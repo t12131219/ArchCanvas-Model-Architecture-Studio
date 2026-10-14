@@ -1,0 +1,1998 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "textcnn",
+  "profile": {
+    "task": "IMDb sentiment classification",
+    "mode": "evaluation (Dropout disabled)",
+    "vocabulary_size": "V=len(vocabulary)",
+    "vocabulary_max_size": 30000,
+    "min_frequency": 2,
+    "max_length": 512,
+    "embedding_dim": 200,
+    "filter_widths": [
+      3,
+      4,
+      5
+    ],
+    "filters_per_width": 128,
+    "feature_positions": [
+      510,
+      509,
+      508
+    ],
+    "pooled_features": 384,
+    "dropout": 0.5,
+    "output_classes": 2,
+    "batch_size_setting": 128,
+    "input_layout": "[B,L]",
+    "lengths_layout": "[B]",
+    "padding_idx": 0,
+    "valid_windows": "max(lengths-k+1,1)",
+    "mask_fill": "torch.finfo(features.dtype).min",
+    "caller_autocast": "bfloat16 CUDA evaluation; runtime not executed",
+    "forward_softmax": false,
+    "symbolic_shapes": true,
+    "model_executed": false
+  },
+  "source": {
+    "repository": "rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "d72c614d79563c7756290b44770a5262b15bfc58e12c9844311724d2862bc09c"
+  },
+  "nodes": [
+    {
+      "id": "textcnn.root",
+      "label": "TextCNN / IMDb valid-window pooling",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN"
+      ],
+      "shape": "(token_ids,lengths) -> logits [B,2]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.input",
+      "label": "Right-padded token IDs",
+      "kind": "input",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::make_loaders"
+      ],
+      "shape": "[B,512]",
+      "detail": [
+        "Caller truncates to max_length=512; padding index 0",
+        "Empty tokenization is replaced by [unk], so lengths>=1"
+      ],
+      "parent": "textcnn.root",
+      "source_evidence": [
+        "E004",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.embedding",
+      "label": "Embedding + channel-first layout",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,200,512]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "textcnn.root",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.lookup",
+      "label": "Embedding V -> 200",
+      "kind": "embedding",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,L,200]",
+      "detail": [
+        "padding_idx=0; vocabulary matrix initialized uniform[-0.25,0.25]",
+        "Padding row explicitly zeroed in __init__"
+      ],
+      "parameter": "embedding.weight",
+      "parent": "textcnn.embedding",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.transpose",
+      "label": "Transpose axes 1 and 2",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,200,L]",
+      "detail": [
+        "Conv1d interprets embedding width as channels"
+      ],
+      "parent": "textcnn.embedding",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.branches",
+      "label": "Three independent convolution widths",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "3 tensors [B,128]",
+      "detail": [
+        "Each branch receives the same embedded sequence",
+        "Separate Conv weights; tuple/list collection is not summation"
+      ],
+      "mode": "parallel",
+      "parent": "textcnn.root",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "item[2]"
+      ]
+    },
+    {
+      "id": "textcnn.k3",
+      "label": "Conv branch / width k=3",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128]",
+      "detail": [
+        "S=L-k+1; selected example L=512"
+      ],
+      "parameter_scope": "convolutions.0",
+      "mode": "chain",
+      "parent": "textcnn.branches",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k3.conv",
+      "label": "Conv1d 200 -> 128 / k=3",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128,510]",
+      "detail": [
+        "stride=1; padding=0; dilation=1; default bias=True",
+        "One separate ModuleList convolution per width"
+      ],
+      "parameter": "convolutions.0",
+      "parent": "textcnn.k3",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k3.relu",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128,510]",
+      "detail": [],
+      "parent": "textcnn.k3",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "textcnn.k3.operands",
+      "label": "Retained features / length mask",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "features + mask operands",
+      "detail": [
+        "Logical operation-argument group; source does not create a (features,mask) tuple",
+        "features retains ReLU values; mask only reads ReLU shape and external lengths"
+      ],
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": false,
+      "child_inputs": {
+        "textcnn.k3.features_operand": {
+          "role": "value",
+          "producer": "textcnn.k3.relu",
+          "src_port": "out"
+        },
+        "textcnn.k3.validity": {
+          "role": "shape",
+          "producer": "textcnn.k3.relu",
+          "src_port": "shape"
+        }
+      },
+      "mode": "parallel",
+      "parent": "textcnn.k3",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "textcnn.k3.features_operand",
+      "label": "Retain ReLU features",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128,510]",
+      "detail": [],
+      "input_relation": {
+        "role": "value",
+        "producer": "textcnn.k3.relu",
+        "src_port": "out"
+      },
+      "parent": "textcnn.k3.operands",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k3.validity",
+      "label": "Build valid-window mask",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "mask: [B,510]",
+      "detail": [],
+      "input_relation": {
+        "role": "shape",
+        "producer": "textcnn.k3.relu",
+        "src_port": "shape"
+      },
+      "boundary_input_role": "shape",
+      "mode": "chain",
+      "parent": "textcnn.k3.operands",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k3.mask_operands",
+      "label": "Allowed count / positions",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "count + position operands",
+      "detail": [],
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": false,
+      "child_inputs": {
+        "textcnn.k3.valid_count": {
+          "role": "external",
+          "producer": "textcnn.lengths",
+          "src_port": "out"
+        },
+        "textcnn.k3.positions": {
+          "role": "shape",
+          "producer": "textcnn.k3.relu",
+          "src_port": "shape"
+        }
+      },
+      "mode": "parallel",
+      "parent": "textcnn.k3.validity",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "textcnn.k3.valid_count",
+      "label": "Count retained windows",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "valid_windows: [B]",
+      "detail": [],
+      "input_relation": {
+        "role": "external",
+        "producer": "textcnn.lengths",
+        "src_port": "out"
+      },
+      "suppress_input_boundary": true,
+      "mode": "chain",
+      "parent": "textcnn.k3.mask_operands",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k3.count",
+      "label": "lengths - k + 1",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B]",
+      "detail": [
+        "k=3; independent lengths operand enters side port"
+      ],
+      "input_relation": {
+        "role": "external",
+        "producer": "textcnn.lengths",
+        "src_port": "out"
+      },
+      "input_ports": [
+        "lengths"
+      ],
+      "parent": "textcnn.k3.valid_count",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "lengths"
+      ]
+    },
+    {
+      "id": "textcnn.k3.clamp",
+      "label": "Clamp count to at least 1",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "valid_windows: [B]",
+      "detail": [
+        ".clamp(min=1)",
+        "A short review retains its first zero-padded convolution window"
+      ],
+      "parent": "textcnn.k3.valid_count",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k3.positions",
+      "label": "arange feature positions",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "positions: [510]",
+      "detail": [
+        "torch.arange(features.shape[-1],device=features.device)",
+        "Runtime S=L-k+1; only shape, not feature values"
+      ],
+      "input_relation": {
+        "role": "shape",
+        "producer": "textcnn.k3.relu",
+        "src_port": "shape"
+      },
+      "parent": "textcnn.k3.mask_operands",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k3.mask",
+      "label": "positions >= valid_windows",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "mask: [B,510]",
+      "detail": [
+        "positions[None,:] >= valid_windows[:,None]",
+        "True excludes a window; lengths never become learned features"
+      ],
+      "parent": "textcnn.k3.validity",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k3.masked_fill",
+      "label": "Fill excluded windows with dtype min",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128,510]",
+      "detail": [
+        "features.masked_fill(mask[:,None,:],torch.finfo(features.dtype).min)",
+        "Same mask broadcasts across all 128 filters; finite minimum, not -infinity"
+      ],
+      "parent": "textcnn.k3",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k3.amax",
+      "label": "amax over valid positions",
+      "kind": "pool",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128]",
+      "detail": [
+        "features.amax(dim=-1); one feature per convolution filter"
+      ],
+      "parent": "textcnn.k3",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k4",
+      "label": "Conv branch / width k=4",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128]",
+      "detail": [
+        "S=L-k+1; selected example L=512"
+      ],
+      "parameter_scope": "convolutions.1",
+      "mode": "chain",
+      "parent": "textcnn.branches",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k4.conv",
+      "label": "Conv1d 200 -> 128 / k=4",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128,509]",
+      "detail": [
+        "stride=1; padding=0; dilation=1; default bias=True",
+        "One separate ModuleList convolution per width"
+      ],
+      "parameter": "convolutions.1",
+      "parent": "textcnn.k4",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k4.relu",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128,509]",
+      "detail": [],
+      "parent": "textcnn.k4",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "textcnn.k4.operands",
+      "label": "Retained features / length mask",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "features + mask operands",
+      "detail": [
+        "Logical operation-argument group; source does not create a (features,mask) tuple",
+        "features retains ReLU values; mask only reads ReLU shape and external lengths"
+      ],
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": false,
+      "child_inputs": {
+        "textcnn.k4.features_operand": {
+          "role": "value",
+          "producer": "textcnn.k4.relu",
+          "src_port": "out"
+        },
+        "textcnn.k4.validity": {
+          "role": "shape",
+          "producer": "textcnn.k4.relu",
+          "src_port": "shape"
+        }
+      },
+      "mode": "parallel",
+      "parent": "textcnn.k4",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "textcnn.k4.features_operand",
+      "label": "Retain ReLU features",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128,509]",
+      "detail": [],
+      "input_relation": {
+        "role": "value",
+        "producer": "textcnn.k4.relu",
+        "src_port": "out"
+      },
+      "parent": "textcnn.k4.operands",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k4.validity",
+      "label": "Build valid-window mask",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "mask: [B,509]",
+      "detail": [],
+      "input_relation": {
+        "role": "shape",
+        "producer": "textcnn.k4.relu",
+        "src_port": "shape"
+      },
+      "boundary_input_role": "shape",
+      "mode": "chain",
+      "parent": "textcnn.k4.operands",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k4.mask_operands",
+      "label": "Allowed count / positions",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "count + position operands",
+      "detail": [],
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": false,
+      "child_inputs": {
+        "textcnn.k4.valid_count": {
+          "role": "external",
+          "producer": "textcnn.lengths",
+          "src_port": "out"
+        },
+        "textcnn.k4.positions": {
+          "role": "shape",
+          "producer": "textcnn.k4.relu",
+          "src_port": "shape"
+        }
+      },
+      "mode": "parallel",
+      "parent": "textcnn.k4.validity",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "textcnn.k4.valid_count",
+      "label": "Count retained windows",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "valid_windows: [B]",
+      "detail": [],
+      "input_relation": {
+        "role": "external",
+        "producer": "textcnn.lengths",
+        "src_port": "out"
+      },
+      "suppress_input_boundary": true,
+      "mode": "chain",
+      "parent": "textcnn.k4.mask_operands",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k4.count",
+      "label": "lengths - k + 1",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B]",
+      "detail": [
+        "k=4; independent lengths operand enters side port"
+      ],
+      "input_relation": {
+        "role": "external",
+        "producer": "textcnn.lengths",
+        "src_port": "out"
+      },
+      "input_ports": [
+        "lengths"
+      ],
+      "parent": "textcnn.k4.valid_count",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "lengths"
+      ]
+    },
+    {
+      "id": "textcnn.k4.clamp",
+      "label": "Clamp count to at least 1",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "valid_windows: [B]",
+      "detail": [
+        ".clamp(min=1)",
+        "A short review retains its first zero-padded convolution window"
+      ],
+      "parent": "textcnn.k4.valid_count",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k4.positions",
+      "label": "arange feature positions",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "positions: [509]",
+      "detail": [
+        "torch.arange(features.shape[-1],device=features.device)",
+        "Runtime S=L-k+1; only shape, not feature values"
+      ],
+      "input_relation": {
+        "role": "shape",
+        "producer": "textcnn.k4.relu",
+        "src_port": "shape"
+      },
+      "parent": "textcnn.k4.mask_operands",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k4.mask",
+      "label": "positions >= valid_windows",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "mask: [B,509]",
+      "detail": [
+        "positions[None,:] >= valid_windows[:,None]",
+        "True excludes a window; lengths never become learned features"
+      ],
+      "parent": "textcnn.k4.validity",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k4.masked_fill",
+      "label": "Fill excluded windows with dtype min",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128,509]",
+      "detail": [
+        "features.masked_fill(mask[:,None,:],torch.finfo(features.dtype).min)",
+        "Same mask broadcasts across all 128 filters; finite minimum, not -infinity"
+      ],
+      "parent": "textcnn.k4",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k4.amax",
+      "label": "amax over valid positions",
+      "kind": "pool",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128]",
+      "detail": [
+        "features.amax(dim=-1); one feature per convolution filter"
+      ],
+      "parent": "textcnn.k4",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k5",
+      "label": "Conv branch / width k=5",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128]",
+      "detail": [
+        "S=L-k+1; selected example L=512"
+      ],
+      "parameter_scope": "convolutions.2",
+      "mode": "chain",
+      "parent": "textcnn.branches",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k5.conv",
+      "label": "Conv1d 200 -> 128 / k=5",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128,508]",
+      "detail": [
+        "stride=1; padding=0; dilation=1; default bias=True",
+        "One separate ModuleList convolution per width"
+      ],
+      "parameter": "convolutions.2",
+      "parent": "textcnn.k5",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k5.relu",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128,508]",
+      "detail": [],
+      "parent": "textcnn.k5",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "textcnn.k5.operands",
+      "label": "Retained features / length mask",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "features + mask operands",
+      "detail": [
+        "Logical operation-argument group; source does not create a (features,mask) tuple",
+        "features retains ReLU values; mask only reads ReLU shape and external lengths"
+      ],
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": false,
+      "child_inputs": {
+        "textcnn.k5.features_operand": {
+          "role": "value",
+          "producer": "textcnn.k5.relu",
+          "src_port": "out"
+        },
+        "textcnn.k5.validity": {
+          "role": "shape",
+          "producer": "textcnn.k5.relu",
+          "src_port": "shape"
+        }
+      },
+      "mode": "parallel",
+      "parent": "textcnn.k5",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "textcnn.k5.features_operand",
+      "label": "Retain ReLU features",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128,508]",
+      "detail": [],
+      "input_relation": {
+        "role": "value",
+        "producer": "textcnn.k5.relu",
+        "src_port": "out"
+      },
+      "parent": "textcnn.k5.operands",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k5.validity",
+      "label": "Build valid-window mask",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "mask: [B,508]",
+      "detail": [],
+      "input_relation": {
+        "role": "shape",
+        "producer": "textcnn.k5.relu",
+        "src_port": "shape"
+      },
+      "boundary_input_role": "shape",
+      "mode": "chain",
+      "parent": "textcnn.k5.operands",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k5.mask_operands",
+      "label": "Allowed count / positions",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "count + position operands",
+      "detail": [],
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": false,
+      "child_inputs": {
+        "textcnn.k5.valid_count": {
+          "role": "external",
+          "producer": "textcnn.lengths",
+          "src_port": "out"
+        },
+        "textcnn.k5.positions": {
+          "role": "shape",
+          "producer": "textcnn.k5.relu",
+          "src_port": "shape"
+        }
+      },
+      "mode": "parallel",
+      "parent": "textcnn.k5.validity",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "textcnn.k5.valid_count",
+      "label": "Count retained windows",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "valid_windows: [B]",
+      "detail": [],
+      "input_relation": {
+        "role": "external",
+        "producer": "textcnn.lengths",
+        "src_port": "out"
+      },
+      "suppress_input_boundary": true,
+      "mode": "chain",
+      "parent": "textcnn.k5.mask_operands",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k5.count",
+      "label": "lengths - k + 1",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B]",
+      "detail": [
+        "k=5; independent lengths operand enters side port"
+      ],
+      "input_relation": {
+        "role": "external",
+        "producer": "textcnn.lengths",
+        "src_port": "out"
+      },
+      "input_ports": [
+        "lengths"
+      ],
+      "parent": "textcnn.k5.valid_count",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "lengths"
+      ]
+    },
+    {
+      "id": "textcnn.k5.clamp",
+      "label": "Clamp count to at least 1",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "valid_windows: [B]",
+      "detail": [
+        ".clamp(min=1)",
+        "A short review retains its first zero-padded convolution window"
+      ],
+      "parent": "textcnn.k5.valid_count",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k5.positions",
+      "label": "arange feature positions",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "positions: [508]",
+      "detail": [
+        "torch.arange(features.shape[-1],device=features.device)",
+        "Runtime S=L-k+1; only shape, not feature values"
+      ],
+      "input_relation": {
+        "role": "shape",
+        "producer": "textcnn.k5.relu",
+        "src_port": "shape"
+      },
+      "parent": "textcnn.k5.mask_operands",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k5.mask",
+      "label": "positions >= valid_windows",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "mask: [B,508]",
+      "detail": [
+        "positions[None,:] >= valid_windows[:,None]",
+        "True excludes a window; lengths never become learned features"
+      ],
+      "parent": "textcnn.k5.validity",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k5.masked_fill",
+      "label": "Fill excluded windows with dtype min",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128,508]",
+      "detail": [
+        "features.masked_fill(mask[:,None,:],torch.finfo(features.dtype).min)",
+        "Same mask broadcasts across all 128 filters; finite minimum, not -infinity"
+      ],
+      "parent": "textcnn.k5",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.k5.amax",
+      "label": "amax over valid positions",
+      "kind": "pool",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,128]",
+      "detail": [
+        "features.amax(dim=-1); one feature per convolution filter"
+      ],
+      "parent": "textcnn.k5",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.head",
+      "label": "Concatenated feature classifier",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "logits: [B,2]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "textcnn.root",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.concat",
+      "label": "Concat pooled branch features",
+      "kind": "concat",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,384]",
+      "detail": [
+        "torch.cat(pooled,dim=1); ordered widths 3,4,5",
+        "3*128=384; not temporal concat"
+      ],
+      "parent": "textcnn.head",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.dropout",
+      "label": "Dropout p=0.5",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,384]",
+      "detail": [
+        "Disabled in selected evaluate/model.eval path"
+      ],
+      "dropout": 0.5,
+      "parent": "textcnn.head",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.classifier",
+      "label": "Linear 384 -> 2",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "logits: [B,2]",
+      "detail": [
+        "class order: negative=0, positive=1; no Softmax in forward"
+      ],
+      "parameter": "classifier",
+      "parent": "textcnn.head",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.output",
+      "label": "Two-class logits",
+      "kind": "output",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward"
+      ],
+      "shape": "[B,2]",
+      "detail": [
+        "evaluate argmax and cross_entropy are caller operations"
+      ],
+      "parent": "textcnn.root",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "textcnn.lengths",
+      "label": "External valid lengths",
+      "kind": "input",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::TextCNN.forward",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn-nlp/cnn_imdb.py::make_loaders"
+      ],
+      "shape": "lengths: [B]",
+      "detail": [
+        "1 <= lengths <= 512 on selected make_loaders path",
+        "Counts real tokens after truncation, excluding right padding"
+      ],
+      "origin": "caller TensorDataset(ids,lengths,labels)",
+      "learnable": false,
+      "parent": null,
+      "source_evidence": [
+        "E004",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "textcnn.embedding:in->textcnn.lookup:in:boundary",
+      "src": "textcnn.embedding",
+      "dst": "textcnn.lookup",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.lookup:out->textcnn.transpose:in:tensor",
+      "src": "textcnn.lookup",
+      "dst": "textcnn.transpose",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.transpose:out->textcnn.embedding:out:boundary",
+      "src": "textcnn.transpose",
+      "dst": "textcnn.embedding",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.k3.count:out->textcnn.k3.clamp:in:tensor",
+      "src": "textcnn.k3.count",
+      "dst": "textcnn.k3.clamp",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k3.clamp:out->textcnn.k3.valid_count:out:boundary",
+      "src": "textcnn.k3.clamp",
+      "dst": "textcnn.k3.valid_count",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.k3.valid_count:out->textcnn.k3.mask_operands:operand[0]:operand_collection",
+      "src": "textcnn.k3.valid_count",
+      "dst": "textcnn.k3.mask_operands",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "textcnn.k3.relu:shape->textcnn.k3.positions:in:shape_dependency",
+      "src": "textcnn.k3.relu",
+      "dst": "textcnn.k3.positions",
+      "src_port": "shape",
+      "dst_port": "in",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "textcnn.k3.positions:out->textcnn.k3.mask_operands:operand[1]:operand_collection",
+      "src": "textcnn.k3.positions",
+      "dst": "textcnn.k3.mask_operands",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "textcnn.k3.validity:in->textcnn.k3.mask_operands:in:boundary",
+      "src": "textcnn.k3.validity",
+      "dst": "textcnn.k3.mask_operands",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.k3.mask_operands:out->textcnn.k3.mask:in:tensor",
+      "src": "textcnn.k3.mask_operands",
+      "dst": "textcnn.k3.mask",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k3.mask:out->textcnn.k3.validity:out:boundary",
+      "src": "textcnn.k3.mask",
+      "dst": "textcnn.k3.validity",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.k3.relu:out->textcnn.k3.features_operand:in:value_operand",
+      "src": "textcnn.k3.relu",
+      "dst": "textcnn.k3.features_operand",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "textcnn.k3.features_operand:out->textcnn.k3.operands:operand[0]:operand_collection",
+      "src": "textcnn.k3.features_operand",
+      "dst": "textcnn.k3.operands",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "textcnn.k3.relu:shape->textcnn.k3.validity:in:shape_dependency",
+      "src": "textcnn.k3.relu",
+      "dst": "textcnn.k3.validity",
+      "src_port": "shape",
+      "dst_port": "in",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "textcnn.k3.validity:out->textcnn.k3.operands:operand[1]:operand_collection",
+      "src": "textcnn.k3.validity",
+      "dst": "textcnn.k3.operands",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "textcnn.k3:in->textcnn.k3.conv:in:boundary",
+      "src": "textcnn.k3",
+      "dst": "textcnn.k3.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.k3.conv:out->textcnn.k3.relu:in:tensor",
+      "src": "textcnn.k3.conv",
+      "dst": "textcnn.k3.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k3.relu:out->textcnn.k3.operands:in:tensor",
+      "src": "textcnn.k3.relu",
+      "dst": "textcnn.k3.operands",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k3.operands:out->textcnn.k3.masked_fill:in:tensor",
+      "src": "textcnn.k3.operands",
+      "dst": "textcnn.k3.masked_fill",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k3.masked_fill:out->textcnn.k3.amax:in:tensor",
+      "src": "textcnn.k3.masked_fill",
+      "dst": "textcnn.k3.amax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k3.amax:out->textcnn.k3:out:boundary",
+      "src": "textcnn.k3.amax",
+      "dst": "textcnn.k3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.k4.count:out->textcnn.k4.clamp:in:tensor",
+      "src": "textcnn.k4.count",
+      "dst": "textcnn.k4.clamp",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k4.clamp:out->textcnn.k4.valid_count:out:boundary",
+      "src": "textcnn.k4.clamp",
+      "dst": "textcnn.k4.valid_count",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.k4.valid_count:out->textcnn.k4.mask_operands:operand[0]:operand_collection",
+      "src": "textcnn.k4.valid_count",
+      "dst": "textcnn.k4.mask_operands",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "textcnn.k4.relu:shape->textcnn.k4.positions:in:shape_dependency",
+      "src": "textcnn.k4.relu",
+      "dst": "textcnn.k4.positions",
+      "src_port": "shape",
+      "dst_port": "in",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "textcnn.k4.positions:out->textcnn.k4.mask_operands:operand[1]:operand_collection",
+      "src": "textcnn.k4.positions",
+      "dst": "textcnn.k4.mask_operands",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "textcnn.k4.validity:in->textcnn.k4.mask_operands:in:boundary",
+      "src": "textcnn.k4.validity",
+      "dst": "textcnn.k4.mask_operands",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.k4.mask_operands:out->textcnn.k4.mask:in:tensor",
+      "src": "textcnn.k4.mask_operands",
+      "dst": "textcnn.k4.mask",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k4.mask:out->textcnn.k4.validity:out:boundary",
+      "src": "textcnn.k4.mask",
+      "dst": "textcnn.k4.validity",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.k4.relu:out->textcnn.k4.features_operand:in:value_operand",
+      "src": "textcnn.k4.relu",
+      "dst": "textcnn.k4.features_operand",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "textcnn.k4.features_operand:out->textcnn.k4.operands:operand[0]:operand_collection",
+      "src": "textcnn.k4.features_operand",
+      "dst": "textcnn.k4.operands",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "textcnn.k4.relu:shape->textcnn.k4.validity:in:shape_dependency",
+      "src": "textcnn.k4.relu",
+      "dst": "textcnn.k4.validity",
+      "src_port": "shape",
+      "dst_port": "in",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "textcnn.k4.validity:out->textcnn.k4.operands:operand[1]:operand_collection",
+      "src": "textcnn.k4.validity",
+      "dst": "textcnn.k4.operands",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "textcnn.k4:in->textcnn.k4.conv:in:boundary",
+      "src": "textcnn.k4",
+      "dst": "textcnn.k4.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.k4.conv:out->textcnn.k4.relu:in:tensor",
+      "src": "textcnn.k4.conv",
+      "dst": "textcnn.k4.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k4.relu:out->textcnn.k4.operands:in:tensor",
+      "src": "textcnn.k4.relu",
+      "dst": "textcnn.k4.operands",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k4.operands:out->textcnn.k4.masked_fill:in:tensor",
+      "src": "textcnn.k4.operands",
+      "dst": "textcnn.k4.masked_fill",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k4.masked_fill:out->textcnn.k4.amax:in:tensor",
+      "src": "textcnn.k4.masked_fill",
+      "dst": "textcnn.k4.amax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k4.amax:out->textcnn.k4:out:boundary",
+      "src": "textcnn.k4.amax",
+      "dst": "textcnn.k4",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.k5.count:out->textcnn.k5.clamp:in:tensor",
+      "src": "textcnn.k5.count",
+      "dst": "textcnn.k5.clamp",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k5.clamp:out->textcnn.k5.valid_count:out:boundary",
+      "src": "textcnn.k5.clamp",
+      "dst": "textcnn.k5.valid_count",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.k5.valid_count:out->textcnn.k5.mask_operands:operand[0]:operand_collection",
+      "src": "textcnn.k5.valid_count",
+      "dst": "textcnn.k5.mask_operands",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "textcnn.k5.relu:shape->textcnn.k5.positions:in:shape_dependency",
+      "src": "textcnn.k5.relu",
+      "dst": "textcnn.k5.positions",
+      "src_port": "shape",
+      "dst_port": "in",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "textcnn.k5.positions:out->textcnn.k5.mask_operands:operand[1]:operand_collection",
+      "src": "textcnn.k5.positions",
+      "dst": "textcnn.k5.mask_operands",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "textcnn.k5.validity:in->textcnn.k5.mask_operands:in:boundary",
+      "src": "textcnn.k5.validity",
+      "dst": "textcnn.k5.mask_operands",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.k5.mask_operands:out->textcnn.k5.mask:in:tensor",
+      "src": "textcnn.k5.mask_operands",
+      "dst": "textcnn.k5.mask",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k5.mask:out->textcnn.k5.validity:out:boundary",
+      "src": "textcnn.k5.mask",
+      "dst": "textcnn.k5.validity",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.k5.relu:out->textcnn.k5.features_operand:in:value_operand",
+      "src": "textcnn.k5.relu",
+      "dst": "textcnn.k5.features_operand",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "textcnn.k5.features_operand:out->textcnn.k5.operands:operand[0]:operand_collection",
+      "src": "textcnn.k5.features_operand",
+      "dst": "textcnn.k5.operands",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "textcnn.k5.relu:shape->textcnn.k5.validity:in:shape_dependency",
+      "src": "textcnn.k5.relu",
+      "dst": "textcnn.k5.validity",
+      "src_port": "shape",
+      "dst_port": "in",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "textcnn.k5.validity:out->textcnn.k5.operands:operand[1]:operand_collection",
+      "src": "textcnn.k5.validity",
+      "dst": "textcnn.k5.operands",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "textcnn.k5:in->textcnn.k5.conv:in:boundary",
+      "src": "textcnn.k5",
+      "dst": "textcnn.k5.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.k5.conv:out->textcnn.k5.relu:in:tensor",
+      "src": "textcnn.k5.conv",
+      "dst": "textcnn.k5.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k5.relu:out->textcnn.k5.operands:in:tensor",
+      "src": "textcnn.k5.relu",
+      "dst": "textcnn.k5.operands",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k5.operands:out->textcnn.k5.masked_fill:in:tensor",
+      "src": "textcnn.k5.operands",
+      "dst": "textcnn.k5.masked_fill",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k5.masked_fill:out->textcnn.k5.amax:in:tensor",
+      "src": "textcnn.k5.masked_fill",
+      "dst": "textcnn.k5.amax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.k5.amax:out->textcnn.k5:out:boundary",
+      "src": "textcnn.k5.amax",
+      "dst": "textcnn.k5",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.branches:in->textcnn.k3:in:fork",
+      "src": "textcnn.branches",
+      "dst": "textcnn.k3",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "textcnn.k3:out->textcnn.branches:item[0]:tuple_collection",
+      "src": "textcnn.k3",
+      "dst": "textcnn.branches",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "textcnn.branches:in->textcnn.k4:in:fork",
+      "src": "textcnn.branches",
+      "dst": "textcnn.k4",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "textcnn.k4:out->textcnn.branches:item[1]:tuple_collection",
+      "src": "textcnn.k4",
+      "dst": "textcnn.branches",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "textcnn.branches:in->textcnn.k5:in:fork",
+      "src": "textcnn.branches",
+      "dst": "textcnn.k5",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "textcnn.k5:out->textcnn.branches:item[2]:tuple_collection",
+      "src": "textcnn.k5",
+      "dst": "textcnn.branches",
+      "src_port": "out",
+      "dst_port": "item[2]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "textcnn.head:in->textcnn.concat:in:boundary",
+      "src": "textcnn.head",
+      "dst": "textcnn.concat",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.concat:out->textcnn.dropout:in:tensor",
+      "src": "textcnn.concat",
+      "dst": "textcnn.dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.dropout:out->textcnn.classifier:in:tensor",
+      "src": "textcnn.dropout",
+      "dst": "textcnn.classifier",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.classifier:out->textcnn.head:out:boundary",
+      "src": "textcnn.classifier",
+      "dst": "textcnn.head",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.root:in->textcnn.input:in:boundary",
+      "src": "textcnn.root",
+      "dst": "textcnn.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.input:out->textcnn.embedding:in:tensor",
+      "src": "textcnn.input",
+      "dst": "textcnn.embedding",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.embedding:out->textcnn.branches:in:tensor",
+      "src": "textcnn.embedding",
+      "dst": "textcnn.branches",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.branches:out->textcnn.head:in:tensor",
+      "src": "textcnn.branches",
+      "dst": "textcnn.head",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.head:out->textcnn.output:in:tensor",
+      "src": "textcnn.head",
+      "dst": "textcnn.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "textcnn.output:out->textcnn.root:out:boundary",
+      "src": "textcnn.output",
+      "dst": "textcnn.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "textcnn.lengths:out->textcnn.k3.count:lengths:sequence_length",
+      "src": "textcnn.lengths",
+      "dst": "textcnn.k3.count",
+      "src_port": "out",
+      "dst_port": "lengths",
+      "role": "sequence_length"
+    },
+    {
+      "id": "textcnn.lengths:out->textcnn.k4.count:lengths:sequence_length",
+      "src": "textcnn.lengths",
+      "dst": "textcnn.k4.count",
+      "src_port": "out",
+      "dst_port": "lengths",
+      "role": "sequence_length"
+    },
+    {
+      "id": "textcnn.lengths:out->textcnn.k5.count:lengths:sequence_length",
+      "src": "textcnn.lengths",
+      "dst": "textcnn.k5.count",
+      "src_port": "out",
+      "dst_port": "lengths",
+      "role": "sequence_length"
+    }
+  ],
+  "facts": [
+    "Config defaults are embedding_dim=200,filter_widths=(3,4,5),filters_per_width=128,max_length=512,dropout=0.5.",
+    "The realized embedding row count is len(vocabulary); 30000 is an upper limit including pad/unk, not a guaranteed exact size.",
+    "One shared embedding supplies three independently parameterized Conv1d branches, all with no padding and stride=1.",
+    "For L=512, convolution output positions are 510,509,508; each branch maps 200 embedding channels to 128 filters.",
+    "After ReLU, valid_windows=(lengths-k+1).clamp(min=1); positions>=valid_windows marks excluded windows.",
+    "Internal parallel argument groups are logical operand bundles, not literal source tuples or tuple-field dispatch.",
+    "Typed child bindings give count only the external lengths input, positions only ReLU.shape, and masked_fill the retained ReLU values plus mask.",
+    "Very short reviews retain their first zero-padded window rather than excluding every window.",
+    "Excluded features are filled with the finite minimum of their actual floating dtype, then amax over positions yields [B,128].",
+    "Pooled features concatenate in widths 3,4,5 order to [B,384], pass Dropout(0.5), then Linear(384,2).",
+    "forward returns raw two-class logits only; evaluate applies argmax and cross_entropy outside model forward.",
+    "Lengths are an explicit caller input used by each branch mask; they are not learned embedding or a packed recurrent input.",
+    "Convolution kernels share weights across positions within each branch; different widths have distinct parameter instances."
+  ],
+  "corrections": [
+    "This frozen notebook is a newer length-masked implementation, not the older torchtext/TextCNN tutorial structure.",
+    "Use Conv1d with batch-first token IDs followed by transpose, not a made-up Conv2d image or sequence-first input.",
+    "Draw masking before maximum reduction; including every padded convolution window changes this source's semantics.",
+    "Preserve clamp(min=1) for short reviews and torch.finfo(dtype).min; neither all-invalid output nor -infinity is the literal source.",
+    "Draw explicit channel Concat after three branch reductions; branches are not summed and do not share convolution weights.",
+    "Do not add a forward Softmax, positional encoding, attention, LSTM packing or pretrained embeddings."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

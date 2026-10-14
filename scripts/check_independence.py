@@ -26,7 +26,7 @@ RELEASE_ITEMS = (
     "pyproject.toml", "requirements.lock", "requirements-runtime.lock", "README.md", "AGENTS.md", "LICENSE", "LICENSE.md", ".gitignore",
     "src", "fixtures", "studio", "docs", "scripts", "skills", "tests", "schemas",
 )
-MODULES = ("archcanvas_cli", "archcanvas_python", "archcanvas_transactions", "archcanvas_publication", "archcanvas_runtime")
+MODULES = ("archcanvas_cli", "archcanvas_python", "archcanvas_transactions", "archcanvas_publication", "archcanvas_runtime", "archcanvas_authoring", "archcanvas_preview")
 FIXTURES = (
     ("transformer", "model:Transformer"),
     ("mlp", "model:MLP"),

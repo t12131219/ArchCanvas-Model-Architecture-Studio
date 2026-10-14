@@ -1,0 +1,1728 @@
+{
+  "source_project": "deeplearning-models-batch3",
+  "repository": "https://github.com/rasbt/deeplearning-models",
+  "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+  "source_snapshot_sha256": "a1cb8ca6e3b3489daf1e2276769302cabd9a1ed9055ae534ae06aec90929c946",
+  "entry": "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "deeplearning-models-batch3/LICENSE": {
+      "sha256": "8cb709815881dd6d5380f3dd6d6327591a56639302e4372eebb84480dcf44024",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/rasbt/deeplearning-models/59beda3aa25337e576564f1c18c6edd26f9f30e3/LICENSE",
+      "derived_from": null
+    },
+    "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.ipynb": {
+      "sha256": "93007925561d3bb7ca662723330a1904a664feed20d7779db837cb3b1da9047d",
+      "lines": 1292,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/rasbt/deeplearning-models/59beda3aa25337e576564f1c18c6edd26f9f30e3/pytorch_ipynb/autoencoder/ae-cnn-cvae.ipynb",
+      "derived_from": null
+    },
+    "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py": {
+      "sha256": "931b370d1952acaf48ba30f5d7f2376e2d496161c5655cd31448c773e3be0fe2",
+      "lines": 336,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/rasbt/deeplearning-models/59beda3aa25337e576564f1c18c6edd26f9f30e3/pytorch_ipynb/autoencoder/ae-cnn-cvae.ipynb",
+      "derived_from": "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.ipynb"
+    }
+  },
+  "symbols": {
+    "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::to_onehot": {
+      "path": "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py",
+      "symbol": "to_onehot",
+      "start": 75,
+      "end": 80,
+      "snippet": "def to_onehot(labels, num_classes, device):\n\n    labels_onehot = torch.zeros(labels.size()[0], num_classes).to(device)\n    labels_onehot.scatter_(1, labels.view(-1, 1), 1)\n\n    return labels_onehot",
+      "notebook_cells": [
+        9
+      ],
+      "original_notebook": "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.ipynb",
+      "evidence_id": "E007"
+    },
+    "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder": {
+      "path": "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py",
+      "symbol": "ConditionalVariationalAutoencoder",
+      "start": 83,
+      "end": 221,
+      "snippet": "class ConditionalVariationalAutoencoder(torch.nn.Module):\n\n    def __init__(self, num_features, num_latent, num_classes):\n        super(ConditionalVariationalAutoencoder, self).__init__()\n        \n        self.num_classes = num_classes\n        \n        \n        ###############\n        # ENCODER\n        ##############\n        \n        # calculate same padding:\n        # (w - k + 2*p)/s + 1 = o\n        # => p = (s(o-1) - w + k)/2\n\n        self.enc_conv_1 = torch.nn.Conv2d(in_channels=1+self.num_classes,\n                                          out_channels=16,\n                                          kernel_size=(6, 6),\n                                          stride=(2, 2),\n                                          padding=0)\n\n        self.enc_conv_2 = torch.nn.Conv2d(in_channels=16,\n                                          out_channels=32,\n                                          kernel_size=(4, 4),\n                                          stride=(2, 2),\n                                          padding=0)                 \n        \n        self.enc_conv_3 = torch.nn.Conv2d(in_channels=32,\n                                          out_channels=64,\n                                          kernel_size=(2, 2),\n                                          stride=(2, 2),\n                                          padding=0)                     \n        \n        self.z_mean = torch.nn.Linear(64*2*2, num_latent)\n        # in the original paper (Kingma & Welling 2015, we use\n        # have a z_mean and z_var, but the problem is that\n        # the z_var can be negative, which would cause issues\n        # in the log later. Hence we assume that latent vector\n        # has a z_mean and z_log_var component, and when we need\n        # the regular variance or std_dev, we simply use \n        # an exponential function\n        self.z_log_var = torch.nn.Linear(64*2*2, num_latent)\n        \n        \n        \n        ###############\n        # DECODER\n        ##############\n        \n        self.dec_linear_1 = torch.nn.Linear(num_latent+self.num_classes, 64*2*2)\n               \n        self.dec_deconv_1 = torch.nn.ConvTranspose2d(in_channels=64,\n                                                     out_channels=32,\n                                                     kernel_size=(2, 2),\n                                                     stride=(2, 2),\n                                                     padding=0)\n                                 \n        self.dec_deconv_2 = torch.nn.ConvTranspose2d(in_channels=32,\n                                                     out_channels=16,\n                                                     kernel_size=(4, 4),\n                                                     stride=(3, 3),\n                                                     padding=1)\n        \n        self.dec_deconv_3 = torch.nn.ConvTranspose2d(in_channels=16,\n                                                     out_channels=11,\n                                                     kernel_size=(6, 6),\n                                                     stride=(3, 3),\n                                                     padding=4)        \n\n\n    def reparameterize(self, z_mu, z_log_var):\n        # Sample epsilon from standard normal distribution\n        eps = torch.randn(z_mu.size(0), z_mu.size(1)).to(device)\n        # note that log(x^2) = 2*log(x); hence divide by 2 to get std_dev\n        # i.e., std_dev = exp(log(std_dev^2)/2) = exp(log(var)/2)\n        z = z_mu + eps * torch.exp(z_log_var/2.) \n        return z\n        \n    def encoder(self, features, targets):\n        \n        ### Add condition\n        onehot_targets = to_onehot(targets, self.num_classes, device)\n        onehot_targets = onehot_targets.view(-1, self.num_classes, 1, 1)\n        \n        ones = torch.ones(features.size()[0], \n                          self.num_classes,\n                          features.size()[2], \n                          features.size()[3], \n                          dtype=features.dtype).to(device)\n        ones = ones * onehot_targets\n        x = torch.cat((features, ones), dim=1)\n        \n        x = self.enc_conv_1(x)\n        x = F.leaky_relu(x)\n        #print('conv1 out:', x.size())\n        \n        x = self.enc_conv_2(x)\n        x = F.leaky_relu(x)\n        #print('conv2 out:', x.size())\n        \n        x = self.enc_conv_3(x)\n        x = F.leaky_relu(x)\n        #print('conv3 out:', x.size())\n        \n        z_mean = self.z_mean(x.view(-1, 64*2*2))\n        z_log_var = self.z_log_var(x.view(-1, 64*2*2))\n        encoded = self.reparameterize(z_mean, z_log_var)\n        return z_mean, z_log_var, encoded\n    \n    def decoder(self, encoded, targets):\n        ### Add condition\n        onehot_targets = to_onehot(targets, self.num_classes, device)\n        encoded = torch.cat((encoded, onehot_targets), dim=1)        \n        \n        x = self.dec_linear_1(encoded)\n        x = x.view(-1, 64, 2, 2)\n        \n        x = self.dec_deconv_1(x)\n        x = F.leaky_relu(x)\n        #print('deconv1 out:', x.size())\n        \n        x = self.dec_deconv_2(x)\n        x = F.leaky_relu(x)\n        #print('deconv2 out:', x.size())\n        \n        x = self.dec_deconv_3(x)\n        x = F.leaky_relu(x)\n        #print('deconv1 out:', x.size())\n        \n        decoded = torch.sigmoid(x)\n        return decoded\n\n    def forward(self, features, targets):\n        \n        z_mean, z_log_var, encoded = self.encoder(features, targets)\n        decoded = self.decoder(encoded, targets)\n        \n        return z_mean, z_log_var, encoded, decoded",
+      "notebook_cells": [
+        9
+      ],
+      "original_notebook": "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.ipynb",
+      "evidence_id": "E001"
+    },
+    "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__": {
+      "path": "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py",
+      "symbol": "ConditionalVariationalAutoencoder.__init__",
+      "start": 85,
+      "end": 151,
+      "snippet": "    def __init__(self, num_features, num_latent, num_classes):\n        super(ConditionalVariationalAutoencoder, self).__init__()\n        \n        self.num_classes = num_classes\n        \n        \n        ###############\n        # ENCODER\n        ##############\n        \n        # calculate same padding:\n        # (w - k + 2*p)/s + 1 = o\n        # => p = (s(o-1) - w + k)/2\n\n        self.enc_conv_1 = torch.nn.Conv2d(in_channels=1+self.num_classes,\n                                          out_channels=16,\n                                          kernel_size=(6, 6),\n                                          stride=(2, 2),\n                                          padding=0)\n\n        self.enc_conv_2 = torch.nn.Conv2d(in_channels=16,\n                                          out_channels=32,\n                                          kernel_size=(4, 4),\n                                          stride=(2, 2),\n                                          padding=0)                 \n        \n        self.enc_conv_3 = torch.nn.Conv2d(in_channels=32,\n                                          out_channels=64,\n                                          kernel_size=(2, 2),\n                                          stride=(2, 2),\n                                          padding=0)                     \n        \n        self.z_mean = torch.nn.Linear(64*2*2, num_latent)\n        # in the original paper (Kingma & Welling 2015, we use\n        # have a z_mean and z_var, but the problem is that\n        # the z_var can be negative, which would cause issues\n        # in the log later. Hence we assume that latent vector\n        # has a z_mean and z_log_var component, and when we need\n        # the regular variance or std_dev, we simply use \n        # an exponential function\n        self.z_log_var = torch.nn.Linear(64*2*2, num_latent)\n        \n        \n        \n        ###############\n        # DECODER\n        ##############\n        \n        self.dec_linear_1 = torch.nn.Linear(num_latent+self.num_classes, 64*2*2)\n               \n        self.dec_deconv_1 = torch.nn.ConvTranspose2d(in_channels=64,\n                                                     out_channels=32,\n                                                     kernel_size=(2, 2),\n                                                     stride=(2, 2),\n                                                     padding=0)\n                                 \n        self.dec_deconv_2 = torch.nn.ConvTranspose2d(in_channels=32,\n                                                     out_channels=16,\n                                                     kernel_size=(4, 4),\n                                                     stride=(3, 3),\n                                                     padding=1)\n        \n        self.dec_deconv_3 = torch.nn.ConvTranspose2d(in_channels=16,\n                                                     out_channels=11,\n                                                     kernel_size=(6, 6),\n                                                     stride=(3, 3),\n                                                     padding=4)        ",
+      "notebook_cells": [
+        9
+      ],
+      "original_notebook": "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.ipynb",
+      "evidence_id": "E002"
+    },
+    "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.reparameterize": {
+      "path": "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py",
+      "symbol": "ConditionalVariationalAutoencoder.reparameterize",
+      "start": 154,
+      "end": 160,
+      "snippet": "    def reparameterize(self, z_mu, z_log_var):\n        # Sample epsilon from standard normal distribution\n        eps = torch.randn(z_mu.size(0), z_mu.size(1)).to(device)\n        # note that log(x^2) = 2*log(x); hence divide by 2 to get std_dev\n        # i.e., std_dev = exp(log(std_dev^2)/2) = exp(log(var)/2)\n        z = z_mu + eps * torch.exp(z_log_var/2.) \n        return z",
+      "notebook_cells": [
+        9
+      ],
+      "original_notebook": "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.ipynb",
+      "evidence_id": "E006"
+    },
+    "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder": {
+      "path": "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py",
+      "symbol": "ConditionalVariationalAutoencoder.encoder",
+      "start": 162,
+      "end": 191,
+      "snippet": "    def encoder(self, features, targets):\n        \n        ### Add condition\n        onehot_targets = to_onehot(targets, self.num_classes, device)\n        onehot_targets = onehot_targets.view(-1, self.num_classes, 1, 1)\n        \n        ones = torch.ones(features.size()[0], \n                          self.num_classes,\n                          features.size()[2], \n                          features.size()[3], \n                          dtype=features.dtype).to(device)\n        ones = ones * onehot_targets\n        x = torch.cat((features, ones), dim=1)\n        \n        x = self.enc_conv_1(x)\n        x = F.leaky_relu(x)\n        #print('conv1 out:', x.size())\n        \n        x = self.enc_conv_2(x)\n        x = F.leaky_relu(x)\n        #print('conv2 out:', x.size())\n        \n        x = self.enc_conv_3(x)\n        x = F.leaky_relu(x)\n        #print('conv3 out:', x.size())\n        \n        z_mean = self.z_mean(x.view(-1, 64*2*2))\n        z_log_var = self.z_log_var(x.view(-1, 64*2*2))\n        encoded = self.reparameterize(z_mean, z_log_var)\n        return z_mean, z_log_var, encoded",
+      "notebook_cells": [
+        9
+      ],
+      "original_notebook": "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.ipynb",
+      "evidence_id": "E004"
+    },
+    "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder": {
+      "path": "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py",
+      "symbol": "ConditionalVariationalAutoencoder.decoder",
+      "start": 193,
+      "end": 214,
+      "snippet": "    def decoder(self, encoded, targets):\n        ### Add condition\n        onehot_targets = to_onehot(targets, self.num_classes, device)\n        encoded = torch.cat((encoded, onehot_targets), dim=1)        \n        \n        x = self.dec_linear_1(encoded)\n        x = x.view(-1, 64, 2, 2)\n        \n        x = self.dec_deconv_1(x)\n        x = F.leaky_relu(x)\n        #print('deconv1 out:', x.size())\n        \n        x = self.dec_deconv_2(x)\n        x = F.leaky_relu(x)\n        #print('deconv2 out:', x.size())\n        \n        x = self.dec_deconv_3(x)\n        x = F.leaky_relu(x)\n        #print('deconv1 out:', x.size())\n        \n        decoded = torch.sigmoid(x)\n        return decoded",
+      "notebook_cells": [
+        9
+      ],
+      "original_notebook": "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.ipynb",
+      "evidence_id": "E003"
+    },
+    "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.forward": {
+      "path": "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py",
+      "symbol": "ConditionalVariationalAutoencoder.forward",
+      "start": 216,
+      "end": 221,
+      "snippet": "    def forward(self, features, targets):\n        \n        z_mean, z_log_var, encoded = self.encoder(features, targets)\n        decoded = self.decoder(encoded, targets)\n        \n        return z_mean, z_log_var, encoded, decoded",
+      "notebook_cells": [
+        9
+      ],
+      "original_notebook": "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.ipynb",
+      "evidence_id": "E005"
+    }
+  },
+  "notebook_origins": {
+    "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py": {
+      "original": "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.ipynb",
+      "line_map": [
+        {
+          "derived_line": 2,
+          "cell_index": 1,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 3,
+          "cell_index": 1,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 6,
+          "cell_index": 6,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 7,
+          "cell_index": 6,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 8,
+          "cell_index": 6,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 9,
+          "cell_index": 6,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 10,
+          "cell_index": 6,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 11,
+          "cell_index": 6,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 12,
+          "cell_index": 6,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 13,
+          "cell_index": 6,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 14,
+          "cell_index": 6,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 15,
+          "cell_index": 6,
+          "cell_line": 10
+        },
+        {
+          "derived_line": 16,
+          "cell_index": 6,
+          "cell_line": 11
+        },
+        {
+          "derived_line": 19,
+          "cell_index": 7,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 20,
+          "cell_index": 7,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 21,
+          "cell_index": 7,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 22,
+          "cell_index": 7,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 23,
+          "cell_index": 7,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 24,
+          "cell_index": 7,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 25,
+          "cell_index": 7,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 26,
+          "cell_index": 7,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 27,
+          "cell_index": 7,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 28,
+          "cell_index": 7,
+          "cell_line": 10
+        },
+        {
+          "derived_line": 29,
+          "cell_index": 7,
+          "cell_line": 11
+        },
+        {
+          "derived_line": 30,
+          "cell_index": 7,
+          "cell_line": 12
+        },
+        {
+          "derived_line": 31,
+          "cell_index": 7,
+          "cell_line": 13
+        },
+        {
+          "derived_line": 32,
+          "cell_index": 7,
+          "cell_line": 14
+        },
+        {
+          "derived_line": 33,
+          "cell_index": 7,
+          "cell_line": 15
+        },
+        {
+          "derived_line": 34,
+          "cell_index": 7,
+          "cell_line": 16
+        },
+        {
+          "derived_line": 35,
+          "cell_index": 7,
+          "cell_line": 17
+        },
+        {
+          "derived_line": 36,
+          "cell_index": 7,
+          "cell_line": 18
+        },
+        {
+          "derived_line": 37,
+          "cell_index": 7,
+          "cell_line": 19
+        },
+        {
+          "derived_line": 38,
+          "cell_index": 7,
+          "cell_line": 20
+        },
+        {
+          "derived_line": 39,
+          "cell_index": 7,
+          "cell_line": 21
+        },
+        {
+          "derived_line": 40,
+          "cell_index": 7,
+          "cell_line": 22
+        },
+        {
+          "derived_line": 41,
+          "cell_index": 7,
+          "cell_line": 23
+        },
+        {
+          "derived_line": 42,
+          "cell_index": 7,
+          "cell_line": 24
+        },
+        {
+          "derived_line": 43,
+          "cell_index": 7,
+          "cell_line": 25
+        },
+        {
+          "derived_line": 44,
+          "cell_index": 7,
+          "cell_line": 26
+        },
+        {
+          "derived_line": 45,
+          "cell_index": 7,
+          "cell_line": 27
+        },
+        {
+          "derived_line": 46,
+          "cell_index": 7,
+          "cell_line": 28
+        },
+        {
+          "derived_line": 47,
+          "cell_index": 7,
+          "cell_line": 29
+        },
+        {
+          "derived_line": 48,
+          "cell_index": 7,
+          "cell_line": 30
+        },
+        {
+          "derived_line": 49,
+          "cell_index": 7,
+          "cell_line": 31
+        },
+        {
+          "derived_line": 50,
+          "cell_index": 7,
+          "cell_line": 32
+        },
+        {
+          "derived_line": 51,
+          "cell_index": 7,
+          "cell_line": 33
+        },
+        {
+          "derived_line": 52,
+          "cell_index": 7,
+          "cell_line": 34
+        },
+        {
+          "derived_line": 53,
+          "cell_index": 7,
+          "cell_line": 35
+        },
+        {
+          "derived_line": 54,
+          "cell_index": 7,
+          "cell_line": 36
+        },
+        {
+          "derived_line": 55,
+          "cell_index": 7,
+          "cell_line": 37
+        },
+        {
+          "derived_line": 56,
+          "cell_index": 7,
+          "cell_line": 38
+        },
+        {
+          "derived_line": 57,
+          "cell_index": 7,
+          "cell_line": 39
+        },
+        {
+          "derived_line": 58,
+          "cell_index": 7,
+          "cell_line": 40
+        },
+        {
+          "derived_line": 59,
+          "cell_index": 7,
+          "cell_line": 41
+        },
+        {
+          "derived_line": 60,
+          "cell_index": 7,
+          "cell_line": 42
+        },
+        {
+          "derived_line": 61,
+          "cell_index": 7,
+          "cell_line": 43
+        },
+        {
+          "derived_line": 62,
+          "cell_index": 7,
+          "cell_line": 44
+        },
+        {
+          "derived_line": 63,
+          "cell_index": 7,
+          "cell_line": 45
+        },
+        {
+          "derived_line": 64,
+          "cell_index": 7,
+          "cell_line": 46
+        },
+        {
+          "derived_line": 65,
+          "cell_index": 7,
+          "cell_line": 47
+        },
+        {
+          "derived_line": 66,
+          "cell_index": 7,
+          "cell_line": 48
+        },
+        {
+          "derived_line": 67,
+          "cell_index": 7,
+          "cell_line": 49
+        },
+        {
+          "derived_line": 70,
+          "cell_index": 9,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 71,
+          "cell_index": 9,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 72,
+          "cell_index": 9,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 73,
+          "cell_index": 9,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 74,
+          "cell_index": 9,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 75,
+          "cell_index": 9,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 76,
+          "cell_index": 9,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 77,
+          "cell_index": 9,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 78,
+          "cell_index": 9,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 79,
+          "cell_index": 9,
+          "cell_line": 10
+        },
+        {
+          "derived_line": 80,
+          "cell_index": 9,
+          "cell_line": 11
+        },
+        {
+          "derived_line": 81,
+          "cell_index": 9,
+          "cell_line": 12
+        },
+        {
+          "derived_line": 82,
+          "cell_index": 9,
+          "cell_line": 13
+        },
+        {
+          "derived_line": 83,
+          "cell_index": 9,
+          "cell_line": 14
+        },
+        {
+          "derived_line": 84,
+          "cell_index": 9,
+          "cell_line": 15
+        },
+        {
+          "derived_line": 85,
+          "cell_index": 9,
+          "cell_line": 16
+        },
+        {
+          "derived_line": 86,
+          "cell_index": 9,
+          "cell_line": 17
+        },
+        {
+          "derived_line": 87,
+          "cell_index": 9,
+          "cell_line": 18
+        },
+        {
+          "derived_line": 88,
+          "cell_index": 9,
+          "cell_line": 19
+        },
+        {
+          "derived_line": 89,
+          "cell_index": 9,
+          "cell_line": 20
+        },
+        {
+          "derived_line": 90,
+          "cell_index": 9,
+          "cell_line": 21
+        },
+        {
+          "derived_line": 91,
+          "cell_index": 9,
+          "cell_line": 22
+        },
+        {
+          "derived_line": 92,
+          "cell_index": 9,
+          "cell_line": 23
+        },
+        {
+          "derived_line": 93,
+          "cell_index": 9,
+          "cell_line": 24
+        },
+        {
+          "derived_line": 94,
+          "cell_index": 9,
+          "cell_line": 25
+        },
+        {
+          "derived_line": 95,
+          "cell_index": 9,
+          "cell_line": 26
+        },
+        {
+          "derived_line": 96,
+          "cell_index": 9,
+          "cell_line": 27
+        },
+        {
+          "derived_line": 97,
+          "cell_index": 9,
+          "cell_line": 28
+        },
+        {
+          "derived_line": 98,
+          "cell_index": 9,
+          "cell_line": 29
+        },
+        {
+          "derived_line": 99,
+          "cell_index": 9,
+          "cell_line": 30
+        },
+        {
+          "derived_line": 100,
+          "cell_index": 9,
+          "cell_line": 31
+        },
+        {
+          "derived_line": 101,
+          "cell_index": 9,
+          "cell_line": 32
+        },
+        {
+          "derived_line": 102,
+          "cell_index": 9,
+          "cell_line": 33
+        },
+        {
+          "derived_line": 103,
+          "cell_index": 9,
+          "cell_line": 34
+        },
+        {
+          "derived_line": 104,
+          "cell_index": 9,
+          "cell_line": 35
+        },
+        {
+          "derived_line": 105,
+          "cell_index": 9,
+          "cell_line": 36
+        },
+        {
+          "derived_line": 106,
+          "cell_index": 9,
+          "cell_line": 37
+        },
+        {
+          "derived_line": 107,
+          "cell_index": 9,
+          "cell_line": 38
+        },
+        {
+          "derived_line": 108,
+          "cell_index": 9,
+          "cell_line": 39
+        },
+        {
+          "derived_line": 109,
+          "cell_index": 9,
+          "cell_line": 40
+        },
+        {
+          "derived_line": 110,
+          "cell_index": 9,
+          "cell_line": 41
+        },
+        {
+          "derived_line": 111,
+          "cell_index": 9,
+          "cell_line": 42
+        },
+        {
+          "derived_line": 112,
+          "cell_index": 9,
+          "cell_line": 43
+        },
+        {
+          "derived_line": 113,
+          "cell_index": 9,
+          "cell_line": 44
+        },
+        {
+          "derived_line": 114,
+          "cell_index": 9,
+          "cell_line": 45
+        },
+        {
+          "derived_line": 115,
+          "cell_index": 9,
+          "cell_line": 46
+        },
+        {
+          "derived_line": 116,
+          "cell_index": 9,
+          "cell_line": 47
+        },
+        {
+          "derived_line": 117,
+          "cell_index": 9,
+          "cell_line": 48
+        },
+        {
+          "derived_line": 118,
+          "cell_index": 9,
+          "cell_line": 49
+        },
+        {
+          "derived_line": 119,
+          "cell_index": 9,
+          "cell_line": 50
+        },
+        {
+          "derived_line": 120,
+          "cell_index": 9,
+          "cell_line": 51
+        },
+        {
+          "derived_line": 121,
+          "cell_index": 9,
+          "cell_line": 52
+        },
+        {
+          "derived_line": 122,
+          "cell_index": 9,
+          "cell_line": 53
+        },
+        {
+          "derived_line": 123,
+          "cell_index": 9,
+          "cell_line": 54
+        },
+        {
+          "derived_line": 124,
+          "cell_index": 9,
+          "cell_line": 55
+        },
+        {
+          "derived_line": 125,
+          "cell_index": 9,
+          "cell_line": 56
+        },
+        {
+          "derived_line": 126,
+          "cell_index": 9,
+          "cell_line": 57
+        },
+        {
+          "derived_line": 127,
+          "cell_index": 9,
+          "cell_line": 58
+        },
+        {
+          "derived_line": 128,
+          "cell_index": 9,
+          "cell_line": 59
+        },
+        {
+          "derived_line": 129,
+          "cell_index": 9,
+          "cell_line": 60
+        },
+        {
+          "derived_line": 130,
+          "cell_index": 9,
+          "cell_line": 61
+        },
+        {
+          "derived_line": 131,
+          "cell_index": 9,
+          "cell_line": 62
+        },
+        {
+          "derived_line": 132,
+          "cell_index": 9,
+          "cell_line": 63
+        },
+        {
+          "derived_line": 133,
+          "cell_index": 9,
+          "cell_line": 64
+        },
+        {
+          "derived_line": 134,
+          "cell_index": 9,
+          "cell_line": 65
+        },
+        {
+          "derived_line": 135,
+          "cell_index": 9,
+          "cell_line": 66
+        },
+        {
+          "derived_line": 136,
+          "cell_index": 9,
+          "cell_line": 67
+        },
+        {
+          "derived_line": 137,
+          "cell_index": 9,
+          "cell_line": 68
+        },
+        {
+          "derived_line": 138,
+          "cell_index": 9,
+          "cell_line": 69
+        },
+        {
+          "derived_line": 139,
+          "cell_index": 9,
+          "cell_line": 70
+        },
+        {
+          "derived_line": 140,
+          "cell_index": 9,
+          "cell_line": 71
+        },
+        {
+          "derived_line": 141,
+          "cell_index": 9,
+          "cell_line": 72
+        },
+        {
+          "derived_line": 142,
+          "cell_index": 9,
+          "cell_line": 73
+        },
+        {
+          "derived_line": 143,
+          "cell_index": 9,
+          "cell_line": 74
+        },
+        {
+          "derived_line": 144,
+          "cell_index": 9,
+          "cell_line": 75
+        },
+        {
+          "derived_line": 145,
+          "cell_index": 9,
+          "cell_line": 76
+        },
+        {
+          "derived_line": 146,
+          "cell_index": 9,
+          "cell_line": 77
+        },
+        {
+          "derived_line": 147,
+          "cell_index": 9,
+          "cell_line": 78
+        },
+        {
+          "derived_line": 148,
+          "cell_index": 9,
+          "cell_line": 79
+        },
+        {
+          "derived_line": 149,
+          "cell_index": 9,
+          "cell_line": 80
+        },
+        {
+          "derived_line": 150,
+          "cell_index": 9,
+          "cell_line": 81
+        },
+        {
+          "derived_line": 151,
+          "cell_index": 9,
+          "cell_line": 82
+        },
+        {
+          "derived_line": 152,
+          "cell_index": 9,
+          "cell_line": 83
+        },
+        {
+          "derived_line": 153,
+          "cell_index": 9,
+          "cell_line": 84
+        },
+        {
+          "derived_line": 154,
+          "cell_index": 9,
+          "cell_line": 85
+        },
+        {
+          "derived_line": 155,
+          "cell_index": 9,
+          "cell_line": 86
+        },
+        {
+          "derived_line": 156,
+          "cell_index": 9,
+          "cell_line": 87
+        },
+        {
+          "derived_line": 157,
+          "cell_index": 9,
+          "cell_line": 88
+        },
+        {
+          "derived_line": 158,
+          "cell_index": 9,
+          "cell_line": 89
+        },
+        {
+          "derived_line": 159,
+          "cell_index": 9,
+          "cell_line": 90
+        },
+        {
+          "derived_line": 160,
+          "cell_index": 9,
+          "cell_line": 91
+        },
+        {
+          "derived_line": 161,
+          "cell_index": 9,
+          "cell_line": 92
+        },
+        {
+          "derived_line": 162,
+          "cell_index": 9,
+          "cell_line": 93
+        },
+        {
+          "derived_line": 163,
+          "cell_index": 9,
+          "cell_line": 94
+        },
+        {
+          "derived_line": 164,
+          "cell_index": 9,
+          "cell_line": 95
+        },
+        {
+          "derived_line": 165,
+          "cell_index": 9,
+          "cell_line": 96
+        },
+        {
+          "derived_line": 166,
+          "cell_index": 9,
+          "cell_line": 97
+        },
+        {
+          "derived_line": 167,
+          "cell_index": 9,
+          "cell_line": 98
+        },
+        {
+          "derived_line": 168,
+          "cell_index": 9,
+          "cell_line": 99
+        },
+        {
+          "derived_line": 169,
+          "cell_index": 9,
+          "cell_line": 100
+        },
+        {
+          "derived_line": 170,
+          "cell_index": 9,
+          "cell_line": 101
+        },
+        {
+          "derived_line": 171,
+          "cell_index": 9,
+          "cell_line": 102
+        },
+        {
+          "derived_line": 172,
+          "cell_index": 9,
+          "cell_line": 103
+        },
+        {
+          "derived_line": 173,
+          "cell_index": 9,
+          "cell_line": 104
+        },
+        {
+          "derived_line": 174,
+          "cell_index": 9,
+          "cell_line": 105
+        },
+        {
+          "derived_line": 175,
+          "cell_index": 9,
+          "cell_line": 106
+        },
+        {
+          "derived_line": 176,
+          "cell_index": 9,
+          "cell_line": 107
+        },
+        {
+          "derived_line": 177,
+          "cell_index": 9,
+          "cell_line": 108
+        },
+        {
+          "derived_line": 178,
+          "cell_index": 9,
+          "cell_line": 109
+        },
+        {
+          "derived_line": 179,
+          "cell_index": 9,
+          "cell_line": 110
+        },
+        {
+          "derived_line": 180,
+          "cell_index": 9,
+          "cell_line": 111
+        },
+        {
+          "derived_line": 181,
+          "cell_index": 9,
+          "cell_line": 112
+        },
+        {
+          "derived_line": 182,
+          "cell_index": 9,
+          "cell_line": 113
+        },
+        {
+          "derived_line": 183,
+          "cell_index": 9,
+          "cell_line": 114
+        },
+        {
+          "derived_line": 184,
+          "cell_index": 9,
+          "cell_line": 115
+        },
+        {
+          "derived_line": 185,
+          "cell_index": 9,
+          "cell_line": 116
+        },
+        {
+          "derived_line": 186,
+          "cell_index": 9,
+          "cell_line": 117
+        },
+        {
+          "derived_line": 187,
+          "cell_index": 9,
+          "cell_line": 118
+        },
+        {
+          "derived_line": 188,
+          "cell_index": 9,
+          "cell_line": 119
+        },
+        {
+          "derived_line": 189,
+          "cell_index": 9,
+          "cell_line": 120
+        },
+        {
+          "derived_line": 190,
+          "cell_index": 9,
+          "cell_line": 121
+        },
+        {
+          "derived_line": 191,
+          "cell_index": 9,
+          "cell_line": 122
+        },
+        {
+          "derived_line": 192,
+          "cell_index": 9,
+          "cell_line": 123
+        },
+        {
+          "derived_line": 193,
+          "cell_index": 9,
+          "cell_line": 124
+        },
+        {
+          "derived_line": 194,
+          "cell_index": 9,
+          "cell_line": 125
+        },
+        {
+          "derived_line": 195,
+          "cell_index": 9,
+          "cell_line": 126
+        },
+        {
+          "derived_line": 196,
+          "cell_index": 9,
+          "cell_line": 127
+        },
+        {
+          "derived_line": 197,
+          "cell_index": 9,
+          "cell_line": 128
+        },
+        {
+          "derived_line": 198,
+          "cell_index": 9,
+          "cell_line": 129
+        },
+        {
+          "derived_line": 199,
+          "cell_index": 9,
+          "cell_line": 130
+        },
+        {
+          "derived_line": 200,
+          "cell_index": 9,
+          "cell_line": 131
+        },
+        {
+          "derived_line": 201,
+          "cell_index": 9,
+          "cell_line": 132
+        },
+        {
+          "derived_line": 202,
+          "cell_index": 9,
+          "cell_line": 133
+        },
+        {
+          "derived_line": 203,
+          "cell_index": 9,
+          "cell_line": 134
+        },
+        {
+          "derived_line": 204,
+          "cell_index": 9,
+          "cell_line": 135
+        },
+        {
+          "derived_line": 205,
+          "cell_index": 9,
+          "cell_line": 136
+        },
+        {
+          "derived_line": 206,
+          "cell_index": 9,
+          "cell_line": 137
+        },
+        {
+          "derived_line": 207,
+          "cell_index": 9,
+          "cell_line": 138
+        },
+        {
+          "derived_line": 208,
+          "cell_index": 9,
+          "cell_line": 139
+        },
+        {
+          "derived_line": 209,
+          "cell_index": 9,
+          "cell_line": 140
+        },
+        {
+          "derived_line": 210,
+          "cell_index": 9,
+          "cell_line": 141
+        },
+        {
+          "derived_line": 211,
+          "cell_index": 9,
+          "cell_line": 142
+        },
+        {
+          "derived_line": 212,
+          "cell_index": 9,
+          "cell_line": 143
+        },
+        {
+          "derived_line": 213,
+          "cell_index": 9,
+          "cell_line": 144
+        },
+        {
+          "derived_line": 214,
+          "cell_index": 9,
+          "cell_line": 145
+        },
+        {
+          "derived_line": 215,
+          "cell_index": 9,
+          "cell_line": 146
+        },
+        {
+          "derived_line": 216,
+          "cell_index": 9,
+          "cell_line": 147
+        },
+        {
+          "derived_line": 217,
+          "cell_index": 9,
+          "cell_line": 148
+        },
+        {
+          "derived_line": 218,
+          "cell_index": 9,
+          "cell_line": 149
+        },
+        {
+          "derived_line": 219,
+          "cell_index": 9,
+          "cell_line": 150
+        },
+        {
+          "derived_line": 220,
+          "cell_index": 9,
+          "cell_line": 151
+        },
+        {
+          "derived_line": 221,
+          "cell_index": 9,
+          "cell_line": 152
+        },
+        {
+          "derived_line": 222,
+          "cell_index": 9,
+          "cell_line": 153
+        },
+        {
+          "derived_line": 223,
+          "cell_index": 9,
+          "cell_line": 154
+        },
+        {
+          "derived_line": 224,
+          "cell_index": 9,
+          "cell_line": 155
+        },
+        {
+          "derived_line": 225,
+          "cell_index": 9,
+          "cell_line": 156
+        },
+        {
+          "derived_line": 226,
+          "cell_index": 9,
+          "cell_line": 157
+        },
+        {
+          "derived_line": 227,
+          "cell_index": 9,
+          "cell_line": 158
+        },
+        {
+          "derived_line": 228,
+          "cell_index": 9,
+          "cell_line": 159
+        },
+        {
+          "derived_line": 229,
+          "cell_index": 9,
+          "cell_line": 160
+        },
+        {
+          "derived_line": 230,
+          "cell_index": 9,
+          "cell_line": 161
+        },
+        {
+          "derived_line": 231,
+          "cell_index": 9,
+          "cell_line": 162
+        },
+        {
+          "derived_line": 232,
+          "cell_index": 9,
+          "cell_line": 163
+        },
+        {
+          "derived_line": 233,
+          "cell_index": 9,
+          "cell_line": 164
+        },
+        {
+          "derived_line": 234,
+          "cell_index": 9,
+          "cell_line": 165
+        },
+        {
+          "derived_line": 235,
+          "cell_index": 9,
+          "cell_line": 166
+        },
+        {
+          "derived_line": 238,
+          "cell_index": 11,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 239,
+          "cell_index": 11,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 240,
+          "cell_index": 11,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 241,
+          "cell_index": 11,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 242,
+          "cell_index": 11,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 243,
+          "cell_index": 11,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 244,
+          "cell_index": 11,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 245,
+          "cell_index": 11,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 246,
+          "cell_index": 11,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 247,
+          "cell_index": 11,
+          "cell_line": 10
+        },
+        {
+          "derived_line": 248,
+          "cell_index": 11,
+          "cell_line": 11
+        },
+        {
+          "derived_line": 249,
+          "cell_index": 11,
+          "cell_line": 12
+        },
+        {
+          "derived_line": 250,
+          "cell_index": 11,
+          "cell_line": 13
+        },
+        {
+          "derived_line": 251,
+          "cell_index": 11,
+          "cell_line": 14
+        },
+        {
+          "derived_line": 252,
+          "cell_index": 11,
+          "cell_line": 15
+        },
+        {
+          "derived_line": 253,
+          "cell_index": 11,
+          "cell_line": 16
+        },
+        {
+          "derived_line": 254,
+          "cell_index": 11,
+          "cell_line": 17
+        },
+        {
+          "derived_line": 255,
+          "cell_index": 11,
+          "cell_line": 18
+        },
+        {
+          "derived_line": 256,
+          "cell_index": 11,
+          "cell_line": 19
+        },
+        {
+          "derived_line": 257,
+          "cell_index": 11,
+          "cell_line": 20
+        },
+        {
+          "derived_line": 258,
+          "cell_index": 11,
+          "cell_line": 21
+        },
+        {
+          "derived_line": 259,
+          "cell_index": 11,
+          "cell_line": 22
+        },
+        {
+          "derived_line": 260,
+          "cell_index": 11,
+          "cell_line": 23
+        },
+        {
+          "derived_line": 261,
+          "cell_index": 11,
+          "cell_line": 24
+        },
+        {
+          "derived_line": 262,
+          "cell_index": 11,
+          "cell_line": 25
+        },
+        {
+          "derived_line": 263,
+          "cell_index": 11,
+          "cell_line": 26
+        },
+        {
+          "derived_line": 264,
+          "cell_index": 11,
+          "cell_line": 27
+        },
+        {
+          "derived_line": 265,
+          "cell_index": 11,
+          "cell_line": 28
+        },
+        {
+          "derived_line": 266,
+          "cell_index": 11,
+          "cell_line": 29
+        },
+        {
+          "derived_line": 267,
+          "cell_index": 11,
+          "cell_line": 30
+        },
+        {
+          "derived_line": 268,
+          "cell_index": 11,
+          "cell_line": 31
+        },
+        {
+          "derived_line": 269,
+          "cell_index": 11,
+          "cell_line": 32
+        },
+        {
+          "derived_line": 270,
+          "cell_index": 11,
+          "cell_line": 33
+        },
+        {
+          "derived_line": 271,
+          "cell_index": 11,
+          "cell_line": 34
+        },
+        {
+          "derived_line": 272,
+          "cell_index": 11,
+          "cell_line": 35
+        },
+        {
+          "derived_line": 273,
+          "cell_index": 11,
+          "cell_line": 36
+        },
+        {
+          "derived_line": 274,
+          "cell_index": 11,
+          "cell_line": 37
+        },
+        {
+          "derived_line": 275,
+          "cell_index": 11,
+          "cell_line": 38
+        },
+        {
+          "derived_line": 276,
+          "cell_index": 11,
+          "cell_line": 39
+        },
+        {
+          "derived_line": 277,
+          "cell_index": 11,
+          "cell_line": 40
+        },
+        {
+          "derived_line": 278,
+          "cell_index": 11,
+          "cell_line": 41
+        },
+        {
+          "derived_line": 279,
+          "cell_index": 11,
+          "cell_line": 42
+        },
+        {
+          "derived_line": 280,
+          "cell_index": 11,
+          "cell_line": 43
+        },
+        {
+          "derived_line": 281,
+          "cell_index": 11,
+          "cell_line": 44
+        },
+        {
+          "derived_line": 282,
+          "cell_index": 11,
+          "cell_line": 45
+        },
+        {
+          "derived_line": 283,
+          "cell_index": 11,
+          "cell_line": 46
+        },
+        {
+          "derived_line": 284,
+          "cell_index": 11,
+          "cell_line": 47
+        },
+        {
+          "derived_line": 287,
+          "cell_index": 14,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 288,
+          "cell_index": 14,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 289,
+          "cell_index": 14,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 290,
+          "cell_index": 14,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 291,
+          "cell_index": 14,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 292,
+          "cell_index": 14,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 293,
+          "cell_index": 14,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 294,
+          "cell_index": 14,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 295,
+          "cell_index": 14,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 296,
+          "cell_index": 14,
+          "cell_line": 10
+        },
+        {
+          "derived_line": 297,
+          "cell_index": 14,
+          "cell_line": 11
+        },
+        {
+          "derived_line": 298,
+          "cell_index": 14,
+          "cell_line": 12
+        },
+        {
+          "derived_line": 299,
+          "cell_index": 14,
+          "cell_line": 13
+        },
+        {
+          "derived_line": 300,
+          "cell_index": 14,
+          "cell_line": 14
+        },
+        {
+          "derived_line": 301,
+          "cell_index": 14,
+          "cell_line": 15
+        },
+        {
+          "derived_line": 302,
+          "cell_index": 14,
+          "cell_line": 16
+        },
+        {
+          "derived_line": 303,
+          "cell_index": 14,
+          "cell_line": 17
+        },
+        {
+          "derived_line": 304,
+          "cell_index": 14,
+          "cell_line": 18
+        },
+        {
+          "derived_line": 307,
+          "cell_index": 16,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 308,
+          "cell_index": 16,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 309,
+          "cell_index": 16,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 310,
+          "cell_index": 16,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 311,
+          "cell_index": 16,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 312,
+          "cell_index": 16,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 313,
+          "cell_index": 16,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 314,
+          "cell_index": 16,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 315,
+          "cell_index": 16,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 316,
+          "cell_index": 16,
+          "cell_line": 10
+        },
+        {
+          "derived_line": 317,
+          "cell_index": 16,
+          "cell_line": 11
+        },
+        {
+          "derived_line": 318,
+          "cell_index": 16,
+          "cell_line": 12
+        },
+        {
+          "derived_line": 319,
+          "cell_index": 16,
+          "cell_line": 13
+        },
+        {
+          "derived_line": 320,
+          "cell_index": 16,
+          "cell_line": 14
+        },
+        {
+          "derived_line": 321,
+          "cell_index": 16,
+          "cell_line": 15
+        },
+        {
+          "derived_line": 322,
+          "cell_index": 16,
+          "cell_line": 16
+        },
+        {
+          "derived_line": 323,
+          "cell_index": 16,
+          "cell_line": 17
+        },
+        {
+          "derived_line": 324,
+          "cell_index": 16,
+          "cell_line": 18
+        },
+        {
+          "derived_line": 325,
+          "cell_index": 16,
+          "cell_line": 19
+        },
+        {
+          "derived_line": 326,
+          "cell_index": 16,
+          "cell_line": 20
+        },
+        {
+          "derived_line": 327,
+          "cell_index": 16,
+          "cell_line": 21
+        },
+        {
+          "derived_line": 328,
+          "cell_index": 16,
+          "cell_line": 22
+        },
+        {
+          "derived_line": 329,
+          "cell_index": 16,
+          "cell_line": 23
+        },
+        {
+          "derived_line": 330,
+          "cell_index": 16,
+          "cell_line": 24
+        },
+        {
+          "derived_line": 331,
+          "cell_index": 16,
+          "cell_line": 25
+        },
+        {
+          "derived_line": 332,
+          "cell_index": 16,
+          "cell_line": 26
+        },
+        {
+          "derived_line": 335,
+          "cell_index": 17,
+          "cell_line": 1
+        }
+      ],
+      "transformation": "code cells in order; notebook magic lines commented"
+    }
+  },
+  "license_files": [
+    "deeplearning-models-batch3/LICENSE"
+  ]
+}

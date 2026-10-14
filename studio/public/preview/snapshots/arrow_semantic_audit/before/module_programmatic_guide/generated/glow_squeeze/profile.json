@@ -1,0 +1,31 @@
+{
+  "input_shape": [
+    "B",
+    2,
+    8,
+    8
+  ],
+  "output_shape": [
+    "B",
+    8,
+    4,
+    4
+  ],
+  "factor": 2,
+  "parameters": [],
+  "require_even_spatial": true,
+  "shape_origin": "declared example; statically inferred, not observed",
+  "drawing_scope": "Only the first three squeeze assignments in Block.forward; flow loop and prior are excluded.",
+  "source_contracts": [
+    [
+      "Block.forward",
+      "squeezed.permute(0, 1, 3, 5, 2, 4)"
+    ],
+    [
+      "Block.forward",
+      "squeezed.contiguous().view(b_size, n_channel * 4, height // 2, width // 2)"
+    ]
+  ],
+  "model_executed": false,
+  "artifact_scope": "module"
+}

@@ -1,0 +1,811 @@
+{
+  "schema": "independent-transformer-actual-svg-audit/1",
+  "source_assertions": [
+    {
+      "method": "scaled_dot_product_attention",
+      "requires": "torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(d_k)",
+      "passed": true
+    },
+    {
+      "method": "scaled_dot_product_attention",
+      "requires": "scores.masked_fill(attn_mask, float(\"-inf\"))",
+      "passed": true
+    },
+    {
+      "method": "scaled_dot_product_attention",
+      "requires": "scores.masked_fill(padding, float(\"-inf\"))",
+      "passed": true
+    },
+    {
+      "method": "scaled_dot_product_attention",
+      "requires": "torch.softmax(scores, dim=-1)",
+      "passed": true
+    },
+    {
+      "method": "scaled_dot_product_attention",
+      "requires": "torch.nan_to_num(attention_weights, nan=0.0)",
+      "passed": true
+    },
+    {
+      "method": "scaled_dot_product_attention",
+      "requires": "torch.matmul(attention_weights, v)",
+      "passed": true
+    },
+    {
+      "method": "PositionwiseFeedForward.__init__",
+      "requires": "self.activation = nn.ReLU()",
+      "passed": true
+    },
+    {
+      "method": "Transformer.forward",
+      "requires": "memory = self.encode(src, src_key_padding_mask)",
+      "passed": true
+    },
+    {
+      "method": "Transformer.forward",
+      "requires": "return self.generator(decoder_out)",
+      "passed": true
+    },
+    {
+      "method": "MultiHeadAttention.forward",
+      "requires": "self.w_q(query)",
+      "passed": true
+    },
+    {
+      "method": "MultiHeadAttention.forward",
+      "requires": "self.w_k(key)",
+      "passed": true
+    },
+    {
+      "method": "MultiHeadAttention.forward",
+      "requires": "self.w_v(value)",
+      "passed": true
+    },
+    {
+      "method": "MultiHeadAttention.forward",
+      "requires": "self._split_heads",
+      "passed": true
+    },
+    {
+      "method": "MultiHeadAttention.forward",
+      "requires": "self._combine_heads",
+      "passed": true
+    },
+    {
+      "method": "MultiHeadAttention.forward",
+      "requires": "self.w_o",
+      "passed": true
+    },
+    {
+      "method": "PositionwiseFeedForward.forward",
+      "requires": "self.linear2",
+      "passed": true
+    },
+    {
+      "method": "PositionwiseFeedForward.forward",
+      "requires": "self.activation",
+      "passed": true
+    },
+    {
+      "method": "PositionwiseFeedForward.forward",
+      "requires": "self.linear1",
+      "passed": true
+    },
+    {
+      "method": "PositionalEncoding.forward",
+      "requires": "x = x + self.pe",
+      "passed": true
+    },
+    {
+      "method": "PositionalEncoding.forward",
+      "requires": "return self.dropout(x)",
+      "passed": true
+    },
+    {
+      "method": "EncoderLayer.forward",
+      "requires": "query=x, key=x, value=x",
+      "passed": true
+    },
+    {
+      "method": "EncoderLayer.forward",
+      "requires": "x + self.dropout1(attn_out)",
+      "passed": true
+    },
+    {
+      "method": "EncoderLayer.forward",
+      "requires": "x + self.dropout2(ffn_out)",
+      "passed": true
+    },
+    {
+      "method": "DecoderLayer.forward",
+      "requires": "query=x, key=x, value=x",
+      "passed": true
+    },
+    {
+      "method": "DecoderLayer.forward",
+      "requires": "query=x, key=memory, value=memory",
+      "passed": true
+    },
+    {
+      "method": "DecoderLayer.forward",
+      "requires": "x + self.dropout1(self_attn_out)",
+      "passed": true
+    },
+    {
+      "method": "DecoderLayer.forward",
+      "requires": "x + self.dropout2(cross_attn_out)",
+      "passed": true
+    },
+    {
+      "method": "DecoderLayer.forward",
+      "requires": "x + self.dropout3(ffn_out)",
+      "passed": true
+    },
+    {
+      "method": "scaled_dot_product_attention",
+      "requires": "mask before Softmax; Softmax before AV",
+      "passed": true
+    },
+    {
+      "method": "source_sha256",
+      "passed": true
+    },
+    {
+      "method": "clones",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "make_causal_mask",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "scaled_dot_product_attention",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "MultiHeadAttention",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "MultiHeadAttention.__init__",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "MultiHeadAttention._split_heads",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "MultiHeadAttention._combine_heads",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "MultiHeadAttention.forward",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "PositionwiseFeedForward",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "PositionwiseFeedForward.__init__",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "PositionwiseFeedForward.forward",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "PositionalEncoding",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "PositionalEncoding.__init__",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "PositionalEncoding.forward",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "TokenEmbedding",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "TokenEmbedding.__init__",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "TokenEmbedding.forward",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "EncoderLayer",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "EncoderLayer.__init__",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "EncoderLayer.forward",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "Encoder",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "Encoder.__init__",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "Encoder.forward",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "DecoderLayer",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "DecoderLayer.__init__",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "DecoderLayer.forward",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "Decoder",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "Decoder.__init__",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "Decoder.forward",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "Transformer",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "Transformer.__init__",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "Transformer._reset_parameters",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "Transformer.encode",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "Transformer.decode",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "Transformer.forward",
+      "requires": "evidence span matches original source",
+      "passed": true
+    },
+    {
+      "method": "greedy_decode",
+      "requires": "evidence span matches original source",
+      "passed": true
+    }
+  ],
+  "views": [
+    {
+      "variant": "current",
+      "view": "overview",
+      "sha256": {
+        "svg": "824da49f0cbb5e5e24566a0bc28deb99778ebce2cdb3e8cf674f370afe06ed67",
+        "png": "740c31c8b88aaabfc65f88a983bd66d7d017b5ab9f5be7382e53f60fde593557",
+        "layout": "f9d365c14f2fb11338303c5ae262f15422cdd4ace42de106f0fa3154bc292873",
+        "ir": "2db32456f0b29e5fd736548b3830a4831c08b5ef58e83965abcf61db7952c80b",
+        "evidence": "0baa210cfacacf9cfa6ca12e03f8d49fafd8aa5e03e7c54a007649f1deac1334"
+      },
+      "artifacts": {
+        "svg": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/generated/figure1_overview.svg",
+          "sha256": "824da49f0cbb5e5e24566a0bc28deb99778ebce2cdb3e8cf674f370afe06ed67"
+        },
+        "png": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/generated/figure1_overview.png",
+          "sha256": "740c31c8b88aaabfc65f88a983bd66d7d017b5ab9f5be7382e53f60fde593557"
+        },
+        "layout": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/generated/layout_overview.json",
+          "sha256": "f9d365c14f2fb11338303c5ae262f15422cdd4ace42de106f0fa3154bc292873"
+        },
+        "ir": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/generated/semantic_ir.json",
+          "sha256": "2db32456f0b29e5fd736548b3830a4831c08b5ef58e83965abcf61db7952c80b"
+        },
+        "evidence": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/generated/source_evidence.json",
+          "sha256": "0baa210cfacacf9cfa6ca12e03f8d49fafd8aa5e03e7c54a007649f1deac1334"
+        }
+      },
+      "png_matches_fresh_svg_render": true,
+      "source_edge_dispositions": 134,
+      "passed": true,
+      "errors": [],
+      "actual_paths": 24,
+      "canonical_connections": 24,
+      "independently_expected_connections": 24,
+      "visible_glyphs": 22,
+      "tensor_aliases": 0
+    },
+    {
+      "variant": "current",
+      "view": "modules",
+      "sha256": {
+        "svg": "52d16128f0593eefc130f441af2e8950c3545c304f009e9c2938da680a098db6",
+        "png": "f283dbf165f84a987ce3cacb9d7274bced8eb903ef0077fd681a6a10970d016e",
+        "layout": "59bf20a4647981630c6ceead61a233e1f5e27039aa750cd57607b06d2274ece9",
+        "ir": "2db32456f0b29e5fd736548b3830a4831c08b5ef58e83965abcf61db7952c80b",
+        "evidence": "0baa210cfacacf9cfa6ca12e03f8d49fafd8aa5e03e7c54a007649f1deac1334"
+      },
+      "artifacts": {
+        "svg": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/generated/figure2_modules.svg",
+          "sha256": "52d16128f0593eefc130f441af2e8950c3545c304f009e9c2938da680a098db6"
+        },
+        "png": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/generated/figure2_modules.png",
+          "sha256": "f283dbf165f84a987ce3cacb9d7274bced8eb903ef0077fd681a6a10970d016e"
+        },
+        "layout": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/generated/layout_modules.json",
+          "sha256": "59bf20a4647981630c6ceead61a233e1f5e27039aa750cd57607b06d2274ece9"
+        },
+        "ir": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/generated/semantic_ir.json",
+          "sha256": "2db32456f0b29e5fd736548b3830a4831c08b5ef58e83965abcf61db7952c80b"
+        },
+        "evidence": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/generated/source_evidence.json",
+          "sha256": "0baa210cfacacf9cfa6ca12e03f8d49fafd8aa5e03e7c54a007649f1deac1334"
+        }
+      },
+      "png_matches_fresh_svg_render": true,
+      "source_edge_dispositions": 134,
+      "passed": true,
+      "errors": [],
+      "actual_paths": 40,
+      "canonical_connections": 40,
+      "independently_expected_connections": 40,
+      "visible_glyphs": 37,
+      "tensor_aliases": 0
+    },
+    {
+      "variant": "current",
+      "view": "detailed",
+      "sha256": {
+        "svg": "53d3774ffce1afa411805349efacd737861aca0363a4acc4b2a3b484d89ebd25",
+        "png": "1475fd79fca10d55deb46086ab65f3db0d663a88e5724ef058db299e1ea875aa",
+        "layout": "73bda03d16f969475091576c7ba6b5afe9f22daf616b061f17ca543536035a51",
+        "ir": "2db32456f0b29e5fd736548b3830a4831c08b5ef58e83965abcf61db7952c80b",
+        "evidence": "0baa210cfacacf9cfa6ca12e03f8d49fafd8aa5e03e7c54a007649f1deac1334"
+      },
+      "artifacts": {
+        "svg": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/generated/figure3_detailed.svg",
+          "sha256": "53d3774ffce1afa411805349efacd737861aca0363a4acc4b2a3b484d89ebd25"
+        },
+        "png": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/generated/figure3_detailed.png",
+          "sha256": "1475fd79fca10d55deb46086ab65f3db0d663a88e5724ef058db299e1ea875aa"
+        },
+        "layout": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/generated/layout_detailed.json",
+          "sha256": "73bda03d16f969475091576c7ba6b5afe9f22daf616b061f17ca543536035a51"
+        },
+        "ir": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/generated/semantic_ir.json",
+          "sha256": "2db32456f0b29e5fd736548b3830a4831c08b5ef58e83965abcf61db7952c80b"
+        },
+        "evidence": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/generated/source_evidence.json",
+          "sha256": "0baa210cfacacf9cfa6ca12e03f8d49fafd8aa5e03e7c54a007649f1deac1334"
+        }
+      },
+      "png_matches_fresh_svg_render": true,
+      "source_edge_dispositions": 134,
+      "passed": true,
+      "errors": [],
+      "actual_paths": 83,
+      "canonical_connections": 70,
+      "independently_expected_connections": 70,
+      "visible_glyphs": 82,
+      "tensor_aliases": 13
+    },
+    {
+      "variant": "compact",
+      "view": "overview",
+      "sha256": {
+        "svg": "3ecc133b2c7905e3c78f36494226453fd38d71a2c0001d220ea5706449ed6f24",
+        "png": "ec6f25dbd78915415935e1c976c6fd2472efb73e75276615bb32dfd3ac2636c3",
+        "layout": "5ef3bb121dbe9985f0717eef58f19fd3abb7a97cf209bb37885304c0b7b95a6e",
+        "ir": "2db32456f0b29e5fd736548b3830a4831c08b5ef58e83965abcf61db7952c80b",
+        "evidence": "997f9c3e4362da2841ad97f1d584254401057e8c5cb35bb268ec58b9bd4ae384"
+      },
+      "artifacts": {
+        "svg": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/variants/compact_mixed_flow/generated/figure1_overview.svg",
+          "sha256": "3ecc133b2c7905e3c78f36494226453fd38d71a2c0001d220ea5706449ed6f24"
+        },
+        "png": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/variants/compact_mixed_flow/generated/figure1_overview.png",
+          "sha256": "ec6f25dbd78915415935e1c976c6fd2472efb73e75276615bb32dfd3ac2636c3"
+        },
+        "layout": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/variants/compact_mixed_flow/generated/layout_overview.json",
+          "sha256": "5ef3bb121dbe9985f0717eef58f19fd3abb7a97cf209bb37885304c0b7b95a6e"
+        },
+        "ir": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/variants/compact_mixed_flow/generated/semantic_ir.json",
+          "sha256": "2db32456f0b29e5fd736548b3830a4831c08b5ef58e83965abcf61db7952c80b"
+        },
+        "evidence": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/variants/compact_mixed_flow/generated/source_evidence.json",
+          "sha256": "997f9c3e4362da2841ad97f1d584254401057e8c5cb35bb268ec58b9bd4ae384"
+        }
+      },
+      "png_matches_fresh_svg_render": true,
+      "source_edge_dispositions": 134,
+      "passed": true,
+      "errors": [],
+      "actual_paths": 24,
+      "canonical_connections": 24,
+      "independently_expected_connections": 24,
+      "visible_glyphs": 22,
+      "tensor_aliases": 0
+    },
+    {
+      "variant": "compact",
+      "view": "modules",
+      "sha256": {
+        "svg": "5059b556fbf93418e8c36cfd0755a7a876018aff96d0cdac25dff73d9fcce4b6",
+        "png": "1a576b2b32261d10b713e0126cf9994418fa22b348e1f0d16c7654fe97c92b43",
+        "layout": "11e6374c81c60f8b4fe2a0a20a5f423dab09717add014c6714f3456d5bf2fef4",
+        "ir": "2db32456f0b29e5fd736548b3830a4831c08b5ef58e83965abcf61db7952c80b",
+        "evidence": "997f9c3e4362da2841ad97f1d584254401057e8c5cb35bb268ec58b9bd4ae384"
+      },
+      "artifacts": {
+        "svg": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/variants/compact_mixed_flow/generated/figure2_modules.svg",
+          "sha256": "5059b556fbf93418e8c36cfd0755a7a876018aff96d0cdac25dff73d9fcce4b6"
+        },
+        "png": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/variants/compact_mixed_flow/generated/figure2_modules.png",
+          "sha256": "1a576b2b32261d10b713e0126cf9994418fa22b348e1f0d16c7654fe97c92b43"
+        },
+        "layout": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/variants/compact_mixed_flow/generated/layout_modules.json",
+          "sha256": "11e6374c81c60f8b4fe2a0a20a5f423dab09717add014c6714f3456d5bf2fef4"
+        },
+        "ir": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/variants/compact_mixed_flow/generated/semantic_ir.json",
+          "sha256": "2db32456f0b29e5fd736548b3830a4831c08b5ef58e83965abcf61db7952c80b"
+        },
+        "evidence": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/variants/compact_mixed_flow/generated/source_evidence.json",
+          "sha256": "997f9c3e4362da2841ad97f1d584254401057e8c5cb35bb268ec58b9bd4ae384"
+        }
+      },
+      "png_matches_fresh_svg_render": true,
+      "source_edge_dispositions": 134,
+      "passed": true,
+      "errors": [],
+      "actual_paths": 40,
+      "canonical_connections": 40,
+      "independently_expected_connections": 40,
+      "visible_glyphs": 37,
+      "tensor_aliases": 0
+    },
+    {
+      "variant": "compact",
+      "view": "detailed",
+      "sha256": {
+        "svg": "e5332fd506263b0939ee6487882727a360da5338c2c0fbba69e8eb0e72e25306",
+        "png": "92bd1ea52e7ae56365244eedf0c47539e400378eab7830599daa805465767c1c",
+        "layout": "5e513f48fc61afba33042fe3ee002a204cd97f387f45af0c00bab17d723ea298",
+        "ir": "2db32456f0b29e5fd736548b3830a4831c08b5ef58e83965abcf61db7952c80b",
+        "evidence": "997f9c3e4362da2841ad97f1d584254401057e8c5cb35bb268ec58b9bd4ae384"
+      },
+      "artifacts": {
+        "svg": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/variants/compact_mixed_flow/generated/figure3_detailed.svg",
+          "sha256": "e5332fd506263b0939ee6487882727a360da5338c2c0fbba69e8eb0e72e25306"
+        },
+        "png": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/variants/compact_mixed_flow/generated/figure3_detailed.png",
+          "sha256": "92bd1ea52e7ae56365244eedf0c47539e400378eab7830599daa805465767c1c"
+        },
+        "layout": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/variants/compact_mixed_flow/generated/layout_detailed.json",
+          "sha256": "5e513f48fc61afba33042fe3ee002a204cd97f387f45af0c00bab17d723ea298"
+        },
+        "ir": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/variants/compact_mixed_flow/generated/semantic_ir.json",
+          "sha256": "2db32456f0b29e5fd736548b3830a4831c08b5ef58e83965abcf61db7952c80b"
+        },
+        "evidence": {
+          "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/transformer_programmatic_guide/variants/compact_mixed_flow/generated/source_evidence.json",
+          "sha256": "997f9c3e4362da2841ad97f1d584254401057e8c5cb35bb268ec58b9bd4ae384"
+        }
+      },
+      "png_matches_fresh_svg_render": true,
+      "source_edge_dispositions": 134,
+      "passed": true,
+      "errors": [],
+      "actual_paths": 83,
+      "canonical_connections": 70,
+      "independently_expected_connections": 70,
+      "visible_glyphs": 82,
+      "tensor_aliases": 13
+    }
+  ],
+  "negative_checks": [
+    {
+      "variant": ".",
+      "mutation": "memory_wrong_Q",
+      "rejected": true,
+      "errors": [
+        "actual SVG endpoint contract differs encoder-memory-to-cross data-canonical-dst",
+        "physical/canonical glyph mismatch encoder-memory-to-cross",
+        "missing source-required connection ('enc.norm2.layernorm:out', 'dec.cross.k:in')",
+        "source forbids canonical connection ('enc.norm2.layernorm:out', 'dec.cross.q:in')",
+        "broken alias continuation ('enc.norm2.layernorm:out', 'dec.cross.q:in')"
+      ]
+    },
+    {
+      "variant": ".",
+      "mutation": "residual_from_processed_output",
+      "rejected": true,
+      "errors": [
+        "actual SVG endpoint contract differs binding-005 data-canonical-src",
+        "physical/canonical glyph mismatch binding-005",
+        "missing source-required connection ('src_pe.add:out', 'enc.norm1.add:x')",
+        "source forbids canonical connection ('enc.self.wo:out', 'enc.norm1.add:x')",
+        "broken alias continuation ('enc.self.wo:out', 'enc.norm1.add:x')"
+      ]
+    },
+    {
+      "variant": ".",
+      "mutation": "PE_buffer_replaces_add",
+      "rejected": true,
+      "errors": [
+        "actual SVG endpoint contract differs binding-002 data-canonical-src",
+        "physical/canonical glyph mismatch binding-002",
+        "missing source-required connection ('src_pe.add:out', 'enc.self.q:in')",
+        "source forbids canonical connection ('src_pe.buffer:out', 'enc.self.q:in')",
+        "broken alias continuation ('src_pe.buffer:out', 'enc.self.q:in')"
+      ]
+    },
+    {
+      "variant": ".",
+      "mutation": "K_Q_operands_swapped",
+      "rejected": true,
+      "errors": [
+        "actual SVG endpoint contract differs binding-020 data-canonical-dst",
+        "physical/canonical glyph mismatch binding-020",
+        "missing source-required connection ('enc.self.split:k_out', 'enc.self.sdpa.qkt:k')",
+        "source forbids canonical connection ('enc.self.split:k_out', 'enc.self.sdpa.qkt:q')",
+        "broken alias continuation ('enc.self.split:k_out', 'enc.self.sdpa.qkt:q')"
+      ]
+    },
+    {
+      "variant": ".",
+      "mutation": "expanded_outer_frame",
+      "rejected": true,
+      "errors": [
+        "actual SVG endpoint contract differs encoder-memory-to-cross-040 data-dst",
+        "physical port mismatch encoder-memory-to-cross-040",
+        "not on actual glyph perimeter dec.cross:memory",
+        "physical/canonical glyph mismatch encoder-memory-to-cross-040",
+        "broken alias continuation ('enc.norm2.layernorm:out', 'dec.cross.v:in')"
+      ]
+    },
+    {
+      "variant": ".",
+      "mutation": "FFN_bypasses_relu",
+      "rejected": true,
+      "errors": [
+        "actual SVG endpoint contract differs binding-034 data-canonical-dst",
+        "physical/canonical glyph mismatch binding-034",
+        "missing source-required connection ('enc.ffn.linear1:out', 'enc.ffn.relu:in')",
+        "source forbids canonical connection ('enc.ffn.linear1:out', 'enc.ffn.linear2:in')",
+        "broken alias continuation ('enc.ffn.linear1:out', 'enc.ffn.linear2:in')"
+      ]
+    },
+    {
+      "variant": ".",
+      "mutation": "actual_svg_wrong_endpoint",
+      "rejected": true,
+      "errors": [
+        "actual SVG/layout path differs binding-001",
+        "physical port mismatch binding-001",
+        "not on actual glyph perimeter src_pe.add:pe"
+      ]
+    },
+    {
+      "variant": ".",
+      "mutation": "actual_svg_missing_path",
+      "rejected": true,
+      "errors": [
+        "layout/actual SVG coverage differs",
+        "missing source-required connection ('src_pe.buffer:out', 'src_pe.add:pe')"
+      ]
+    },
+    {
+      "variant": ".",
+      "mutation": "actual_svg_unregistered_path",
+      "rejected": true,
+      "errors": [
+        "unregistered actual SVG path None"
+      ]
+    },
+    {
+      "variant": ".",
+      "mutation": "wrong_tensor_alias_owner",
+      "rejected": true,
+      "errors": [
+        "alias producer mismatch binding-036",
+        "alias producer mismatch binding-037"
+      ]
+    },
+    {
+      "variant": "variants/compact_mixed_flow",
+      "mutation": "memory_wrong_Q",
+      "rejected": true,
+      "errors": [
+        "actual SVG endpoint contract differs encoder-memory-to-cross data-canonical-dst",
+        "physical/canonical glyph mismatch encoder-memory-to-cross",
+        "missing source-required connection ('enc.norm2.layernorm:out', 'dec.cross.k:in')",
+        "source forbids canonical connection ('enc.norm2.layernorm:out', 'dec.cross.q:in')",
+        "broken alias continuation ('enc.norm2.layernorm:out', 'dec.cross.q:in')"
+      ]
+    },
+    {
+      "variant": "variants/compact_mixed_flow",
+      "mutation": "residual_from_processed_output",
+      "rejected": true,
+      "errors": [
+        "actual SVG endpoint contract differs binding-005 data-canonical-src",
+        "physical/canonical glyph mismatch binding-005",
+        "missing source-required connection ('src_pe.add:out', 'enc.norm1.add:x')",
+        "source forbids canonical connection ('enc.self.wo:out', 'enc.norm1.add:x')",
+        "broken alias continuation ('enc.self.wo:out', 'enc.norm1.add:x')"
+      ]
+    },
+    {
+      "variant": "variants/compact_mixed_flow",
+      "mutation": "PE_buffer_replaces_add",
+      "rejected": true,
+      "errors": [
+        "actual SVG endpoint contract differs binding-002 data-canonical-src",
+        "physical/canonical glyph mismatch binding-002",
+        "missing source-required connection ('src_pe.add:out', 'enc.self.q:in')",
+        "source forbids canonical connection ('src_pe.buffer:out', 'enc.self.q:in')",
+        "broken alias continuation ('src_pe.buffer:out', 'enc.self.q:in')"
+      ]
+    },
+    {
+      "variant": "variants/compact_mixed_flow",
+      "mutation": "K_Q_operands_swapped",
+      "rejected": true,
+      "errors": [
+        "actual SVG endpoint contract differs binding-020 data-canonical-dst",
+        "physical/canonical glyph mismatch binding-020",
+        "missing source-required connection ('enc.self.split:k_out', 'enc.self.sdpa.qkt:k')",
+        "source forbids canonical connection ('enc.self.split:k_out', 'enc.self.sdpa.qkt:q')",
+        "broken alias continuation ('enc.self.split:k_out', 'enc.self.sdpa.qkt:q')"
+      ]
+    },
+    {
+      "variant": "variants/compact_mixed_flow",
+      "mutation": "expanded_outer_frame",
+      "rejected": true,
+      "errors": [
+        "actual SVG endpoint contract differs encoder-memory-to-cross-040 data-dst",
+        "physical port mismatch encoder-memory-to-cross-040",
+        "not on actual glyph perimeter dec.cross:memory",
+        "physical/canonical glyph mismatch encoder-memory-to-cross-040",
+        "broken alias continuation ('enc.norm2.layernorm:out', 'dec.cross.v:in')"
+      ]
+    },
+    {
+      "variant": "variants/compact_mixed_flow",
+      "mutation": "FFN_bypasses_relu",
+      "rejected": true,
+      "errors": [
+        "actual SVG endpoint contract differs binding-034 data-canonical-dst",
+        "physical/canonical glyph mismatch binding-034",
+        "missing source-required connection ('enc.ffn.linear1:out', 'enc.ffn.relu:in')",
+        "source forbids canonical connection ('enc.ffn.linear1:out', 'enc.ffn.linear2:in')",
+        "broken alias continuation ('enc.ffn.linear1:out', 'enc.ffn.linear2:in')"
+      ]
+    },
+    {
+      "variant": "variants/compact_mixed_flow",
+      "mutation": "actual_svg_wrong_endpoint",
+      "rejected": true,
+      "errors": [
+        "actual SVG/layout path differs binding-001",
+        "physical port mismatch binding-001",
+        "not on actual glyph perimeter src_pe.add:pe"
+      ]
+    },
+    {
+      "variant": "variants/compact_mixed_flow",
+      "mutation": "actual_svg_missing_path",
+      "rejected": true,
+      "errors": [
+        "layout/actual SVG coverage differs",
+        "missing source-required connection ('src_pe.buffer:out', 'src_pe.add:pe')"
+      ]
+    },
+    {
+      "variant": "variants/compact_mixed_flow",
+      "mutation": "actual_svg_unregistered_path",
+      "rejected": true,
+      "errors": [
+        "unregistered actual SVG path None"
+      ]
+    },
+    {
+      "variant": "variants/compact_mixed_flow",
+      "mutation": "wrong_tensor_alias_owner",
+      "rejected": true,
+      "errors": [
+        "alias producer mismatch binding-032",
+        "alias producer mismatch binding-033"
+      ]
+    }
+  ],
+  "passed": true,
+  "limitations": [
+    "Source contracts target the supplied adapter; not a universal semantic equivalence proof.",
+    "Historical snapshots and upstream reference SVG are excluded from certification."
+  ]
+}

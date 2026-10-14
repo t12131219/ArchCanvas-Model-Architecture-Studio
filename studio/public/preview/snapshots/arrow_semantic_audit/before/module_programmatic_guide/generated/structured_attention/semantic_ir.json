@@ -1,0 +1,575 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "structured_attention",
+  "profile": {
+    "lstm_hid_dim": 16,
+    "d_a": 12,
+    "r": 3,
+    "max_len": 8,
+    "padding_mask": false,
+    "bidirectional": false,
+    "actual_return": false,
+    "label": "Precomputed H / T8,H16,d_a12,hops3 / time Softmax / no mask in source",
+    "mode": "reviewed static selected module profile",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "kaushalshetty/Structured-Self-Attention",
+    "commit": "84ed64f9cee75f84a5d871a46508a308182e4a6d",
+    "snapshot": "165508d19956eef562247b5a0f1eb548f4cc1127959b0778ab6b5532f55a9a43"
+  },
+  "nodes": [
+    {
+      "id": "structured_attention.root",
+      "label": "Structured hop attention",
+      "kind": "group",
+      "source": [
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.__init__",
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.softmax",
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "struct.input"
+        ],
+        [
+          "struct.body"
+        ],
+        [
+          "struct.output"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E003",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "struct.input",
+      "label": "Precomputed LSTM outputs H",
+      "kind": "input",
+      "source": [
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.forward"
+      ],
+      "shape": "[B,8,16]",
+      "detail": [],
+      "bidirectional": false,
+      "upstream_lstm_excluded": true,
+      "parent": "structured_attention.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "struct.body",
+      "label": "Structured sentence attention subgraph",
+      "kind": "group",
+      "source": [
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.__init__",
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.forward",
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.softmax"
+      ],
+      "shape": "A:[B,3,8]; mean:[B,16]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "struct.scorer"
+        ],
+        [
+          "struct.softmax"
+        ],
+        [
+          "struct.attention"
+        ],
+        [
+          "struct.pool"
+        ],
+        [
+          "struct.avg"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": "structured_attention.root",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "struct.scorer",
+      "label": "Two-layer hop scorer",
+      "kind": "group",
+      "source": [
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.__init__",
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.forward"
+      ],
+      "shape": "[B,8,3]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "struct.body",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "struct.first",
+      "label": "Linear H16 -> d_a12",
+      "kind": "linear",
+      "source": [
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.__init__"
+      ],
+      "shape": "[B,8,12]",
+      "detail": [],
+      "parameter": "linear_first",
+      "bias": true,
+      "initial_bias": 0,
+      "parent": "struct.scorer",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "struct.tanh",
+      "label": "Tanh",
+      "kind": "tanh",
+      "source": [
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.forward"
+      ],
+      "shape": "[B,8,12]",
+      "detail": [],
+      "parent": "struct.scorer",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "struct.second",
+      "label": "Linear d_a12 -> hops3",
+      "kind": "linear",
+      "source": [
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.__init__"
+      ],
+      "shape": "[B,8,3]",
+      "detail": [],
+      "parameter": "linear_second",
+      "bias": true,
+      "initial_bias": 0,
+      "parent": "struct.scorer",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "struct.softmax",
+      "label": "Normalize time / helper",
+      "kind": "group",
+      "source": [
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.forward",
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.softmax"
+      ],
+      "shape": "[B,8,3]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "struct.body",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "struct.swap",
+      "label": "Transpose time to last axis",
+      "kind": "tensor",
+      "source": [
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.softmax"
+      ],
+      "shape": "[B,3,8]",
+      "detail": [],
+      "axes": [
+        1,
+        2
+      ],
+      "parent": "struct.softmax",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "struct.flat",
+      "label": "Contiguous + view2D",
+      "kind": "tensor",
+      "source": [
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.softmax"
+      ],
+      "shape": "[B*3,8]",
+      "detail": [],
+      "expression": "trans_input.contiguous().view(-1, trans_size[-1])",
+      "parent": "struct.softmax",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "struct.normalize",
+      "label": "F.softmax / dim omitted",
+      "kind": "softmax",
+      "source": [
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.softmax"
+      ],
+      "shape": "[B*3,8]",
+      "detail": [],
+      "dim_argument": "omitted",
+      "original_normalized_axis": 1,
+      "parent": "struct.softmax",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "struct.restore",
+      "label": "View original transposed size",
+      "kind": "tensor",
+      "source": [
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.softmax"
+      ],
+      "shape": "[B,3,8]",
+      "detail": [],
+      "parent": "struct.softmax",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "struct.swapback",
+      "label": "Transpose back to time,hops",
+      "kind": "tensor",
+      "source": [
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.softmax"
+      ],
+      "shape": "[B,8,3]",
+      "detail": [],
+      "axes": [
+        1,
+        2
+      ],
+      "parent": "struct.softmax",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "struct.attention",
+      "label": "Transpose to hop attention A",
+      "kind": "tensor",
+      "source": [
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.forward"
+      ],
+      "shape": "[B,3,8]",
+      "detail": [],
+      "axes": [
+        1,
+        2
+      ],
+      "padding_mask": false,
+      "parent": "struct.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "struct.pool",
+      "label": "A @ original LSTM outputs",
+      "kind": "matmul",
+      "source": [
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.forward"
+      ],
+      "shape": "[B,3,16]",
+      "detail": [],
+      "expression": "attention @ outputs",
+      "parent": "struct.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "attention",
+        "values"
+      ]
+    },
+    {
+      "id": "struct.avg",
+      "label": "Sum hop embeddings / r=3",
+      "kind": "tensor",
+      "source": [
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "sum_dim": 1,
+      "divisor": 3,
+      "expression": "torch.sum(sentence_embeddings, 1) / self.r",
+      "parent": "struct.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "struct.output",
+      "label": "Boundary: mean embedding and A",
+      "kind": "output",
+      "source": [
+        "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.forward"
+      ],
+      "shape": "[B,16]; [B,3,8]",
+      "detail": [],
+      "actual_return": false,
+      "fields": [
+        "avg_sentence_embeddings",
+        "attention"
+      ],
+      "parent": "structured_attention.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mean_embedding",
+        "attention"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "struct.scorer:in->struct.first:in:boundary",
+      "src": "struct.scorer",
+      "dst": "struct.first",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "struct.first:out->struct.tanh:in:tensor",
+      "src": "struct.first",
+      "dst": "struct.tanh",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "struct.tanh:out->struct.second:in:tensor",
+      "src": "struct.tanh",
+      "dst": "struct.second",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "struct.second:out->struct.scorer:out:boundary",
+      "src": "struct.second",
+      "dst": "struct.scorer",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "struct.softmax:in->struct.swap:in:boundary",
+      "src": "struct.softmax",
+      "dst": "struct.swap",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "struct.swap:out->struct.flat:in:tensor",
+      "src": "struct.swap",
+      "dst": "struct.flat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "struct.flat:out->struct.normalize:in:tensor",
+      "src": "struct.flat",
+      "dst": "struct.normalize",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "struct.normalize:out->struct.restore:in:tensor",
+      "src": "struct.normalize",
+      "dst": "struct.restore",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "struct.restore:out->struct.swapback:in:tensor",
+      "src": "struct.restore",
+      "dst": "struct.swapback",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "struct.swapback:out->struct.softmax:out:boundary",
+      "src": "struct.swapback",
+      "dst": "struct.softmax",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "struct.input:out->struct.scorer:in:tensor",
+      "src": "struct.input",
+      "dst": "struct.scorer",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "struct.scorer:out->struct.softmax:in:tensor",
+      "src": "struct.scorer",
+      "dst": "struct.softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "struct.softmax:out->struct.attention:in:tensor",
+      "src": "struct.softmax",
+      "dst": "struct.attention",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "struct.attention:out->struct.pool:attention:tensor",
+      "src": "struct.attention",
+      "dst": "struct.pool",
+      "src_port": "out",
+      "dst_port": "attention",
+      "role": "tensor"
+    },
+    {
+      "id": "struct.input:out->struct.pool:values:tensor",
+      "src": "struct.input",
+      "dst": "struct.pool",
+      "src_port": "out",
+      "dst_port": "values",
+      "role": "tensor"
+    },
+    {
+      "id": "struct.pool:out->struct.avg:in:tensor",
+      "src": "struct.pool",
+      "dst": "struct.avg",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "struct.avg:out->struct.output:mean_embedding:tensor",
+      "src": "struct.avg",
+      "dst": "struct.output",
+      "src_port": "out",
+      "dst_port": "mean_embedding",
+      "role": "tensor"
+    },
+    {
+      "id": "struct.attention:out->struct.output:attention:tensor",
+      "src": "struct.attention",
+      "dst": "struct.output",
+      "src_port": "out",
+      "dst_port": "attention",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Two independent biased Linear layers score three hops; constructor zeroes both biases but keeps them learnable.",
+    "The actual source LSTM is unidirectional with width lstm_hid_dim, not twice that dimension.",
+    "The helper moves axis1 to the final axis, makes a2D view, calls F.softmax with omitted dim, restores and transposes back.",
+    "Hop attention multiplies the same original outputs used for scores; hop embeddings are averaged by sum/r, not concatenated.",
+    "No padding mask, packed sequence, attention Dropout, or orthogonality loss is executed inside this selected subgraph; l2_matrix_norm is a separate helper.",
+    "Top boundary variables are not a return tuple of a standalone method; full forward returns classifier output and attention."
+  ],
+  "corrections": [
+    "Do not invent padding-mask arrows or a bidirectional LSTM based on the paper.",
+    "Do not normalize across hops or replace source mean-hop fusion with flatten/concatenation."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

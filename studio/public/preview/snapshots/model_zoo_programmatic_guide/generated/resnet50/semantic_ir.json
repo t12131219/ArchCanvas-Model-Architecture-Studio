@@ -1,0 +1,2545 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "resnet50",
+  "profile": {
+    "task": "MNIST classification",
+    "mode": "eval",
+    "input_channels": 1,
+    "input_size": [
+      28,
+      28
+    ],
+    "num_classes": 10,
+    "source_factory": "resnet34",
+    "factory_comment": "ResNet-34",
+    "actual_block": "Bottleneck",
+    "expansion": 4,
+    "stage_blocks": [
+      3,
+      4,
+      6,
+      3
+    ],
+    "bottleneck_planes": [
+      64,
+      128,
+      256,
+      512
+    ],
+    "stage_output_channels": [
+      256,
+      512,
+      1024,
+      2048
+    ],
+    "stage_spatial": [
+      7,
+      4,
+      2,
+      1
+    ],
+    "total_bottlenecks": 16,
+    "projection_blocks": 4,
+    "identity_blocks": 12,
+    "stride_location": "Bottleneck.conv2",
+    "avgpool_constructed": true,
+    "avgpool_called": false,
+    "classifier": [
+      2048,
+      10
+    ],
+    "batch_size_setting": 128,
+    "output": "(logits, probas)",
+    "config_source": "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py notebook cells10,12,15,16"
+  },
+  "source": {
+    "repository": "https://github.com/rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "a1cb8ca6e3b3489daf1e2276769302cabd9a1ed9055ae534ae06aec90929c946"
+  },
+  "nodes": [
+    {
+      "id": "r50.root",
+      "label": "ResNet50-type · MNIST",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::resnet34",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet"
+      ],
+      "shape": "2 x [B,10]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E010",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.input",
+      "label": "MNIST image",
+      "kind": "input",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.forward"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [
+        "native MNIST28x28; grayscale=True"
+      ],
+      "parent": "r50.root",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stem",
+      "label": "Conv stem",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.forward"
+      ],
+      "shape": "[B,64,7,7]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "r50.root",
+      "source_evidence": [
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stem.conv",
+      "label": "Conv7x7 1 ->64 / s2",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.forward"
+      ],
+      "shape": "[B,64,14,14]",
+      "detail": [
+        "padding3; bias=False"
+      ],
+      "parameter": "conv1",
+      "kernel_size": 7,
+      "stride": 2,
+      "parent": "r50.stem",
+      "source_evidence": [
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stem.bn",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.forward"
+      ],
+      "shape": "[B,64,14,14]",
+      "detail": [],
+      "parameter": "bn1",
+      "parent": "r50.stem",
+      "source_evidence": [
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stem.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.forward"
+      ],
+      "shape": "[B,64,14,14]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "r50.stem",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stem.pool",
+      "label": "MaxPool3x3 / s2",
+      "kind": "max_pool2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.forward"
+      ],
+      "shape": "[B,64,7,7]",
+      "detail": [
+        "padding1"
+      ],
+      "parent": "r50.stem",
+      "source_evidence": [
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1",
+      "label": "Stage1 · 3 Bottlenecks",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.forward"
+      ],
+      "shape": "[B,256,7,7]",
+      "detail": [
+        "planes=64; expansion4; first stride1"
+      ],
+      "parameter_scope": "layer1",
+      "block_count": 3,
+      "mode": "chain",
+      "parent": "r50.root",
+      "source_evidence": [
+        "E005",
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.first",
+      "label": "First Bottleneck · projection",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer"
+      ],
+      "shape": "[B,256,7,7]",
+      "detail": [
+        "stride=1; input channels=64; output=256",
+        "stage1 projection is required even at stride1 because64!=256"
+      ],
+      "parameter_scope": "layer1.0",
+      "use_projection": true,
+      "stride": 1,
+      "bottleneck_planes": 64,
+      "output_channels": 256,
+      "block_count": 1,
+      "instance_indices": [
+        0
+      ],
+      "mode": "chain",
+      "parent": "r50.stage1",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.first.paths",
+      "label": "Main / projected shortcut",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "two matching operands",
+      "detail": [
+        "both receive same x; parallel grouping is not an arithmetic Add"
+      ],
+      "dispatch": false,
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": false,
+      "child_inputs": {
+        "r50.stage1.first.main": {
+          "role": "value",
+          "producer": "r50.stage1.first",
+          "src_port": "in"
+        },
+        "r50.stage1.first.shortcut": {
+          "role": "value",
+          "producer": "r50.stage1.first",
+          "src_port": "in"
+        }
+      },
+      "mode": "parallel",
+      "parent": "r50.stage1.first",
+      "source_evidence": [
+        "E006",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "r50.stage1.first.main",
+      "label": "Bottleneck convolution path",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,256,7,7]",
+      "detail": [
+        "1x1 reduce ->3x3 spatial ->1x1 expand4",
+        "stride, if2, is in conv2 not conv1"
+      ],
+      "mode": "chain",
+      "parent": "r50.stage1.first.paths",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.first.main.conv1",
+      "label": "Conv1x1 64 -> 64",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,64,7,7]",
+      "detail": [
+        "padding=0; bias=False; stride=1"
+      ],
+      "parameter": "layer1.0.conv1",
+      "in_channels": 64,
+      "out_channels": 64,
+      "kernel_size": 1,
+      "stride": 1,
+      "bias": false,
+      "parent": "r50.stage1.first.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.first.main.bn1",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,64,7,7]",
+      "detail": [
+        "eval: running statistics; affine=True"
+      ],
+      "parameter": "layer1.0.bn1",
+      "parent": "r50.stage1.first.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.first.main.relu1",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,64,7,7]",
+      "detail": [
+        "inplace=True; same parameter-free self.relu called at 3 positions"
+      ],
+      "parent": "r50.stage1.first.main",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.first.main.conv2",
+      "label": "Conv3x3 64 -> 64",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,64,7,7]",
+      "detail": [
+        "padding=1; bias=False; stride=1"
+      ],
+      "parameter": "layer1.0.conv2",
+      "in_channels": 64,
+      "out_channels": 64,
+      "kernel_size": 3,
+      "stride": 1,
+      "bias": false,
+      "parent": "r50.stage1.first.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.first.main.bn2",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,64,7,7]",
+      "detail": [
+        "eval: running statistics; affine=True"
+      ],
+      "parameter": "layer1.0.bn2",
+      "parent": "r50.stage1.first.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.first.main.relu2",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,64,7,7]",
+      "detail": [
+        "inplace=True; same parameter-free self.relu called at 3 positions"
+      ],
+      "parent": "r50.stage1.first.main",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.first.main.conv3",
+      "label": "Conv1x1 64 -> 256",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,256,7,7]",
+      "detail": [
+        "padding=0; bias=False; stride=1"
+      ],
+      "parameter": "layer1.0.conv3",
+      "in_channels": 64,
+      "out_channels": 256,
+      "kernel_size": 1,
+      "stride": 1,
+      "bias": false,
+      "parent": "r50.stage1.first.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.first.main.bn3",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,256,7,7]",
+      "detail": [
+        "eval: running statistics; affine=True"
+      ],
+      "parameter": "layer1.0.bn3",
+      "parent": "r50.stage1.first.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.first.shortcut",
+      "label": "Projection shortcut",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,256,7,7]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "r50.stage1.first.paths",
+      "source_evidence": [
+        "E006",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.first.projection",
+      "label": "Conv1x1 64 -> 256 / s1",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,256,7,7]",
+      "detail": [
+        "bias=False; stride matches main conv2"
+      ],
+      "parameter": "layer1.0.downsample.0",
+      "in_channels": 64,
+      "out_channels": 256,
+      "kernel_size": 1,
+      "stride": 1,
+      "bias": false,
+      "parent": "r50.stage1.first.shortcut",
+      "source_evidence": [
+        "E006",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.first.projection_bn",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,256,7,7]",
+      "detail": [],
+      "parameter": "layer1.0.downsample.1",
+      "parent": "r50.stage1.first.shortcut",
+      "source_evidence": [
+        "E006",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.first.add",
+      "label": "Add two paths",
+      "kind": "add",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,256,7,7]",
+      "detail": [
+        "out += residual"
+      ],
+      "parent": "r50.stage1.first",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.first.relu3",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,256,7,7]",
+      "detail": [
+        "inplace=True; same parameter-free self.relu called at 3 positions"
+      ],
+      "parent": "r50.stage1.first",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.identities",
+      "label": "Identity Bottleneck x 2",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,256,7,7]",
+      "detail": [
+        "template j=1...2; every instance has separate Conv/BN weights",
+        "final ReLU follows Add; no projection; stride1"
+      ],
+      "parameter_scope": "layer1.{j}",
+      "repeat": {
+        "count": 2,
+        "index": "j",
+        "instance_indices": [
+          1,
+          2
+        ],
+        "independent_parameters": true
+      },
+      "instance_indices": [
+        1,
+        2
+      ],
+      "block_count": 2,
+      "use_projection": false,
+      "stride": 1,
+      "bottleneck_planes": 64,
+      "output_channels": 256,
+      "mode": "chain",
+      "parent": "r50.stage1",
+      "source_evidence": [
+        "E006",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.identities.main",
+      "label": "Three convolutions + identity",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,256,7,7]",
+      "detail": [
+        "1x1 reduce ->3x3 spatial ->1x1 expand4",
+        "stride, if2, is in conv2 not conv1"
+      ],
+      "mode": "chain",
+      "residual": true,
+      "parent": "r50.stage1.identities",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.identities.main.conv1",
+      "label": "Conv1x1 256 -> 64",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,64,7,7]",
+      "detail": [
+        "padding=0; bias=False; stride=1"
+      ],
+      "parameter": "layer1.{j}.conv1",
+      "in_channels": 256,
+      "out_channels": 64,
+      "kernel_size": 1,
+      "stride": 1,
+      "bias": false,
+      "parent": "r50.stage1.identities.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.identities.main.bn1",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,64,7,7]",
+      "detail": [
+        "eval: running statistics; affine=True"
+      ],
+      "parameter": "layer1.{j}.bn1",
+      "parent": "r50.stage1.identities.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.identities.main.relu1",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,64,7,7]",
+      "detail": [
+        "inplace=True; same parameter-free self.relu called at 3 positions"
+      ],
+      "parent": "r50.stage1.identities.main",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.identities.main.conv2",
+      "label": "Conv3x3 64 -> 64",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,64,7,7]",
+      "detail": [
+        "padding=1; bias=False; stride=1"
+      ],
+      "parameter": "layer1.{j}.conv2",
+      "in_channels": 64,
+      "out_channels": 64,
+      "kernel_size": 3,
+      "stride": 1,
+      "bias": false,
+      "parent": "r50.stage1.identities.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.identities.main.bn2",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,64,7,7]",
+      "detail": [
+        "eval: running statistics; affine=True"
+      ],
+      "parameter": "layer1.{j}.bn2",
+      "parent": "r50.stage1.identities.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.identities.main.relu2",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,64,7,7]",
+      "detail": [
+        "inplace=True; same parameter-free self.relu called at 3 positions"
+      ],
+      "parent": "r50.stage1.identities.main",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.identities.main.conv3",
+      "label": "Conv1x1 64 -> 256",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,256,7,7]",
+      "detail": [
+        "padding=0; bias=False; stride=1"
+      ],
+      "parameter": "layer1.{j}.conv3",
+      "in_channels": 64,
+      "out_channels": 256,
+      "kernel_size": 1,
+      "stride": 1,
+      "bias": false,
+      "parent": "r50.stage1.identities.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.identities.main.bn3",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,256,7,7]",
+      "detail": [
+        "eval: running statistics; affine=True"
+      ],
+      "parameter": "layer1.{j}.bn3",
+      "parent": "r50.stage1.identities.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage1.identities.add",
+      "label": "Add identity input",
+      "kind": "add",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,256,7,7]",
+      "detail": [
+        "out += original x"
+      ],
+      "parent": "r50.stage1.identities.main",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "r50.stage1.identities.relu3",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,256,7,7]",
+      "detail": [
+        "inplace=True; same parameter-free self.relu called at 3 positions"
+      ],
+      "parent": "r50.stage1.identities",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage2",
+      "label": "Stage2 · 4 Bottlenecks",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "planes=128; expansion4; first stride2"
+      ],
+      "parameter_scope": "layer2",
+      "block_count": 4,
+      "mode": "chain",
+      "parent": "r50.root",
+      "source_evidence": [
+        "E005",
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage2.first",
+      "label": "First Bottleneck · projection",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "stride=2; input channels=256; output=512",
+        "both paths downsample; no identity shortcut"
+      ],
+      "parameter_scope": "layer2.0",
+      "use_projection": true,
+      "stride": 2,
+      "bottleneck_planes": 128,
+      "output_channels": 512,
+      "block_count": 1,
+      "instance_indices": [
+        0
+      ],
+      "mode": "chain",
+      "parent": "r50.stage2",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage2.first.paths",
+      "label": "Main / projected shortcut",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "two matching operands",
+      "detail": [
+        "both receive same x; parallel grouping is not an arithmetic Add"
+      ],
+      "dispatch": false,
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": false,
+      "child_inputs": {
+        "r50.stage2.first.main": {
+          "role": "value",
+          "producer": "r50.stage2.first",
+          "src_port": "in"
+        },
+        "r50.stage2.first.shortcut": {
+          "role": "value",
+          "producer": "r50.stage2.first",
+          "src_port": "in"
+        }
+      },
+      "mode": "parallel",
+      "parent": "r50.stage2.first",
+      "source_evidence": [
+        "E006",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "r50.stage2.first.main",
+      "label": "Bottleneck convolution path",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "1x1 reduce ->3x3 spatial ->1x1 expand4",
+        "stride, if2, is in conv2 not conv1"
+      ],
+      "mode": "chain",
+      "parent": "r50.stage2.first.paths",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage2.first.main.conv1",
+      "label": "Conv1x1 256 -> 128",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,128,7,7]",
+      "detail": [
+        "padding=0; bias=False; stride=1"
+      ],
+      "parameter": "layer2.0.conv1",
+      "in_channels": 256,
+      "out_channels": 128,
+      "kernel_size": 1,
+      "stride": 1,
+      "bias": false,
+      "parent": "r50.stage2.first.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage2.first.main.bn1",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,128,7,7]",
+      "detail": [
+        "eval: running statistics; affine=True"
+      ],
+      "parameter": "layer2.0.bn1",
+      "parent": "r50.stage2.first.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage2.first.main.relu1",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,128,7,7]",
+      "detail": [
+        "inplace=True; same parameter-free self.relu called at 3 positions"
+      ],
+      "parent": "r50.stage2.first.main",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage2.first.main.conv2",
+      "label": "Conv3x3 128 -> 128 / s2",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,128,4,4]",
+      "detail": [
+        "padding=1; bias=False; stride=2"
+      ],
+      "parameter": "layer2.0.conv2",
+      "in_channels": 128,
+      "out_channels": 128,
+      "kernel_size": 3,
+      "stride": 2,
+      "bias": false,
+      "parent": "r50.stage2.first.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage2.first.main.bn2",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,128,4,4]",
+      "detail": [
+        "eval: running statistics; affine=True"
+      ],
+      "parameter": "layer2.0.bn2",
+      "parent": "r50.stage2.first.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage2.first.main.relu2",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,128,4,4]",
+      "detail": [
+        "inplace=True; same parameter-free self.relu called at 3 positions"
+      ],
+      "parent": "r50.stage2.first.main",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage2.first.main.conv3",
+      "label": "Conv1x1 128 -> 512",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "padding=0; bias=False; stride=1"
+      ],
+      "parameter": "layer2.0.conv3",
+      "in_channels": 128,
+      "out_channels": 512,
+      "kernel_size": 1,
+      "stride": 1,
+      "bias": false,
+      "parent": "r50.stage2.first.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage2.first.main.bn3",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "eval: running statistics; affine=True"
+      ],
+      "parameter": "layer2.0.bn3",
+      "parent": "r50.stage2.first.main",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage2.first.shortcut",
+      "label": "Projection shortcut",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "r50.stage2.first.paths",
+      "source_evidence": [
+        "E006",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage2.first.projection",
+      "label": "Conv1x1 256 -> 512 / s2",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "bias=False; stride matches main conv2"
+      ],
+      "parameter": "layer2.0.downsample.0",
+      "in_channels": 256,
+      "out_channels": 512,
+      "kernel_size": 1,
+      "stride": 2,
+      "bias": false,
+      "parent": "r50.stage2.first.shortcut",
+      "source_evidence": [
+        "E006",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage2.first.projection_bn",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [],
+      "parameter": "layer2.0.downsample.1",
+      "parent": "r50.stage2.first.shortcut",
+      "source_evidence": [
+        "E006",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage2.first.add",
+      "label": "Add two paths",
+      "kind": "add",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "out += residual"
+      ],
+      "parent": "r50.stage2.first",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage2.first.relu3",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "inplace=True; same parameter-free self.relu called at 3 positions"
+      ],
+      "parent": "r50.stage2.first",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage2.identities",
+      "label": "Identity Bottleneck x 3",
+      "kind": "bottleneck",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "1x1-BN-ReLU ->3x3-BN-ReLU ->1x1-BN ->Add original x ->ReLU",
+        "j=1...3; independent weights; stride1; no projection"
+      ],
+      "parameter_scope": "layer2.{j}",
+      "parameter_members": [
+        "layer2.{j}.conv1",
+        "layer2.{j}.bn1",
+        "layer2.{j}.conv2",
+        "layer2.{j}.bn2",
+        "layer2.{j}.conv3",
+        "layer2.{j}.bn3"
+      ],
+      "repeat": {
+        "count": 3,
+        "index": "j",
+        "instance_indices": [
+          1,
+          2,
+          3
+        ],
+        "independent_parameters": true
+      },
+      "instance_indices": [
+        1,
+        2,
+        3
+      ],
+      "block_count": 3,
+      "use_projection": false,
+      "stride": 1,
+      "bottleneck_planes": 128,
+      "output_channels": 512,
+      "parent": "r50.stage2",
+      "source_evidence": [
+        "E006",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage3",
+      "label": "Stage3 · 6 Bottlenecks",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.forward"
+      ],
+      "shape": "[B,1024,2,2]",
+      "detail": [
+        "planes=256; expansion4; first stride2"
+      ],
+      "parameter_scope": "layer3",
+      "block_count": 6,
+      "mode": "chain",
+      "parent": "r50.root",
+      "source_evidence": [
+        "E005",
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage3.first",
+      "label": "First Bottleneck · projection",
+      "kind": "bottleneck",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,1024,2,2]",
+      "detail": [
+        "main:1x1-BN-ReLU ->3x3(s2)-BN-ReLU ->1x1-BN",
+        "shortcut:Conv1x1(s2)+BN; then Add ->ReLU",
+        "separate weights; 512->1024 channels"
+      ],
+      "parameter_scope": "layer3.0",
+      "parameter_members": [
+        "layer3.0.conv1",
+        "layer3.0.bn1",
+        "layer3.0.conv2",
+        "layer3.0.bn2",
+        "layer3.0.conv3",
+        "layer3.0.bn3",
+        "layer3.0.downsample.0",
+        "layer3.0.downsample.1"
+      ],
+      "use_projection": true,
+      "stride": 2,
+      "bottleneck_planes": 256,
+      "output_channels": 1024,
+      "block_count": 1,
+      "instance_indices": [
+        0
+      ],
+      "parent": "r50.stage3",
+      "source_evidence": [
+        "E006",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage3.identities",
+      "label": "Identity Bottleneck x 5",
+      "kind": "bottleneck",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,1024,2,2]",
+      "detail": [
+        "1x1-BN-ReLU ->3x3-BN-ReLU ->1x1-BN ->Add original x ->ReLU",
+        "j=1...5; independent weights; stride1; no projection"
+      ],
+      "parameter_scope": "layer3.{j}",
+      "parameter_members": [
+        "layer3.{j}.conv1",
+        "layer3.{j}.bn1",
+        "layer3.{j}.conv2",
+        "layer3.{j}.bn2",
+        "layer3.{j}.conv3",
+        "layer3.{j}.bn3"
+      ],
+      "repeat": {
+        "count": 5,
+        "index": "j",
+        "instance_indices": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "independent_parameters": true
+      },
+      "instance_indices": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "block_count": 5,
+      "use_projection": false,
+      "stride": 1,
+      "bottleneck_planes": 256,
+      "output_channels": 1024,
+      "parent": "r50.stage3",
+      "source_evidence": [
+        "E006",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage4",
+      "label": "Stage4 · 3 Bottlenecks",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.forward"
+      ],
+      "shape": "[B,2048,1,1]",
+      "detail": [
+        "planes=512; expansion4; first stride2"
+      ],
+      "parameter_scope": "layer4",
+      "block_count": 3,
+      "mode": "chain",
+      "parent": "r50.root",
+      "source_evidence": [
+        "E005",
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage4.first",
+      "label": "First Bottleneck · projection",
+      "kind": "bottleneck",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,2048,1,1]",
+      "detail": [
+        "main:1x1-BN-ReLU ->3x3(s2)-BN-ReLU ->1x1-BN",
+        "shortcut:Conv1x1(s2)+BN; then Add ->ReLU",
+        "separate weights; 1024->2048 channels"
+      ],
+      "parameter_scope": "layer4.0",
+      "parameter_members": [
+        "layer4.0.conv1",
+        "layer4.0.bn1",
+        "layer4.0.conv2",
+        "layer4.0.bn2",
+        "layer4.0.conv3",
+        "layer4.0.bn3",
+        "layer4.0.downsample.0",
+        "layer4.0.downsample.1"
+      ],
+      "use_projection": true,
+      "stride": 2,
+      "bottleneck_planes": 512,
+      "output_channels": 2048,
+      "block_count": 1,
+      "instance_indices": [
+        0
+      ],
+      "parent": "r50.stage4",
+      "source_evidence": [
+        "E006",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.stage4.identities",
+      "label": "Identity Bottleneck x 2",
+      "kind": "bottleneck",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet._make_layer",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::Bottleneck.forward"
+      ],
+      "shape": "[B,2048,1,1]",
+      "detail": [
+        "1x1-BN-ReLU ->3x3-BN-ReLU ->1x1-BN ->Add original x ->ReLU",
+        "j=1...2; independent weights; stride1; no projection"
+      ],
+      "parameter_scope": "layer4.{j}",
+      "parameter_members": [
+        "layer4.{j}.conv1",
+        "layer4.{j}.bn1",
+        "layer4.{j}.conv2",
+        "layer4.{j}.bn2",
+        "layer4.{j}.conv3",
+        "layer4.{j}.bn3"
+      ],
+      "repeat": {
+        "count": 2,
+        "index": "j",
+        "instance_indices": [
+          1,
+          2
+        ],
+        "independent_parameters": true
+      },
+      "instance_indices": [
+        1,
+        2
+      ],
+      "block_count": 2,
+      "use_projection": false,
+      "stride": 1,
+      "bottleneck_planes": 512,
+      "output_channels": 2048,
+      "parent": "r50.stage4",
+      "source_evidence": [
+        "E006",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.head",
+      "label": "Classifier head",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.forward"
+      ],
+      "shape": "2 x [B,10]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "r50.root",
+      "source_evidence": [
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.flatten",
+      "label": "Flatten",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.forward"
+      ],
+      "shape": "[B,2048]",
+      "detail": [
+        "x.view(B,-1); final spatial1x1; avgpool call commented"
+      ],
+      "parent": "r50.head",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.fc",
+      "label": "Linear2048 ->10",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.forward"
+      ],
+      "shape": "[B,10]",
+      "detail": [],
+      "parameter": "fc",
+      "parent": "r50.head",
+      "source_evidence": [
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.returns",
+      "label": "Return logits / probabilities",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.forward"
+      ],
+      "shape": "(logits, probas)",
+      "detail": [],
+      "dispatch": false,
+      "mode": "parallel",
+      "port_bindings": {
+        "out": [
+          {
+            "node": "r50.logits",
+            "port": "out"
+          },
+          {
+            "node": "r50.softmax",
+            "port": "out"
+          }
+        ],
+        "item[0]": {
+          "node": "r50.logits",
+          "port": "out"
+        },
+        "item[1]": {
+          "node": "r50.softmax",
+          "port": "out"
+        },
+        "logits": {
+          "node": "r50.logits",
+          "port": "out"
+        },
+        "probas": {
+          "node": "r50.softmax",
+          "port": "out"
+        }
+      },
+      "parent": "r50.head",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "logits",
+        "probas"
+      ]
+    },
+    {
+      "id": "r50.logits",
+      "label": "Retain logits",
+      "kind": "identity",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.forward"
+      ],
+      "shape": "[B,10]",
+      "detail": [],
+      "parent": "r50.returns",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.softmax",
+      "label": "Softmax",
+      "kind": "softmax",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.forward"
+      ],
+      "shape": "[B,10]",
+      "detail": [
+        "F.softmax(logits,dim=1)"
+      ],
+      "parent": "r50.returns",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "r50.output",
+      "label": "Forward return tuple",
+      "kind": "output",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py::ResNet.forward"
+      ],
+      "shape": "2 x [B,10]",
+      "detail": [
+        "return logits,probas"
+      ],
+      "parent": "r50.root",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "r50.stem:in->r50.stem.conv:in:boundary",
+      "src": "r50.stem",
+      "dst": "r50.stem.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stem.conv:out->r50.stem.bn:in:tensor",
+      "src": "r50.stem.conv",
+      "dst": "r50.stem.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stem.bn:out->r50.stem.relu:in:tensor",
+      "src": "r50.stem.bn",
+      "dst": "r50.stem.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stem.relu:out->r50.stem.pool:in:tensor",
+      "src": "r50.stem.relu",
+      "dst": "r50.stem.pool",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stem.pool:out->r50.stem:out:boundary",
+      "src": "r50.stem.pool",
+      "dst": "r50.stem",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage1.first.main:in->r50.stage1.first.main.conv1:in:boundary",
+      "src": "r50.stage1.first.main",
+      "dst": "r50.stage1.first.main.conv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage1.first.main.conv1:out->r50.stage1.first.main.bn1:in:tensor",
+      "src": "r50.stage1.first.main.conv1",
+      "dst": "r50.stage1.first.main.bn1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.first.main.bn1:out->r50.stage1.first.main.relu1:in:tensor",
+      "src": "r50.stage1.first.main.bn1",
+      "dst": "r50.stage1.first.main.relu1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.first.main.relu1:out->r50.stage1.first.main.conv2:in:tensor",
+      "src": "r50.stage1.first.main.relu1",
+      "dst": "r50.stage1.first.main.conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.first.main.conv2:out->r50.stage1.first.main.bn2:in:tensor",
+      "src": "r50.stage1.first.main.conv2",
+      "dst": "r50.stage1.first.main.bn2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.first.main.bn2:out->r50.stage1.first.main.relu2:in:tensor",
+      "src": "r50.stage1.first.main.bn2",
+      "dst": "r50.stage1.first.main.relu2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.first.main.relu2:out->r50.stage1.first.main.conv3:in:tensor",
+      "src": "r50.stage1.first.main.relu2",
+      "dst": "r50.stage1.first.main.conv3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.first.main.conv3:out->r50.stage1.first.main.bn3:in:tensor",
+      "src": "r50.stage1.first.main.conv3",
+      "dst": "r50.stage1.first.main.bn3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.first.main.bn3:out->r50.stage1.first.main:out:boundary",
+      "src": "r50.stage1.first.main.bn3",
+      "dst": "r50.stage1.first.main",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage1.first.shortcut:in->r50.stage1.first.projection:in:boundary",
+      "src": "r50.stage1.first.shortcut",
+      "dst": "r50.stage1.first.projection",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage1.first.projection:out->r50.stage1.first.projection_bn:in:tensor",
+      "src": "r50.stage1.first.projection",
+      "dst": "r50.stage1.first.projection_bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.first.projection_bn:out->r50.stage1.first.shortcut:out:boundary",
+      "src": "r50.stage1.first.projection_bn",
+      "dst": "r50.stage1.first.shortcut",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage1.first:in->r50.stage1.first.main:in:value_operand",
+      "src": "r50.stage1.first",
+      "dst": "r50.stage1.first.main",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "r50.stage1.first.main:out->r50.stage1.first.paths:operand[0]:operand_collection",
+      "src": "r50.stage1.first.main",
+      "dst": "r50.stage1.first.paths",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "r50.stage1.first:in->r50.stage1.first.shortcut:in:value_operand",
+      "src": "r50.stage1.first",
+      "dst": "r50.stage1.first.shortcut",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "r50.stage1.first.shortcut:out->r50.stage1.first.paths:operand[1]:operand_collection",
+      "src": "r50.stage1.first.shortcut",
+      "dst": "r50.stage1.first.paths",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "r50.stage1.first:in->r50.stage1.first.paths:in:boundary",
+      "src": "r50.stage1.first",
+      "dst": "r50.stage1.first.paths",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage1.first.paths:out->r50.stage1.first.add:in:tensor",
+      "src": "r50.stage1.first.paths",
+      "dst": "r50.stage1.first.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.first.add:out->r50.stage1.first.relu3:in:tensor",
+      "src": "r50.stage1.first.add",
+      "dst": "r50.stage1.first.relu3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.first.relu3:out->r50.stage1.first:out:boundary",
+      "src": "r50.stage1.first.relu3",
+      "dst": "r50.stage1.first",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage1.identities.main:in->r50.stage1.identities.main.conv1:in:boundary",
+      "src": "r50.stage1.identities.main",
+      "dst": "r50.stage1.identities.main.conv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage1.identities.main.conv1:out->r50.stage1.identities.main.bn1:in:tensor",
+      "src": "r50.stage1.identities.main.conv1",
+      "dst": "r50.stage1.identities.main.bn1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.identities.main.bn1:out->r50.stage1.identities.main.relu1:in:tensor",
+      "src": "r50.stage1.identities.main.bn1",
+      "dst": "r50.stage1.identities.main.relu1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.identities.main.relu1:out->r50.stage1.identities.main.conv2:in:tensor",
+      "src": "r50.stage1.identities.main.relu1",
+      "dst": "r50.stage1.identities.main.conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.identities.main.conv2:out->r50.stage1.identities.main.bn2:in:tensor",
+      "src": "r50.stage1.identities.main.conv2",
+      "dst": "r50.stage1.identities.main.bn2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.identities.main.bn2:out->r50.stage1.identities.main.relu2:in:tensor",
+      "src": "r50.stage1.identities.main.bn2",
+      "dst": "r50.stage1.identities.main.relu2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.identities.main.relu2:out->r50.stage1.identities.main.conv3:in:tensor",
+      "src": "r50.stage1.identities.main.relu2",
+      "dst": "r50.stage1.identities.main.conv3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.identities.main.conv3:out->r50.stage1.identities.main.bn3:in:tensor",
+      "src": "r50.stage1.identities.main.conv3",
+      "dst": "r50.stage1.identities.main.bn3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.identities.main.bn3:out->r50.stage1.identities.add:in:tensor",
+      "src": "r50.stage1.identities.main.bn3",
+      "dst": "r50.stage1.identities.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.identities.add:out->r50.stage1.identities.main:out:boundary",
+      "src": "r50.stage1.identities.add",
+      "dst": "r50.stage1.identities.main",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage1.identities.main:in->r50.stage1.identities.add:side:residual",
+      "src": "r50.stage1.identities.main",
+      "dst": "r50.stage1.identities.add",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "residual"
+    },
+    {
+      "id": "r50.stage1.identities:in->r50.stage1.identities.main:in:boundary",
+      "src": "r50.stage1.identities",
+      "dst": "r50.stage1.identities.main",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage1.identities.main:out->r50.stage1.identities.relu3:in:tensor",
+      "src": "r50.stage1.identities.main",
+      "dst": "r50.stage1.identities.relu3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.identities.relu3:out->r50.stage1.identities:out:boundary",
+      "src": "r50.stage1.identities.relu3",
+      "dst": "r50.stage1.identities",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage1:in->r50.stage1.first:in:boundary",
+      "src": "r50.stage1",
+      "dst": "r50.stage1.first",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage1.first:out->r50.stage1.identities:in:tensor",
+      "src": "r50.stage1.first",
+      "dst": "r50.stage1.identities",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1.identities:out->r50.stage1:out:boundary",
+      "src": "r50.stage1.identities",
+      "dst": "r50.stage1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage2.first.main:in->r50.stage2.first.main.conv1:in:boundary",
+      "src": "r50.stage2.first.main",
+      "dst": "r50.stage2.first.main.conv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage2.first.main.conv1:out->r50.stage2.first.main.bn1:in:tensor",
+      "src": "r50.stage2.first.main.conv1",
+      "dst": "r50.stage2.first.main.bn1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage2.first.main.bn1:out->r50.stage2.first.main.relu1:in:tensor",
+      "src": "r50.stage2.first.main.bn1",
+      "dst": "r50.stage2.first.main.relu1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage2.first.main.relu1:out->r50.stage2.first.main.conv2:in:tensor",
+      "src": "r50.stage2.first.main.relu1",
+      "dst": "r50.stage2.first.main.conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage2.first.main.conv2:out->r50.stage2.first.main.bn2:in:tensor",
+      "src": "r50.stage2.first.main.conv2",
+      "dst": "r50.stage2.first.main.bn2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage2.first.main.bn2:out->r50.stage2.first.main.relu2:in:tensor",
+      "src": "r50.stage2.first.main.bn2",
+      "dst": "r50.stage2.first.main.relu2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage2.first.main.relu2:out->r50.stage2.first.main.conv3:in:tensor",
+      "src": "r50.stage2.first.main.relu2",
+      "dst": "r50.stage2.first.main.conv3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage2.first.main.conv3:out->r50.stage2.first.main.bn3:in:tensor",
+      "src": "r50.stage2.first.main.conv3",
+      "dst": "r50.stage2.first.main.bn3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage2.first.main.bn3:out->r50.stage2.first.main:out:boundary",
+      "src": "r50.stage2.first.main.bn3",
+      "dst": "r50.stage2.first.main",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage2.first.shortcut:in->r50.stage2.first.projection:in:boundary",
+      "src": "r50.stage2.first.shortcut",
+      "dst": "r50.stage2.first.projection",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage2.first.projection:out->r50.stage2.first.projection_bn:in:tensor",
+      "src": "r50.stage2.first.projection",
+      "dst": "r50.stage2.first.projection_bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage2.first.projection_bn:out->r50.stage2.first.shortcut:out:boundary",
+      "src": "r50.stage2.first.projection_bn",
+      "dst": "r50.stage2.first.shortcut",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage2.first:in->r50.stage2.first.main:in:value_operand",
+      "src": "r50.stage2.first",
+      "dst": "r50.stage2.first.main",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "r50.stage2.first.main:out->r50.stage2.first.paths:operand[0]:operand_collection",
+      "src": "r50.stage2.first.main",
+      "dst": "r50.stage2.first.paths",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "r50.stage2.first:in->r50.stage2.first.shortcut:in:value_operand",
+      "src": "r50.stage2.first",
+      "dst": "r50.stage2.first.shortcut",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "r50.stage2.first.shortcut:out->r50.stage2.first.paths:operand[1]:operand_collection",
+      "src": "r50.stage2.first.shortcut",
+      "dst": "r50.stage2.first.paths",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "r50.stage2.first:in->r50.stage2.first.paths:in:boundary",
+      "src": "r50.stage2.first",
+      "dst": "r50.stage2.first.paths",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage2.first.paths:out->r50.stage2.first.add:in:tensor",
+      "src": "r50.stage2.first.paths",
+      "dst": "r50.stage2.first.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage2.first.add:out->r50.stage2.first.relu3:in:tensor",
+      "src": "r50.stage2.first.add",
+      "dst": "r50.stage2.first.relu3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage2.first.relu3:out->r50.stage2.first:out:boundary",
+      "src": "r50.stage2.first.relu3",
+      "dst": "r50.stage2.first",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage2:in->r50.stage2.first:in:boundary",
+      "src": "r50.stage2",
+      "dst": "r50.stage2.first",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage2.first:out->r50.stage2.identities:in:tensor",
+      "src": "r50.stage2.first",
+      "dst": "r50.stage2.identities",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage2.identities:out->r50.stage2:out:boundary",
+      "src": "r50.stage2.identities",
+      "dst": "r50.stage2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage3:in->r50.stage3.first:in:boundary",
+      "src": "r50.stage3",
+      "dst": "r50.stage3.first",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage3.first:out->r50.stage3.identities:in:tensor",
+      "src": "r50.stage3.first",
+      "dst": "r50.stage3.identities",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage3.identities:out->r50.stage3:out:boundary",
+      "src": "r50.stage3.identities",
+      "dst": "r50.stage3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage4:in->r50.stage4.first:in:boundary",
+      "src": "r50.stage4",
+      "dst": "r50.stage4.first",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.stage4.first:out->r50.stage4.identities:in:tensor",
+      "src": "r50.stage4.first",
+      "dst": "r50.stage4.identities",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage4.identities:out->r50.stage4:out:boundary",
+      "src": "r50.stage4.identities",
+      "dst": "r50.stage4",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.returns:in->r50.logits:in:fork",
+      "src": "r50.returns",
+      "dst": "r50.logits",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "r50.logits:out->r50.returns:item[0]:tuple_collection",
+      "src": "r50.logits",
+      "dst": "r50.returns",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "r50.returns:in->r50.softmax:in:fork",
+      "src": "r50.returns",
+      "dst": "r50.softmax",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "r50.softmax:out->r50.returns:item[1]:tuple_collection",
+      "src": "r50.softmax",
+      "dst": "r50.returns",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "r50.head:in->r50.flatten:in:boundary",
+      "src": "r50.head",
+      "dst": "r50.flatten",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.flatten:out->r50.fc:in:tensor",
+      "src": "r50.flatten",
+      "dst": "r50.fc",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.fc:out->r50.returns:in:tensor",
+      "src": "r50.fc",
+      "dst": "r50.returns",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.returns:out->r50.head:out:boundary",
+      "src": "r50.returns",
+      "dst": "r50.head",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.root:in->r50.input:in:boundary",
+      "src": "r50.root",
+      "dst": "r50.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "r50.input:out->r50.stem:in:tensor",
+      "src": "r50.input",
+      "dst": "r50.stem",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stem:out->r50.stage1:in:tensor",
+      "src": "r50.stem",
+      "dst": "r50.stage1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage1:out->r50.stage2:in:tensor",
+      "src": "r50.stage1",
+      "dst": "r50.stage2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage2:out->r50.stage3:in:tensor",
+      "src": "r50.stage2",
+      "dst": "r50.stage3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage3:out->r50.stage4:in:tensor",
+      "src": "r50.stage3",
+      "dst": "r50.stage4",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.stage4:out->r50.head:in:tensor",
+      "src": "r50.stage4",
+      "dst": "r50.head",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.head:out->r50.output:in:tensor",
+      "src": "r50.head",
+      "dst": "r50.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "r50.output:out->r50.root:out:boundary",
+      "src": "r50.output",
+      "dst": "r50.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    }
+  ],
+  "facts": [
+    "The notebook factory is named resnet34 but constructs Bottleneck(expansion4) with [3,4,6,3]; its structure is ResNet50-type, not BasicBlock ResNet34.",
+    "The selected factory reads global NUM_CLASSES=10 and GRAYSCALE=True instead of using its num_classes parameter.",
+    "Input[B,1,28,28] becomes64x14x14 after7x7 stride2 Conv, then64x7x7 after3x3 stride2 MaxPool.",
+    "Four stages contain3,4,6,3 independent Bottlenecks, with output channels256,512,1024,2048 and spatial sizes7,4,2,1.",
+    "Each Bottleneck executes Conv1x1-BN-ReLU ->Conv3x3-BN-ReLU ->Conv1x1-BN ->Add shortcut ->ReLU.",
+    "Stride2 is on conv2, not conv1; projection shortcut uses matching stride. Stage1 also requires projection because64!=64*4 even at stride1.",
+    "There are4 learned projection shortcuts and12 identity shortcuts; no across-block weight sharing.",
+    "AvgPool2d(7,1) exists in __init__ but its forward call is commented; flatten directly receives2048x1x1.",
+    "The classifier is Linear2048->10; forward computes Softmax and returns logits and probas.",
+    "Stage1 projection/identity and stage2 downsampling projection expand as representative patterns; later templates preserve instance counts, scopes and parameter members."
+  ],
+  "corrections": [
+    "Keep the real source symbol resnet34 and explicitly identify its naming mismatch; do not invent a resnet50 function.",
+    "Use MNIST28x28 grayscale rather than ImageNet224x224; do not add executed global average pooling.",
+    "Draw stage1 projection despite stride1: expansion4 changes64 channels to256.",
+    "Place downsampling in the3x3 conv2 and the shortcut1x1, not in the main conv1.",
+    "Draw Bottleneck three-convolution structure, not ResNet18's two-convolution BasicBlock.",
+    "Final ReLU follows residual Add; BN follows conv3 before Add; preserve both forward return fields."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

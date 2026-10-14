@@ -1,0 +1,8 @@
+import {readFile,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {parse} from '/home/fzg/.npm/_npx/9b9809298fe40d2c/node_modules/@babel/parser/lib/index.js';
+const path=new URL('./upstream/layoutstyles-RkxN5UEX.js',import.meta.url),source=await readFile(path,'utf8');
+const ast=parse(source,{sourceType:'module'});let found=[];
+function walk(value){if(!value||typeof value!=='object')return;if(value.type==='CallExpression'&&value.arguments?.[0]?.type==='TemplateLiteral'&&value.arguments[0].quasis?.[0]?.value?.cooked==='PolylineEdgeRouterConfig')found.push(value);for(const [key,v]of Object.entries(value)){if(['loc','extra','comments','tokens'].includes(key))continue;if(Array.isArray(v))v.forEach(walk);else if(v&&typeof v==='object')walk(v);}}
+walk(ast);if(found.length!==1)throw Error('expected one config call');const n=found[0],slice=source.slice(n.start,n.end);await writeFile(new URL('./feature-slice/PolylineEdgeRouterConfig.bundle-slice.js',import.meta.url),'export default '+slice+';\n');
+await writeFile(new URL('./feature-slice-provenance.json',import.meta.url),JSON.stringify({method:'Babel AST exact CallExpression slice, inert parsing; original minified identifiers unchanged',source:'upstream/layoutstyles-RkxN5UEX.js',source_sha256:createHash('sha256').update(source).digest('hex'),start_utf16:n.start,end_utf16:n.end,prefix:'export default ',suffix:';\n',slice_sha256:createHash('sha256').update(slice).digest('hex'),limit:'Only the PolylineEdgeRouterConfig class expression, not imports, yFiles library, application bootstrap or runtime.'},null,2));console.log({start:n.start,end:n.end,bytes:Buffer.byteLength(slice)});

@@ -1,0 +1,33 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>TextCNN (IMDb length-masked) 源码架构图</title><style>body{font-family:DejaVu Sans,Arial,sans-serif;background:#edf0f5;color:#172336;margin:24px}main{max-width:1600px;margin:auto}section{background:white;padding:24px;margin-top:24px;border-radius:12px}img{width:100%;height:auto}a{color:#315479}nav{position:sticky;top:0;background:#edf0f5;padding:16px 0}pre{white-space:pre-wrap}</style><main><h1>TextCNN (IMDb length-masked)</h1><p>rasbt/deeplearning-models @ 59beda3aa253</p><nav><a href="../index.html">模型总览</a> · <a href="#overview">概览</a> · <a href="#modules">模块</a> · <a href="#detailed">详细</a> · <a href="source_map.md">逐节点源码映射</a> · <a href="source_evidence.json">源码证据</a> · <a href="semantic_ir.json">语义 IR</a> · <a href="layout_checks.json">检查</a></nav><details><summary>选定配置与边界</summary><pre>{
+  &quot;task&quot;: &quot;IMDb sentiment classification&quot;,
+  &quot;mode&quot;: &quot;evaluation (Dropout disabled)&quot;,
+  &quot;vocabulary_size&quot;: &quot;V=len(vocabulary)&quot;,
+  &quot;vocabulary_max_size&quot;: 30000,
+  &quot;min_frequency&quot;: 2,
+  &quot;max_length&quot;: 512,
+  &quot;embedding_dim&quot;: 200,
+  &quot;filter_widths&quot;: [
+    3,
+    4,
+    5
+  ],
+  &quot;filters_per_width&quot;: 128,
+  &quot;feature_positions&quot;: [
+    510,
+    509,
+    508
+  ],
+  &quot;pooled_features&quot;: 384,
+  &quot;dropout&quot;: 0.5,
+  &quot;output_classes&quot;: 2,
+  &quot;batch_size_setting&quot;: 128,
+  &quot;input_layout&quot;: &quot;[B,L]&quot;,
+  &quot;lengths_layout&quot;: &quot;[B]&quot;,
+  &quot;padding_idx&quot;: 0,
+  &quot;valid_windows&quot;: &quot;max(lengths-k+1,1)&quot;,
+  &quot;mask_fill&quot;: &quot;torch.finfo(features.dtype).min&quot;,
+  &quot;caller_autocast&quot;: &quot;bfloat16 CUDA evaluation; runtime not executed&quot;,
+  &quot;forward_softmax&quot;: false,
+  &quot;symbolic_shapes&quot;: true,
+  &quot;model_executed&quot;: false
+}</pre></details><section id="overview"><h2>概览</h2><p><a href="figure1_overview.svg">SVG</a> · <a href="layout_overview.json">布局记录</a></p><img src="figure1_overview.svg" alt="overview"></section><section id="modules"><h2>模块</h2><p><a href="figure2_modules.svg">SVG</a> · <a href="layout_modules.json">布局记录</a></p><img src="figure2_modules.svg" alt="modules"></section><section id="detailed"><h2>详细</h2><p><a href="figure3_detailed.svg">SVG</a> · <a href="layout_detailed.json">布局记录</a></p><img src="figure3_detailed.svg" alt="detailed"></section></main></html>

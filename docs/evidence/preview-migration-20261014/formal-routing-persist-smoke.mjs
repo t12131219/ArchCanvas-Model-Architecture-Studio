@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import {chromium} from '/home/fzg/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright-core/index.mjs';
+const browser=await chromium.launch({headless:true,executablePath:'/home/fzg/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',args:['--no-sandbox']});
+const page=await browser.newPage({viewport:{width:1600,height:1100}}),errors=[],checks=[];
+page.on('pageerror',e=>errors.push(e.message));
+try {
+ await page.goto('http://127.0.0.1:8891');
+ await page.waitForFunction(()=>document.querySelector('select[aria-label="示例模型"]')&&!document.querySelector('select[aria-label="示例模型"]').disabled);
+ let frame=page.frame({url:/preview\/yworks_edge_router_lab\/index.html/});
+ await page.locator('.workspace-menu summary').click();
+ await page.locator('.workspace-menu button').filter({hasText:/示例|模块库/}).click();
+ await frame.locator('button[data-case-id="routing-lab"]').click();
+ await frame.waitForFunction(()=>document.querySelector('#modelTitle')?.textContent==='Edge Router · 避障实验');
+ await frame.locator('.library .studio-drawer-close').click();await page.locator('.workspace-menu').evaluate(e=>e.open=false);
+ await page.waitForFunction(()=>document.querySelector('.project-breadcrumb')?.textContent.includes('Edge Router'));
+ await page.getByRole('button',{name:'保存',exact:true}).click();
+ await page.waitForFunction(()=>!document.querySelector('button.save-button')?.disabled);
+ await page.waitForTimeout(1000);
+ checks.push('source-free routing sandbox saves through the formal project toolbar');
+ await page.reload();
+ await page.waitForFunction(()=>document.querySelector('select[aria-label="示例模型"]')&&!document.querySelector('select[aria-label="示例模型"]').disabled);
+ frame=page.frame({url:/preview\/yworks_edge_router_lab\/index.html/});
+ await frame.waitForFunction(()=>document.querySelector('#modelTitle')?.textContent==='Edge Router · 避障实验');
+ await page.waitForFunction(()=>document.querySelector('.project-breadcrumb')?.textContent.includes('Edge Router'));
+ assert.equal(await frame.locator('[data-node-id]').count(),9);
+ assert.equal(await frame.locator('[data-edge-id]').count(),11);
+ checks.push('whole-page reload restores routing case identity and its complete graph');
+ await page.getByRole('button',{name:'编辑',exact:true}).click();
+ await page.waitForTimeout(300);
+ const body=await page.locator('body').innerText();assert.match(body,/没有模型源码|没有可编辑|教学|路由实验/);
+ assert.equal(await page.locator('.prototype-preview').isVisible(),true);
+ checks.push('restored source-free sandbox retains the preview-only authoring guard');
+ assert.deepEqual(errors,[]);
+ const report={ok:true,checks,errors};await fs.writeFile('/tmp/archcanvas-routing-persist-smoke.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
+} finally {await browser.close();}

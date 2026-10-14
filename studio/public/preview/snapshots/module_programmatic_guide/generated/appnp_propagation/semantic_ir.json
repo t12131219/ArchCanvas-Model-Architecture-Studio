@@ -1,0 +1,377 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "appnp_propagation",
+  "profile": {
+    "alpha": 0.1,
+    "iterations": 3,
+    "model": "approximate",
+    "display": "APPNP iteration template / alpha=.1 / K=3 / no task head",
+    "edge_dropout_once_per_forward": true,
+    "shared_fixed_restart": true,
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "benedekrozemberczki/APPNP",
+    "commit": "338d98980ee8748e652630dd422341ef8b2a354a",
+    "snapshot": "a26a0aa75b2bc72b4e8a18bc84a4db7f3ffe1beddef97181a20a300d75295eb0"
+  },
+  "nodes": [
+    {
+      "id": "appnp_propagation.root",
+      "label": "APPNP restart propagation / module only",
+      "kind": "group",
+      "source": [
+        "appnp-modules/src/appnp_layer.py::APPNPModel.forward"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "appnp_propagation.h0",
+          "appnp_propagation.edges"
+        ],
+        [
+          "appnp_propagation.module"
+        ],
+        [
+          "appnp_propagation.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "appnp_propagation.h0",
+      "label": "Retained initial H0",
+      "kind": "input",
+      "source": [
+        "appnp-modules/src/appnp_layer.py::APPNPModel.forward"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "boundary": "latent_features_2",
+      "parent": "appnp_propagation.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "appnp_propagation.edges",
+      "label": "Sparse topology / weights",
+      "kind": "control",
+      "source": [
+        "appnp-modules/src/appnp_layer.py::APPNPModel.forward"
+      ],
+      "shape": "indices[2,E], values[E]",
+      "detail": [],
+      "parent": "appnp_propagation.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "values",
+        "indices"
+      ]
+    },
+    {
+      "id": "appnp_propagation.module",
+      "label": "APPNP restart propagation / operators",
+      "kind": "group",
+      "source": [
+        "appnp-modules/src/appnp_layer.py::APPNPModel.forward"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "appnp_propagation.drop"
+        ],
+        [
+          "appnp_propagation.step"
+        ],
+        [
+          "appnp_propagation.scale",
+          "appnp_propagation.restart"
+        ],
+        [
+          "appnp_propagation.add"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "appnp_propagation.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "appnp_propagation.drop",
+      "label": "Edge weight Dropout / once",
+      "kind": "dropout",
+      "source": [
+        "appnp-modules/src/appnp_layer.py::APPNPModel.forward"
+      ],
+      "shape": "[E]",
+      "detail": [],
+      "resampled_inside_loop": false,
+      "training": "caller mode",
+      "p": "self.args.dropout",
+      "parent": "appnp_propagation.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "appnp_propagation.step",
+      "label": "Repeat K=3 / sparse propagation",
+      "kind": "group",
+      "source": [
+        "appnp-modules/src/appnp_layer.py::APPNPModel.forward"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "iteration_template": true,
+      "repeat": 3,
+      "parameter_sharing": "same topology/dropout sample across all iterations",
+      "mode": "chain",
+      "parent": "appnp_propagation.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "appnp_propagation.step.spmm",
+      "label": "A_drop @ current H",
+      "kind": "spmm",
+      "source": [
+        "appnp-modules/src/appnp_layer.py::APPNPModel.forward"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "opaque_runtime_boundary": true,
+      "expression": "spmm(index=self.edge_indices, value=edge_weights, n=localized_predictions.shape[0], m=localized_predictions.shape[0], matrix=localized_predictions)",
+      "parent": "appnp_propagation.step",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "state0",
+        "indices",
+        "weights",
+        "state_next"
+      ]
+    },
+    {
+      "id": "appnp_propagation.scale",
+      "label": "Scale propagated state by 1-alpha",
+      "kind": "multiply",
+      "source": [
+        "appnp-modules/src/appnp_layer.py::APPNPModel.forward"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "expression": "(1-self.args.alpha)*new_features",
+      "parent": "appnp_propagation.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "appnp_propagation.restart",
+      "label": "Scale SAME H0 by alpha",
+      "kind": "multiply",
+      "source": [
+        "appnp-modules/src/appnp_layer.py::APPNPModel.forward"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "expression": "self.args.alpha * latent_features_2",
+      "parent": "appnp_propagation.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "appnp_propagation.add",
+      "label": "Add restart to propagated state",
+      "kind": "add",
+      "source": [
+        "appnp-modules/src/appnp_layer.py::APPNPModel.forward"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "expression": "localized_predictions + self.args.alpha*latent_features_2",
+      "parent": "appnp_propagation.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "propagated",
+        "restart"
+      ]
+    },
+    {
+      "id": "appnp_propagation.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "appnp-modules/src/appnp_layer.py::APPNPModel.forward"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "parent": "appnp_propagation.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "appnp_propagation.step.spmm:out->appnp_propagation.step:out:boundary",
+      "src": "appnp_propagation.step.spmm",
+      "dst": "appnp_propagation.step",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "appnp_propagation.h0:out->appnp_propagation.step.spmm:state0:initial_state",
+      "src": "appnp_propagation.h0",
+      "dst": "appnp_propagation.step.spmm",
+      "src_port": "out",
+      "dst_port": "state0",
+      "role": "initial_state"
+    },
+    {
+      "id": "appnp_propagation.edges:values->appnp_propagation.drop:in:topology",
+      "src": "appnp_propagation.edges",
+      "dst": "appnp_propagation.drop",
+      "src_port": "values",
+      "dst_port": "in",
+      "role": "topology"
+    },
+    {
+      "id": "appnp_propagation.edges:indices->appnp_propagation.step.spmm:indices:topology",
+      "src": "appnp_propagation.edges",
+      "dst": "appnp_propagation.step.spmm",
+      "src_port": "indices",
+      "dst_port": "indices",
+      "role": "topology"
+    },
+    {
+      "id": "appnp_propagation.drop:out->appnp_propagation.step.spmm:weights:topology",
+      "src": "appnp_propagation.drop",
+      "dst": "appnp_propagation.step.spmm",
+      "src_port": "out",
+      "dst_port": "weights",
+      "role": "topology"
+    },
+    {
+      "id": "appnp_propagation.step.spmm:out->appnp_propagation.scale:in:tensor",
+      "src": "appnp_propagation.step.spmm",
+      "dst": "appnp_propagation.scale",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "appnp_propagation.scale:out->appnp_propagation.add:propagated:tensor",
+      "src": "appnp_propagation.scale",
+      "dst": "appnp_propagation.add",
+      "src_port": "out",
+      "dst_port": "propagated",
+      "role": "tensor"
+    },
+    {
+      "id": "appnp_propagation.h0:out->appnp_propagation.restart:in:retained_value",
+      "src": "appnp_propagation.h0",
+      "dst": "appnp_propagation.restart",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "retained_value"
+    },
+    {
+      "id": "appnp_propagation.restart:out->appnp_propagation.add:restart:tensor",
+      "src": "appnp_propagation.restart",
+      "dst": "appnp_propagation.add",
+      "src_port": "out",
+      "dst_port": "restart",
+      "role": "tensor"
+    },
+    {
+      "id": "appnp_propagation.add:out->appnp_propagation.step.spmm:state_next:loop_recurrence",
+      "src": "appnp_propagation.add",
+      "dst": "appnp_propagation.step.spmm",
+      "src_port": "out",
+      "dst_port": "state_next",
+      "role": "loop_recurrence"
+    },
+    {
+      "id": "appnp_propagation.add:out->appnp_propagation.output:in:tensor",
+      "src": "appnp_propagation.add",
+      "dst": "appnp_propagation.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "One representative recurrence is shown with K=3 declared example repeats. Feedback edges carry next H, not fresh task logits.",
+    "Edge Dropout occurs before the loop and is shared within a forward. Restart is always the same latent_features_2, never the latest H.",
+    "Normalized topology is external at the chosen module boundary; torch_sparse.spmm remains a library boundary.",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not put log_softmax or the predictor MLP inside this propagation module.",
+    "Do not resample edge dropout each iteration or use alpha*H_t as restart."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

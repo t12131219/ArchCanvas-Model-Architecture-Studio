@@ -1,0 +1,28 @@
+{
+  "output_size": 8,
+  "input_size": 16,
+  "which_linear": "nn.Linear explicitly selected",
+  "cross_replica": false,
+  "mybn": false,
+  "norm_style": "bn",
+  "training": true,
+  "source_momentum_literal": 0.1,
+  "shape_origin": "declared example; statically inferred, not observed",
+  "drawing_scope": "ccbn with norm_style=bn, mybn=False, cross_replica=False, which_linear=nn.Linear selected.",
+  "source_contracts": [
+    [
+      "ccbn.forward",
+      "(1 + self.gain(y)).view(y.size(0), -1, 1, 1)"
+    ],
+    [
+      "ccbn.forward",
+      "F.batch_norm(x, self.stored_mean, self.stored_var, None, None, self.training, 0.1, self.eps)"
+    ],
+    [
+      "ccbn.forward",
+      "out * gain + bias"
+    ]
+  ],
+  "model_executed": false,
+  "artifact_scope": "module"
+}

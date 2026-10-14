@@ -1,0 +1,650 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "gru",
+  "profile": {
+    "task": "IMDb binary sentiment classification",
+    "mode": "eval",
+    "selected_caller": "compute_binary_accuracy: per-batch prediction segment",
+    "embedding_dim": 128,
+    "hidden_dim": 256,
+    "output_dim": 1,
+    "vocabulary_size": "V=len(TEXT.vocab)",
+    "vocabulary_max_size_setting": 20000,
+    "num_layers": 1,
+    "bidirectional": false,
+    "batch_first": false,
+    "bias": true,
+    "recurrent_dropout": 0,
+    "external_dropout_calls": 0,
+    "batch_size_setting": 128,
+    "enforce_sorted": "default True",
+    "return_value": "[B] logits",
+    "caller_output": "[B] labels after sigmoid > 0.5",
+    "training_loss": "binary_cross_entropy_with_logits outside forward",
+    "recurrent_internals": "opaque PyTorch nn.GRU library boundary"
+  },
+  "source": {
+    "repository": "https://github.com/rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "a1cb8ca6e3b3489daf1e2276769302cabd9a1ed9055ae534ae06aec90929c946"
+  },
+  "nodes": [
+    {
+      "id": "gru.root",
+      "label": "Packed GRU: IMDb sentiment",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.forward",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::compute_binary_accuracy"
+      ],
+      "shape": "per-batch labels: [B]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.input",
+      "label": "Padded token IDs",
+      "kind": "input",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.forward",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::compute_binary_accuracy"
+      ],
+      "shape": "text: [T,B]",
+      "detail": [],
+      "parent": "gru.root",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.forward",
+      "label": "RNN.forward: packed GRU classifier",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "logits: [B]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "gru.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.embedding",
+      "label": "Token embedding",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "[T,B,128]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "gru.forward",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.lookup",
+      "label": "Embedding V -> 128",
+      "kind": "embedding",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "[T,B,128]",
+      "detail": [
+        "V=len(TEXT.vocab); no pretrained initialization or padding_idx is passed"
+      ],
+      "parameter": "embedding.weight",
+      "padding_idx": null,
+      "runtime_dependency": "torch.nn.Embedding",
+      "parent": "gru.embedding",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.packing",
+      "label": "Pack valid time steps",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "PackedSequence",
+      "detail": [],
+      "mode": "chain",
+      "parent": "gru.forward",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.pack",
+      "label": "pack_padded_sequence",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "PackedSequence",
+      "detail": [
+        "embedded values + external valid lengths; sorted within batch",
+        "batch_first and enforce_sorted are omitted, so API defaults apply"
+      ],
+      "runtime_dependency": "torch.nn.utils.rnn.pack_padded_sequence",
+      "batch_first": false,
+      "enforce_sorted": "default True",
+      "parent": "gru.packing",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "lengths"
+      ]
+    },
+    {
+      "id": "gru.recurrent",
+      "label": "Single-layer GRU",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "[B,256]",
+      "detail": [],
+      "parameter_scope": "rnn",
+      "mode": "chain",
+      "parent": "gru.forward",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.core",
+      "label": "nn.GRU 128 -> 256",
+      "kind": "recurrent",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "(packed_output,h_n)",
+      "detail": [
+        "one layer / one direction; no initial state supplied",
+        "gate kernels are not defined in this notebook"
+      ],
+      "parameter_scope": "rnn",
+      "parameters": [
+        "rnn.weight_ih_l0",
+        "rnn.weight_hh_l0",
+        "rnn.bias_ih_l0",
+        "rnn.bias_hh_l0"
+      ],
+      "runtime_dependency": "torch.nn.GRU",
+      "opaque_runtime_boundary": true,
+      "num_layers": 1,
+      "bidirectional": false,
+      "bias": true,
+      "dropout": 0,
+      "initial_state": "PyTorch default zeros",
+      "output_tuple": [
+        "packed_output",
+        "hidden"
+      ],
+      "temporal_parameter_sharing": true,
+      "parent": "gru.recurrent",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.select_hidden",
+      "label": "Select hidden h_n",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "[1,B,256]",
+      "detail": [
+        "packed_output is unused; GRU returns no cell state"
+      ],
+      "input_selector": "hidden",
+      "parent": "gru.recurrent",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.squeeze",
+      "label": "Squeeze layer axis 0",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "[B,256]",
+      "detail": [
+        "hidden.squeeze(0); no mean pooling or unpacking"
+      ],
+      "expression": "hidden.squeeze(0)",
+      "parent": "gru.recurrent",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.classifier",
+      "label": "Binary logit head",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "logits: [B]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "gru.forward",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.fc",
+      "label": "Linear 256 -> 1",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "parameter": "fc",
+      "parent": "gru.classifier",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.flatten",
+      "label": "view(-1)",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "logits: [B]",
+      "detail": [
+        "complete RNN.forward return; no internal Sigmoid"
+      ],
+      "expression": "view(-1)",
+      "parent": "gru.classifier",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.caller",
+      "label": "Caller: per-batch binary decisions",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::compute_binary_accuracy"
+      ],
+      "shape": "binary labels: [B]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "gru.root",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.sigmoid",
+      "label": "Sigmoid",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::compute_binary_accuracy"
+      ],
+      "shape": "p(positive): [B]",
+      "detail": [],
+      "boundary": "caller",
+      "expression": "torch.sigmoid(logits)",
+      "parent": "gru.caller",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.threshold",
+      "label": "Threshold p > 0.5",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::compute_binary_accuracy"
+      ],
+      "shape": "labels: [B]",
+      "detail": [
+        "accuracy accumulation and final percentage are outside the diagram"
+      ],
+      "boundary": "caller",
+      "expression": "(torch.sigmoid(logits) > 0.5).long()",
+      "parent": "gru.caller",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.lengths",
+      "label": "External sequence lengths",
+      "kind": "input",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::RNN.forward",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_gru_packed_imdb.py::compute_binary_accuracy"
+      ],
+      "shape": "text_length: [B]",
+      "detail": [
+        "Field(include_lengths=True); used by packing, not a learned feature"
+      ],
+      "origin": "caller_batch_data.text[1]",
+      "learnable": false,
+      "parent": null,
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "gru.embedding:in->gru.lookup:in:boundary",
+      "src": "gru.embedding",
+      "dst": "gru.lookup",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.lookup:out->gru.embedding:out:boundary",
+      "src": "gru.lookup",
+      "dst": "gru.embedding",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.packing:in->gru.pack:in:boundary",
+      "src": "gru.packing",
+      "dst": "gru.pack",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.pack:out->gru.packing:out:boundary",
+      "src": "gru.pack",
+      "dst": "gru.packing",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.recurrent:in->gru.core:in:boundary",
+      "src": "gru.recurrent",
+      "dst": "gru.core",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.core:out->gru.select_hidden:in:tensor",
+      "src": "gru.core",
+      "dst": "gru.select_hidden",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.select_hidden:out->gru.squeeze:in:tensor",
+      "src": "gru.select_hidden",
+      "dst": "gru.squeeze",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.squeeze:out->gru.recurrent:out:boundary",
+      "src": "gru.squeeze",
+      "dst": "gru.recurrent",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.classifier:in->gru.fc:in:boundary",
+      "src": "gru.classifier",
+      "dst": "gru.fc",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.fc:out->gru.flatten:in:tensor",
+      "src": "gru.fc",
+      "dst": "gru.flatten",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.flatten:out->gru.classifier:out:boundary",
+      "src": "gru.flatten",
+      "dst": "gru.classifier",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.forward:in->gru.embedding:in:boundary",
+      "src": "gru.forward",
+      "dst": "gru.embedding",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.embedding:out->gru.packing:in:tensor",
+      "src": "gru.embedding",
+      "dst": "gru.packing",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.packing:out->gru.recurrent:in:tensor",
+      "src": "gru.packing",
+      "dst": "gru.recurrent",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.recurrent:out->gru.classifier:in:tensor",
+      "src": "gru.recurrent",
+      "dst": "gru.classifier",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.classifier:out->gru.forward:out:boundary",
+      "src": "gru.classifier",
+      "dst": "gru.forward",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.caller:in->gru.sigmoid:in:boundary",
+      "src": "gru.caller",
+      "dst": "gru.sigmoid",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.sigmoid:out->gru.threshold:in:tensor",
+      "src": "gru.sigmoid",
+      "dst": "gru.threshold",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.threshold:out->gru.caller:out:boundary",
+      "src": "gru.threshold",
+      "dst": "gru.caller",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.root:in->gru.input:in:boundary",
+      "src": "gru.root",
+      "dst": "gru.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.input:out->gru.forward:in:tensor",
+      "src": "gru.input",
+      "dst": "gru.forward",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.forward:out->gru.caller:in:tensor",
+      "src": "gru.forward",
+      "dst": "gru.caller",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.caller:out->gru.root:out:boundary",
+      "src": "gru.caller",
+      "dst": "gru.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.lengths:out->gru.pack:lengths:sequence_length",
+      "src": "gru.lengths",
+      "dst": "gru.pack",
+      "src_port": "out",
+      "dst_port": "lengths",
+      "role": "sequence_length"
+    }
+  ],
+  "facts": [
+    "The selected constructor is Embedding(V,128), GRU(128,256), Linear(256,1); V is len(TEXT.vocab).",
+    "The API defaults used by the source are one layer, unidirectional, sequence-first, bias=True and dropout=0.",
+    "Field(include_lengths=True) and BucketIterator(sort_within_batch=True) supply valid lengths and sorted batches.",
+    "pack_padded_sequence omits batch_first and enforce_sorted arguments; do not silently change their defaults.",
+    "GRU returns (packed_output,hidden), without an LSTM cell; only hidden.squeeze(0) enters the classifier.",
+    "RNN.forward returns fc(...).view(-1), a [B] logit vector; the caller applies sigmoid and threshold.",
+    "The diagram ends at per-batch predictions inside compute_binary_accuracy, not the function's accumulated accuracy percentage.",
+    "Training uses binary_cross_entropy_with_logits outside forward; predict_sentiment is a separate single-sentence caller.",
+    "The same recurrent instance reuses weights across time; gate implementation is external PyTorch code, not notebook AST.",
+    "Old torchtext/spaCy and length-device compatibility are not tested: source and model are never executed."
+  ],
+  "corrections": [
+    "Do not substitute an LSTM tuple or add a cell state, bidirectional branch, stacked layer, or dropout.",
+    "Do not replace packing/final hidden with dense padding, last padded output, mean pooling, or pad_packed_sequence.",
+    "Do not put Sigmoid inside RNN.forward or claim vocabulary_max_size is the realized embedding row count.",
+    "Reset/update gates are not source-extracted operators; the real nn.GRU runtime boundary remains explicit."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

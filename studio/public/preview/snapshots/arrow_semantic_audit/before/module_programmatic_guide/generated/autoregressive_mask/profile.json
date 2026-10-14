@@ -1,0 +1,46 @@
+{
+  "in_features": 8,
+  "out_features": 8,
+  "in_flow_features": 4,
+  "mask_type": "output",
+  "parameters": [],
+  "dtype": "float32",
+  "input_degrees": [
+    0,
+    1,
+    2,
+    0,
+    1,
+    2,
+    0,
+    1
+  ],
+  "output_degrees": [
+    -1,
+    0,
+    1,
+    2,
+    -1,
+    0,
+    1,
+    2
+  ],
+  "shape_origin": "declared example; statically inferred, not observed",
+  "drawing_scope": "get_mask(mask_type=output) construction function only; no MaskedLinear forward or MADE model.",
+  "source_contracts": [
+    [
+      "get_mask",
+      "torch.arange(in_features) % (in_flow_features - 1)"
+    ],
+    [
+      "get_mask",
+      "torch.arange(out_features) % in_flow_features - 1"
+    ],
+    [
+      "get_mask",
+      "(out_degrees.unsqueeze(-1) >= in_degrees.unsqueeze(0)).float()"
+    ]
+  ],
+  "model_executed": false,
+  "artifact_scope": "module"
+}

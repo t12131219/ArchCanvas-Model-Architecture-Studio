@@ -1,0 +1,1010 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "pyramid_pooling",
+  "profile": {
+    "scope": "PSPModule only",
+    "constructor": "PSPModule(features=64,out_features=128,sizes=(1,2,3,6))",
+    "sizes": [
+      1,
+      2,
+      3,
+      6
+    ],
+    "features": 64,
+    "out_features": 128,
+    "license_status": "upstream tree contains no LICENSE; recorded rather than fabricated",
+    "input_shape": "[B,64,24,24]",
+    "output_shape": "[B,128,24,24]",
+    "shape_origin": "explicit static module profile; not observed",
+    "mode": "caller train/eval; not executed",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "Lextal/pspnet-pytorch",
+    "commit": "4eb6ab61287e837f5e2d8c1ae09fadeaa0e31e37",
+    "snapshot": "ec03decbad220846c78d3b5fdba46c4a42932c5c1bf6011acff18db0ac46caa5"
+  },
+  "nodes": [
+    {
+      "id": "pyramid_pooling.root",
+      "label": "Pyramid pooling / PSPModule / module",
+      "kind": "group",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward"
+      ],
+      "shape": "[B,128,24,24]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.input",
+      "label": "Module input",
+      "kind": "input",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward"
+      ],
+      "shape": "[B,64,24,24]",
+      "detail": [],
+      "learnable": false,
+      "parent": "pyramid_pooling.root",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.module",
+      "label": "PSPModule",
+      "kind": "group",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward"
+      ],
+      "shape": "[B,128,24,24]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "pyramid_pooling.root",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.branches",
+      "label": "Four pyramid bins + original feats",
+      "kind": "group",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward"
+      ],
+      "shape": "5 x 64 channels",
+      "detail": [],
+      "collection_type": "list",
+      "literal_tuple": false,
+      "dispatch": false,
+      "branch_order": [
+        1,
+        2,
+        3,
+        6,
+        "feats"
+      ],
+      "mode": "parallel",
+      "parent": "pyramid_pooling.module",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "item[2]",
+        "item[3]",
+        "item[4]"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.bin1",
+      "label": "Pool bins 1x1",
+      "kind": "group",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward",
+        "pspnet-vision-extended/pspnet.py::PSPModule._make_stage"
+      ],
+      "shape": "[B,64,24,24]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "pyramid_pooling.branches",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.pool0",
+      "label": "AdaptiveAvgPool 1x1",
+      "kind": "pool",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward",
+        "pspnet-vision-extended/pspnet.py::PSPModule._make_stage"
+      ],
+      "shape": "[B,64,1,1]",
+      "detail": [],
+      "output_size": [
+        1,
+        1
+      ],
+      "pool_type": "adaptive_average",
+      "parent": "pyramid_pooling.bin1",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.conv0",
+      "label": "Conv 1 / 64→64",
+      "kind": "conv",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward",
+        "pspnet-vision-extended/pspnet.py::PSPModule._make_stage"
+      ],
+      "shape": "[B,64,1,1]",
+      "detail": [],
+      "parameter": "stages.0.1",
+      "instance_identity": "pyramid_pooling.stages.0.1",
+      "learnable": true,
+      "in_channels": 64,
+      "out_channels": 64,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "pyramid_pooling.bin1",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.resize0",
+      "label": "Bilinear upsample to H,W",
+      "kind": "interpolate",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward"
+      ],
+      "shape": "[B,64,24,24]",
+      "detail": [],
+      "source_operation": "F.upsample",
+      "mode_argument": "bilinear",
+      "align_corners_argument": "omitted",
+      "size_from": "input.shape[-2:]",
+      "parent": "pyramid_pooling.bin1",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "size"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.bin2",
+      "label": "Pool bins 2x2",
+      "kind": "group",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward",
+        "pspnet-vision-extended/pspnet.py::PSPModule._make_stage"
+      ],
+      "shape": "[B,64,24,24]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "pyramid_pooling.branches",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.pool1",
+      "label": "AdaptiveAvgPool 2x2",
+      "kind": "pool",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward",
+        "pspnet-vision-extended/pspnet.py::PSPModule._make_stage"
+      ],
+      "shape": "[B,64,2,2]",
+      "detail": [],
+      "output_size": [
+        2,
+        2
+      ],
+      "pool_type": "adaptive_average",
+      "parent": "pyramid_pooling.bin2",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.conv1",
+      "label": "Conv 1 / 64→64",
+      "kind": "conv",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward",
+        "pspnet-vision-extended/pspnet.py::PSPModule._make_stage"
+      ],
+      "shape": "[B,64,2,2]",
+      "detail": [],
+      "parameter": "stages.1.1",
+      "instance_identity": "pyramid_pooling.stages.1.1",
+      "learnable": true,
+      "in_channels": 64,
+      "out_channels": 64,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "pyramid_pooling.bin2",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.resize1",
+      "label": "Bilinear upsample to H,W",
+      "kind": "interpolate",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward"
+      ],
+      "shape": "[B,64,24,24]",
+      "detail": [],
+      "source_operation": "F.upsample",
+      "mode_argument": "bilinear",
+      "align_corners_argument": "omitted",
+      "size_from": "input.shape[-2:]",
+      "parent": "pyramid_pooling.bin2",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "size"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.bin3",
+      "label": "Pool bins 3x3",
+      "kind": "group",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward",
+        "pspnet-vision-extended/pspnet.py::PSPModule._make_stage"
+      ],
+      "shape": "[B,64,24,24]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "pyramid_pooling.branches",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.pool2",
+      "label": "AdaptiveAvgPool 3x3",
+      "kind": "pool",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward",
+        "pspnet-vision-extended/pspnet.py::PSPModule._make_stage"
+      ],
+      "shape": "[B,64,3,3]",
+      "detail": [],
+      "output_size": [
+        3,
+        3
+      ],
+      "pool_type": "adaptive_average",
+      "parent": "pyramid_pooling.bin3",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.conv2",
+      "label": "Conv 1 / 64→64",
+      "kind": "conv",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward",
+        "pspnet-vision-extended/pspnet.py::PSPModule._make_stage"
+      ],
+      "shape": "[B,64,3,3]",
+      "detail": [],
+      "parameter": "stages.2.1",
+      "instance_identity": "pyramid_pooling.stages.2.1",
+      "learnable": true,
+      "in_channels": 64,
+      "out_channels": 64,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "pyramid_pooling.bin3",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.resize2",
+      "label": "Bilinear upsample to H,W",
+      "kind": "interpolate",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward"
+      ],
+      "shape": "[B,64,24,24]",
+      "detail": [],
+      "source_operation": "F.upsample",
+      "mode_argument": "bilinear",
+      "align_corners_argument": "omitted",
+      "size_from": "input.shape[-2:]",
+      "parent": "pyramid_pooling.bin3",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "size"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.bin6",
+      "label": "Pool bins 6x6",
+      "kind": "group",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward",
+        "pspnet-vision-extended/pspnet.py::PSPModule._make_stage"
+      ],
+      "shape": "[B,64,24,24]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "pyramid_pooling.branches",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.pool3",
+      "label": "AdaptiveAvgPool 6x6",
+      "kind": "pool",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward",
+        "pspnet-vision-extended/pspnet.py::PSPModule._make_stage"
+      ],
+      "shape": "[B,64,6,6]",
+      "detail": [],
+      "output_size": [
+        6,
+        6
+      ],
+      "pool_type": "adaptive_average",
+      "parent": "pyramid_pooling.bin6",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.conv3",
+      "label": "Conv 1 / 64→64",
+      "kind": "conv",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward",
+        "pspnet-vision-extended/pspnet.py::PSPModule._make_stage"
+      ],
+      "shape": "[B,64,6,6]",
+      "detail": [],
+      "parameter": "stages.3.1",
+      "instance_identity": "pyramid_pooling.stages.3.1",
+      "learnable": true,
+      "in_channels": 64,
+      "out_channels": 64,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "pyramid_pooling.bin6",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.resize3",
+      "label": "Bilinear upsample to H,W",
+      "kind": "interpolate",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward"
+      ],
+      "shape": "[B,64,24,24]",
+      "detail": [],
+      "source_operation": "F.upsample",
+      "mode_argument": "bilinear",
+      "align_corners_argument": "omitted",
+      "size_from": "input.shape[-2:]",
+      "parent": "pyramid_pooling.bin6",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "size"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.retained",
+      "label": "Retain original feats",
+      "kind": "identity",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward"
+      ],
+      "shape": "[B,64,24,24]",
+      "detail": [],
+      "learnable": false,
+      "parent": "pyramid_pooling.branches",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.concat",
+      "label": "Concat priors then original",
+      "kind": "concat",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward"
+      ],
+      "shape": "[B,320,24,24]",
+      "detail": [],
+      "dim": 1,
+      "parent": "pyramid_pooling.module",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.bottleneck",
+      "label": "Conv 1 / 320→128",
+      "kind": "conv",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward"
+      ],
+      "shape": "[B,128,24,24]",
+      "detail": [],
+      "parameter": "bottleneck",
+      "instance_identity": "pyramid_pooling.bottleneck",
+      "learnable": true,
+      "in_channels": 320,
+      "out_channels": 128,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": true,
+      "source_operation": "nn.Conv2d",
+      "parent": "pyramid_pooling.module",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward"
+      ],
+      "shape": "[B,128,24,24]",
+      "detail": [],
+      "inplace": false,
+      "learnable": false,
+      "parent": "pyramid_pooling.module",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pyramid_pooling.output",
+      "label": "Module output",
+      "kind": "output",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPModule.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPModule.forward"
+      ],
+      "shape": "[B,128,24,24]",
+      "detail": [],
+      "learnable": false,
+      "parent": "pyramid_pooling.root",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "pyramid_pooling.bin1:in->pyramid_pooling.pool0:in:boundary",
+      "src": "pyramid_pooling.bin1",
+      "dst": "pyramid_pooling.pool0",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "pyramid_pooling.pool0:out->pyramid_pooling.conv0:in:tensor",
+      "src": "pyramid_pooling.pool0",
+      "dst": "pyramid_pooling.conv0",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "pyramid_pooling.conv0:out->pyramid_pooling.resize0:in:tensor",
+      "src": "pyramid_pooling.conv0",
+      "dst": "pyramid_pooling.resize0",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "pyramid_pooling.resize0:out->pyramid_pooling.bin1:out:boundary",
+      "src": "pyramid_pooling.resize0",
+      "dst": "pyramid_pooling.bin1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "pyramid_pooling.bin2:in->pyramid_pooling.pool1:in:boundary",
+      "src": "pyramid_pooling.bin2",
+      "dst": "pyramid_pooling.pool1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "pyramid_pooling.pool1:out->pyramid_pooling.conv1:in:tensor",
+      "src": "pyramid_pooling.pool1",
+      "dst": "pyramid_pooling.conv1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "pyramid_pooling.conv1:out->pyramid_pooling.resize1:in:tensor",
+      "src": "pyramid_pooling.conv1",
+      "dst": "pyramid_pooling.resize1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "pyramid_pooling.resize1:out->pyramid_pooling.bin2:out:boundary",
+      "src": "pyramid_pooling.resize1",
+      "dst": "pyramid_pooling.bin2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "pyramid_pooling.bin3:in->pyramid_pooling.pool2:in:boundary",
+      "src": "pyramid_pooling.bin3",
+      "dst": "pyramid_pooling.pool2",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "pyramid_pooling.pool2:out->pyramid_pooling.conv2:in:tensor",
+      "src": "pyramid_pooling.pool2",
+      "dst": "pyramid_pooling.conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "pyramid_pooling.conv2:out->pyramid_pooling.resize2:in:tensor",
+      "src": "pyramid_pooling.conv2",
+      "dst": "pyramid_pooling.resize2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "pyramid_pooling.resize2:out->pyramid_pooling.bin3:out:boundary",
+      "src": "pyramid_pooling.resize2",
+      "dst": "pyramid_pooling.bin3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "pyramid_pooling.bin6:in->pyramid_pooling.pool3:in:boundary",
+      "src": "pyramid_pooling.bin6",
+      "dst": "pyramid_pooling.pool3",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "pyramid_pooling.pool3:out->pyramid_pooling.conv3:in:tensor",
+      "src": "pyramid_pooling.pool3",
+      "dst": "pyramid_pooling.conv3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "pyramid_pooling.conv3:out->pyramid_pooling.resize3:in:tensor",
+      "src": "pyramid_pooling.conv3",
+      "dst": "pyramid_pooling.resize3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "pyramid_pooling.resize3:out->pyramid_pooling.bin6:out:boundary",
+      "src": "pyramid_pooling.resize3",
+      "dst": "pyramid_pooling.bin6",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "pyramid_pooling.branches:in->pyramid_pooling.bin1:in:fork",
+      "src": "pyramid_pooling.branches",
+      "dst": "pyramid_pooling.bin1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "pyramid_pooling.bin1:out->pyramid_pooling.branches:item[0]:tuple_collection",
+      "src": "pyramid_pooling.bin1",
+      "dst": "pyramid_pooling.branches",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "pyramid_pooling.branches:in->pyramid_pooling.bin2:in:fork",
+      "src": "pyramid_pooling.branches",
+      "dst": "pyramid_pooling.bin2",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "pyramid_pooling.bin2:out->pyramid_pooling.branches:item[1]:tuple_collection",
+      "src": "pyramid_pooling.bin2",
+      "dst": "pyramid_pooling.branches",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "pyramid_pooling.branches:in->pyramid_pooling.bin3:in:fork",
+      "src": "pyramid_pooling.branches",
+      "dst": "pyramid_pooling.bin3",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "pyramid_pooling.bin3:out->pyramid_pooling.branches:item[2]:tuple_collection",
+      "src": "pyramid_pooling.bin3",
+      "dst": "pyramid_pooling.branches",
+      "src_port": "out",
+      "dst_port": "item[2]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "pyramid_pooling.branches:in->pyramid_pooling.bin6:in:fork",
+      "src": "pyramid_pooling.branches",
+      "dst": "pyramid_pooling.bin6",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "pyramid_pooling.bin6:out->pyramid_pooling.branches:item[3]:tuple_collection",
+      "src": "pyramid_pooling.bin6",
+      "dst": "pyramid_pooling.branches",
+      "src_port": "out",
+      "dst_port": "item[3]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "pyramid_pooling.branches:in->pyramid_pooling.retained:in:fork",
+      "src": "pyramid_pooling.branches",
+      "dst": "pyramid_pooling.retained",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "pyramid_pooling.retained:out->pyramid_pooling.branches:item[4]:tuple_collection",
+      "src": "pyramid_pooling.retained",
+      "dst": "pyramid_pooling.branches",
+      "src_port": "out",
+      "dst_port": "item[4]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "pyramid_pooling.module:in->pyramid_pooling.branches:in:boundary",
+      "src": "pyramid_pooling.module",
+      "dst": "pyramid_pooling.branches",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "pyramid_pooling.branches:out->pyramid_pooling.concat:in:tensor",
+      "src": "pyramid_pooling.branches",
+      "dst": "pyramid_pooling.concat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "pyramid_pooling.concat:out->pyramid_pooling.bottleneck:in:tensor",
+      "src": "pyramid_pooling.concat",
+      "dst": "pyramid_pooling.bottleneck",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "pyramid_pooling.bottleneck:out->pyramid_pooling.relu:in:tensor",
+      "src": "pyramid_pooling.bottleneck",
+      "dst": "pyramid_pooling.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "pyramid_pooling.relu:out->pyramid_pooling.module:out:boundary",
+      "src": "pyramid_pooling.relu",
+      "dst": "pyramid_pooling.module",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "pyramid_pooling.root:in->pyramid_pooling.input:in:boundary",
+      "src": "pyramid_pooling.root",
+      "dst": "pyramid_pooling.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "pyramid_pooling.input:out->pyramid_pooling.module:in:tensor",
+      "src": "pyramid_pooling.input",
+      "dst": "pyramid_pooling.module",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "pyramid_pooling.module:out->pyramid_pooling.output:in:tensor",
+      "src": "pyramid_pooling.module",
+      "dst": "pyramid_pooling.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "pyramid_pooling.output:out->pyramid_pooling.root:out:boundary",
+      "src": "pyramid_pooling.output",
+      "dst": "pyramid_pooling.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "pyramid_pooling.input:shape->pyramid_pooling.resize0:size:shape_dependency",
+      "src": "pyramid_pooling.input",
+      "dst": "pyramid_pooling.resize0",
+      "src_port": "shape",
+      "dst_port": "size",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "pyramid_pooling.input:shape->pyramid_pooling.resize1:size:shape_dependency",
+      "src": "pyramid_pooling.input",
+      "dst": "pyramid_pooling.resize1",
+      "src_port": "shape",
+      "dst_port": "size",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "pyramid_pooling.input:shape->pyramid_pooling.resize2:size:shape_dependency",
+      "src": "pyramid_pooling.input",
+      "dst": "pyramid_pooling.resize2",
+      "src_port": "shape",
+      "dst_port": "size",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "pyramid_pooling.input:shape->pyramid_pooling.resize3:size:shape_dependency",
+      "src": "pyramid_pooling.input",
+      "dst": "pyramid_pooling.resize3",
+      "src_port": "shape",
+      "dst_port": "size",
+      "role": "shape_dependency"
+    }
+  ],
+  "facts": [
+    "Four adaptive pools independently project64->64, resize to24x24, then concatenate before original feats.",
+    "Stage Conv biasFalse; bottleneck bias defaultsTrue; no BN inside this PSPModule.",
+    "F.upsample has omitted align_corners; no API default is invented.",
+    "Upstream repository contains no LICENSE file; its absence is explicitly retained in provenance."
+  ],
+  "corrections": [
+    "This literal implementation retainsC channels per bin rather than C/4.",
+    "Original feats is the last list entry, not the first.",
+    "Do not use ASPP dilation rates or add absent BN."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

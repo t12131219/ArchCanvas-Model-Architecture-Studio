@@ -1,0 +1,2209 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "inception_split",
+  "profile": {
+    "scope": "InceptionE only; no complete Inception network",
+    "constructor": "InceptionE(1280)",
+    "in_channels": 1280,
+    "channels_7x7": null,
+    "conv_block": null,
+    "output_channels": 2048,
+    "branch_order": [
+      "branch1x1",
+      "branch3x3",
+      "branch3x3dbl",
+      "branch_pool"
+    ],
+    "branch_channels": [
+      320,
+      768,
+      768,
+      192
+    ],
+    "input_shape": "[B,1280,8,8]",
+    "output_shape": "[B,2048,8,8]",
+    "shape_origin": "explicit static module profile; not observed",
+    "mode": "caller train/eval; not executed",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "pytorch/vision",
+    "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+    "snapshot": "66209ff0a5fcaf22d0c55fcc2b008aa29f50dec4f265cbd902de8482ed44f5bd"
+  },
+  "nodes": [
+    {
+      "id": "inception_split.root",
+      "label": "InceptionE / independent module / module",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward"
+      ],
+      "shape": "[B,2048,8,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E004",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.input",
+      "label": "Module input",
+      "kind": "input",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward"
+      ],
+      "shape": "[B,1280,8,8]",
+      "detail": [],
+      "learnable": false,
+      "parent": "inception_split.root",
+      "source_evidence": [
+        "E004",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.module",
+      "label": "InceptionE",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,2048,8,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "inception_split.root",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branches",
+      "label": "Source-ordered independent paths",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "ordered branch list",
+      "detail": [],
+      "collection_type": "list",
+      "literal_tuple": false,
+      "dispatch": false,
+      "branch_order": [
+        "branch1x1",
+        "branch3x3",
+        "branch3x3dbl",
+        "branch_pool"
+      ],
+      "mode": "parallel",
+      "parent": "inception_split.module",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "item[2]",
+        "item[3]"
+      ]
+    },
+    {
+      "id": "inception_split.path.branch1x1",
+      "label": "branch1x1",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,320,8,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "inception_split.branches",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch1x1",
+      "label": "branch1x1",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,320,8,8]",
+      "detail": [],
+      "source_class": "BasicConv2d",
+      "parameter_scope": "branch1x1",
+      "mode": "chain",
+      "parent": "inception_split.path.branch1x1",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch1x1.conv",
+      "label": "Conv 1 / 1280→320",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,320,8,8]",
+      "detail": [],
+      "parameter": "branch1x1.conv",
+      "instance_identity": "inception_split.branch1x1.conv",
+      "learnable": true,
+      "in_channels": 1280,
+      "out_channels": 320,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "inception_split.branch1x1",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch1x1.bn",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,320,8,8]",
+      "detail": [],
+      "parameter": "branch1x1.bn",
+      "instance_identity": "inception_split.branch1x1.bn",
+      "learnable": true,
+      "num_features": 320,
+      "eps": 0.001,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "inception_split.branch1x1",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch1x1.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,320,8,8]",
+      "detail": [],
+      "inplace": true,
+      "learnable": false,
+      "parent": "inception_split.branch1x1",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.path.branch3x3",
+      "label": "branch3x3",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,768,8,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "inception_split.branches",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3_1",
+      "label": "branch3x3_1",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "source_class": "BasicConv2d",
+      "parameter_scope": "branch3x3_1",
+      "mode": "chain",
+      "parent": "inception_split.path.branch3x3",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3_1.conv",
+      "label": "Conv 1 / 1280→384",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "parameter": "branch3x3_1.conv",
+      "instance_identity": "inception_split.branch3x3_1.conv",
+      "learnable": true,
+      "in_channels": 1280,
+      "out_channels": 384,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "inception_split.branch3x3_1",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3_1.bn",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "parameter": "branch3x3_1.bn",
+      "instance_identity": "inception_split.branch3x3_1.bn",
+      "learnable": true,
+      "num_features": 384,
+      "eps": 0.001,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "inception_split.branch3x3_1",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3_1.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "inplace": true,
+      "learnable": false,
+      "parent": "inception_split.branch3x3_1",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3.split",
+      "label": "Factorized split kernels",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "2 independent tensors",
+      "detail": [],
+      "collection_type": "list",
+      "literal_tuple": false,
+      "dispatch": false,
+      "mode": "parallel",
+      "parent": "inception_split.path.branch3x3",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3_2a",
+      "label": "branch3x3_2a",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "source_class": "BasicConv2d",
+      "parameter_scope": "branch3x3_2a",
+      "mode": "chain",
+      "parent": "inception_split.branch3x3.split",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3_2a.conv",
+      "label": "Conv (1, 3) / 384→384",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "parameter": "branch3x3_2a.conv",
+      "instance_identity": "inception_split.branch3x3_2a.conv",
+      "learnable": true,
+      "in_channels": 384,
+      "out_channels": 384,
+      "kernel_size": [
+        1,
+        3
+      ],
+      "stride": 1,
+      "padding": [
+        0,
+        1
+      ],
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "inception_split.branch3x3_2a",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3_2a.bn",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "parameter": "branch3x3_2a.bn",
+      "instance_identity": "inception_split.branch3x3_2a.bn",
+      "learnable": true,
+      "num_features": 384,
+      "eps": 0.001,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "inception_split.branch3x3_2a",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3_2a.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "inplace": true,
+      "learnable": false,
+      "parent": "inception_split.branch3x3_2a",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3_2b",
+      "label": "branch3x3_2b",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "source_class": "BasicConv2d",
+      "parameter_scope": "branch3x3_2b",
+      "mode": "chain",
+      "parent": "inception_split.branch3x3.split",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3_2b.conv",
+      "label": "Conv (3, 1) / 384→384",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "parameter": "branch3x3_2b.conv",
+      "instance_identity": "inception_split.branch3x3_2b.conv",
+      "learnable": true,
+      "in_channels": 384,
+      "out_channels": 384,
+      "kernel_size": [
+        3,
+        1
+      ],
+      "stride": 1,
+      "padding": [
+        1,
+        0
+      ],
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "inception_split.branch3x3_2b",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3_2b.bn",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "parameter": "branch3x3_2b.bn",
+      "instance_identity": "inception_split.branch3x3_2b.bn",
+      "learnable": true,
+      "num_features": 384,
+      "eps": 0.001,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "inception_split.branch3x3_2b",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3_2b.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "inplace": true,
+      "learnable": false,
+      "parent": "inception_split.branch3x3_2b",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3.concat",
+      "label": "Concat split outputs",
+      "kind": "concat",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward"
+      ],
+      "shape": "[B,768,8,8]",
+      "detail": [],
+      "dim": 1,
+      "parent": "inception_split.path.branch3x3",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.path.branch3x3dbl",
+      "label": "branch3x3dbl",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,768,8,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "inception_split.branches",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl_1",
+      "label": "branch3x3dbl_1",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,448,8,8]",
+      "detail": [],
+      "source_class": "BasicConv2d",
+      "parameter_scope": "branch3x3dbl_1",
+      "mode": "chain",
+      "parent": "inception_split.path.branch3x3dbl",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl_1.conv",
+      "label": "Conv 1 / 1280→448",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,448,8,8]",
+      "detail": [],
+      "parameter": "branch3x3dbl_1.conv",
+      "instance_identity": "inception_split.branch3x3dbl_1.conv",
+      "learnable": true,
+      "in_channels": 1280,
+      "out_channels": 448,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "inception_split.branch3x3dbl_1",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl_1.bn",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,448,8,8]",
+      "detail": [],
+      "parameter": "branch3x3dbl_1.bn",
+      "instance_identity": "inception_split.branch3x3dbl_1.bn",
+      "learnable": true,
+      "num_features": 448,
+      "eps": 0.001,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "inception_split.branch3x3dbl_1",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl_1.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,448,8,8]",
+      "detail": [],
+      "inplace": true,
+      "learnable": false,
+      "parent": "inception_split.branch3x3dbl_1",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl_2",
+      "label": "branch3x3dbl_2",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "source_class": "BasicConv2d",
+      "parameter_scope": "branch3x3dbl_2",
+      "mode": "chain",
+      "parent": "inception_split.path.branch3x3dbl",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl_2.conv",
+      "label": "Conv 3 / 448→384",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "parameter": "branch3x3dbl_2.conv",
+      "instance_identity": "inception_split.branch3x3dbl_2.conv",
+      "learnable": true,
+      "in_channels": 448,
+      "out_channels": 384,
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "inception_split.branch3x3dbl_2",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl_2.bn",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "parameter": "branch3x3dbl_2.bn",
+      "instance_identity": "inception_split.branch3x3dbl_2.bn",
+      "learnable": true,
+      "num_features": 384,
+      "eps": 0.001,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "inception_split.branch3x3dbl_2",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl_2.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "inplace": true,
+      "learnable": false,
+      "parent": "inception_split.branch3x3dbl_2",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl.split",
+      "label": "Factorized split kernels",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "2 independent tensors",
+      "detail": [],
+      "collection_type": "list",
+      "literal_tuple": false,
+      "dispatch": false,
+      "mode": "parallel",
+      "parent": "inception_split.path.branch3x3dbl",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3a",
+      "label": "branch3x3dbl_3a",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "source_class": "BasicConv2d",
+      "parameter_scope": "branch3x3dbl_3a",
+      "mode": "chain",
+      "parent": "inception_split.branch3x3dbl.split",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3a.conv",
+      "label": "Conv (1, 3) / 384→384",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "parameter": "branch3x3dbl_3a.conv",
+      "instance_identity": "inception_split.branch3x3dbl_3a.conv",
+      "learnable": true,
+      "in_channels": 384,
+      "out_channels": 384,
+      "kernel_size": [
+        1,
+        3
+      ],
+      "stride": 1,
+      "padding": [
+        0,
+        1
+      ],
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "inception_split.branch3x3dbl_3a",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3a.bn",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "parameter": "branch3x3dbl_3a.bn",
+      "instance_identity": "inception_split.branch3x3dbl_3a.bn",
+      "learnable": true,
+      "num_features": 384,
+      "eps": 0.001,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "inception_split.branch3x3dbl_3a",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3a.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "inplace": true,
+      "learnable": false,
+      "parent": "inception_split.branch3x3dbl_3a",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3b",
+      "label": "branch3x3dbl_3b",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "source_class": "BasicConv2d",
+      "parameter_scope": "branch3x3dbl_3b",
+      "mode": "chain",
+      "parent": "inception_split.branch3x3dbl.split",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3b.conv",
+      "label": "Conv (3, 1) / 384→384",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "parameter": "branch3x3dbl_3b.conv",
+      "instance_identity": "inception_split.branch3x3dbl_3b.conv",
+      "learnable": true,
+      "in_channels": 384,
+      "out_channels": 384,
+      "kernel_size": [
+        3,
+        1
+      ],
+      "stride": 1,
+      "padding": [
+        1,
+        0
+      ],
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "inception_split.branch3x3dbl_3b",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3b.bn",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "parameter": "branch3x3dbl_3b.bn",
+      "instance_identity": "inception_split.branch3x3dbl_3b.bn",
+      "learnable": true,
+      "num_features": 384,
+      "eps": 0.001,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "inception_split.branch3x3dbl_3b",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3b.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,384,8,8]",
+      "detail": [],
+      "inplace": true,
+      "learnable": false,
+      "parent": "inception_split.branch3x3dbl_3b",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch3x3dbl.concat",
+      "label": "Concat split outputs",
+      "kind": "concat",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward"
+      ],
+      "shape": "[B,768,8,8]",
+      "detail": [],
+      "dim": 1,
+      "parent": "inception_split.path.branch3x3dbl",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.path.branch_pool",
+      "label": "branch_pool",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,192,8,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "inception_split.branches",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch_pool.pool",
+      "label": "averagePool 3 / 1",
+      "kind": "pool",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward"
+      ],
+      "shape": "[B,1280,8,8]",
+      "detail": [],
+      "pool_type": "average",
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "parent": "inception_split.path.branch_pool",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch_pool",
+      "label": "branch_pool",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,192,8,8]",
+      "detail": [],
+      "source_class": "BasicConv2d",
+      "parameter_scope": "branch_pool",
+      "mode": "chain",
+      "parent": "inception_split.path.branch_pool",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch_pool.conv",
+      "label": "Conv 1 / 1280→192",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,192,8,8]",
+      "detail": [],
+      "parameter": "branch_pool.conv",
+      "instance_identity": "inception_split.branch_pool.conv",
+      "learnable": true,
+      "in_channels": 1280,
+      "out_channels": 192,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "inception_split.branch_pool",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch_pool.bn",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,192,8,8]",
+      "detail": [],
+      "parameter": "branch_pool.bn",
+      "instance_identity": "inception_split.branch_pool.bn",
+      "learnable": true,
+      "num_features": 192,
+      "eps": 0.001,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "inception_split.branch_pool",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.branch_pool.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE._forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward"
+      ],
+      "shape": "[B,192,8,8]",
+      "detail": [],
+      "inplace": true,
+      "learnable": false,
+      "parent": "inception_split.branch_pool",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E006",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.concat",
+      "label": "Concat channel dim=1",
+      "kind": "concat",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward"
+      ],
+      "shape": "[B,2048,8,8]",
+      "detail": [],
+      "dim": 1,
+      "ordered_inputs": [
+        "branch1x1",
+        "branch3x3",
+        "branch3x3dbl",
+        "branch_pool"
+      ],
+      "parent": "inception_split.module",
+      "source_evidence": [
+        "E004",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inception_split.output",
+      "label": "Module output",
+      "kind": "output",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE.forward"
+      ],
+      "shape": "[B,2048,8,8]",
+      "detail": [],
+      "learnable": false,
+      "parent": "inception_split.root",
+      "source_evidence": [
+        "E004",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "inception_split.branch1x1:in->inception_split.branch1x1.conv:in:boundary",
+      "src": "inception_split.branch1x1",
+      "dst": "inception_split.branch1x1.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch1x1.conv:out->inception_split.branch1x1.bn:in:tensor",
+      "src": "inception_split.branch1x1.conv",
+      "dst": "inception_split.branch1x1.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch1x1.bn:out->inception_split.branch1x1.relu:in:tensor",
+      "src": "inception_split.branch1x1.bn",
+      "dst": "inception_split.branch1x1.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch1x1.relu:out->inception_split.branch1x1:out:boundary",
+      "src": "inception_split.branch1x1.relu",
+      "dst": "inception_split.branch1x1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.path.branch1x1:in->inception_split.branch1x1:in:boundary",
+      "src": "inception_split.path.branch1x1",
+      "dst": "inception_split.branch1x1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch1x1:out->inception_split.path.branch1x1:out:boundary",
+      "src": "inception_split.branch1x1",
+      "dst": "inception_split.path.branch1x1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3_1:in->inception_split.branch3x3_1.conv:in:boundary",
+      "src": "inception_split.branch3x3_1",
+      "dst": "inception_split.branch3x3_1.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3_1.conv:out->inception_split.branch3x3_1.bn:in:tensor",
+      "src": "inception_split.branch3x3_1.conv",
+      "dst": "inception_split.branch3x3_1.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3_1.bn:out->inception_split.branch3x3_1.relu:in:tensor",
+      "src": "inception_split.branch3x3_1.bn",
+      "dst": "inception_split.branch3x3_1.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3_1.relu:out->inception_split.branch3x3_1:out:boundary",
+      "src": "inception_split.branch3x3_1.relu",
+      "dst": "inception_split.branch3x3_1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3_2a:in->inception_split.branch3x3_2a.conv:in:boundary",
+      "src": "inception_split.branch3x3_2a",
+      "dst": "inception_split.branch3x3_2a.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3_2a.conv:out->inception_split.branch3x3_2a.bn:in:tensor",
+      "src": "inception_split.branch3x3_2a.conv",
+      "dst": "inception_split.branch3x3_2a.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3_2a.bn:out->inception_split.branch3x3_2a.relu:in:tensor",
+      "src": "inception_split.branch3x3_2a.bn",
+      "dst": "inception_split.branch3x3_2a.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3_2a.relu:out->inception_split.branch3x3_2a:out:boundary",
+      "src": "inception_split.branch3x3_2a.relu",
+      "dst": "inception_split.branch3x3_2a",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3_2b:in->inception_split.branch3x3_2b.conv:in:boundary",
+      "src": "inception_split.branch3x3_2b",
+      "dst": "inception_split.branch3x3_2b.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3_2b.conv:out->inception_split.branch3x3_2b.bn:in:tensor",
+      "src": "inception_split.branch3x3_2b.conv",
+      "dst": "inception_split.branch3x3_2b.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3_2b.bn:out->inception_split.branch3x3_2b.relu:in:tensor",
+      "src": "inception_split.branch3x3_2b.bn",
+      "dst": "inception_split.branch3x3_2b.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3_2b.relu:out->inception_split.branch3x3_2b:out:boundary",
+      "src": "inception_split.branch3x3_2b.relu",
+      "dst": "inception_split.branch3x3_2b",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3.split:in->inception_split.branch3x3_2a:in:fork",
+      "src": "inception_split.branch3x3.split",
+      "dst": "inception_split.branch3x3_2a",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "inception_split.branch3x3_2a:out->inception_split.branch3x3.split:item[0]:tuple_collection",
+      "src": "inception_split.branch3x3_2a",
+      "dst": "inception_split.branch3x3.split",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "inception_split.branch3x3.split:in->inception_split.branch3x3_2b:in:fork",
+      "src": "inception_split.branch3x3.split",
+      "dst": "inception_split.branch3x3_2b",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "inception_split.branch3x3_2b:out->inception_split.branch3x3.split:item[1]:tuple_collection",
+      "src": "inception_split.branch3x3_2b",
+      "dst": "inception_split.branch3x3.split",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "inception_split.path.branch3x3:in->inception_split.branch3x3_1:in:boundary",
+      "src": "inception_split.path.branch3x3",
+      "dst": "inception_split.branch3x3_1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3_1:out->inception_split.branch3x3.split:in:tensor",
+      "src": "inception_split.branch3x3_1",
+      "dst": "inception_split.branch3x3.split",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3.split:out->inception_split.branch3x3.concat:in:tensor",
+      "src": "inception_split.branch3x3.split",
+      "dst": "inception_split.branch3x3.concat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3.concat:out->inception_split.path.branch3x3:out:boundary",
+      "src": "inception_split.branch3x3.concat",
+      "dst": "inception_split.path.branch3x3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_1:in->inception_split.branch3x3dbl_1.conv:in:boundary",
+      "src": "inception_split.branch3x3dbl_1",
+      "dst": "inception_split.branch3x3dbl_1.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_1.conv:out->inception_split.branch3x3dbl_1.bn:in:tensor",
+      "src": "inception_split.branch3x3dbl_1.conv",
+      "dst": "inception_split.branch3x3dbl_1.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_1.bn:out->inception_split.branch3x3dbl_1.relu:in:tensor",
+      "src": "inception_split.branch3x3dbl_1.bn",
+      "dst": "inception_split.branch3x3dbl_1.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_1.relu:out->inception_split.branch3x3dbl_1:out:boundary",
+      "src": "inception_split.branch3x3dbl_1.relu",
+      "dst": "inception_split.branch3x3dbl_1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_2:in->inception_split.branch3x3dbl_2.conv:in:boundary",
+      "src": "inception_split.branch3x3dbl_2",
+      "dst": "inception_split.branch3x3dbl_2.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_2.conv:out->inception_split.branch3x3dbl_2.bn:in:tensor",
+      "src": "inception_split.branch3x3dbl_2.conv",
+      "dst": "inception_split.branch3x3dbl_2.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_2.bn:out->inception_split.branch3x3dbl_2.relu:in:tensor",
+      "src": "inception_split.branch3x3dbl_2.bn",
+      "dst": "inception_split.branch3x3dbl_2.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_2.relu:out->inception_split.branch3x3dbl_2:out:boundary",
+      "src": "inception_split.branch3x3dbl_2.relu",
+      "dst": "inception_split.branch3x3dbl_2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3a:in->inception_split.branch3x3dbl_3a.conv:in:boundary",
+      "src": "inception_split.branch3x3dbl_3a",
+      "dst": "inception_split.branch3x3dbl_3a.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3a.conv:out->inception_split.branch3x3dbl_3a.bn:in:tensor",
+      "src": "inception_split.branch3x3dbl_3a.conv",
+      "dst": "inception_split.branch3x3dbl_3a.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3a.bn:out->inception_split.branch3x3dbl_3a.relu:in:tensor",
+      "src": "inception_split.branch3x3dbl_3a.bn",
+      "dst": "inception_split.branch3x3dbl_3a.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3a.relu:out->inception_split.branch3x3dbl_3a:out:boundary",
+      "src": "inception_split.branch3x3dbl_3a.relu",
+      "dst": "inception_split.branch3x3dbl_3a",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3b:in->inception_split.branch3x3dbl_3b.conv:in:boundary",
+      "src": "inception_split.branch3x3dbl_3b",
+      "dst": "inception_split.branch3x3dbl_3b.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3b.conv:out->inception_split.branch3x3dbl_3b.bn:in:tensor",
+      "src": "inception_split.branch3x3dbl_3b.conv",
+      "dst": "inception_split.branch3x3dbl_3b.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3b.bn:out->inception_split.branch3x3dbl_3b.relu:in:tensor",
+      "src": "inception_split.branch3x3dbl_3b.bn",
+      "dst": "inception_split.branch3x3dbl_3b.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3b.relu:out->inception_split.branch3x3dbl_3b:out:boundary",
+      "src": "inception_split.branch3x3dbl_3b.relu",
+      "dst": "inception_split.branch3x3dbl_3b",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3dbl.split:in->inception_split.branch3x3dbl_3a:in:fork",
+      "src": "inception_split.branch3x3dbl.split",
+      "dst": "inception_split.branch3x3dbl_3a",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3a:out->inception_split.branch3x3dbl.split:item[0]:tuple_collection",
+      "src": "inception_split.branch3x3dbl_3a",
+      "dst": "inception_split.branch3x3dbl.split",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "inception_split.branch3x3dbl.split:in->inception_split.branch3x3dbl_3b:in:fork",
+      "src": "inception_split.branch3x3dbl.split",
+      "dst": "inception_split.branch3x3dbl_3b",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_3b:out->inception_split.branch3x3dbl.split:item[1]:tuple_collection",
+      "src": "inception_split.branch3x3dbl_3b",
+      "dst": "inception_split.branch3x3dbl.split",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "inception_split.path.branch3x3dbl:in->inception_split.branch3x3dbl_1:in:boundary",
+      "src": "inception_split.path.branch3x3dbl",
+      "dst": "inception_split.branch3x3dbl_1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_1:out->inception_split.branch3x3dbl_2:in:tensor",
+      "src": "inception_split.branch3x3dbl_1",
+      "dst": "inception_split.branch3x3dbl_2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3dbl_2:out->inception_split.branch3x3dbl.split:in:tensor",
+      "src": "inception_split.branch3x3dbl_2",
+      "dst": "inception_split.branch3x3dbl.split",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3dbl.split:out->inception_split.branch3x3dbl.concat:in:tensor",
+      "src": "inception_split.branch3x3dbl.split",
+      "dst": "inception_split.branch3x3dbl.concat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch3x3dbl.concat:out->inception_split.path.branch3x3dbl:out:boundary",
+      "src": "inception_split.branch3x3dbl.concat",
+      "dst": "inception_split.path.branch3x3dbl",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch_pool:in->inception_split.branch_pool.conv:in:boundary",
+      "src": "inception_split.branch_pool",
+      "dst": "inception_split.branch_pool.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch_pool.conv:out->inception_split.branch_pool.bn:in:tensor",
+      "src": "inception_split.branch_pool.conv",
+      "dst": "inception_split.branch_pool.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch_pool.bn:out->inception_split.branch_pool.relu:in:tensor",
+      "src": "inception_split.branch_pool.bn",
+      "dst": "inception_split.branch_pool.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch_pool.relu:out->inception_split.branch_pool:out:boundary",
+      "src": "inception_split.branch_pool.relu",
+      "dst": "inception_split.branch_pool",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.path.branch_pool:in->inception_split.branch_pool.pool:in:boundary",
+      "src": "inception_split.path.branch_pool",
+      "dst": "inception_split.branch_pool.pool",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branch_pool.pool:out->inception_split.branch_pool:in:tensor",
+      "src": "inception_split.branch_pool.pool",
+      "dst": "inception_split.branch_pool",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.branch_pool:out->inception_split.path.branch_pool:out:boundary",
+      "src": "inception_split.branch_pool",
+      "dst": "inception_split.path.branch_pool",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branches:in->inception_split.path.branch1x1:in:fork",
+      "src": "inception_split.branches",
+      "dst": "inception_split.path.branch1x1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "inception_split.path.branch1x1:out->inception_split.branches:item[0]:tuple_collection",
+      "src": "inception_split.path.branch1x1",
+      "dst": "inception_split.branches",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "inception_split.branches:in->inception_split.path.branch3x3:in:fork",
+      "src": "inception_split.branches",
+      "dst": "inception_split.path.branch3x3",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "inception_split.path.branch3x3:out->inception_split.branches:item[1]:tuple_collection",
+      "src": "inception_split.path.branch3x3",
+      "dst": "inception_split.branches",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "inception_split.branches:in->inception_split.path.branch3x3dbl:in:fork",
+      "src": "inception_split.branches",
+      "dst": "inception_split.path.branch3x3dbl",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "inception_split.path.branch3x3dbl:out->inception_split.branches:item[2]:tuple_collection",
+      "src": "inception_split.path.branch3x3dbl",
+      "dst": "inception_split.branches",
+      "src_port": "out",
+      "dst_port": "item[2]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "inception_split.branches:in->inception_split.path.branch_pool:in:fork",
+      "src": "inception_split.branches",
+      "dst": "inception_split.path.branch_pool",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "inception_split.path.branch_pool:out->inception_split.branches:item[3]:tuple_collection",
+      "src": "inception_split.path.branch_pool",
+      "dst": "inception_split.branches",
+      "src_port": "out",
+      "dst_port": "item[3]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "inception_split.module:in->inception_split.branches:in:boundary",
+      "src": "inception_split.module",
+      "dst": "inception_split.branches",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.branches:out->inception_split.concat:in:tensor",
+      "src": "inception_split.branches",
+      "dst": "inception_split.concat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.concat:out->inception_split.module:out:boundary",
+      "src": "inception_split.concat",
+      "dst": "inception_split.module",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.root:in->inception_split.input:in:boundary",
+      "src": "inception_split.root",
+      "dst": "inception_split.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "inception_split.input:out->inception_split.module:in:tensor",
+      "src": "inception_split.input",
+      "dst": "inception_split.module",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.module:out->inception_split.output:in:tensor",
+      "src": "inception_split.module",
+      "dst": "inception_split.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inception_split.output:out->inception_split.root:out:boundary",
+      "src": "inception_split.output",
+      "dst": "inception_split.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    }
+  ],
+  "facts": [
+    "Bounded AST adapter reads actual attribute order, kernels, stride/padding, list order and nested cats.",
+    "Every BasicConv is Conv(biasFalse) -> BN(eps.001) -> inplace ReLU; real .conv/.bn attributes own independent parameters.",
+    "Four or three source paths receive the same x; lists are collected and then channel concatenated.",
+    "Repeated initial BasicConv bodies in the five-block path remain folded at detailed view; all operators and identities remain in IR."
+  ],
+  "corrections": [
+    "Do not interchange average/max pool, square/factorized kernels, or source concat order.",
+    "InceptionE has two nested kernel splits and three actual Concat operations; no branch summation."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

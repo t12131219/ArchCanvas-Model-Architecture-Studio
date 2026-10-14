@@ -1,0 +1,9009 @@
+{
+  "view": "detailed",
+  "canvas": [
+    1600,
+    2308
+  ],
+  "semantic_ir_sha256": "8790f318d62e30ff86ffd7b8a8910a725a8da5395e9c5d02debb4491cc6c4f4a",
+  "source_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+  "measurement": "rule-based intrinsic heights and conservative text allowance; no pixel font measurement",
+  "routing": {
+    "marker_units": "userSpaceOnUse",
+    "arrow_length": 9,
+    "minimum_terminal": 18,
+    "inner_inset": 18,
+    "computation_direction": "mixed; macro bottom-to-top, attention top-to-bottom",
+    "downward_exceptions": [
+      "encoder-memory-to-cross",
+      "encoder-memory-to-cross-040",
+      "encoder-memory-to-cross-041",
+      "encoder-memory-to-cross-042"
+    ]
+  },
+  "semantic_projection": {
+    "schema": "transformer-source-terminals/1",
+    "edge_dispositions": [
+      {
+        "edge": "src_pe:in->src_pe.add:x",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "src_embed:out",
+            "dst": "src_pe.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "src_pe.buffer:out->src_pe.add:pe",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "src_pe.buffer:out",
+            "dst": "src_pe.add:pe"
+          }
+        ]
+      },
+      {
+        "edge": "src_pe.add:out->src_pe.dropout:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.self.q:in"
+          },
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.self.k:in"
+          },
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.self.v:in"
+          },
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.norm1.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "src_pe.dropout:out->src_pe:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.self.q:in"
+          },
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.self.k:in"
+          },
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.self.v:in"
+          },
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.norm1.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "src_tokens:out->src_embed:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "src_tokens:out",
+            "dst": "src_embed:in"
+          }
+        ]
+      },
+      {
+        "edge": "src_embed:out->src_pe:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "src_embed:out",
+            "dst": "src_pe.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "tgt_pe:in->tgt_pe.add:x",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "tgt_embed:out",
+            "dst": "tgt_pe.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "tgt_pe.buffer:out->tgt_pe.add:pe",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "tgt_pe.buffer:out",
+            "dst": "tgt_pe.add:pe"
+          }
+        ]
+      },
+      {
+        "edge": "tgt_pe.add:out->tgt_pe.dropout:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.self.q:in"
+          },
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.self.k:in"
+          },
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.self.v:in"
+          },
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.norm1.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "tgt_pe.dropout:out->tgt_pe:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.self.q:in"
+          },
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.self.k:in"
+          },
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.self.v:in"
+          },
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.norm1.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "tgt_tokens:out->tgt_embed:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "tgt_tokens:out",
+            "dst": "tgt_embed:in"
+          }
+        ]
+      },
+      {
+        "edge": "tgt_embed:out->tgt_pe:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "tgt_embed:out",
+            "dst": "tgt_pe.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "src_pe:out->enc.self:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.self.q:in"
+          },
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.self.k:in"
+          },
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.self.v:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self:in->enc.self.q:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.self.q:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self:in->enc.self.k:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.self.k:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self:in->enc.self.v:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.self.v:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.q:out->enc.self.split:q_in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.self.q:out",
+            "dst": "enc.self.split:q_in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.split:q_out->enc.self.sdpa:q",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.self.split:q_out",
+            "dst": "enc.self.sdpa.qkt:q"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.k:out->enc.self.split:k_in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.self.k:out",
+            "dst": "enc.self.split:k_in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.split:k_out->enc.self.sdpa:k",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.self.split:k_out",
+            "dst": "enc.self.sdpa.qkt:k"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.v:out->enc.self.split:v_in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.self.v:out",
+            "dst": "enc.self.split:v_in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.split:v_out->enc.self.sdpa:v",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.self.split:v_out",
+            "dst": "enc.self.sdpa.av:v"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.sdpa:out->enc.self.merge:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.self.sdpa.av:out",
+            "dst": "enc.self.merge:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.merge:out->enc.self.wo:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.self.merge:out",
+            "dst": "enc.self.wo:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.sdpa.qkt:out->enc.self.sdpa.scale:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.self.sdpa.qkt:out",
+            "dst": "enc.self.sdpa.scale:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.sdpa.scale:out->enc.self.sdpa.mask:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.self.sdpa.scale:out",
+            "dst": "enc.self.sdpa.mask:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.sdpa.mask:out->enc.self.sdpa.softmax:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.self.sdpa.mask:out",
+            "dst": "enc.self.sdpa.softmax:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.sdpa.softmax:out->enc.self.sdpa.nan_guard:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.self.sdpa.softmax:out",
+            "dst": "enc.self.sdpa.av:a"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.sdpa.nan_guard:out->enc.self.sdpa.attn_dropout:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.self.sdpa.softmax:out",
+            "dst": "enc.self.sdpa.av:a"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.sdpa.attn_dropout:out->enc.self.sdpa.av:a",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.self.sdpa.softmax:out",
+            "dst": "enc.self.sdpa.av:a"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.sdpa:q->enc.self.sdpa.qkt:q",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "enc.self.split:q_out",
+            "dst": "enc.self.sdpa.qkt:q"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.sdpa:k->enc.self.sdpa.qkt:k",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "enc.self.split:k_out",
+            "dst": "enc.self.sdpa.qkt:k"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.sdpa:v->enc.self.sdpa.av:v",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "enc.self.split:v_out",
+            "dst": "enc.self.sdpa.av:v"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.sdpa.av:out->enc.self.sdpa:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "enc.self.sdpa.av:out",
+            "dst": "enc.self.merge:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self.wo:out->enc.self:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "enc.self.wo:out",
+            "dst": "enc.norm1.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "enc.norm1:in->enc.norm1.branch_dropout:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "enc.self.wo:out",
+            "dst": "enc.norm1.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "enc.norm1.branch_dropout:out->enc.norm1.add:f",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.self.wo:out",
+            "dst": "enc.norm1.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "enc.norm1:skip->enc.norm1.add:x",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.norm1.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "enc.norm1.add:out->enc.norm1.layernorm:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.norm1.add:out",
+            "dst": "enc.norm1.layernorm:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.norm1.layernorm:out->enc.norm1:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "enc.norm1.layernorm:out",
+            "dst": "enc.ffn.linear1:in"
+          },
+          {
+            "src": "enc.norm1.layernorm:out",
+            "dst": "enc.norm2.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self:out->enc.norm1:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.self.wo:out",
+            "dst": "enc.norm1.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "src_pe:out->enc.norm1:skip",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.norm1.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "enc.norm1:out->enc.ffn:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.norm1.layernorm:out",
+            "dst": "enc.ffn.linear1:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.ffn.linear1:out->enc.ffn.relu:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.ffn.linear1:out",
+            "dst": "enc.ffn.relu:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.ffn.relu:out->enc.ffn.dropout:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.ffn.relu:out",
+            "dst": "enc.ffn.linear2:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.ffn.dropout:out->enc.ffn.linear2:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.ffn.relu:out",
+            "dst": "enc.ffn.linear2:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.ffn:in->enc.ffn.linear1:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "enc.norm1.layernorm:out",
+            "dst": "enc.ffn.linear1:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.ffn.linear2:out->enc.ffn:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "enc.ffn.linear2:out",
+            "dst": "enc.norm2.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "enc.norm2:in->enc.norm2.branch_dropout:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "enc.ffn.linear2:out",
+            "dst": "enc.norm2.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "enc.norm2.branch_dropout:out->enc.norm2.add:f",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.ffn.linear2:out",
+            "dst": "enc.norm2.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "enc.norm2:skip->enc.norm2.add:x",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "enc.norm1.layernorm:out",
+            "dst": "enc.norm2.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "enc.norm2.add:out->enc.norm2.layernorm:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.norm2.add:out",
+            "dst": "enc.norm2.layernorm:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.norm2.layernorm:out->enc.norm2:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "enc.norm2.layernorm:out",
+            "dst": "dec.cross.k:in"
+          },
+          {
+            "src": "enc.norm2.layernorm:out",
+            "dst": "dec.cross.v:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.ffn:out->enc.norm2:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.ffn.linear2:out",
+            "dst": "enc.norm2.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "enc.norm1:out->enc.norm2:skip",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.norm1.layernorm:out",
+            "dst": "enc.norm2.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "enc.norm2:out->enc.output:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.norm2.layernorm:out",
+            "dst": "dec.cross.k:in"
+          },
+          {
+            "src": "enc.norm2.layernorm:out",
+            "dst": "dec.cross.v:in"
+          }
+        ]
+      },
+      {
+        "edge": "tgt_pe:out->dec.self:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.self.q:in"
+          },
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.self.k:in"
+          },
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.self.v:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self:in->dec.self.q:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.self.q:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self:in->dec.self.k:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.self.k:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self:in->dec.self.v:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.self.v:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.q:out->dec.self.split:q_in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.self.q:out",
+            "dst": "dec.self.split:q_in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.split:q_out->dec.self.sdpa:q",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.self.split:q_out",
+            "dst": "dec.self.sdpa.qkt:q"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.k:out->dec.self.split:k_in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.self.k:out",
+            "dst": "dec.self.split:k_in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.split:k_out->dec.self.sdpa:k",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.self.split:k_out",
+            "dst": "dec.self.sdpa.qkt:k"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.v:out->dec.self.split:v_in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.self.v:out",
+            "dst": "dec.self.split:v_in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.split:v_out->dec.self.sdpa:v",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.self.split:v_out",
+            "dst": "dec.self.sdpa.av:v"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.sdpa:out->dec.self.merge:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.self.sdpa.av:out",
+            "dst": "dec.self.merge:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.merge:out->dec.self.wo:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.self.merge:out",
+            "dst": "dec.self.wo:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.sdpa.qkt:out->dec.self.sdpa.scale:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.self.sdpa.qkt:out",
+            "dst": "dec.self.sdpa.scale:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.sdpa.scale:out->dec.self.sdpa.mask:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.self.sdpa.scale:out",
+            "dst": "dec.self.sdpa.mask:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.sdpa.mask:out->dec.self.sdpa.softmax:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.self.sdpa.mask:out",
+            "dst": "dec.self.sdpa.softmax:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.sdpa.softmax:out->dec.self.sdpa.nan_guard:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.self.sdpa.softmax:out",
+            "dst": "dec.self.sdpa.av:a"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.sdpa.nan_guard:out->dec.self.sdpa.attn_dropout:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.self.sdpa.softmax:out",
+            "dst": "dec.self.sdpa.av:a"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.sdpa.attn_dropout:out->dec.self.sdpa.av:a",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.self.sdpa.softmax:out",
+            "dst": "dec.self.sdpa.av:a"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.sdpa:q->dec.self.sdpa.qkt:q",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "dec.self.split:q_out",
+            "dst": "dec.self.sdpa.qkt:q"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.sdpa:k->dec.self.sdpa.qkt:k",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "dec.self.split:k_out",
+            "dst": "dec.self.sdpa.qkt:k"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.sdpa:v->dec.self.sdpa.av:v",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "dec.self.split:v_out",
+            "dst": "dec.self.sdpa.av:v"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.sdpa.av:out->dec.self.sdpa:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "dec.self.sdpa.av:out",
+            "dst": "dec.self.merge:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self.wo:out->dec.self:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "dec.self.wo:out",
+            "dst": "dec.norm1.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm1:in->dec.norm1.branch_dropout:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "dec.self.wo:out",
+            "dst": "dec.norm1.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm1.branch_dropout:out->dec.norm1.add:f",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.self.wo:out",
+            "dst": "dec.norm1.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm1:skip->dec.norm1.add:x",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.norm1.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm1.add:out->dec.norm1.layernorm:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.norm1.add:out",
+            "dst": "dec.norm1.layernorm:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm1.layernorm:out->dec.norm1:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "dec.norm1.layernorm:out",
+            "dst": "dec.cross.q:in"
+          },
+          {
+            "src": "dec.norm1.layernorm:out",
+            "dst": "dec.norm2.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self:out->dec.norm1:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.self.wo:out",
+            "dst": "dec.norm1.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "tgt_pe:out->dec.norm1:skip",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.norm1.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm1:out->dec.cross:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.norm1.layernorm:out",
+            "dst": "dec.cross.q:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.cross:in->dec.cross.q:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "dec.norm1.layernorm:out",
+            "dst": "dec.cross.q:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.cross:memory->dec.cross.k:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "enc.norm2.layernorm:out",
+            "dst": "dec.cross.k:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.cross:memory->dec.cross.v:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "enc.norm2.layernorm:out",
+            "dst": "dec.cross.v:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.cross.q:out->dec.cross.split:q_in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.cross.q:out",
+            "dst": "dec.cross.split:q_in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.cross.split:q_out->dec.cross.sdpa:q",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.cross.split:q_out",
+            "dst": "dec.cross.sdpa:q"
+          }
+        ]
+      },
+      {
+        "edge": "dec.cross.k:out->dec.cross.split:k_in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.cross.k:out",
+            "dst": "dec.cross.split:k_in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.cross.split:k_out->dec.cross.sdpa:k",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.cross.split:k_out",
+            "dst": "dec.cross.sdpa:k"
+          }
+        ]
+      },
+      {
+        "edge": "dec.cross.v:out->dec.cross.split:v_in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.cross.v:out",
+            "dst": "dec.cross.split:v_in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.cross.split:v_out->dec.cross.sdpa:v",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.cross.split:v_out",
+            "dst": "dec.cross.sdpa:v"
+          }
+        ]
+      },
+      {
+        "edge": "dec.cross.sdpa:out->dec.cross.merge:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.cross.sdpa:out",
+            "dst": "dec.cross.merge:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.cross.merge:out->dec.cross.wo:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.cross.merge:out",
+            "dst": "dec.cross.wo:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.cross.sdpa.qkt:out->dec.cross.sdpa.scale:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa.scale:out->dec.cross.sdpa.mask:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa.mask:out->dec.cross.sdpa.softmax:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa.softmax:out->dec.cross.sdpa.nan_guard:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa.nan_guard:out->dec.cross.sdpa.attn_dropout:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa.attn_dropout:out->dec.cross.sdpa.av:a",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa:q->dec.cross.sdpa.qkt:q",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa:k->dec.cross.sdpa.qkt:k",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa:v->dec.cross.sdpa.av:v",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa.av:out->dec.cross.sdpa:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.wo:out->dec.cross:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "dec.cross.wo:out",
+            "dst": "dec.norm2.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm2:in->dec.norm2.branch_dropout:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "dec.cross.wo:out",
+            "dst": "dec.norm2.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm2.branch_dropout:out->dec.norm2.add:f",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.cross.wo:out",
+            "dst": "dec.norm2.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm2:skip->dec.norm2.add:x",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "dec.norm1.layernorm:out",
+            "dst": "dec.norm2.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm2.add:out->dec.norm2.layernorm:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.norm2.add:out",
+            "dst": "dec.norm2.layernorm:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm2.layernorm:out->dec.norm2:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "dec.norm2.layernorm:out",
+            "dst": "dec.ffn.linear1:in"
+          },
+          {
+            "src": "dec.norm2.layernorm:out",
+            "dst": "dec.norm3.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "dec.cross:out->dec.norm2:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.cross.wo:out",
+            "dst": "dec.norm2.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm1:out->dec.norm2:skip",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.norm1.layernorm:out",
+            "dst": "dec.norm2.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm2:out->dec.ffn:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.norm2.layernorm:out",
+            "dst": "dec.ffn.linear1:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.ffn.linear1:out->dec.ffn.relu:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.ffn.linear1:out",
+            "dst": "dec.ffn.relu:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.ffn.relu:out->dec.ffn.dropout:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.ffn.relu:out",
+            "dst": "dec.ffn.linear2:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.ffn.dropout:out->dec.ffn.linear2:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.ffn.relu:out",
+            "dst": "dec.ffn.linear2:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.ffn:in->dec.ffn.linear1:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "dec.norm2.layernorm:out",
+            "dst": "dec.ffn.linear1:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.ffn.linear2:out->dec.ffn:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "dec.ffn.linear2:out",
+            "dst": "dec.norm3.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm3:in->dec.norm3.branch_dropout:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "dec.ffn.linear2:out",
+            "dst": "dec.norm3.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm3.branch_dropout:out->dec.norm3.add:f",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.ffn.linear2:out",
+            "dst": "dec.norm3.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm3:skip->dec.norm3.add:x",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "dec.norm2.layernorm:out",
+            "dst": "dec.norm3.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm3.add:out->dec.norm3.layernorm:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.norm3.add:out",
+            "dst": "dec.norm3.layernorm:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm3.layernorm:out->dec.norm3:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "dec.norm3.layernorm:out",
+            "dst": "generator:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.ffn:out->dec.norm3:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.ffn.linear2:out",
+            "dst": "dec.norm3.add:f"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm2:out->dec.norm3:skip",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.norm2.layernorm:out",
+            "dst": "dec.norm3.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm3:out->dec.output:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.norm3.layernorm:out",
+            "dst": "generator:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.output:out->dec.cross:memory",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.norm2.layernorm:out",
+            "dst": "dec.cross.k:in"
+          },
+          {
+            "src": "enc.norm2.layernorm:out",
+            "dst": "dec.cross.v:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.output:out->generator:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.norm3.layernorm:out",
+            "dst": "generator:in"
+          }
+        ]
+      },
+      {
+        "edge": "generator:out->logits:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "generator:out",
+            "dst": "probabilities:in"
+          }
+        ]
+      },
+      {
+        "edge": "logits:out->probabilities:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "generator:out",
+            "dst": "probabilities:in"
+          }
+        ]
+      }
+    ],
+    "scaffold_paths": 116,
+    "source_connections": 70,
+    "value_aliases": [
+      {
+        "id": "enc.ffn.input_value",
+        "owner": "enc.ffn:in",
+        "bbox": [
+          120,
+          514,
+          50,
+          30
+        ],
+        "flow": "right",
+        "in": [
+          120,
+          529.0
+        ],
+        "out": [
+          170,
+          529.0
+        ]
+      },
+      {
+        "id": "enc.ffn.output_value",
+        "owner": "enc.ffn.linear2:out",
+        "bbox": [
+          556,
+          514,
+          50,
+          30
+        ],
+        "flow": "right",
+        "in": [
+          556,
+          529.0
+        ],
+        "out": [
+          606,
+          529.0
+        ]
+      },
+      {
+        "id": "enc.self.q.value",
+        "owner": "enc.self.q:out",
+        "bbox": [
+          232.0,
+          916,
+          50,
+          30
+        ],
+        "flow": "down",
+        "input": [
+          232.0,
+          931
+        ],
+        "output": [
+          257.0,
+          946
+        ],
+        "in": [
+          232.0,
+          931
+        ],
+        "out": [
+          257.0,
+          946
+        ]
+      },
+      {
+        "id": "enc.self.k.value",
+        "owner": "enc.self.k:out",
+        "bbox": [
+          411.33333333333337,
+          916,
+          50,
+          30
+        ],
+        "flow": "down",
+        "input": [
+          411.33333333333337,
+          931
+        ],
+        "output": [
+          436.33333333333337,
+          946
+        ],
+        "in": [
+          411.33333333333337,
+          931
+        ],
+        "out": [
+          436.33333333333337,
+          946
+        ]
+      },
+      {
+        "id": "enc.self.v.value",
+        "owner": "enc.self.v:out",
+        "bbox": [
+          590.6666666666667,
+          916,
+          50,
+          30
+        ],
+        "flow": "down",
+        "input": [
+          590.6666666666667,
+          931
+        ],
+        "output": [
+          615.6666666666667,
+          946
+        ],
+        "in": [
+          590.6666666666667,
+          931
+        ],
+        "out": [
+          615.6666666666667,
+          946
+        ]
+      },
+      {
+        "id": "dec.ffn.input_value",
+        "owner": "dec.ffn:in",
+        "bbox": [
+          976,
+          514,
+          50,
+          30
+        ],
+        "flow": "right",
+        "in": [
+          976,
+          529.0
+        ],
+        "out": [
+          1026,
+          529.0
+        ]
+      },
+      {
+        "id": "dec.ffn.output_value",
+        "owner": "dec.ffn.linear2:out",
+        "bbox": [
+          1412,
+          514,
+          50,
+          30
+        ],
+        "flow": "right",
+        "in": [
+          1412,
+          529.0
+        ],
+        "out": [
+          1462,
+          529.0
+        ]
+      },
+      {
+        "id": "dec.cross.q.value",
+        "owner": "dec.cross.q:out",
+        "bbox": [
+          1088.0,
+          916,
+          50,
+          30
+        ],
+        "flow": "down",
+        "input": [
+          1088.0,
+          931
+        ],
+        "output": [
+          1113.0,
+          946
+        ],
+        "in": [
+          1088.0,
+          931
+        ],
+        "out": [
+          1113.0,
+          946
+        ]
+      },
+      {
+        "id": "dec.cross.k.value",
+        "owner": "dec.cross.k:out",
+        "bbox": [
+          1267.3333333333333,
+          916,
+          50,
+          30
+        ],
+        "flow": "down",
+        "input": [
+          1267.3333333333333,
+          931
+        ],
+        "output": [
+          1292.3333333333333,
+          946
+        ],
+        "in": [
+          1267.3333333333333,
+          931
+        ],
+        "out": [
+          1292.3333333333333,
+          946
+        ]
+      },
+      {
+        "id": "dec.cross.v.value",
+        "owner": "dec.cross.v:out",
+        "bbox": [
+          1446.6666666666667,
+          916,
+          50,
+          30
+        ],
+        "flow": "down",
+        "input": [
+          1446.6666666666667,
+          931
+        ],
+        "output": [
+          1471.6666666666667,
+          946
+        ],
+        "in": [
+          1446.6666666666667,
+          931
+        ],
+        "out": [
+          1471.6666666666667,
+          946
+        ]
+      },
+      {
+        "id": "dec.self.q.value",
+        "owner": "dec.self.q:out",
+        "bbox": [
+          1088.0,
+          1512,
+          50,
+          30
+        ],
+        "flow": "down",
+        "input": [
+          1088.0,
+          1527
+        ],
+        "output": [
+          1113.0,
+          1542
+        ],
+        "in": [
+          1088.0,
+          1527
+        ],
+        "out": [
+          1113.0,
+          1542
+        ]
+      },
+      {
+        "id": "dec.self.k.value",
+        "owner": "dec.self.k:out",
+        "bbox": [
+          1267.3333333333333,
+          1512,
+          50,
+          30
+        ],
+        "flow": "down",
+        "input": [
+          1267.3333333333333,
+          1527
+        ],
+        "output": [
+          1292.3333333333333,
+          1542
+        ],
+        "in": [
+          1267.3333333333333,
+          1527
+        ],
+        "out": [
+          1292.3333333333333,
+          1542
+        ]
+      },
+      {
+        "id": "dec.self.v.value",
+        "owner": "dec.self.v:out",
+        "bbox": [
+          1446.6666666666667,
+          1512,
+          50,
+          30
+        ],
+        "flow": "down",
+        "input": [
+          1446.6666666666667,
+          1527
+        ],
+        "output": [
+          1471.6666666666667,
+          1542
+        ],
+        "in": [
+          1446.6666666666667,
+          1527
+        ],
+        "out": [
+          1471.6666666666667,
+          1542
+        ]
+      },
+      {
+        "id": "enc.memory.value",
+        "owner": "enc.output:out",
+        "bbox": [
+          720.0,
+          318,
+          160,
+          104
+        ],
+        "flow": "down",
+        "in": [
+          800.0,
+          318
+        ],
+        "out": [
+          800.0,
+          422
+        ]
+      }
+    ],
+    "mode": "source IR selects glyph terminals; geometric network selects route",
+    "physical_routing": {
+      "schema": "semantic-physical-ports/2",
+      "binding_authority": "canonical source IR",
+      "geometry_authority": "editable presentation",
+      "objective": "short legal orthogonal routes with few bends",
+      "caption_policy": "canonical source route selects caption identity; editable path anchors follow displayed geometry",
+      "border_policy": "painted shaft and frame half-widths plus 2px air gap; corner gates and shared forks adapt within source scope",
+      "gate_policy": "source-recorded straight ancestor exits follow their endpoint; gate side and hierarchy stay fixed",
+      "protected": [
+        "value-alias flow",
+        "branch stems",
+        "folded field slots",
+        "container side gates"
+      ]
+    },
+    "junction_markers": [
+      {
+        "id": "source-fork-1",
+        "point": [
+          382.0,
+          664.0
+        ],
+        "canonical_src": "enc.norm1.layernorm:out",
+        "routes": [
+          "binding-032",
+          "binding-039"
+        ],
+        "geometry": "intersection of registered source routes",
+        "kind": "tensor-fork"
+      },
+      {
+        "id": "source-fork-2",
+        "point": [
+          382.0,
+          1364.0
+        ],
+        "canonical_src": "src_pe.add:out",
+        "routes": [
+          "binding-002",
+          "binding-003",
+          "binding-004",
+          "binding-005"
+        ],
+        "geometry": "intersection of registered source routes",
+        "kind": "tensor-fork"
+      },
+      {
+        "id": "source-fork-3",
+        "point": [
+          1238.0,
+          664.0
+        ],
+        "canonical_src": "dec.norm2.layernorm:out",
+        "routes": [
+          "binding-076",
+          "binding-083"
+        ],
+        "geometry": "intersection of registered source routes",
+        "kind": "tensor-fork"
+      },
+      {
+        "id": "source-fork-4",
+        "point": [
+          1238.0,
+          1260.0
+        ],
+        "canonical_src": "dec.norm1.layernorm:out",
+        "routes": [
+          "binding-061",
+          "binding-075"
+        ],
+        "geometry": "intersection of registered source routes",
+        "kind": "tensor-fork"
+      },
+      {
+        "id": "source-fork-5",
+        "point": [
+          1238.0,
+          1960.0
+        ],
+        "canonical_src": "tgt_pe.add:out",
+        "routes": [
+          "binding-009",
+          "binding-010",
+          "binding-011",
+          "binding-012"
+        ],
+        "geometry": "intersection of registered source routes",
+        "kind": "tensor-fork"
+      }
+    ]
+  },
+  "attachments": [
+    {
+      "id": "label-1",
+      "owner": "probabilities",
+      "kind": "label",
+      "bbox": [
+        1000.85,
+        117.91999999999999,
+        474.3,
+        40.12
+      ],
+      "source_owner": "probabilities"
+    },
+    {
+      "id": "label-2",
+      "owner": "generator",
+      "kind": "label",
+      "bbox": [
+        1053.8600000000001,
+        200.3,
+        368.28,
+        21.24
+      ],
+      "source_owner": "generator"
+    },
+    {
+      "id": "label-3",
+      "owner": "generator",
+      "kind": "label",
+      "bbox": [
+        1456.0,
+        198,
+        66.96,
+        21.24
+      ],
+      "source_owner": "generator"
+    },
+    {
+      "id": "label-4",
+      "owner": "enc.layer_i",
+      "kind": "label",
+      "bbox": [
+        62,
+        243,
+        270.94,
+        27.139999999999997
+      ],
+      "source_owner": "enc.layer_i"
+    },
+    {
+      "id": "label-5",
+      "owner": "enc.norm2",
+      "kind": "label",
+      "bbox": [
+        102,
+        315,
+        248.0,
+        23.599999999999998
+      ],
+      "source_owner": "enc.norm2"
+    },
+    {
+      "id": "label-6",
+      "owner": "enc.norm2.add",
+      "kind": "label",
+      "bbox": [
+        242.25,
+        346,
+        15.5,
+        29.5
+      ],
+      "source_owner": "enc.norm2.add"
+    },
+    {
+      "id": "label-7",
+      "owner": "enc.norm2",
+      "kind": "edge-label",
+      "bbox": [
+        128,
+        339,
+        79.36,
+        18.88
+      ],
+      "edge_spec": {
+        "canonical_dst": "enc.norm2.add:x"
+      },
+      "near": "target",
+      "source_owner": "enc.norm2",
+      "route": "binding-039",
+      "canonical_src": "enc.norm1.layernorm:out",
+      "canonical_dst": "enc.norm2.add:x",
+      "semantic_edges": [
+        "enc.norm1.layernorm:out->enc.norm1:out",
+        "enc.norm1:out->enc.norm2:skip",
+        "enc.norm2:skip->enc.norm2.add:x"
+      ]
+    },
+    {
+      "id": "label-8",
+      "owner": "enc.norm2.layernorm",
+      "kind": "label",
+      "bbox": [
+        396.99,
+        351.65,
+        106.02,
+        22.419999999999998
+      ],
+      "source_owner": "enc.norm2.layernorm"
+    },
+    {
+      "id": "label-9",
+      "owner": "enc.ffn",
+      "kind": "label",
+      "bbox": [
+        171.2,
+        450,
+        421.6,
+        23.599999999999998
+      ],
+      "source_owner": "enc.ffn"
+    },
+    {
+      "id": "label-10",
+      "owner": "enc.ffn.input_value",
+      "kind": "label",
+      "bbox": [
+        110.28,
+        548,
+        69.44,
+        18.88
+      ],
+      "source_owner": "enc.ffn:in"
+    },
+    {
+      "id": "label-11",
+      "owner": "enc.ffn.output_value",
+      "kind": "label",
+      "bbox": [
+        546.28,
+        548,
+        69.44,
+        18.88
+      ],
+      "source_owner": "enc.ffn.linear2:out"
+    },
+    {
+      "id": "label-12",
+      "owner": "enc.ffn.input_value",
+      "kind": "label",
+      "bbox": [
+        139.11,
+        485,
+        11.78,
+        22.419999999999998
+      ],
+      "source_owner": "enc.ffn:in"
+    },
+    {
+      "id": "label-13",
+      "owner": "enc.ffn.output_value",
+      "kind": "label",
+      "bbox": [
+        575.11,
+        485,
+        11.78,
+        22.419999999999998
+      ],
+      "source_owner": "enc.ffn.linear2:out"
+    },
+    {
+      "id": "label-14",
+      "owner": "enc.ffn.linear1",
+      "kind": "label",
+      "bbox": [
+        205.94,
+        506.67999999999995,
+        78.12,
+        42.48
+      ],
+      "source_owner": "enc.ffn.linear1"
+    },
+    {
+      "id": "label-15",
+      "owner": "enc.ffn.relu",
+      "kind": "label",
+      "bbox": [
+        340.68,
+        517.3,
+        44.64,
+        21.24
+      ],
+      "source_owner": "enc.ffn.relu"
+    },
+    {
+      "id": "label-16",
+      "owner": "enc.ffn.linear2",
+      "kind": "label",
+      "bbox": [
+        441.94,
+        506.67999999999995,
+        78.12,
+        42.48
+      ],
+      "source_owner": "enc.ffn.linear2"
+    },
+    {
+      "id": "enc.ffn.hidden_snapshot",
+      "owner": "enc.ffn.relu",
+      "kind": "value-snapshot",
+      "value_owner": "enc.ffn.relu:out",
+      "bbox": [
+        265,
+        562,
+        132,
+        80
+      ],
+      "source_owner": "enc.ffn.relu"
+    },
+    {
+      "id": "label-18",
+      "owner": "enc.norm1",
+      "kind": "label",
+      "bbox": [
+        102,
+        683,
+        248.0,
+        23.599999999999998
+      ],
+      "source_owner": "enc.norm1"
+    },
+    {
+      "id": "label-19",
+      "owner": "enc.norm1.add",
+      "kind": "label",
+      "bbox": [
+        242.25,
+        714,
+        15.5,
+        29.5
+      ],
+      "source_owner": "enc.norm1.add"
+    },
+    {
+      "id": "label-20",
+      "owner": "enc.norm1",
+      "kind": "edge-label",
+      "bbox": [
+        128,
+        707,
+        79.36,
+        18.88
+      ],
+      "edge_spec": {
+        "canonical_dst": "enc.norm1.add:x"
+      },
+      "near": "target",
+      "source_owner": "enc.norm1",
+      "route": "binding-005",
+      "canonical_src": "src_pe.add:out",
+      "canonical_dst": "enc.norm1.add:x",
+      "semantic_edges": [
+        "enc.norm1:skip->enc.norm1.add:x",
+        "src_pe.add:out->src_pe.dropout:in",
+        "src_pe.dropout:out->src_pe:out",
+        "src_pe:out->enc.norm1:skip"
+      ]
+    },
+    {
+      "id": "label-21",
+      "owner": "enc.norm1.layernorm",
+      "kind": "label",
+      "bbox": [
+        396.99,
+        719.65,
+        106.02,
+        22.419999999999998
+      ],
+      "source_owner": "enc.norm1.layernorm"
+    },
+    {
+      "id": "label-22",
+      "owner": "enc.self",
+      "kind": "label",
+      "bbox": [
+        245.6,
+        818,
+        272.8,
+        23.599999999999998
+      ],
+      "source_owner": "enc.self"
+    },
+    {
+      "id": "label-23",
+      "owner": "enc.self",
+      "kind": "label",
+      "bbox": [
+        287.14,
+        846,
+        189.72,
+        21.24
+      ],
+      "source_owner": "enc.self"
+    },
+    {
+      "id": "label-24",
+      "owner": "enc.self.q",
+      "kind": "label",
+      "bbox": [
+        123.15,
+        921.25,
+        83.7,
+        17.7
+      ],
+      "source_owner": "enc.self.q"
+    },
+    {
+      "id": "label-25",
+      "owner": "enc.self.q.value",
+      "kind": "label",
+      "bbox": [
+        257.0,
+        950,
+        0.0,
+        18.88
+      ],
+      "source_owner": "enc.self.q:out"
+    },
+    {
+      "id": "label-26",
+      "owner": "enc.self.q.value",
+      "kind": "label",
+      "bbox": [
+        251.73,
+        894,
+        10.54,
+        20.06
+      ],
+      "source_owner": "enc.self.q:out"
+    },
+    {
+      "id": "label-27",
+      "owner": "enc.self.q.value",
+      "kind": "label",
+      "bbox": [
+        186.24,
+        951,
+        60.76,
+        16.52
+      ],
+      "source_owner": "enc.self.q:out"
+    },
+    {
+      "id": "label-28",
+      "owner": "enc.self.k",
+      "kind": "label",
+      "bbox": [
+        302.48333333333335,
+        921.25,
+        83.7,
+        17.7
+      ],
+      "source_owner": "enc.self.k"
+    },
+    {
+      "id": "label-29",
+      "owner": "enc.self.k.value",
+      "kind": "label",
+      "bbox": [
+        436.33333333333337,
+        950,
+        0.0,
+        18.88
+      ],
+      "source_owner": "enc.self.k:out"
+    },
+    {
+      "id": "label-30",
+      "owner": "enc.self.k.value",
+      "kind": "label",
+      "bbox": [
+        431.0633333333334,
+        894,
+        10.54,
+        20.06
+      ],
+      "source_owner": "enc.self.k:out"
+    },
+    {
+      "id": "label-31",
+      "owner": "enc.self.k.value",
+      "kind": "label",
+      "bbox": [
+        365.5733333333334,
+        951,
+        60.76,
+        16.52
+      ],
+      "source_owner": "enc.self.k:out"
+    },
+    {
+      "id": "label-32",
+      "owner": "enc.self.v",
+      "kind": "label",
+      "bbox": [
+        481.8166666666667,
+        921.25,
+        83.7,
+        17.7
+      ],
+      "source_owner": "enc.self.v"
+    },
+    {
+      "id": "label-33",
+      "owner": "enc.self.v.value",
+      "kind": "label",
+      "bbox": [
+        615.6666666666667,
+        950,
+        0.0,
+        18.88
+      ],
+      "source_owner": "enc.self.v:out"
+    },
+    {
+      "id": "label-34",
+      "owner": "enc.self.v.value",
+      "kind": "label",
+      "bbox": [
+        610.3966666666668,
+        894,
+        10.54,
+        20.06
+      ],
+      "source_owner": "enc.self.v:out"
+    },
+    {
+      "id": "label-35",
+      "owner": "enc.self.v.value",
+      "kind": "label",
+      "bbox": [
+        544.9066666666668,
+        951,
+        60.76,
+        16.52
+      ],
+      "source_owner": "enc.self.v:out"
+    },
+    {
+      "id": "label-36",
+      "owner": "enc.self.split",
+      "kind": "label",
+      "bbox": [
+        197.55,
+        1003.95,
+        368.9,
+        20.06
+      ],
+      "source_owner": "enc.self.split"
+    },
+    {
+      "id": "label-37",
+      "owner": "enc.self.sdpa",
+      "kind": "label",
+      "bbox": [
+        171.2,
+        1063,
+        421.6,
+        20.06
+      ],
+      "source_owner": "enc.self.sdpa"
+    },
+    {
+      "id": "label-38",
+      "owner": "enc.self.sdpa.qkt",
+      "kind": "label",
+      "bbox": [
+        157.1,
+        1112.25,
+        55.8,
+        17.7
+      ],
+      "source_owner": "enc.self.sdpa.qkt"
+    },
+    {
+      "id": "label-39",
+      "owner": "enc.self.sdpa.scale",
+      "kind": "label",
+      "bbox": [
+        256.25,
+        1112.25,
+        46.5,
+        17.7
+      ],
+      "source_owner": "enc.self.sdpa.scale"
+    },
+    {
+      "id": "label-40",
+      "owner": "enc.self.sdpa.mask",
+      "kind": "label",
+      "bbox": [
+        332.5,
+        1103.4,
+        93.0,
+        35.4
+      ],
+      "source_owner": "enc.self.sdpa.mask"
+    },
+    {
+      "id": "label-41",
+      "owner": "enc.self.sdpa.softmax",
+      "kind": "label",
+      "bbox": [
+        454.95,
+        1112.25,
+        65.1,
+        17.7
+      ],
+      "source_owner": "enc.self.sdpa.softmax"
+    },
+    {
+      "id": "label-42",
+      "owner": "enc.self.sdpa.av",
+      "kind": "label",
+      "bbox": [
+        561.75,
+        1112.25,
+        46.5,
+        17.7
+      ],
+      "source_owner": "enc.self.sdpa.av"
+    },
+    {
+      "id": "label-43",
+      "owner": "enc.self.split",
+      "kind": "edge-label",
+      "bbox": [
+        143.88,
+        1039,
+        16.12,
+        15.34
+      ],
+      "edge_spec": {
+        "canonical_src": "enc.self.split:q_out",
+        "canonical_dst": "enc.self.sdpa.qkt:q"
+      },
+      "near": "source",
+      "source_owner": "enc.self.split",
+      "route": "binding-017",
+      "canonical_src": "enc.self.split:q_out",
+      "canonical_dst": "enc.self.sdpa.qkt:q",
+      "semantic_edges": [
+        "enc.self.sdpa:q->enc.self.sdpa.qkt:q",
+        "enc.self.split:q_out->enc.self.sdpa:q"
+      ]
+    },
+    {
+      "id": "label-44",
+      "owner": "enc.self.split",
+      "kind": "edge-label",
+      "bbox": [
+        208,
+        1039,
+        16.12,
+        15.34
+      ],
+      "edge_spec": {
+        "canonical_src": "enc.self.split:k_out",
+        "canonical_dst": "enc.self.sdpa.qkt:k"
+      },
+      "near": "source",
+      "source_owner": "enc.self.split",
+      "route": "binding-020",
+      "canonical_src": "enc.self.split:k_out",
+      "canonical_dst": "enc.self.sdpa.qkt:k",
+      "semantic_edges": [
+        "enc.self.sdpa:k->enc.self.sdpa.qkt:k",
+        "enc.self.split:k_out->enc.self.sdpa:k"
+      ]
+    },
+    {
+      "id": "label-45",
+      "owner": "enc.self.split",
+      "kind": "edge-label",
+      "bbox": [
+        562.88,
+        1039,
+        16.12,
+        15.34
+      ],
+      "edge_spec": {
+        "canonical_src": "enc.self.split:v_out",
+        "canonical_dst": "enc.self.sdpa.av:v"
+      },
+      "near": "source",
+      "source_owner": "enc.self.split",
+      "route": "binding-023",
+      "canonical_src": "enc.self.split:v_out",
+      "canonical_dst": "enc.self.sdpa.av:v",
+      "semantic_edges": [
+        "enc.self.sdpa:v->enc.self.sdpa.av:v",
+        "enc.self.split:v_out->enc.self.sdpa:v"
+      ]
+    },
+    {
+      "id": "label-46",
+      "owner": "enc.self.sdpa",
+      "kind": "edge-label",
+      "bbox": [
+        429.15999999999997,
+        1138,
+        112.84,
+        15.34
+      ],
+      "edge_spec": {
+        "canonical_src": "enc.self.sdpa.softmax:out",
+        "canonical_dst": "enc.self.sdpa.av:a"
+      },
+      "near": "ratio",
+      "source_owner": "enc.self.sdpa",
+      "route": "binding-029",
+      "canonical_src": "enc.self.sdpa.softmax:out",
+      "canonical_dst": "enc.self.sdpa.av:a",
+      "semantic_edges": [
+        "enc.self.sdpa.attn_dropout:out->enc.self.sdpa.av:a",
+        "enc.self.sdpa.nan_guard:out->enc.self.sdpa.attn_dropout:in",
+        "enc.self.sdpa.softmax:out->enc.self.sdpa.nan_guard:in"
+      ]
+    },
+    {
+      "id": "label-47",
+      "owner": "enc.self.sdpa",
+      "kind": "edge-label",
+      "bbox": [
+        337.67,
+        1145,
+        88.66,
+        30.68
+      ],
+      "edge_spec": {
+        "canonical_src": "enc.self.sdpa.mask:out",
+        "canonical_dst": "enc.self.sdpa.softmax:in"
+      },
+      "near": "ratio",
+      "source_owner": "enc.self.sdpa",
+      "route": "binding-028",
+      "canonical_src": "enc.self.sdpa.mask:out",
+      "canonical_dst": "enc.self.sdpa.softmax:in",
+      "semantic_edges": [
+        "enc.self.sdpa.mask:out->enc.self.sdpa.softmax:in"
+      ]
+    },
+    {
+      "id": "label-48",
+      "owner": "enc.self.merge",
+      "kind": "label",
+      "bbox": [
+        187.01,
+        1234.95,
+        389.98,
+        20.06
+      ],
+      "source_owner": "enc.self.merge"
+    },
+    {
+      "id": "label-49",
+      "owner": "enc.self.wo",
+      "kind": "label",
+      "bbox": [
+        281.56,
+        1291.3,
+        200.88,
+        21.24
+      ],
+      "source_owner": "enc.self.wo"
+    },
+    {
+      "id": "label-50",
+      "owner": "src_embed",
+      "kind": "label",
+      "bbox": [
+        222.97,
+        2076.65,
+        318.06,
+        22.419999999999998
+      ],
+      "source_owner": "src_embed"
+    },
+    {
+      "id": "label-51",
+      "owner": "src_pe.add",
+      "kind": "label",
+      "bbox": [
+        374.25,
+        1998,
+        15.5,
+        29.5
+      ],
+      "source_owner": "src_pe.add"
+    },
+    {
+      "id": "label-52",
+      "owner": "src_pe.buffer",
+      "kind": "label",
+      "bbox": [
+        84.87,
+        2004.95,
+        200.26,
+        20.06
+      ],
+      "source_owner": "src_pe.buffer"
+    },
+    {
+      "id": "label-53",
+      "owner": "src_embed",
+      "kind": "label",
+      "bbox": [
+        150.12,
+        2159,
+        463.76,
+        20.06
+      ],
+      "source_owner": "src_embed"
+    },
+    {
+      "id": "label-54",
+      "owner": "dec.layer_i",
+      "kind": "label",
+      "bbox": [
+        918,
+        243,
+        270.94,
+        27.139999999999997
+      ],
+      "source_owner": "dec.layer_i"
+    },
+    {
+      "id": "label-55",
+      "owner": "dec.norm3",
+      "kind": "label",
+      "bbox": [
+        958,
+        315,
+        248.0,
+        23.599999999999998
+      ],
+      "source_owner": "dec.norm3"
+    },
+    {
+      "id": "label-56",
+      "owner": "dec.norm3.add",
+      "kind": "label",
+      "bbox": [
+        1098.25,
+        346,
+        15.5,
+        29.5
+      ],
+      "source_owner": "dec.norm3.add"
+    },
+    {
+      "id": "label-57",
+      "owner": "dec.norm3",
+      "kind": "edge-label",
+      "bbox": [
+        984,
+        339,
+        79.36,
+        18.88
+      ],
+      "edge_spec": {
+        "canonical_dst": "dec.norm3.add:x"
+      },
+      "near": "target",
+      "source_owner": "dec.norm3",
+      "route": "binding-083",
+      "canonical_src": "dec.norm2.layernorm:out",
+      "canonical_dst": "dec.norm3.add:x",
+      "semantic_edges": [
+        "dec.norm2.layernorm:out->dec.norm2:out",
+        "dec.norm2:out->dec.norm3:skip",
+        "dec.norm3:skip->dec.norm3.add:x"
+      ]
+    },
+    {
+      "id": "label-58",
+      "owner": "dec.norm3.layernorm",
+      "kind": "label",
+      "bbox": [
+        1252.99,
+        351.65,
+        106.02,
+        22.419999999999998
+      ],
+      "source_owner": "dec.norm3.layernorm"
+    },
+    {
+      "id": "label-59",
+      "owner": "dec.ffn",
+      "kind": "label",
+      "bbox": [
+        1027.2,
+        450,
+        421.6,
+        23.599999999999998
+      ],
+      "source_owner": "dec.ffn"
+    },
+    {
+      "id": "label-60",
+      "owner": "dec.ffn.input_value",
+      "kind": "label",
+      "bbox": [
+        966.28,
+        548,
+        69.44,
+        18.88
+      ],
+      "source_owner": "dec.ffn:in"
+    },
+    {
+      "id": "label-61",
+      "owner": "dec.ffn.output_value",
+      "kind": "label",
+      "bbox": [
+        1402.28,
+        548,
+        69.44,
+        18.88
+      ],
+      "source_owner": "dec.ffn.linear2:out"
+    },
+    {
+      "id": "label-62",
+      "owner": "dec.ffn.input_value",
+      "kind": "label",
+      "bbox": [
+        995.11,
+        485,
+        11.78,
+        22.419999999999998
+      ],
+      "source_owner": "dec.ffn:in"
+    },
+    {
+      "id": "label-63",
+      "owner": "dec.ffn.output_value",
+      "kind": "label",
+      "bbox": [
+        1431.11,
+        485,
+        11.78,
+        22.419999999999998
+      ],
+      "source_owner": "dec.ffn.linear2:out"
+    },
+    {
+      "id": "label-64",
+      "owner": "dec.ffn.linear1",
+      "kind": "label",
+      "bbox": [
+        1061.94,
+        506.67999999999995,
+        78.12,
+        42.48
+      ],
+      "source_owner": "dec.ffn.linear1"
+    },
+    {
+      "id": "label-65",
+      "owner": "dec.ffn.relu",
+      "kind": "label",
+      "bbox": [
+        1196.68,
+        517.3,
+        44.64,
+        21.24
+      ],
+      "source_owner": "dec.ffn.relu"
+    },
+    {
+      "id": "label-66",
+      "owner": "dec.ffn.linear2",
+      "kind": "label",
+      "bbox": [
+        1297.94,
+        506.67999999999995,
+        78.12,
+        42.48
+      ],
+      "source_owner": "dec.ffn.linear2"
+    },
+    {
+      "id": "dec.ffn.hidden_snapshot",
+      "owner": "dec.ffn.relu",
+      "kind": "value-snapshot",
+      "value_owner": "dec.ffn.relu:out",
+      "bbox": [
+        1121,
+        562,
+        132,
+        80
+      ],
+      "source_owner": "dec.ffn.relu"
+    },
+    {
+      "id": "label-68",
+      "owner": "dec.norm2",
+      "kind": "label",
+      "bbox": [
+        958,
+        683,
+        248.0,
+        23.599999999999998
+      ],
+      "source_owner": "dec.norm2"
+    },
+    {
+      "id": "label-69",
+      "owner": "dec.norm2.add",
+      "kind": "label",
+      "bbox": [
+        1098.25,
+        714,
+        15.5,
+        29.5
+      ],
+      "source_owner": "dec.norm2.add"
+    },
+    {
+      "id": "label-70",
+      "owner": "dec.norm2",
+      "kind": "edge-label",
+      "bbox": [
+        984,
+        707,
+        79.36,
+        18.88
+      ],
+      "edge_spec": {
+        "canonical_dst": "dec.norm2.add:x"
+      },
+      "near": "target",
+      "source_owner": "dec.norm2",
+      "route": "binding-075",
+      "canonical_src": "dec.norm1.layernorm:out",
+      "canonical_dst": "dec.norm2.add:x",
+      "semantic_edges": [
+        "dec.norm1.layernorm:out->dec.norm1:out",
+        "dec.norm1:out->dec.norm2:skip",
+        "dec.norm2:skip->dec.norm2.add:x"
+      ]
+    },
+    {
+      "id": "label-71",
+      "owner": "dec.norm2.layernorm",
+      "kind": "label",
+      "bbox": [
+        1252.99,
+        719.65,
+        106.02,
+        22.419999999999998
+      ],
+      "source_owner": "dec.norm2.layernorm"
+    },
+    {
+      "id": "label-72",
+      "owner": "dec.cross",
+      "kind": "label",
+      "bbox": [
+        1045.8,
+        818,
+        384.4,
+        23.599999999999998
+      ],
+      "source_owner": "dec.cross"
+    },
+    {
+      "id": "label-73",
+      "owner": "dec.cross",
+      "kind": "label",
+      "bbox": [
+        1070.6,
+        846,
+        334.8,
+        21.24
+      ],
+      "source_owner": "dec.cross"
+    },
+    {
+      "id": "label-74",
+      "owner": "dec.cross.q",
+      "kind": "label",
+      "bbox": [
+        979.15,
+        921.25,
+        83.7,
+        17.7
+      ],
+      "source_owner": "dec.cross.q"
+    },
+    {
+      "id": "label-75",
+      "owner": "dec.cross.q.value",
+      "kind": "label",
+      "bbox": [
+        1113.0,
+        950,
+        0.0,
+        18.88
+      ],
+      "source_owner": "dec.cross.q:out"
+    },
+    {
+      "id": "label-76",
+      "owner": "dec.cross.q.value",
+      "kind": "label",
+      "bbox": [
+        1107.73,
+        894,
+        10.54,
+        20.06
+      ],
+      "source_owner": "dec.cross.q:out"
+    },
+    {
+      "id": "label-77",
+      "owner": "dec.cross.q.value",
+      "kind": "label",
+      "bbox": [
+        1042.24,
+        951,
+        60.76,
+        16.52
+      ],
+      "source_owner": "dec.cross.q:out"
+    },
+    {
+      "id": "label-78",
+      "owner": "dec.cross.k",
+      "kind": "label",
+      "bbox": [
+        1158.4833333333333,
+        921.25,
+        83.7,
+        17.7
+      ],
+      "source_owner": "dec.cross.k"
+    },
+    {
+      "id": "label-79",
+      "owner": "dec.cross.k.value",
+      "kind": "label",
+      "bbox": [
+        1292.3333333333333,
+        950,
+        0.0,
+        18.88
+      ],
+      "source_owner": "dec.cross.k:out"
+    },
+    {
+      "id": "label-80",
+      "owner": "dec.cross.k.value",
+      "kind": "label",
+      "bbox": [
+        1287.0633333333333,
+        894,
+        10.54,
+        20.06
+      ],
+      "source_owner": "dec.cross.k:out"
+    },
+    {
+      "id": "label-81",
+      "owner": "dec.cross.k.value",
+      "kind": "label",
+      "bbox": [
+        1221.5733333333333,
+        951,
+        60.76,
+        16.52
+      ],
+      "source_owner": "dec.cross.k:out"
+    },
+    {
+      "id": "label-82",
+      "owner": "dec.cross.v",
+      "kind": "label",
+      "bbox": [
+        1337.8166666666668,
+        921.25,
+        83.7,
+        17.7
+      ],
+      "source_owner": "dec.cross.v"
+    },
+    {
+      "id": "label-83",
+      "owner": "dec.cross.v.value",
+      "kind": "label",
+      "bbox": [
+        1471.6666666666667,
+        950,
+        0.0,
+        18.88
+      ],
+      "source_owner": "dec.cross.v:out"
+    },
+    {
+      "id": "label-84",
+      "owner": "dec.cross.v.value",
+      "kind": "label",
+      "bbox": [
+        1466.3966666666668,
+        894,
+        10.54,
+        20.06
+      ],
+      "source_owner": "dec.cross.v:out"
+    },
+    {
+      "id": "label-85",
+      "owner": "dec.cross.v.value",
+      "kind": "label",
+      "bbox": [
+        1400.9066666666668,
+        951,
+        60.76,
+        16.52
+      ],
+      "source_owner": "dec.cross.v:out"
+    },
+    {
+      "id": "label-86",
+      "owner": "dec.cross.split",
+      "kind": "label",
+      "bbox": [
+        1053.55,
+        1003.95,
+        368.9,
+        20.06
+      ],
+      "source_owner": "dec.cross.split"
+    },
+    {
+      "id": "label-87",
+      "owner": "dec.cross.sdpa",
+      "kind": "label",
+      "bbox": [
+        1020.38,
+        1067.3,
+        435.24,
+        21.24
+      ],
+      "source_owner": "dec.cross.sdpa"
+    },
+    {
+      "id": "label-88",
+      "owner": "dec.cross.merge",
+      "kind": "label",
+      "bbox": [
+        1043.01,
+        1128.95,
+        389.98,
+        20.06
+      ],
+      "source_owner": "dec.cross.merge"
+    },
+    {
+      "id": "label-89",
+      "owner": "dec.cross.wo",
+      "kind": "label",
+      "bbox": [
+        1137.56,
+        1185.3,
+        200.88,
+        21.24
+      ],
+      "source_owner": "dec.cross.wo"
+    },
+    {
+      "id": "label-90",
+      "owner": "dec.norm1",
+      "kind": "label",
+      "bbox": [
+        958,
+        1279,
+        248.0,
+        23.599999999999998
+      ],
+      "source_owner": "dec.norm1"
+    },
+    {
+      "id": "label-91",
+      "owner": "dec.norm1.add",
+      "kind": "label",
+      "bbox": [
+        1098.25,
+        1310,
+        15.5,
+        29.5
+      ],
+      "source_owner": "dec.norm1.add"
+    },
+    {
+      "id": "label-92",
+      "owner": "dec.norm1",
+      "kind": "edge-label",
+      "bbox": [
+        984,
+        1303,
+        79.36,
+        18.88
+      ],
+      "edge_spec": {
+        "canonical_dst": "dec.norm1.add:x"
+      },
+      "near": "target",
+      "source_owner": "dec.norm1",
+      "route": "binding-012",
+      "canonical_src": "tgt_pe.add:out",
+      "canonical_dst": "dec.norm1.add:x",
+      "semantic_edges": [
+        "dec.norm1:skip->dec.norm1.add:x",
+        "tgt_pe.add:out->tgt_pe.dropout:in",
+        "tgt_pe.dropout:out->tgt_pe:out",
+        "tgt_pe:out->dec.norm1:skip"
+      ]
+    },
+    {
+      "id": "label-93",
+      "owner": "dec.norm1.layernorm",
+      "kind": "label",
+      "bbox": [
+        1252.99,
+        1315.65,
+        106.02,
+        22.419999999999998
+      ],
+      "source_owner": "dec.norm1.layernorm"
+    },
+    {
+      "id": "label-94",
+      "owner": "dec.self",
+      "kind": "label",
+      "bbox": [
+        1058.2,
+        1414,
+        359.6,
+        23.599999999999998
+      ],
+      "source_owner": "dec.self"
+    },
+    {
+      "id": "label-95",
+      "owner": "dec.self",
+      "kind": "label",
+      "bbox": [
+        1143.14,
+        1442,
+        189.72,
+        21.24
+      ],
+      "source_owner": "dec.self"
+    },
+    {
+      "id": "label-96",
+      "owner": "dec.self.q",
+      "kind": "label",
+      "bbox": [
+        979.15,
+        1517.25,
+        83.7,
+        17.7
+      ],
+      "source_owner": "dec.self.q"
+    },
+    {
+      "id": "label-97",
+      "owner": "dec.self.q.value",
+      "kind": "label",
+      "bbox": [
+        1113.0,
+        1546,
+        0.0,
+        18.88
+      ],
+      "source_owner": "dec.self.q:out"
+    },
+    {
+      "id": "label-98",
+      "owner": "dec.self.q.value",
+      "kind": "label",
+      "bbox": [
+        1107.73,
+        1490,
+        10.54,
+        20.06
+      ],
+      "source_owner": "dec.self.q:out"
+    },
+    {
+      "id": "label-99",
+      "owner": "dec.self.q.value",
+      "kind": "label",
+      "bbox": [
+        1042.24,
+        1547,
+        60.76,
+        16.52
+      ],
+      "source_owner": "dec.self.q:out"
+    },
+    {
+      "id": "label-100",
+      "owner": "dec.self.k",
+      "kind": "label",
+      "bbox": [
+        1158.4833333333333,
+        1517.25,
+        83.7,
+        17.7
+      ],
+      "source_owner": "dec.self.k"
+    },
+    {
+      "id": "label-101",
+      "owner": "dec.self.k.value",
+      "kind": "label",
+      "bbox": [
+        1292.3333333333333,
+        1546,
+        0.0,
+        18.88
+      ],
+      "source_owner": "dec.self.k:out"
+    },
+    {
+      "id": "label-102",
+      "owner": "dec.self.k.value",
+      "kind": "label",
+      "bbox": [
+        1287.0633333333333,
+        1490,
+        10.54,
+        20.06
+      ],
+      "source_owner": "dec.self.k:out"
+    },
+    {
+      "id": "label-103",
+      "owner": "dec.self.k.value",
+      "kind": "label",
+      "bbox": [
+        1221.5733333333333,
+        1547,
+        60.76,
+        16.52
+      ],
+      "source_owner": "dec.self.k:out"
+    },
+    {
+      "id": "label-104",
+      "owner": "dec.self.v",
+      "kind": "label",
+      "bbox": [
+        1337.8166666666668,
+        1517.25,
+        83.7,
+        17.7
+      ],
+      "source_owner": "dec.self.v"
+    },
+    {
+      "id": "label-105",
+      "owner": "dec.self.v.value",
+      "kind": "label",
+      "bbox": [
+        1471.6666666666667,
+        1546,
+        0.0,
+        18.88
+      ],
+      "source_owner": "dec.self.v:out"
+    },
+    {
+      "id": "label-106",
+      "owner": "dec.self.v.value",
+      "kind": "label",
+      "bbox": [
+        1466.3966666666668,
+        1490,
+        10.54,
+        20.06
+      ],
+      "source_owner": "dec.self.v:out"
+    },
+    {
+      "id": "label-107",
+      "owner": "dec.self.v.value",
+      "kind": "label",
+      "bbox": [
+        1400.9066666666668,
+        1547,
+        60.76,
+        16.52
+      ],
+      "source_owner": "dec.self.v:out"
+    },
+    {
+      "id": "label-108",
+      "owner": "dec.self.split",
+      "kind": "label",
+      "bbox": [
+        1053.55,
+        1599.95,
+        368.9,
+        20.06
+      ],
+      "source_owner": "dec.self.split"
+    },
+    {
+      "id": "label-109",
+      "owner": "dec.self.sdpa",
+      "kind": "label",
+      "bbox": [
+        1027.2,
+        1659,
+        421.6,
+        20.06
+      ],
+      "source_owner": "dec.self.sdpa"
+    },
+    {
+      "id": "label-110",
+      "owner": "dec.self.sdpa.qkt",
+      "kind": "label",
+      "bbox": [
+        1013.1,
+        1708.25,
+        55.8,
+        17.7
+      ],
+      "source_owner": "dec.self.sdpa.qkt"
+    },
+    {
+      "id": "label-111",
+      "owner": "dec.self.sdpa.scale",
+      "kind": "label",
+      "bbox": [
+        1112.25,
+        1708.25,
+        46.5,
+        17.7
+      ],
+      "source_owner": "dec.self.sdpa.scale"
+    },
+    {
+      "id": "label-112",
+      "owner": "dec.self.sdpa.mask",
+      "kind": "label",
+      "bbox": [
+        1197.8,
+        1699.4,
+        74.4,
+        35.4
+      ],
+      "source_owner": "dec.self.sdpa.mask"
+    },
+    {
+      "id": "label-113",
+      "owner": "dec.self.sdpa.softmax",
+      "kind": "label",
+      "bbox": [
+        1310.95,
+        1708.25,
+        65.1,
+        17.7
+      ],
+      "source_owner": "dec.self.sdpa.softmax"
+    },
+    {
+      "id": "label-114",
+      "owner": "dec.self.sdpa.av",
+      "kind": "label",
+      "bbox": [
+        1417.75,
+        1708.25,
+        46.5,
+        17.7
+      ],
+      "source_owner": "dec.self.sdpa.av"
+    },
+    {
+      "id": "label-115",
+      "owner": "dec.self.split",
+      "kind": "edge-label",
+      "bbox": [
+        999.88,
+        1635,
+        16.12,
+        15.34
+      ],
+      "edge_spec": {
+        "canonical_src": "dec.self.split:q_out",
+        "canonical_dst": "dec.self.sdpa.qkt:q"
+      },
+      "near": "source",
+      "source_owner": "dec.self.split",
+      "route": "binding-046",
+      "canonical_src": "dec.self.split:q_out",
+      "canonical_dst": "dec.self.sdpa.qkt:q",
+      "semantic_edges": [
+        "dec.self.sdpa:q->dec.self.sdpa.qkt:q",
+        "dec.self.split:q_out->dec.self.sdpa:q"
+      ]
+    },
+    {
+      "id": "label-116",
+      "owner": "dec.self.split",
+      "kind": "edge-label",
+      "bbox": [
+        1064,
+        1635,
+        16.12,
+        15.34
+      ],
+      "edge_spec": {
+        "canonical_src": "dec.self.split:k_out",
+        "canonical_dst": "dec.self.sdpa.qkt:k"
+      },
+      "near": "source",
+      "source_owner": "dec.self.split",
+      "route": "binding-049",
+      "canonical_src": "dec.self.split:k_out",
+      "canonical_dst": "dec.self.sdpa.qkt:k",
+      "semantic_edges": [
+        "dec.self.sdpa:k->dec.self.sdpa.qkt:k",
+        "dec.self.split:k_out->dec.self.sdpa:k"
+      ]
+    },
+    {
+      "id": "label-117",
+      "owner": "dec.self.split",
+      "kind": "edge-label",
+      "bbox": [
+        1418.88,
+        1635,
+        16.12,
+        15.34
+      ],
+      "edge_spec": {
+        "canonical_src": "dec.self.split:v_out",
+        "canonical_dst": "dec.self.sdpa.av:v"
+      },
+      "near": "source",
+      "source_owner": "dec.self.split",
+      "route": "binding-052",
+      "canonical_src": "dec.self.split:v_out",
+      "canonical_dst": "dec.self.sdpa.av:v",
+      "semantic_edges": [
+        "dec.self.sdpa:v->dec.self.sdpa.av:v",
+        "dec.self.split:v_out->dec.self.sdpa:v"
+      ]
+    },
+    {
+      "id": "label-118",
+      "owner": "dec.self.sdpa",
+      "kind": "edge-label",
+      "bbox": [
+        1285.16,
+        1734,
+        112.84,
+        15.34
+      ],
+      "edge_spec": {
+        "canonical_src": "dec.self.sdpa.softmax:out",
+        "canonical_dst": "dec.self.sdpa.av:a"
+      },
+      "near": "ratio",
+      "source_owner": "dec.self.sdpa",
+      "route": "binding-058",
+      "canonical_src": "dec.self.sdpa.softmax:out",
+      "canonical_dst": "dec.self.sdpa.av:a",
+      "semantic_edges": [
+        "dec.self.sdpa.attn_dropout:out->dec.self.sdpa.av:a",
+        "dec.self.sdpa.nan_guard:out->dec.self.sdpa.attn_dropout:in",
+        "dec.self.sdpa.softmax:out->dec.self.sdpa.nan_guard:in"
+      ]
+    },
+    {
+      "id": "label-119",
+      "owner": "dec.self.sdpa",
+      "kind": "edge-label",
+      "bbox": [
+        1193.67,
+        1741,
+        88.66,
+        30.68
+      ],
+      "edge_spec": {
+        "canonical_src": "dec.self.sdpa.mask:out",
+        "canonical_dst": "dec.self.sdpa.softmax:in"
+      },
+      "near": "ratio",
+      "source_owner": "dec.self.sdpa",
+      "route": "binding-057",
+      "canonical_src": "dec.self.sdpa.mask:out",
+      "canonical_dst": "dec.self.sdpa.softmax:in",
+      "semantic_edges": [
+        "dec.self.sdpa.mask:out->dec.self.sdpa.softmax:in"
+      ]
+    },
+    {
+      "id": "label-120",
+      "owner": "dec.self.merge",
+      "kind": "label",
+      "bbox": [
+        1043.01,
+        1830.95,
+        389.98,
+        20.06
+      ],
+      "source_owner": "dec.self.merge"
+    },
+    {
+      "id": "label-121",
+      "owner": "dec.self.wo",
+      "kind": "label",
+      "bbox": [
+        1137.56,
+        1887.3,
+        200.88,
+        21.24
+      ],
+      "source_owner": "dec.self.wo"
+    },
+    {
+      "id": "label-122",
+      "owner": "tgt_embed",
+      "kind": "label",
+      "bbox": [
+        1078.97,
+        2076.65,
+        318.06,
+        22.419999999999998
+      ],
+      "source_owner": "tgt_embed"
+    },
+    {
+      "id": "label-123",
+      "owner": "tgt_pe.add",
+      "kind": "label",
+      "bbox": [
+        1230.25,
+        1998,
+        15.5,
+        29.5
+      ],
+      "source_owner": "tgt_pe.add"
+    },
+    {
+      "id": "label-124",
+      "owner": "tgt_pe.buffer",
+      "kind": "label",
+      "bbox": [
+        940.87,
+        2004.95,
+        200.26,
+        20.06
+      ],
+      "source_owner": "tgt_pe.buffer"
+    },
+    {
+      "id": "label-125",
+      "owner": "tgt_embed",
+      "kind": "label",
+      "bbox": [
+        1006.12,
+        2159,
+        463.76,
+        20.06
+      ],
+      "source_owner": "tgt_embed"
+    }
+  ],
+  "boxes": [
+    {
+      "id": "probabilities",
+      "parent": null,
+      "bbox": [
+        998.0,
+        110,
+        480,
+        58
+      ]
+    },
+    {
+      "id": "generator",
+      "parent": null,
+      "bbox": [
+        1048.0,
+        188,
+        380,
+        48
+      ]
+    },
+    {
+      "id": "enc.layer_i",
+      "parent": null,
+      "bbox": [
+        42,
+        286,
+        660,
+        1088
+      ]
+    },
+    {
+      "id": "enc.norm2",
+      "parent": "enc.layer_i",
+      "bbox": [
+        80,
+        308,
+        604,
+        110
+      ]
+    },
+    {
+      "id": "enc.norm2.add",
+      "parent": "enc.norm2",
+      "bbox": [
+        236,
+        350,
+        28,
+        28
+      ]
+    },
+    {
+      "id": "enc.norm2.layernorm",
+      "parent": "enc.norm2",
+      "bbox": [
+        350,
+        346,
+        200,
+        36
+      ]
+    },
+    {
+      "id": "enc.ffn",
+      "parent": "enc.layer_i",
+      "bbox": [
+        80,
+        442,
+        604,
+        210
+      ]
+    },
+    {
+      "id": "enc.ffn.linear1",
+      "parent": "enc.ffn",
+      "bbox": [
+        190,
+        504,
+        110,
+        50
+      ]
+    },
+    {
+      "id": "enc.ffn.relu",
+      "parent": "enc.ffn",
+      "bbox": [
+        320,
+        504,
+        86,
+        50
+      ]
+    },
+    {
+      "id": "enc.ffn.linear2",
+      "parent": "enc.ffn",
+      "bbox": [
+        426,
+        504,
+        110,
+        50
+      ]
+    },
+    {
+      "id": "enc.norm1",
+      "parent": "enc.layer_i",
+      "bbox": [
+        80,
+        676,
+        604,
+        110
+      ]
+    },
+    {
+      "id": "enc.norm1.add",
+      "parent": "enc.norm1",
+      "bbox": [
+        236,
+        718,
+        28,
+        28
+      ]
+    },
+    {
+      "id": "enc.norm1.layernorm",
+      "parent": "enc.norm1",
+      "bbox": [
+        350,
+        714,
+        200,
+        36
+      ]
+    },
+    {
+      "id": "enc.self",
+      "parent": "enc.layer_i",
+      "bbox": [
+        80,
+        810,
+        604,
+        542
+      ]
+    },
+    {
+      "id": "enc.self.q",
+      "parent": "enc.self",
+      "bbox": [
+        122.0,
+        914,
+        86,
+        34
+      ]
+    },
+    {
+      "id": "enc.self.k",
+      "parent": "enc.self",
+      "bbox": [
+        301.33333333333337,
+        914,
+        86,
+        34
+      ]
+    },
+    {
+      "id": "enc.self.v",
+      "parent": "enc.self",
+      "bbox": [
+        480.6666666666667,
+        914,
+        86,
+        34
+      ]
+    },
+    {
+      "id": "enc.self.split",
+      "parent": "enc.self",
+      "bbox": [
+        122,
+        996,
+        520,
+        38
+      ]
+    },
+    {
+      "id": "enc.self.sdpa",
+      "parent": "enc.self",
+      "bbox": [
+        122,
+        1058,
+        520,
+        124
+      ]
+    },
+    {
+      "id": "enc.self.sdpa.qkt",
+      "parent": "enc.self.sdpa",
+      "bbox": [
+        144,
+        1102,
+        82,
+        40
+      ]
+    },
+    {
+      "id": "enc.self.sdpa.scale",
+      "parent": "enc.self.sdpa",
+      "bbox": [
+        247.5,
+        1102,
+        64,
+        40
+      ]
+    },
+    {
+      "id": "enc.self.sdpa.mask",
+      "parent": "enc.self.sdpa",
+      "bbox": [
+        333.0,
+        1102,
+        92,
+        40
+      ]
+    },
+    {
+      "id": "enc.self.sdpa.softmax",
+      "parent": "enc.self.sdpa",
+      "bbox": [
+        446.5,
+        1102,
+        82,
+        40
+      ]
+    },
+    {
+      "id": "enc.self.sdpa.av",
+      "parent": "enc.self.sdpa",
+      "bbox": [
+        550.0,
+        1102,
+        70,
+        40
+      ]
+    },
+    {
+      "id": "enc.self.merge",
+      "parent": "enc.self",
+      "bbox": [
+        122,
+        1230,
+        520,
+        32
+      ]
+    },
+    {
+      "id": "enc.self.wo",
+      "parent": "enc.self",
+      "bbox": [
+        272.0,
+        1286,
+        220,
+        34
+      ]
+    },
+    {
+      "id": "src_embed",
+      "parent": null,
+      "bbox": [
+        135,
+        2058,
+        494,
+        62
+      ]
+    },
+    {
+      "id": "src_pe.add",
+      "parent": null,
+      "bbox": [
+        367.0,
+        2001,
+        30,
+        30
+      ]
+    },
+    {
+      "id": "src_pe.buffer",
+      "parent": null,
+      "bbox": [
+        80.0,
+        1993,
+        210,
+        46
+      ]
+    },
+    {
+      "id": "src_tokens",
+      "parent": null,
+      "bbox": [
+        342.0,
+        2139,
+        80,
+        19
+      ],
+      "glyph": "input_label"
+    },
+    {
+      "id": "dec.layer_i",
+      "parent": null,
+      "bbox": [
+        898,
+        286,
+        660,
+        1684
+      ]
+    },
+    {
+      "id": "dec.norm3",
+      "parent": "dec.layer_i",
+      "bbox": [
+        936,
+        308,
+        604,
+        110
+      ]
+    },
+    {
+      "id": "dec.norm3.add",
+      "parent": "dec.norm3",
+      "bbox": [
+        1092,
+        350,
+        28,
+        28
+      ]
+    },
+    {
+      "id": "dec.norm3.layernorm",
+      "parent": "dec.norm3",
+      "bbox": [
+        1206,
+        346,
+        200,
+        36
+      ]
+    },
+    {
+      "id": "dec.ffn",
+      "parent": "dec.layer_i",
+      "bbox": [
+        936,
+        442,
+        604,
+        210
+      ]
+    },
+    {
+      "id": "dec.ffn.linear1",
+      "parent": "dec.ffn",
+      "bbox": [
+        1046,
+        504,
+        110,
+        50
+      ]
+    },
+    {
+      "id": "dec.ffn.relu",
+      "parent": "dec.ffn",
+      "bbox": [
+        1176,
+        504,
+        86,
+        50
+      ]
+    },
+    {
+      "id": "dec.ffn.linear2",
+      "parent": "dec.ffn",
+      "bbox": [
+        1282,
+        504,
+        110,
+        50
+      ]
+    },
+    {
+      "id": "dec.norm2",
+      "parent": "dec.layer_i",
+      "bbox": [
+        936,
+        676,
+        604,
+        110
+      ]
+    },
+    {
+      "id": "dec.norm2.add",
+      "parent": "dec.norm2",
+      "bbox": [
+        1092,
+        718,
+        28,
+        28
+      ]
+    },
+    {
+      "id": "dec.norm2.layernorm",
+      "parent": "dec.norm2",
+      "bbox": [
+        1206,
+        714,
+        200,
+        36
+      ]
+    },
+    {
+      "id": "dec.cross",
+      "parent": "dec.layer_i",
+      "bbox": [
+        936,
+        810,
+        604,
+        438
+      ]
+    },
+    {
+      "id": "dec.cross.q",
+      "parent": "dec.cross",
+      "bbox": [
+        978.0,
+        914,
+        86,
+        34
+      ]
+    },
+    {
+      "id": "dec.cross.k",
+      "parent": "dec.cross",
+      "bbox": [
+        1157.3333333333333,
+        914,
+        86,
+        34
+      ]
+    },
+    {
+      "id": "dec.cross.v",
+      "parent": "dec.cross",
+      "bbox": [
+        1336.6666666666667,
+        914,
+        86,
+        34
+      ]
+    },
+    {
+      "id": "dec.cross.split",
+      "parent": "dec.cross",
+      "bbox": [
+        978,
+        996,
+        520,
+        38
+      ]
+    },
+    {
+      "id": "dec.cross.sdpa",
+      "parent": "dec.cross",
+      "bbox": [
+        978,
+        1058,
+        520,
+        42
+      ]
+    },
+    {
+      "id": "dec.cross.merge",
+      "parent": "dec.cross",
+      "bbox": [
+        978,
+        1124,
+        520,
+        32
+      ]
+    },
+    {
+      "id": "dec.cross.wo",
+      "parent": "dec.cross",
+      "bbox": [
+        1128.0,
+        1180,
+        220,
+        34
+      ]
+    },
+    {
+      "id": "dec.norm1",
+      "parent": "dec.layer_i",
+      "bbox": [
+        936,
+        1272,
+        604,
+        110
+      ]
+    },
+    {
+      "id": "dec.norm1.add",
+      "parent": "dec.norm1",
+      "bbox": [
+        1092,
+        1314,
+        28,
+        28
+      ]
+    },
+    {
+      "id": "dec.norm1.layernorm",
+      "parent": "dec.norm1",
+      "bbox": [
+        1206,
+        1310,
+        200,
+        36
+      ]
+    },
+    {
+      "id": "dec.self",
+      "parent": "dec.layer_i",
+      "bbox": [
+        936,
+        1406,
+        604,
+        542
+      ]
+    },
+    {
+      "id": "dec.self.q",
+      "parent": "dec.self",
+      "bbox": [
+        978.0,
+        1510,
+        86,
+        34
+      ]
+    },
+    {
+      "id": "dec.self.k",
+      "parent": "dec.self",
+      "bbox": [
+        1157.3333333333333,
+        1510,
+        86,
+        34
+      ]
+    },
+    {
+      "id": "dec.self.v",
+      "parent": "dec.self",
+      "bbox": [
+        1336.6666666666667,
+        1510,
+        86,
+        34
+      ]
+    },
+    {
+      "id": "dec.self.split",
+      "parent": "dec.self",
+      "bbox": [
+        978,
+        1592,
+        520,
+        38
+      ]
+    },
+    {
+      "id": "dec.self.sdpa",
+      "parent": "dec.self",
+      "bbox": [
+        978,
+        1654,
+        520,
+        124
+      ]
+    },
+    {
+      "id": "dec.self.sdpa.qkt",
+      "parent": "dec.self.sdpa",
+      "bbox": [
+        1000,
+        1698,
+        82,
+        40
+      ]
+    },
+    {
+      "id": "dec.self.sdpa.scale",
+      "parent": "dec.self.sdpa",
+      "bbox": [
+        1103.5,
+        1698,
+        64,
+        40
+      ]
+    },
+    {
+      "id": "dec.self.sdpa.mask",
+      "parent": "dec.self.sdpa",
+      "bbox": [
+        1189.0,
+        1698,
+        92,
+        40
+      ]
+    },
+    {
+      "id": "dec.self.sdpa.softmax",
+      "parent": "dec.self.sdpa",
+      "bbox": [
+        1302.5,
+        1698,
+        82,
+        40
+      ]
+    },
+    {
+      "id": "dec.self.sdpa.av",
+      "parent": "dec.self.sdpa",
+      "bbox": [
+        1406.0,
+        1698,
+        70,
+        40
+      ]
+    },
+    {
+      "id": "dec.self.merge",
+      "parent": "dec.self",
+      "bbox": [
+        978,
+        1826,
+        520,
+        32
+      ]
+    },
+    {
+      "id": "dec.self.wo",
+      "parent": "dec.self",
+      "bbox": [
+        1128.0,
+        1882,
+        220,
+        34
+      ]
+    },
+    {
+      "id": "tgt_embed",
+      "parent": null,
+      "bbox": [
+        991,
+        2058,
+        494,
+        62
+      ]
+    },
+    {
+      "id": "tgt_pe.add",
+      "parent": null,
+      "bbox": [
+        1223.0,
+        2001,
+        30,
+        30
+      ]
+    },
+    {
+      "id": "tgt_pe.buffer",
+      "parent": null,
+      "bbox": [
+        936.0,
+        1993,
+        210,
+        46
+      ]
+    },
+    {
+      "id": "tgt_tokens",
+      "parent": null,
+      "bbox": [
+        1198.0,
+        2139,
+        80,
+        19
+      ],
+      "glyph": "input_label"
+    },
+    {
+      "id": "enc.ffn.input_value",
+      "parent": "enc.ffn",
+      "bbox": [
+        120,
+        514,
+        50,
+        30
+      ],
+      "glyph": "tensor_value_alias",
+      "canonical": "enc.ffn:in"
+    },
+    {
+      "id": "enc.ffn.output_value",
+      "parent": "enc.ffn",
+      "bbox": [
+        556,
+        514,
+        50,
+        30
+      ],
+      "glyph": "tensor_value_alias",
+      "canonical": "enc.ffn.linear2:out"
+    },
+    {
+      "id": "enc.self.q.value",
+      "parent": "enc.self",
+      "bbox": [
+        232.0,
+        916,
+        50,
+        30
+      ],
+      "glyph": "tensor_value_alias",
+      "canonical": "enc.self.q:out"
+    },
+    {
+      "id": "enc.self.k.value",
+      "parent": "enc.self",
+      "bbox": [
+        411.33333333333337,
+        916,
+        50,
+        30
+      ],
+      "glyph": "tensor_value_alias",
+      "canonical": "enc.self.k:out"
+    },
+    {
+      "id": "enc.self.v.value",
+      "parent": "enc.self",
+      "bbox": [
+        590.6666666666667,
+        916,
+        50,
+        30
+      ],
+      "glyph": "tensor_value_alias",
+      "canonical": "enc.self.v:out"
+    },
+    {
+      "id": "dec.ffn.input_value",
+      "parent": "dec.ffn",
+      "bbox": [
+        976,
+        514,
+        50,
+        30
+      ],
+      "glyph": "tensor_value_alias",
+      "canonical": "dec.ffn:in"
+    },
+    {
+      "id": "dec.ffn.output_value",
+      "parent": "dec.ffn",
+      "bbox": [
+        1412,
+        514,
+        50,
+        30
+      ],
+      "glyph": "tensor_value_alias",
+      "canonical": "dec.ffn.linear2:out"
+    },
+    {
+      "id": "dec.cross.q.value",
+      "parent": "dec.cross",
+      "bbox": [
+        1088.0,
+        916,
+        50,
+        30
+      ],
+      "glyph": "tensor_value_alias",
+      "canonical": "dec.cross.q:out"
+    },
+    {
+      "id": "dec.cross.k.value",
+      "parent": "dec.cross",
+      "bbox": [
+        1267.3333333333333,
+        916,
+        50,
+        30
+      ],
+      "glyph": "tensor_value_alias",
+      "canonical": "dec.cross.k:out"
+    },
+    {
+      "id": "dec.cross.v.value",
+      "parent": "dec.cross",
+      "bbox": [
+        1446.6666666666667,
+        916,
+        50,
+        30
+      ],
+      "glyph": "tensor_value_alias",
+      "canonical": "dec.cross.v:out"
+    },
+    {
+      "id": "dec.self.q.value",
+      "parent": "dec.self",
+      "bbox": [
+        1088.0,
+        1512,
+        50,
+        30
+      ],
+      "glyph": "tensor_value_alias",
+      "canonical": "dec.self.q:out"
+    },
+    {
+      "id": "dec.self.k.value",
+      "parent": "dec.self",
+      "bbox": [
+        1267.3333333333333,
+        1512,
+        50,
+        30
+      ],
+      "glyph": "tensor_value_alias",
+      "canonical": "dec.self.k:out"
+    },
+    {
+      "id": "dec.self.v.value",
+      "parent": "dec.self",
+      "bbox": [
+        1446.6666666666667,
+        1512,
+        50,
+        30
+      ],
+      "glyph": "tensor_value_alias",
+      "canonical": "dec.self.v:out"
+    },
+    {
+      "id": "enc.memory.value",
+      "parent": null,
+      "bbox": [
+        720.0,
+        318,
+        160,
+        104
+      ],
+      "glyph": "tensor_value_alias",
+      "canonical": "enc.output:out"
+    }
+  ],
+  "border_rects": [
+    {
+      "id": "probabilities",
+      "bbox": [
+        998.0,
+        110,
+        480,
+        58
+      ],
+      "radius": 10
+    },
+    {
+      "id": "generator",
+      "bbox": [
+        1048.0,
+        188,
+        380,
+        48
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.layer_i",
+      "bbox": [
+        42,
+        286,
+        660,
+        1088
+      ],
+      "radius": 19
+    },
+    {
+      "id": "enc.norm2",
+      "bbox": [
+        80,
+        308,
+        604,
+        110
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.norm2.layernorm",
+      "bbox": [
+        350,
+        346,
+        200,
+        36
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.ffn",
+      "bbox": [
+        80,
+        442,
+        604,
+        210
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.ffn.linear1",
+      "bbox": [
+        190,
+        504,
+        110,
+        50
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.ffn.relu",
+      "bbox": [
+        320,
+        504,
+        86,
+        50
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.ffn.linear2",
+      "bbox": [
+        426,
+        504,
+        110,
+        50
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.norm1",
+      "bbox": [
+        80,
+        676,
+        604,
+        110
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.norm1.layernorm",
+      "bbox": [
+        350,
+        714,
+        200,
+        36
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.self",
+      "bbox": [
+        80,
+        810,
+        604,
+        542
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.self.q",
+      "bbox": [
+        122.0,
+        914,
+        86,
+        34
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.self.k",
+      "bbox": [
+        301.33333333333337,
+        914,
+        86,
+        34
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.self.v",
+      "bbox": [
+        480.6666666666667,
+        914,
+        86,
+        34
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.self.split",
+      "bbox": [
+        122,
+        996,
+        520,
+        38
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.self.sdpa",
+      "bbox": [
+        122,
+        1058,
+        520,
+        124
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.self.sdpa.qkt",
+      "bbox": [
+        144,
+        1102,
+        82,
+        40
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.self.sdpa.scale",
+      "bbox": [
+        247.5,
+        1102,
+        64,
+        40
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.self.sdpa.mask",
+      "bbox": [
+        333.0,
+        1102,
+        92,
+        40
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.self.sdpa.softmax",
+      "bbox": [
+        446.5,
+        1102,
+        82,
+        40
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.self.sdpa.av",
+      "bbox": [
+        550.0,
+        1102,
+        70,
+        40
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.self.merge",
+      "bbox": [
+        122,
+        1230,
+        520,
+        32
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.self.wo",
+      "bbox": [
+        272.0,
+        1286,
+        220,
+        34
+      ],
+      "radius": 10
+    },
+    {
+      "id": "src_embed",
+      "bbox": [
+        135,
+        2058,
+        494,
+        62
+      ],
+      "radius": 10
+    },
+    {
+      "id": "src_pe.buffer",
+      "bbox": [
+        80.0,
+        1993,
+        210,
+        46
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.layer_i",
+      "bbox": [
+        898,
+        286,
+        660,
+        1684
+      ],
+      "radius": 19
+    },
+    {
+      "id": "dec.norm3",
+      "bbox": [
+        936,
+        308,
+        604,
+        110
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.norm3.layernorm",
+      "bbox": [
+        1206,
+        346,
+        200,
+        36
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.ffn",
+      "bbox": [
+        936,
+        442,
+        604,
+        210
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.ffn.linear1",
+      "bbox": [
+        1046,
+        504,
+        110,
+        50
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.ffn.relu",
+      "bbox": [
+        1176,
+        504,
+        86,
+        50
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.ffn.linear2",
+      "bbox": [
+        1282,
+        504,
+        110,
+        50
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.norm2",
+      "bbox": [
+        936,
+        676,
+        604,
+        110
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.norm2.layernorm",
+      "bbox": [
+        1206,
+        714,
+        200,
+        36
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.cross",
+      "bbox": [
+        936,
+        810,
+        604,
+        438
+      ],
+      "radius": 10
+    },
+    {
+      "id": "frame-037",
+      "bbox": [
+        972,
+        896,
+        173.33333333333334,
+        86
+      ],
+      "radius": 7
+    },
+    {
+      "id": "frame-038",
+      "bbox": [
+        1151.3333333333333,
+        896,
+        352.6666666666667,
+        86
+      ],
+      "radius": 7
+    },
+    {
+      "id": "dec.cross.q",
+      "bbox": [
+        978.0,
+        914,
+        86,
+        34
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.cross.k",
+      "bbox": [
+        1157.3333333333333,
+        914,
+        86,
+        34
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.cross.v",
+      "bbox": [
+        1336.6666666666667,
+        914,
+        86,
+        34
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.cross.split",
+      "bbox": [
+        978,
+        996,
+        520,
+        38
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.cross.sdpa",
+      "bbox": [
+        978,
+        1058,
+        520,
+        42
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.cross.merge",
+      "bbox": [
+        978,
+        1124,
+        520,
+        32
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.cross.wo",
+      "bbox": [
+        1128.0,
+        1180,
+        220,
+        34
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.norm1",
+      "bbox": [
+        936,
+        1272,
+        604,
+        110
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.norm1.layernorm",
+      "bbox": [
+        1206,
+        1310,
+        200,
+        36
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.self",
+      "bbox": [
+        936,
+        1406,
+        604,
+        542
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.self.q",
+      "bbox": [
+        978.0,
+        1510,
+        86,
+        34
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.self.k",
+      "bbox": [
+        1157.3333333333333,
+        1510,
+        86,
+        34
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.self.v",
+      "bbox": [
+        1336.6666666666667,
+        1510,
+        86,
+        34
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.self.split",
+      "bbox": [
+        978,
+        1592,
+        520,
+        38
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.self.sdpa",
+      "bbox": [
+        978,
+        1654,
+        520,
+        124
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.self.sdpa.qkt",
+      "bbox": [
+        1000,
+        1698,
+        82,
+        40
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.self.sdpa.scale",
+      "bbox": [
+        1103.5,
+        1698,
+        64,
+        40
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.self.sdpa.mask",
+      "bbox": [
+        1189.0,
+        1698,
+        92,
+        40
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.self.sdpa.softmax",
+      "bbox": [
+        1302.5,
+        1698,
+        82,
+        40
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.self.sdpa.av",
+      "bbox": [
+        1406.0,
+        1698,
+        70,
+        40
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.self.merge",
+      "bbox": [
+        978,
+        1826,
+        520,
+        32
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.self.wo",
+      "bbox": [
+        1128.0,
+        1882,
+        220,
+        34
+      ],
+      "radius": 10
+    },
+    {
+      "id": "tgt_embed",
+      "bbox": [
+        991,
+        2058,
+        494,
+        62
+      ],
+      "radius": 10
+    },
+    {
+      "id": "tgt_pe.buffer",
+      "bbox": [
+        936.0,
+        1993,
+        210,
+        46
+      ],
+      "radius": 10
+    },
+    {
+      "id": "frame-063",
+      "bbox": [
+        720.0,
+        318,
+        160,
+        104
+      ],
+      "radius": 10
+    }
+  ],
+  "ports": {
+    "probabilities": {
+      "in": [
+        1238.0,
+        168
+      ]
+    },
+    "generator": {
+      "in": [
+        1238.0,
+        236
+      ],
+      "out": [
+        1238.0,
+        188
+      ]
+    },
+    "logits": {
+      "out": [
+        1238.0,
+        188
+      ]
+    },
+    "enc.layer_i": {
+      "in": [
+        372.0,
+        1374
+      ],
+      "out": [
+        372.0,
+        286
+      ]
+    },
+    "enc.norm2": {
+      "in": [
+        666,
+        418
+      ],
+      "out": [
+        382.0,
+        308
+      ],
+      "skip": [
+        80,
+        364
+      ]
+    },
+    "enc.norm2.add": {
+      "x": [
+        236,
+        364
+      ],
+      "f": [
+        250,
+        378
+      ],
+      "out": [
+        264,
+        364
+      ]
+    },
+    "enc.norm2.layernorm": {
+      "in": [
+        350,
+        364
+      ],
+      "out": [
+        550,
+        364
+      ]
+    },
+    "enc.ffn": {
+      "in": [
+        382.0,
+        652
+      ],
+      "out": [
+        666,
+        442
+      ],
+      "input_tap": [
+        382.0,
+        664.0
+      ]
+    },
+    "enc.ffn.linear1": {
+      "in": [
+        190,
+        529
+      ],
+      "out": [
+        300,
+        529
+      ]
+    },
+    "enc.ffn.relu": {
+      "in": [
+        320,
+        529
+      ],
+      "out": [
+        406,
+        529
+      ]
+    },
+    "enc.ffn.linear2": {
+      "in": [
+        426,
+        529
+      ],
+      "out": [
+        536,
+        529
+      ]
+    },
+    "enc.norm1": {
+      "in": [
+        666,
+        786
+      ],
+      "out": [
+        382.0,
+        676
+      ],
+      "skip": [
+        80,
+        732
+      ]
+    },
+    "enc.norm1.add": {
+      "x": [
+        236,
+        732
+      ],
+      "f": [
+        250,
+        746
+      ],
+      "out": [
+        264,
+        732
+      ]
+    },
+    "enc.norm1.layernorm": {
+      "in": [
+        350,
+        732
+      ],
+      "out": [
+        550,
+        732
+      ]
+    },
+    "enc.self": {
+      "in": [
+        382.0,
+        1352
+      ],
+      "out": [
+        666,
+        810
+      ],
+      "memory": [
+        80,
+        882
+      ],
+      "input_tap": [
+        382.0,
+        1364.0
+      ]
+    },
+    "enc.self.q": {
+      "in": [
+        165.0,
+        914
+      ],
+      "out": [
+        208.0,
+        931
+      ]
+    },
+    "enc.self.k": {
+      "in": [
+        344.33333333333337,
+        914
+      ],
+      "out": [
+        387.33333333333337,
+        931
+      ]
+    },
+    "enc.self.v": {
+      "in": [
+        523.6666666666667,
+        914
+      ],
+      "out": [
+        566.6666666666667,
+        931
+      ]
+    },
+    "enc.self.split": {
+      "q_in": [
+        257.0,
+        996
+      ],
+      "k_in": [
+        436.33333333333337,
+        996
+      ],
+      "v_in": [
+        615.6666666666667,
+        996
+      ],
+      "q_out": [
+        166,
+        1034
+      ],
+      "k_out": [
+        202,
+        1034
+      ],
+      "v_out": [
+        585.0,
+        1034
+      ]
+    },
+    "enc.self.sdpa": {
+      "q": [
+        166,
+        1058
+      ],
+      "k": [
+        202,
+        1058
+      ],
+      "v": [
+        585.0,
+        1058
+      ],
+      "out": [
+        630,
+        1182
+      ]
+    },
+    "enc.self.sdpa.qkt": {
+      "q": [
+        166,
+        1102
+      ],
+      "k": [
+        202,
+        1102
+      ],
+      "out": [
+        226,
+        1122
+      ]
+    },
+    "enc.self.sdpa.scale": {
+      "in": [
+        247.5,
+        1122
+      ],
+      "out": [
+        311.5,
+        1122
+      ]
+    },
+    "enc.self.sdpa.mask": {
+      "in": [
+        333.0,
+        1122
+      ],
+      "out": [
+        425.0,
+        1122
+      ]
+    },
+    "enc.self.sdpa.softmax": {
+      "in": [
+        446.5,
+        1122
+      ],
+      "out": [
+        528.5,
+        1122
+      ]
+    },
+    "enc.self.sdpa.av": {
+      "a": [
+        550.0,
+        1122
+      ],
+      "v": [
+        585.0,
+        1102
+      ],
+      "out": [
+        620.0,
+        1122
+      ]
+    },
+    "enc.self.merge": {
+      "in": [
+        382.0,
+        1230
+      ],
+      "out": [
+        382.0,
+        1262
+      ]
+    },
+    "enc.self.wo": {
+      "in": [
+        382.0,
+        1286
+      ],
+      "out": [
+        492.0,
+        1303
+      ]
+    },
+    "src_embed": {
+      "in": [
+        382.0,
+        2120
+      ],
+      "out": [
+        382.0,
+        2058
+      ]
+    },
+    "src_pe.add": {
+      "x": [
+        382.0,
+        2031
+      ],
+      "pe": [
+        367.0,
+        2016
+      ],
+      "out": [
+        382.0,
+        2001
+      ]
+    },
+    "src_pe.buffer": {
+      "out": [
+        290.0,
+        2016
+      ]
+    },
+    "src_pe": {
+      "out": [
+        382.0,
+        2001
+      ]
+    },
+    "src_tokens": {
+      "out": [
+        382.0,
+        2139
+      ]
+    },
+    "dec.layer_i": {
+      "in": [
+        1228.0,
+        1970
+      ],
+      "out": [
+        1228.0,
+        286
+      ]
+    },
+    "dec.norm3": {
+      "in": [
+        1522,
+        418
+      ],
+      "out": [
+        1238.0,
+        308
+      ],
+      "skip": [
+        936,
+        364
+      ]
+    },
+    "dec.norm3.add": {
+      "x": [
+        1092,
+        364
+      ],
+      "f": [
+        1106,
+        378
+      ],
+      "out": [
+        1120,
+        364
+      ]
+    },
+    "dec.norm3.layernorm": {
+      "in": [
+        1206,
+        364
+      ],
+      "out": [
+        1406,
+        364
+      ]
+    },
+    "dec.ffn": {
+      "in": [
+        1238.0,
+        652
+      ],
+      "out": [
+        1522,
+        442
+      ],
+      "input_tap": [
+        1238.0,
+        664.0
+      ]
+    },
+    "dec.ffn.linear1": {
+      "in": [
+        1046,
+        529
+      ],
+      "out": [
+        1156,
+        529
+      ]
+    },
+    "dec.ffn.relu": {
+      "in": [
+        1176,
+        529
+      ],
+      "out": [
+        1262,
+        529
+      ]
+    },
+    "dec.ffn.linear2": {
+      "in": [
+        1282,
+        529
+      ],
+      "out": [
+        1392,
+        529
+      ]
+    },
+    "dec.norm2": {
+      "in": [
+        1522,
+        786
+      ],
+      "out": [
+        1238.0,
+        676
+      ],
+      "skip": [
+        936,
+        732
+      ]
+    },
+    "dec.norm2.add": {
+      "x": [
+        1092,
+        732
+      ],
+      "f": [
+        1106,
+        746
+      ],
+      "out": [
+        1120,
+        732
+      ]
+    },
+    "dec.norm2.layernorm": {
+      "in": [
+        1206,
+        732
+      ],
+      "out": [
+        1406,
+        732
+      ]
+    },
+    "dec.cross": {
+      "in": [
+        1238.0,
+        1248
+      ],
+      "out": [
+        1522,
+        810
+      ],
+      "memory": [
+        936,
+        874
+      ],
+      "input_tap": [
+        1238.0,
+        1260.0
+      ]
+    },
+    "dec.cross.q": {
+      "in": [
+        1021.0,
+        914
+      ],
+      "out": [
+        1064.0,
+        931
+      ]
+    },
+    "dec.cross.k": {
+      "in": [
+        1200.3333333333333,
+        914
+      ],
+      "out": [
+        1243.3333333333333,
+        931
+      ]
+    },
+    "dec.cross.v": {
+      "in": [
+        1379.6666666666667,
+        914
+      ],
+      "out": [
+        1422.6666666666667,
+        931
+      ]
+    },
+    "dec.cross.split": {
+      "q_in": [
+        1113.0,
+        996
+      ],
+      "k_in": [
+        1292.3333333333333,
+        996
+      ],
+      "v_in": [
+        1471.6666666666667,
+        996
+      ],
+      "q_out": [
+        1113.0,
+        1034
+      ],
+      "k_out": [
+        1292.3333333333333,
+        1034
+      ],
+      "v_out": [
+        1471.6666666666667,
+        1034
+      ]
+    },
+    "dec.cross.sdpa": {
+      "q": [
+        1113.0,
+        1058
+      ],
+      "k": [
+        1292.3333333333333,
+        1058
+      ],
+      "v": [
+        1471.6666666666667,
+        1058
+      ],
+      "out": [
+        1238.0,
+        1100
+      ]
+    },
+    "dec.cross.merge": {
+      "in": [
+        1238.0,
+        1124
+      ],
+      "out": [
+        1238.0,
+        1156
+      ]
+    },
+    "dec.cross.wo": {
+      "in": [
+        1238.0,
+        1180
+      ],
+      "out": [
+        1348.0,
+        1197
+      ]
+    },
+    "dec.norm1": {
+      "in": [
+        1522,
+        1382
+      ],
+      "out": [
+        1238.0,
+        1272
+      ],
+      "skip": [
+        936,
+        1328
+      ]
+    },
+    "dec.norm1.add": {
+      "x": [
+        1092,
+        1328
+      ],
+      "f": [
+        1106,
+        1342
+      ],
+      "out": [
+        1120,
+        1328
+      ]
+    },
+    "dec.norm1.layernorm": {
+      "in": [
+        1206,
+        1328
+      ],
+      "out": [
+        1406,
+        1328
+      ]
+    },
+    "dec.self": {
+      "in": [
+        1238.0,
+        1948
+      ],
+      "out": [
+        1522,
+        1406
+      ],
+      "memory": [
+        936,
+        1478
+      ],
+      "input_tap": [
+        1238.0,
+        1960.0
+      ]
+    },
+    "dec.self.q": {
+      "in": [
+        1021.0,
+        1510
+      ],
+      "out": [
+        1064.0,
+        1527
+      ]
+    },
+    "dec.self.k": {
+      "in": [
+        1200.3333333333333,
+        1510
+      ],
+      "out": [
+        1243.3333333333333,
+        1527
+      ]
+    },
+    "dec.self.v": {
+      "in": [
+        1379.6666666666667,
+        1510
+      ],
+      "out": [
+        1422.6666666666667,
+        1527
+      ]
+    },
+    "dec.self.split": {
+      "q_in": [
+        1113.0,
+        1592
+      ],
+      "k_in": [
+        1292.3333333333333,
+        1592
+      ],
+      "v_in": [
+        1471.6666666666667,
+        1592
+      ],
+      "q_out": [
+        1022,
+        1630
+      ],
+      "k_out": [
+        1058,
+        1630
+      ],
+      "v_out": [
+        1441.0,
+        1630
+      ]
+    },
+    "dec.self.sdpa": {
+      "q": [
+        1022,
+        1654
+      ],
+      "k": [
+        1058,
+        1654
+      ],
+      "v": [
+        1441.0,
+        1654
+      ],
+      "out": [
+        1486,
+        1778
+      ]
+    },
+    "dec.self.sdpa.qkt": {
+      "q": [
+        1022,
+        1698
+      ],
+      "k": [
+        1058,
+        1698
+      ],
+      "out": [
+        1082,
+        1718
+      ]
+    },
+    "dec.self.sdpa.scale": {
+      "in": [
+        1103.5,
+        1718
+      ],
+      "out": [
+        1167.5,
+        1718
+      ]
+    },
+    "dec.self.sdpa.mask": {
+      "in": [
+        1189.0,
+        1718
+      ],
+      "out": [
+        1281.0,
+        1718
+      ]
+    },
+    "dec.self.sdpa.softmax": {
+      "in": [
+        1302.5,
+        1718
+      ],
+      "out": [
+        1384.5,
+        1718
+      ]
+    },
+    "dec.self.sdpa.av": {
+      "a": [
+        1406.0,
+        1718
+      ],
+      "v": [
+        1441.0,
+        1698
+      ],
+      "out": [
+        1476.0,
+        1718
+      ]
+    },
+    "dec.self.merge": {
+      "in": [
+        1238.0,
+        1826
+      ],
+      "out": [
+        1238.0,
+        1858
+      ]
+    },
+    "dec.self.wo": {
+      "in": [
+        1238.0,
+        1882
+      ],
+      "out": [
+        1348.0,
+        1899
+      ]
+    },
+    "tgt_embed": {
+      "in": [
+        1238.0,
+        2120
+      ],
+      "out": [
+        1238.0,
+        2058
+      ]
+    },
+    "tgt_pe.add": {
+      "x": [
+        1238.0,
+        2031
+      ],
+      "pe": [
+        1223.0,
+        2016
+      ],
+      "out": [
+        1238.0,
+        2001
+      ]
+    },
+    "tgt_pe.buffer": {
+      "out": [
+        1146.0,
+        2016
+      ]
+    },
+    "tgt_pe": {
+      "out": [
+        1238.0,
+        2001
+      ]
+    },
+    "tgt_tokens": {
+      "out": [
+        1238.0,
+        2139
+      ]
+    },
+    "enc.output": {
+      "out": [
+        382.0,
+        308
+      ]
+    },
+    "dec.output": {
+      "out": [
+        1238.0,
+        308
+      ]
+    },
+    "enc.ffn.input_value": {
+      "in": [
+        120,
+        529.0
+      ],
+      "out": [
+        170,
+        529.0
+      ]
+    },
+    "enc.ffn.output_value": {
+      "in": [
+        556,
+        529.0
+      ],
+      "out": [
+        606,
+        529.0
+      ]
+    },
+    "enc.self.q.value": {
+      "in": [
+        232.0,
+        931
+      ],
+      "out": [
+        257.0,
+        946
+      ]
+    },
+    "enc.self.k.value": {
+      "in": [
+        411.33333333333337,
+        931
+      ],
+      "out": [
+        436.33333333333337,
+        946
+      ]
+    },
+    "enc.self.v.value": {
+      "in": [
+        590.6666666666667,
+        931
+      ],
+      "out": [
+        615.6666666666667,
+        946
+      ]
+    },
+    "dec.ffn.input_value": {
+      "in": [
+        976,
+        529.0
+      ],
+      "out": [
+        1026,
+        529.0
+      ]
+    },
+    "dec.ffn.output_value": {
+      "in": [
+        1412,
+        529.0
+      ],
+      "out": [
+        1462,
+        529.0
+      ]
+    },
+    "dec.cross.q.value": {
+      "in": [
+        1088.0,
+        931
+      ],
+      "out": [
+        1113.0,
+        946
+      ]
+    },
+    "dec.cross.k.value": {
+      "in": [
+        1267.3333333333333,
+        931
+      ],
+      "out": [
+        1292.3333333333333,
+        946
+      ]
+    },
+    "dec.cross.v.value": {
+      "in": [
+        1446.6666666666667,
+        931
+      ],
+      "out": [
+        1471.6666666666667,
+        946
+      ]
+    },
+    "dec.self.q.value": {
+      "in": [
+        1088.0,
+        1527
+      ],
+      "out": [
+        1113.0,
+        1542
+      ]
+    },
+    "dec.self.k.value": {
+      "in": [
+        1267.3333333333333,
+        1527
+      ],
+      "out": [
+        1292.3333333333333,
+        1542
+      ]
+    },
+    "dec.self.v.value": {
+      "in": [
+        1446.6666666666667,
+        1527
+      ],
+      "out": [
+        1471.6666666666667,
+        1542
+      ]
+    },
+    "enc.memory.value": {
+      "in": [
+        800.0,
+        318
+      ],
+      "out": [
+        800.0,
+        422
+      ]
+    }
+  },
+  "routes": [
+    {
+      "id": "binding-001",
+      "points": [
+        [
+          290.0,
+          2016
+        ],
+        [
+          367.0,
+          2016
+        ]
+      ],
+      "src": "src_pe.buffer:out",
+      "dst": "src_pe.add:pe",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "src_pe.buffer:out",
+      "canonical_dst": "src_pe.add:pe",
+      "semantic_edges": [
+        "src_pe.buffer:out->src_pe.add:pe"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "src_pe.buffer:out",
+        "target": "src_pe.add:pe",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-002",
+      "points": [
+        [
+          382.0,
+          2001
+        ],
+        [
+          382.0,
+          1334
+        ],
+        [
+          98,
+          1334
+        ],
+        [
+          98,
+          890
+        ],
+        [
+          165.0,
+          890
+        ],
+        [
+          165.0,
+          914
+        ]
+      ],
+      "src": "src_pe.add:out",
+      "dst": "enc.self.q:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "src_pe.add:out",
+      "canonical_dst": "enc.self.q:in",
+      "semantic_edges": [
+        "enc.self:in->enc.self.q:in",
+        "src_pe.add:out->src_pe.dropout:in",
+        "src_pe.dropout:out->src_pe:out",
+        "src_pe:out->enc.self:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "src_pe.add:out",
+        "target": "enc.self.q:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-003",
+      "points": [
+        [
+          382.0,
+          2001
+        ],
+        [
+          382.0,
+          1334
+        ],
+        [
+          98,
+          1334
+        ],
+        [
+          98,
+          890
+        ],
+        [
+          344.33333333333337,
+          890
+        ],
+        [
+          344.33333333333337,
+          914
+        ]
+      ],
+      "src": "src_pe.add:out",
+      "dst": "enc.self.k:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "src_pe.add:out",
+      "canonical_dst": "enc.self.k:in",
+      "semantic_edges": [
+        "enc.self:in->enc.self.k:in",
+        "src_pe.add:out->src_pe.dropout:in",
+        "src_pe.dropout:out->src_pe:out",
+        "src_pe:out->enc.self:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "src_pe.add:out",
+        "target": "enc.self.k:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-004",
+      "points": [
+        [
+          382.0,
+          2001
+        ],
+        [
+          382.0,
+          1334
+        ],
+        [
+          98,
+          1334
+        ],
+        [
+          98,
+          890
+        ],
+        [
+          523.6666666666667,
+          890
+        ],
+        [
+          523.6666666666667,
+          914
+        ]
+      ],
+      "src": "src_pe.add:out",
+      "dst": "enc.self.v:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "src_pe.add:out",
+      "canonical_dst": "enc.self.v:in",
+      "semantic_edges": [
+        "enc.self:in->enc.self.v:in",
+        "src_pe.add:out->src_pe.dropout:in",
+        "src_pe.dropout:out->src_pe:out",
+        "src_pe:out->enc.self:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "src_pe.add:out",
+        "target": "enc.self.v:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-005",
+      "points": [
+        [
+          382.0,
+          2001
+        ],
+        [
+          382.0,
+          1364.0
+        ],
+        [
+          56,
+          1364.0
+        ],
+        [
+          56,
+          732
+        ],
+        [
+          236,
+          732
+        ]
+      ],
+      "src": "src_pe.add:out",
+      "dst": "enc.norm1.add:x",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "src_pe.add:out",
+      "canonical_dst": "enc.norm1.add:x",
+      "semantic_edges": [
+        "enc.norm1:skip->enc.norm1.add:x",
+        "src_pe.add:out->src_pe.dropout:in",
+        "src_pe.dropout:out->src_pe:out",
+        "src_pe:out->enc.norm1:skip"
+      ],
+      "semantic_kind": "residual",
+      "port_authority": {
+        "source": "src_pe.add:out",
+        "target": "enc.norm1.add:x",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-006",
+      "points": [
+        [
+          382.0,
+          2139
+        ],
+        [
+          382.0,
+          2120
+        ]
+      ],
+      "src": "src_tokens:out",
+      "dst": "src_embed:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "src_tokens:out",
+      "canonical_dst": "src_embed:in",
+      "semantic_edges": [
+        "src_tokens:out->src_embed:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "src_tokens:out",
+        "target": "src_embed:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-007",
+      "points": [
+        [
+          382.0,
+          2058
+        ],
+        [
+          382.0,
+          2031
+        ]
+      ],
+      "src": "src_embed:out",
+      "dst": "src_pe.add:x",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "src_embed:out",
+      "canonical_dst": "src_pe.add:x",
+      "semantic_edges": [
+        "src_embed:out->src_pe:in",
+        "src_pe:in->src_pe.add:x"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "src_embed:out",
+        "target": "src_pe.add:x",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-008",
+      "points": [
+        [
+          1146.0,
+          2016
+        ],
+        [
+          1223.0,
+          2016
+        ]
+      ],
+      "src": "tgt_pe.buffer:out",
+      "dst": "tgt_pe.add:pe",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "tgt_pe.buffer:out",
+      "canonical_dst": "tgt_pe.add:pe",
+      "semantic_edges": [
+        "tgt_pe.buffer:out->tgt_pe.add:pe"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "tgt_pe.buffer:out",
+        "target": "tgt_pe.add:pe",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-009",
+      "points": [
+        [
+          1238.0,
+          2001
+        ],
+        [
+          1238.0,
+          1930
+        ],
+        [
+          954,
+          1930
+        ],
+        [
+          954,
+          1486
+        ],
+        [
+          1021.0,
+          1486
+        ],
+        [
+          1021.0,
+          1510
+        ]
+      ],
+      "src": "tgt_pe.add:out",
+      "dst": "dec.self.q:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "tgt_pe.add:out",
+      "canonical_dst": "dec.self.q:in",
+      "semantic_edges": [
+        "dec.self:in->dec.self.q:in",
+        "tgt_pe.add:out->tgt_pe.dropout:in",
+        "tgt_pe.dropout:out->tgt_pe:out",
+        "tgt_pe:out->dec.self:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "tgt_pe.add:out",
+        "target": "dec.self.q:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-010",
+      "points": [
+        [
+          1238.0,
+          2001
+        ],
+        [
+          1238.0,
+          1930
+        ],
+        [
+          954,
+          1930
+        ],
+        [
+          954,
+          1486
+        ],
+        [
+          1200.3333333333333,
+          1486
+        ],
+        [
+          1200.3333333333333,
+          1510
+        ]
+      ],
+      "src": "tgt_pe.add:out",
+      "dst": "dec.self.k:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "tgt_pe.add:out",
+      "canonical_dst": "dec.self.k:in",
+      "semantic_edges": [
+        "dec.self:in->dec.self.k:in",
+        "tgt_pe.add:out->tgt_pe.dropout:in",
+        "tgt_pe.dropout:out->tgt_pe:out",
+        "tgt_pe:out->dec.self:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "tgt_pe.add:out",
+        "target": "dec.self.k:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-011",
+      "points": [
+        [
+          1238.0,
+          2001
+        ],
+        [
+          1238.0,
+          1930
+        ],
+        [
+          954,
+          1930
+        ],
+        [
+          954,
+          1486
+        ],
+        [
+          1379.6666666666667,
+          1486
+        ],
+        [
+          1379.6666666666667,
+          1510
+        ]
+      ],
+      "src": "tgt_pe.add:out",
+      "dst": "dec.self.v:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "tgt_pe.add:out",
+      "canonical_dst": "dec.self.v:in",
+      "semantic_edges": [
+        "dec.self:in->dec.self.v:in",
+        "tgt_pe.add:out->tgt_pe.dropout:in",
+        "tgt_pe.dropout:out->tgt_pe:out",
+        "tgt_pe:out->dec.self:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "tgt_pe.add:out",
+        "target": "dec.self.v:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-012",
+      "points": [
+        [
+          1238.0,
+          2001
+        ],
+        [
+          1238.0,
+          1960.0
+        ],
+        [
+          912,
+          1960.0
+        ],
+        [
+          912,
+          1328
+        ],
+        [
+          1092,
+          1328
+        ]
+      ],
+      "src": "tgt_pe.add:out",
+      "dst": "dec.norm1.add:x",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "tgt_pe.add:out",
+      "canonical_dst": "dec.norm1.add:x",
+      "semantic_edges": [
+        "dec.norm1:skip->dec.norm1.add:x",
+        "tgt_pe.add:out->tgt_pe.dropout:in",
+        "tgt_pe.dropout:out->tgt_pe:out",
+        "tgt_pe:out->dec.norm1:skip"
+      ],
+      "semantic_kind": "residual",
+      "port_authority": {
+        "source": "tgt_pe.add:out",
+        "target": "dec.norm1.add:x",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-013",
+      "points": [
+        [
+          1238.0,
+          2139
+        ],
+        [
+          1238.0,
+          2120
+        ]
+      ],
+      "src": "tgt_tokens:out",
+      "dst": "tgt_embed:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "tgt_tokens:out",
+      "canonical_dst": "tgt_embed:in",
+      "semantic_edges": [
+        "tgt_tokens:out->tgt_embed:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "tgt_tokens:out",
+        "target": "tgt_embed:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-014",
+      "points": [
+        [
+          1238.0,
+          2058
+        ],
+        [
+          1238.0,
+          2031
+        ]
+      ],
+      "src": "tgt_embed:out",
+      "dst": "tgt_pe.add:x",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "tgt_embed:out",
+      "canonical_dst": "tgt_pe.add:x",
+      "semantic_edges": [
+        "tgt_embed:out->tgt_pe:in",
+        "tgt_pe:in->tgt_pe.add:x"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "tgt_embed:out",
+        "target": "tgt_pe.add:x",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-015",
+      "points": [
+        [
+          208.0,
+          931
+        ],
+        [
+          232.0,
+          931
+        ]
+      ],
+      "src": "enc.self.q:out",
+      "dst": "enc.self.q.value:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.self.q:out",
+      "canonical_dst": "enc.self.split:q_in",
+      "semantic_edges": [
+        "enc.self.q:out->enc.self.split:q_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.self.q:out",
+        "target": "enc.self.split:q_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-016",
+      "points": [
+        [
+          257.0,
+          946
+        ],
+        [
+          257.0,
+          996
+        ]
+      ],
+      "src": "enc.self.q.value:out",
+      "dst": "enc.self.split:q_in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.self.q:out",
+      "canonical_dst": "enc.self.split:q_in",
+      "semantic_edges": [
+        "enc.self.q:out->enc.self.split:q_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.self.q:out",
+        "target": "enc.self.split:q_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-017",
+      "points": [
+        [
+          166,
+          1034
+        ],
+        [
+          166,
+          1102
+        ]
+      ],
+      "src": "enc.self.split:q_out",
+      "dst": "enc.self.sdpa.qkt:q",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.self.split:q_out",
+      "canonical_dst": "enc.self.sdpa.qkt:q",
+      "semantic_edges": [
+        "enc.self.sdpa:q->enc.self.sdpa.qkt:q",
+        "enc.self.split:q_out->enc.self.sdpa:q"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.self.split:q_out",
+        "target": "enc.self.sdpa.qkt:q",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-018",
+      "points": [
+        [
+          387.33333333333337,
+          931
+        ],
+        [
+          411.33333333333337,
+          931
+        ]
+      ],
+      "src": "enc.self.k:out",
+      "dst": "enc.self.k.value:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.self.k:out",
+      "canonical_dst": "enc.self.split:k_in",
+      "semantic_edges": [
+        "enc.self.k:out->enc.self.split:k_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.self.k:out",
+        "target": "enc.self.split:k_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-019",
+      "points": [
+        [
+          436.33333333333337,
+          946
+        ],
+        [
+          436.33333333333337,
+          996
+        ]
+      ],
+      "src": "enc.self.k.value:out",
+      "dst": "enc.self.split:k_in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.self.k:out",
+      "canonical_dst": "enc.self.split:k_in",
+      "semantic_edges": [
+        "enc.self.k:out->enc.self.split:k_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.self.k:out",
+        "target": "enc.self.split:k_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-020",
+      "points": [
+        [
+          202,
+          1034
+        ],
+        [
+          202,
+          1102
+        ]
+      ],
+      "src": "enc.self.split:k_out",
+      "dst": "enc.self.sdpa.qkt:k",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.self.split:k_out",
+      "canonical_dst": "enc.self.sdpa.qkt:k",
+      "semantic_edges": [
+        "enc.self.sdpa:k->enc.self.sdpa.qkt:k",
+        "enc.self.split:k_out->enc.self.sdpa:k"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.self.split:k_out",
+        "target": "enc.self.sdpa.qkt:k",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-021",
+      "points": [
+        [
+          566.6666666666667,
+          931
+        ],
+        [
+          590.6666666666667,
+          931
+        ]
+      ],
+      "src": "enc.self.v:out",
+      "dst": "enc.self.v.value:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.self.v:out",
+      "canonical_dst": "enc.self.split:v_in",
+      "semantic_edges": [
+        "enc.self.v:out->enc.self.split:v_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.self.v:out",
+        "target": "enc.self.split:v_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-022",
+      "points": [
+        [
+          615.6666666666667,
+          946
+        ],
+        [
+          615.6666666666667,
+          996
+        ]
+      ],
+      "src": "enc.self.v.value:out",
+      "dst": "enc.self.split:v_in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.self.v:out",
+      "canonical_dst": "enc.self.split:v_in",
+      "semantic_edges": [
+        "enc.self.v:out->enc.self.split:v_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.self.v:out",
+        "target": "enc.self.split:v_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-023",
+      "points": [
+        [
+          585.0,
+          1034
+        ],
+        [
+          585.0,
+          1102
+        ]
+      ],
+      "src": "enc.self.split:v_out",
+      "dst": "enc.self.sdpa.av:v",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.self.split:v_out",
+      "canonical_dst": "enc.self.sdpa.av:v",
+      "semantic_edges": [
+        "enc.self.sdpa:v->enc.self.sdpa.av:v",
+        "enc.self.split:v_out->enc.self.sdpa:v"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.self.split:v_out",
+        "target": "enc.self.sdpa.av:v",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-024",
+      "points": [
+        [
+          620.0,
+          1122
+        ],
+        [
+          630,
+          1122
+        ],
+        [
+          630,
+          1206
+        ],
+        [
+          382.0,
+          1206
+        ],
+        [
+          382.0,
+          1230
+        ]
+      ],
+      "src": "enc.self.sdpa.av:out",
+      "dst": "enc.self.merge:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.self.sdpa.av:out",
+      "canonical_dst": "enc.self.merge:in",
+      "semantic_edges": [
+        "enc.self.sdpa.av:out->enc.self.sdpa:out",
+        "enc.self.sdpa:out->enc.self.merge:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.self.sdpa.av:out",
+        "target": "enc.self.merge:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-025",
+      "points": [
+        [
+          382.0,
+          1262
+        ],
+        [
+          382.0,
+          1286
+        ]
+      ],
+      "src": "enc.self.merge:out",
+      "dst": "enc.self.wo:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.self.merge:out",
+      "canonical_dst": "enc.self.wo:in",
+      "semantic_edges": [
+        "enc.self.merge:out->enc.self.wo:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.self.merge:out",
+        "target": "enc.self.wo:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-026",
+      "points": [
+        [
+          226,
+          1122
+        ],
+        [
+          247.5,
+          1122
+        ]
+      ],
+      "src": "enc.self.sdpa.qkt:out",
+      "dst": "enc.self.sdpa.scale:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.self.sdpa.qkt:out",
+      "canonical_dst": "enc.self.sdpa.scale:in",
+      "semantic_edges": [
+        "enc.self.sdpa.qkt:out->enc.self.sdpa.scale:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.self.sdpa.qkt:out",
+        "target": "enc.self.sdpa.scale:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-027",
+      "points": [
+        [
+          311.5,
+          1122
+        ],
+        [
+          333.0,
+          1122
+        ]
+      ],
+      "src": "enc.self.sdpa.scale:out",
+      "dst": "enc.self.sdpa.mask:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.self.sdpa.scale:out",
+      "canonical_dst": "enc.self.sdpa.mask:in",
+      "semantic_edges": [
+        "enc.self.sdpa.scale:out->enc.self.sdpa.mask:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.self.sdpa.scale:out",
+        "target": "enc.self.sdpa.mask:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-028",
+      "points": [
+        [
+          425.0,
+          1122
+        ],
+        [
+          446.5,
+          1122
+        ]
+      ],
+      "src": "enc.self.sdpa.mask:out",
+      "dst": "enc.self.sdpa.softmax:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.self.sdpa.mask:out",
+      "canonical_dst": "enc.self.sdpa.softmax:in",
+      "semantic_edges": [
+        "enc.self.sdpa.mask:out->enc.self.sdpa.softmax:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.self.sdpa.mask:out",
+        "target": "enc.self.sdpa.softmax:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-029",
+      "points": [
+        [
+          528.5,
+          1122
+        ],
+        [
+          550.0,
+          1122
+        ]
+      ],
+      "src": "enc.self.sdpa.softmax:out",
+      "dst": "enc.self.sdpa.av:a",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.self.sdpa.softmax:out",
+      "canonical_dst": "enc.self.sdpa.av:a",
+      "semantic_edges": [
+        "enc.self.sdpa.attn_dropout:out->enc.self.sdpa.av:a",
+        "enc.self.sdpa.nan_guard:out->enc.self.sdpa.attn_dropout:in",
+        "enc.self.sdpa.softmax:out->enc.self.sdpa.nan_guard:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.self.sdpa.softmax:out",
+        "target": "enc.self.sdpa.av:a",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-030",
+      "points": [
+        [
+          492.0,
+          1303
+        ],
+        [
+          666,
+          1303
+        ],
+        [
+          666,
+          772
+        ],
+        [
+          250,
+          772
+        ],
+        [
+          250,
+          746
+        ]
+      ],
+      "src": "enc.self.wo:out",
+      "dst": "enc.norm1.add:f",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.self.wo:out",
+      "canonical_dst": "enc.norm1.add:f",
+      "semantic_edges": [
+        "enc.norm1.branch_dropout:out->enc.norm1.add:f",
+        "enc.norm1:in->enc.norm1.branch_dropout:in",
+        "enc.self.wo:out->enc.self:out",
+        "enc.self:out->enc.norm1:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.self.wo:out",
+        "target": "enc.norm1.add:f",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-031",
+      "points": [
+        [
+          264,
+          732
+        ],
+        [
+          350,
+          732
+        ]
+      ],
+      "src": "enc.norm1.add:out",
+      "dst": "enc.norm1.layernorm:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.norm1.add:out",
+      "canonical_dst": "enc.norm1.layernorm:in",
+      "semantic_edges": [
+        "enc.norm1.add:out->enc.norm1.layernorm:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.norm1.add:out",
+        "target": "enc.norm1.layernorm:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-032",
+      "points": [
+        [
+          550,
+          732
+        ],
+        [
+          666,
+          732
+        ],
+        [
+          666,
+          700
+        ],
+        [
+          382.0,
+          700
+        ],
+        [
+          382.0,
+          634
+        ],
+        [
+          98,
+          634
+        ],
+        [
+          98,
+          529
+        ],
+        [
+          120,
+          529
+        ]
+      ],
+      "src": "enc.norm1.layernorm:out",
+      "dst": "enc.ffn.input_value:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.norm1.layernorm:out",
+      "canonical_dst": "enc.ffn.linear1:in",
+      "semantic_edges": [
+        "enc.ffn:in->enc.ffn.linear1:in",
+        "enc.norm1.layernorm:out->enc.norm1:out",
+        "enc.norm1:out->enc.ffn:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.norm1.layernorm:out",
+        "target": "enc.ffn.linear1:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-033",
+      "points": [
+        [
+          170,
+          529.0
+        ],
+        [
+          190,
+          529
+        ]
+      ],
+      "src": "enc.ffn.input_value:out",
+      "dst": "enc.ffn.linear1:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.norm1.layernorm:out",
+      "canonical_dst": "enc.ffn.linear1:in",
+      "semantic_edges": [
+        "enc.ffn:in->enc.ffn.linear1:in",
+        "enc.norm1.layernorm:out->enc.norm1:out",
+        "enc.norm1:out->enc.ffn:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.norm1.layernorm:out",
+        "target": "enc.ffn.linear1:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-034",
+      "points": [
+        [
+          300,
+          529
+        ],
+        [
+          320,
+          529
+        ]
+      ],
+      "src": "enc.ffn.linear1:out",
+      "dst": "enc.ffn.relu:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.ffn.linear1:out",
+      "canonical_dst": "enc.ffn.relu:in",
+      "semantic_edges": [
+        "enc.ffn.linear1:out->enc.ffn.relu:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.ffn.linear1:out",
+        "target": "enc.ffn.relu:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-035",
+      "points": [
+        [
+          406,
+          529
+        ],
+        [
+          426,
+          529
+        ]
+      ],
+      "src": "enc.ffn.relu:out",
+      "dst": "enc.ffn.linear2:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.ffn.relu:out",
+      "canonical_dst": "enc.ffn.linear2:in",
+      "semantic_edges": [
+        "enc.ffn.dropout:out->enc.ffn.linear2:in",
+        "enc.ffn.relu:out->enc.ffn.dropout:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.ffn.relu:out",
+        "target": "enc.ffn.linear2:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-036",
+      "points": [
+        [
+          536,
+          529
+        ],
+        [
+          556,
+          529
+        ]
+      ],
+      "src": "enc.ffn.linear2:out",
+      "dst": "enc.ffn.output_value:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.ffn.linear2:out",
+      "canonical_dst": "enc.norm2.add:f",
+      "semantic_edges": [
+        "enc.ffn.linear2:out->enc.ffn:out",
+        "enc.ffn:out->enc.norm2:in",
+        "enc.norm2.branch_dropout:out->enc.norm2.add:f",
+        "enc.norm2:in->enc.norm2.branch_dropout:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.ffn.linear2:out",
+        "target": "enc.norm2.add:f",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-037",
+      "points": [
+        [
+          606,
+          529.0
+        ],
+        [
+          666,
+          529
+        ],
+        [
+          666,
+          404
+        ],
+        [
+          250,
+          404
+        ],
+        [
+          250,
+          378
+        ]
+      ],
+      "src": "enc.ffn.output_value:out",
+      "dst": "enc.norm2.add:f",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.ffn.linear2:out",
+      "canonical_dst": "enc.norm2.add:f",
+      "semantic_edges": [
+        "enc.ffn.linear2:out->enc.ffn:out",
+        "enc.ffn:out->enc.norm2:in",
+        "enc.norm2.branch_dropout:out->enc.norm2.add:f",
+        "enc.norm2:in->enc.norm2.branch_dropout:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.ffn.linear2:out",
+        "target": "enc.norm2.add:f",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-038",
+      "points": [
+        [
+          264,
+          364
+        ],
+        [
+          350,
+          364
+        ]
+      ],
+      "src": "enc.norm2.add:out",
+      "dst": "enc.norm2.layernorm:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.norm2.add:out",
+      "canonical_dst": "enc.norm2.layernorm:in",
+      "semantic_edges": [
+        "enc.norm2.add:out->enc.norm2.layernorm:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.norm2.add:out",
+        "target": "enc.norm2.layernorm:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-039",
+      "points": [
+        [
+          550,
+          732
+        ],
+        [
+          666,
+          732
+        ],
+        [
+          666,
+          700
+        ],
+        [
+          382.0,
+          700
+        ],
+        [
+          382.0,
+          664.0
+        ],
+        [
+          56,
+          664.0
+        ],
+        [
+          56,
+          364
+        ],
+        [
+          236,
+          364
+        ]
+      ],
+      "src": "enc.norm1.layernorm:out",
+      "dst": "enc.norm2.add:x",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.norm1.layernorm:out",
+      "canonical_dst": "enc.norm2.add:x",
+      "semantic_edges": [
+        "enc.norm1.layernorm:out->enc.norm1:out",
+        "enc.norm1:out->enc.norm2:skip",
+        "enc.norm2:skip->enc.norm2.add:x"
+      ],
+      "semantic_kind": "residual",
+      "port_authority": {
+        "source": "enc.norm1.layernorm:out",
+        "target": "enc.norm2.add:x",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "encoder-memory-to-cross",
+      "points": [
+        [
+          550,
+          364
+        ],
+        [
+          666,
+          364
+        ],
+        [
+          666,
+          332
+        ],
+        [
+          382.0,
+          332
+        ],
+        [
+          382.0,
+          219
+        ],
+        [
+          800.0,
+          219
+        ],
+        [
+          800.0,
+          318
+        ]
+      ],
+      "src": "enc.norm2.layernorm:out",
+      "dst": "enc.memory.value:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.8,
+      "canonical_src": "enc.norm2.layernorm:out",
+      "canonical_dst": "dec.cross.k:in",
+      "semantic_edges": [
+        "dec.cross:memory->dec.cross.k:in",
+        "enc.norm2.layernorm:out->enc.norm2:out",
+        "enc.norm2:out->enc.output:in",
+        "enc.output:out->dec.cross:memory"
+      ],
+      "semantic_kind": "memory",
+      "port_authority": {
+        "source": "enc.norm2.layernorm:out",
+        "target": "dec.cross.k:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "encoder-memory-to-cross-040",
+      "points": [
+        [
+          800.0,
+          422
+        ],
+        [
+          800.0,
+          874
+        ],
+        [
+          1200.3333333333333,
+          874
+        ],
+        [
+          1200.3333333333333,
+          914
+        ]
+      ],
+      "src": "enc.memory.value:out",
+      "dst": "dec.cross.k:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.8,
+      "canonical_src": "enc.norm2.layernorm:out",
+      "canonical_dst": "dec.cross.k:in",
+      "semantic_edges": [
+        "dec.cross:memory->dec.cross.k:in",
+        "enc.norm2.layernorm:out->enc.norm2:out",
+        "enc.norm2:out->enc.output:in",
+        "enc.output:out->dec.cross:memory"
+      ],
+      "semantic_kind": "memory",
+      "port_authority": {
+        "source": "enc.norm2.layernorm:out",
+        "target": "dec.cross.k:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "encoder-memory-to-cross-041",
+      "points": [
+        [
+          550,
+          364
+        ],
+        [
+          666,
+          364
+        ],
+        [
+          666,
+          332
+        ],
+        [
+          382.0,
+          332
+        ],
+        [
+          382.0,
+          219
+        ],
+        [
+          800.0,
+          219
+        ],
+        [
+          800.0,
+          318
+        ]
+      ],
+      "src": "enc.norm2.layernorm:out",
+      "dst": "enc.memory.value:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.8,
+      "canonical_src": "enc.norm2.layernorm:out",
+      "canonical_dst": "dec.cross.v:in",
+      "semantic_edges": [
+        "dec.cross:memory->dec.cross.v:in",
+        "enc.norm2.layernorm:out->enc.norm2:out",
+        "enc.norm2:out->enc.output:in",
+        "enc.output:out->dec.cross:memory"
+      ],
+      "semantic_kind": "memory",
+      "port_authority": {
+        "source": "enc.norm2.layernorm:out",
+        "target": "dec.cross.v:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "encoder-memory-to-cross-042",
+      "points": [
+        [
+          800.0,
+          422
+        ],
+        [
+          800.0,
+          874
+        ],
+        [
+          1379.6666666666667,
+          874
+        ],
+        [
+          1379.6666666666667,
+          914
+        ]
+      ],
+      "src": "enc.memory.value:out",
+      "dst": "dec.cross.v:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.8,
+      "canonical_src": "enc.norm2.layernorm:out",
+      "canonical_dst": "dec.cross.v:in",
+      "semantic_edges": [
+        "dec.cross:memory->dec.cross.v:in",
+        "enc.norm2.layernorm:out->enc.norm2:out",
+        "enc.norm2:out->enc.output:in",
+        "enc.output:out->dec.cross:memory"
+      ],
+      "semantic_kind": "memory",
+      "port_authority": {
+        "source": "enc.norm2.layernorm:out",
+        "target": "dec.cross.v:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-044",
+      "points": [
+        [
+          1064.0,
+          1527
+        ],
+        [
+          1088.0,
+          1527
+        ]
+      ],
+      "src": "dec.self.q:out",
+      "dst": "dec.self.q.value:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.self.q:out",
+      "canonical_dst": "dec.self.split:q_in",
+      "semantic_edges": [
+        "dec.self.q:out->dec.self.split:q_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.self.q:out",
+        "target": "dec.self.split:q_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-045",
+      "points": [
+        [
+          1113.0,
+          1542
+        ],
+        [
+          1113.0,
+          1592
+        ]
+      ],
+      "src": "dec.self.q.value:out",
+      "dst": "dec.self.split:q_in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.self.q:out",
+      "canonical_dst": "dec.self.split:q_in",
+      "semantic_edges": [
+        "dec.self.q:out->dec.self.split:q_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.self.q:out",
+        "target": "dec.self.split:q_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-046",
+      "points": [
+        [
+          1022,
+          1630
+        ],
+        [
+          1022,
+          1698
+        ]
+      ],
+      "src": "dec.self.split:q_out",
+      "dst": "dec.self.sdpa.qkt:q",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.self.split:q_out",
+      "canonical_dst": "dec.self.sdpa.qkt:q",
+      "semantic_edges": [
+        "dec.self.sdpa:q->dec.self.sdpa.qkt:q",
+        "dec.self.split:q_out->dec.self.sdpa:q"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.self.split:q_out",
+        "target": "dec.self.sdpa.qkt:q",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-047",
+      "points": [
+        [
+          1243.3333333333333,
+          1527
+        ],
+        [
+          1267.3333333333333,
+          1527
+        ]
+      ],
+      "src": "dec.self.k:out",
+      "dst": "dec.self.k.value:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.self.k:out",
+      "canonical_dst": "dec.self.split:k_in",
+      "semantic_edges": [
+        "dec.self.k:out->dec.self.split:k_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.self.k:out",
+        "target": "dec.self.split:k_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-048",
+      "points": [
+        [
+          1292.3333333333333,
+          1542
+        ],
+        [
+          1292.3333333333333,
+          1592
+        ]
+      ],
+      "src": "dec.self.k.value:out",
+      "dst": "dec.self.split:k_in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.self.k:out",
+      "canonical_dst": "dec.self.split:k_in",
+      "semantic_edges": [
+        "dec.self.k:out->dec.self.split:k_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.self.k:out",
+        "target": "dec.self.split:k_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-049",
+      "points": [
+        [
+          1058,
+          1630
+        ],
+        [
+          1058,
+          1698
+        ]
+      ],
+      "src": "dec.self.split:k_out",
+      "dst": "dec.self.sdpa.qkt:k",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.self.split:k_out",
+      "canonical_dst": "dec.self.sdpa.qkt:k",
+      "semantic_edges": [
+        "dec.self.sdpa:k->dec.self.sdpa.qkt:k",
+        "dec.self.split:k_out->dec.self.sdpa:k"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.self.split:k_out",
+        "target": "dec.self.sdpa.qkt:k",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-050",
+      "points": [
+        [
+          1422.6666666666667,
+          1527
+        ],
+        [
+          1446.6666666666667,
+          1527
+        ]
+      ],
+      "src": "dec.self.v:out",
+      "dst": "dec.self.v.value:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.self.v:out",
+      "canonical_dst": "dec.self.split:v_in",
+      "semantic_edges": [
+        "dec.self.v:out->dec.self.split:v_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.self.v:out",
+        "target": "dec.self.split:v_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-051",
+      "points": [
+        [
+          1471.6666666666667,
+          1542
+        ],
+        [
+          1471.6666666666667,
+          1592
+        ]
+      ],
+      "src": "dec.self.v.value:out",
+      "dst": "dec.self.split:v_in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.self.v:out",
+      "canonical_dst": "dec.self.split:v_in",
+      "semantic_edges": [
+        "dec.self.v:out->dec.self.split:v_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.self.v:out",
+        "target": "dec.self.split:v_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-052",
+      "points": [
+        [
+          1441.0,
+          1630
+        ],
+        [
+          1441.0,
+          1698
+        ]
+      ],
+      "src": "dec.self.split:v_out",
+      "dst": "dec.self.sdpa.av:v",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.self.split:v_out",
+      "canonical_dst": "dec.self.sdpa.av:v",
+      "semantic_edges": [
+        "dec.self.sdpa:v->dec.self.sdpa.av:v",
+        "dec.self.split:v_out->dec.self.sdpa:v"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.self.split:v_out",
+        "target": "dec.self.sdpa.av:v",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-053",
+      "points": [
+        [
+          1476.0,
+          1718
+        ],
+        [
+          1486,
+          1718
+        ],
+        [
+          1486,
+          1802
+        ],
+        [
+          1238.0,
+          1802
+        ],
+        [
+          1238.0,
+          1826
+        ]
+      ],
+      "src": "dec.self.sdpa.av:out",
+      "dst": "dec.self.merge:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.self.sdpa.av:out",
+      "canonical_dst": "dec.self.merge:in",
+      "semantic_edges": [
+        "dec.self.sdpa.av:out->dec.self.sdpa:out",
+        "dec.self.sdpa:out->dec.self.merge:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.self.sdpa.av:out",
+        "target": "dec.self.merge:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-054",
+      "points": [
+        [
+          1238.0,
+          1858
+        ],
+        [
+          1238.0,
+          1882
+        ]
+      ],
+      "src": "dec.self.merge:out",
+      "dst": "dec.self.wo:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.self.merge:out",
+      "canonical_dst": "dec.self.wo:in",
+      "semantic_edges": [
+        "dec.self.merge:out->dec.self.wo:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.self.merge:out",
+        "target": "dec.self.wo:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-055",
+      "points": [
+        [
+          1082,
+          1718
+        ],
+        [
+          1103.5,
+          1718
+        ]
+      ],
+      "src": "dec.self.sdpa.qkt:out",
+      "dst": "dec.self.sdpa.scale:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.self.sdpa.qkt:out",
+      "canonical_dst": "dec.self.sdpa.scale:in",
+      "semantic_edges": [
+        "dec.self.sdpa.qkt:out->dec.self.sdpa.scale:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.self.sdpa.qkt:out",
+        "target": "dec.self.sdpa.scale:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-056",
+      "points": [
+        [
+          1167.5,
+          1718
+        ],
+        [
+          1189.0,
+          1718
+        ]
+      ],
+      "src": "dec.self.sdpa.scale:out",
+      "dst": "dec.self.sdpa.mask:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.self.sdpa.scale:out",
+      "canonical_dst": "dec.self.sdpa.mask:in",
+      "semantic_edges": [
+        "dec.self.sdpa.scale:out->dec.self.sdpa.mask:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.self.sdpa.scale:out",
+        "target": "dec.self.sdpa.mask:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-057",
+      "points": [
+        [
+          1281.0,
+          1718
+        ],
+        [
+          1302.5,
+          1718
+        ]
+      ],
+      "src": "dec.self.sdpa.mask:out",
+      "dst": "dec.self.sdpa.softmax:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.self.sdpa.mask:out",
+      "canonical_dst": "dec.self.sdpa.softmax:in",
+      "semantic_edges": [
+        "dec.self.sdpa.mask:out->dec.self.sdpa.softmax:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.self.sdpa.mask:out",
+        "target": "dec.self.sdpa.softmax:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-058",
+      "points": [
+        [
+          1384.5,
+          1718
+        ],
+        [
+          1406.0,
+          1718
+        ]
+      ],
+      "src": "dec.self.sdpa.softmax:out",
+      "dst": "dec.self.sdpa.av:a",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.self.sdpa.softmax:out",
+      "canonical_dst": "dec.self.sdpa.av:a",
+      "semantic_edges": [
+        "dec.self.sdpa.attn_dropout:out->dec.self.sdpa.av:a",
+        "dec.self.sdpa.nan_guard:out->dec.self.sdpa.attn_dropout:in",
+        "dec.self.sdpa.softmax:out->dec.self.sdpa.nan_guard:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.self.sdpa.softmax:out",
+        "target": "dec.self.sdpa.av:a",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-059",
+      "points": [
+        [
+          1348.0,
+          1899
+        ],
+        [
+          1522,
+          1899
+        ],
+        [
+          1522,
+          1368
+        ],
+        [
+          1106,
+          1368
+        ],
+        [
+          1106,
+          1342
+        ]
+      ],
+      "src": "dec.self.wo:out",
+      "dst": "dec.norm1.add:f",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.self.wo:out",
+      "canonical_dst": "dec.norm1.add:f",
+      "semantic_edges": [
+        "dec.norm1.branch_dropout:out->dec.norm1.add:f",
+        "dec.norm1:in->dec.norm1.branch_dropout:in",
+        "dec.self.wo:out->dec.self:out",
+        "dec.self:out->dec.norm1:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.self.wo:out",
+        "target": "dec.norm1.add:f",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-060",
+      "points": [
+        [
+          1120,
+          1328
+        ],
+        [
+          1206,
+          1328
+        ]
+      ],
+      "src": "dec.norm1.add:out",
+      "dst": "dec.norm1.layernorm:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.norm1.add:out",
+      "canonical_dst": "dec.norm1.layernorm:in",
+      "semantic_edges": [
+        "dec.norm1.add:out->dec.norm1.layernorm:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.norm1.add:out",
+        "target": "dec.norm1.layernorm:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-061",
+      "points": [
+        [
+          1406,
+          1328
+        ],
+        [
+          1522,
+          1328
+        ],
+        [
+          1522,
+          1296
+        ],
+        [
+          1238.0,
+          1296
+        ],
+        [
+          1238.0,
+          1230
+        ],
+        [
+          954,
+          1230
+        ],
+        [
+          954,
+          890
+        ],
+        [
+          1021.0,
+          890
+        ],
+        [
+          1021.0,
+          914
+        ]
+      ],
+      "src": "dec.norm1.layernorm:out",
+      "dst": "dec.cross.q:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.norm1.layernorm:out",
+      "canonical_dst": "dec.cross.q:in",
+      "semantic_edges": [
+        "dec.cross:in->dec.cross.q:in",
+        "dec.norm1.layernorm:out->dec.norm1:out",
+        "dec.norm1:out->dec.cross:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.norm1.layernorm:out",
+        "target": "dec.cross.q:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-062",
+      "points": [
+        [
+          1064.0,
+          931
+        ],
+        [
+          1088.0,
+          931
+        ]
+      ],
+      "src": "dec.cross.q:out",
+      "dst": "dec.cross.q.value:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.cross.q:out",
+      "canonical_dst": "dec.cross.split:q_in",
+      "semantic_edges": [
+        "dec.cross.q:out->dec.cross.split:q_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.cross.q:out",
+        "target": "dec.cross.split:q_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-063",
+      "points": [
+        [
+          1113.0,
+          946
+        ],
+        [
+          1113.0,
+          996
+        ]
+      ],
+      "src": "dec.cross.q.value:out",
+      "dst": "dec.cross.split:q_in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.cross.q:out",
+      "canonical_dst": "dec.cross.split:q_in",
+      "semantic_edges": [
+        "dec.cross.q:out->dec.cross.split:q_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.cross.q:out",
+        "target": "dec.cross.split:q_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-064",
+      "points": [
+        [
+          1113.0,
+          1034
+        ],
+        [
+          1113.0,
+          1058
+        ]
+      ],
+      "src": "dec.cross.split:q_out",
+      "dst": "dec.cross.sdpa:q",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.cross.split:q_out",
+      "canonical_dst": "dec.cross.sdpa:q",
+      "semantic_edges": [
+        "dec.cross.split:q_out->dec.cross.sdpa:q"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.cross.split:q_out",
+        "target": "dec.cross.sdpa:q",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-065",
+      "points": [
+        [
+          1243.3333333333333,
+          931
+        ],
+        [
+          1267.3333333333333,
+          931
+        ]
+      ],
+      "src": "dec.cross.k:out",
+      "dst": "dec.cross.k.value:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.cross.k:out",
+      "canonical_dst": "dec.cross.split:k_in",
+      "semantic_edges": [
+        "dec.cross.k:out->dec.cross.split:k_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.cross.k:out",
+        "target": "dec.cross.split:k_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-066",
+      "points": [
+        [
+          1292.3333333333333,
+          946
+        ],
+        [
+          1292.3333333333333,
+          996
+        ]
+      ],
+      "src": "dec.cross.k.value:out",
+      "dst": "dec.cross.split:k_in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.cross.k:out",
+      "canonical_dst": "dec.cross.split:k_in",
+      "semantic_edges": [
+        "dec.cross.k:out->dec.cross.split:k_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.cross.k:out",
+        "target": "dec.cross.split:k_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-067",
+      "points": [
+        [
+          1292.3333333333333,
+          1034
+        ],
+        [
+          1292.3333333333333,
+          1058
+        ]
+      ],
+      "src": "dec.cross.split:k_out",
+      "dst": "dec.cross.sdpa:k",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.cross.split:k_out",
+      "canonical_dst": "dec.cross.sdpa:k",
+      "semantic_edges": [
+        "dec.cross.split:k_out->dec.cross.sdpa:k"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.cross.split:k_out",
+        "target": "dec.cross.sdpa:k",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-068",
+      "points": [
+        [
+          1422.6666666666667,
+          931
+        ],
+        [
+          1446.6666666666667,
+          931
+        ]
+      ],
+      "src": "dec.cross.v:out",
+      "dst": "dec.cross.v.value:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.cross.v:out",
+      "canonical_dst": "dec.cross.split:v_in",
+      "semantic_edges": [
+        "dec.cross.v:out->dec.cross.split:v_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.cross.v:out",
+        "target": "dec.cross.split:v_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-069",
+      "points": [
+        [
+          1471.6666666666667,
+          946
+        ],
+        [
+          1471.6666666666667,
+          996
+        ]
+      ],
+      "src": "dec.cross.v.value:out",
+      "dst": "dec.cross.split:v_in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.cross.v:out",
+      "canonical_dst": "dec.cross.split:v_in",
+      "semantic_edges": [
+        "dec.cross.v:out->dec.cross.split:v_in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.cross.v:out",
+        "target": "dec.cross.split:v_in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-070",
+      "points": [
+        [
+          1471.6666666666667,
+          1034
+        ],
+        [
+          1471.6666666666667,
+          1058
+        ]
+      ],
+      "src": "dec.cross.split:v_out",
+      "dst": "dec.cross.sdpa:v",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.cross.split:v_out",
+      "canonical_dst": "dec.cross.sdpa:v",
+      "semantic_edges": [
+        "dec.cross.split:v_out->dec.cross.sdpa:v"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.cross.split:v_out",
+        "target": "dec.cross.sdpa:v",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-071",
+      "points": [
+        [
+          1238.0,
+          1100
+        ],
+        [
+          1238.0,
+          1124
+        ]
+      ],
+      "src": "dec.cross.sdpa:out",
+      "dst": "dec.cross.merge:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.cross.sdpa:out",
+      "canonical_dst": "dec.cross.merge:in",
+      "semantic_edges": [
+        "dec.cross.sdpa:out->dec.cross.merge:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.cross.sdpa:out",
+        "target": "dec.cross.merge:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-072",
+      "points": [
+        [
+          1238.0,
+          1156
+        ],
+        [
+          1238.0,
+          1180
+        ]
+      ],
+      "src": "dec.cross.merge:out",
+      "dst": "dec.cross.wo:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.cross.merge:out",
+      "canonical_dst": "dec.cross.wo:in",
+      "semantic_edges": [
+        "dec.cross.merge:out->dec.cross.wo:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.cross.merge:out",
+        "target": "dec.cross.wo:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-073",
+      "points": [
+        [
+          1348.0,
+          1197
+        ],
+        [
+          1522,
+          1197
+        ],
+        [
+          1522,
+          772
+        ],
+        [
+          1106,
+          772
+        ],
+        [
+          1106,
+          746
+        ]
+      ],
+      "src": "dec.cross.wo:out",
+      "dst": "dec.norm2.add:f",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.cross.wo:out",
+      "canonical_dst": "dec.norm2.add:f",
+      "semantic_edges": [
+        "dec.cross.wo:out->dec.cross:out",
+        "dec.cross:out->dec.norm2:in",
+        "dec.norm2.branch_dropout:out->dec.norm2.add:f",
+        "dec.norm2:in->dec.norm2.branch_dropout:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.cross.wo:out",
+        "target": "dec.norm2.add:f",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-074",
+      "points": [
+        [
+          1120,
+          732
+        ],
+        [
+          1206,
+          732
+        ]
+      ],
+      "src": "dec.norm2.add:out",
+      "dst": "dec.norm2.layernorm:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.norm2.add:out",
+      "canonical_dst": "dec.norm2.layernorm:in",
+      "semantic_edges": [
+        "dec.norm2.add:out->dec.norm2.layernorm:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.norm2.add:out",
+        "target": "dec.norm2.layernorm:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-075",
+      "points": [
+        [
+          1406,
+          1328
+        ],
+        [
+          1522,
+          1328
+        ],
+        [
+          1522,
+          1296
+        ],
+        [
+          1238.0,
+          1296
+        ],
+        [
+          1238.0,
+          1260.0
+        ],
+        [
+          912,
+          1260.0
+        ],
+        [
+          912,
+          732
+        ],
+        [
+          1092,
+          732
+        ]
+      ],
+      "src": "dec.norm1.layernorm:out",
+      "dst": "dec.norm2.add:x",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.norm1.layernorm:out",
+      "canonical_dst": "dec.norm2.add:x",
+      "semantic_edges": [
+        "dec.norm1.layernorm:out->dec.norm1:out",
+        "dec.norm1:out->dec.norm2:skip",
+        "dec.norm2:skip->dec.norm2.add:x"
+      ],
+      "semantic_kind": "residual",
+      "port_authority": {
+        "source": "dec.norm1.layernorm:out",
+        "target": "dec.norm2.add:x",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-076",
+      "points": [
+        [
+          1406,
+          732
+        ],
+        [
+          1522,
+          732
+        ],
+        [
+          1522,
+          700
+        ],
+        [
+          1238.0,
+          700
+        ],
+        [
+          1238.0,
+          634
+        ],
+        [
+          954,
+          634
+        ],
+        [
+          954,
+          529
+        ],
+        [
+          976,
+          529
+        ]
+      ],
+      "src": "dec.norm2.layernorm:out",
+      "dst": "dec.ffn.input_value:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.norm2.layernorm:out",
+      "canonical_dst": "dec.ffn.linear1:in",
+      "semantic_edges": [
+        "dec.ffn:in->dec.ffn.linear1:in",
+        "dec.norm2.layernorm:out->dec.norm2:out",
+        "dec.norm2:out->dec.ffn:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.norm2.layernorm:out",
+        "target": "dec.ffn.linear1:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-077",
+      "points": [
+        [
+          1026,
+          529.0
+        ],
+        [
+          1046,
+          529
+        ]
+      ],
+      "src": "dec.ffn.input_value:out",
+      "dst": "dec.ffn.linear1:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.norm2.layernorm:out",
+      "canonical_dst": "dec.ffn.linear1:in",
+      "semantic_edges": [
+        "dec.ffn:in->dec.ffn.linear1:in",
+        "dec.norm2.layernorm:out->dec.norm2:out",
+        "dec.norm2:out->dec.ffn:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.norm2.layernorm:out",
+        "target": "dec.ffn.linear1:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-078",
+      "points": [
+        [
+          1156,
+          529
+        ],
+        [
+          1176,
+          529
+        ]
+      ],
+      "src": "dec.ffn.linear1:out",
+      "dst": "dec.ffn.relu:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.ffn.linear1:out",
+      "canonical_dst": "dec.ffn.relu:in",
+      "semantic_edges": [
+        "dec.ffn.linear1:out->dec.ffn.relu:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.ffn.linear1:out",
+        "target": "dec.ffn.relu:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-079",
+      "points": [
+        [
+          1262,
+          529
+        ],
+        [
+          1282,
+          529
+        ]
+      ],
+      "src": "dec.ffn.relu:out",
+      "dst": "dec.ffn.linear2:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.ffn.relu:out",
+      "canonical_dst": "dec.ffn.linear2:in",
+      "semantic_edges": [
+        "dec.ffn.dropout:out->dec.ffn.linear2:in",
+        "dec.ffn.relu:out->dec.ffn.dropout:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.ffn.relu:out",
+        "target": "dec.ffn.linear2:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-080",
+      "points": [
+        [
+          1392,
+          529
+        ],
+        [
+          1412,
+          529
+        ]
+      ],
+      "src": "dec.ffn.linear2:out",
+      "dst": "dec.ffn.output_value:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.ffn.linear2:out",
+      "canonical_dst": "dec.norm3.add:f",
+      "semantic_edges": [
+        "dec.ffn.linear2:out->dec.ffn:out",
+        "dec.ffn:out->dec.norm3:in",
+        "dec.norm3.branch_dropout:out->dec.norm3.add:f",
+        "dec.norm3:in->dec.norm3.branch_dropout:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.ffn.linear2:out",
+        "target": "dec.norm3.add:f",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-081",
+      "points": [
+        [
+          1462,
+          529.0
+        ],
+        [
+          1522,
+          529
+        ],
+        [
+          1522,
+          404
+        ],
+        [
+          1106,
+          404
+        ],
+        [
+          1106,
+          378
+        ]
+      ],
+      "src": "dec.ffn.output_value:out",
+      "dst": "dec.norm3.add:f",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.ffn.linear2:out",
+      "canonical_dst": "dec.norm3.add:f",
+      "semantic_edges": [
+        "dec.ffn.linear2:out->dec.ffn:out",
+        "dec.ffn:out->dec.norm3:in",
+        "dec.norm3.branch_dropout:out->dec.norm3.add:f",
+        "dec.norm3:in->dec.norm3.branch_dropout:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.ffn.linear2:out",
+        "target": "dec.norm3.add:f",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-082",
+      "points": [
+        [
+          1120,
+          364
+        ],
+        [
+          1206,
+          364
+        ]
+      ],
+      "src": "dec.norm3.add:out",
+      "dst": "dec.norm3.layernorm:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.norm3.add:out",
+      "canonical_dst": "dec.norm3.layernorm:in",
+      "semantic_edges": [
+        "dec.norm3.add:out->dec.norm3.layernorm:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.norm3.add:out",
+        "target": "dec.norm3.layernorm:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-083",
+      "points": [
+        [
+          1406,
+          732
+        ],
+        [
+          1522,
+          732
+        ],
+        [
+          1522,
+          700
+        ],
+        [
+          1238.0,
+          700
+        ],
+        [
+          1238.0,
+          664.0
+        ],
+        [
+          912,
+          664.0
+        ],
+        [
+          912,
+          364
+        ],
+        [
+          1092,
+          364
+        ]
+      ],
+      "src": "dec.norm2.layernorm:out",
+      "dst": "dec.norm3.add:x",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.norm2.layernorm:out",
+      "canonical_dst": "dec.norm3.add:x",
+      "semantic_edges": [
+        "dec.norm2.layernorm:out->dec.norm2:out",
+        "dec.norm2:out->dec.norm3:skip",
+        "dec.norm3:skip->dec.norm3.add:x"
+      ],
+      "semantic_kind": "residual",
+      "port_authority": {
+        "source": "dec.norm2.layernorm:out",
+        "target": "dec.norm3.add:x",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-084",
+      "points": [
+        [
+          1406,
+          364
+        ],
+        [
+          1522,
+          364
+        ],
+        [
+          1522,
+          332
+        ],
+        [
+          1238.0,
+          332
+        ],
+        [
+          1238.0,
+          236
+        ]
+      ],
+      "src": "dec.norm3.layernorm:out",
+      "dst": "generator:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.norm3.layernorm:out",
+      "canonical_dst": "generator:in",
+      "semantic_edges": [
+        "dec.norm3.layernorm:out->dec.norm3:out",
+        "dec.norm3:out->dec.output:in",
+        "dec.output:out->generator:in"
+      ],
+      "semantic_kind": "repeat_output",
+      "port_authority": {
+        "source": "dec.norm3.layernorm:out",
+        "target": "generator:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-085",
+      "points": [
+        [
+          1238.0,
+          188
+        ],
+        [
+          1238.0,
+          168
+        ]
+      ],
+      "src": "generator:out",
+      "dst": "probabilities:in",
+      "dashed": true,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "generator:out",
+      "canonical_dst": "probabilities:in",
+      "semantic_edges": [
+        "generator:out->logits:in",
+        "logits:out->probabilities:in"
+      ],
+      "semantic_kind": "explanatory",
+      "port_authority": {
+        "source": "generator:out",
+        "target": "probabilities:in",
+        "geometry": "presentation"
+      }
+    }
+  ]
+}

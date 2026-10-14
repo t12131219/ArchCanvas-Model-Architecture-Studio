@@ -1,0 +1,50 @@
+{
+  "source_project": "density-flow-modules",
+  "repository": "ikostrikov/pytorch-flows",
+  "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+  "source_snapshot_sha256": "c0ebb6c1af0b9d8f0b8140bbc16c5cf7122408fa79a5b25da427fac8d15d657a",
+  "entry": "density-flow-modules/flows.py::CouplingLayer.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "density-flow-modules/LICENSE": {
+      "sha256": "d541e764a331fbfb13f50107a3466d47cb2422f878160bdcaf433c259a5e121a",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ikostrikov/pytorch-flows/bf12ed91b86867b38d74982f5e2d44c248604df9/LICENSE",
+      "derived_from": null
+    },
+    "density-flow-modules/flows.py": {
+      "sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+      "lines": 504,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ikostrikov/pytorch-flows/bf12ed91b86867b38d74982f5e2d44c248604df9/flows.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "density-flow-modules/flows.py::CouplingLayer.__init__": {
+      "path": "density-flow-modules/flows.py",
+      "symbol": "CouplingLayer.__init__",
+      "start": 407,
+      "end": 440,
+      "snippet": "    def __init__(self,\n                 num_inputs,\n                 num_hidden,\n                 mask,\n                 num_cond_inputs=None,\n                 s_act='tanh',\n                 t_act='relu'):\n        super(CouplingLayer, self).__init__()\n\n        self.num_inputs = num_inputs\n        self.mask = mask\n\n        activations = {'relu': nn.ReLU, 'sigmoid': nn.Sigmoid, 'tanh': nn.Tanh}\n        s_act_func = activations[s_act]\n        t_act_func = activations[t_act]\n\n        if num_cond_inputs is not None:\n            total_inputs = num_inputs + num_cond_inputs\n        else:\n            total_inputs = num_inputs\n            \n        self.scale_net = nn.Sequential(\n            nn.Linear(total_inputs, num_hidden), s_act_func(),\n            nn.Linear(num_hidden, num_hidden), s_act_func(),\n            nn.Linear(num_hidden, num_inputs))\n        self.translate_net = nn.Sequential(\n            nn.Linear(total_inputs, num_hidden), t_act_func(),\n            nn.Linear(num_hidden, num_hidden), t_act_func(),\n            nn.Linear(num_hidden, num_inputs))\n\n        def init(m):\n            if isinstance(m, nn.Linear):\n                m.bias.data.fill_(0)\n                nn.init.orthogonal_(m.weight.data)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "density-flow-modules/flows.py::CouplingLayer.forward": {
+      "path": "density-flow-modules/flows.py",
+      "symbol": "CouplingLayer.forward",
+      "start": 442,
+      "end": 458,
+      "snippet": "    def forward(self, inputs, cond_inputs=None, mode='direct'):\n        mask = self.mask\n        \n        masked_inputs = inputs * mask\n        if cond_inputs is not None:\n            masked_inputs = torch.cat([masked_inputs, cond_inputs], -1)\n        \n        if mode == 'direct':\n            log_s = self.scale_net(masked_inputs) * (1 - mask)\n            t = self.translate_net(masked_inputs) * (1 - mask)\n            s = torch.exp(log_s)\n            return inputs * s + t, log_s.sum(-1, keepdim=True)\n        else:\n            log_s = self.scale_net(masked_inputs) * (1 - mask)\n            t = self.translate_net(masked_inputs) * (1 - mask)\n            s = torch.exp(-log_s)\n            return (inputs - t) * s, -log_s.sum(-1, keepdim=True)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "density-flow-modules/LICENSE"
+  ]
+}

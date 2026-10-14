@@ -1,0 +1,60 @@
+# Modulated deformable conv：外部offset与mask
+
+本例只绘制 `One DeformConv2d call; no offset/mask predictor network`，不新增完整模型。固定来源为 [pytorch/vision](https://github.com/pytorch/vision)，commit `01dfa8ea81972bb74b52dc01e6a1b43b26b62020`。源码经 AST 读取与 SHA256/Git blob 核对，未导入、执行模型、下载权重或运行 C++/CUDA kernel。
+
+本例明确声明构造 `DeformConv2d(8,16,3,padding=1,bias=False); mask supplied`，输入 `[B,8,16,16]`，输出 `[B,16,16,16]`。shape 是选例与静态公式的推导，不是一次实际forward观测；含BN/Dropout的路径由调用方train/eval决定。
+
+选 `DeformConv2d(8,16,3,padding=1,bias=False)`，input[B,8,16,16]、外部offset[B,18,16,16]、外部mask[B,9,16,16]、真实weight[16,8,3,3]，output[B,16,16,16]。groups1由input通道/weight通道推导，offset_groups1由18/(2×3×3)推导；两者是不同概念。
+
+mask supplied使 `use_mask=True`，调用torch.ops.torchvision.deform_conv2d。weight 是学习Parameter，初始化Kaiming(a=sqrt5)；bias=False令注册bias为None，functional wrapper创建zero bias占位。offset/mask由调用方提供，源码本模块没有预测网络；不可增加offsetConv/maskConv。kernel保留opaque边界。
+
+## 源码证据范围
+
+| 符号 | 本固定文件行号 | 原文件 |
+|---|---|---|
+| `DeformConv2d` | 106–180 | [固定源码](../sources/torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py) |
+| `DeformConv2d.__init__` | 111–145 | [固定源码](../sources/torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py) |
+| `DeformConv2d.reset_parameters` | 147–153 | [固定源码](../sources/torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py) |
+| `DeformConv2d.forward` | 155–167 | [固定源码](../sources/torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py) |
+| `deform_conv2d` | 12–103 | [固定源码](../sources/torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py) |
+
+完整片段与 E### 编号由生成时的 `source_evidence.json`、`source_map.md`保存；图上的E###指向符号范围，不能把一个范围编号当成该节点的逐行自动推理结果。
+
+## 图中算子与参数身份
+
+| 稳定节点 / 图框标签 | 源码操作与配置 | 声明输出 shape | 参数属性路径 |
+|---|---|---|---|
+| `deformable_conv.kernel` / DeformConv / modulated | `deform_conv2d`；kernel_size=[3, 3]；stride=[1, 1]；padding=[1, 1]；dilation=[1, 1]；groups=1；bias=False；use_mask=True | `[B,16,16,16]` | `无学习参数` |
+| `deformable_conv.offset` / External sampling offsets | 辅助 `input`，origin=caller | `[B,18,16,16]` | `无学习参数` |
+| `deformable_conv.weight` / Learned convolution weight | 辅助 `parameter`，origin=parameter | `[16,8,3,3]` | `weight` |
+| `deformable_conv.mask` / External modulation mask | 辅助 `input`，origin=caller | `[B,9,16,16]` | `无学习参数` |
+
+不同属性路径对应不同实例；同色同形状不自动表示共享参数。BN的affine参数与running-stat buffer分别理解。未提供自定义替代block，本选例只针对固定源码与以上构造。
+
+## 三粒度与排布理由
+
+主图上行input→wrapper/kernel→output，三个独立辅助面板分别表示offset、weight、mask。parameter用紫色，与外部粉色张量区分。每个旁路专属operand端口和独立走线槽，不将三个值在中途合成一条tensor线。module/detailed相同因kernel不可在本次Python证据里继续展开。
+
+三粒度复用同一语义IR。`chain.items`按执行先后声明，由共享布局引擎反转画面y方向，实现内部与总体自底向上；`parallel.items`保持源码列表顺序，收集本身不执行tensor合并，Concat/Add必须另有真实节点。graph布局只声明rank/列对齐，数据依赖必须显式提供，不能从视觉相邻自动推断。
+
+字体使用DejaVu Sans/Arial，深色边框；粉色输入、蓝色卷积/张量、黄色BN/Concat/Add、绿色Pool、紫色输出/参数，具体角色见生成的 `visual_style.json`。宽高来自标题、shape、证据文本和子容器测量；间距、转弯槽、箭头末段由共享引擎计算，不来自源码中的坐标。每条边保留语义端口，折叠视图映射到最近可见容器；上游kernel无Python内部证据时保持边界，而不为“更详细”虚造节点。
+
+## 生成与验证
+
+正式合并后，在专题目录运行：
+
+```bash
+python3 generate.py --module deformable_conv --png
+python3 checks/vision_extended.py
+```
+
+适配器合并前可单独预览：
+
+```bash
+python3 staging/preview_module.py deformable_conv \
+  --manifest staging/vision_source_manifest.json --out /tmp/module-vision-extended
+```
+
+输出的SVG可以继续编辑，但应修改适配器/布局再重新生成以保持源码、IR、图像同步。独立 `checks/vision_extended.py` 读取真实AST校验构造、branch选择、操作数和真实顺序；另有全部声明一致性guard。每例至少删除/交换真实依赖端点的负例，并验证shape、operator与参数身份错误能被拒绝。三个视图均检查边界、包含、正交路线、末段转弯空间、上行主流、避开边框与算子内部、文本范围和不同辅助张量的路线分离。PNG还需目视复查。
+
+这些校验针对上述固定snapshot/选例，不代表任意源码自动提取、数值结果正确或所有运行时配置已验证。相邻版本、custom block、输入shape或条件分支变化均需重新取证和独立合同。

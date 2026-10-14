@@ -1,0 +1,411 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "channel_shuffle",
+  "profile": {
+    "task": "module channel permutation",
+    "groups": 2,
+    "num_channels": 24,
+    "channels_per_group": 12,
+    "input_shape": [
+      "B",
+      24,
+      8,
+      8
+    ],
+    "output_shape": [
+      "B",
+      24,
+      8,
+      8
+    ],
+    "grouped_shape": [
+      "B",
+      2,
+      12,
+      8,
+      8
+    ],
+    "transposed_shape": [
+      "B",
+      12,
+      2,
+      8,
+      8
+    ],
+    "input_contiguity": "contiguous declared input; first view must be compatible",
+    "mode": "mode-independent function; not executed",
+    "learned_parameter_count": 0,
+    "permutation_output_to_input": [
+      0,
+      12,
+      1,
+      13,
+      2,
+      14,
+      3,
+      15,
+      4,
+      16,
+      5,
+      17,
+      6,
+      18,
+      7,
+      19,
+      8,
+      20,
+      9,
+      21,
+      10,
+      22,
+      11,
+      23
+    ],
+    "permutation_origin": "static derivation from view/transpose/view; not an additional source operator",
+    "shape_origin": "declared representative module input, not runtime observation",
+    "symbolic_shapes": true,
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "pytorch/vision",
+    "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+    "snapshot": "66209ff0a5fcaf22d0c55fcc2b008aa29f50dec4f265cbd902de8482ed44f5bd"
+  },
+  "nodes": [
+    {
+      "id": "shuffle.root",
+      "label": "Channel shuffle",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::channel_shuffle"
+      ],
+      "shape": "Function module",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle.input",
+      "label": "Input x / contiguous",
+      "kind": "input",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::channel_shuffle"
+      ],
+      "shape": "[B,24,8,8]",
+      "detail": [],
+      "learnable": false,
+      "origin": "declared_module_profile",
+      "contiguous": true,
+      "parent": "shuffle.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle.module",
+      "label": "Shuffle\ngroups=2",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::channel_shuffle"
+      ],
+      "shape": "[B,24,8,8] -> [B,24,8,8]",
+      "detail": [
+        "Function only; tensor permutation without learned parameters"
+      ],
+      "learnable": false,
+      "groups": 2,
+      "channels_per_group": 12,
+      "instance_identity": "channel_shuffle_call_1",
+      "source_function": "channel_shuffle",
+      "mode": "chain",
+      "parent": "shuffle.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle.group_view",
+      "label": "View C as groups x C/G",
+      "kind": "view",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::channel_shuffle"
+      ],
+      "shape": "[B,2,12,8,8]",
+      "detail": [],
+      "learnable": false,
+      "expression": "x.view(batchsize,groups,channels_per_group,height,width)",
+      "source_operation": "Tensor.view",
+      "groups": 2,
+      "channels_per_group": 12,
+      "target_shape": [
+        "B",
+        2,
+        12,
+        8,
+        8
+      ],
+      "axis_meaning": [
+        "batch",
+        "groups",
+        "channels_per_group",
+        "height",
+        "width"
+      ],
+      "parent": "shuffle.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle.axis_swap",
+      "label": "Transpose\n+ contiguous",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::channel_shuffle"
+      ],
+      "shape": "2 x 12 -> 12 x 2 axes",
+      "detail": [
+        "Two literal operations; contiguous prepares final view"
+      ],
+      "learnable": false,
+      "mode": "chain",
+      "parent": "shuffle.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle.transpose",
+      "label": "Transpose axes 1 and 2",
+      "kind": "transpose",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::channel_shuffle"
+      ],
+      "shape": "[B,12,2,8,8]",
+      "detail": [],
+      "learnable": false,
+      "dims": [
+        1,
+        2
+      ],
+      "expression": "torch.transpose(x,1,2)",
+      "source_operation": "torch.transpose",
+      "storage_effect": "strided view; channels_per_group and groups axes exchanged",
+      "parent": "shuffle.axis_swap",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle.contiguous",
+      "label": "Contiguous memory layout",
+      "kind": "contiguous",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::channel_shuffle"
+      ],
+      "shape": "[B,12,2,8,8]",
+      "detail": [],
+      "learnable": false,
+      "expression": "x.contiguous()",
+      "source_operation": "Tensor.contiguous",
+      "storage_effect": "materialize contiguous order when required; values and shape preserved",
+      "parent": "shuffle.axis_swap",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle.flatten_view",
+      "label": "View group axes as channels",
+      "kind": "view",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::channel_shuffle"
+      ],
+      "shape": "[B,24,8,8]",
+      "detail": [],
+      "learnable": false,
+      "expression": "x.view(batchsize,-1,height,width)",
+      "source_operation": "Tensor.view",
+      "target_shape": [
+        "B",
+        -1,
+        8,
+        8
+      ],
+      "inferred_channels": 24,
+      "flattened_axes": [
+        1,
+        2
+      ],
+      "parent": "shuffle.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle.output",
+      "label": "Shuffled output",
+      "kind": "output",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::channel_shuffle"
+      ],
+      "shape": "[B,24,8,8]",
+      "detail": [],
+      "learnable": false,
+      "parent": "shuffle.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "shuffle.axis_swap:in->shuffle.transpose:in:boundary",
+      "src": "shuffle.axis_swap",
+      "dst": "shuffle.transpose",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "shuffle.transpose:out->shuffle.contiguous:in:tensor",
+      "src": "shuffle.transpose",
+      "dst": "shuffle.contiguous",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle.contiguous:out->shuffle.axis_swap:out:boundary",
+      "src": "shuffle.contiguous",
+      "dst": "shuffle.axis_swap",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "shuffle.module:in->shuffle.group_view:in:boundary",
+      "src": "shuffle.module",
+      "dst": "shuffle.group_view",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "shuffle.group_view:out->shuffle.axis_swap:in:tensor",
+      "src": "shuffle.group_view",
+      "dst": "shuffle.axis_swap",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle.axis_swap:out->shuffle.flatten_view:in:tensor",
+      "src": "shuffle.axis_swap",
+      "dst": "shuffle.flatten_view",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle.flatten_view:out->shuffle.module:out:boundary",
+      "src": "shuffle.flatten_view",
+      "dst": "shuffle.module",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "shuffle.root:in->shuffle.input:in:boundary",
+      "src": "shuffle.root",
+      "dst": "shuffle.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "shuffle.input:out->shuffle.module:in:tensor",
+      "src": "shuffle.input",
+      "dst": "shuffle.module",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle.module:out->shuffle.output:in:tensor",
+      "src": "shuffle.module",
+      "dst": "shuffle.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle.output:out->shuffle.root:out:boundary",
+      "src": "shuffle.output",
+      "dst": "shuffle.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    }
+  ],
+  "facts": [
+    "This artifact contains one channel_shuffle(x,groups) call and excludes ShuffleNetV2/InvertedResidual convolutions and branch splitting.",
+    "The declared example uses contiguous[B,24,8,8] input,groups2,channels_per_group=24//2=12; C must be divisible by groups.",
+    "The function reads x.size() metadata and computes channels_per_group; these are configuration/shape arithmetic, not new learned feature nodes.",
+    "The literal tensor operation order is view(B,2,12,8,8),transpose(1,2),contiguous(),view(B,-1,8,8).",
+    "Transpose swaps group and within-group axes to[B,12,2,8,8]; it does not swap height/width or mix pixels.",
+    "contiguous preserves logical values and shape and provides the storage order required by the following view.",
+    "Output has the same[B,24,8,8] shape; output channel o reads input(o%2)*12+o//2 at the same spatial coordinate.",
+    "The static permutation is0,12,1,13,...,11,23; this explanatory mapping is not a separate gather/index_select call in the source.",
+    "All operations are nonparameterized; train/eval mode does not change this function's transformation."
+  ],
+  "corrections": [
+    "Do not draw grouped/depthwise convolutions, branch concat, BatchNorm or a classifier around this isolated function.",
+    "The final shape matches the input, but channel values are reordered; equal shapes do not mean an identity operation.",
+    "Keep contiguous between transpose and final view; transpose alone generally leaves a noncontiguous tensor.",
+    "groups2 reshapes24 channels into2x12 before swapping to12x2; it is not a12-group example.",
+    "A channel-index mapping is a static explanation; the source contains no explicit permutation matrix or gather operator."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

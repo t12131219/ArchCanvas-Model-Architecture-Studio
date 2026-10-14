@@ -1,0 +1,658 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "glow_split_prior",
+  "profile": {
+    "split": true,
+    "input_channels_after_squeeze": 8,
+    "retained_channels": 4,
+    "prior_channels": 8,
+    "head_order": [
+      "mean",
+      "log_sd"
+    ],
+    "sampling": false,
+    "logdet_excluded": true,
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "Only split=True prior subgraph after the omitted Flow loop; excludes squeeze, flow logdet and reverse sampling.",
+    "source_contracts": [
+      [
+        "Block.forward",
+        "self.prior(out).chunk(2, 1)"
+      ],
+      [
+        "gaussian_log_p",
+        "-0.5 * log(2 * pi) - log_sd - 0.5 * (x - mean) ** 2 / torch.exp(2 * log_sd)"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "rosinality/glow-pytorch",
+    "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+    "snapshot": "1d5cf48ba47a5ecf7ea7059a37c9d1584a95871f52d5022f76b59cc51138d2ce"
+  },
+  "nodes": [
+    {
+      "id": "glow_split_prior.root",
+      "label": "Split prior / conditional Gaussian density",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::Block.__init__",
+        "glow-modules/model.py::Block.forward",
+        "glow-modules/model.py::ZeroConv2d.__init__",
+        "glow-modules/model.py::ZeroConv2d.forward",
+        "glow-modules/model.py::gaussian_log_p"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "glow_split_prior.x"
+        ],
+        [
+          "glow_split_prior.body"
+        ],
+        [
+          "glow_split_prior.keep",
+          "glow_split_prior.z",
+          "glow_split_prior.lp"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_split_prior.x",
+      "label": "Features after omitted flows",
+      "kind": "input",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "[B,8,4,4]",
+      "detail": [],
+      "parent": "glow_split_prior.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_split_prior.body",
+      "label": "Split prior module",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::Block.__init__",
+        "glow-modules/model.py::Block.forward",
+        "glow-modules/model.py::ZeroConv2d.__init__",
+        "glow-modules/model.py::ZeroConv2d.forward",
+        "glow-modules/model.py::gaussian_log_p"
+      ],
+      "shape": "[B,4,4,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "glow_split_prior.split"
+        ],
+        [
+          "glow_split_prior.prior"
+        ],
+        [
+          "glow_split_prior.heads"
+        ],
+        [
+          "glow_split_prior.density"
+        ],
+        [
+          "glow_split_prior.reduce"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "glow_split_prior.root",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_split_prior.split",
+      "label": "Split channel halves",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "port_bindings": {
+        "out": {
+          "node": "glow_split_prior.splitop",
+          "port": "retained"
+        },
+        "z_new": {
+          "node": "glow_split_prior.splitop",
+          "port": "z_new"
+        }
+      },
+      "port_binding_evidence": {
+        "out": {
+          "source": [
+            "glow-modules/model.py::Block.forward"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        },
+        "z_new": {
+          "source": [
+            "glow-modules/model.py::Block.forward"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        }
+      },
+      "parent": "glow_split_prior.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "z_new"
+      ]
+    },
+    {
+      "id": "glow_split_prior.splitop",
+      "label": "out.chunk(2,dim=1)",
+      "kind": "tensor",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "two [B,4,4,4]",
+      "detail": [],
+      "expression": "out.chunk(2, 1)",
+      "operand_order": [
+        "out",
+        "z_new"
+      ],
+      "return_fields": [
+        "retained",
+        "z_new"
+      ],
+      "parent": "glow_split_prior.split",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "retained",
+        "z_new"
+      ]
+    },
+    {
+      "id": "glow_split_prior.prior",
+      "label": "Prior on retained half",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "glow_split_prior.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_split_prior.priorop",
+      "label": "ZeroConv2d prior 4 -> 8",
+      "kind": "conv2d",
+      "source": [
+        "glow-modules/model.py::Block.__init__",
+        "glow-modules/model.py::Block.forward",
+        "glow-modules/model.py::ZeroConv2d.forward"
+      ],
+      "shape": "[B,8,4,4]",
+      "detail": [],
+      "module_identity": "prior",
+      "input_operand": "out",
+      "padding_value": 1,
+      "parent": "glow_split_prior.prior",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_split_prior.heads",
+      "label": "Mean / log standard deviation",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "port_bindings": {
+        "mean_log_sd": {
+          "node": "glow_split_prior.headsop",
+          "port": "mean_log_sd"
+        }
+      },
+      "port_binding_evidence": {
+        "mean_log_sd": {
+          "source": [
+            "glow-modules/model.py::Block.forward"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        }
+      },
+      "parent": "glow_split_prior.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mean_log_sd"
+      ]
+    },
+    {
+      "id": "glow_split_prior.headsop",
+      "label": "chunk -> mean, log_sd",
+      "kind": "tensor",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "each [B,4,4,4]",
+      "detail": [],
+      "expression": "self.prior(out).chunk(2, 1)",
+      "head_order": [
+        "mean",
+        "log_sd"
+      ],
+      "return_fields": [
+        "mean",
+        "log_sd"
+      ],
+      "output_bundle": [
+        "mean",
+        "log_sd"
+      ],
+      "parent": "glow_split_prior.heads",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mean_log_sd"
+      ]
+    },
+    {
+      "id": "glow_split_prior.density",
+      "label": "Elementwise Gaussian log_p",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "port_bindings": {
+        "parameters": {
+          "node": "glow_split_prior.gauss",
+          "port": "parameters"
+        },
+        "sample": {
+          "node": "glow_split_prior.gauss",
+          "port": "sample"
+        }
+      },
+      "port_binding_evidence": {
+        "parameters": {
+          "source": [
+            "glow-modules/model.py::Block.forward",
+            "glow-modules/model.py::gaussian_log_p"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        },
+        "sample": {
+          "source": [
+            "glow-modules/model.py::Block.forward",
+            "glow-modules/model.py::gaussian_log_p"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        }
+      },
+      "parent": "glow_split_prior.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "parameters",
+        "sample"
+      ]
+    },
+    {
+      "id": "glow_split_prior.gauss",
+      "label": "gaussian_log_p(z_new,mean,log_sd)",
+      "kind": "density",
+      "source": [
+        "glow-modules/model.py::Block.forward",
+        "glow-modules/model.py::gaussian_log_p"
+      ],
+      "shape": "[B,4,4,4]",
+      "detail": [],
+      "expression": "-0.5 * log(2 * pi) - log_sd - 0.5 * (x - mean) ** 2 / torch.exp(2 * log_sd)",
+      "scale_parameterization": "log_standard_deviation",
+      "parent": "glow_split_prior.density",
+      "source_evidence": [
+        "E002",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "parameters",
+        "sample"
+      ]
+    },
+    {
+      "id": "glow_split_prior.reduce",
+      "label": "Per-example sum",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "glow_split_prior.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_split_prior.sum",
+      "label": "view(B,-1).sum(1)",
+      "kind": "density",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "[B]",
+      "detail": [],
+      "expression": "log_p.view(b_size, -1).sum(1)",
+      "reduce_axes": [
+        "C",
+        "H",
+        "W"
+      ],
+      "parent": "glow_split_prior.reduce",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_split_prior.keep",
+      "label": "Retained out",
+      "kind": "output",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "[B,4,4,4]",
+      "detail": [],
+      "parent": "glow_split_prior.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_split_prior.z",
+      "label": "Split latent z_new",
+      "kind": "output",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "[B,4,4,4]",
+      "detail": [],
+      "parent": "glow_split_prior.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_split_prior.lp",
+      "label": "Conditional log_p",
+      "kind": "output",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "[B]",
+      "detail": [],
+      "parent": "glow_split_prior.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "glow_split_prior.split:in->glow_split_prior.splitop:in:boundary",
+      "src": "glow_split_prior.split",
+      "dst": "glow_split_prior.splitop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_split_prior.splitop:out->glow_split_prior.split:out:boundary",
+      "src": "glow_split_prior.splitop",
+      "dst": "glow_split_prior.split",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_split_prior.prior:in->glow_split_prior.priorop:in:boundary",
+      "src": "glow_split_prior.prior",
+      "dst": "glow_split_prior.priorop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_split_prior.priorop:out->glow_split_prior.prior:out:boundary",
+      "src": "glow_split_prior.priorop",
+      "dst": "glow_split_prior.prior",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_split_prior.heads:in->glow_split_prior.headsop:in:boundary",
+      "src": "glow_split_prior.heads",
+      "dst": "glow_split_prior.headsop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_split_prior.headsop:out->glow_split_prior.heads:out:boundary",
+      "src": "glow_split_prior.headsop",
+      "dst": "glow_split_prior.heads",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_split_prior.density:in->glow_split_prior.gauss:in:boundary",
+      "src": "glow_split_prior.density",
+      "dst": "glow_split_prior.gauss",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_split_prior.gauss:out->glow_split_prior.density:out:boundary",
+      "src": "glow_split_prior.gauss",
+      "dst": "glow_split_prior.density",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_split_prior.reduce:in->glow_split_prior.sum:in:boundary",
+      "src": "glow_split_prior.reduce",
+      "dst": "glow_split_prior.sum",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_split_prior.sum:out->glow_split_prior.reduce:out:boundary",
+      "src": "glow_split_prior.sum",
+      "dst": "glow_split_prior.reduce",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_split_prior.x:out->glow_split_prior.split:in:tensor",
+      "src": "glow_split_prior.x",
+      "dst": "glow_split_prior.split",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_split_prior.split:out->glow_split_prior.prior:in:tensor",
+      "src": "glow_split_prior.split",
+      "dst": "glow_split_prior.prior",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_split_prior.split:out->glow_split_prior.keep:in:retained_value",
+      "src": "glow_split_prior.split",
+      "dst": "glow_split_prior.keep",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "retained_value"
+    },
+    {
+      "id": "glow_split_prior.split:z_new->glow_split_prior.z:in:retained_value",
+      "src": "glow_split_prior.split",
+      "dst": "glow_split_prior.z",
+      "src_port": "z_new",
+      "dst_port": "in",
+      "role": "retained_value"
+    },
+    {
+      "id": "glow_split_prior.prior:out->glow_split_prior.heads:in:tensor",
+      "src": "glow_split_prior.prior",
+      "dst": "glow_split_prior.heads",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_split_prior.heads:mean_log_sd->glow_split_prior.density:parameters:tensor",
+      "src": "glow_split_prior.heads",
+      "dst": "glow_split_prior.density",
+      "src_port": "mean_log_sd",
+      "dst_port": "parameters",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_split_prior.split:z_new->glow_split_prior.density:sample:tensor",
+      "src": "glow_split_prior.split",
+      "dst": "glow_split_prior.density",
+      "src_port": "z_new",
+      "dst_port": "sample",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_split_prior.density:out->glow_split_prior.reduce:in:tensor",
+      "src": "glow_split_prior.density",
+      "dst": "glow_split_prior.reduce",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_split_prior.reduce:out->glow_split_prior.lp:in:tensor",
+      "src": "glow_split_prior.reduce",
+      "dst": "glow_split_prior.lp",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Prior sees retained out, whereas density is evaluated on z_new; these operands cannot be interchanged.",
+    "log_sd denotes log standard deviation; density denominator is exp(2*log_sd), not exp(log_sd).",
+    "The three outputs are independent values; there is no z-to-retained tensor chain."
+  ],
+  "corrections": [
+    "Do not call this a whole Glow block or add a reparameterization sample to forward."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

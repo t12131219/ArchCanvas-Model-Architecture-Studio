@@ -1,0 +1,3449 @@
+{
+  "adapter": "supplied educational pytorch_transformer_original; manual semantic adapter",
+  "source_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+  "dimension_symbols": {
+    "B": "batch",
+    "S": "source length",
+    "T": "target length",
+    "D": "d_model",
+    "H": "heads",
+    "Dh": "D/H",
+    "V": "target vocabulary"
+  },
+  "conventions": {
+    "dropout": "retained in IR, folded in views",
+    "nan_guard": "retained in IR, folded in views",
+    "repeats": "serial independent copies; representative layer i",
+    "shape_glyphs": "symbolic, not true matrix dimensions",
+    "causal_mask": "caller must supply tgt_mask; greedy_decode constructs it"
+  },
+  "nodes": [
+    {
+      "id": "model",
+      "kind": "model",
+      "parent": null,
+      "rank": 0,
+      "children": [
+        "src_tokens",
+        "src_embed",
+        "src_pe",
+        "tgt_tokens",
+        "tgt_embed",
+        "tgt_pe",
+        "enc",
+        "dec",
+        "generator",
+        "logits",
+        "probabilities"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "Transformer.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "src_tokens",
+      "kind": "input",
+      "parent": "model",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "Transformer.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "src_embed",
+      "kind": "embedding",
+      "parent": "model",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "TokenEmbedding.forward"
+      ],
+      "param_identity": "model.src_embedding.embedding.weight",
+      "scale": "sqrt(D)"
+    },
+    {
+      "id": "src_pe",
+      "kind": "positional_encoding",
+      "parent": "model",
+      "rank": 0,
+      "children": [
+        "src_pe.buffer",
+        "src_pe.add",
+        "src_pe.dropout"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionalEncoding.forward"
+      ],
+      "param_identity": null,
+      "buffer_identity": "model.position.pe",
+      "dropout": "folded",
+      "port_bindings": {
+        "in": {
+          "node": "src_pe.add",
+          "port": "x"
+        },
+        "out": {
+          "node": "src_pe.dropout",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "src_pe.buffer",
+      "kind": "sinusoidal_buffer",
+      "parent": "src_pe",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionalEncoding.forward"
+      ],
+      "param_identity": null,
+      "buffer_identity": "model.position.pe"
+    },
+    {
+      "id": "src_pe.add",
+      "kind": "add",
+      "parent": "src_pe",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "x",
+        "pe",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionalEncoding.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "src_pe.dropout",
+      "kind": "dropout",
+      "parent": "src_pe",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionalEncoding.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "tgt_tokens",
+      "kind": "input",
+      "parent": "model",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "Transformer.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "tgt_embed",
+      "kind": "embedding",
+      "parent": "model",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "TokenEmbedding.forward"
+      ],
+      "param_identity": "model.tgt_embedding.embedding.weight",
+      "scale": "sqrt(D)"
+    },
+    {
+      "id": "tgt_pe",
+      "kind": "positional_encoding",
+      "parent": "model",
+      "rank": 0,
+      "children": [
+        "tgt_pe.buffer",
+        "tgt_pe.add",
+        "tgt_pe.dropout"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionalEncoding.forward"
+      ],
+      "param_identity": null,
+      "buffer_identity": "model.position.pe",
+      "dropout": "folded",
+      "port_bindings": {
+        "in": {
+          "node": "tgt_pe.add",
+          "port": "x"
+        },
+        "out": {
+          "node": "tgt_pe.dropout",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "tgt_pe.buffer",
+      "kind": "sinusoidal_buffer",
+      "parent": "tgt_pe",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionalEncoding.forward"
+      ],
+      "param_identity": null,
+      "buffer_identity": "model.position.pe"
+    },
+    {
+      "id": "tgt_pe.add",
+      "kind": "add",
+      "parent": "tgt_pe",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "x",
+        "pe",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionalEncoding.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "tgt_pe.dropout",
+      "kind": "dropout",
+      "parent": "tgt_pe",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionalEncoding.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "enc",
+      "kind": "serial_repeat",
+      "parent": "model",
+      "rank": 0,
+      "children": [
+        "enc.layer_i",
+        "enc.output"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "Encoder.forward",
+        "clones"
+      ],
+      "param_identity": null,
+      "count": "N_encoder",
+      "independent_parameters": true
+    },
+    {
+      "id": "enc.layer_i",
+      "kind": "layer",
+      "parent": "enc",
+      "rank": 0,
+      "children": [
+        "enc.self",
+        "enc.norm1",
+        "enc.ffn",
+        "enc.norm2"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "EncoderLayer.forward"
+      ],
+      "param_identity": "model.encoder.layers[i]"
+    },
+    {
+      "id": "enc.self",
+      "kind": "attention",
+      "parent": "enc.layer_i",
+      "rank": 0,
+      "children": [
+        "enc.self.q",
+        "enc.self.k",
+        "enc.self.v",
+        "enc.self.split",
+        "enc.self.sdpa",
+        "enc.self.merge",
+        "enc.self.wo",
+        "enc.self.projection_summary",
+        "enc.self.output_summary"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.forward",
+        "EncoderLayer.forward"
+      ],
+      "param_identity": "model.encoder.layers[i].self_attn",
+      "attention_role": "self",
+      "semantic_contract": {
+        "input_identity": "src_pe",
+        "branch_result": "attn_out",
+        "stage": 1,
+        "source_symbol": "EncoderLayer.forward",
+        "source_line": 278,
+        "source_expression": "self.self_attn(query=x, key=x, value=x, key_padding_mask=src_key_padding_mask)",
+        "role": "encoder_self",
+        "query_source": "src_pe",
+        "key_source": "src_pe",
+        "value_source": "src_pe",
+        "mask_args": [
+          "src_key_padding_mask"
+        ],
+        "mask_bindings": {
+          "key_padding_mask": "src_key_padding_mask"
+        },
+        "mask_semantics": "boolean True masks scores with -inf before Softmax; causal only when tgt_mask is supplied",
+        "q_shape": "[B,S,D]",
+        "k_shape": "[B,S,D]",
+        "v_shape": "[B,S,D]"
+      },
+      "port_bindings": {
+        "in": [
+          {
+            "node": "enc.self.q",
+            "port": "in"
+          },
+          {
+            "node": "enc.self.k",
+            "port": "in"
+          },
+          {
+            "node": "enc.self.v",
+            "port": "in"
+          }
+        ],
+        "out": {
+          "node": "enc.self.wo",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "enc.self.q",
+      "kind": "linear_projection",
+      "parent": "enc.self",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.__init__",
+        "MultiHeadAttention.forward"
+      ],
+      "param_identity": "model.encoder.layers[i].self_attn.w_q",
+      "input_identity": "src_pe",
+      "input_source": "src_pe",
+      "parallel_group": "enc.self.qkv",
+      "output_shape": "[B,S,D]"
+    },
+    {
+      "id": "enc.self.k",
+      "kind": "linear_projection",
+      "parent": "enc.self",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.__init__",
+        "MultiHeadAttention.forward"
+      ],
+      "param_identity": "model.encoder.layers[i].self_attn.w_k",
+      "input_identity": "src_pe",
+      "input_source": "src_pe",
+      "parallel_group": "enc.self.qkv",
+      "output_shape": "[B,S,D]"
+    },
+    {
+      "id": "enc.self.v",
+      "kind": "linear_projection",
+      "parent": "enc.self",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.__init__",
+        "MultiHeadAttention.forward"
+      ],
+      "param_identity": "model.encoder.layers[i].self_attn.w_v",
+      "input_identity": "src_pe",
+      "input_source": "src_pe",
+      "parallel_group": "enc.self.qkv",
+      "output_shape": "[B,S,D]"
+    },
+    {
+      "id": "enc.self.split",
+      "kind": "reshape_transpose",
+      "parent": "enc.self",
+      "rank": 1,
+      "children": [],
+      "ports": [
+        "q_in",
+        "k_in",
+        "v_in",
+        "q_out",
+        "k_out",
+        "v_out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention._split_heads"
+      ],
+      "param_identity": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "enc.self.sdpa",
+      "kind": "attention_math",
+      "parent": "enc.self",
+      "rank": 2,
+      "children": [
+        "enc.self.sdpa.qkt",
+        "enc.self.sdpa.scale",
+        "enc.self.sdpa.mask",
+        "enc.self.sdpa.softmax",
+        "enc.self.sdpa.nan_guard",
+        "enc.self.sdpa.attn_dropout",
+        "enc.self.sdpa.av"
+      ],
+      "ports": [
+        "q",
+        "k",
+        "v",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "mask_inputs": [
+        "src_key_padding_mask"
+      ],
+      "port_bindings": {
+        "q": {
+          "node": "enc.self.sdpa.qkt",
+          "port": "q"
+        },
+        "k": {
+          "node": "enc.self.sdpa.qkt",
+          "port": "k"
+        },
+        "v": {
+          "node": "enc.self.sdpa.av",
+          "port": "v"
+        },
+        "out": {
+          "node": "enc.self.sdpa.av",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "enc.self.merge",
+      "kind": "transpose_reshape",
+      "parent": "enc.self",
+      "rank": 3,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention._combine_heads"
+      ],
+      "param_identity": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "enc.self.wo",
+      "kind": "linear",
+      "parent": "enc.self",
+      "rank": 4,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.forward"
+      ],
+      "param_identity": "model.encoder.layers[i].self_attn.w_o",
+      "mask_inputs": null
+    },
+    {
+      "id": "enc.self.sdpa.qkt",
+      "kind": "qkt",
+      "parent": "enc.self.sdpa",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "q",
+        "k",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "enc.self.sdpa.scale",
+      "kind": "scale",
+      "parent": "enc.self.sdpa",
+      "rank": 1,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "enc.self.sdpa.mask",
+      "kind": "mask",
+      "parent": "enc.self.sdpa",
+      "rank": 2,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": true,
+      "mask_semantics": "boolean True masks scores with -inf before Softmax; causal only when tgt_mask is supplied",
+      "mask_inputs": [
+        "src_key_padding_mask"
+      ]
+    },
+    {
+      "id": "enc.self.sdpa.softmax",
+      "kind": "softmax",
+      "parent": "enc.self.sdpa",
+      "rank": 3,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "enc.self.sdpa.nan_guard",
+      "kind": "nan_guard",
+      "parent": "enc.self.sdpa",
+      "rank": 4,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "enc.self.sdpa.attn_dropout",
+      "kind": "attn_dropout",
+      "parent": "enc.self.sdpa",
+      "rank": 5,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "enc.self.sdpa.av",
+      "kind": "av",
+      "parent": "enc.self.sdpa",
+      "rank": 6,
+      "children": [],
+      "ports": [
+        "a",
+        "v",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "enc.norm1",
+      "kind": "postnorm",
+      "parent": "enc.layer_i",
+      "rank": 1,
+      "children": [
+        "enc.norm1.branch_dropout",
+        "enc.norm1.add",
+        "enc.norm1.layernorm"
+      ],
+      "ports": [
+        "in",
+        "skip",
+        "out"
+      ],
+      "source_evidence": [
+        "EncoderLayer.forward"
+      ],
+      "param_identity": "model.encoder.layers[i].norm1",
+      "formula": "LayerNorm(x + Dropout(sublayer(x)))",
+      "residual_source": "src_pe",
+      "semantic_contract": {
+        "stage": 1,
+        "ordering": "post_layer_norm",
+        "skip_source": "src_pe",
+        "branch_dropout": "dropout1",
+        "formula": "LayerNorm(x + Dropout(sublayer(x)))",
+        "source_symbol": "EncoderLayer.forward",
+        "source_line": 284,
+        "source_expression": "self.norm1(x + self.dropout1(attn_out))"
+      },
+      "port_bindings": {
+        "in": {
+          "node": "enc.norm1.branch_dropout",
+          "port": "in"
+        },
+        "skip": {
+          "node": "enc.norm1.add",
+          "port": "x"
+        },
+        "out": {
+          "node": "enc.norm1.layernorm",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "enc.norm1.branch_dropout",
+      "kind": "dropout",
+      "parent": "enc.norm1",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "EncoderLayer.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "enc.norm1.add",
+      "kind": "add",
+      "parent": "enc.norm1",
+      "rank": 1,
+      "children": [],
+      "ports": [
+        "x",
+        "f",
+        "out"
+      ],
+      "source_evidence": [
+        "EncoderLayer.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "enc.norm1.layernorm",
+      "kind": "layernorm",
+      "parent": "enc.norm1",
+      "rank": 2,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "EncoderLayer.forward"
+      ],
+      "param_identity": "model.encoder.layers[i].norm1"
+    },
+    {
+      "id": "enc.ffn",
+      "kind": "ffn",
+      "parent": "enc.layer_i",
+      "rank": 2,
+      "children": [
+        "enc.ffn.linear1",
+        "enc.ffn.relu",
+        "enc.ffn.dropout",
+        "enc.ffn.linear2"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionwiseFeedForward.forward",
+        "EncoderLayer.forward"
+      ],
+      "param_identity": "model.encoder.layers[i].ffn",
+      "attention_role": null,
+      "semantic_contract": {
+        "input_identity": "enc.norm1",
+        "branch_result": "ffn_out",
+        "stage": 2,
+        "source_symbol": "EncoderLayer.forward",
+        "source_line": 286,
+        "source_expression": "self.ffn(x)"
+      },
+      "port_bindings": {
+        "in": {
+          "node": "enc.ffn.linear1",
+          "port": "in"
+        },
+        "out": {
+          "node": "enc.ffn.linear2",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "enc.ffn.linear1",
+      "kind": "linear",
+      "parent": "enc.ffn",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionwiseFeedForward.forward"
+      ],
+      "param_identity": "model.encoder.layers[i].ffn.linear1"
+    },
+    {
+      "id": "enc.ffn.relu",
+      "kind": "relu",
+      "parent": "enc.ffn",
+      "rank": 1,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionwiseFeedForward.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "enc.ffn.dropout",
+      "kind": "dropout",
+      "parent": "enc.ffn",
+      "rank": 2,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionwiseFeedForward.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "enc.ffn.linear2",
+      "kind": "linear",
+      "parent": "enc.ffn",
+      "rank": 3,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionwiseFeedForward.forward"
+      ],
+      "param_identity": "model.encoder.layers[i].ffn.linear2"
+    },
+    {
+      "id": "enc.norm2",
+      "kind": "postnorm",
+      "parent": "enc.layer_i",
+      "rank": 3,
+      "children": [
+        "enc.norm2.branch_dropout",
+        "enc.norm2.add",
+        "enc.norm2.layernorm"
+      ],
+      "ports": [
+        "in",
+        "skip",
+        "out"
+      ],
+      "source_evidence": [
+        "EncoderLayer.forward"
+      ],
+      "param_identity": "model.encoder.layers[i].norm2",
+      "formula": "LayerNorm(x + Dropout(sublayer(x)))",
+      "residual_source": "enc.norm1",
+      "semantic_contract": {
+        "stage": 2,
+        "ordering": "post_layer_norm",
+        "skip_source": "enc.norm1",
+        "branch_dropout": "dropout2",
+        "formula": "LayerNorm(x + Dropout(sublayer(x)))",
+        "source_symbol": "EncoderLayer.forward",
+        "source_line": 287,
+        "source_expression": "self.norm2(x + self.dropout2(ffn_out))"
+      },
+      "port_bindings": {
+        "in": {
+          "node": "enc.norm2.branch_dropout",
+          "port": "in"
+        },
+        "skip": {
+          "node": "enc.norm2.add",
+          "port": "x"
+        },
+        "out": {
+          "node": "enc.norm2.layernorm",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "enc.norm2.branch_dropout",
+      "kind": "dropout",
+      "parent": "enc.norm2",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "EncoderLayer.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "enc.norm2.add",
+      "kind": "add",
+      "parent": "enc.norm2",
+      "rank": 1,
+      "children": [],
+      "ports": [
+        "x",
+        "f",
+        "out"
+      ],
+      "source_evidence": [
+        "EncoderLayer.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "enc.norm2.layernorm",
+      "kind": "layernorm",
+      "parent": "enc.norm2",
+      "rank": 2,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "EncoderLayer.forward"
+      ],
+      "param_identity": "model.encoder.layers[i].norm2"
+    },
+    {
+      "id": "enc.output",
+      "kind": "stack_output",
+      "parent": "enc",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "Encoder.forward"
+      ],
+      "param_identity": null,
+      "port_bindings": {
+        "out": {
+          "node": "enc.norm2",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "dec",
+      "kind": "serial_repeat",
+      "parent": "model",
+      "rank": 0,
+      "children": [
+        "dec.layer_i",
+        "dec.output"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "Decoder.forward",
+        "clones"
+      ],
+      "param_identity": null,
+      "count": "N_decoder",
+      "independent_parameters": true
+    },
+    {
+      "id": "dec.layer_i",
+      "kind": "layer",
+      "parent": "dec",
+      "rank": 0,
+      "children": [
+        "dec.self",
+        "dec.norm1",
+        "dec.cross",
+        "dec.norm2",
+        "dec.ffn",
+        "dec.norm3"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "DecoderLayer.forward"
+      ],
+      "param_identity": "model.decoder.layers[i]"
+    },
+    {
+      "id": "dec.self",
+      "kind": "attention",
+      "parent": "dec.layer_i",
+      "rank": 0,
+      "children": [
+        "dec.self.q",
+        "dec.self.k",
+        "dec.self.v",
+        "dec.self.split",
+        "dec.self.sdpa",
+        "dec.self.merge",
+        "dec.self.wo",
+        "dec.self.projection_summary",
+        "dec.self.output_summary"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.forward",
+        "DecoderLayer.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].self_attn",
+      "attention_role": "self",
+      "semantic_contract": {
+        "input_identity": "tgt_pe",
+        "branch_result": "self_attn_out",
+        "stage": 1,
+        "source_symbol": "DecoderLayer.forward",
+        "source_line": 345,
+        "source_expression": "self.self_attn(query=x, key=x, value=x, attn_mask=tgt_mask, key_padding_mask=tgt_key_padding_mask)",
+        "role": "decoder_masked_self",
+        "query_source": "tgt_pe",
+        "key_source": "tgt_pe",
+        "value_source": "tgt_pe",
+        "mask_args": [
+          "tgt_mask",
+          "tgt_key_padding_mask"
+        ],
+        "mask_bindings": {
+          "attn_mask": "tgt_mask",
+          "key_padding_mask": "tgt_key_padding_mask"
+        },
+        "mask_semantics": "boolean True masks scores with -inf before Softmax; causal only when tgt_mask is supplied",
+        "q_shape": "[B,T,D]",
+        "k_shape": "[B,T,D]",
+        "v_shape": "[B,T,D]"
+      },
+      "port_bindings": {
+        "in": [
+          {
+            "node": "dec.self.q",
+            "port": "in"
+          },
+          {
+            "node": "dec.self.k",
+            "port": "in"
+          },
+          {
+            "node": "dec.self.v",
+            "port": "in"
+          }
+        ],
+        "out": {
+          "node": "dec.self.wo",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "dec.self.q",
+      "kind": "linear_projection",
+      "parent": "dec.self",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.__init__",
+        "MultiHeadAttention.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].self_attn.w_q",
+      "input_identity": "tgt_pe",
+      "input_source": "tgt_pe",
+      "parallel_group": "dec.self.qkv",
+      "output_shape": "[B,T,D]"
+    },
+    {
+      "id": "dec.self.k",
+      "kind": "linear_projection",
+      "parent": "dec.self",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.__init__",
+        "MultiHeadAttention.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].self_attn.w_k",
+      "input_identity": "tgt_pe",
+      "input_source": "tgt_pe",
+      "parallel_group": "dec.self.qkv",
+      "output_shape": "[B,T,D]"
+    },
+    {
+      "id": "dec.self.v",
+      "kind": "linear_projection",
+      "parent": "dec.self",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.__init__",
+        "MultiHeadAttention.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].self_attn.w_v",
+      "input_identity": "tgt_pe",
+      "input_source": "tgt_pe",
+      "parallel_group": "dec.self.qkv",
+      "output_shape": "[B,T,D]"
+    },
+    {
+      "id": "dec.self.split",
+      "kind": "reshape_transpose",
+      "parent": "dec.self",
+      "rank": 1,
+      "children": [],
+      "ports": [
+        "q_in",
+        "k_in",
+        "v_in",
+        "q_out",
+        "k_out",
+        "v_out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention._split_heads"
+      ],
+      "param_identity": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.self.sdpa",
+      "kind": "attention_math",
+      "parent": "dec.self",
+      "rank": 2,
+      "children": [
+        "dec.self.sdpa.qkt",
+        "dec.self.sdpa.scale",
+        "dec.self.sdpa.mask",
+        "dec.self.sdpa.softmax",
+        "dec.self.sdpa.nan_guard",
+        "dec.self.sdpa.attn_dropout",
+        "dec.self.sdpa.av"
+      ],
+      "ports": [
+        "q",
+        "k",
+        "v",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "mask_inputs": [
+        "tgt_mask",
+        "tgt_key_padding_mask"
+      ],
+      "port_bindings": {
+        "q": {
+          "node": "dec.self.sdpa.qkt",
+          "port": "q"
+        },
+        "k": {
+          "node": "dec.self.sdpa.qkt",
+          "port": "k"
+        },
+        "v": {
+          "node": "dec.self.sdpa.av",
+          "port": "v"
+        },
+        "out": {
+          "node": "dec.self.sdpa.av",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "dec.self.merge",
+      "kind": "transpose_reshape",
+      "parent": "dec.self",
+      "rank": 3,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention._combine_heads"
+      ],
+      "param_identity": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.self.wo",
+      "kind": "linear",
+      "parent": "dec.self",
+      "rank": 4,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].self_attn.w_o",
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.self.sdpa.qkt",
+      "kind": "qkt",
+      "parent": "dec.self.sdpa",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "q",
+        "k",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.self.sdpa.scale",
+      "kind": "scale",
+      "parent": "dec.self.sdpa",
+      "rank": 1,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.self.sdpa.mask",
+      "kind": "mask",
+      "parent": "dec.self.sdpa",
+      "rank": 2,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": true,
+      "mask_semantics": "boolean True masks scores with -inf before Softmax; causal only when tgt_mask is supplied",
+      "mask_inputs": [
+        "tgt_mask",
+        "tgt_key_padding_mask"
+      ]
+    },
+    {
+      "id": "dec.self.sdpa.softmax",
+      "kind": "softmax",
+      "parent": "dec.self.sdpa",
+      "rank": 3,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.self.sdpa.nan_guard",
+      "kind": "nan_guard",
+      "parent": "dec.self.sdpa",
+      "rank": 4,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.self.sdpa.attn_dropout",
+      "kind": "attn_dropout",
+      "parent": "dec.self.sdpa",
+      "rank": 5,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.self.sdpa.av",
+      "kind": "av",
+      "parent": "dec.self.sdpa",
+      "rank": 6,
+      "children": [],
+      "ports": [
+        "a",
+        "v",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.norm1",
+      "kind": "postnorm",
+      "parent": "dec.layer_i",
+      "rank": 1,
+      "children": [
+        "dec.norm1.branch_dropout",
+        "dec.norm1.add",
+        "dec.norm1.layernorm"
+      ],
+      "ports": [
+        "in",
+        "skip",
+        "out"
+      ],
+      "source_evidence": [
+        "DecoderLayer.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].norm1",
+      "formula": "LayerNorm(x + Dropout(sublayer(x)))",
+      "residual_source": "tgt_pe",
+      "semantic_contract": {
+        "stage": 1,
+        "ordering": "post_layer_norm",
+        "skip_source": "tgt_pe",
+        "branch_dropout": "dropout1",
+        "formula": "LayerNorm(x + Dropout(sublayer(x)))",
+        "source_symbol": "DecoderLayer.forward",
+        "source_line": 352,
+        "source_expression": "self.norm1(x + self.dropout1(self_attn_out))"
+      },
+      "port_bindings": {
+        "in": {
+          "node": "dec.norm1.branch_dropout",
+          "port": "in"
+        },
+        "skip": {
+          "node": "dec.norm1.add",
+          "port": "x"
+        },
+        "out": {
+          "node": "dec.norm1.layernorm",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "dec.norm1.branch_dropout",
+      "kind": "dropout",
+      "parent": "dec.norm1",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "DecoderLayer.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "dec.norm1.add",
+      "kind": "add",
+      "parent": "dec.norm1",
+      "rank": 1,
+      "children": [],
+      "ports": [
+        "x",
+        "f",
+        "out"
+      ],
+      "source_evidence": [
+        "DecoderLayer.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "dec.norm1.layernorm",
+      "kind": "layernorm",
+      "parent": "dec.norm1",
+      "rank": 2,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "DecoderLayer.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].norm1"
+    },
+    {
+      "id": "dec.cross",
+      "kind": "attention",
+      "parent": "dec.layer_i",
+      "rank": 2,
+      "children": [
+        "dec.cross.q",
+        "dec.cross.k",
+        "dec.cross.v",
+        "dec.cross.split",
+        "dec.cross.sdpa",
+        "dec.cross.merge",
+        "dec.cross.wo",
+        "dec.cross.projection_summary",
+        "dec.cross.output_summary"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "memory"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.forward",
+        "DecoderLayer.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].cross_attn",
+      "attention_role": "cross",
+      "semantic_contract": {
+        "input_identity": "dec.norm1",
+        "branch_result": "cross_attn_out",
+        "stage": 2,
+        "source_symbol": "DecoderLayer.forward",
+        "source_line": 355,
+        "source_expression": "self.cross_attn(query=x, key=memory, value=memory, key_padding_mask=memory_key_padding_mask)",
+        "role": "encoder_decoder_cross",
+        "query_source": "dec.norm1",
+        "key_source": "enc.output",
+        "value_source": "enc.output",
+        "mask_args": [
+          "memory_key_padding_mask"
+        ],
+        "mask_bindings": {
+          "key_padding_mask": "memory_key_padding_mask"
+        },
+        "mask_semantics": "boolean True masks scores with -inf before Softmax; causal only when tgt_mask is supplied",
+        "q_shape": "[B,T,D]",
+        "k_shape": "[B,S,D]",
+        "v_shape": "[B,S,D]"
+      },
+      "port_bindings": {
+        "in": {
+          "node": "dec.cross.q",
+          "port": "in"
+        },
+        "memory": [
+          {
+            "node": "dec.cross.k",
+            "port": "in"
+          },
+          {
+            "node": "dec.cross.v",
+            "port": "in"
+          }
+        ],
+        "out": {
+          "node": "dec.cross.wo",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "dec.cross.q",
+      "kind": "linear_projection",
+      "parent": "dec.cross",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.__init__",
+        "MultiHeadAttention.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].cross_attn.w_q",
+      "input_identity": "dec.norm1",
+      "input_source": "dec.norm1",
+      "parallel_group": "dec.cross.qkv",
+      "output_shape": "[B,T,D]"
+    },
+    {
+      "id": "dec.cross.k",
+      "kind": "linear_projection",
+      "parent": "dec.cross",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.__init__",
+        "MultiHeadAttention.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].cross_attn.w_k",
+      "input_identity": "memory",
+      "input_source": "enc.output",
+      "parallel_group": "dec.cross.qkv",
+      "output_shape": "[B,S,D]"
+    },
+    {
+      "id": "dec.cross.v",
+      "kind": "linear_projection",
+      "parent": "dec.cross",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.__init__",
+        "MultiHeadAttention.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].cross_attn.w_v",
+      "input_identity": "memory",
+      "input_source": "enc.output",
+      "parallel_group": "dec.cross.qkv",
+      "output_shape": "[B,S,D]"
+    },
+    {
+      "id": "dec.cross.split",
+      "kind": "reshape_transpose",
+      "parent": "dec.cross",
+      "rank": 1,
+      "children": [],
+      "ports": [
+        "q_in",
+        "k_in",
+        "v_in",
+        "q_out",
+        "k_out",
+        "v_out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention._split_heads"
+      ],
+      "param_identity": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.cross.sdpa",
+      "kind": "attention_math",
+      "parent": "dec.cross",
+      "rank": 2,
+      "children": [
+        "dec.cross.sdpa.qkt",
+        "dec.cross.sdpa.scale",
+        "dec.cross.sdpa.mask",
+        "dec.cross.sdpa.softmax",
+        "dec.cross.sdpa.nan_guard",
+        "dec.cross.sdpa.attn_dropout",
+        "dec.cross.sdpa.av"
+      ],
+      "ports": [
+        "q",
+        "k",
+        "v",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "mask_inputs": [
+        "memory_key_padding_mask"
+      ],
+      "port_bindings": {
+        "q": {
+          "node": "dec.cross.sdpa.qkt",
+          "port": "q"
+        },
+        "k": {
+          "node": "dec.cross.sdpa.qkt",
+          "port": "k"
+        },
+        "v": {
+          "node": "dec.cross.sdpa.av",
+          "port": "v"
+        },
+        "out": {
+          "node": "dec.cross.sdpa.av",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "dec.cross.merge",
+      "kind": "transpose_reshape",
+      "parent": "dec.cross",
+      "rank": 3,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention._combine_heads"
+      ],
+      "param_identity": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.cross.wo",
+      "kind": "linear",
+      "parent": "dec.cross",
+      "rank": 4,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].cross_attn.w_o",
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.cross.sdpa.qkt",
+      "kind": "qkt",
+      "parent": "dec.cross.sdpa",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "q",
+        "k",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.cross.sdpa.scale",
+      "kind": "scale",
+      "parent": "dec.cross.sdpa",
+      "rank": 1,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.cross.sdpa.mask",
+      "kind": "mask",
+      "parent": "dec.cross.sdpa",
+      "rank": 2,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": true,
+      "mask_semantics": "boolean True masks scores with -inf before Softmax; causal only when tgt_mask is supplied",
+      "mask_inputs": [
+        "memory_key_padding_mask"
+      ]
+    },
+    {
+      "id": "dec.cross.sdpa.softmax",
+      "kind": "softmax",
+      "parent": "dec.cross.sdpa",
+      "rank": 3,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.cross.sdpa.nan_guard",
+      "kind": "nan_guard",
+      "parent": "dec.cross.sdpa",
+      "rank": 4,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.cross.sdpa.attn_dropout",
+      "kind": "attn_dropout",
+      "parent": "dec.cross.sdpa",
+      "rank": 5,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.cross.sdpa.av",
+      "kind": "av",
+      "parent": "dec.cross.sdpa",
+      "rank": 6,
+      "children": [],
+      "ports": [
+        "a",
+        "v",
+        "out"
+      ],
+      "source_evidence": [
+        "scaled_dot_product_attention"
+      ],
+      "param_identity": null,
+      "conditional": false,
+      "mask_semantics": null,
+      "mask_inputs": null
+    },
+    {
+      "id": "dec.norm2",
+      "kind": "postnorm",
+      "parent": "dec.layer_i",
+      "rank": 3,
+      "children": [
+        "dec.norm2.branch_dropout",
+        "dec.norm2.add",
+        "dec.norm2.layernorm"
+      ],
+      "ports": [
+        "in",
+        "skip",
+        "out"
+      ],
+      "source_evidence": [
+        "DecoderLayer.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].norm2",
+      "formula": "LayerNorm(x + Dropout(sublayer(x)))",
+      "residual_source": "dec.norm1",
+      "semantic_contract": {
+        "stage": 2,
+        "ordering": "post_layer_norm",
+        "skip_source": "dec.norm1",
+        "branch_dropout": "dropout2",
+        "formula": "LayerNorm(x + Dropout(sublayer(x)))",
+        "source_symbol": "DecoderLayer.forward",
+        "source_line": 361,
+        "source_expression": "self.norm2(x + self.dropout2(cross_attn_out))"
+      },
+      "port_bindings": {
+        "in": {
+          "node": "dec.norm2.branch_dropout",
+          "port": "in"
+        },
+        "skip": {
+          "node": "dec.norm2.add",
+          "port": "x"
+        },
+        "out": {
+          "node": "dec.norm2.layernorm",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "dec.norm2.branch_dropout",
+      "kind": "dropout",
+      "parent": "dec.norm2",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "DecoderLayer.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "dec.norm2.add",
+      "kind": "add",
+      "parent": "dec.norm2",
+      "rank": 1,
+      "children": [],
+      "ports": [
+        "x",
+        "f",
+        "out"
+      ],
+      "source_evidence": [
+        "DecoderLayer.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "dec.norm2.layernorm",
+      "kind": "layernorm",
+      "parent": "dec.norm2",
+      "rank": 2,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "DecoderLayer.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].norm2"
+    },
+    {
+      "id": "dec.ffn",
+      "kind": "ffn",
+      "parent": "dec.layer_i",
+      "rank": 4,
+      "children": [
+        "dec.ffn.linear1",
+        "dec.ffn.relu",
+        "dec.ffn.dropout",
+        "dec.ffn.linear2"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionwiseFeedForward.forward",
+        "DecoderLayer.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].ffn",
+      "attention_role": null,
+      "semantic_contract": {
+        "input_identity": "dec.norm2",
+        "branch_result": "ffn_out",
+        "stage": 3,
+        "source_symbol": "DecoderLayer.forward",
+        "source_line": 364,
+        "source_expression": "self.ffn(x)"
+      },
+      "port_bindings": {
+        "in": {
+          "node": "dec.ffn.linear1",
+          "port": "in"
+        },
+        "out": {
+          "node": "dec.ffn.linear2",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "dec.ffn.linear1",
+      "kind": "linear",
+      "parent": "dec.ffn",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionwiseFeedForward.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].ffn.linear1"
+    },
+    {
+      "id": "dec.ffn.relu",
+      "kind": "relu",
+      "parent": "dec.ffn",
+      "rank": 1,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionwiseFeedForward.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "dec.ffn.dropout",
+      "kind": "dropout",
+      "parent": "dec.ffn",
+      "rank": 2,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionwiseFeedForward.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "dec.ffn.linear2",
+      "kind": "linear",
+      "parent": "dec.ffn",
+      "rank": 3,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "PositionwiseFeedForward.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].ffn.linear2"
+    },
+    {
+      "id": "dec.norm3",
+      "kind": "postnorm",
+      "parent": "dec.layer_i",
+      "rank": 5,
+      "children": [
+        "dec.norm3.branch_dropout",
+        "dec.norm3.add",
+        "dec.norm3.layernorm"
+      ],
+      "ports": [
+        "in",
+        "skip",
+        "out"
+      ],
+      "source_evidence": [
+        "DecoderLayer.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].norm3",
+      "formula": "LayerNorm(x + Dropout(sublayer(x)))",
+      "residual_source": "dec.norm2",
+      "semantic_contract": {
+        "stage": 3,
+        "ordering": "post_layer_norm",
+        "skip_source": "dec.norm2",
+        "branch_dropout": "dropout3",
+        "formula": "LayerNorm(x + Dropout(sublayer(x)))",
+        "source_symbol": "DecoderLayer.forward",
+        "source_line": 365,
+        "source_expression": "self.norm3(x + self.dropout3(ffn_out))"
+      },
+      "port_bindings": {
+        "in": {
+          "node": "dec.norm3.branch_dropout",
+          "port": "in"
+        },
+        "skip": {
+          "node": "dec.norm3.add",
+          "port": "x"
+        },
+        "out": {
+          "node": "dec.norm3.layernorm",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "dec.norm3.branch_dropout",
+      "kind": "dropout",
+      "parent": "dec.norm3",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "DecoderLayer.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "dec.norm3.add",
+      "kind": "add",
+      "parent": "dec.norm3",
+      "rank": 1,
+      "children": [],
+      "ports": [
+        "x",
+        "f",
+        "out"
+      ],
+      "source_evidence": [
+        "DecoderLayer.forward"
+      ],
+      "param_identity": null
+    },
+    {
+      "id": "dec.norm3.layernorm",
+      "kind": "layernorm",
+      "parent": "dec.norm3",
+      "rank": 2,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "DecoderLayer.forward"
+      ],
+      "param_identity": "model.decoder.layers[i].norm3"
+    },
+    {
+      "id": "dec.output",
+      "kind": "stack_output",
+      "parent": "dec",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "Decoder.forward"
+      ],
+      "param_identity": null,
+      "port_bindings": {
+        "out": {
+          "node": "dec.norm3",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "generator",
+      "kind": "linear",
+      "parent": "model",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "Transformer.__init__",
+        "Transformer.forward"
+      ],
+      "param_identity": "model.generator.weight",
+      "optional_alias": "model.tgt_embedding.embedding.weight when tie flag is true"
+    },
+    {
+      "id": "logits",
+      "kind": "output",
+      "parent": "model",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "Transformer.forward"
+      ],
+      "param_identity": null,
+      "shape": "[B,T,V]",
+      "port_bindings": {
+        "out": {
+          "node": "generator",
+          "port": "out"
+        }
+      }
+    },
+    {
+      "id": "probabilities",
+      "kind": "explanatory_softmax",
+      "parent": "model",
+      "rank": 0,
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [],
+      "param_identity": null,
+      "executed_in_forward": false
+    },
+    {
+      "id": "enc.self.projection_summary",
+      "kind": "source_summary",
+      "parent": "enc.self",
+      "children": [],
+      "ports": [
+        "in",
+        "memory",
+        "q_out",
+        "k_out",
+        "v_out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.forward",
+        "MultiHeadAttention._split_heads"
+      ],
+      "param_identity": null,
+      "summary_members": [
+        "enc.self.q",
+        "enc.self.k",
+        "enc.self.v",
+        "enc.self.split"
+      ],
+      "member_ports": {
+        "enc.self.q:in": "in",
+        "enc.self.k:in": "in",
+        "enc.self.v:in": "in",
+        "enc.self.q:out": "q_out",
+        "enc.self.k:out": "k_out",
+        "enc.self.v:out": "v_out",
+        "enc.self.split:q_in": "q_out",
+        "enc.self.split:k_in": "k_out",
+        "enc.self.split:v_in": "v_out",
+        "enc.self.split:q_out": "q_out",
+        "enc.self.split:k_out": "k_out",
+        "enc.self.split:v_out": "v_out"
+      }
+    },
+    {
+      "id": "enc.self.output_summary",
+      "kind": "source_summary",
+      "parent": "enc.self",
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.forward",
+        "MultiHeadAttention._combine_heads"
+      ],
+      "param_identity": null,
+      "summary_members": [
+        "enc.self.merge",
+        "enc.self.wo"
+      ],
+      "member_ports": {
+        "enc.self.merge:in": "in",
+        "enc.self.merge:out": "out",
+        "enc.self.wo:in": "out",
+        "enc.self.wo:out": "out"
+      }
+    },
+    {
+      "id": "dec.self.projection_summary",
+      "kind": "source_summary",
+      "parent": "dec.self",
+      "children": [],
+      "ports": [
+        "in",
+        "memory",
+        "q_out",
+        "k_out",
+        "v_out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.forward",
+        "MultiHeadAttention._split_heads"
+      ],
+      "param_identity": null,
+      "summary_members": [
+        "dec.self.q",
+        "dec.self.k",
+        "dec.self.v",
+        "dec.self.split"
+      ],
+      "member_ports": {
+        "dec.self.q:in": "in",
+        "dec.self.k:in": "in",
+        "dec.self.v:in": "in",
+        "dec.self.q:out": "q_out",
+        "dec.self.k:out": "k_out",
+        "dec.self.v:out": "v_out",
+        "dec.self.split:q_in": "q_out",
+        "dec.self.split:k_in": "k_out",
+        "dec.self.split:v_in": "v_out",
+        "dec.self.split:q_out": "q_out",
+        "dec.self.split:k_out": "k_out",
+        "dec.self.split:v_out": "v_out"
+      }
+    },
+    {
+      "id": "dec.self.output_summary",
+      "kind": "source_summary",
+      "parent": "dec.self",
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.forward",
+        "MultiHeadAttention._combine_heads"
+      ],
+      "param_identity": null,
+      "summary_members": [
+        "dec.self.merge",
+        "dec.self.wo"
+      ],
+      "member_ports": {
+        "dec.self.merge:in": "in",
+        "dec.self.merge:out": "out",
+        "dec.self.wo:in": "out",
+        "dec.self.wo:out": "out"
+      }
+    },
+    {
+      "id": "dec.cross.projection_summary",
+      "kind": "source_summary",
+      "parent": "dec.cross",
+      "children": [],
+      "ports": [
+        "in",
+        "memory",
+        "q_out",
+        "k_out",
+        "v_out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.forward",
+        "MultiHeadAttention._split_heads"
+      ],
+      "param_identity": null,
+      "summary_members": [
+        "dec.cross.q",
+        "dec.cross.k",
+        "dec.cross.v",
+        "dec.cross.split"
+      ],
+      "member_ports": {
+        "dec.cross.q:in": "in",
+        "dec.cross.k:in": "memory",
+        "dec.cross.v:in": "memory",
+        "dec.cross.q:out": "q_out",
+        "dec.cross.k:out": "k_out",
+        "dec.cross.v:out": "v_out",
+        "dec.cross.split:q_in": "q_out",
+        "dec.cross.split:k_in": "k_out",
+        "dec.cross.split:v_in": "v_out",
+        "dec.cross.split:q_out": "q_out",
+        "dec.cross.split:k_out": "k_out",
+        "dec.cross.split:v_out": "v_out"
+      }
+    },
+    {
+      "id": "dec.cross.output_summary",
+      "kind": "source_summary",
+      "parent": "dec.cross",
+      "children": [],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "source_evidence": [
+        "MultiHeadAttention.forward",
+        "MultiHeadAttention._combine_heads"
+      ],
+      "param_identity": null,
+      "summary_members": [
+        "dec.cross.merge",
+        "dec.cross.wo"
+      ],
+      "member_ports": {
+        "dec.cross.merge:in": "in",
+        "dec.cross.merge:out": "out",
+        "dec.cross.wo:in": "out",
+        "dec.cross.wo:out": "out"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "src_pe:in->src_pe.add:x",
+      "src": "src_pe",
+      "dst": "src_pe.add",
+      "src_port": "in",
+      "dst_port": "x",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "src_pe.buffer:out->src_pe.add:pe",
+      "src": "src_pe.buffer",
+      "dst": "src_pe.add",
+      "src_port": "out",
+      "dst_port": "pe",
+      "kind": "tensor"
+    },
+    {
+      "id": "src_pe.add:out->src_pe.dropout:in",
+      "src": "src_pe.add",
+      "dst": "src_pe.dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "src_pe.dropout:out->src_pe:out",
+      "src": "src_pe.dropout",
+      "dst": "src_pe",
+      "src_port": "out",
+      "dst_port": "out",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "src_tokens:out->src_embed:in",
+      "src": "src_tokens",
+      "dst": "src_embed",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "src_embed:out->src_pe:in",
+      "src": "src_embed",
+      "dst": "src_pe",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "tgt_pe:in->tgt_pe.add:x",
+      "src": "tgt_pe",
+      "dst": "tgt_pe.add",
+      "src_port": "in",
+      "dst_port": "x",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "tgt_pe.buffer:out->tgt_pe.add:pe",
+      "src": "tgt_pe.buffer",
+      "dst": "tgt_pe.add",
+      "src_port": "out",
+      "dst_port": "pe",
+      "kind": "tensor"
+    },
+    {
+      "id": "tgt_pe.add:out->tgt_pe.dropout:in",
+      "src": "tgt_pe.add",
+      "dst": "tgt_pe.dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "tgt_pe.dropout:out->tgt_pe:out",
+      "src": "tgt_pe.dropout",
+      "dst": "tgt_pe",
+      "src_port": "out",
+      "dst_port": "out",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "tgt_tokens:out->tgt_embed:in",
+      "src": "tgt_tokens",
+      "dst": "tgt_embed",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "tgt_embed:out->tgt_pe:in",
+      "src": "tgt_embed",
+      "dst": "tgt_pe",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "src_pe:out->enc.self:in",
+      "src": "src_pe",
+      "dst": "enc.self",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.self:in->enc.self.q:in",
+      "src": "enc.self",
+      "dst": "enc.self.q",
+      "src_port": "in",
+      "dst_port": "in",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "enc.self:in->enc.self.k:in",
+      "src": "enc.self",
+      "dst": "enc.self.k",
+      "src_port": "in",
+      "dst_port": "in",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "enc.self:in->enc.self.v:in",
+      "src": "enc.self",
+      "dst": "enc.self.v",
+      "src_port": "in",
+      "dst_port": "in",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "enc.self.q:out->enc.self.split:q_in",
+      "src": "enc.self.q",
+      "dst": "enc.self.split",
+      "src_port": "out",
+      "dst_port": "q_in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.self.split:q_out->enc.self.sdpa:q",
+      "src": "enc.self.split",
+      "dst": "enc.self.sdpa",
+      "src_port": "q_out",
+      "dst_port": "q",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.self.k:out->enc.self.split:k_in",
+      "src": "enc.self.k",
+      "dst": "enc.self.split",
+      "src_port": "out",
+      "dst_port": "k_in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.self.split:k_out->enc.self.sdpa:k",
+      "src": "enc.self.split",
+      "dst": "enc.self.sdpa",
+      "src_port": "k_out",
+      "dst_port": "k",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.self.v:out->enc.self.split:v_in",
+      "src": "enc.self.v",
+      "dst": "enc.self.split",
+      "src_port": "out",
+      "dst_port": "v_in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.self.split:v_out->enc.self.sdpa:v",
+      "src": "enc.self.split",
+      "dst": "enc.self.sdpa",
+      "src_port": "v_out",
+      "dst_port": "v",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.self.sdpa:out->enc.self.merge:in",
+      "src": "enc.self.sdpa",
+      "dst": "enc.self.merge",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.self.merge:out->enc.self.wo:in",
+      "src": "enc.self.merge",
+      "dst": "enc.self.wo",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.self.sdpa.qkt:out->enc.self.sdpa.scale:in",
+      "src": "enc.self.sdpa.qkt",
+      "dst": "enc.self.sdpa.scale",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.self.sdpa.scale:out->enc.self.sdpa.mask:in",
+      "src": "enc.self.sdpa.scale",
+      "dst": "enc.self.sdpa.mask",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.self.sdpa.mask:out->enc.self.sdpa.softmax:in",
+      "src": "enc.self.sdpa.mask",
+      "dst": "enc.self.sdpa.softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.self.sdpa.softmax:out->enc.self.sdpa.nan_guard:in",
+      "src": "enc.self.sdpa.softmax",
+      "dst": "enc.self.sdpa.nan_guard",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.self.sdpa.nan_guard:out->enc.self.sdpa.attn_dropout:in",
+      "src": "enc.self.sdpa.nan_guard",
+      "dst": "enc.self.sdpa.attn_dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.self.sdpa.attn_dropout:out->enc.self.sdpa.av:a",
+      "src": "enc.self.sdpa.attn_dropout",
+      "dst": "enc.self.sdpa.av",
+      "src_port": "out",
+      "dst_port": "a",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.self.sdpa:q->enc.self.sdpa.qkt:q",
+      "src": "enc.self.sdpa",
+      "dst": "enc.self.sdpa.qkt",
+      "src_port": "q",
+      "dst_port": "q",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "enc.self.sdpa:k->enc.self.sdpa.qkt:k",
+      "src": "enc.self.sdpa",
+      "dst": "enc.self.sdpa.qkt",
+      "src_port": "k",
+      "dst_port": "k",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "enc.self.sdpa:v->enc.self.sdpa.av:v",
+      "src": "enc.self.sdpa",
+      "dst": "enc.self.sdpa.av",
+      "src_port": "v",
+      "dst_port": "v",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "enc.self.sdpa.av:out->enc.self.sdpa:out",
+      "src": "enc.self.sdpa.av",
+      "dst": "enc.self.sdpa",
+      "src_port": "out",
+      "dst_port": "out",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "enc.self.wo:out->enc.self:out",
+      "src": "enc.self.wo",
+      "dst": "enc.self",
+      "src_port": "out",
+      "dst_port": "out",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "enc.norm1:in->enc.norm1.branch_dropout:in",
+      "src": "enc.norm1",
+      "dst": "enc.norm1.branch_dropout",
+      "src_port": "in",
+      "dst_port": "in",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "enc.norm1.branch_dropout:out->enc.norm1.add:f",
+      "src": "enc.norm1.branch_dropout",
+      "dst": "enc.norm1.add",
+      "src_port": "out",
+      "dst_port": "f",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.norm1:skip->enc.norm1.add:x",
+      "src": "enc.norm1",
+      "dst": "enc.norm1.add",
+      "src_port": "skip",
+      "dst_port": "x",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "enc.norm1.add:out->enc.norm1.layernorm:in",
+      "src": "enc.norm1.add",
+      "dst": "enc.norm1.layernorm",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.norm1.layernorm:out->enc.norm1:out",
+      "src": "enc.norm1.layernorm",
+      "dst": "enc.norm1",
+      "src_port": "out",
+      "dst_port": "out",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "enc.self:out->enc.norm1:in",
+      "src": "enc.self",
+      "dst": "enc.norm1",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "src_pe:out->enc.norm1:skip",
+      "src": "src_pe",
+      "dst": "enc.norm1",
+      "src_port": "out",
+      "dst_port": "skip",
+      "kind": "residual"
+    },
+    {
+      "id": "enc.norm1:out->enc.ffn:in",
+      "src": "enc.norm1",
+      "dst": "enc.ffn",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.ffn.linear1:out->enc.ffn.relu:in",
+      "src": "enc.ffn.linear1",
+      "dst": "enc.ffn.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.ffn.relu:out->enc.ffn.dropout:in",
+      "src": "enc.ffn.relu",
+      "dst": "enc.ffn.dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.ffn.dropout:out->enc.ffn.linear2:in",
+      "src": "enc.ffn.dropout",
+      "dst": "enc.ffn.linear2",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.ffn:in->enc.ffn.linear1:in",
+      "src": "enc.ffn",
+      "dst": "enc.ffn.linear1",
+      "src_port": "in",
+      "dst_port": "in",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "enc.ffn.linear2:out->enc.ffn:out",
+      "src": "enc.ffn.linear2",
+      "dst": "enc.ffn",
+      "src_port": "out",
+      "dst_port": "out",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "enc.norm2:in->enc.norm2.branch_dropout:in",
+      "src": "enc.norm2",
+      "dst": "enc.norm2.branch_dropout",
+      "src_port": "in",
+      "dst_port": "in",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "enc.norm2.branch_dropout:out->enc.norm2.add:f",
+      "src": "enc.norm2.branch_dropout",
+      "dst": "enc.norm2.add",
+      "src_port": "out",
+      "dst_port": "f",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.norm2:skip->enc.norm2.add:x",
+      "src": "enc.norm2",
+      "dst": "enc.norm2.add",
+      "src_port": "skip",
+      "dst_port": "x",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "enc.norm2.add:out->enc.norm2.layernorm:in",
+      "src": "enc.norm2.add",
+      "dst": "enc.norm2.layernorm",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.norm2.layernorm:out->enc.norm2:out",
+      "src": "enc.norm2.layernorm",
+      "dst": "enc.norm2",
+      "src_port": "out",
+      "dst_port": "out",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "enc.ffn:out->enc.norm2:in",
+      "src": "enc.ffn",
+      "dst": "enc.norm2",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "enc.norm1:out->enc.norm2:skip",
+      "src": "enc.norm1",
+      "dst": "enc.norm2",
+      "src_port": "out",
+      "dst_port": "skip",
+      "kind": "residual"
+    },
+    {
+      "id": "enc.norm2:out->enc.output:in",
+      "src": "enc.norm2",
+      "dst": "enc.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "repeat_output",
+      "repeated_over": "N independent layers"
+    },
+    {
+      "id": "tgt_pe:out->dec.self:in",
+      "src": "tgt_pe",
+      "dst": "dec.self",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.self:in->dec.self.q:in",
+      "src": "dec.self",
+      "dst": "dec.self.q",
+      "src_port": "in",
+      "dst_port": "in",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.self:in->dec.self.k:in",
+      "src": "dec.self",
+      "dst": "dec.self.k",
+      "src_port": "in",
+      "dst_port": "in",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.self:in->dec.self.v:in",
+      "src": "dec.self",
+      "dst": "dec.self.v",
+      "src_port": "in",
+      "dst_port": "in",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.self.q:out->dec.self.split:q_in",
+      "src": "dec.self.q",
+      "dst": "dec.self.split",
+      "src_port": "out",
+      "dst_port": "q_in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.self.split:q_out->dec.self.sdpa:q",
+      "src": "dec.self.split",
+      "dst": "dec.self.sdpa",
+      "src_port": "q_out",
+      "dst_port": "q",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.self.k:out->dec.self.split:k_in",
+      "src": "dec.self.k",
+      "dst": "dec.self.split",
+      "src_port": "out",
+      "dst_port": "k_in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.self.split:k_out->dec.self.sdpa:k",
+      "src": "dec.self.split",
+      "dst": "dec.self.sdpa",
+      "src_port": "k_out",
+      "dst_port": "k",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.self.v:out->dec.self.split:v_in",
+      "src": "dec.self.v",
+      "dst": "dec.self.split",
+      "src_port": "out",
+      "dst_port": "v_in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.self.split:v_out->dec.self.sdpa:v",
+      "src": "dec.self.split",
+      "dst": "dec.self.sdpa",
+      "src_port": "v_out",
+      "dst_port": "v",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.self.sdpa:out->dec.self.merge:in",
+      "src": "dec.self.sdpa",
+      "dst": "dec.self.merge",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.self.merge:out->dec.self.wo:in",
+      "src": "dec.self.merge",
+      "dst": "dec.self.wo",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.self.sdpa.qkt:out->dec.self.sdpa.scale:in",
+      "src": "dec.self.sdpa.qkt",
+      "dst": "dec.self.sdpa.scale",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.self.sdpa.scale:out->dec.self.sdpa.mask:in",
+      "src": "dec.self.sdpa.scale",
+      "dst": "dec.self.sdpa.mask",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.self.sdpa.mask:out->dec.self.sdpa.softmax:in",
+      "src": "dec.self.sdpa.mask",
+      "dst": "dec.self.sdpa.softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.self.sdpa.softmax:out->dec.self.sdpa.nan_guard:in",
+      "src": "dec.self.sdpa.softmax",
+      "dst": "dec.self.sdpa.nan_guard",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.self.sdpa.nan_guard:out->dec.self.sdpa.attn_dropout:in",
+      "src": "dec.self.sdpa.nan_guard",
+      "dst": "dec.self.sdpa.attn_dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.self.sdpa.attn_dropout:out->dec.self.sdpa.av:a",
+      "src": "dec.self.sdpa.attn_dropout",
+      "dst": "dec.self.sdpa.av",
+      "src_port": "out",
+      "dst_port": "a",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.self.sdpa:q->dec.self.sdpa.qkt:q",
+      "src": "dec.self.sdpa",
+      "dst": "dec.self.sdpa.qkt",
+      "src_port": "q",
+      "dst_port": "q",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.self.sdpa:k->dec.self.sdpa.qkt:k",
+      "src": "dec.self.sdpa",
+      "dst": "dec.self.sdpa.qkt",
+      "src_port": "k",
+      "dst_port": "k",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.self.sdpa:v->dec.self.sdpa.av:v",
+      "src": "dec.self.sdpa",
+      "dst": "dec.self.sdpa.av",
+      "src_port": "v",
+      "dst_port": "v",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.self.sdpa.av:out->dec.self.sdpa:out",
+      "src": "dec.self.sdpa.av",
+      "dst": "dec.self.sdpa",
+      "src_port": "out",
+      "dst_port": "out",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.self.wo:out->dec.self:out",
+      "src": "dec.self.wo",
+      "dst": "dec.self",
+      "src_port": "out",
+      "dst_port": "out",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.norm1:in->dec.norm1.branch_dropout:in",
+      "src": "dec.norm1",
+      "dst": "dec.norm1.branch_dropout",
+      "src_port": "in",
+      "dst_port": "in",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.norm1.branch_dropout:out->dec.norm1.add:f",
+      "src": "dec.norm1.branch_dropout",
+      "dst": "dec.norm1.add",
+      "src_port": "out",
+      "dst_port": "f",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.norm1:skip->dec.norm1.add:x",
+      "src": "dec.norm1",
+      "dst": "dec.norm1.add",
+      "src_port": "skip",
+      "dst_port": "x",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.norm1.add:out->dec.norm1.layernorm:in",
+      "src": "dec.norm1.add",
+      "dst": "dec.norm1.layernorm",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.norm1.layernorm:out->dec.norm1:out",
+      "src": "dec.norm1.layernorm",
+      "dst": "dec.norm1",
+      "src_port": "out",
+      "dst_port": "out",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.self:out->dec.norm1:in",
+      "src": "dec.self",
+      "dst": "dec.norm1",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "tgt_pe:out->dec.norm1:skip",
+      "src": "tgt_pe",
+      "dst": "dec.norm1",
+      "src_port": "out",
+      "dst_port": "skip",
+      "kind": "residual"
+    },
+    {
+      "id": "dec.norm1:out->dec.cross:in",
+      "src": "dec.norm1",
+      "dst": "dec.cross",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.cross:in->dec.cross.q:in",
+      "src": "dec.cross",
+      "dst": "dec.cross.q",
+      "src_port": "in",
+      "dst_port": "in",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.cross:memory->dec.cross.k:in",
+      "src": "dec.cross",
+      "dst": "dec.cross.k",
+      "src_port": "memory",
+      "dst_port": "in",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.cross:memory->dec.cross.v:in",
+      "src": "dec.cross",
+      "dst": "dec.cross.v",
+      "src_port": "memory",
+      "dst_port": "in",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.cross.q:out->dec.cross.split:q_in",
+      "src": "dec.cross.q",
+      "dst": "dec.cross.split",
+      "src_port": "out",
+      "dst_port": "q_in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.cross.split:q_out->dec.cross.sdpa:q",
+      "src": "dec.cross.split",
+      "dst": "dec.cross.sdpa",
+      "src_port": "q_out",
+      "dst_port": "q",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.cross.k:out->dec.cross.split:k_in",
+      "src": "dec.cross.k",
+      "dst": "dec.cross.split",
+      "src_port": "out",
+      "dst_port": "k_in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.cross.split:k_out->dec.cross.sdpa:k",
+      "src": "dec.cross.split",
+      "dst": "dec.cross.sdpa",
+      "src_port": "k_out",
+      "dst_port": "k",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.cross.v:out->dec.cross.split:v_in",
+      "src": "dec.cross.v",
+      "dst": "dec.cross.split",
+      "src_port": "out",
+      "dst_port": "v_in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.cross.split:v_out->dec.cross.sdpa:v",
+      "src": "dec.cross.split",
+      "dst": "dec.cross.sdpa",
+      "src_port": "v_out",
+      "dst_port": "v",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.cross.sdpa:out->dec.cross.merge:in",
+      "src": "dec.cross.sdpa",
+      "dst": "dec.cross.merge",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.cross.merge:out->dec.cross.wo:in",
+      "src": "dec.cross.merge",
+      "dst": "dec.cross.wo",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.cross.sdpa.qkt:out->dec.cross.sdpa.scale:in",
+      "src": "dec.cross.sdpa.qkt",
+      "dst": "dec.cross.sdpa.scale",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.cross.sdpa.scale:out->dec.cross.sdpa.mask:in",
+      "src": "dec.cross.sdpa.scale",
+      "dst": "dec.cross.sdpa.mask",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.cross.sdpa.mask:out->dec.cross.sdpa.softmax:in",
+      "src": "dec.cross.sdpa.mask",
+      "dst": "dec.cross.sdpa.softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.cross.sdpa.softmax:out->dec.cross.sdpa.nan_guard:in",
+      "src": "dec.cross.sdpa.softmax",
+      "dst": "dec.cross.sdpa.nan_guard",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.cross.sdpa.nan_guard:out->dec.cross.sdpa.attn_dropout:in",
+      "src": "dec.cross.sdpa.nan_guard",
+      "dst": "dec.cross.sdpa.attn_dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.cross.sdpa.attn_dropout:out->dec.cross.sdpa.av:a",
+      "src": "dec.cross.sdpa.attn_dropout",
+      "dst": "dec.cross.sdpa.av",
+      "src_port": "out",
+      "dst_port": "a",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.cross.sdpa:q->dec.cross.sdpa.qkt:q",
+      "src": "dec.cross.sdpa",
+      "dst": "dec.cross.sdpa.qkt",
+      "src_port": "q",
+      "dst_port": "q",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.cross.sdpa:k->dec.cross.sdpa.qkt:k",
+      "src": "dec.cross.sdpa",
+      "dst": "dec.cross.sdpa.qkt",
+      "src_port": "k",
+      "dst_port": "k",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.cross.sdpa:v->dec.cross.sdpa.av:v",
+      "src": "dec.cross.sdpa",
+      "dst": "dec.cross.sdpa.av",
+      "src_port": "v",
+      "dst_port": "v",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.cross.sdpa.av:out->dec.cross.sdpa:out",
+      "src": "dec.cross.sdpa.av",
+      "dst": "dec.cross.sdpa",
+      "src_port": "out",
+      "dst_port": "out",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.cross.wo:out->dec.cross:out",
+      "src": "dec.cross.wo",
+      "dst": "dec.cross",
+      "src_port": "out",
+      "dst_port": "out",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.norm2:in->dec.norm2.branch_dropout:in",
+      "src": "dec.norm2",
+      "dst": "dec.norm2.branch_dropout",
+      "src_port": "in",
+      "dst_port": "in",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.norm2.branch_dropout:out->dec.norm2.add:f",
+      "src": "dec.norm2.branch_dropout",
+      "dst": "dec.norm2.add",
+      "src_port": "out",
+      "dst_port": "f",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.norm2:skip->dec.norm2.add:x",
+      "src": "dec.norm2",
+      "dst": "dec.norm2.add",
+      "src_port": "skip",
+      "dst_port": "x",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.norm2.add:out->dec.norm2.layernorm:in",
+      "src": "dec.norm2.add",
+      "dst": "dec.norm2.layernorm",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.norm2.layernorm:out->dec.norm2:out",
+      "src": "dec.norm2.layernorm",
+      "dst": "dec.norm2",
+      "src_port": "out",
+      "dst_port": "out",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.cross:out->dec.norm2:in",
+      "src": "dec.cross",
+      "dst": "dec.norm2",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.norm1:out->dec.norm2:skip",
+      "src": "dec.norm1",
+      "dst": "dec.norm2",
+      "src_port": "out",
+      "dst_port": "skip",
+      "kind": "residual"
+    },
+    {
+      "id": "dec.norm2:out->dec.ffn:in",
+      "src": "dec.norm2",
+      "dst": "dec.ffn",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.ffn.linear1:out->dec.ffn.relu:in",
+      "src": "dec.ffn.linear1",
+      "dst": "dec.ffn.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.ffn.relu:out->dec.ffn.dropout:in",
+      "src": "dec.ffn.relu",
+      "dst": "dec.ffn.dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.ffn.dropout:out->dec.ffn.linear2:in",
+      "src": "dec.ffn.dropout",
+      "dst": "dec.ffn.linear2",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.ffn:in->dec.ffn.linear1:in",
+      "src": "dec.ffn",
+      "dst": "dec.ffn.linear1",
+      "src_port": "in",
+      "dst_port": "in",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.ffn.linear2:out->dec.ffn:out",
+      "src": "dec.ffn.linear2",
+      "dst": "dec.ffn",
+      "src_port": "out",
+      "dst_port": "out",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.norm3:in->dec.norm3.branch_dropout:in",
+      "src": "dec.norm3",
+      "dst": "dec.norm3.branch_dropout",
+      "src_port": "in",
+      "dst_port": "in",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.norm3.branch_dropout:out->dec.norm3.add:f",
+      "src": "dec.norm3.branch_dropout",
+      "dst": "dec.norm3.add",
+      "src_port": "out",
+      "dst_port": "f",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.norm3:skip->dec.norm3.add:x",
+      "src": "dec.norm3",
+      "dst": "dec.norm3.add",
+      "src_port": "skip",
+      "dst_port": "x",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.norm3.add:out->dec.norm3.layernorm:in",
+      "src": "dec.norm3.add",
+      "dst": "dec.norm3.layernorm",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.norm3.layernorm:out->dec.norm3:out",
+      "src": "dec.norm3.layernorm",
+      "dst": "dec.norm3",
+      "src_port": "out",
+      "dst_port": "out",
+      "kind": "interface_binding"
+    },
+    {
+      "id": "dec.ffn:out->dec.norm3:in",
+      "src": "dec.ffn",
+      "dst": "dec.norm3",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "dec.norm2:out->dec.norm3:skip",
+      "src": "dec.norm2",
+      "dst": "dec.norm3",
+      "src_port": "out",
+      "dst_port": "skip",
+      "kind": "residual"
+    },
+    {
+      "id": "dec.norm3:out->dec.output:in",
+      "src": "dec.norm3",
+      "dst": "dec.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "repeat_output",
+      "repeated_over": "N independent layers"
+    },
+    {
+      "id": "enc.output:out->dec.cross:memory",
+      "src": "enc.output",
+      "dst": "dec.cross",
+      "src_port": "out",
+      "dst_port": "memory",
+      "kind": "memory",
+      "shape": "[B,S,D]"
+    },
+    {
+      "id": "dec.output:out->generator:in",
+      "src": "dec.output",
+      "dst": "generator",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "generator:out->logits:in",
+      "src": "generator",
+      "dst": "logits",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "tensor"
+    },
+    {
+      "id": "logits:out->probabilities:in",
+      "src": "logits",
+      "dst": "probabilities",
+      "src_port": "out",
+      "dst_port": "in",
+      "kind": "explanatory",
+      "style": "dashed"
+    }
+  ]
+}

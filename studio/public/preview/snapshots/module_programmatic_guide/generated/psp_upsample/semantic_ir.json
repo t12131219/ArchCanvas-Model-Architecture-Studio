@@ -1,0 +1,361 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "psp_upsample",
+  "profile": {
+    "scope": "PSPUpsample only; PSP pooling, enclosing decoder and classifier excluded",
+    "constructor": "PSPUpsample(64,32)",
+    "in_channels": 64,
+    "out_channels": 32,
+    "spatial_scale": 2,
+    "prelu_num_parameters": 1,
+    "input_shape": "[B,64,8,8]",
+    "output_shape": "[B,32,16,16]",
+    "shape_origin": "explicit static module profile; not observed",
+    "mode": "caller train/eval; not executed",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "Lextal/pspnet-pytorch",
+    "commit": "4eb6ab61287e837f5e2d8c1ae09fadeaa0e31e37",
+    "snapshot": "ec03decbad220846c78d3b5fdba46c4a42932c5c1bf6011acff18db0ac46caa5"
+  },
+  "nodes": [
+    {
+      "id": "psp_upsample.root",
+      "label": "PSP resize/convolution upsample / module",
+      "kind": "group",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.forward"
+      ],
+      "shape": "[B,32,16,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "psp_upsample.input",
+      "label": "Module input",
+      "kind": "input",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.forward"
+      ],
+      "shape": "[B,64,8,8]",
+      "detail": [],
+      "learnable": false,
+      "parent": "psp_upsample.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "psp_upsample.module",
+      "label": "PSPUpsample",
+      "kind": "group",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.forward"
+      ],
+      "shape": "[B,32,16,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "psp_upsample.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "psp_upsample.resize",
+      "label": "Bilinear resize / 2x H,W",
+      "kind": "interpolate",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.forward"
+      ],
+      "shape": "[B,64,16,16]",
+      "detail": [],
+      "source_operation": "F.upsample",
+      "mode_argument": "bilinear",
+      "align_corners_argument": "omitted",
+      "size_expression": "(2*x.size(2),2*x.size(3))",
+      "library_boundary": true,
+      "learnable": false,
+      "parent": "psp_upsample.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "size"
+      ]
+    },
+    {
+      "id": "psp_upsample.conv",
+      "label": "Conv3 + BN + PReLU",
+      "kind": "group",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.forward"
+      ],
+      "shape": "[B,32,16,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "psp_upsample.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "psp_upsample.conv_op",
+      "label": "Conv 3 / 64→32",
+      "kind": "conv",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.forward"
+      ],
+      "shape": "[B,32,16,16]",
+      "detail": [],
+      "parameter": "conv.0",
+      "instance_identity": "psp_upsample.conv.0",
+      "learnable": true,
+      "in_channels": 64,
+      "out_channels": 32,
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "groups": 1,
+      "bias": true,
+      "source_operation": "nn.Conv2d",
+      "parent": "psp_upsample.conv",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "psp_upsample.bn",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.forward"
+      ],
+      "shape": "[B,32,16,16]",
+      "detail": [],
+      "parameter": "conv.1",
+      "instance_identity": "psp_upsample.conv.1",
+      "learnable": true,
+      "num_features": 32,
+      "eps": 1e-05,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "psp_upsample.conv",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "psp_upsample.prelu",
+      "label": "PReLU / one learned slope",
+      "kind": "prelu",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.forward"
+      ],
+      "shape": "[B,32,16,16]",
+      "detail": [],
+      "parameter": "conv.2",
+      "instance_identity": "psp_upsample.conv.2",
+      "learnable": true,
+      "num_parameters": 1,
+      "parameter_tensors": [
+        "conv.2.weight"
+      ],
+      "parameter_shape": [
+        1
+      ],
+      "initial_slope": 0.25,
+      "shared_across": "all output channels",
+      "source_operation": "nn.PReLU()",
+      "parent": "psp_upsample.conv",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "psp_upsample.output",
+      "label": "Module output",
+      "kind": "output",
+      "source": [
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.__init__",
+        "pspnet-vision-extended/pspnet.py::PSPUpsample.forward"
+      ],
+      "shape": "[B,32,16,16]",
+      "detail": [],
+      "learnable": false,
+      "parent": "psp_upsample.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "psp_upsample.conv:in->psp_upsample.conv_op:in:boundary",
+      "src": "psp_upsample.conv",
+      "dst": "psp_upsample.conv_op",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "psp_upsample.conv_op:out->psp_upsample.bn:in:tensor",
+      "src": "psp_upsample.conv_op",
+      "dst": "psp_upsample.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "psp_upsample.bn:out->psp_upsample.prelu:in:tensor",
+      "src": "psp_upsample.bn",
+      "dst": "psp_upsample.prelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "psp_upsample.prelu:out->psp_upsample.conv:out:boundary",
+      "src": "psp_upsample.prelu",
+      "dst": "psp_upsample.conv",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "psp_upsample.module:in->psp_upsample.resize:in:boundary",
+      "src": "psp_upsample.module",
+      "dst": "psp_upsample.resize",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "psp_upsample.resize:out->psp_upsample.conv:in:tensor",
+      "src": "psp_upsample.resize",
+      "dst": "psp_upsample.conv",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "psp_upsample.conv:out->psp_upsample.module:out:boundary",
+      "src": "psp_upsample.conv",
+      "dst": "psp_upsample.module",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "psp_upsample.root:in->psp_upsample.input:in:boundary",
+      "src": "psp_upsample.root",
+      "dst": "psp_upsample.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "psp_upsample.input:out->psp_upsample.module:in:tensor",
+      "src": "psp_upsample.input",
+      "dst": "psp_upsample.module",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "psp_upsample.module:out->psp_upsample.output:in:tensor",
+      "src": "psp_upsample.module",
+      "dst": "psp_upsample.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "psp_upsample.output:out->psp_upsample.root:out:boundary",
+      "src": "psp_upsample.output",
+      "dst": "psp_upsample.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "psp_upsample.input:shape->psp_upsample.resize:size:shape_dependency",
+      "src": "psp_upsample.input",
+      "dst": "psp_upsample.resize",
+      "src_port": "shape",
+      "dst_port": "size",
+      "role": "shape_dependency"
+    }
+  ],
+  "facts": [
+    "Bilinear F.upsample doubles input H and W before the convolution, rather than applying pixel channel rearrangement.",
+    "Conv3 padding1 retains enlarged16x16 and has default biasTrue; BN32 follows it.",
+    "nn.PReLU() owns exactly one learned slope initialized0.25, shared across all32 channels; it is not a fixed ReLU.",
+    "align_corners is omitted in this historical API call; drawing does not invent a default or execute the library."
+  ],
+  "corrections": [
+    "Do not replace bilinear upsample with ConvTranspose or PixelShuffle.",
+    "The PReLU parameter is separate from Conv/BN parameter paths and does not have32 independent slopes."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

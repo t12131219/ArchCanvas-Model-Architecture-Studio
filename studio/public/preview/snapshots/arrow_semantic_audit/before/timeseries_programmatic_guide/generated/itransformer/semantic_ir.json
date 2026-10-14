@@ -1,0 +1,2997 @@
+{
+  "schema": "timeseries-semantic-ir/1",
+  "model": "itransformer",
+  "profile": {
+    "task": "ETTh1 multivariate forecasting",
+    "seq_len": 96,
+    "pred_len": 96,
+    "n_vars": 7,
+    "covariates": 4,
+    "tokens": 11,
+    "d_model": 256,
+    "d_ff": 256,
+    "n_heads": 8,
+    "e_layers": 2,
+    "dropout": 0.1,
+    "activation": "gelu",
+    "use_norm": true,
+    "output_attention": false,
+    "embed": "timeF",
+    "freq": "h",
+    "config_source": "iTransformer/scripts/multivariate_forecasting/ETT/iTransformer_ETTh1.sh:5-22 + run.py defaults",
+    "mode": "eval"
+  },
+  "nodes": [
+    {
+      "id": "it.model",
+      "label": "iTransformer",
+      "kind": "group",
+      "source": [
+        "iTransformer/model/iTransformer.py::Model"
+      ],
+      "shape": "[B,P,N]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.input",
+      "label": "Input time series",
+      "kind": "input",
+      "source": [
+        "iTransformer/model/iTransformer.py::Model.forecast"
+      ],
+      "shape": "[B,L,N]",
+      "detail": [
+        "L=96; N=7"
+      ],
+      "parent": "it.model",
+      "source_evidence": [
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.normalize",
+      "label": "Series normalize",
+      "kind": "norm",
+      "source": [
+        "iTransformer/model/iTransformer.py::Model.forecast"
+      ],
+      "shape": "[B,L,N]",
+      "detail": [
+        "per-variate mean over L; mean.detach()",
+        "std=sqrt(var(unbiased=False)+1e-5)",
+        "(x-mean)/std; use_norm=True"
+      ],
+      "parent": "it.model",
+      "source_evidence": [
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.embedding",
+      "label": "Inverted embedding",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/Embed.py::DataEmbedding_inverted.__init__",
+        "iTransformer/layers/Embed.py::DataEmbedding_inverted.forward",
+        "iTransformer/model/iTransformer.py::Model.forecast"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "time axis becomes features"
+      ],
+      "mode": "chain",
+      "parent": "it.model",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.invert",
+      "label": "Invert axes",
+      "kind": "tensor",
+      "source": [
+        "iTransformer/layers/Embed.py::DataEmbedding_inverted.forward"
+      ],
+      "shape": "[B,N,L]",
+      "detail": [
+        "permute(0,2,1); one variate = one token"
+      ],
+      "parent": "it.embedding",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.concat",
+      "label": "Append time tokens",
+      "kind": "mixing",
+      "source": [
+        "iTransformer/layers/Embed.py::DataEmbedding_inverted.forward"
+      ],
+      "shape": "[B,T,L]",
+      "detail": [
+        "concat along token axis; T=N+C",
+        "selected: C=4; None -> C=0"
+      ],
+      "parent": "it.embedding",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "it.embed_linear",
+      "label": "Temporal projection",
+      "kind": "linear",
+      "source": [
+        "iTransformer/layers/Embed.py::DataEmbedding_inverted.__init__",
+        "iTransformer/layers/Embed.py::DataEmbedding_inverted.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "Linear L=96 -> D=256; shared across tokens"
+      ],
+      "parameter": "enc_embedding.value_embedding",
+      "parent": "it.embedding",
+      "source_evidence": [
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.embed_dropout",
+      "label": "Embedding dropout",
+      "kind": "control",
+      "source": [
+        "iTransformer/layers/Embed.py::DataEmbedding_inverted.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "p=0.1; no positional embedding"
+      ],
+      "parent": "it.embedding",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.encoder",
+      "label": "Encoder x 2",
+      "kind": "group",
+      "source": [
+        "iTransformer/model/iTransformer.py::Model.__init__",
+        "iTransformer/layers/Transformer_EncDec.py::Encoder.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "layer 2 folded in all views",
+        "layers have independent weights"
+      ],
+      "mode": "chain",
+      "parent": "it.model",
+      "source_evidence": [
+        "E019",
+        "E014"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1",
+      "label": "Encoder layer 1",
+      "kind": "group",
+      "source": [
+        "iTransformer/model/iTransformer.py::Model.__init__",
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "same structure; independent layer parameters"
+      ],
+      "parameter_scope": "encoder.attn_layers.0",
+      "mode": "chain",
+      "parent": "it.encoder",
+      "source_evidence": [
+        "E019",
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention_residual",
+      "label": "Attention + residual",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [],
+      "residual": true,
+      "mode": "chain",
+      "parent": "it.enc1",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention",
+      "label": "Full self-attention",
+      "kind": "group",
+      "source": [
+        "iTransformer/model/iTransformer.py::Model.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward",
+        "iTransformer/layers/SelfAttention_Family.py::FullAttention.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "H=8; mask_flag=False",
+        "attention across variable / time tokens"
+      ],
+      "mode": "chain",
+      "parent": "it.enc1.attention_residual",
+      "source_evidence": [
+        "E019",
+        "E008",
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.operands",
+      "label": "Weights / values",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward",
+        "iTransformer/layers/SelfAttention_Family.py::FullAttention.forward"
+      ],
+      "shape": "(A,V)",
+      "detail": [],
+      "mode": "parallel",
+      "parent": "it.enc1.attention",
+      "source_evidence": [
+        "E008",
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.weights",
+      "label": "QK -> weights",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::FullAttention.forward"
+      ],
+      "shape": "A: [B,H,T,T]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "it.enc1.attention.operands",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.qk",
+      "label": "Q / K projections",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "(Q,K)",
+      "detail": [],
+      "mode": "parallel",
+      "parent": "it.enc1.attention.weights",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.q",
+      "label": "Q",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,H,d]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "it.enc1.attention.qk",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.q.linear",
+      "label": "Linear Q",
+      "kind": "linear",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "D -> H*d; independent weight"
+      ],
+      "parameter": "encoder.attn_layers.0.attention.query_projection",
+      "parent": "it.enc1.attention.q",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.q.heads",
+      "label": "Split heads",
+      "kind": "tensor",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,H,d]",
+      "detail": [
+        "view; d=D/H=32"
+      ],
+      "parent": "it.enc1.attention.q",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.k",
+      "label": "K",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,H,d]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "it.enc1.attention.qk",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.k.linear",
+      "label": "Linear K",
+      "kind": "linear",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "D -> H*d; independent weight"
+      ],
+      "parameter": "encoder.attn_layers.0.attention.key_projection",
+      "parent": "it.enc1.attention.k",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.k.heads",
+      "label": "Split heads",
+      "kind": "tensor",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,H,d]",
+      "detail": [
+        "view; d=D/H=32"
+      ],
+      "parent": "it.enc1.attention.k",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.scores",
+      "label": "QK contraction",
+      "kind": "attention",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::FullAttention.forward"
+      ],
+      "shape": "[B,H,T,T]",
+      "detail": [
+        "einsum blhe,bshe -> bhls"
+      ],
+      "parent": "it.enc1.attention.weights",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.scale",
+      "label": "Scale scores",
+      "kind": "attention",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::FullAttention.forward"
+      ],
+      "shape": "[B,H,T,T]",
+      "detail": [
+        "1 / sqrt(d); no causal mask"
+      ],
+      "parent": "it.enc1.attention.weights",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.softmax",
+      "label": "Softmax",
+      "kind": "activation",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::FullAttention.forward"
+      ],
+      "shape": "[B,H,T,T]",
+      "detail": [
+        "over key tokens"
+      ],
+      "parent": "it.enc1.attention.weights",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.attn_drop",
+      "label": "Attention dropout",
+      "kind": "control",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::FullAttention.forward"
+      ],
+      "shape": "[B,H,T,T]",
+      "detail": [
+        "p=0.1; train only"
+      ],
+      "parent": "it.enc1.attention.weights",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.v",
+      "label": "V",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,H,d]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "it.enc1.attention.operands",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.v.linear",
+      "label": "Linear V",
+      "kind": "linear",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "D -> H*d; independent weight"
+      ],
+      "parameter": "encoder.attn_layers.0.attention.value_projection",
+      "parent": "it.enc1.attention.v",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.v.heads",
+      "label": "Split heads",
+      "kind": "tensor",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,H,d]",
+      "detail": [
+        "view; d=D/H=32"
+      ],
+      "parent": "it.enc1.attention.v",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.av",
+      "label": "A times V",
+      "kind": "attention",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::FullAttention.forward"
+      ],
+      "shape": "[B,T,H,d]",
+      "detail": [
+        "einsum bhls,bshd -> blhd"
+      ],
+      "parent": "it.enc1.attention",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.merge",
+      "label": "Merge heads",
+      "kind": "tensor",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "contiguous + view"
+      ],
+      "parent": "it.enc1.attention",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention.out",
+      "label": "Output projection",
+      "kind": "linear",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "Linear H*d -> D"
+      ],
+      "parameter": "encoder.attn_layers.0.attention.out_projection",
+      "parent": "it.enc1.attention",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.attention_dropout",
+      "label": "Output dropout",
+      "kind": "control",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "p=0.1"
+      ],
+      "parent": "it.enc1.attention_residual",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.add1",
+      "label": "Add residual",
+      "kind": "mixing",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "x + dropout(attention(x))"
+      ],
+      "parent": "it.enc1.attention_residual",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "it.enc1.norm1",
+      "label": "LayerNorm 1",
+      "kind": "norm",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.__init__",
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "post-attention; over D"
+      ],
+      "parameter": "encoder.attn_layers.0.norm1",
+      "parent": "it.enc1",
+      "source_evidence": [
+        "E016",
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.ffn_residual",
+      "label": "FFN + residual",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [],
+      "residual": true,
+      "mode": "chain",
+      "parent": "it.enc1",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.ffn",
+      "label": "Pointwise FFN",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.__init__",
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "D=256; F=256"
+      ],
+      "mode": "chain",
+      "parent": "it.enc1.ffn_residual",
+      "source_evidence": [
+        "E016",
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.ffn_transpose_in",
+      "label": "Transpose",
+      "kind": "tensor",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,D,T]",
+      "detail": [
+        "swap token / feature axes"
+      ],
+      "parent": "it.enc1.ffn",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.conv1",
+      "label": "Conv1d D -> F",
+      "kind": "linear",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.__init__",
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,F,T]",
+      "detail": [
+        "kernel=1; tokenwise"
+      ],
+      "parameter": "encoder.attn_layers.0.conv1",
+      "parent": "it.enc1.ffn",
+      "source_evidence": [
+        "E016",
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.__init__",
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,F,T]",
+      "detail": [
+        "activation=gelu"
+      ],
+      "parent": "it.enc1.ffn",
+      "source_evidence": [
+        "E016",
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.ffn_dropout1",
+      "label": "Dropout",
+      "kind": "control",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,F,T]",
+      "detail": [
+        "p=0.1"
+      ],
+      "parent": "it.enc1.ffn",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.conv2",
+      "label": "Conv1d F -> D",
+      "kind": "linear",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.__init__",
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,D,T]",
+      "detail": [
+        "kernel=1; tokenwise"
+      ],
+      "parameter": "encoder.attn_layers.0.conv2",
+      "parent": "it.enc1.ffn",
+      "source_evidence": [
+        "E016",
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.ffn_transpose_out",
+      "label": "Transpose",
+      "kind": "tensor",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "restore token-first axes"
+      ],
+      "parent": "it.enc1.ffn",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.ffn_dropout2",
+      "label": "Dropout",
+      "kind": "control",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "p=0.1"
+      ],
+      "parent": "it.enc1.ffn",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc1.add2",
+      "label": "Add residual",
+      "kind": "mixing",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "norm1 state + FFN state"
+      ],
+      "parent": "it.enc1.ffn_residual",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "it.enc1.norm2",
+      "label": "LayerNorm 2",
+      "kind": "norm",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.__init__",
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "post-FFN; over D"
+      ],
+      "parameter": "encoder.attn_layers.0.norm2",
+      "parent": "it.enc1",
+      "source_evidence": [
+        "E016",
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2",
+      "label": "Encoder layer 2",
+      "kind": "group",
+      "source": [
+        "iTransformer/model/iTransformer.py::Model.__init__",
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "same structure; independent layer parameters"
+      ],
+      "parameter_scope": "encoder.attn_layers.1",
+      "mode": "chain",
+      "parent": "it.encoder",
+      "source_evidence": [
+        "E019",
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention_residual",
+      "label": "Attention + residual",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [],
+      "residual": true,
+      "mode": "chain",
+      "parent": "it.enc2",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention",
+      "label": "Full self-attention",
+      "kind": "group",
+      "source": [
+        "iTransformer/model/iTransformer.py::Model.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward",
+        "iTransformer/layers/SelfAttention_Family.py::FullAttention.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "H=8; mask_flag=False",
+        "attention across variable / time tokens"
+      ],
+      "mode": "chain",
+      "parent": "it.enc2.attention_residual",
+      "source_evidence": [
+        "E019",
+        "E008",
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.operands",
+      "label": "Weights / values",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward",
+        "iTransformer/layers/SelfAttention_Family.py::FullAttention.forward"
+      ],
+      "shape": "(A,V)",
+      "detail": [],
+      "mode": "parallel",
+      "parent": "it.enc2.attention",
+      "source_evidence": [
+        "E008",
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.weights",
+      "label": "QK -> weights",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::FullAttention.forward"
+      ],
+      "shape": "A: [B,H,T,T]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "it.enc2.attention.operands",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.qk",
+      "label": "Q / K projections",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "(Q,K)",
+      "detail": [],
+      "mode": "parallel",
+      "parent": "it.enc2.attention.weights",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.q",
+      "label": "Q",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,H,d]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "it.enc2.attention.qk",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.q.linear",
+      "label": "Linear Q",
+      "kind": "linear",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "D -> H*d; independent weight"
+      ],
+      "parameter": "encoder.attn_layers.1.attention.query_projection",
+      "parent": "it.enc2.attention.q",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.q.heads",
+      "label": "Split heads",
+      "kind": "tensor",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,H,d]",
+      "detail": [
+        "view; d=D/H=32"
+      ],
+      "parent": "it.enc2.attention.q",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.k",
+      "label": "K",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,H,d]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "it.enc2.attention.qk",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.k.linear",
+      "label": "Linear K",
+      "kind": "linear",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "D -> H*d; independent weight"
+      ],
+      "parameter": "encoder.attn_layers.1.attention.key_projection",
+      "parent": "it.enc2.attention.k",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.k.heads",
+      "label": "Split heads",
+      "kind": "tensor",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,H,d]",
+      "detail": [
+        "view; d=D/H=32"
+      ],
+      "parent": "it.enc2.attention.k",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.scores",
+      "label": "QK contraction",
+      "kind": "attention",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::FullAttention.forward"
+      ],
+      "shape": "[B,H,T,T]",
+      "detail": [
+        "einsum blhe,bshe -> bhls"
+      ],
+      "parent": "it.enc2.attention.weights",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.scale",
+      "label": "Scale scores",
+      "kind": "attention",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::FullAttention.forward"
+      ],
+      "shape": "[B,H,T,T]",
+      "detail": [
+        "1 / sqrt(d); no causal mask"
+      ],
+      "parent": "it.enc2.attention.weights",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.softmax",
+      "label": "Softmax",
+      "kind": "activation",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::FullAttention.forward"
+      ],
+      "shape": "[B,H,T,T]",
+      "detail": [
+        "over key tokens"
+      ],
+      "parent": "it.enc2.attention.weights",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.attn_drop",
+      "label": "Attention dropout",
+      "kind": "control",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::FullAttention.forward"
+      ],
+      "shape": "[B,H,T,T]",
+      "detail": [
+        "p=0.1; train only"
+      ],
+      "parent": "it.enc2.attention.weights",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.v",
+      "label": "V",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,H,d]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "it.enc2.attention.operands",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.v.linear",
+      "label": "Linear V",
+      "kind": "linear",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "D -> H*d; independent weight"
+      ],
+      "parameter": "encoder.attn_layers.1.attention.value_projection",
+      "parent": "it.enc2.attention.v",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.v.heads",
+      "label": "Split heads",
+      "kind": "tensor",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,H,d]",
+      "detail": [
+        "view; d=D/H=32"
+      ],
+      "parent": "it.enc2.attention.v",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.av",
+      "label": "A times V",
+      "kind": "attention",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::FullAttention.forward"
+      ],
+      "shape": "[B,T,H,d]",
+      "detail": [
+        "einsum bhls,bshd -> blhd"
+      ],
+      "parent": "it.enc2.attention",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.merge",
+      "label": "Merge heads",
+      "kind": "tensor",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "contiguous + view"
+      ],
+      "parent": "it.enc2.attention",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention.out",
+      "label": "Output projection",
+      "kind": "linear",
+      "source": [
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.__init__",
+        "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "Linear H*d -> D"
+      ],
+      "parameter": "encoder.attn_layers.1.attention.out_projection",
+      "parent": "it.enc2.attention",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.attention_dropout",
+      "label": "Output dropout",
+      "kind": "control",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "p=0.1"
+      ],
+      "parent": "it.enc2.attention_residual",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.add1",
+      "label": "Add residual",
+      "kind": "mixing",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "x + dropout(attention(x))"
+      ],
+      "parent": "it.enc2.attention_residual",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "it.enc2.norm1",
+      "label": "LayerNorm 1",
+      "kind": "norm",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.__init__",
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "post-attention; over D"
+      ],
+      "parameter": "encoder.attn_layers.1.norm1",
+      "parent": "it.enc2",
+      "source_evidence": [
+        "E016",
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.ffn_residual",
+      "label": "FFN + residual",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [],
+      "residual": true,
+      "mode": "chain",
+      "parent": "it.enc2",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.ffn",
+      "label": "Pointwise FFN",
+      "kind": "group",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.__init__",
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "D=256; F=256"
+      ],
+      "mode": "chain",
+      "parent": "it.enc2.ffn_residual",
+      "source_evidence": [
+        "E016",
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.ffn_transpose_in",
+      "label": "Transpose",
+      "kind": "tensor",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,D,T]",
+      "detail": [
+        "swap token / feature axes"
+      ],
+      "parent": "it.enc2.ffn",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.conv1",
+      "label": "Conv1d D -> F",
+      "kind": "linear",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.__init__",
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,F,T]",
+      "detail": [
+        "kernel=1; tokenwise"
+      ],
+      "parameter": "encoder.attn_layers.1.conv1",
+      "parent": "it.enc2.ffn",
+      "source_evidence": [
+        "E016",
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.__init__",
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,F,T]",
+      "detail": [
+        "activation=gelu"
+      ],
+      "parent": "it.enc2.ffn",
+      "source_evidence": [
+        "E016",
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.ffn_dropout1",
+      "label": "Dropout",
+      "kind": "control",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,F,T]",
+      "detail": [
+        "p=0.1"
+      ],
+      "parent": "it.enc2.ffn",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.conv2",
+      "label": "Conv1d F -> D",
+      "kind": "linear",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.__init__",
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,D,T]",
+      "detail": [
+        "kernel=1; tokenwise"
+      ],
+      "parameter": "encoder.attn_layers.1.conv2",
+      "parent": "it.enc2.ffn",
+      "source_evidence": [
+        "E016",
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.ffn_transpose_out",
+      "label": "Transpose",
+      "kind": "tensor",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "restore token-first axes"
+      ],
+      "parent": "it.enc2.ffn",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.ffn_dropout2",
+      "label": "Dropout",
+      "kind": "control",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "p=0.1"
+      ],
+      "parent": "it.enc2.ffn",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.enc2.add2",
+      "label": "Add residual",
+      "kind": "mixing",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "norm1 state + FFN state"
+      ],
+      "parent": "it.enc2.ffn_residual",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "it.enc2.norm2",
+      "label": "LayerNorm 2",
+      "kind": "norm",
+      "source": [
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.__init__",
+        "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "post-FFN; over D"
+      ],
+      "parameter": "encoder.attn_layers.1.norm2",
+      "parent": "it.enc2",
+      "source_evidence": [
+        "E016",
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.encoder_norm",
+      "label": "Final LayerNorm",
+      "kind": "norm",
+      "source": [
+        "iTransformer/model/iTransformer.py::Model.__init__",
+        "iTransformer/layers/Transformer_EncDec.py::Encoder.forward"
+      ],
+      "shape": "[B,T,D]",
+      "detail": [
+        "after both encoder layers"
+      ],
+      "parameter": "encoder.norm",
+      "parent": "it.encoder",
+      "source_evidence": [
+        "E019",
+        "E014"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.head",
+      "label": "Forecast projection",
+      "kind": "group",
+      "source": [
+        "iTransformer/model/iTransformer.py::Model.forecast"
+      ],
+      "shape": "[B,P,N]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "it.model",
+      "source_evidence": [
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.project",
+      "label": "Linear D -> P",
+      "kind": "linear",
+      "source": [
+        "iTransformer/model/iTransformer.py::Model.__init__",
+        "iTransformer/model/iTransformer.py::Model.forecast"
+      ],
+      "shape": "[B,T,P]",
+      "detail": [
+        "P=96; same head across tokens"
+      ],
+      "parameter": "projector",
+      "parent": "it.head",
+      "source_evidence": [
+        "E019",
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.restore",
+      "label": "Restore time axis",
+      "kind": "tensor",
+      "source": [
+        "iTransformer/model/iTransformer.py::Model.forecast"
+      ],
+      "shape": "[B,P,T]",
+      "detail": [
+        "permute(0,2,1); after projection"
+      ],
+      "parent": "it.head",
+      "source_evidence": [
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.select",
+      "label": "Keep N variates",
+      "kind": "control",
+      "source": [
+        "iTransformer/model/iTransformer.py::Model.forecast"
+      ],
+      "shape": "[B,P,N]",
+      "detail": [
+        "[:, :, :N]; discard time-token forecasts"
+      ],
+      "parent": "it.head",
+      "source_evidence": [
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.denormalize",
+      "label": "Restore series scale",
+      "kind": "norm",
+      "source": [
+        "iTransformer/model/iTransformer.py::Model.forecast"
+      ],
+      "shape": "[B,P,N]",
+      "detail": [
+        "forecast * saved_std + saved_mean"
+      ],
+      "parent": "it.model",
+      "source_evidence": [
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "it.output",
+      "label": "Forecast",
+      "kind": "output",
+      "source": [
+        "iTransformer/model/iTransformer.py::Model.forward"
+      ],
+      "shape": "[B,96,7]",
+      "detail": [
+        "last P steps; output_attention=False"
+      ],
+      "parent": "it.model",
+      "source_evidence": [
+        "E021"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.marks",
+      "label": "Time covariates",
+      "kind": "group",
+      "source": [
+        "iTransformer/model/iTransformer.py::Model.forecast",
+        "iTransformer/layers/Embed.py::DataEmbedding_inverted.forward"
+      ],
+      "shape": "[B,C,L]",
+      "detail": [
+        "optional; absent when x_mark_enc=None"
+      ],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E020",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.marks_input",
+      "label": "Time features",
+      "kind": "input",
+      "source": [
+        "iTransformer/model/iTransformer.py::Model.forecast"
+      ],
+      "shape": "[B,L,C]",
+      "detail": [
+        "selected C=4; external x_mark_enc"
+      ],
+      "parent": "it.marks",
+      "source_evidence": [
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "it.marks_invert",
+      "label": "Invert time features",
+      "kind": "tensor",
+      "source": [
+        "iTransformer/layers/Embed.py::DataEmbedding_inverted.forward"
+      ],
+      "shape": "[B,C,L]",
+      "detail": [
+        "permute(0,2,1)"
+      ],
+      "parent": "it.marks",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "it.embedding:in->it.invert:in:boundary",
+      "src": "it.embedding",
+      "dst": "it.invert",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.invert:out->it.concat:in:tensor",
+      "src": "it.invert",
+      "dst": "it.concat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.concat:out->it.embed_linear:in:tensor",
+      "src": "it.concat",
+      "dst": "it.embed_linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.embed_linear:out->it.embed_dropout:in:tensor",
+      "src": "it.embed_linear",
+      "dst": "it.embed_dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.embed_dropout:out->it.embedding:out:boundary",
+      "src": "it.embed_dropout",
+      "dst": "it.embedding",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.attention.q:in->it.enc1.attention.q.linear:in:boundary",
+      "src": "it.enc1.attention.q",
+      "dst": "it.enc1.attention.q.linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.attention.q.linear:out->it.enc1.attention.q.heads:in:tensor",
+      "src": "it.enc1.attention.q.linear",
+      "dst": "it.enc1.attention.q.heads",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.attention.q.heads:out->it.enc1.attention.q:out:boundary",
+      "src": "it.enc1.attention.q.heads",
+      "dst": "it.enc1.attention.q",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.attention.k:in->it.enc1.attention.k.linear:in:boundary",
+      "src": "it.enc1.attention.k",
+      "dst": "it.enc1.attention.k.linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.attention.k.linear:out->it.enc1.attention.k.heads:in:tensor",
+      "src": "it.enc1.attention.k.linear",
+      "dst": "it.enc1.attention.k.heads",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.attention.k.heads:out->it.enc1.attention.k:out:boundary",
+      "src": "it.enc1.attention.k.heads",
+      "dst": "it.enc1.attention.k",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.attention.qk:in->it.enc1.attention.q:in:fork",
+      "src": "it.enc1.attention.qk",
+      "dst": "it.enc1.attention.q",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "it.enc1.attention.q:out->it.enc1.attention.qk:item[0]:tuple_collection",
+      "src": "it.enc1.attention.q",
+      "dst": "it.enc1.attention.qk",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "it.enc1.attention.qk:in->it.enc1.attention.k:in:fork",
+      "src": "it.enc1.attention.qk",
+      "dst": "it.enc1.attention.k",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "it.enc1.attention.k:out->it.enc1.attention.qk:item[1]:tuple_collection",
+      "src": "it.enc1.attention.k",
+      "dst": "it.enc1.attention.qk",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "it.enc1.attention.weights:in->it.enc1.attention.qk:in:boundary",
+      "src": "it.enc1.attention.weights",
+      "dst": "it.enc1.attention.qk",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.attention.qk:out->it.enc1.attention.scores:in:tensor",
+      "src": "it.enc1.attention.qk",
+      "dst": "it.enc1.attention.scores",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.attention.scores:out->it.enc1.attention.scale:in:tensor",
+      "src": "it.enc1.attention.scores",
+      "dst": "it.enc1.attention.scale",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.attention.scale:out->it.enc1.attention.softmax:in:tensor",
+      "src": "it.enc1.attention.scale",
+      "dst": "it.enc1.attention.softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.attention.softmax:out->it.enc1.attention.attn_drop:in:tensor",
+      "src": "it.enc1.attention.softmax",
+      "dst": "it.enc1.attention.attn_drop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.attention.attn_drop:out->it.enc1.attention.weights:out:boundary",
+      "src": "it.enc1.attention.attn_drop",
+      "dst": "it.enc1.attention.weights",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.attention.v:in->it.enc1.attention.v.linear:in:boundary",
+      "src": "it.enc1.attention.v",
+      "dst": "it.enc1.attention.v.linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.attention.v.linear:out->it.enc1.attention.v.heads:in:tensor",
+      "src": "it.enc1.attention.v.linear",
+      "dst": "it.enc1.attention.v.heads",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.attention.v.heads:out->it.enc1.attention.v:out:boundary",
+      "src": "it.enc1.attention.v.heads",
+      "dst": "it.enc1.attention.v",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.attention.operands:in->it.enc1.attention.weights:in:fork",
+      "src": "it.enc1.attention.operands",
+      "dst": "it.enc1.attention.weights",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "it.enc1.attention.weights:out->it.enc1.attention.operands:item[0]:tuple_collection",
+      "src": "it.enc1.attention.weights",
+      "dst": "it.enc1.attention.operands",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "it.enc1.attention.operands:in->it.enc1.attention.v:in:fork",
+      "src": "it.enc1.attention.operands",
+      "dst": "it.enc1.attention.v",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "it.enc1.attention.v:out->it.enc1.attention.operands:item[1]:tuple_collection",
+      "src": "it.enc1.attention.v",
+      "dst": "it.enc1.attention.operands",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "it.enc1.attention:in->it.enc1.attention.operands:in:boundary",
+      "src": "it.enc1.attention",
+      "dst": "it.enc1.attention.operands",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.attention.operands:out->it.enc1.attention.av:in:tensor",
+      "src": "it.enc1.attention.operands",
+      "dst": "it.enc1.attention.av",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.attention.av:out->it.enc1.attention.merge:in:tensor",
+      "src": "it.enc1.attention.av",
+      "dst": "it.enc1.attention.merge",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.attention.merge:out->it.enc1.attention.out:in:tensor",
+      "src": "it.enc1.attention.merge",
+      "dst": "it.enc1.attention.out",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.attention.out:out->it.enc1.attention:out:boundary",
+      "src": "it.enc1.attention.out",
+      "dst": "it.enc1.attention",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.attention_residual:in->it.enc1.attention:in:boundary",
+      "src": "it.enc1.attention_residual",
+      "dst": "it.enc1.attention",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.attention:out->it.enc1.attention_dropout:in:tensor",
+      "src": "it.enc1.attention",
+      "dst": "it.enc1.attention_dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.attention_dropout:out->it.enc1.add1:in:tensor",
+      "src": "it.enc1.attention_dropout",
+      "dst": "it.enc1.add1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.add1:out->it.enc1.attention_residual:out:boundary",
+      "src": "it.enc1.add1",
+      "dst": "it.enc1.attention_residual",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.attention_residual:in->it.enc1.add1:side:residual",
+      "src": "it.enc1.attention_residual",
+      "dst": "it.enc1.add1",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "residual"
+    },
+    {
+      "id": "it.enc1.ffn:in->it.enc1.ffn_transpose_in:in:boundary",
+      "src": "it.enc1.ffn",
+      "dst": "it.enc1.ffn_transpose_in",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.ffn_transpose_in:out->it.enc1.conv1:in:tensor",
+      "src": "it.enc1.ffn_transpose_in",
+      "dst": "it.enc1.conv1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.conv1:out->it.enc1.gelu:in:tensor",
+      "src": "it.enc1.conv1",
+      "dst": "it.enc1.gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.gelu:out->it.enc1.ffn_dropout1:in:tensor",
+      "src": "it.enc1.gelu",
+      "dst": "it.enc1.ffn_dropout1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.ffn_dropout1:out->it.enc1.conv2:in:tensor",
+      "src": "it.enc1.ffn_dropout1",
+      "dst": "it.enc1.conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.conv2:out->it.enc1.ffn_transpose_out:in:tensor",
+      "src": "it.enc1.conv2",
+      "dst": "it.enc1.ffn_transpose_out",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.ffn_transpose_out:out->it.enc1.ffn_dropout2:in:tensor",
+      "src": "it.enc1.ffn_transpose_out",
+      "dst": "it.enc1.ffn_dropout2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.ffn_dropout2:out->it.enc1.ffn:out:boundary",
+      "src": "it.enc1.ffn_dropout2",
+      "dst": "it.enc1.ffn",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.ffn_residual:in->it.enc1.ffn:in:boundary",
+      "src": "it.enc1.ffn_residual",
+      "dst": "it.enc1.ffn",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.ffn:out->it.enc1.add2:in:tensor",
+      "src": "it.enc1.ffn",
+      "dst": "it.enc1.add2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.add2:out->it.enc1.ffn_residual:out:boundary",
+      "src": "it.enc1.add2",
+      "dst": "it.enc1.ffn_residual",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.ffn_residual:in->it.enc1.add2:side:residual",
+      "src": "it.enc1.ffn_residual",
+      "dst": "it.enc1.add2",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "residual"
+    },
+    {
+      "id": "it.enc1:in->it.enc1.attention_residual:in:boundary",
+      "src": "it.enc1",
+      "dst": "it.enc1.attention_residual",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1.attention_residual:out->it.enc1.norm1:in:tensor",
+      "src": "it.enc1.attention_residual",
+      "dst": "it.enc1.norm1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.norm1:out->it.enc1.ffn_residual:in:tensor",
+      "src": "it.enc1.norm1",
+      "dst": "it.enc1.ffn_residual",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.ffn_residual:out->it.enc1.norm2:in:tensor",
+      "src": "it.enc1.ffn_residual",
+      "dst": "it.enc1.norm2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc1.norm2:out->it.enc1:out:boundary",
+      "src": "it.enc1.norm2",
+      "dst": "it.enc1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.attention.q:in->it.enc2.attention.q.linear:in:boundary",
+      "src": "it.enc2.attention.q",
+      "dst": "it.enc2.attention.q.linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.attention.q.linear:out->it.enc2.attention.q.heads:in:tensor",
+      "src": "it.enc2.attention.q.linear",
+      "dst": "it.enc2.attention.q.heads",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.attention.q.heads:out->it.enc2.attention.q:out:boundary",
+      "src": "it.enc2.attention.q.heads",
+      "dst": "it.enc2.attention.q",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.attention.k:in->it.enc2.attention.k.linear:in:boundary",
+      "src": "it.enc2.attention.k",
+      "dst": "it.enc2.attention.k.linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.attention.k.linear:out->it.enc2.attention.k.heads:in:tensor",
+      "src": "it.enc2.attention.k.linear",
+      "dst": "it.enc2.attention.k.heads",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.attention.k.heads:out->it.enc2.attention.k:out:boundary",
+      "src": "it.enc2.attention.k.heads",
+      "dst": "it.enc2.attention.k",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.attention.qk:in->it.enc2.attention.q:in:fork",
+      "src": "it.enc2.attention.qk",
+      "dst": "it.enc2.attention.q",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "it.enc2.attention.q:out->it.enc2.attention.qk:item[0]:tuple_collection",
+      "src": "it.enc2.attention.q",
+      "dst": "it.enc2.attention.qk",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "it.enc2.attention.qk:in->it.enc2.attention.k:in:fork",
+      "src": "it.enc2.attention.qk",
+      "dst": "it.enc2.attention.k",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "it.enc2.attention.k:out->it.enc2.attention.qk:item[1]:tuple_collection",
+      "src": "it.enc2.attention.k",
+      "dst": "it.enc2.attention.qk",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "it.enc2.attention.weights:in->it.enc2.attention.qk:in:boundary",
+      "src": "it.enc2.attention.weights",
+      "dst": "it.enc2.attention.qk",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.attention.qk:out->it.enc2.attention.scores:in:tensor",
+      "src": "it.enc2.attention.qk",
+      "dst": "it.enc2.attention.scores",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.attention.scores:out->it.enc2.attention.scale:in:tensor",
+      "src": "it.enc2.attention.scores",
+      "dst": "it.enc2.attention.scale",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.attention.scale:out->it.enc2.attention.softmax:in:tensor",
+      "src": "it.enc2.attention.scale",
+      "dst": "it.enc2.attention.softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.attention.softmax:out->it.enc2.attention.attn_drop:in:tensor",
+      "src": "it.enc2.attention.softmax",
+      "dst": "it.enc2.attention.attn_drop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.attention.attn_drop:out->it.enc2.attention.weights:out:boundary",
+      "src": "it.enc2.attention.attn_drop",
+      "dst": "it.enc2.attention.weights",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.attention.v:in->it.enc2.attention.v.linear:in:boundary",
+      "src": "it.enc2.attention.v",
+      "dst": "it.enc2.attention.v.linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.attention.v.linear:out->it.enc2.attention.v.heads:in:tensor",
+      "src": "it.enc2.attention.v.linear",
+      "dst": "it.enc2.attention.v.heads",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.attention.v.heads:out->it.enc2.attention.v:out:boundary",
+      "src": "it.enc2.attention.v.heads",
+      "dst": "it.enc2.attention.v",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.attention.operands:in->it.enc2.attention.weights:in:fork",
+      "src": "it.enc2.attention.operands",
+      "dst": "it.enc2.attention.weights",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "it.enc2.attention.weights:out->it.enc2.attention.operands:item[0]:tuple_collection",
+      "src": "it.enc2.attention.weights",
+      "dst": "it.enc2.attention.operands",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "it.enc2.attention.operands:in->it.enc2.attention.v:in:fork",
+      "src": "it.enc2.attention.operands",
+      "dst": "it.enc2.attention.v",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "it.enc2.attention.v:out->it.enc2.attention.operands:item[1]:tuple_collection",
+      "src": "it.enc2.attention.v",
+      "dst": "it.enc2.attention.operands",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "it.enc2.attention:in->it.enc2.attention.operands:in:boundary",
+      "src": "it.enc2.attention",
+      "dst": "it.enc2.attention.operands",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.attention.operands:out->it.enc2.attention.av:in:tensor",
+      "src": "it.enc2.attention.operands",
+      "dst": "it.enc2.attention.av",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.attention.av:out->it.enc2.attention.merge:in:tensor",
+      "src": "it.enc2.attention.av",
+      "dst": "it.enc2.attention.merge",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.attention.merge:out->it.enc2.attention.out:in:tensor",
+      "src": "it.enc2.attention.merge",
+      "dst": "it.enc2.attention.out",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.attention.out:out->it.enc2.attention:out:boundary",
+      "src": "it.enc2.attention.out",
+      "dst": "it.enc2.attention",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.attention_residual:in->it.enc2.attention:in:boundary",
+      "src": "it.enc2.attention_residual",
+      "dst": "it.enc2.attention",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.attention:out->it.enc2.attention_dropout:in:tensor",
+      "src": "it.enc2.attention",
+      "dst": "it.enc2.attention_dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.attention_dropout:out->it.enc2.add1:in:tensor",
+      "src": "it.enc2.attention_dropout",
+      "dst": "it.enc2.add1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.add1:out->it.enc2.attention_residual:out:boundary",
+      "src": "it.enc2.add1",
+      "dst": "it.enc2.attention_residual",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.attention_residual:in->it.enc2.add1:side:residual",
+      "src": "it.enc2.attention_residual",
+      "dst": "it.enc2.add1",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "residual"
+    },
+    {
+      "id": "it.enc2.ffn:in->it.enc2.ffn_transpose_in:in:boundary",
+      "src": "it.enc2.ffn",
+      "dst": "it.enc2.ffn_transpose_in",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.ffn_transpose_in:out->it.enc2.conv1:in:tensor",
+      "src": "it.enc2.ffn_transpose_in",
+      "dst": "it.enc2.conv1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.conv1:out->it.enc2.gelu:in:tensor",
+      "src": "it.enc2.conv1",
+      "dst": "it.enc2.gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.gelu:out->it.enc2.ffn_dropout1:in:tensor",
+      "src": "it.enc2.gelu",
+      "dst": "it.enc2.ffn_dropout1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.ffn_dropout1:out->it.enc2.conv2:in:tensor",
+      "src": "it.enc2.ffn_dropout1",
+      "dst": "it.enc2.conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.conv2:out->it.enc2.ffn_transpose_out:in:tensor",
+      "src": "it.enc2.conv2",
+      "dst": "it.enc2.ffn_transpose_out",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.ffn_transpose_out:out->it.enc2.ffn_dropout2:in:tensor",
+      "src": "it.enc2.ffn_transpose_out",
+      "dst": "it.enc2.ffn_dropout2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.ffn_dropout2:out->it.enc2.ffn:out:boundary",
+      "src": "it.enc2.ffn_dropout2",
+      "dst": "it.enc2.ffn",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.ffn_residual:in->it.enc2.ffn:in:boundary",
+      "src": "it.enc2.ffn_residual",
+      "dst": "it.enc2.ffn",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.ffn:out->it.enc2.add2:in:tensor",
+      "src": "it.enc2.ffn",
+      "dst": "it.enc2.add2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.add2:out->it.enc2.ffn_residual:out:boundary",
+      "src": "it.enc2.add2",
+      "dst": "it.enc2.ffn_residual",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.ffn_residual:in->it.enc2.add2:side:residual",
+      "src": "it.enc2.ffn_residual",
+      "dst": "it.enc2.add2",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "residual"
+    },
+    {
+      "id": "it.enc2:in->it.enc2.attention_residual:in:boundary",
+      "src": "it.enc2",
+      "dst": "it.enc2.attention_residual",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc2.attention_residual:out->it.enc2.norm1:in:tensor",
+      "src": "it.enc2.attention_residual",
+      "dst": "it.enc2.norm1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.norm1:out->it.enc2.ffn_residual:in:tensor",
+      "src": "it.enc2.norm1",
+      "dst": "it.enc2.ffn_residual",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.ffn_residual:out->it.enc2.norm2:in:tensor",
+      "src": "it.enc2.ffn_residual",
+      "dst": "it.enc2.norm2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2.norm2:out->it.enc2:out:boundary",
+      "src": "it.enc2.norm2",
+      "dst": "it.enc2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.encoder:in->it.enc1:in:boundary",
+      "src": "it.encoder",
+      "dst": "it.enc1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.enc1:out->it.enc2:in:tensor",
+      "src": "it.enc1",
+      "dst": "it.enc2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.enc2:out->it.encoder_norm:in:tensor",
+      "src": "it.enc2",
+      "dst": "it.encoder_norm",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.encoder_norm:out->it.encoder:out:boundary",
+      "src": "it.encoder_norm",
+      "dst": "it.encoder",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.head:in->it.project:in:boundary",
+      "src": "it.head",
+      "dst": "it.project",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.project:out->it.restore:in:tensor",
+      "src": "it.project",
+      "dst": "it.restore",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.restore:out->it.select:in:tensor",
+      "src": "it.restore",
+      "dst": "it.select",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.select:out->it.head:out:boundary",
+      "src": "it.select",
+      "dst": "it.head",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.model:in->it.input:in:boundary",
+      "src": "it.model",
+      "dst": "it.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.input:out->it.normalize:in:tensor",
+      "src": "it.input",
+      "dst": "it.normalize",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.normalize:out->it.embedding:in:tensor",
+      "src": "it.normalize",
+      "dst": "it.embedding",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.embedding:out->it.encoder:in:tensor",
+      "src": "it.embedding",
+      "dst": "it.encoder",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.encoder:out->it.head:in:tensor",
+      "src": "it.encoder",
+      "dst": "it.head",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.head:out->it.denormalize:in:tensor",
+      "src": "it.head",
+      "dst": "it.denormalize",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.denormalize:out->it.output:in:tensor",
+      "src": "it.denormalize",
+      "dst": "it.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.output:out->it.model:out:boundary",
+      "src": "it.output",
+      "dst": "it.model",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.marks:in->it.marks_input:in:boundary",
+      "src": "it.marks",
+      "dst": "it.marks_input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "it.marks_input:out->it.marks_invert:in:tensor",
+      "src": "it.marks_input",
+      "dst": "it.marks_invert",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "it.marks_invert:out->it.marks:out:boundary",
+      "src": "it.marks_invert",
+      "dst": "it.marks",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "it.marks:out->it.concat:side:covariate",
+      "src": "it.marks",
+      "dst": "it.concat",
+      "src_port": "out",
+      "dst_port": "side",
+      "role": "covariate"
+    },
+    {
+      "id": "it.normalize:out->it.denormalize:side:statistics",
+      "src": "it.normalize",
+      "dst": "it.denormalize",
+      "src_port": "out",
+      "dst_port": "side",
+      "role": "statistics"
+    }
+  ],
+  "facts": [
+    "One variate is one token; attention is over T=N+C tokens, not L time steps.",
+    "Inverted embedding uses Linear(seq_len,d_model), with no positional embedding.",
+    "Optional x_mark_enc is appended as additional tokens before the same Linear.",
+    "FullAttention(False) and attn_mask=None mean no causal mask in this forecast path.",
+    "Encoder FFN is two kernel=1 Conv1d operations; GELU comes from selected CLI defaults.",
+    "Both encoder layers have independent parameters; final Encoder LayerNorm is additional.",
+    "Projection precedes output permutation; covariate forecasts are then discarded.",
+    "Input series statistics are reused for output denormalization; this is distinct from dataset scaling.",
+    "x_dec and x_mark_dec are accepted by forecast but unused in this model."
+  ],
+  "corrections": [
+    "Reference figure reverses output permute/projector order; code projects D->P before permute.",
+    "Reference figure omits covariate tokens, their output slicing, and series denormalization.",
+    "Reference figure omits the encoder's final LayerNorm after the repeated layers.",
+    "FFN labels now identify actual Conv1d(kernel=1) modules instead of only equivalent Linear operations.",
+    "Attention internals now flow bottom-to-top; Q/K generate A while V reaches A*V independently."
+  ],
+  "semantics": "reviewed static adapter; selected profile; boundary and tuple edges explicit"
+}

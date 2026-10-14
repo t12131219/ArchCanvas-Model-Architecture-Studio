@@ -1,0 +1,729 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "made_affine",
+  "profile": {
+    "num_inputs": 4,
+    "num_hidden": 8,
+    "num_cond_inputs": null,
+    "mode": "direct",
+    "pre_exp_tanh": false,
+    "independent_networks": false,
+    "head_order": [
+      "m",
+      "a"
+    ],
+    "inverse": "sequential coordinate loop; same parameters",
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "MADE forward direct branch only; inverse loop is documented rather than falsely parallelized.",
+    "source_contracts": [
+      [
+        "MADE.forward",
+        "(inputs - m) * torch.exp(-a)"
+      ],
+      [
+        "MADE.forward",
+        "-a.sum(-1, keepdim=True)"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "ikostrikov/pytorch-flows",
+    "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+    "snapshot": "c0ebb6c1af0b9d8f0b8140bbc16c5cf7122408fa79a5b25da427fac8d15d657a"
+  },
+  "nodes": [
+    {
+      "id": "made_affine.root",
+      "label": "MADE / autoregressive affine",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MADE.__init__",
+        "density-flow-modules/flows.py::MADE.forward",
+        "density-flow-modules/flows.py::MaskedLinear.__init__",
+        "density-flow-modules/flows.py::MaskedLinear.forward",
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "made_affine.x"
+        ],
+        [
+          "made_affine.body"
+        ],
+        [
+          "made_affine.u",
+          "made_affine.ld"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_affine.x",
+      "label": "Input x",
+      "kind": "input",
+      "source": [
+        "density-flow-modules/flows.py::MADE.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parent": "made_affine.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_affine.body",
+      "label": "MADE module",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MADE.__init__",
+        "density-flow-modules/flows.py::MADE.forward",
+        "density-flow-modules/flows.py::MaskedLinear.__init__",
+        "density-flow-modules/flows.py::MaskedLinear.forward",
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "made_affine.net"
+        ],
+        [
+          "made_affine.heads"
+        ],
+        [
+          "made_affine.shift",
+          "made_affine.scale",
+          "made_affine.det"
+        ],
+        [
+          "made_affine.affine"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "made_affine.root",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_affine.net",
+      "label": "Shared masked network",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MADE.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "made_affine.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_affine.netjoin",
+      "label": "MaskedLinear 4 -> 8",
+      "kind": "masked_linear",
+      "source": [
+        "density-flow-modules/flows.py::MADE.__init__",
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parameters": [
+        "joiner.linear.weight",
+        "joiner.linear.bias"
+      ],
+      "mask": "input",
+      "parent": "made_affine.net",
+      "source_evidence": [
+        "E001",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_affine.netact1",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "density-flow-modules/flows.py::MADE.__init__"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parent": "made_affine.net",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_affine.nethidden",
+      "label": "MaskedLinear 8 -> 8",
+      "kind": "masked_linear",
+      "source": [
+        "density-flow-modules/flows.py::MADE.__init__",
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parameters": [
+        "trunk.1.linear.weight",
+        "trunk.1.linear.bias"
+      ],
+      "mask": "hidden",
+      "parent": "made_affine.net",
+      "source_evidence": [
+        "E001",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_affine.netact2",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "density-flow-modules/flows.py::MADE.__init__"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parent": "made_affine.net",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_affine.netout",
+      "label": "MaskedLinear 8 -> 8",
+      "kind": "masked_linear",
+      "source": [
+        "density-flow-modules/flows.py::MADE.__init__",
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parameters": [
+        "trunk.3.linear.weight",
+        "trunk.3.linear.bias"
+      ],
+      "mask": "output",
+      "parent": "made_affine.net",
+      "source_evidence": [
+        "E001",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_affine.heads",
+      "label": "Split m and a",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MADE.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "made_affine.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "m",
+        "a"
+      ]
+    },
+    {
+      "id": "made_affine.chunk",
+      "label": "chunk(2,dim=1)",
+      "kind": "tensor",
+      "source": [
+        "density-flow-modules/flows.py::MADE.forward"
+      ],
+      "shape": "each [B,4]",
+      "detail": [],
+      "expression": "self.trunk(h).chunk(2, 1)",
+      "head_order": [
+        "m",
+        "a"
+      ],
+      "parent": "made_affine.heads",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_affine.shift",
+      "label": "Subtract conditional mean",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MADE.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "made_affine.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "m"
+      ]
+    },
+    {
+      "id": "made_affine.sub",
+      "label": "inputs - m",
+      "kind": "subtract",
+      "source": [
+        "density-flow-modules/flows.py::MADE.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "inputs - m",
+      "parent": "made_affine.shift",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_affine.scale",
+      "label": "Inverse scale",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MADE.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "made_affine.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_affine.exp",
+      "label": "exp(-a)",
+      "kind": "tensor",
+      "source": [
+        "density-flow-modules/flows.py::MADE.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "torch.exp(-a)",
+      "parent": "made_affine.scale",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_affine.affine",
+      "label": "Affine output",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MADE.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "made_affine.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "scale"
+      ]
+    },
+    {
+      "id": "made_affine.mul",
+      "label": "(inputs-m) * exp(-a)",
+      "kind": "multiply",
+      "source": [
+        "density-flow-modules/flows.py::MADE.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "(inputs - m) * torch.exp(-a)",
+      "parent": "made_affine.affine",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_affine.det",
+      "label": "Log determinant",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MADE.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "made_affine.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_affine.sum",
+      "label": "-a.sum(-1,keepdim=True)",
+      "kind": "density",
+      "source": [
+        "density-flow-modules/flows.py::MADE.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "expression": "-a.sum(-1, keepdim=True)",
+      "dim": -1,
+      "keepdim": true,
+      "parent": "made_affine.det",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_affine.u",
+      "label": "Transformed u",
+      "kind": "output",
+      "source": [
+        "density-flow-modules/flows.py::MADE.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parent": "made_affine.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_affine.ld",
+      "label": "Logdet per example",
+      "kind": "output",
+      "source": [
+        "density-flow-modules/flows.py::MADE.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "parent": "made_affine.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "made_affine.net:in->made_affine.netjoin:in:boundary",
+      "src": "made_affine.net",
+      "dst": "made_affine.netjoin",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "made_affine.netjoin:out->made_affine.netact1:in:tensor",
+      "src": "made_affine.netjoin",
+      "dst": "made_affine.netact1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_affine.netact1:out->made_affine.nethidden:in:tensor",
+      "src": "made_affine.netact1",
+      "dst": "made_affine.nethidden",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_affine.nethidden:out->made_affine.netact2:in:tensor",
+      "src": "made_affine.nethidden",
+      "dst": "made_affine.netact2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_affine.netact2:out->made_affine.netout:in:tensor",
+      "src": "made_affine.netact2",
+      "dst": "made_affine.netout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_affine.netout:out->made_affine.net:out:boundary",
+      "src": "made_affine.netout",
+      "dst": "made_affine.net",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "made_affine.heads:in->made_affine.chunk:in:boundary",
+      "src": "made_affine.heads",
+      "dst": "made_affine.chunk",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "made_affine.chunk:out->made_affine.heads:out:boundary",
+      "src": "made_affine.chunk",
+      "dst": "made_affine.heads",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "made_affine.shift:in->made_affine.sub:in:boundary",
+      "src": "made_affine.shift",
+      "dst": "made_affine.sub",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "made_affine.sub:out->made_affine.shift:out:boundary",
+      "src": "made_affine.sub",
+      "dst": "made_affine.shift",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "made_affine.scale:in->made_affine.exp:in:boundary",
+      "src": "made_affine.scale",
+      "dst": "made_affine.exp",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "made_affine.exp:out->made_affine.scale:out:boundary",
+      "src": "made_affine.exp",
+      "dst": "made_affine.scale",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "made_affine.affine:in->made_affine.mul:in:boundary",
+      "src": "made_affine.affine",
+      "dst": "made_affine.mul",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "made_affine.mul:out->made_affine.affine:out:boundary",
+      "src": "made_affine.mul",
+      "dst": "made_affine.affine",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "made_affine.det:in->made_affine.sum:in:boundary",
+      "src": "made_affine.det",
+      "dst": "made_affine.sum",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "made_affine.sum:out->made_affine.det:out:boundary",
+      "src": "made_affine.sum",
+      "dst": "made_affine.det",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "made_affine.x:out->made_affine.net:in:tensor",
+      "src": "made_affine.x",
+      "dst": "made_affine.net",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_affine.net:out->made_affine.heads:in:tensor",
+      "src": "made_affine.net",
+      "dst": "made_affine.heads",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_affine.heads:m->made_affine.shift:m:tensor",
+      "src": "made_affine.heads",
+      "dst": "made_affine.shift",
+      "src_port": "m",
+      "dst_port": "m",
+      "role": "tensor"
+    },
+    {
+      "id": "made_affine.heads:a->made_affine.scale:in:tensor",
+      "src": "made_affine.heads",
+      "dst": "made_affine.scale",
+      "src_port": "a",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_affine.heads:a->made_affine.det:in:tensor",
+      "src": "made_affine.heads",
+      "dst": "made_affine.det",
+      "src_port": "a",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_affine.x:out->made_affine.shift:in:retained_value",
+      "src": "made_affine.x",
+      "dst": "made_affine.shift",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "retained_value"
+    },
+    {
+      "id": "made_affine.shift:out->made_affine.affine:in:tensor",
+      "src": "made_affine.shift",
+      "dst": "made_affine.affine",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_affine.scale:out->made_affine.affine:scale:tensor",
+      "src": "made_affine.scale",
+      "dst": "made_affine.affine",
+      "src_port": "out",
+      "dst_port": "scale",
+      "role": "tensor"
+    },
+    {
+      "id": "made_affine.affine:out->made_affine.u:in:tensor",
+      "src": "made_affine.affine",
+      "dst": "made_affine.u",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_affine.det:out->made_affine.ld:in:tensor",
+      "src": "made_affine.det",
+      "dst": "made_affine.ld",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Degree masks enforce strict autoregressive dependence through the output degree offset; masks are registered buffers.",
+    "MADE shares a masked trunk and chunks its 2D output into m then a; pre_exp_tanh is accepted but unused by this class.",
+    "Inverse builds coordinates one at a time with the same learned networks; the direct view is a DAG, not that inverse execution.",
+    "The returned logdet follows the exact source expression. It is not a third sequential layer applied to u."
+  ],
+  "corrections": [
+    "Do not swap m/a, use dense unmasked hidden layers, or claim pre_exp_tanh acts in MADE."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

@@ -1,0 +1,565 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "glow_actnorm",
+  "profile": {
+    "channels": 8,
+    "input_shape": [
+      "B",
+      8,
+      8,
+      8
+    ],
+    "logdet": true,
+    "initialization": "one-time data-dependent",
+    "parameters": [
+      "loc",
+      "scale"
+    ],
+    "buffers": [
+      "initialized"
+    ],
+    "logdet_shape": "scalar",
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "Only ActNorm with logdet=True; reverse is documented, not drawn as forward.",
+    "source_contracts": [
+      [
+        "ActNorm.forward",
+        "self.scale * (input + self.loc)"
+      ],
+      [
+        "ActNorm.forward",
+        "height * width * torch.sum(log_abs)"
+      ],
+      [
+        "ActNorm.initialize",
+        "1 / (std + 1e-6)"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "rosinality/glow-pytorch",
+    "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+    "snapshot": "1d5cf48ba47a5ecf7ea7059a37c9d1584a95871f52d5022f76b59cc51138d2ce"
+  },
+  "nodes": [
+    {
+      "id": "glow_actnorm.root",
+      "label": "Glow ActNorm / data-initialized affine",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::ActNorm.__init__",
+        "glow-modules/model.py::ActNorm.initialize",
+        "glow-modules/model.py::ActNorm.forward",
+        "glow-modules/model.py::ActNorm.reverse"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "glow_actnorm.x",
+          "glow_actnorm.state"
+        ],
+        [
+          "glow_actnorm.body"
+        ],
+        [
+          "glow_actnorm.y",
+          "glow_actnorm.ld"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E003",
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_actnorm.x",
+      "label": "Input x",
+      "kind": "input",
+      "source": [
+        "glow-modules/model.py::ActNorm.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "parent": "glow_actnorm.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "glow_actnorm.state",
+      "label": "loc / scale + init flag",
+      "kind": "input",
+      "source": [
+        "glow-modules/model.py::ActNorm.__init__"
+      ],
+      "shape": "[1,8,1,1]",
+      "detail": [],
+      "parameters": [
+        "loc",
+        "scale"
+      ],
+      "buffers": [
+        "initialized"
+      ],
+      "parent": "glow_actnorm.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_actnorm.body",
+      "label": "Glow ActNorm module",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::ActNorm.__init__",
+        "glow-modules/model.py::ActNorm.initialize",
+        "glow-modules/model.py::ActNorm.forward",
+        "glow-modules/model.py::ActNorm.reverse"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "glow_actnorm.init"
+        ],
+        [
+          "glow_actnorm.affine",
+          "glow_actnorm.det"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "glow_actnorm.root",
+      "source_evidence": [
+        "E001",
+        "E003",
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_actnorm.init",
+      "label": "One-time initialization",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::ActNorm.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "flow_role": "control",
+      "mode": "chain",
+      "parent": "glow_actnorm.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_actnorm.guard",
+      "label": "If initialized == 0",
+      "kind": "control",
+      "source": [
+        "glow-modules/model.py::ActNorm.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "condition": "initialized.item()==0",
+      "parent": "glow_actnorm.init",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_actnorm.stats",
+      "label": "Channel mean / std",
+      "kind": "statistics",
+      "source": [
+        "glow-modules/model.py::ActNorm.initialize"
+      ],
+      "shape": "[1,8,1,1]",
+      "detail": [],
+      "axes": [
+        0,
+        2,
+        3
+      ],
+      "std_correction": "torch.std default; version boundary",
+      "parent": "glow_actnorm.init",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "glow_actnorm.copy",
+      "label": "Copy loc=-mean; scale=1/(std+eps)",
+      "kind": "control",
+      "source": [
+        "glow-modules/model.py::ActNorm.initialize",
+        "glow-modules/model.py::ActNorm.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "epsilon": 1e-06,
+      "updates": [
+        "loc.data",
+        "scale.data",
+        "initialized=1"
+      ],
+      "once_only": true,
+      "parent": "glow_actnorm.init",
+      "source_evidence": [
+        "E003",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_actnorm.affine",
+      "label": "Broadcast affine",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::ActNorm.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "glow_actnorm.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_actnorm.shift",
+      "label": "x + loc",
+      "kind": "add",
+      "source": [
+        "glow-modules/model.py::ActNorm.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "expression": "input + self.loc",
+      "parent": "glow_actnorm.affine",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_actnorm.scale",
+      "label": "scale * shifted x",
+      "kind": "multiply",
+      "source": [
+        "glow-modules/model.py::ActNorm.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "expression": "self.scale * (input + self.loc)",
+      "parameters": [
+        "scale",
+        "loc"
+      ],
+      "parent": "glow_actnorm.affine",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_actnorm.det",
+      "label": "Log-volume contribution",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::ActNorm.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "glow_actnorm.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_actnorm.abslog",
+      "label": "log(abs(scale))",
+      "kind": "tensor",
+      "source": [
+        "glow-modules/model.py::ActNorm.forward"
+      ],
+      "shape": "[1,8,1,1]",
+      "detail": [],
+      "expression": "logabs(self.scale)",
+      "parent": "glow_actnorm.det",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_actnorm.sum",
+      "label": "H*W * sum log(abs(scale))",
+      "kind": "density",
+      "source": [
+        "glow-modules/model.py::ActNorm.forward"
+      ],
+      "shape": "scalar",
+      "detail": [],
+      "spatial_factor": 64,
+      "expression": "height * width * torch.sum(log_abs)",
+      "parent": "glow_actnorm.det",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "glow_actnorm.y",
+      "label": "Affine output y",
+      "kind": "output",
+      "source": [
+        "glow-modules/model.py::ActNorm.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "parent": "glow_actnorm.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_actnorm.ld",
+      "label": "logdet / scalar",
+      "kind": "output",
+      "source": [
+        "glow-modules/model.py::ActNorm.forward"
+      ],
+      "shape": "scalar",
+      "detail": [],
+      "parent": "glow_actnorm.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "glow_actnorm.guard:out->glow_actnorm.stats:in:control",
+      "src": "glow_actnorm.guard",
+      "dst": "glow_actnorm.stats",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "control"
+    },
+    {
+      "id": "glow_actnorm.stats:out->glow_actnorm.copy:in:control",
+      "src": "glow_actnorm.stats",
+      "dst": "glow_actnorm.copy",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "control"
+    },
+    {
+      "id": "glow_actnorm.copy:out->glow_actnorm.init:out:boundary",
+      "src": "glow_actnorm.copy",
+      "dst": "glow_actnorm.init",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_actnorm.affine:in->glow_actnorm.shift:in:boundary",
+      "src": "glow_actnorm.affine",
+      "dst": "glow_actnorm.shift",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_actnorm.shift:out->glow_actnorm.scale:in:tensor",
+      "src": "glow_actnorm.shift",
+      "dst": "glow_actnorm.scale",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_actnorm.scale:out->glow_actnorm.affine:out:boundary",
+      "src": "glow_actnorm.scale",
+      "dst": "glow_actnorm.affine",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_actnorm.det:in->glow_actnorm.abslog:in:boundary",
+      "src": "glow_actnorm.det",
+      "dst": "glow_actnorm.abslog",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_actnorm.abslog:out->glow_actnorm.sum:in:tensor",
+      "src": "glow_actnorm.abslog",
+      "dst": "glow_actnorm.sum",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_actnorm.sum:out->glow_actnorm.det:out:boundary",
+      "src": "glow_actnorm.sum",
+      "dst": "glow_actnorm.det",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_actnorm.x:out->glow_actnorm.stats:input:tensor",
+      "src": "glow_actnorm.x",
+      "dst": "glow_actnorm.stats",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_actnorm.state:out->glow_actnorm.guard:in:state",
+      "src": "glow_actnorm.state",
+      "dst": "glow_actnorm.guard",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "state"
+    },
+    {
+      "id": "glow_actnorm.init:out->glow_actnorm.affine:in:state",
+      "src": "glow_actnorm.init",
+      "dst": "glow_actnorm.affine",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "state"
+    },
+    {
+      "id": "glow_actnorm.x:out->glow_actnorm.affine:in:tensor",
+      "src": "glow_actnorm.x",
+      "dst": "glow_actnorm.affine",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_actnorm.init:out->glow_actnorm.det:in:state",
+      "src": "glow_actnorm.init",
+      "dst": "glow_actnorm.det",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "state"
+    },
+    {
+      "id": "glow_actnorm.affine:out->glow_actnorm.y:in:tensor",
+      "src": "glow_actnorm.affine",
+      "dst": "glow_actnorm.y",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_actnorm.det:out->glow_actnorm.ld:in:tensor",
+      "src": "glow_actnorm.det",
+      "dst": "glow_actnorm.ld",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_actnorm.x:shape->glow_actnorm.sum:shape:shape_dependency",
+      "src": "glow_actnorm.x",
+      "dst": "glow_actnorm.sum",
+      "src_port": "shape",
+      "dst_port": "shape",
+      "role": "shape_dependency"
+    }
+  ],
+  "facts": [
+    "loc and scale are learned Parameters, initialized from the first input under no_grad; initialized is a uint8 buffer.",
+    "Returned logdet is one scalar shared across batch, not a per-example vector. The data stream and determinant are separate outputs.",
+    "Reverse is output/scale-loc. Source torch.std default is left version-dependent."
+  ],
+  "corrections": [
+    "Do not draw logscale as the stored parameter: this implementation stores scale directly.",
+    "No batch-statistics recomputation after initialized becomes 1."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

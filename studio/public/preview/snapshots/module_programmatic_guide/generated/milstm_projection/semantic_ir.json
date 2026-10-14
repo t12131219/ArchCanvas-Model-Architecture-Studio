@@ -1,0 +1,630 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "milstm_projection",
+  "profile": {
+    "input_size": 12,
+    "hidden_size": 16,
+    "gate_width": 64,
+    "coefficient_shape": [
+      64
+    ],
+    "boundary_variable": "gates",
+    "actual_function_return": [
+      "hy",
+      "cy"
+    ],
+    "kernel_origin": "supplementary PyTorch benchmark; not rasbt notebook kernel",
+    "label": "Gate preactivation only / I12,H16 / alpha,beta_i,beta_h,bias supplied",
+    "mode": "reviewed static selected module profile",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "pytorch/pytorch",
+    "commit": "a8d6afb511a69687bbb2b7e88a3cf67917e1697e",
+    "snapshot": "c792f152fe79d547f576dbbc3ff5295b8f6a8dc0e3812f8d5ec2d3ddf6ccc3e6"
+  },
+  "nodes": [
+    {
+      "id": "milstm_projection.root",
+      "label": "MI-LSTM / multiplicative gate integration",
+      "kind": "group",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::milstm_cell"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "mi.x",
+          "mi.h",
+          "mi.params"
+        ],
+        [
+          "mi.body"
+        ],
+        [
+          "mi.output"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mi.x",
+      "label": "Current input x",
+      "kind": "input",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::milstm_cell"
+      ],
+      "shape": "[B,12]",
+      "detail": [],
+      "parent": "milstm_projection.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mi.h",
+      "label": "Previous hidden hx",
+      "kind": "input",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::milstm_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "milstm_projection.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mi.params",
+      "label": "Caller weights / coefficients",
+      "kind": "input",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::milstm_cell"
+      ],
+      "shape": "W_ih:[64,12]; W_hh:[64,16]; vectors:[64]",
+      "detail": [],
+      "registered_in_function": false,
+      "parent": "milstm_projection.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "w_ih",
+        "w_hh",
+        "alpha",
+        "beta_i",
+        "beta_h",
+        "bias"
+      ]
+    },
+    {
+      "id": "mi.body",
+      "label": "MI gate preactivation subgraph",
+      "kind": "group",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::milstm_cell"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "mi.wx",
+          "mi.uz"
+        ],
+        [
+          "mi.coupling",
+          "mi.input_term",
+          "mi.hidden_term"
+        ],
+        [
+          "mi.add_input"
+        ],
+        [
+          "mi.add_hidden"
+        ],
+        [
+          "mi.bias"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": "milstm_projection.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mi.wx",
+      "label": "Input projection / Wx",
+      "kind": "linear",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::milstm_cell"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "parameters": [
+        "w_ih"
+      ],
+      "bias": false,
+      "weight_shape": [
+        64,
+        12
+      ],
+      "expression": "x.mm(w_ih.t())",
+      "parameter_origin": "caller Tensor argument",
+      "parent": "mi.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input",
+        "w_ih"
+      ]
+    },
+    {
+      "id": "mi.uz",
+      "label": "Hidden projection / Uz",
+      "kind": "linear",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::milstm_cell"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "parameters": [
+        "w_hh"
+      ],
+      "bias": false,
+      "weight_shape": [
+        64,
+        16
+      ],
+      "expression": "hx.mm(w_hh.t())",
+      "parameter_origin": "caller Tensor argument",
+      "parent": "mi.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "hidden",
+        "w_hh"
+      ]
+    },
+    {
+      "id": "mi.coupling",
+      "label": "Coupling term",
+      "kind": "group",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::milstm_cell"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "mi.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mi.alpha_wx",
+      "label": "alpha * Wx",
+      "kind": "multiply",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::milstm_cell"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "parameters": [
+        "alpha"
+      ],
+      "parameter_shape": [
+        64
+      ],
+      "expression": "alpha * Wx",
+      "parent": "mi.coupling",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "Wx",
+        "alpha"
+      ]
+    },
+    {
+      "id": "mi.product",
+      "label": "(alpha * Wx) * Uz",
+      "kind": "multiply",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::milstm_cell"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "expression": "alpha * Wx * Uz",
+      "parent": "mi.coupling",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "Uz"
+      ]
+    },
+    {
+      "id": "mi.input_term",
+      "label": "beta_i * Wx",
+      "kind": "multiply",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::milstm_cell"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "parameters": [
+        "beta_i"
+      ],
+      "parameter_shape": [
+        64
+      ],
+      "expression": "beta_i * Wx",
+      "parent": "mi.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "Wx",
+        "beta_i"
+      ]
+    },
+    {
+      "id": "mi.hidden_term",
+      "label": "beta_h * Uz",
+      "kind": "multiply",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::milstm_cell"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "parameters": [
+        "beta_h"
+      ],
+      "parameter_shape": [
+        64
+      ],
+      "expression": "beta_h * Uz",
+      "parent": "mi.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "Uz",
+        "beta_h"
+      ]
+    },
+    {
+      "id": "mi.add_input",
+      "label": "Coupling + input term",
+      "kind": "add",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::milstm_cell"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "ordered_operands": [
+        "alpha * Wx * Uz",
+        "beta_i * Wx"
+      ],
+      "parent": "mi.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "coupling",
+        "input_term"
+      ]
+    },
+    {
+      "id": "mi.add_hidden",
+      "label": "Add hidden term",
+      "kind": "add",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::milstm_cell"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "ordered_operands": [
+        "coupling_plus_input",
+        "beta_h * Uz"
+      ],
+      "parent": "mi.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "partial",
+        "hidden_term"
+      ]
+    },
+    {
+      "id": "mi.bias",
+      "label": "Add one gate bias",
+      "kind": "add",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::milstm_cell"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "parameters": [
+        "bias"
+      ],
+      "parameter_shape": [
+        64
+      ],
+      "expression": "alpha * Wx * Uz + beta_i * Wx + beta_h * Uz + bias",
+      "registered_in_function": false,
+      "parent": "mi.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "partial",
+        "bias"
+      ]
+    },
+    {
+      "id": "mi.output",
+      "label": "Boundary: gates before chunk",
+      "kind": "output",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::milstm_cell"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "actual_return": false,
+      "boundary_variable": "gates",
+      "next_source_operation": "gates.chunk(4, 1)",
+      "actual_function_return": [
+        "hy",
+        "cy"
+      ],
+      "parent": "milstm_projection.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "gates"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "mi.coupling:in->mi.alpha_wx:in:boundary",
+      "src": "mi.coupling",
+      "dst": "mi.alpha_wx",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mi.alpha_wx:out->mi.product:in:tensor",
+      "src": "mi.alpha_wx",
+      "dst": "mi.product",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.product:out->mi.coupling:out:boundary",
+      "src": "mi.product",
+      "dst": "mi.coupling",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mi.x:out->mi.wx:input:tensor",
+      "src": "mi.x",
+      "dst": "mi.wx",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.h:out->mi.uz:hidden:tensor",
+      "src": "mi.h",
+      "dst": "mi.uz",
+      "src_port": "out",
+      "dst_port": "hidden",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.wx:out->mi.alpha_wx:Wx:tensor",
+      "src": "mi.wx",
+      "dst": "mi.alpha_wx",
+      "src_port": "out",
+      "dst_port": "Wx",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.uz:out->mi.product:Uz:tensor",
+      "src": "mi.uz",
+      "dst": "mi.product",
+      "src_port": "out",
+      "dst_port": "Uz",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.wx:out->mi.input_term:Wx:tensor",
+      "src": "mi.wx",
+      "dst": "mi.input_term",
+      "src_port": "out",
+      "dst_port": "Wx",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.uz:out->mi.hidden_term:Uz:tensor",
+      "src": "mi.uz",
+      "dst": "mi.hidden_term",
+      "src_port": "out",
+      "dst_port": "Uz",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.product:out->mi.add_input:coupling:tensor",
+      "src": "mi.product",
+      "dst": "mi.add_input",
+      "src_port": "out",
+      "dst_port": "coupling",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.input_term:out->mi.add_input:input_term:tensor",
+      "src": "mi.input_term",
+      "dst": "mi.add_input",
+      "src_port": "out",
+      "dst_port": "input_term",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.add_input:out->mi.add_hidden:partial:tensor",
+      "src": "mi.add_input",
+      "dst": "mi.add_hidden",
+      "src_port": "out",
+      "dst_port": "partial",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.hidden_term:out->mi.add_hidden:hidden_term:tensor",
+      "src": "mi.hidden_term",
+      "dst": "mi.add_hidden",
+      "src_port": "out",
+      "dst_port": "hidden_term",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.add_hidden:out->mi.bias:partial:tensor",
+      "src": "mi.add_hidden",
+      "dst": "mi.bias",
+      "src_port": "out",
+      "dst_port": "partial",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.bias:out->mi.output:gates:tensor",
+      "src": "mi.bias",
+      "dst": "mi.output",
+      "src_port": "out",
+      "dst_port": "gates",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.params:w_ih->mi.wx:w_ih:tensor",
+      "src": "mi.params",
+      "dst": "mi.wx",
+      "src_port": "w_ih",
+      "dst_port": "w_ih",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.params:w_hh->mi.uz:w_hh:tensor",
+      "src": "mi.params",
+      "dst": "mi.uz",
+      "src_port": "w_hh",
+      "dst_port": "w_hh",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.params:alpha->mi.alpha_wx:alpha:tensor",
+      "src": "mi.params",
+      "dst": "mi.alpha_wx",
+      "src_port": "alpha",
+      "dst_port": "alpha",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.params:beta_i->mi.input_term:beta_i:tensor",
+      "src": "mi.params",
+      "dst": "mi.input_term",
+      "src_port": "beta_i",
+      "dst_port": "beta_i",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.params:beta_h->mi.hidden_term:beta_h:tensor",
+      "src": "mi.params",
+      "dst": "mi.hidden_term",
+      "src_port": "beta_h",
+      "dst_port": "beta_h",
+      "role": "tensor"
+    },
+    {
+      "id": "mi.params:bias->mi.bias:bias:tensor",
+      "src": "mi.params",
+      "dst": "mi.bias",
+      "src_port": "bias",
+      "dst_port": "bias",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Multiplicative integration introduces alpha*Wx*Uz plus independently weighted input and hidden terms before the ordinary four-gate LSTM suffix.",
+    "The source multiplication is left-associated: alpha*Wx first, then multiply Uz; the diagram retains that operation order.",
+    "Matrix projections have no separate b_ih/b_hh; a single supplied gate bias is added after the three terms.",
+    "This is a source subgraph with gates as its chosen boundary; milstm_cell actually continues with chunk4 and returns hy,cy.",
+    "Coefficient vectors and matrix weights are caller Tensor arguments; the function itself registers no Parameters."
+  ],
+  "corrections": [
+    "Do not replace the interaction term by Wx+Uz or confuse beta_i with beta_h.",
+    "Do not claim gates is a source function return or that this benchmark implements the directory notebook kernel."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

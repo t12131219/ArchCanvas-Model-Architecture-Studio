@@ -1,0 +1,154 @@
+{
+  "schema": "residual-teaching-annotation/1",
+  "kind": "teaching annotation; not a concrete model analysis or execution",
+  "equation": "z = LN(x + Dropout(F(x)))",
+  "computation_direction": "bottom-to-top",
+  "minimum_terminal": 18,
+  "canvas": [
+    504,
+    392
+  ],
+  "boxes": {
+    "input_x": [
+      208.0,
+      296,
+      120,
+      40
+    ],
+    "F": [
+      88,
+      136,
+      360,
+      136
+    ],
+    "add_norm": [
+      88,
+      56,
+      360,
+      56
+    ]
+  },
+  "ports": {
+    "input_x": {
+      "in": [
+        268.0,
+        336
+      ],
+      "out": [
+        268.0,
+        296
+      ],
+      "skip": [
+        208.0,
+        316.0
+      ]
+    },
+    "F": {
+      "in": [
+        268.0,
+        272
+      ],
+      "out": [
+        268.0,
+        136
+      ],
+      "skip": [
+        88,
+        204.0
+      ]
+    },
+    "add_norm": {
+      "in": [
+        268.0,
+        112
+      ],
+      "out": [
+        268.0,
+        56
+      ],
+      "skip": [
+        88,
+        84.0
+      ]
+    }
+  },
+  "routes": [
+    {
+      "id": "main-F-to-norm",
+      "src": "F:out",
+      "dst": "add_norm:in",
+      "role": "transformed_value",
+      "points": [
+        [
+          268.0,
+          136
+        ],
+        [
+          268.0,
+          112
+        ]
+      ],
+      "arrow": true
+    },
+    {
+      "id": "input-to-F",
+      "src": "input_x:out",
+      "dst": "F:in",
+      "role": "tensor",
+      "points": [
+        [
+          268.0,
+          296
+        ],
+        [
+          268.0,
+          272
+        ]
+      ],
+      "arrow": true
+    },
+    {
+      "id": "retained-x-to-norm",
+      "src": "input_x:out",
+      "dst": "add_norm:skip",
+      "role": "retained_input",
+      "points": [
+        [
+          268.0,
+          296
+        ],
+        [
+          268.0,
+          284.0
+        ],
+        [
+          56,
+          284.0
+        ],
+        [
+          56,
+          84.0
+        ],
+        [
+          88,
+          84.0
+        ]
+      ],
+      "arrow": true
+    }
+  ],
+  "contracts": {
+    "main": [
+      "F:out",
+      "add_norm:in"
+    ],
+    "input": [
+      "input_x:out",
+      "F:in"
+    ],
+    "residual": [
+      "input_x:out",
+      "add_norm:skip"
+    ]
+  }
+}

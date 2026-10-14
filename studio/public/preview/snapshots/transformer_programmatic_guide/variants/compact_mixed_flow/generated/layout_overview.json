@@ -1,0 +1,2905 @@
+{
+  "view": "overview",
+  "canvas": [
+    1600,
+    1218
+  ],
+  "semantic_ir_sha256": "8790f318d62e30ff86ffd7b8a8910a725a8da5395e9c5d02debb4491cc6c4f4a",
+  "source_sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+  "measurement": "rule-based intrinsic heights and conservative text allowance; no pixel font measurement",
+  "routing": {
+    "marker_units": "userSpaceOnUse",
+    "arrow_length": 9,
+    "minimum_terminal": 18,
+    "inner_inset": 18,
+    "computation_direction": "mixed; macro bottom-to-top, attention top-to-bottom",
+    "downward_exceptions": [
+      "encoder-memory-to-cross",
+      "encoder-memory-to-cross-015"
+    ]
+  },
+  "semantic_projection": {
+    "schema": "transformer-source-terminals/1",
+    "edge_dispositions": [
+      {
+        "edge": "src_pe:in->src_pe.add:x",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "src_embed:out",
+            "dst": "src_pe.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "src_pe.buffer:out->src_pe.add:pe",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "src_pe.buffer:out",
+            "dst": "src_pe.add:pe"
+          }
+        ]
+      },
+      {
+        "edge": "src_pe.add:out->src_pe.dropout:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.self:in"
+          },
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.norm1:skip"
+          }
+        ]
+      },
+      {
+        "edge": "src_pe.dropout:out->src_pe:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.self:in"
+          },
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.norm1:skip"
+          }
+        ]
+      },
+      {
+        "edge": "src_tokens:out->src_embed:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "src_tokens:out",
+            "dst": "src_embed:in"
+          }
+        ]
+      },
+      {
+        "edge": "src_embed:out->src_pe:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "src_embed:out",
+            "dst": "src_pe.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "tgt_pe:in->tgt_pe.add:x",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "tgt_embed:out",
+            "dst": "tgt_pe.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "tgt_pe.buffer:out->tgt_pe.add:pe",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "tgt_pe.buffer:out",
+            "dst": "tgt_pe.add:pe"
+          }
+        ]
+      },
+      {
+        "edge": "tgt_pe.add:out->tgt_pe.dropout:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.self:in"
+          },
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.norm1:skip"
+          }
+        ]
+      },
+      {
+        "edge": "tgt_pe.dropout:out->tgt_pe:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": [
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.self:in"
+          },
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.norm1:skip"
+          }
+        ]
+      },
+      {
+        "edge": "tgt_tokens:out->tgt_embed:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "tgt_tokens:out",
+            "dst": "tgt_embed:in"
+          }
+        ]
+      },
+      {
+        "edge": "tgt_embed:out->tgt_pe:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "tgt_embed:out",
+            "dst": "tgt_pe.add:x"
+          }
+        ]
+      },
+      {
+        "edge": "src_pe:out->enc.self:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.self:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.self:in->enc.self.q:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self:in->enc.self.k:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self:in->enc.self.v:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.q:out->enc.self.split:q_in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.split:q_out->enc.self.sdpa:q",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.k:out->enc.self.split:k_in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.split:k_out->enc.self.sdpa:k",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.v:out->enc.self.split:v_in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.split:v_out->enc.self.sdpa:v",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.sdpa:out->enc.self.merge:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.merge:out->enc.self.wo:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.sdpa.qkt:out->enc.self.sdpa.scale:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.sdpa.scale:out->enc.self.sdpa.mask:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.sdpa.mask:out->enc.self.sdpa.softmax:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.sdpa.softmax:out->enc.self.sdpa.nan_guard:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.sdpa.nan_guard:out->enc.self.sdpa.attn_dropout:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.sdpa.attn_dropout:out->enc.self.sdpa.av:a",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.sdpa:q->enc.self.sdpa.qkt:q",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.sdpa:k->enc.self.sdpa.qkt:k",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.sdpa:v->enc.self.sdpa.av:v",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.sdpa.av:out->enc.self.sdpa:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self.wo:out->enc.self:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.norm1:in->enc.norm1.branch_dropout:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.norm1.branch_dropout:out->enc.norm1.add:f",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.norm1:skip->enc.norm1.add:x",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.norm1.add:out->enc.norm1.layernorm:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.norm1.layernorm:out->enc.norm1:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.self:out->enc.norm1:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.self:out",
+            "dst": "enc.norm1:in"
+          }
+        ]
+      },
+      {
+        "edge": "src_pe:out->enc.norm1:skip",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "src_pe.add:out",
+            "dst": "enc.norm1:skip"
+          }
+        ]
+      },
+      {
+        "edge": "enc.norm1:out->enc.ffn:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.norm1:out",
+            "dst": "enc.ffn:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.ffn.linear1:out->enc.ffn.relu:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.ffn.relu:out->enc.ffn.dropout:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.ffn.dropout:out->enc.ffn.linear2:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.ffn:in->enc.ffn.linear1:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.ffn.linear2:out->enc.ffn:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.norm2:in->enc.norm2.branch_dropout:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.norm2.branch_dropout:out->enc.norm2.add:f",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.norm2:skip->enc.norm2.add:x",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.norm2.add:out->enc.norm2.layernorm:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.norm2.layernorm:out->enc.norm2:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "enc.ffn:out->enc.norm2:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.ffn:out",
+            "dst": "enc.norm2:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.norm1:out->enc.norm2:skip",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.norm1:out",
+            "dst": "enc.norm2:skip"
+          }
+        ]
+      },
+      {
+        "edge": "enc.norm2:out->enc.output:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.norm2:out",
+            "dst": "dec.cross:memory"
+          }
+        ]
+      },
+      {
+        "edge": "tgt_pe:out->dec.self:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.self:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.self:in->dec.self.q:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self:in->dec.self.k:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self:in->dec.self.v:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.q:out->dec.self.split:q_in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.split:q_out->dec.self.sdpa:q",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.k:out->dec.self.split:k_in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.split:k_out->dec.self.sdpa:k",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.v:out->dec.self.split:v_in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.split:v_out->dec.self.sdpa:v",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.sdpa:out->dec.self.merge:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.merge:out->dec.self.wo:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.sdpa.qkt:out->dec.self.sdpa.scale:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.sdpa.scale:out->dec.self.sdpa.mask:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.sdpa.mask:out->dec.self.sdpa.softmax:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.sdpa.softmax:out->dec.self.sdpa.nan_guard:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.sdpa.nan_guard:out->dec.self.sdpa.attn_dropout:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.sdpa.attn_dropout:out->dec.self.sdpa.av:a",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.sdpa:q->dec.self.sdpa.qkt:q",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.sdpa:k->dec.self.sdpa.qkt:k",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.sdpa:v->dec.self.sdpa.av:v",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.sdpa.av:out->dec.self.sdpa:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self.wo:out->dec.self:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.norm1:in->dec.norm1.branch_dropout:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.norm1.branch_dropout:out->dec.norm1.add:f",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.norm1:skip->dec.norm1.add:x",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.norm1.add:out->dec.norm1.layernorm:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.norm1.layernorm:out->dec.norm1:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.self:out->dec.norm1:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.self:out",
+            "dst": "dec.norm1:in"
+          }
+        ]
+      },
+      {
+        "edge": "tgt_pe:out->dec.norm1:skip",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "tgt_pe.add:out",
+            "dst": "dec.norm1:skip"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm1:out->dec.cross:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.norm1:out",
+            "dst": "dec.cross:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.cross:in->dec.cross.q:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross:memory->dec.cross.k:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross:memory->dec.cross.v:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.q:out->dec.cross.split:q_in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.split:q_out->dec.cross.sdpa:q",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.k:out->dec.cross.split:k_in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.split:k_out->dec.cross.sdpa:k",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.v:out->dec.cross.split:v_in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.split:v_out->dec.cross.sdpa:v",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa:out->dec.cross.merge:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.merge:out->dec.cross.wo:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa.qkt:out->dec.cross.sdpa.scale:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa.scale:out->dec.cross.sdpa.mask:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa.mask:out->dec.cross.sdpa.softmax:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa.softmax:out->dec.cross.sdpa.nan_guard:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa.nan_guard:out->dec.cross.sdpa.attn_dropout:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa.attn_dropout:out->dec.cross.sdpa.av:a",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa:q->dec.cross.sdpa.qkt:q",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa:k->dec.cross.sdpa.qkt:k",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa:v->dec.cross.sdpa.av:v",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.sdpa.av:out->dec.cross.sdpa:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross.wo:out->dec.cross:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.norm2:in->dec.norm2.branch_dropout:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.norm2.branch_dropout:out->dec.norm2.add:f",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.norm2:skip->dec.norm2.add:x",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.norm2.add:out->dec.norm2.layernorm:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.norm2.layernorm:out->dec.norm2:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.cross:out->dec.norm2:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.cross:out",
+            "dst": "dec.norm2:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm1:out->dec.norm2:skip",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.norm1:out",
+            "dst": "dec.norm2:skip"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm2:out->dec.ffn:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.norm2:out",
+            "dst": "dec.ffn:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.ffn.linear1:out->dec.ffn.relu:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.ffn.relu:out->dec.ffn.dropout:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.ffn.dropout:out->dec.ffn.linear2:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.ffn:in->dec.ffn.linear1:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.ffn.linear2:out->dec.ffn:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.norm3:in->dec.norm3.branch_dropout:in",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.norm3.branch_dropout:out->dec.norm3.add:f",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.norm3:skip->dec.norm3.add:x",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.norm3.add:out->dec.norm3.layernorm:in",
+        "status": "folded_inside_same_visible_source_scope",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.norm3.layernorm:out->dec.norm3:out",
+        "status": "declared_source_interface_alias",
+        "projected_connections": []
+      },
+      {
+        "edge": "dec.ffn:out->dec.norm3:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.ffn:out",
+            "dst": "dec.norm3:in"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm2:out->dec.norm3:skip",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.norm2:out",
+            "dst": "dec.norm3:skip"
+          }
+        ]
+      },
+      {
+        "edge": "dec.norm3:out->dec.output:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.norm3:out",
+            "dst": "generator:in"
+          }
+        ]
+      },
+      {
+        "edge": "enc.output:out->dec.cross:memory",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "enc.norm2:out",
+            "dst": "dec.cross:memory"
+          }
+        ]
+      },
+      {
+        "edge": "dec.output:out->generator:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "dec.norm3:out",
+            "dst": "generator:in"
+          }
+        ]
+      },
+      {
+        "edge": "generator:out->logits:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "generator:out",
+            "dst": "probabilities:in"
+          }
+        ]
+      },
+      {
+        "edge": "logits:out->probabilities:in",
+        "status": "rendered_source_connection",
+        "projected_connections": [
+          {
+            "src": "generator:out",
+            "dst": "probabilities:in"
+          }
+        ]
+      }
+    ],
+    "scaffold_paths": 25,
+    "source_connections": 24,
+    "value_aliases": [
+      {
+        "id": "enc.memory.value",
+        "owner": "enc.output:out",
+        "bbox": [
+          720.0,
+          318,
+          160,
+          104
+        ],
+        "flow": "down",
+        "in": [
+          800.0,
+          318
+        ],
+        "out": [
+          800.0,
+          422
+        ]
+      }
+    ],
+    "mode": "source IR selects glyph terminals; geometric network selects route",
+    "physical_routing": {
+      "schema": "semantic-physical-ports/2",
+      "binding_authority": "canonical source IR",
+      "geometry_authority": "editable presentation",
+      "objective": "short legal orthogonal routes with few bends",
+      "caption_policy": "canonical source route selects caption identity; editable path anchors follow displayed geometry",
+      "border_policy": "painted shaft and frame half-widths plus 2px air gap; corner gates and shared forks adapt within source scope",
+      "gate_policy": "source-recorded straight ancestor exits follow their endpoint; gate side and hierarchy stay fixed",
+      "protected": [
+        "value-alias flow",
+        "branch stems",
+        "folded field slots",
+        "container side gates"
+      ]
+    },
+    "junction_markers": [
+      {
+        "id": "source-fork-1",
+        "point": [
+          382.0,
+          470.0
+        ],
+        "canonical_src": "enc.norm1:out",
+        "routes": [
+          "binding-012",
+          "binding-014"
+        ],
+        "geometry": "intersection of registered source routes",
+        "kind": "tensor-fork"
+      },
+      {
+        "id": "source-fork-2",
+        "point": [
+          382.0,
+          670.0
+        ],
+        "canonical_src": "src_pe.add:out",
+        "routes": [
+          "binding-002",
+          "binding-003"
+        ],
+        "geometry": "intersection of registered source routes",
+        "kind": "tensor-fork"
+      },
+      {
+        "id": "source-fork-3",
+        "point": [
+          1238.0,
+          470.0
+        ],
+        "canonical_src": "dec.norm2:out",
+        "routes": [
+          "binding-021",
+          "binding-023"
+        ],
+        "geometry": "intersection of registered source routes",
+        "kind": "tensor-fork"
+      },
+      {
+        "id": "source-fork-4",
+        "point": [
+          1238.0,
+          670.0
+        ],
+        "canonical_src": "dec.norm1:out",
+        "routes": [
+          "binding-018",
+          "binding-020"
+        ],
+        "geometry": "intersection of registered source routes",
+        "kind": "tensor-fork"
+      },
+      {
+        "id": "source-fork-5",
+        "point": [
+          1238.0,
+          870.0
+        ],
+        "canonical_src": "tgt_pe.add:out",
+        "routes": [
+          "binding-007",
+          "binding-008"
+        ],
+        "geometry": "intersection of registered source routes",
+        "kind": "tensor-fork"
+      }
+    ]
+  },
+  "attachments": [
+    {
+      "id": "label-1",
+      "owner": "probabilities",
+      "kind": "label",
+      "bbox": [
+        1000.85,
+        117.91999999999999,
+        474.3,
+        40.12
+      ],
+      "source_owner": "probabilities"
+    },
+    {
+      "id": "label-2",
+      "owner": "generator",
+      "kind": "label",
+      "bbox": [
+        1053.8600000000001,
+        200.3,
+        368.28,
+        21.24
+      ],
+      "source_owner": "generator"
+    },
+    {
+      "id": "label-3",
+      "owner": "generator",
+      "kind": "label",
+      "bbox": [
+        1456.0,
+        198,
+        66.96,
+        21.24
+      ],
+      "source_owner": "generator"
+    },
+    {
+      "id": "label-4",
+      "owner": "enc.layer_i",
+      "kind": "label",
+      "bbox": [
+        62,
+        243,
+        270.94,
+        27.139999999999997
+      ],
+      "source_owner": "enc.layer_i"
+    },
+    {
+      "id": "label-5",
+      "owner": "enc.norm2",
+      "kind": "label",
+      "bbox": [
+        181.74,
+        321.0,
+        400.52,
+        22.419999999999998
+      ],
+      "source_owner": "enc.norm2"
+    },
+    {
+      "id": "label-6",
+      "owner": "enc.ffn",
+      "kind": "label",
+      "bbox": [
+        171.2,
+        390,
+        421.6,
+        23.599999999999998
+      ],
+      "source_owner": "enc.ffn"
+    },
+    {
+      "id": "label-7",
+      "owner": "enc.ffn",
+      "kind": "label",
+      "bbox": [
+        197.55,
+        419,
+        368.9,
+        20.06
+      ],
+      "source_owner": "enc.ffn"
+    },
+    {
+      "id": "label-8",
+      "owner": "enc.norm1",
+      "kind": "label",
+      "bbox": [
+        181.74,
+        495.0,
+        400.52,
+        22.419999999999998
+      ],
+      "source_owner": "enc.norm1"
+    },
+    {
+      "id": "label-9",
+      "owner": "enc.self",
+      "kind": "label",
+      "bbox": [
+        245.6,
+        564,
+        272.8,
+        23.599999999999998
+      ],
+      "source_owner": "enc.self"
+    },
+    {
+      "id": "label-10",
+      "owner": "enc.self",
+      "kind": "label",
+      "bbox": [
+        287.14,
+        592,
+        189.72,
+        21.24
+      ],
+      "source_owner": "enc.self"
+    },
+    {
+      "id": "label-11",
+      "owner": "enc.self",
+      "kind": "label",
+      "bbox": [
+        277.84000000000003,
+        623,
+        208.32,
+        18.88
+      ],
+      "source_owner": "enc.self"
+    },
+    {
+      "id": "label-12",
+      "owner": "src_embed",
+      "kind": "label",
+      "bbox": [
+        222.97,
+        986.65,
+        318.06,
+        22.419999999999998
+      ],
+      "source_owner": "src_embed"
+    },
+    {
+      "id": "label-13",
+      "owner": "src_pe.add",
+      "kind": "label",
+      "bbox": [
+        374.25,
+        908,
+        15.5,
+        29.5
+      ],
+      "source_owner": "src_pe.add"
+    },
+    {
+      "id": "label-14",
+      "owner": "src_pe.buffer",
+      "kind": "label",
+      "bbox": [
+        84.87,
+        914.95,
+        200.26,
+        20.06
+      ],
+      "source_owner": "src_pe.buffer"
+    },
+    {
+      "id": "label-15",
+      "owner": "src_embed",
+      "kind": "label",
+      "bbox": [
+        150.12,
+        1069,
+        463.76,
+        20.06
+      ],
+      "source_owner": "src_embed"
+    },
+    {
+      "id": "label-16",
+      "owner": "dec.layer_i",
+      "kind": "label",
+      "bbox": [
+        918,
+        243,
+        270.94,
+        27.139999999999997
+      ],
+      "source_owner": "dec.layer_i"
+    },
+    {
+      "id": "label-17",
+      "owner": "dec.norm3",
+      "kind": "label",
+      "bbox": [
+        1037.74,
+        321.0,
+        400.52,
+        22.419999999999998
+      ],
+      "source_owner": "dec.norm3"
+    },
+    {
+      "id": "label-18",
+      "owner": "dec.ffn",
+      "kind": "label",
+      "bbox": [
+        1027.2,
+        390,
+        421.6,
+        23.599999999999998
+      ],
+      "source_owner": "dec.ffn"
+    },
+    {
+      "id": "label-19",
+      "owner": "dec.ffn",
+      "kind": "label",
+      "bbox": [
+        1053.55,
+        419,
+        368.9,
+        20.06
+      ],
+      "source_owner": "dec.ffn"
+    },
+    {
+      "id": "label-20",
+      "owner": "dec.norm2",
+      "kind": "label",
+      "bbox": [
+        1037.74,
+        495.0,
+        400.52,
+        22.419999999999998
+      ],
+      "source_owner": "dec.norm2"
+    },
+    {
+      "id": "label-21",
+      "owner": "dec.cross",
+      "kind": "label",
+      "bbox": [
+        1045.8,
+        564,
+        384.4,
+        23.599999999999998
+      ],
+      "source_owner": "dec.cross"
+    },
+    {
+      "id": "label-22",
+      "owner": "dec.cross",
+      "kind": "label",
+      "bbox": [
+        1070.6,
+        592,
+        334.8,
+        21.24
+      ],
+      "source_owner": "dec.cross"
+    },
+    {
+      "id": "label-23",
+      "owner": "dec.cross",
+      "kind": "label",
+      "bbox": [
+        1133.84,
+        623,
+        208.32,
+        18.88
+      ],
+      "source_owner": "dec.cross"
+    },
+    {
+      "id": "label-24",
+      "owner": "dec.norm1",
+      "kind": "label",
+      "bbox": [
+        1037.74,
+        695.0,
+        400.52,
+        22.419999999999998
+      ],
+      "source_owner": "dec.norm1"
+    },
+    {
+      "id": "label-25",
+      "owner": "dec.self",
+      "kind": "label",
+      "bbox": [
+        1058.2,
+        764,
+        359.6,
+        23.599999999999998
+      ],
+      "source_owner": "dec.self"
+    },
+    {
+      "id": "label-26",
+      "owner": "dec.self",
+      "kind": "label",
+      "bbox": [
+        1143.14,
+        792,
+        189.72,
+        21.24
+      ],
+      "source_owner": "dec.self"
+    },
+    {
+      "id": "label-27",
+      "owner": "dec.self",
+      "kind": "label",
+      "bbox": [
+        1039.6,
+        823,
+        396.8,
+        18.88
+      ],
+      "source_owner": "dec.self"
+    },
+    {
+      "id": "label-28",
+      "owner": "tgt_embed",
+      "kind": "label",
+      "bbox": [
+        1078.97,
+        986.65,
+        318.06,
+        22.419999999999998
+      ],
+      "source_owner": "tgt_embed"
+    },
+    {
+      "id": "label-29",
+      "owner": "tgt_pe.add",
+      "kind": "label",
+      "bbox": [
+        1230.25,
+        908,
+        15.5,
+        29.5
+      ],
+      "source_owner": "tgt_pe.add"
+    },
+    {
+      "id": "label-30",
+      "owner": "tgt_pe.buffer",
+      "kind": "label",
+      "bbox": [
+        940.87,
+        914.95,
+        200.26,
+        20.06
+      ],
+      "source_owner": "tgt_pe.buffer"
+    },
+    {
+      "id": "label-31",
+      "owner": "tgt_embed",
+      "kind": "label",
+      "bbox": [
+        1006.12,
+        1069,
+        463.76,
+        20.06
+      ],
+      "source_owner": "tgt_embed"
+    }
+  ],
+  "boxes": [
+    {
+      "id": "probabilities",
+      "parent": null,
+      "bbox": [
+        998.0,
+        110,
+        480,
+        58
+      ]
+    },
+    {
+      "id": "generator",
+      "parent": null,
+      "bbox": [
+        1048.0,
+        188,
+        380,
+        48
+      ]
+    },
+    {
+      "id": "enc.layer_i",
+      "parent": null,
+      "bbox": [
+        42,
+        286,
+        660,
+        394
+      ]
+    },
+    {
+      "id": "enc.norm2",
+      "parent": "enc.layer_i",
+      "bbox": [
+        80,
+        308,
+        604,
+        50
+      ]
+    },
+    {
+      "id": "enc.ffn",
+      "parent": "enc.layer_i",
+      "bbox": [
+        80,
+        382,
+        604,
+        76
+      ]
+    },
+    {
+      "id": "enc.norm1",
+      "parent": "enc.layer_i",
+      "bbox": [
+        80,
+        482,
+        604,
+        50
+      ]
+    },
+    {
+      "id": "enc.self",
+      "parent": "enc.layer_i",
+      "bbox": [
+        80,
+        556,
+        604,
+        102
+      ]
+    },
+    {
+      "id": "src_embed",
+      "parent": null,
+      "bbox": [
+        135,
+        968,
+        494,
+        62
+      ]
+    },
+    {
+      "id": "src_pe.add",
+      "parent": null,
+      "bbox": [
+        367.0,
+        911,
+        30,
+        30
+      ]
+    },
+    {
+      "id": "src_pe.buffer",
+      "parent": null,
+      "bbox": [
+        80.0,
+        903,
+        210,
+        46
+      ]
+    },
+    {
+      "id": "src_tokens",
+      "parent": null,
+      "bbox": [
+        342.0,
+        1049,
+        80,
+        19
+      ],
+      "glyph": "input_label"
+    },
+    {
+      "id": "dec.layer_i",
+      "parent": null,
+      "bbox": [
+        898,
+        286,
+        660,
+        594
+      ]
+    },
+    {
+      "id": "dec.norm3",
+      "parent": "dec.layer_i",
+      "bbox": [
+        936,
+        308,
+        604,
+        50
+      ]
+    },
+    {
+      "id": "dec.ffn",
+      "parent": "dec.layer_i",
+      "bbox": [
+        936,
+        382,
+        604,
+        76
+      ]
+    },
+    {
+      "id": "dec.norm2",
+      "parent": "dec.layer_i",
+      "bbox": [
+        936,
+        482,
+        604,
+        50
+      ]
+    },
+    {
+      "id": "dec.cross",
+      "parent": "dec.layer_i",
+      "bbox": [
+        936,
+        556,
+        604,
+        102
+      ]
+    },
+    {
+      "id": "dec.norm1",
+      "parent": "dec.layer_i",
+      "bbox": [
+        936,
+        682,
+        604,
+        50
+      ]
+    },
+    {
+      "id": "dec.self",
+      "parent": "dec.layer_i",
+      "bbox": [
+        936,
+        756,
+        604,
+        102
+      ]
+    },
+    {
+      "id": "tgt_embed",
+      "parent": null,
+      "bbox": [
+        991,
+        968,
+        494,
+        62
+      ]
+    },
+    {
+      "id": "tgt_pe.add",
+      "parent": null,
+      "bbox": [
+        1223.0,
+        911,
+        30,
+        30
+      ]
+    },
+    {
+      "id": "tgt_pe.buffer",
+      "parent": null,
+      "bbox": [
+        936.0,
+        903,
+        210,
+        46
+      ]
+    },
+    {
+      "id": "tgt_tokens",
+      "parent": null,
+      "bbox": [
+        1198.0,
+        1049,
+        80,
+        19
+      ],
+      "glyph": "input_label"
+    },
+    {
+      "id": "enc.memory.value",
+      "parent": null,
+      "bbox": [
+        720.0,
+        318,
+        160,
+        104
+      ],
+      "glyph": "tensor_value_alias",
+      "canonical": "enc.output:out"
+    }
+  ],
+  "border_rects": [
+    {
+      "id": "probabilities",
+      "bbox": [
+        998.0,
+        110,
+        480,
+        58
+      ],
+      "radius": 10
+    },
+    {
+      "id": "generator",
+      "bbox": [
+        1048.0,
+        188,
+        380,
+        48
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.layer_i",
+      "bbox": [
+        42,
+        286,
+        660,
+        394
+      ],
+      "radius": 19
+    },
+    {
+      "id": "enc.norm2",
+      "bbox": [
+        80,
+        308,
+        604,
+        50
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.ffn",
+      "bbox": [
+        80,
+        382,
+        604,
+        76
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.norm1",
+      "bbox": [
+        80,
+        482,
+        604,
+        50
+      ],
+      "radius": 10
+    },
+    {
+      "id": "enc.self",
+      "bbox": [
+        80,
+        556,
+        604,
+        102
+      ],
+      "radius": 10
+    },
+    {
+      "id": "src_embed",
+      "bbox": [
+        135,
+        968,
+        494,
+        62
+      ],
+      "radius": 10
+    },
+    {
+      "id": "src_pe.buffer",
+      "bbox": [
+        80.0,
+        903,
+        210,
+        46
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.layer_i",
+      "bbox": [
+        898,
+        286,
+        660,
+        594
+      ],
+      "radius": 19
+    },
+    {
+      "id": "dec.norm3",
+      "bbox": [
+        936,
+        308,
+        604,
+        50
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.ffn",
+      "bbox": [
+        936,
+        382,
+        604,
+        76
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.norm2",
+      "bbox": [
+        936,
+        482,
+        604,
+        50
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.cross",
+      "bbox": [
+        936,
+        556,
+        604,
+        102
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.norm1",
+      "bbox": [
+        936,
+        682,
+        604,
+        50
+      ],
+      "radius": 10
+    },
+    {
+      "id": "dec.self",
+      "bbox": [
+        936,
+        756,
+        604,
+        102
+      ],
+      "radius": 10
+    },
+    {
+      "id": "tgt_embed",
+      "bbox": [
+        991,
+        968,
+        494,
+        62
+      ],
+      "radius": 10
+    },
+    {
+      "id": "tgt_pe.buffer",
+      "bbox": [
+        936.0,
+        903,
+        210,
+        46
+      ],
+      "radius": 10
+    },
+    {
+      "id": "frame-019",
+      "bbox": [
+        720.0,
+        318,
+        160,
+        104
+      ],
+      "radius": 10
+    }
+  ],
+  "ports": {
+    "probabilities": {
+      "in": [
+        1238.0,
+        168
+      ]
+    },
+    "generator": {
+      "in": [
+        1238.0,
+        236
+      ],
+      "out": [
+        1238.0,
+        188
+      ]
+    },
+    "logits": {
+      "out": [
+        1238.0,
+        188
+      ]
+    },
+    "enc.layer_i": {
+      "in": [
+        372.0,
+        680
+      ],
+      "out": [
+        372.0,
+        286
+      ]
+    },
+    "enc.norm2": {
+      "in": [
+        382.0,
+        358
+      ],
+      "out": [
+        382.0,
+        308
+      ],
+      "skip": [
+        80,
+        333.0
+      ]
+    },
+    "enc.ffn": {
+      "in": [
+        382.0,
+        458
+      ],
+      "out": [
+        382.0,
+        382
+      ],
+      "input_tap": [
+        382.0,
+        470.0
+      ]
+    },
+    "enc.norm1": {
+      "in": [
+        382.0,
+        532
+      ],
+      "out": [
+        382.0,
+        482
+      ],
+      "skip": [
+        80,
+        507.0
+      ]
+    },
+    "enc.self": {
+      "in": [
+        382.0,
+        658
+      ],
+      "out": [
+        382.0,
+        556
+      ],
+      "memory": [
+        80,
+        628
+      ],
+      "input_tap": [
+        382.0,
+        670.0
+      ]
+    },
+    "src_embed": {
+      "in": [
+        382.0,
+        1030
+      ],
+      "out": [
+        382.0,
+        968
+      ]
+    },
+    "src_pe.add": {
+      "x": [
+        382.0,
+        941
+      ],
+      "pe": [
+        367.0,
+        926
+      ],
+      "out": [
+        382.0,
+        911
+      ]
+    },
+    "src_pe.buffer": {
+      "out": [
+        290.0,
+        926
+      ]
+    },
+    "src_pe": {
+      "out": [
+        382.0,
+        911
+      ]
+    },
+    "src_tokens": {
+      "out": [
+        382.0,
+        1049
+      ]
+    },
+    "dec.layer_i": {
+      "in": [
+        1228.0,
+        880
+      ],
+      "out": [
+        1228.0,
+        286
+      ]
+    },
+    "dec.norm3": {
+      "in": [
+        1238.0,
+        358
+      ],
+      "out": [
+        1238.0,
+        308
+      ],
+      "skip": [
+        936,
+        333.0
+      ]
+    },
+    "dec.ffn": {
+      "in": [
+        1238.0,
+        458
+      ],
+      "out": [
+        1238.0,
+        382
+      ],
+      "input_tap": [
+        1238.0,
+        470.0
+      ]
+    },
+    "dec.norm2": {
+      "in": [
+        1238.0,
+        532
+      ],
+      "out": [
+        1238.0,
+        482
+      ],
+      "skip": [
+        936,
+        507.0
+      ]
+    },
+    "dec.cross": {
+      "in": [
+        1238.0,
+        658
+      ],
+      "out": [
+        1238.0,
+        556
+      ],
+      "memory": [
+        936,
+        628
+      ],
+      "input_tap": [
+        1238.0,
+        670.0
+      ]
+    },
+    "dec.norm1": {
+      "in": [
+        1238.0,
+        732
+      ],
+      "out": [
+        1238.0,
+        682
+      ],
+      "skip": [
+        936,
+        707.0
+      ]
+    },
+    "dec.self": {
+      "in": [
+        1238.0,
+        858
+      ],
+      "out": [
+        1238.0,
+        756
+      ],
+      "memory": [
+        936,
+        828
+      ],
+      "input_tap": [
+        1238.0,
+        870.0
+      ]
+    },
+    "tgt_embed": {
+      "in": [
+        1238.0,
+        1030
+      ],
+      "out": [
+        1238.0,
+        968
+      ]
+    },
+    "tgt_pe.add": {
+      "x": [
+        1238.0,
+        941
+      ],
+      "pe": [
+        1223.0,
+        926
+      ],
+      "out": [
+        1238.0,
+        911
+      ]
+    },
+    "tgt_pe.buffer": {
+      "out": [
+        1146.0,
+        926
+      ]
+    },
+    "tgt_pe": {
+      "out": [
+        1238.0,
+        911
+      ]
+    },
+    "tgt_tokens": {
+      "out": [
+        1238.0,
+        1049
+      ]
+    },
+    "enc.output": {
+      "out": [
+        382.0,
+        308
+      ]
+    },
+    "dec.output": {
+      "out": [
+        1238.0,
+        308
+      ]
+    },
+    "enc.memory.value": {
+      "in": [
+        800.0,
+        318
+      ],
+      "out": [
+        800.0,
+        422
+      ]
+    }
+  },
+  "routes": [
+    {
+      "id": "binding-001",
+      "points": [
+        [
+          290.0,
+          926
+        ],
+        [
+          367.0,
+          926
+        ]
+      ],
+      "src": "src_pe.buffer:out",
+      "dst": "src_pe.add:pe",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "src_pe.buffer:out",
+      "canonical_dst": "src_pe.add:pe",
+      "semantic_edges": [
+        "src_pe.buffer:out->src_pe.add:pe"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "src_pe.buffer:out",
+        "target": "src_pe.add:pe",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-002",
+      "points": [
+        [
+          382.0,
+          911
+        ],
+        [
+          382.0,
+          658
+        ]
+      ],
+      "src": "src_pe.add:out",
+      "dst": "enc.self:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "src_pe.add:out",
+      "canonical_dst": "enc.self:in",
+      "semantic_edges": [
+        "src_pe.add:out->src_pe.dropout:in",
+        "src_pe.dropout:out->src_pe:out",
+        "src_pe:out->enc.self:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "src_pe.add:out",
+        "target": "enc.self:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-003",
+      "points": [
+        [
+          382.0,
+          911
+        ],
+        [
+          382.0,
+          670.0
+        ],
+        [
+          56,
+          670.0
+        ],
+        [
+          56,
+          507.0
+        ],
+        [
+          80,
+          507.0
+        ]
+      ],
+      "src": "src_pe.add:out",
+      "dst": "enc.norm1:skip",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "src_pe.add:out",
+      "canonical_dst": "enc.norm1:skip",
+      "semantic_edges": [
+        "src_pe.add:out->src_pe.dropout:in",
+        "src_pe.dropout:out->src_pe:out",
+        "src_pe:out->enc.norm1:skip"
+      ],
+      "semantic_kind": "residual",
+      "port_authority": {
+        "source": "src_pe.add:out",
+        "target": "enc.norm1:skip",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-004",
+      "points": [
+        [
+          382.0,
+          1049
+        ],
+        [
+          382.0,
+          1030
+        ]
+      ],
+      "src": "src_tokens:out",
+      "dst": "src_embed:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "src_tokens:out",
+      "canonical_dst": "src_embed:in",
+      "semantic_edges": [
+        "src_tokens:out->src_embed:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "src_tokens:out",
+        "target": "src_embed:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-005",
+      "points": [
+        [
+          382.0,
+          968
+        ],
+        [
+          382.0,
+          941
+        ]
+      ],
+      "src": "src_embed:out",
+      "dst": "src_pe.add:x",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "src_embed:out",
+      "canonical_dst": "src_pe.add:x",
+      "semantic_edges": [
+        "src_embed:out->src_pe:in",
+        "src_pe:in->src_pe.add:x"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "src_embed:out",
+        "target": "src_pe.add:x",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-006",
+      "points": [
+        [
+          1146.0,
+          926
+        ],
+        [
+          1223.0,
+          926
+        ]
+      ],
+      "src": "tgt_pe.buffer:out",
+      "dst": "tgt_pe.add:pe",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "tgt_pe.buffer:out",
+      "canonical_dst": "tgt_pe.add:pe",
+      "semantic_edges": [
+        "tgt_pe.buffer:out->tgt_pe.add:pe"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "tgt_pe.buffer:out",
+        "target": "tgt_pe.add:pe",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-007",
+      "points": [
+        [
+          1238.0,
+          911
+        ],
+        [
+          1238.0,
+          858
+        ]
+      ],
+      "src": "tgt_pe.add:out",
+      "dst": "dec.self:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "tgt_pe.add:out",
+      "canonical_dst": "dec.self:in",
+      "semantic_edges": [
+        "tgt_pe.add:out->tgt_pe.dropout:in",
+        "tgt_pe.dropout:out->tgt_pe:out",
+        "tgt_pe:out->dec.self:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "tgt_pe.add:out",
+        "target": "dec.self:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-008",
+      "points": [
+        [
+          1238.0,
+          911
+        ],
+        [
+          1238.0,
+          870.0
+        ],
+        [
+          912,
+          870.0
+        ],
+        [
+          912,
+          707.0
+        ],
+        [
+          936,
+          707.0
+        ]
+      ],
+      "src": "tgt_pe.add:out",
+      "dst": "dec.norm1:skip",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "tgt_pe.add:out",
+      "canonical_dst": "dec.norm1:skip",
+      "semantic_edges": [
+        "tgt_pe.add:out->tgt_pe.dropout:in",
+        "tgt_pe.dropout:out->tgt_pe:out",
+        "tgt_pe:out->dec.norm1:skip"
+      ],
+      "semantic_kind": "residual",
+      "port_authority": {
+        "source": "tgt_pe.add:out",
+        "target": "dec.norm1:skip",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-009",
+      "points": [
+        [
+          1238.0,
+          1049
+        ],
+        [
+          1238.0,
+          1030
+        ]
+      ],
+      "src": "tgt_tokens:out",
+      "dst": "tgt_embed:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "tgt_tokens:out",
+      "canonical_dst": "tgt_embed:in",
+      "semantic_edges": [
+        "tgt_tokens:out->tgt_embed:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "tgt_tokens:out",
+        "target": "tgt_embed:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-010",
+      "points": [
+        [
+          1238.0,
+          968
+        ],
+        [
+          1238.0,
+          941
+        ]
+      ],
+      "src": "tgt_embed:out",
+      "dst": "tgt_pe.add:x",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "tgt_embed:out",
+      "canonical_dst": "tgt_pe.add:x",
+      "semantic_edges": [
+        "tgt_embed:out->tgt_pe:in",
+        "tgt_pe:in->tgt_pe.add:x"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "tgt_embed:out",
+        "target": "tgt_pe.add:x",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-011",
+      "points": [
+        [
+          382.0,
+          556
+        ],
+        [
+          382.0,
+          532
+        ]
+      ],
+      "src": "enc.self:out",
+      "dst": "enc.norm1:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.self:out",
+      "canonical_dst": "enc.norm1:in",
+      "semantic_edges": [
+        "enc.self:out->enc.norm1:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.self:out",
+        "target": "enc.norm1:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-012",
+      "points": [
+        [
+          382.0,
+          482
+        ],
+        [
+          382.0,
+          458
+        ]
+      ],
+      "src": "enc.norm1:out",
+      "dst": "enc.ffn:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.norm1:out",
+      "canonical_dst": "enc.ffn:in",
+      "semantic_edges": [
+        "enc.norm1:out->enc.ffn:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.norm1:out",
+        "target": "enc.ffn:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-013",
+      "points": [
+        [
+          382.0,
+          382
+        ],
+        [
+          382.0,
+          358
+        ]
+      ],
+      "src": "enc.ffn:out",
+      "dst": "enc.norm2:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.ffn:out",
+      "canonical_dst": "enc.norm2:in",
+      "semantic_edges": [
+        "enc.ffn:out->enc.norm2:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "enc.ffn:out",
+        "target": "enc.norm2:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-014",
+      "points": [
+        [
+          382.0,
+          482
+        ],
+        [
+          382.0,
+          470.0
+        ],
+        [
+          56,
+          470.0
+        ],
+        [
+          56,
+          333.0
+        ],
+        [
+          80,
+          333.0
+        ]
+      ],
+      "src": "enc.norm1:out",
+      "dst": "enc.norm2:skip",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "enc.norm1:out",
+      "canonical_dst": "enc.norm2:skip",
+      "semantic_edges": [
+        "enc.norm1:out->enc.norm2:skip"
+      ],
+      "semantic_kind": "residual",
+      "port_authority": {
+        "source": "enc.norm1:out",
+        "target": "enc.norm2:skip",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "encoder-memory-to-cross",
+      "points": [
+        [
+          382.0,
+          308
+        ],
+        [
+          382.0,
+          219
+        ],
+        [
+          800.0,
+          219
+        ],
+        [
+          800.0,
+          318
+        ]
+      ],
+      "src": "enc.norm2:out",
+      "dst": "enc.memory.value:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.8,
+      "canonical_src": "enc.norm2:out",
+      "canonical_dst": "dec.cross:memory",
+      "semantic_edges": [
+        "enc.norm2:out->enc.output:in",
+        "enc.output:out->dec.cross:memory"
+      ],
+      "semantic_kind": "memory",
+      "port_authority": {
+        "source": "enc.norm2:out",
+        "target": "dec.cross:memory",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "encoder-memory-to-cross-015",
+      "points": [
+        [
+          800.0,
+          422
+        ],
+        [
+          800.0,
+          628
+        ],
+        [
+          936,
+          628
+        ]
+      ],
+      "src": "enc.memory.value:out",
+      "dst": "dec.cross:memory",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.8,
+      "canonical_src": "enc.norm2:out",
+      "canonical_dst": "dec.cross:memory",
+      "semantic_edges": [
+        "enc.norm2:out->enc.output:in",
+        "enc.output:out->dec.cross:memory"
+      ],
+      "semantic_kind": "memory",
+      "port_authority": {
+        "source": "enc.norm2:out",
+        "target": "dec.cross:memory",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-017",
+      "points": [
+        [
+          1238.0,
+          756
+        ],
+        [
+          1238.0,
+          732
+        ]
+      ],
+      "src": "dec.self:out",
+      "dst": "dec.norm1:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.self:out",
+      "canonical_dst": "dec.norm1:in",
+      "semantic_edges": [
+        "dec.self:out->dec.norm1:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.self:out",
+        "target": "dec.norm1:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-018",
+      "points": [
+        [
+          1238.0,
+          682
+        ],
+        [
+          1238.0,
+          658
+        ]
+      ],
+      "src": "dec.norm1:out",
+      "dst": "dec.cross:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.norm1:out",
+      "canonical_dst": "dec.cross:in",
+      "semantic_edges": [
+        "dec.norm1:out->dec.cross:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.norm1:out",
+        "target": "dec.cross:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-019",
+      "points": [
+        [
+          1238.0,
+          556
+        ],
+        [
+          1238.0,
+          532
+        ]
+      ],
+      "src": "dec.cross:out",
+      "dst": "dec.norm2:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.cross:out",
+      "canonical_dst": "dec.norm2:in",
+      "semantic_edges": [
+        "dec.cross:out->dec.norm2:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.cross:out",
+        "target": "dec.norm2:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-020",
+      "points": [
+        [
+          1238.0,
+          682
+        ],
+        [
+          1238.0,
+          670.0
+        ],
+        [
+          912,
+          670.0
+        ],
+        [
+          912,
+          507.0
+        ],
+        [
+          936,
+          507.0
+        ]
+      ],
+      "src": "dec.norm1:out",
+      "dst": "dec.norm2:skip",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.norm1:out",
+      "canonical_dst": "dec.norm2:skip",
+      "semantic_edges": [
+        "dec.norm1:out->dec.norm2:skip"
+      ],
+      "semantic_kind": "residual",
+      "port_authority": {
+        "source": "dec.norm1:out",
+        "target": "dec.norm2:skip",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-021",
+      "points": [
+        [
+          1238.0,
+          482
+        ],
+        [
+          1238.0,
+          458
+        ]
+      ],
+      "src": "dec.norm2:out",
+      "dst": "dec.ffn:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.norm2:out",
+      "canonical_dst": "dec.ffn:in",
+      "semantic_edges": [
+        "dec.norm2:out->dec.ffn:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.norm2:out",
+        "target": "dec.ffn:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-022",
+      "points": [
+        [
+          1238.0,
+          382
+        ],
+        [
+          1238.0,
+          358
+        ]
+      ],
+      "src": "dec.ffn:out",
+      "dst": "dec.norm3:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.ffn:out",
+      "canonical_dst": "dec.norm3:in",
+      "semantic_edges": [
+        "dec.ffn:out->dec.norm3:in"
+      ],
+      "semantic_kind": "tensor",
+      "port_authority": {
+        "source": "dec.ffn:out",
+        "target": "dec.norm3:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-023",
+      "points": [
+        [
+          1238.0,
+          482
+        ],
+        [
+          1238.0,
+          470.0
+        ],
+        [
+          912,
+          470.0
+        ],
+        [
+          912,
+          333.0
+        ],
+        [
+          936,
+          333.0
+        ]
+      ],
+      "src": "dec.norm2:out",
+      "dst": "dec.norm3:skip",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.norm2:out",
+      "canonical_dst": "dec.norm3:skip",
+      "semantic_edges": [
+        "dec.norm2:out->dec.norm3:skip"
+      ],
+      "semantic_kind": "residual",
+      "port_authority": {
+        "source": "dec.norm2:out",
+        "target": "dec.norm3:skip",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-024",
+      "points": [
+        [
+          1238.0,
+          308
+        ],
+        [
+          1238.0,
+          236
+        ]
+      ],
+      "src": "dec.norm3:out",
+      "dst": "generator:in",
+      "dashed": false,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "dec.norm3:out",
+      "canonical_dst": "generator:in",
+      "semantic_edges": [
+        "dec.norm3:out->dec.output:in",
+        "dec.output:out->generator:in"
+      ],
+      "semantic_kind": "repeat_output",
+      "port_authority": {
+        "source": "dec.norm3:out",
+        "target": "generator:in",
+        "geometry": "presentation"
+      }
+    },
+    {
+      "id": "binding-025",
+      "points": [
+        [
+          1238.0,
+          188
+        ],
+        [
+          1238.0,
+          168
+        ]
+      ],
+      "src": "generator:out",
+      "dst": "probabilities:in",
+      "dashed": true,
+      "arrow": true,
+      "width": 2.2,
+      "canonical_src": "generator:out",
+      "canonical_dst": "probabilities:in",
+      "semantic_edges": [
+        "generator:out->logits:in",
+        "logits:out->probabilities:in"
+      ],
+      "semantic_kind": "explanatory",
+      "port_authority": {
+        "source": "generator:out",
+        "target": "probabilities:in",
+        "geometry": "presentation"
+      }
+    }
+  ]
+}

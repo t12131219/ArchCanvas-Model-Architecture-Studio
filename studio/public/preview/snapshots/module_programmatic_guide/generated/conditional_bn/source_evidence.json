@@ -1,0 +1,50 @@
+{
+  "source_project": "biggan-modules",
+  "repository": "ajbrock/BigGAN-PyTorch",
+  "commit": "98459431a5d618d644d54cd1e9fceb1e5045648d",
+  "source_snapshot_sha256": "bcb65449b0e95aa5867f78a42d97c40578083152549d64d9cb4b1601d7388218",
+  "entry": "biggan-modules/layers.py::ccbn.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "biggan-modules/LICENSE": {
+      "sha256": "f1280fb72c21d398df9f738d279cda47ff1a1a7d0e6e60fec4b6d988caf26cb9",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ajbrock/BigGAN-PyTorch/98459431a5d618d644d54cd1e9fceb1e5045648d/LICENSE",
+      "derived_from": null
+    },
+    "biggan-modules/layers.py": {
+      "sha256": "aaf26237cb86c7b0e8bdabc24e13d83e5253c0f969f16183155668e1b144f0e5",
+      "lines": 459,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ajbrock/BigGAN-PyTorch/98459431a5d618d644d54cd1e9fceb1e5045648d/layers.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "biggan-modules/layers.py::ccbn.__init__": {
+      "path": "biggan-modules/layers.py",
+      "symbol": "ccbn.__init__",
+      "start": 279,
+      "end": 303,
+      "snippet": "  def __init__(self, output_size, input_size, which_linear, eps=1e-5, momentum=0.1,\n               cross_replica=False, mybn=False, norm_style='bn',):\n    super(ccbn, self).__init__()\n    self.output_size, self.input_size = output_size, input_size\n    # Prepare gain and bias layers\n    self.gain = which_linear(input_size, output_size)\n    self.bias = which_linear(input_size, output_size)\n    # epsilon to avoid dividing by 0\n    self.eps = eps\n    # Momentum\n    self.momentum = momentum\n    # Use cross-replica batchnorm?\n    self.cross_replica = cross_replica\n    # Use my batchnorm?\n    self.mybn = mybn\n    # Norm style?\n    self.norm_style = norm_style\n    \n    if self.cross_replica:\n      self.bn = SyncBN2d(output_size, eps=self.eps, momentum=self.momentum, affine=False)\n    elif self.mybn:\n      self.bn = myBN(output_size, self.eps, self.momentum)\n    elif self.norm_style in ['bn', 'in']:\n      self.register_buffer('stored_mean', torch.zeros(output_size))\n      self.register_buffer('stored_var',  torch.ones(output_size)) ",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "biggan-modules/layers.py::ccbn.forward": {
+      "path": "biggan-modules/layers.py",
+      "symbol": "ccbn.forward",
+      "start": 306,
+      "end": 325,
+      "snippet": "  def forward(self, x, y):\n    # Calculate class-conditional gains and biases\n    gain = (1 + self.gain(y)).view(y.size(0), -1, 1, 1)\n    bias = self.bias(y).view(y.size(0), -1, 1, 1)\n    # If using my batchnorm\n    if self.mybn or self.cross_replica:\n      return self.bn(x, gain=gain, bias=bias)\n    # else:\n    else:\n      if self.norm_style == 'bn':\n        out = F.batch_norm(x, self.stored_mean, self.stored_var, None, None,\n                          self.training, 0.1, self.eps)\n      elif self.norm_style == 'in':\n        out = F.instance_norm(x, self.stored_mean, self.stored_var, None, None,\n                          self.training, 0.1, self.eps)\n      elif self.norm_style == 'gn':\n        out = groupnorm(x, self.normstyle)\n      elif self.norm_style == 'nonorm':\n        out = x\n      return out * gain + bias",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "biggan-modules/LICENSE"
+  ]
+}

@@ -1,0 +1,1092 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "graphnet",
+  "profile": {
+    "task": "MNIST10-class classification",
+    "mode": "eval",
+    "input_size": [
+      28,
+      28
+    ],
+    "input_channels": 1,
+    "nodes": 784,
+    "node_feature_width": 1,
+    "num_classes": 10,
+    "batch_size_setting": 128,
+    "construction": "fixed grid adjacency precomputed in __init__",
+    "buffer": "A",
+    "adjacency_learnable": false,
+    "adjacency_shape": [
+      784,
+      784
+    ],
+    "kernel": "exp(-distance/sigma^2)",
+    "sigma": "0.05*pi",
+    "distance_squared": false,
+    "threshold": 0.01,
+    "degree_epsilon": 1e-05,
+    "normalization": "D_hat[:,None]*A*D_hat[None,:]",
+    "neighbor_operation": "weighted sum",
+    "self_loop": "diagonal starts at exp(0)=1; no extra identity addition",
+    "bias": false,
+    "classifier": [
+      784,
+      10
+    ],
+    "output": "(logits,probas)",
+    "dead_assignments": [
+      "A_tensor = self.A.unsqueeze(0); overwritten by self.A.expand(B,-1,-1)"
+    ],
+    "drawing_scope": "live dependencies of forward return plus explicit constructor buffer provenance",
+    "model_executed": false
+  },
+  "source": {
+    "repository": "https://github.com/rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "d99aabf41ee783fdb7b603dc53fc09c290e223223a1576e510b40206f438e950"
+  },
+  "nodes": [
+    {
+      "id": "graphnet.root",
+      "label": "GraphNet: fixed pixel graph",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "2 x [B,10]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.input",
+      "label": "MNIST grayscale image",
+      "kind": "input",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [],
+      "parent": "graphnet.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "graphnet.forward",
+      "label": "GraphNet forward",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "(logits,probas)",
+      "detail": [
+        "live data dependencies of returned values; overwritten unsqueeze result is omitted"
+      ],
+      "mode": "chain",
+      "parent": "graphnet.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.layout",
+      "label": "Image pixels to graph nodes",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,N=784,F=1]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "graphnet.forward",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.reshape",
+      "label": "View pixels as node features",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,784,1]",
+      "detail": [
+        "x.view(B,-1,1); fixed selected grayscale28x28 image"
+      ],
+      "expression": "x.view(B,-1,1)",
+      "input_channels": 1,
+      "parent": "graphnet.layout",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.aggregation",
+      "label": "Fixed neighbor aggregation",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,784]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "graphnet.forward",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.operands",
+      "label": "Node values / fixed weights",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "X and A operands",
+      "detail": [],
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": false,
+      "child_inputs": {
+        "graphnet.features_operand": {
+          "role": "value",
+          "producer": "graphnet.reshape",
+          "src_port": "out"
+        },
+        "graphnet.broadcast": {
+          "role": "external",
+          "producer": "graphnet.adjacency",
+          "src_port": "out"
+        }
+      },
+      "operand_order": [
+        "graphnet.broadcast",
+        "graphnet.features_operand"
+      ],
+      "mode": "parallel",
+      "port_bindings": {
+        "out": [
+          {
+            "node": "graphnet.expand",
+            "port": "out"
+          },
+          {
+            "node": "graphnet.features_operand",
+            "port": "out"
+          }
+        ],
+        "item[0]": {
+          "node": "graphnet.expand",
+          "port": "out"
+        },
+        "item[1]": {
+          "node": "graphnet.features_operand",
+          "port": "out"
+        },
+        "A": {
+          "node": "graphnet.expand",
+          "port": "out"
+        },
+        "X": {
+          "node": "graphnet.features_operand",
+          "port": "out"
+        }
+      },
+      "parent": "graphnet.aggregation",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "A",
+        "X",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "graphnet.features_operand",
+      "label": "Retain pixel features",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,784,1]",
+      "detail": [],
+      "expression": "x_reshape",
+      "parent": "graphnet.operands",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.broadcast",
+      "label": "Broadcast fixed adjacency",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,N,N]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "input_relation": {
+        "role": "external",
+        "producer": "graphnet.adjacency",
+        "src_port": "out"
+      },
+      "mode": "chain",
+      "parent": "graphnet.operands",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.expand",
+      "label": "self.A.expand(B,-1,-1)",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,784,784]",
+      "detail": [
+        "reads the registered2D buffer directly; no per-image learned adjacency",
+        "B comes from x.size(0); expand is a broadcast view, not repeat/copy"
+      ],
+      "expression": "self.A.expand(B,-1,-1)",
+      "buffer_identity": "A",
+      "learnable": false,
+      "input_ports": [
+        "A",
+        "B"
+      ],
+      "param_identity": "same buffer self.A for every batch item",
+      "parent": "graphnet.broadcast",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "A",
+        "B"
+      ]
+    },
+    {
+      "id": "graphnet.bmm",
+      "label": "Batch MatMul: A @ X",
+      "kind": "mixing",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,784,1]",
+      "detail": [
+        "sum_j A_hat[i,j] * pixel[j]; no activation, attention or node-feature Linear"
+      ],
+      "expression": "torch.bmm(A_tensor,x_reshape)",
+      "operation": "bmm",
+      "ordered_operands": [
+        "graphnet.expand",
+        "graphnet.features_operand"
+      ],
+      "reduction": "weighted neighbor sum, not row arithmetic mean",
+      "parent": "graphnet.aggregation",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.flatten",
+      "label": "View aggregated nodes",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,784]",
+      "detail": [],
+      "expression": "torch.bmm(A_tensor,x_reshape).view(B,-1)",
+      "parent": "graphnet.aggregation",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.head",
+      "label": "Whole-image linear head",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "2 x [B,10]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "graphnet.forward",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.fc",
+      "label": "Linear 784 -> 10 / no bias",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,10]",
+      "detail": [
+        "self.fc acts on the entire784-node vector; not a per-node channel projection"
+      ],
+      "parameter": "fc.weight",
+      "bias": false,
+      "in_features": 784,
+      "out_features": 10,
+      "parameter_shape": [
+        10,
+        784
+      ],
+      "parent": "graphnet.head",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.returns",
+      "label": "Return logits / probabilities",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "(logits,probas)",
+      "detail": [],
+      "dispatch": false,
+      "mode": "parallel",
+      "port_bindings": {
+        "out": [
+          {
+            "node": "graphnet.logits",
+            "port": "out"
+          },
+          {
+            "node": "graphnet.softmax",
+            "port": "out"
+          }
+        ],
+        "item[0]": {
+          "node": "graphnet.logits",
+          "port": "out"
+        },
+        "item[1]": {
+          "node": "graphnet.softmax",
+          "port": "out"
+        },
+        "logits": {
+          "node": "graphnet.logits",
+          "port": "out"
+        },
+        "probas": {
+          "node": "graphnet.softmax",
+          "port": "out"
+        }
+      },
+      "parent": "graphnet.head",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "logits",
+        "probas"
+      ]
+    },
+    {
+      "id": "graphnet.logits",
+      "label": "Retain logits",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,10]",
+      "detail": [],
+      "parent": "graphnet.returns",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.softmax",
+      "label": "Softmax along classes",
+      "kind": "softmax",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,10]",
+      "detail": [],
+      "expression": "F.softmax(logits,dim=1)",
+      "dim": 1,
+      "parent": "graphnet.returns",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.output",
+      "label": "Forward return tuple",
+      "kind": "output",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.forward"
+      ],
+      "shape": "2 x [B,10]",
+      "detail": [
+        "raw logits + normalized class probabilities"
+      ],
+      "output_tuple": [
+        "logits",
+        "probas"
+      ],
+      "parent": "graphnet.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.adjacency",
+      "label": "Fixed graph / init",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::precompute_adjacency_matrix",
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.__init__"
+      ],
+      "shape": "fixed A: [784,784]",
+      "detail": [
+        "constructor-time work; independent of input pixel values; not a forward layer"
+      ],
+      "execution_scope": "construction",
+      "buffer_identity": "A",
+      "learnable": false,
+      "param_identity": "fixed adjacency buffer A; constructed once",
+      "mode": "chain",
+      "port_bindings": {
+        "out": {
+          "node": "graphnet.buffer",
+          "port": "out"
+        },
+        "A": {
+          "node": "graphnet.buffer",
+          "port": "out"
+        }
+      },
+      "parent": null,
+      "source_evidence": [
+        "E005",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "A"
+      ]
+    },
+    {
+      "id": "graphnet.coords",
+      "label": "Normalized grid coords",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::precompute_adjacency_matrix"
+      ],
+      "shape": "coord: [N,2]",
+      "detail": [
+        "np.meshgrid; stack(col,row); reshape(-1,2) / img_size",
+        "N=28*28; coordinates are 0..27 divided by28, not divided by27"
+      ],
+      "expression": "np.stack((col,row),axis=2).reshape(-1,2) / img_size",
+      "learnable": false,
+      "parent": "graphnet.adjacency",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.dist",
+      "label": "Pairwise Euclidean distance",
+      "kind": "mixing",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::precompute_adjacency_matrix"
+      ],
+      "shape": "dist: [N,N]",
+      "detail": [],
+      "expression": "cdist(coord,coord,metric='euclidean')",
+      "metric": "euclidean",
+      "parent": "graphnet.adjacency",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.kernel",
+      "label": "exp(-distance / sigma^2)",
+      "kind": "mixing",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::precompute_adjacency_matrix"
+      ],
+      "shape": "A: [N,N]",
+      "detail": [
+        "sigma=.05*pi; actual source uses distance, not distance squared"
+      ],
+      "expression": "np.exp(- dist / sigma ** 2)",
+      "sigma": "0.05 * np.pi",
+      "distance_squared": false,
+      "parent": "graphnet.adjacency",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.threshold",
+      "label": "Set A < .01 to zero",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::precompute_adjacency_matrix"
+      ],
+      "shape": "A: [N,N]",
+      "detail": [],
+      "expression": "A[A < 0.01] = 0",
+      "threshold": 0.01,
+      "parent": "graphnet.adjacency",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.float",
+      "label": "Convert NumPy to float tensor",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::precompute_adjacency_matrix"
+      ],
+      "shape": "A: [N,N]",
+      "detail": [],
+      "expression": "torch.from_numpy(A).float()",
+      "dtype": "float32",
+      "parent": "graphnet.adjacency",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.row_sum",
+      "label": "Sum A over columns",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::precompute_adjacency_matrix"
+      ],
+      "shape": "D: [N]",
+      "detail": [],
+      "expression": "A.sum(1)",
+      "dim": 1,
+      "parent": "graphnet.adjacency",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.inv_sqrt",
+      "label": "Inverse sqrt / epsilon",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::precompute_adjacency_matrix"
+      ],
+      "shape": "D_hat: [N]",
+      "detail": [],
+      "expression": "(D + 1e-5) ** (-0.5)",
+      "epsilon": 1e-05,
+      "parent": "graphnet.adjacency",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphnet.normalize",
+      "label": "Scale rows and columns",
+      "kind": "mixing",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::precompute_adjacency_matrix"
+      ],
+      "shape": "A_hat: [N,N]",
+      "detail": [
+        "D_hat[:,None] * A * D_hat[None,:]; not row-average normalization"
+      ],
+      "expression": "D_hat.view(-1,1) * A * D_hat.view(1,-1)",
+      "normalization": "symmetric degree scaling",
+      "operands": [
+        "graphnet.float",
+        "graphnet.inv_sqrt"
+      ],
+      "parent": "graphnet.adjacency",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "A"
+      ]
+    },
+    {
+      "id": "graphnet.buffer",
+      "label": "register_buffer(\"A\")",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/gnn/gnn-basic-1.py::GraphNet.__init__"
+      ],
+      "shape": "self.A: [784,784]",
+      "detail": [
+        "constructed once; non-learnable persistent buffer; moves with model.to",
+        "same matrix used for every image, train or eval"
+      ],
+      "expression": "self.register_buffer('A', A)",
+      "buffer_identity": "A",
+      "learnable": false,
+      "param_identity": "buffer self.A; no learned parameters; shared across images",
+      "persistent": true,
+      "parent": "graphnet.adjacency",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "graphnet.layout:in->graphnet.reshape:in:boundary",
+      "src": "graphnet.layout",
+      "dst": "graphnet.reshape",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "graphnet.reshape:out->graphnet.layout:out:boundary",
+      "src": "graphnet.reshape",
+      "dst": "graphnet.layout",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "graphnet.expand:out->graphnet.broadcast:out:boundary",
+      "src": "graphnet.expand",
+      "dst": "graphnet.broadcast",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "graphnet.reshape:out->graphnet.features_operand:in:value_operand",
+      "src": "graphnet.reshape",
+      "dst": "graphnet.features_operand",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "graphnet.features_operand:out->graphnet.operands:operand[0]:operand_collection",
+      "src": "graphnet.features_operand",
+      "dst": "graphnet.operands",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "graphnet.broadcast:out->graphnet.operands:operand[1]:operand_collection",
+      "src": "graphnet.broadcast",
+      "dst": "graphnet.operands",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "graphnet.aggregation:in->graphnet.operands:in:boundary",
+      "src": "graphnet.aggregation",
+      "dst": "graphnet.operands",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "graphnet.operands:out->graphnet.bmm:in:tensor",
+      "src": "graphnet.operands",
+      "dst": "graphnet.bmm",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphnet.bmm:out->graphnet.flatten:in:tensor",
+      "src": "graphnet.bmm",
+      "dst": "graphnet.flatten",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphnet.flatten:out->graphnet.aggregation:out:boundary",
+      "src": "graphnet.flatten",
+      "dst": "graphnet.aggregation",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "graphnet.returns:in->graphnet.logits:in:fork",
+      "src": "graphnet.returns",
+      "dst": "graphnet.logits",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "graphnet.logits:out->graphnet.returns:item[0]:tuple_collection",
+      "src": "graphnet.logits",
+      "dst": "graphnet.returns",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "graphnet.returns:in->graphnet.softmax:in:fork",
+      "src": "graphnet.returns",
+      "dst": "graphnet.softmax",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "graphnet.softmax:out->graphnet.returns:item[1]:tuple_collection",
+      "src": "graphnet.softmax",
+      "dst": "graphnet.returns",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "graphnet.head:in->graphnet.fc:in:boundary",
+      "src": "graphnet.head",
+      "dst": "graphnet.fc",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "graphnet.fc:out->graphnet.returns:in:tensor",
+      "src": "graphnet.fc",
+      "dst": "graphnet.returns",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphnet.returns:out->graphnet.head:out:boundary",
+      "src": "graphnet.returns",
+      "dst": "graphnet.head",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "graphnet.forward:in->graphnet.layout:in:boundary",
+      "src": "graphnet.forward",
+      "dst": "graphnet.layout",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "graphnet.layout:out->graphnet.aggregation:in:tensor",
+      "src": "graphnet.layout",
+      "dst": "graphnet.aggregation",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphnet.aggregation:out->graphnet.head:in:tensor",
+      "src": "graphnet.aggregation",
+      "dst": "graphnet.head",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphnet.head:out->graphnet.forward:out:boundary",
+      "src": "graphnet.head",
+      "dst": "graphnet.forward",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "graphnet.root:in->graphnet.input:in:boundary",
+      "src": "graphnet.root",
+      "dst": "graphnet.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "graphnet.input:out->graphnet.forward:in:tensor",
+      "src": "graphnet.input",
+      "dst": "graphnet.forward",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphnet.forward:out->graphnet.output:in:tensor",
+      "src": "graphnet.forward",
+      "dst": "graphnet.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphnet.output:out->graphnet.root:out:boundary",
+      "src": "graphnet.output",
+      "dst": "graphnet.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "graphnet.adjacency:in->graphnet.coords:in:boundary",
+      "src": "graphnet.adjacency",
+      "dst": "graphnet.coords",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "graphnet.coords:out->graphnet.dist:in:tensor",
+      "src": "graphnet.coords",
+      "dst": "graphnet.dist",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphnet.dist:out->graphnet.kernel:in:tensor",
+      "src": "graphnet.dist",
+      "dst": "graphnet.kernel",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphnet.kernel:out->graphnet.threshold:in:tensor",
+      "src": "graphnet.kernel",
+      "dst": "graphnet.threshold",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphnet.threshold:out->graphnet.float:in:tensor",
+      "src": "graphnet.threshold",
+      "dst": "graphnet.float",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphnet.float:out->graphnet.row_sum:in:tensor",
+      "src": "graphnet.float",
+      "dst": "graphnet.row_sum",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphnet.row_sum:out->graphnet.inv_sqrt:in:tensor",
+      "src": "graphnet.row_sum",
+      "dst": "graphnet.inv_sqrt",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphnet.inv_sqrt:out->graphnet.normalize:in:tensor",
+      "src": "graphnet.inv_sqrt",
+      "dst": "graphnet.normalize",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphnet.normalize:out->graphnet.buffer:in:tensor",
+      "src": "graphnet.normalize",
+      "dst": "graphnet.buffer",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphnet.buffer:out->graphnet.adjacency:out:boundary",
+      "src": "graphnet.buffer",
+      "dst": "graphnet.adjacency",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "graphnet.float:out->graphnet.normalize:A:retained_value",
+      "src": "graphnet.float",
+      "dst": "graphnet.normalize",
+      "src_port": "out",
+      "dst_port": "A",
+      "role": "retained_value"
+    },
+    {
+      "id": "graphnet.adjacency:out->graphnet.expand:A:fixed_buffer",
+      "src": "graphnet.adjacency",
+      "dst": "graphnet.expand",
+      "src_port": "out",
+      "dst_port": "A",
+      "role": "fixed_buffer"
+    },
+    {
+      "id": "graphnet.input:shape->graphnet.expand:B:shape_dependency",
+      "src": "graphnet.input",
+      "dst": "graphnet.expand",
+      "src_port": "shape",
+      "dst_port": "B",
+      "role": "shape_dependency"
+    }
+  ],
+  "facts": [
+    "Each grayscale28x28 image supplies784 scalar node features; graph edges come only from fixed pixel coordinates.",
+    "The helper computes Euclidean distances of coordinates divided by img_size, then exp(-dist/sigma^2), not exp(-dist^2/sigma^2).",
+    "Weights below.01 are zeroed, then symmetric inverse-square-root degree factors include epsilon1e-5.",
+    "A starts with unit diagonal because distance(i,i)=0; source never separately adds identity or performs row-mean normalization.",
+    "GraphNet.__init__ calls the helper once and registers A as a non-learnable persistent buffer, not an optimizer parameter.",
+    "The same fixed matrix is broadcast over B with self.A.expand(B,-1,-1); batch size comes from input shape, not pixel values.",
+    "The first A_tensor=self.A.unsqueeze(0) assignment executes but is overwritten immediately; its result is not on returned-value dependencies.",
+    "bmm outputs[B,N,1]; only the subsequent view creates[B,N]. The variable name avg_neighbor_features is a weighted sum, not a row arithmetic mean.",
+    "self.fc=Linear784->10 with bias=False classifies the entire node vector; there is no separate per-node learned feature transform.",
+    "forward computes Softmax(dim=1) and actually returns both logits and probabilities. Loss and accuracy decisions are outside forward.",
+    "The selected eval profile does not change operators: no Dropout or BatchNorm exists. No model/helper/scipy computation was executed."
+  ],
+  "corrections": [
+    "Do not replace this simple GraphNet with stacked GCN layers, hidden-node channel projections, ReLU, attention or pooling absent from source.",
+    "Do not label A as learned edges, an image-dependent graph, a row-average matrix, or an extra self-loop addition.",
+    "Do not silently square distance in the source kernel or discard its threshold and degree epsilon.",
+    "Do not chain unused unsqueeze output into expand: source expands self.A directly after overwriting A_tensor.",
+    "Do not mix gnn-basic-edge-1 learned edge predictor into this fixed-buffer variant."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

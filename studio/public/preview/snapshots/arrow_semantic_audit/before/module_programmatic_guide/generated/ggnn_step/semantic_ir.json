@@ -1,0 +1,960 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "ggnn_step",
+  "profile": {
+    "n_node": 4,
+    "state_dim": 8,
+    "n_edge_types": 2,
+    "n_steps": 3,
+    "iteration_template": true,
+    "gates": "reset/update; GRU-style interpolation",
+    "readout_excluded": true,
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "JamesChuanggg/ggnn.pytorch",
+    "commit": "0c7897fe9b05e9b4f9a963ff55bd3ad917ea734e",
+    "snapshot": "daea4b2fa353b1212185c1c04d807d65bc34e63c121945cc955d0371399a3122"
+  },
+  "nodes": [
+    {
+      "id": "ggnn_step.root",
+      "label": "GGNN typed-edge propagation step / module only",
+      "kind": "group",
+      "source": [
+        "ggnn-modules/model.py::GGNN.forward"
+      ],
+      "shape": "[B,4,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "ggnn_step.state",
+          "ggnn_step.adj"
+        ],
+        [
+          "ggnn_step.module"
+        ],
+        [
+          "ggnn_step.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.state",
+      "label": "Current node state H_t",
+      "kind": "input",
+      "source": [
+        "ggnn-modules/model.py::GGNN.forward"
+      ],
+      "shape": "[B,4,8]",
+      "detail": [],
+      "parent": "ggnn_step.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "next_iteration"
+      ]
+    },
+    {
+      "id": "ggnn_step.adj",
+      "label": "Directed typed adjacency A",
+      "kind": "control",
+      "source": [
+        "ggnn-modules/model.py::GGNN.forward"
+      ],
+      "shape": "[B,4,16]",
+      "detail": [],
+      "parent": "ggnn_step.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.module",
+      "label": "GGNN typed-edge propagation step / operators",
+      "kind": "group",
+      "source": [
+        "ggnn-modules/model.py::GGNN.forward"
+      ],
+      "shape": "[B,4,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "ggnn_step.incoming",
+          "ggnn_step.outgoing",
+          "ggnn_step.split"
+        ],
+        [
+          "ggnn_step.ain",
+          "ggnn_step.aout"
+        ],
+        [
+          "ggnn_step.cat"
+        ],
+        [
+          "ggnn_step.reset",
+          "ggnn_step.update"
+        ],
+        [
+          "ggnn_step.reset_state"
+        ],
+        [
+          "ggnn_step.joined"
+        ],
+        [
+          "ggnn_step.candidate"
+        ],
+        [
+          "ggnn_step.blend"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "ggnn_step.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.incoming",
+      "label": "Incoming type maps",
+      "kind": "group",
+      "source": [
+        "ggnn-modules/model.py::GGNN.__init__",
+        "ggnn-modules/model.py::GGNN.forward"
+      ],
+      "shape": "[B,8,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "ggnn_step.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.incoming.linear",
+      "label": "Two distinct Linear 8 -> 8",
+      "kind": "linear",
+      "source": [
+        "ggnn-modules/model.py::GGNN.__init__",
+        "ggnn-modules/model.py::GGNN.forward"
+      ],
+      "shape": "2 x [B,4,8]",
+      "detail": [],
+      "parameter_families": [
+        "in_0",
+        "in_1"
+      ],
+      "shared_across_iterations": true,
+      "parent": "ggnn_step.incoming",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.incoming.pack",
+      "label": "Stack / transpose / view T*N",
+      "kind": "tensor",
+      "source": [
+        "ggnn-modules/model.py::GGNN.__init__",
+        "ggnn-modules/model.py::GGNN.forward"
+      ],
+      "shape": "[B,8,8]",
+      "detail": [],
+      "type_major_order": true,
+      "parent": "ggnn_step.incoming",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.outgoing",
+      "label": "Outgoing type maps",
+      "kind": "group",
+      "source": [
+        "ggnn-modules/model.py::GGNN.__init__",
+        "ggnn-modules/model.py::GGNN.forward"
+      ],
+      "shape": "[B,8,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "ggnn_step.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.outgoing.linear",
+      "label": "Two distinct Linear 8 -> 8",
+      "kind": "linear",
+      "source": [
+        "ggnn-modules/model.py::GGNN.__init__",
+        "ggnn-modules/model.py::GGNN.forward"
+      ],
+      "shape": "2 x [B,4,8]",
+      "detail": [],
+      "parameter_families": [
+        "out_0",
+        "out_1"
+      ],
+      "shared_across_iterations": true,
+      "parent": "ggnn_step.outgoing",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.outgoing.pack",
+      "label": "Stack / transpose / view T*N",
+      "kind": "tensor",
+      "source": [
+        "ggnn-modules/model.py::GGNN.__init__",
+        "ggnn-modules/model.py::GGNN.forward"
+      ],
+      "shape": "[B,8,8]",
+      "detail": [],
+      "type_major_order": true,
+      "parent": "ggnn_step.outgoing",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.split",
+      "label": "Slice incoming / outgoing blocks",
+      "kind": "tensor",
+      "source": [
+        "ggnn-modules/model.py::Propogator.forward"
+      ],
+      "shape": "2 x [B,4,8]",
+      "detail": [],
+      "split_width": "N*T=8",
+      "parent": "ggnn_step.module",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "A_in",
+        "A_out"
+      ]
+    },
+    {
+      "id": "ggnn_step.ain",
+      "label": "BMM A_in @ states",
+      "kind": "bmm",
+      "source": [
+        "ggnn-modules/model.py::Propogator.forward"
+      ],
+      "shape": "[B,4,8]",
+      "detail": [],
+      "expression": "torch.bmm(A_in, state_in)",
+      "parent": "ggnn_step.module",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "states",
+        "A_in"
+      ]
+    },
+    {
+      "id": "ggnn_step.aout",
+      "label": "BMM A_out @ states",
+      "kind": "bmm",
+      "source": [
+        "ggnn-modules/model.py::Propogator.forward"
+      ],
+      "shape": "[B,4,8]",
+      "detail": [],
+      "expression": "torch.bmm(A_out, state_out)",
+      "parent": "ggnn_step.module",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "states",
+        "A_out"
+      ]
+    },
+    {
+      "id": "ggnn_step.cat",
+      "label": "Concat messages + current state",
+      "kind": "cat",
+      "source": [
+        "ggnn-modules/model.py::Propogator.forward"
+      ],
+      "shape": "[B,4,24]",
+      "detail": [],
+      "order": [
+        "a_in",
+        "a_out",
+        "state_cur"
+      ],
+      "dim": 2,
+      "parent": "ggnn_step.module",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "a_in",
+        "a_out",
+        "current"
+      ]
+    },
+    {
+      "id": "ggnn_step.reset",
+      "label": "Reset gate",
+      "kind": "group",
+      "source": [
+        "ggnn-modules/model.py::Propogator.__init__",
+        "ggnn-modules/model.py::Propogator.forward"
+      ],
+      "shape": "[B,4,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "ggnn_step.module",
+      "source_evidence": [
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.reset.linear",
+      "label": "Linear 24 -> 8",
+      "kind": "linear",
+      "source": [
+        "ggnn-modules/model.py::Propogator.__init__",
+        "ggnn-modules/model.py::Propogator.forward"
+      ],
+      "shape": "[B,4,8]",
+      "detail": [],
+      "parameter": "propogator.reset_gate.0",
+      "parent": "ggnn_step.reset",
+      "source_evidence": [
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.reset.sigmoid",
+      "label": "Sigmoid",
+      "kind": "sigmoid",
+      "source": [
+        "ggnn-modules/model.py::Propogator.__init__",
+        "ggnn-modules/model.py::Propogator.forward"
+      ],
+      "shape": "[B,4,8]",
+      "detail": [],
+      "parent": "ggnn_step.reset",
+      "source_evidence": [
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.update",
+      "label": "Update gate",
+      "kind": "group",
+      "source": [
+        "ggnn-modules/model.py::Propogator.__init__",
+        "ggnn-modules/model.py::Propogator.forward"
+      ],
+      "shape": "[B,4,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "ggnn_step.module",
+      "source_evidence": [
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.update.linear",
+      "label": "Linear 24 -> 8",
+      "kind": "linear",
+      "source": [
+        "ggnn-modules/model.py::Propogator.__init__",
+        "ggnn-modules/model.py::Propogator.forward"
+      ],
+      "shape": "[B,4,8]",
+      "detail": [],
+      "parameter": "propogator.update_gate.0",
+      "parent": "ggnn_step.update",
+      "source_evidence": [
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.update.sigmoid",
+      "label": "Sigmoid",
+      "kind": "sigmoid",
+      "source": [
+        "ggnn-modules/model.py::Propogator.__init__",
+        "ggnn-modules/model.py::Propogator.forward"
+      ],
+      "shape": "[B,4,8]",
+      "detail": [],
+      "parent": "ggnn_step.update",
+      "source_evidence": [
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.reset_state",
+      "label": "r * SAME current state",
+      "kind": "multiply",
+      "source": [
+        "ggnn-modules/model.py::Propogator.forward"
+      ],
+      "shape": "[B,4,8]",
+      "detail": [],
+      "parent": "ggnn_step.module",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "r",
+        "state"
+      ]
+    },
+    {
+      "id": "ggnn_step.joined",
+      "label": "Concat messages + reset state",
+      "kind": "cat",
+      "source": [
+        "ggnn-modules/model.py::Propogator.forward"
+      ],
+      "shape": "[B,4,24]",
+      "detail": [],
+      "order": [
+        "a_in",
+        "a_out",
+        "r*state_cur"
+      ],
+      "dim": 2,
+      "parent": "ggnn_step.module",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "a_in",
+        "a_out",
+        "reset_state"
+      ]
+    },
+    {
+      "id": "ggnn_step.candidate",
+      "label": "Candidate transform / source tansform",
+      "kind": "group",
+      "source": [
+        "ggnn-modules/model.py::Propogator.__init__",
+        "ggnn-modules/model.py::Propogator.forward"
+      ],
+      "shape": "[B,4,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "ggnn_step.module",
+      "source_evidence": [
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.candidate.linear",
+      "label": "Linear 24 -> 8",
+      "kind": "linear",
+      "source": [
+        "ggnn-modules/model.py::Propogator.__init__",
+        "ggnn-modules/model.py::Propogator.forward"
+      ],
+      "shape": "[B,4,8]",
+      "detail": [],
+      "parameter": "propogator.tansform.0",
+      "parent": "ggnn_step.candidate",
+      "source_evidence": [
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.candidate.tanh",
+      "label": "Tanh candidate",
+      "kind": "tanh",
+      "source": [
+        "ggnn-modules/model.py::Propogator.__init__",
+        "ggnn-modules/model.py::Propogator.forward"
+      ],
+      "shape": "[B,4,8]",
+      "detail": [],
+      "parent": "ggnn_step.candidate",
+      "source_evidence": [
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ggnn_step.blend",
+      "label": "GRU-style complementary blend",
+      "kind": "add",
+      "source": [
+        "ggnn-modules/model.py::Propogator.forward"
+      ],
+      "shape": "[B,4,8]",
+      "detail": [],
+      "expression": "(1 - z) * state_cur + z * h_hat",
+      "parent": "ggnn_step.module",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "z",
+        "state",
+        "candidate"
+      ]
+    },
+    {
+      "id": "ggnn_step.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "ggnn-modules/model.py::Propogator.forward"
+      ],
+      "shape": "[B,4,8]",
+      "detail": [],
+      "parent": "ggnn_step.root",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "ggnn_step.incoming:in->ggnn_step.incoming.linear:in:boundary",
+      "src": "ggnn_step.incoming",
+      "dst": "ggnn_step.incoming.linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ggnn_step.incoming.linear:out->ggnn_step.incoming.pack:in:tensor",
+      "src": "ggnn_step.incoming.linear",
+      "dst": "ggnn_step.incoming.pack",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.incoming.pack:out->ggnn_step.incoming:out:boundary",
+      "src": "ggnn_step.incoming.pack",
+      "dst": "ggnn_step.incoming",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ggnn_step.outgoing:in->ggnn_step.outgoing.linear:in:boundary",
+      "src": "ggnn_step.outgoing",
+      "dst": "ggnn_step.outgoing.linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ggnn_step.outgoing.linear:out->ggnn_step.outgoing.pack:in:tensor",
+      "src": "ggnn_step.outgoing.linear",
+      "dst": "ggnn_step.outgoing.pack",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.outgoing.pack:out->ggnn_step.outgoing:out:boundary",
+      "src": "ggnn_step.outgoing.pack",
+      "dst": "ggnn_step.outgoing",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ggnn_step.reset:in->ggnn_step.reset.linear:in:boundary",
+      "src": "ggnn_step.reset",
+      "dst": "ggnn_step.reset.linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ggnn_step.reset.linear:out->ggnn_step.reset.sigmoid:in:tensor",
+      "src": "ggnn_step.reset.linear",
+      "dst": "ggnn_step.reset.sigmoid",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.reset.sigmoid:out->ggnn_step.reset:out:boundary",
+      "src": "ggnn_step.reset.sigmoid",
+      "dst": "ggnn_step.reset",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ggnn_step.update:in->ggnn_step.update.linear:in:boundary",
+      "src": "ggnn_step.update",
+      "dst": "ggnn_step.update.linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ggnn_step.update.linear:out->ggnn_step.update.sigmoid:in:tensor",
+      "src": "ggnn_step.update.linear",
+      "dst": "ggnn_step.update.sigmoid",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.update.sigmoid:out->ggnn_step.update:out:boundary",
+      "src": "ggnn_step.update.sigmoid",
+      "dst": "ggnn_step.update",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ggnn_step.candidate:in->ggnn_step.candidate.linear:in:boundary",
+      "src": "ggnn_step.candidate",
+      "dst": "ggnn_step.candidate.linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ggnn_step.candidate.linear:out->ggnn_step.candidate.tanh:in:tensor",
+      "src": "ggnn_step.candidate.linear",
+      "dst": "ggnn_step.candidate.tanh",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.candidate.tanh:out->ggnn_step.candidate:out:boundary",
+      "src": "ggnn_step.candidate.tanh",
+      "dst": "ggnn_step.candidate",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ggnn_step.state:out->ggnn_step.incoming.linear:in:tensor",
+      "src": "ggnn_step.state",
+      "dst": "ggnn_step.incoming.linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.state:out->ggnn_step.outgoing.linear:in:tensor",
+      "src": "ggnn_step.state",
+      "dst": "ggnn_step.outgoing.linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.adj:out->ggnn_step.split:in:topology",
+      "src": "ggnn_step.adj",
+      "dst": "ggnn_step.split",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "topology"
+    },
+    {
+      "id": "ggnn_step.incoming.pack:out->ggnn_step.ain:states:tensor",
+      "src": "ggnn_step.incoming.pack",
+      "dst": "ggnn_step.ain",
+      "src_port": "out",
+      "dst_port": "states",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.outgoing.pack:out->ggnn_step.aout:states:tensor",
+      "src": "ggnn_step.outgoing.pack",
+      "dst": "ggnn_step.aout",
+      "src_port": "out",
+      "dst_port": "states",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.split:A_in->ggnn_step.ain:A_in:topology",
+      "src": "ggnn_step.split",
+      "dst": "ggnn_step.ain",
+      "src_port": "A_in",
+      "dst_port": "A_in",
+      "role": "topology"
+    },
+    {
+      "id": "ggnn_step.split:A_out->ggnn_step.aout:A_out:topology",
+      "src": "ggnn_step.split",
+      "dst": "ggnn_step.aout",
+      "src_port": "A_out",
+      "dst_port": "A_out",
+      "role": "topology"
+    },
+    {
+      "id": "ggnn_step.ain:out->ggnn_step.cat:a_in:tensor",
+      "src": "ggnn_step.ain",
+      "dst": "ggnn_step.cat",
+      "src_port": "out",
+      "dst_port": "a_in",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.aout:out->ggnn_step.cat:a_out:tensor",
+      "src": "ggnn_step.aout",
+      "dst": "ggnn_step.cat",
+      "src_port": "out",
+      "dst_port": "a_out",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.state:out->ggnn_step.cat:current:retained_value",
+      "src": "ggnn_step.state",
+      "dst": "ggnn_step.cat",
+      "src_port": "out",
+      "dst_port": "current",
+      "role": "retained_value"
+    },
+    {
+      "id": "ggnn_step.cat:out->ggnn_step.reset.linear:in:tensor",
+      "src": "ggnn_step.cat",
+      "dst": "ggnn_step.reset.linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.cat:out->ggnn_step.update.linear:in:tensor",
+      "src": "ggnn_step.cat",
+      "dst": "ggnn_step.update.linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.reset.sigmoid:out->ggnn_step.reset_state:r:tensor",
+      "src": "ggnn_step.reset.sigmoid",
+      "dst": "ggnn_step.reset_state",
+      "src_port": "out",
+      "dst_port": "r",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.state:out->ggnn_step.reset_state:state:retained_value",
+      "src": "ggnn_step.state",
+      "dst": "ggnn_step.reset_state",
+      "src_port": "out",
+      "dst_port": "state",
+      "role": "retained_value"
+    },
+    {
+      "id": "ggnn_step.ain:out->ggnn_step.joined:a_in:retained_value",
+      "src": "ggnn_step.ain",
+      "dst": "ggnn_step.joined",
+      "src_port": "out",
+      "dst_port": "a_in",
+      "role": "retained_value"
+    },
+    {
+      "id": "ggnn_step.aout:out->ggnn_step.joined:a_out:retained_value",
+      "src": "ggnn_step.aout",
+      "dst": "ggnn_step.joined",
+      "src_port": "out",
+      "dst_port": "a_out",
+      "role": "retained_value"
+    },
+    {
+      "id": "ggnn_step.reset_state:out->ggnn_step.joined:reset_state:tensor",
+      "src": "ggnn_step.reset_state",
+      "dst": "ggnn_step.joined",
+      "src_port": "out",
+      "dst_port": "reset_state",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.joined:out->ggnn_step.candidate.linear:in:tensor",
+      "src": "ggnn_step.joined",
+      "dst": "ggnn_step.candidate.linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.update.sigmoid:out->ggnn_step.blend:z:retained_value",
+      "src": "ggnn_step.update.sigmoid",
+      "dst": "ggnn_step.blend",
+      "src_port": "out",
+      "dst_port": "z",
+      "role": "retained_value"
+    },
+    {
+      "id": "ggnn_step.state:out->ggnn_step.blend:state:retained_value",
+      "src": "ggnn_step.state",
+      "dst": "ggnn_step.blend",
+      "src_port": "out",
+      "dst_port": "state",
+      "role": "retained_value"
+    },
+    {
+      "id": "ggnn_step.candidate.tanh:out->ggnn_step.blend:candidate:tensor",
+      "src": "ggnn_step.candidate.tanh",
+      "dst": "ggnn_step.blend",
+      "src_port": "out",
+      "dst_port": "candidate",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.blend:out->ggnn_step.output:in:tensor",
+      "src": "ggnn_step.blend",
+      "dst": "ggnn_step.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ggnn_step.blend:out->ggnn_step.state:next_iteration:loop_recurrence",
+      "src": "ggnn_step.blend",
+      "dst": "ggnn_step.state",
+      "src_port": "out",
+      "dst_port": "next_iteration",
+      "role": "loop_recurrence"
+    }
+  ],
+  "facts": [
+    "Two edge types own distinct in_i and out_i Linear modules; all time steps reuse these same four modules and the same Propogator gates.",
+    "Adjacency packs incoming and outgoing typed blocks. Separate BMMs form messages; source concatenates both messages and current state for two gates.",
+    "Reset r acts on current state before candidate formation. Update formula is (1-z)*state_cur+z*h_hat, preserving the source gate convention.",
+    "Class is misspelled Propogator and candidate member tansform in source; identities preserve those spellings.",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not replace actual gates with opaque nn.GRU or LSTM merely because the docstring says LSTM.",
+    "Do not share in_i and out_i or give each time step fresh learned parameters."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

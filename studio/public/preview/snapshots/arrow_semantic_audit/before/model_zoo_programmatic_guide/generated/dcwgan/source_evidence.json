@@ -1,0 +1,1776 @@
+{
+  "source_project": "deeplearning-models-batch4",
+  "repository": "https://github.com/rasbt/deeplearning-models",
+  "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+  "source_snapshot_sha256": "d99aabf41ee783fdb7b603dc53fc09c290e223223a1576e510b40206f438e950",
+  "entry": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py::GAN.generator_forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "deeplearning-models-batch4/LICENSE": {
+      "sha256": "8cb709815881dd6d5380f3dd6d6327591a56639302e4372eebb84480dcf44024",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/rasbt/deeplearning-models/59beda3aa25337e576564f1c18c6edd26f9f30e3/LICENSE",
+      "derived_from": null
+    },
+    "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.ipynb": {
+      "sha256": "d38b4edbb4837eb481eb5273ad30804fcd82564e7fdc7e9ad8a6d57d735aa65a",
+      "lines": 1311,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/rasbt/deeplearning-models/59beda3aa25337e576564f1c18c6edd26f9f30e3/pytorch_ipynb/gan/dc-wgan-1.ipynb",
+      "derived_from": null
+    },
+    "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py": {
+      "sha256": "ddb3d1058c0531caaed7d5a53510e58c4e6dc9d6366da8bf7a361f53cc87dbae",
+      "lines": 346,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/rasbt/deeplearning-models/59beda3aa25337e576564f1c18c6edd26f9f30e3/pytorch_ipynb/gan/dc-wgan-1.ipynb",
+      "derived_from": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.ipynb"
+    }
+  },
+  "symbols": {
+    "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py::__module__": {
+      "path": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py",
+      "symbol": "__module__",
+      "start": 1,
+      "end": 346,
+      "snippet": "# %% Notebook cell 1\n# NOTEBOOK_MAGIC %load_ext watermark\n# NOTEBOOK_MAGIC %watermark -a 'Sebastian Raschka' -v -p torch\n\n# %% Notebook cell 6\nimport time\nimport numpy as np\nimport torch\nimport torch.nn.functional as F\nfrom torchvision import datasets\nfrom torchvision import transforms\nimport torch.nn as nn\nfrom torch.utils.data import DataLoader\n\n\nif torch.cuda.is_available():\n    torch.backends.cudnn.deterministic = True\n\n# %% Notebook cell 8\n##########################\n### SETTINGS\n##########################\n\n# Device\ndevice = torch.device(\"cuda:0\" if torch.cuda.is_available() else \"cpu\")\n\n# Hyperparameters\nrandom_seed = 0\ngenerator_learning_rate = 0.00005\ndiscriminator_learning_rate = 0.00005\nNUM_EPOCHS = 100\nBATCH_SIZE = 128\nLATENT_DIM = 100\nIMG_SHAPE = (1, 28, 28)\nIMG_SIZE = 1\nfor x in IMG_SHAPE:\n    IMG_SIZE *= x\n\n## WGAN-specific settings\nnum_iter_critic = 5\nweight_clip_value = 0.01\n\n\n##########################\n### MNIST DATASET\n##########################\n\n# Note transforms.ToTensor() scales input images\n# to 0-1 range\ntrain_dataset = datasets.MNIST(root='data', \n                               train=True, \n                               transform=transforms.ToTensor(),\n                               download=True)\n\ntest_dataset = datasets.MNIST(root='data', \n                              train=False, \n                              transform=transforms.ToTensor())\n\n\ntrain_loader = DataLoader(dataset=train_dataset, \n                          batch_size=BATCH_SIZE,\n                          num_workers=4,\n                          shuffle=True)\n\ntest_loader = DataLoader(dataset=test_dataset, \n                         batch_size=BATCH_SIZE,\n                         num_workers=4,\n                         shuffle=False)\n\n# Checking the dataset\nfor images, labels in train_loader:  \n    print('Image batch dimensions:', images.shape)\n    print('Image label dimensions:', labels.shape)\n    break\n\n# %% Notebook cell 10\n##########################\n### MODEL\n##########################\n\nclass Flatten(nn.Module):\n    def forward(self, input):\n        return input.view(input.size(0), -1)\n    \nclass Reshape1(nn.Module):\n    def forward(self, input):\n        return input.view(input.size(0), 64, 7, 7)\n\n\ndef wasserstein_loss(y_true, y_pred):\n    return torch.mean(y_true * y_pred)\n    \n    \nclass GAN(torch.nn.Module):\n\n    def __init__(self):\n        super(GAN, self).__init__()\n        \n        \n        self.generator = nn.Sequential(\n              \n            nn.Linear(LATENT_DIM, 3136, bias=False),\n            nn.BatchNorm1d(num_features=3136),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001),\n            Reshape1(),\n            \n            nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=(3, 3), stride=(2, 2), padding=1, bias=False),\n            nn.BatchNorm2d(num_features=32),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001),\n            #nn.Dropout2d(p=0.2),\n            \n            nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=(3, 3), stride=(2, 2), padding=1, bias=False),\n            nn.BatchNorm2d(num_features=16),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001),\n            #nn.Dropout2d(p=0.2),\n            \n            nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=(3, 3), stride=(1, 1), padding=0, bias=False),\n            nn.BatchNorm2d(num_features=8),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001),\n            #nn.Dropout2d(p=0.2),\n            \n            nn.ConvTranspose2d(in_channels=8, out_channels=1, kernel_size=(2, 2), stride=(1, 1), padding=0, bias=False),\n            nn.Tanh()\n        )\n        \n        self.discriminator = nn.Sequential(\n            nn.Conv2d(in_channels=1, out_channels=8, padding=1, kernel_size=(3, 3), stride=(2, 2), bias=False),\n            nn.BatchNorm2d(num_features=8),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001), \n            #nn.Dropout2d(p=0.2),\n            \n            nn.Conv2d(in_channels=8, out_channels=16, padding=1, kernel_size=(3, 3), stride=(2, 2), bias=False),\n            nn.BatchNorm2d(num_features=16),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001), \n            #nn.Dropout2d(p=0.2),\n            \n            nn.Conv2d(in_channels=16, out_channels=32, padding=1, kernel_size=(3, 3), stride=(2, 2), bias=False),\n            nn.BatchNorm2d(num_features=32),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001), \n            #nn.Dropout2d(p=0.2),\n            \n            Flatten(),\n\n            nn.Linear(512, 1),\n            #nn.Sigmoid()\n        )\n\n            \n    def generator_forward(self, z):\n        img = self.generator(z)\n        return img\n    \n    def discriminator_forward(self, img):\n        pred = model.discriminator(img)\n        return pred.view(-1)\n\n\n\n# %% Notebook cell 11\ntorch.manual_seed(random_seed)\n\n#del model\nmodel = GAN()\nmodel = model.to(device)\n\nprint(model)\n\n# %% Notebook cell 12\n### ## FOR DEBUGGING\n\n\"\"\"\noutputs = []\ndef hook(module, input, output):\n    outputs.append(output)\n\nfor i, layer in enumerate(model.discriminator):\n    if isinstance(layer, torch.nn.modules.conv.Conv2d):\n        model.discriminator[i].register_forward_hook(hook)\n\n#for i, layer in enumerate(model.generator):\n#    if isinstance(layer, torch.nn.modules.ConvTranspose2d):\n#        model.generator[i].register_forward_hook(hook)\n\"\"\"\n\n# %% Notebook cell 13\noptim_gener = torch.optim.RMSprop(model.generator.parameters(), lr=generator_learning_rate)\noptim_discr = torch.optim.RMSprop(model.discriminator.parameters(), lr=discriminator_learning_rate)\n\n# %% Notebook cell 15\nstart_time = time.time()    \n\ndiscr_costs = []\ngener_costs = []\nfor epoch in range(NUM_EPOCHS):\n    model = model.train()\n    for batch_idx, (features, targets) in enumerate(train_loader):\n\n        \n        # Normalize images to [-1, 1] range\n        features = (features - 0.5)*2.\n        features = features.view(-1, IMG_SIZE).to(device) \n\n        targets = targets.to(device)\n\n        # Regular GAN:\n        # valid = torch.ones(targets.size(0)).float().to(device)\n        # fake = torch.zeros(targets.size(0)).float().to(device)\n        \n        # WGAN:\n        valid = -(torch.ones(targets.size(0)).float()).to(device)\n        fake = torch.ones(targets.size(0)).float().to(device)\n        \n\n        ### FORWARD AND BACK PROP\n        \n        \n        # --------------------------\n        # Train Generator\n        # --------------------------\n        \n        # Make new images\n        z = torch.zeros((targets.size(0), LATENT_DIM)).uniform_(0.0, 1.0).to(device)\n        generated_features = model.generator_forward(z)\n        \n        # Loss for fooling the discriminator\n        discr_pred = model.discriminator_forward(generated_features.view(targets.size(0), 1, 28, 28))\n        \n        # Regular GAN:\n        # gener_loss = F.binary_cross_entropy_with_logits(discr_pred, valid)\n        \n        # WGAN:\n        gener_loss = wasserstein_loss(valid, discr_pred)\n        \n        optim_gener.zero_grad()\n        gener_loss.backward()\n        optim_gener.step()\n        \n        \n        # --------------------------\n        # Train Discriminator\n        # --------------------------        \n\n        # WGAN: Multiple loops for the discriminator\n        for _ in range(num_iter_critic):\n        \n            discr_pred_real = model.discriminator_forward(features.view(targets.size(0), 1, 28, 28))\n            # Regular GAN:\n            # real_loss = F.binary_cross_entropy_with_logits(discr_pred_real, valid)\n            # WGAN:\n            real_loss = wasserstein_loss(valid, discr_pred_real)\n\n            discr_pred_fake = model.discriminator_forward(generated_features.view(targets.size(0), 1, 28, 28).detach())\n\n            # Regular GAN:\n            # fake_loss = F.binary_cross_entropy_with_logits(discr_pred_fake, fake)\n            # WGAN:\n            fake_loss = wasserstein_loss(fake, discr_pred_fake)\n\n            discr_loss = 0.5*(real_loss + fake_loss)\n            \n            optim_discr.zero_grad()\n            discr_loss.backward()\n            optim_discr.step()        \n\n            # WGAN:\n            for p in model.discriminator.parameters():\n                p.data.clamp_(-weight_clip_value, weight_clip_value)\n\n        \n        discr_costs.append(discr_loss.item())\n        gener_costs.append(gener_loss.item())\n        \n        \n        ### LOGGING\n        if not batch_idx % 100:\n            print ('Epoch: %03d/%03d | Batch %03d/%03d | Gen/Dis Loss: %.4f/%.4f' \n                   %(epoch+1, NUM_EPOCHS, batch_idx, \n                     len(train_loader), gener_loss, discr_loss))\n\n    print('Time elapsed: %.2f min' % ((time.time() - start_time)/60))\n    \nprint('Total Training Time: %.2f min' % ((time.time() - start_time)/60))\n\n# %% Notebook cell 16\n### For Debugging\n\n\"\"\"\nfor i in outputs:\n    print(i.size())\n\"\"\"\n\n# %% Notebook cell 18\n# NOTEBOOK_MAGIC %matplotlib inline\nimport matplotlib.pyplot as plt\n\n# %% Notebook cell 19\nax1 = plt.subplot(1, 1, 1)\nax1.plot(range(len(gener_costs)), gener_costs, label='Generator loss')\nax1.plot(range(len(discr_costs)), discr_costs, label='Discriminator loss')\nax1.set_xlabel('Iterations')\nax1.set_ylabel('Loss')\nax1.legend()\n\n###################\n# Set scond x-axis\nax2 = ax1.twiny()\nnewlabel = list(range(NUM_EPOCHS+1))\niter_per_epoch = len(train_loader)\nnewpos = [e*iter_per_epoch for e in newlabel]\n\nax2.set_xticklabels(newlabel[::10])\nax2.set_xticks(newpos[::10])\n\nax2.xaxis.set_ticks_position('bottom')\nax2.xaxis.set_label_position('bottom')\nax2.spines['bottom'].set_position(('outward', 45))\nax2.set_xlabel('Epochs')\nax2.set_xlim(ax1.get_xlim())\n###################\n\nplt.show()\n\n# %% Notebook cell 20\n##########################\n### VISUALIZATION\n##########################\n\n\nmodel.eval()\n# Make new images\nz = torch.zeros((10, LATENT_DIM)).uniform_(0.0, 1.0).to(device)\ngenerated_features = model.generator_forward(z)\nimgs = generated_features.view(-1, 28, 28)\n\nfig, axes = plt.subplots(nrows=1, ncols=10, figsize=(20, 2.5))\n\n\nfor i, ax in enumerate(axes):\n    axes[i].imshow(imgs[i].to(torch.device('cpu')).detach(), cmap='binary')\n\n# %% Notebook cell 21\nfrom torchsummary import summary\nmodel = model.to('cuda:0')\nsummary(model.generator, input_size=(100,))\nsummary(model.discriminator, input_size=(1, 28, 28))\n",
+      "notebook_cells": [
+        1,
+        6,
+        8,
+        10,
+        11,
+        12,
+        13,
+        15,
+        16,
+        18,
+        19,
+        20,
+        21
+      ],
+      "original_notebook": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.ipynb",
+      "evidence_id": "E009"
+    },
+    "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py::Flatten": {
+      "path": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py",
+      "symbol": "Flatten",
+      "start": 81,
+      "end": 83,
+      "snippet": "class Flatten(nn.Module):\n    def forward(self, input):\n        return input.view(input.size(0), -1)",
+      "notebook_cells": [
+        10
+      ],
+      "original_notebook": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.ipynb",
+      "evidence_id": "E001"
+    },
+    "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py::Flatten.forward": {
+      "path": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py",
+      "symbol": "Flatten.forward",
+      "start": 82,
+      "end": 83,
+      "snippet": "    def forward(self, input):\n        return input.view(input.size(0), -1)",
+      "notebook_cells": [
+        10
+      ],
+      "original_notebook": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.ipynb",
+      "evidence_id": "E002"
+    },
+    "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py::Reshape1": {
+      "path": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py",
+      "symbol": "Reshape1",
+      "start": 85,
+      "end": 87,
+      "snippet": "class Reshape1(nn.Module):\n    def forward(self, input):\n        return input.view(input.size(0), 64, 7, 7)",
+      "notebook_cells": [
+        10
+      ],
+      "original_notebook": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.ipynb",
+      "evidence_id": "E007"
+    },
+    "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py::Reshape1.forward": {
+      "path": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py",
+      "symbol": "Reshape1.forward",
+      "start": 86,
+      "end": 87,
+      "snippet": "    def forward(self, input):\n        return input.view(input.size(0), 64, 7, 7)",
+      "notebook_cells": [
+        10
+      ],
+      "original_notebook": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.ipynb",
+      "evidence_id": "E008"
+    },
+    "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py::wasserstein_loss": {
+      "path": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py",
+      "symbol": "wasserstein_loss",
+      "start": 90,
+      "end": 91,
+      "snippet": "def wasserstein_loss(y_true, y_pred):\n    return torch.mean(y_true * y_pred)",
+      "notebook_cells": [
+        10
+      ],
+      "original_notebook": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.ipynb",
+      "evidence_id": "E010"
+    },
+    "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py::GAN": {
+      "path": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py",
+      "symbol": "GAN",
+      "start": 94,
+      "end": 155,
+      "snippet": "class GAN(torch.nn.Module):\n\n    def __init__(self):\n        super(GAN, self).__init__()\n        \n        \n        self.generator = nn.Sequential(\n              \n            nn.Linear(LATENT_DIM, 3136, bias=False),\n            nn.BatchNorm1d(num_features=3136),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001),\n            Reshape1(),\n            \n            nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=(3, 3), stride=(2, 2), padding=1, bias=False),\n            nn.BatchNorm2d(num_features=32),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001),\n            #nn.Dropout2d(p=0.2),\n            \n            nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=(3, 3), stride=(2, 2), padding=1, bias=False),\n            nn.BatchNorm2d(num_features=16),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001),\n            #nn.Dropout2d(p=0.2),\n            \n            nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=(3, 3), stride=(1, 1), padding=0, bias=False),\n            nn.BatchNorm2d(num_features=8),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001),\n            #nn.Dropout2d(p=0.2),\n            \n            nn.ConvTranspose2d(in_channels=8, out_channels=1, kernel_size=(2, 2), stride=(1, 1), padding=0, bias=False),\n            nn.Tanh()\n        )\n        \n        self.discriminator = nn.Sequential(\n            nn.Conv2d(in_channels=1, out_channels=8, padding=1, kernel_size=(3, 3), stride=(2, 2), bias=False),\n            nn.BatchNorm2d(num_features=8),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001), \n            #nn.Dropout2d(p=0.2),\n            \n            nn.Conv2d(in_channels=8, out_channels=16, padding=1, kernel_size=(3, 3), stride=(2, 2), bias=False),\n            nn.BatchNorm2d(num_features=16),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001), \n            #nn.Dropout2d(p=0.2),\n            \n            nn.Conv2d(in_channels=16, out_channels=32, padding=1, kernel_size=(3, 3), stride=(2, 2), bias=False),\n            nn.BatchNorm2d(num_features=32),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001), \n            #nn.Dropout2d(p=0.2),\n            \n            Flatten(),\n\n            nn.Linear(512, 1),\n            #nn.Sigmoid()\n        )\n\n            \n    def generator_forward(self, z):\n        img = self.generator(z)\n        return img\n    \n    def discriminator_forward(self, img):\n        pred = model.discriminator(img)\n        return pred.view(-1)",
+      "notebook_cells": [
+        10
+      ],
+      "original_notebook": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.ipynb",
+      "evidence_id": "E003"
+    },
+    "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py::GAN.__init__": {
+      "path": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py",
+      "symbol": "GAN.__init__",
+      "start": 96,
+      "end": 146,
+      "snippet": "    def __init__(self):\n        super(GAN, self).__init__()\n        \n        \n        self.generator = nn.Sequential(\n              \n            nn.Linear(LATENT_DIM, 3136, bias=False),\n            nn.BatchNorm1d(num_features=3136),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001),\n            Reshape1(),\n            \n            nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=(3, 3), stride=(2, 2), padding=1, bias=False),\n            nn.BatchNorm2d(num_features=32),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001),\n            #nn.Dropout2d(p=0.2),\n            \n            nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=(3, 3), stride=(2, 2), padding=1, bias=False),\n            nn.BatchNorm2d(num_features=16),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001),\n            #nn.Dropout2d(p=0.2),\n            \n            nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=(3, 3), stride=(1, 1), padding=0, bias=False),\n            nn.BatchNorm2d(num_features=8),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001),\n            #nn.Dropout2d(p=0.2),\n            \n            nn.ConvTranspose2d(in_channels=8, out_channels=1, kernel_size=(2, 2), stride=(1, 1), padding=0, bias=False),\n            nn.Tanh()\n        )\n        \n        self.discriminator = nn.Sequential(\n            nn.Conv2d(in_channels=1, out_channels=8, padding=1, kernel_size=(3, 3), stride=(2, 2), bias=False),\n            nn.BatchNorm2d(num_features=8),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001), \n            #nn.Dropout2d(p=0.2),\n            \n            nn.Conv2d(in_channels=8, out_channels=16, padding=1, kernel_size=(3, 3), stride=(2, 2), bias=False),\n            nn.BatchNorm2d(num_features=16),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001), \n            #nn.Dropout2d(p=0.2),\n            \n            nn.Conv2d(in_channels=16, out_channels=32, padding=1, kernel_size=(3, 3), stride=(2, 2), bias=False),\n            nn.BatchNorm2d(num_features=32),\n            nn.LeakyReLU(inplace=True, negative_slope=0.0001), \n            #nn.Dropout2d(p=0.2),\n            \n            Flatten(),\n\n            nn.Linear(512, 1),\n            #nn.Sigmoid()\n        )",
+      "notebook_cells": [
+        10
+      ],
+      "original_notebook": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.ipynb",
+      "evidence_id": "E004"
+    },
+    "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py::GAN.generator_forward": {
+      "path": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py",
+      "symbol": "GAN.generator_forward",
+      "start": 149,
+      "end": 151,
+      "snippet": "    def generator_forward(self, z):\n        img = self.generator(z)\n        return img",
+      "notebook_cells": [
+        10
+      ],
+      "original_notebook": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.ipynb",
+      "evidence_id": "E006"
+    },
+    "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py::GAN.discriminator_forward": {
+      "path": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py",
+      "symbol": "GAN.discriminator_forward",
+      "start": 153,
+      "end": 155,
+      "snippet": "    def discriminator_forward(self, img):\n        pred = model.discriminator(img)\n        return pred.view(-1)",
+      "notebook_cells": [
+        10
+      ],
+      "original_notebook": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.ipynb",
+      "evidence_id": "E005"
+    }
+  },
+  "notebook_origins": {
+    "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py": {
+      "original": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.ipynb",
+      "line_map": [
+        {
+          "derived_line": 2,
+          "cell_index": 1,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 3,
+          "cell_index": 1,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 6,
+          "cell_index": 6,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 7,
+          "cell_index": 6,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 8,
+          "cell_index": 6,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 9,
+          "cell_index": 6,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 10,
+          "cell_index": 6,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 11,
+          "cell_index": 6,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 12,
+          "cell_index": 6,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 13,
+          "cell_index": 6,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 14,
+          "cell_index": 6,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 15,
+          "cell_index": 6,
+          "cell_line": 10
+        },
+        {
+          "derived_line": 16,
+          "cell_index": 6,
+          "cell_line": 11
+        },
+        {
+          "derived_line": 17,
+          "cell_index": 6,
+          "cell_line": 12
+        },
+        {
+          "derived_line": 20,
+          "cell_index": 8,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 21,
+          "cell_index": 8,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 22,
+          "cell_index": 8,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 23,
+          "cell_index": 8,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 24,
+          "cell_index": 8,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 25,
+          "cell_index": 8,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 26,
+          "cell_index": 8,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 27,
+          "cell_index": 8,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 28,
+          "cell_index": 8,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 29,
+          "cell_index": 8,
+          "cell_line": 10
+        },
+        {
+          "derived_line": 30,
+          "cell_index": 8,
+          "cell_line": 11
+        },
+        {
+          "derived_line": 31,
+          "cell_index": 8,
+          "cell_line": 12
+        },
+        {
+          "derived_line": 32,
+          "cell_index": 8,
+          "cell_line": 13
+        },
+        {
+          "derived_line": 33,
+          "cell_index": 8,
+          "cell_line": 14
+        },
+        {
+          "derived_line": 34,
+          "cell_index": 8,
+          "cell_line": 15
+        },
+        {
+          "derived_line": 35,
+          "cell_index": 8,
+          "cell_line": 16
+        },
+        {
+          "derived_line": 36,
+          "cell_index": 8,
+          "cell_line": 17
+        },
+        {
+          "derived_line": 37,
+          "cell_index": 8,
+          "cell_line": 18
+        },
+        {
+          "derived_line": 38,
+          "cell_index": 8,
+          "cell_line": 19
+        },
+        {
+          "derived_line": 39,
+          "cell_index": 8,
+          "cell_line": 20
+        },
+        {
+          "derived_line": 40,
+          "cell_index": 8,
+          "cell_line": 21
+        },
+        {
+          "derived_line": 41,
+          "cell_index": 8,
+          "cell_line": 22
+        },
+        {
+          "derived_line": 42,
+          "cell_index": 8,
+          "cell_line": 23
+        },
+        {
+          "derived_line": 43,
+          "cell_index": 8,
+          "cell_line": 24
+        },
+        {
+          "derived_line": 44,
+          "cell_index": 8,
+          "cell_line": 25
+        },
+        {
+          "derived_line": 45,
+          "cell_index": 8,
+          "cell_line": 26
+        },
+        {
+          "derived_line": 46,
+          "cell_index": 8,
+          "cell_line": 27
+        },
+        {
+          "derived_line": 47,
+          "cell_index": 8,
+          "cell_line": 28
+        },
+        {
+          "derived_line": 48,
+          "cell_index": 8,
+          "cell_line": 29
+        },
+        {
+          "derived_line": 49,
+          "cell_index": 8,
+          "cell_line": 30
+        },
+        {
+          "derived_line": 50,
+          "cell_index": 8,
+          "cell_line": 31
+        },
+        {
+          "derived_line": 51,
+          "cell_index": 8,
+          "cell_line": 32
+        },
+        {
+          "derived_line": 52,
+          "cell_index": 8,
+          "cell_line": 33
+        },
+        {
+          "derived_line": 53,
+          "cell_index": 8,
+          "cell_line": 34
+        },
+        {
+          "derived_line": 54,
+          "cell_index": 8,
+          "cell_line": 35
+        },
+        {
+          "derived_line": 55,
+          "cell_index": 8,
+          "cell_line": 36
+        },
+        {
+          "derived_line": 56,
+          "cell_index": 8,
+          "cell_line": 37
+        },
+        {
+          "derived_line": 57,
+          "cell_index": 8,
+          "cell_line": 38
+        },
+        {
+          "derived_line": 58,
+          "cell_index": 8,
+          "cell_line": 39
+        },
+        {
+          "derived_line": 59,
+          "cell_index": 8,
+          "cell_line": 40
+        },
+        {
+          "derived_line": 60,
+          "cell_index": 8,
+          "cell_line": 41
+        },
+        {
+          "derived_line": 61,
+          "cell_index": 8,
+          "cell_line": 42
+        },
+        {
+          "derived_line": 62,
+          "cell_index": 8,
+          "cell_line": 43
+        },
+        {
+          "derived_line": 63,
+          "cell_index": 8,
+          "cell_line": 44
+        },
+        {
+          "derived_line": 64,
+          "cell_index": 8,
+          "cell_line": 45
+        },
+        {
+          "derived_line": 65,
+          "cell_index": 8,
+          "cell_line": 46
+        },
+        {
+          "derived_line": 66,
+          "cell_index": 8,
+          "cell_line": 47
+        },
+        {
+          "derived_line": 67,
+          "cell_index": 8,
+          "cell_line": 48
+        },
+        {
+          "derived_line": 68,
+          "cell_index": 8,
+          "cell_line": 49
+        },
+        {
+          "derived_line": 69,
+          "cell_index": 8,
+          "cell_line": 50
+        },
+        {
+          "derived_line": 70,
+          "cell_index": 8,
+          "cell_line": 51
+        },
+        {
+          "derived_line": 71,
+          "cell_index": 8,
+          "cell_line": 52
+        },
+        {
+          "derived_line": 72,
+          "cell_index": 8,
+          "cell_line": 53
+        },
+        {
+          "derived_line": 73,
+          "cell_index": 8,
+          "cell_line": 54
+        },
+        {
+          "derived_line": 74,
+          "cell_index": 8,
+          "cell_line": 55
+        },
+        {
+          "derived_line": 77,
+          "cell_index": 10,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 78,
+          "cell_index": 10,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 79,
+          "cell_index": 10,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 80,
+          "cell_index": 10,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 81,
+          "cell_index": 10,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 82,
+          "cell_index": 10,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 83,
+          "cell_index": 10,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 84,
+          "cell_index": 10,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 85,
+          "cell_index": 10,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 86,
+          "cell_index": 10,
+          "cell_line": 10
+        },
+        {
+          "derived_line": 87,
+          "cell_index": 10,
+          "cell_line": 11
+        },
+        {
+          "derived_line": 88,
+          "cell_index": 10,
+          "cell_line": 12
+        },
+        {
+          "derived_line": 89,
+          "cell_index": 10,
+          "cell_line": 13
+        },
+        {
+          "derived_line": 90,
+          "cell_index": 10,
+          "cell_line": 14
+        },
+        {
+          "derived_line": 91,
+          "cell_index": 10,
+          "cell_line": 15
+        },
+        {
+          "derived_line": 92,
+          "cell_index": 10,
+          "cell_line": 16
+        },
+        {
+          "derived_line": 93,
+          "cell_index": 10,
+          "cell_line": 17
+        },
+        {
+          "derived_line": 94,
+          "cell_index": 10,
+          "cell_line": 18
+        },
+        {
+          "derived_line": 95,
+          "cell_index": 10,
+          "cell_line": 19
+        },
+        {
+          "derived_line": 96,
+          "cell_index": 10,
+          "cell_line": 20
+        },
+        {
+          "derived_line": 97,
+          "cell_index": 10,
+          "cell_line": 21
+        },
+        {
+          "derived_line": 98,
+          "cell_index": 10,
+          "cell_line": 22
+        },
+        {
+          "derived_line": 99,
+          "cell_index": 10,
+          "cell_line": 23
+        },
+        {
+          "derived_line": 100,
+          "cell_index": 10,
+          "cell_line": 24
+        },
+        {
+          "derived_line": 101,
+          "cell_index": 10,
+          "cell_line": 25
+        },
+        {
+          "derived_line": 102,
+          "cell_index": 10,
+          "cell_line": 26
+        },
+        {
+          "derived_line": 103,
+          "cell_index": 10,
+          "cell_line": 27
+        },
+        {
+          "derived_line": 104,
+          "cell_index": 10,
+          "cell_line": 28
+        },
+        {
+          "derived_line": 105,
+          "cell_index": 10,
+          "cell_line": 29
+        },
+        {
+          "derived_line": 106,
+          "cell_index": 10,
+          "cell_line": 30
+        },
+        {
+          "derived_line": 107,
+          "cell_index": 10,
+          "cell_line": 31
+        },
+        {
+          "derived_line": 108,
+          "cell_index": 10,
+          "cell_line": 32
+        },
+        {
+          "derived_line": 109,
+          "cell_index": 10,
+          "cell_line": 33
+        },
+        {
+          "derived_line": 110,
+          "cell_index": 10,
+          "cell_line": 34
+        },
+        {
+          "derived_line": 111,
+          "cell_index": 10,
+          "cell_line": 35
+        },
+        {
+          "derived_line": 112,
+          "cell_index": 10,
+          "cell_line": 36
+        },
+        {
+          "derived_line": 113,
+          "cell_index": 10,
+          "cell_line": 37
+        },
+        {
+          "derived_line": 114,
+          "cell_index": 10,
+          "cell_line": 38
+        },
+        {
+          "derived_line": 115,
+          "cell_index": 10,
+          "cell_line": 39
+        },
+        {
+          "derived_line": 116,
+          "cell_index": 10,
+          "cell_line": 40
+        },
+        {
+          "derived_line": 117,
+          "cell_index": 10,
+          "cell_line": 41
+        },
+        {
+          "derived_line": 118,
+          "cell_index": 10,
+          "cell_line": 42
+        },
+        {
+          "derived_line": 119,
+          "cell_index": 10,
+          "cell_line": 43
+        },
+        {
+          "derived_line": 120,
+          "cell_index": 10,
+          "cell_line": 44
+        },
+        {
+          "derived_line": 121,
+          "cell_index": 10,
+          "cell_line": 45
+        },
+        {
+          "derived_line": 122,
+          "cell_index": 10,
+          "cell_line": 46
+        },
+        {
+          "derived_line": 123,
+          "cell_index": 10,
+          "cell_line": 47
+        },
+        {
+          "derived_line": 124,
+          "cell_index": 10,
+          "cell_line": 48
+        },
+        {
+          "derived_line": 125,
+          "cell_index": 10,
+          "cell_line": 49
+        },
+        {
+          "derived_line": 126,
+          "cell_index": 10,
+          "cell_line": 50
+        },
+        {
+          "derived_line": 127,
+          "cell_index": 10,
+          "cell_line": 51
+        },
+        {
+          "derived_line": 128,
+          "cell_index": 10,
+          "cell_line": 52
+        },
+        {
+          "derived_line": 129,
+          "cell_index": 10,
+          "cell_line": 53
+        },
+        {
+          "derived_line": 130,
+          "cell_index": 10,
+          "cell_line": 54
+        },
+        {
+          "derived_line": 131,
+          "cell_index": 10,
+          "cell_line": 55
+        },
+        {
+          "derived_line": 132,
+          "cell_index": 10,
+          "cell_line": 56
+        },
+        {
+          "derived_line": 133,
+          "cell_index": 10,
+          "cell_line": 57
+        },
+        {
+          "derived_line": 134,
+          "cell_index": 10,
+          "cell_line": 58
+        },
+        {
+          "derived_line": 135,
+          "cell_index": 10,
+          "cell_line": 59
+        },
+        {
+          "derived_line": 136,
+          "cell_index": 10,
+          "cell_line": 60
+        },
+        {
+          "derived_line": 137,
+          "cell_index": 10,
+          "cell_line": 61
+        },
+        {
+          "derived_line": 138,
+          "cell_index": 10,
+          "cell_line": 62
+        },
+        {
+          "derived_line": 139,
+          "cell_index": 10,
+          "cell_line": 63
+        },
+        {
+          "derived_line": 140,
+          "cell_index": 10,
+          "cell_line": 64
+        },
+        {
+          "derived_line": 141,
+          "cell_index": 10,
+          "cell_line": 65
+        },
+        {
+          "derived_line": 142,
+          "cell_index": 10,
+          "cell_line": 66
+        },
+        {
+          "derived_line": 143,
+          "cell_index": 10,
+          "cell_line": 67
+        },
+        {
+          "derived_line": 144,
+          "cell_index": 10,
+          "cell_line": 68
+        },
+        {
+          "derived_line": 145,
+          "cell_index": 10,
+          "cell_line": 69
+        },
+        {
+          "derived_line": 146,
+          "cell_index": 10,
+          "cell_line": 70
+        },
+        {
+          "derived_line": 147,
+          "cell_index": 10,
+          "cell_line": 71
+        },
+        {
+          "derived_line": 148,
+          "cell_index": 10,
+          "cell_line": 72
+        },
+        {
+          "derived_line": 149,
+          "cell_index": 10,
+          "cell_line": 73
+        },
+        {
+          "derived_line": 150,
+          "cell_index": 10,
+          "cell_line": 74
+        },
+        {
+          "derived_line": 151,
+          "cell_index": 10,
+          "cell_line": 75
+        },
+        {
+          "derived_line": 152,
+          "cell_index": 10,
+          "cell_line": 76
+        },
+        {
+          "derived_line": 153,
+          "cell_index": 10,
+          "cell_line": 77
+        },
+        {
+          "derived_line": 154,
+          "cell_index": 10,
+          "cell_line": 78
+        },
+        {
+          "derived_line": 155,
+          "cell_index": 10,
+          "cell_line": 79
+        },
+        {
+          "derived_line": 156,
+          "cell_index": 10,
+          "cell_line": 80
+        },
+        {
+          "derived_line": 157,
+          "cell_index": 10,
+          "cell_line": 81
+        },
+        {
+          "derived_line": 160,
+          "cell_index": 11,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 161,
+          "cell_index": 11,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 162,
+          "cell_index": 11,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 163,
+          "cell_index": 11,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 164,
+          "cell_index": 11,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 165,
+          "cell_index": 11,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 166,
+          "cell_index": 11,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 169,
+          "cell_index": 12,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 170,
+          "cell_index": 12,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 171,
+          "cell_index": 12,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 172,
+          "cell_index": 12,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 173,
+          "cell_index": 12,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 174,
+          "cell_index": 12,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 175,
+          "cell_index": 12,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 176,
+          "cell_index": 12,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 177,
+          "cell_index": 12,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 178,
+          "cell_index": 12,
+          "cell_line": 10
+        },
+        {
+          "derived_line": 179,
+          "cell_index": 12,
+          "cell_line": 11
+        },
+        {
+          "derived_line": 180,
+          "cell_index": 12,
+          "cell_line": 12
+        },
+        {
+          "derived_line": 181,
+          "cell_index": 12,
+          "cell_line": 13
+        },
+        {
+          "derived_line": 182,
+          "cell_index": 12,
+          "cell_line": 14
+        },
+        {
+          "derived_line": 183,
+          "cell_index": 12,
+          "cell_line": 15
+        },
+        {
+          "derived_line": 186,
+          "cell_index": 13,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 187,
+          "cell_index": 13,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 190,
+          "cell_index": 15,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 191,
+          "cell_index": 15,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 192,
+          "cell_index": 15,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 193,
+          "cell_index": 15,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 194,
+          "cell_index": 15,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 195,
+          "cell_index": 15,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 196,
+          "cell_index": 15,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 197,
+          "cell_index": 15,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 198,
+          "cell_index": 15,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 199,
+          "cell_index": 15,
+          "cell_line": 10
+        },
+        {
+          "derived_line": 200,
+          "cell_index": 15,
+          "cell_line": 11
+        },
+        {
+          "derived_line": 201,
+          "cell_index": 15,
+          "cell_line": 12
+        },
+        {
+          "derived_line": 202,
+          "cell_index": 15,
+          "cell_line": 13
+        },
+        {
+          "derived_line": 203,
+          "cell_index": 15,
+          "cell_line": 14
+        },
+        {
+          "derived_line": 204,
+          "cell_index": 15,
+          "cell_line": 15
+        },
+        {
+          "derived_line": 205,
+          "cell_index": 15,
+          "cell_line": 16
+        },
+        {
+          "derived_line": 206,
+          "cell_index": 15,
+          "cell_line": 17
+        },
+        {
+          "derived_line": 207,
+          "cell_index": 15,
+          "cell_line": 18
+        },
+        {
+          "derived_line": 208,
+          "cell_index": 15,
+          "cell_line": 19
+        },
+        {
+          "derived_line": 209,
+          "cell_index": 15,
+          "cell_line": 20
+        },
+        {
+          "derived_line": 210,
+          "cell_index": 15,
+          "cell_line": 21
+        },
+        {
+          "derived_line": 211,
+          "cell_index": 15,
+          "cell_line": 22
+        },
+        {
+          "derived_line": 212,
+          "cell_index": 15,
+          "cell_line": 23
+        },
+        {
+          "derived_line": 213,
+          "cell_index": 15,
+          "cell_line": 24
+        },
+        {
+          "derived_line": 214,
+          "cell_index": 15,
+          "cell_line": 25
+        },
+        {
+          "derived_line": 215,
+          "cell_index": 15,
+          "cell_line": 26
+        },
+        {
+          "derived_line": 216,
+          "cell_index": 15,
+          "cell_line": 27
+        },
+        {
+          "derived_line": 217,
+          "cell_index": 15,
+          "cell_line": 28
+        },
+        {
+          "derived_line": 218,
+          "cell_index": 15,
+          "cell_line": 29
+        },
+        {
+          "derived_line": 219,
+          "cell_index": 15,
+          "cell_line": 30
+        },
+        {
+          "derived_line": 220,
+          "cell_index": 15,
+          "cell_line": 31
+        },
+        {
+          "derived_line": 221,
+          "cell_index": 15,
+          "cell_line": 32
+        },
+        {
+          "derived_line": 222,
+          "cell_index": 15,
+          "cell_line": 33
+        },
+        {
+          "derived_line": 223,
+          "cell_index": 15,
+          "cell_line": 34
+        },
+        {
+          "derived_line": 224,
+          "cell_index": 15,
+          "cell_line": 35
+        },
+        {
+          "derived_line": 225,
+          "cell_index": 15,
+          "cell_line": 36
+        },
+        {
+          "derived_line": 226,
+          "cell_index": 15,
+          "cell_line": 37
+        },
+        {
+          "derived_line": 227,
+          "cell_index": 15,
+          "cell_line": 38
+        },
+        {
+          "derived_line": 228,
+          "cell_index": 15,
+          "cell_line": 39
+        },
+        {
+          "derived_line": 229,
+          "cell_index": 15,
+          "cell_line": 40
+        },
+        {
+          "derived_line": 230,
+          "cell_index": 15,
+          "cell_line": 41
+        },
+        {
+          "derived_line": 231,
+          "cell_index": 15,
+          "cell_line": 42
+        },
+        {
+          "derived_line": 232,
+          "cell_index": 15,
+          "cell_line": 43
+        },
+        {
+          "derived_line": 233,
+          "cell_index": 15,
+          "cell_line": 44
+        },
+        {
+          "derived_line": 234,
+          "cell_index": 15,
+          "cell_line": 45
+        },
+        {
+          "derived_line": 235,
+          "cell_index": 15,
+          "cell_line": 46
+        },
+        {
+          "derived_line": 236,
+          "cell_index": 15,
+          "cell_line": 47
+        },
+        {
+          "derived_line": 237,
+          "cell_index": 15,
+          "cell_line": 48
+        },
+        {
+          "derived_line": 238,
+          "cell_index": 15,
+          "cell_line": 49
+        },
+        {
+          "derived_line": 239,
+          "cell_index": 15,
+          "cell_line": 50
+        },
+        {
+          "derived_line": 240,
+          "cell_index": 15,
+          "cell_line": 51
+        },
+        {
+          "derived_line": 241,
+          "cell_index": 15,
+          "cell_line": 52
+        },
+        {
+          "derived_line": 242,
+          "cell_index": 15,
+          "cell_line": 53
+        },
+        {
+          "derived_line": 243,
+          "cell_index": 15,
+          "cell_line": 54
+        },
+        {
+          "derived_line": 244,
+          "cell_index": 15,
+          "cell_line": 55
+        },
+        {
+          "derived_line": 245,
+          "cell_index": 15,
+          "cell_line": 56
+        },
+        {
+          "derived_line": 246,
+          "cell_index": 15,
+          "cell_line": 57
+        },
+        {
+          "derived_line": 247,
+          "cell_index": 15,
+          "cell_line": 58
+        },
+        {
+          "derived_line": 248,
+          "cell_index": 15,
+          "cell_line": 59
+        },
+        {
+          "derived_line": 249,
+          "cell_index": 15,
+          "cell_line": 60
+        },
+        {
+          "derived_line": 250,
+          "cell_index": 15,
+          "cell_line": 61
+        },
+        {
+          "derived_line": 251,
+          "cell_index": 15,
+          "cell_line": 62
+        },
+        {
+          "derived_line": 252,
+          "cell_index": 15,
+          "cell_line": 63
+        },
+        {
+          "derived_line": 253,
+          "cell_index": 15,
+          "cell_line": 64
+        },
+        {
+          "derived_line": 254,
+          "cell_index": 15,
+          "cell_line": 65
+        },
+        {
+          "derived_line": 255,
+          "cell_index": 15,
+          "cell_line": 66
+        },
+        {
+          "derived_line": 256,
+          "cell_index": 15,
+          "cell_line": 67
+        },
+        {
+          "derived_line": 257,
+          "cell_index": 15,
+          "cell_line": 68
+        },
+        {
+          "derived_line": 258,
+          "cell_index": 15,
+          "cell_line": 69
+        },
+        {
+          "derived_line": 259,
+          "cell_index": 15,
+          "cell_line": 70
+        },
+        {
+          "derived_line": 260,
+          "cell_index": 15,
+          "cell_line": 71
+        },
+        {
+          "derived_line": 261,
+          "cell_index": 15,
+          "cell_line": 72
+        },
+        {
+          "derived_line": 262,
+          "cell_index": 15,
+          "cell_line": 73
+        },
+        {
+          "derived_line": 263,
+          "cell_index": 15,
+          "cell_line": 74
+        },
+        {
+          "derived_line": 264,
+          "cell_index": 15,
+          "cell_line": 75
+        },
+        {
+          "derived_line": 265,
+          "cell_index": 15,
+          "cell_line": 76
+        },
+        {
+          "derived_line": 266,
+          "cell_index": 15,
+          "cell_line": 77
+        },
+        {
+          "derived_line": 267,
+          "cell_index": 15,
+          "cell_line": 78
+        },
+        {
+          "derived_line": 268,
+          "cell_index": 15,
+          "cell_line": 79
+        },
+        {
+          "derived_line": 269,
+          "cell_index": 15,
+          "cell_line": 80
+        },
+        {
+          "derived_line": 270,
+          "cell_index": 15,
+          "cell_line": 81
+        },
+        {
+          "derived_line": 271,
+          "cell_index": 15,
+          "cell_line": 82
+        },
+        {
+          "derived_line": 272,
+          "cell_index": 15,
+          "cell_line": 83
+        },
+        {
+          "derived_line": 273,
+          "cell_index": 15,
+          "cell_line": 84
+        },
+        {
+          "derived_line": 274,
+          "cell_index": 15,
+          "cell_line": 85
+        },
+        {
+          "derived_line": 275,
+          "cell_index": 15,
+          "cell_line": 86
+        },
+        {
+          "derived_line": 276,
+          "cell_index": 15,
+          "cell_line": 87
+        },
+        {
+          "derived_line": 277,
+          "cell_index": 15,
+          "cell_line": 88
+        },
+        {
+          "derived_line": 278,
+          "cell_index": 15,
+          "cell_line": 89
+        },
+        {
+          "derived_line": 279,
+          "cell_index": 15,
+          "cell_line": 90
+        },
+        {
+          "derived_line": 280,
+          "cell_index": 15,
+          "cell_line": 91
+        },
+        {
+          "derived_line": 281,
+          "cell_index": 15,
+          "cell_line": 92
+        },
+        {
+          "derived_line": 282,
+          "cell_index": 15,
+          "cell_line": 93
+        },
+        {
+          "derived_line": 285,
+          "cell_index": 16,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 286,
+          "cell_index": 16,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 287,
+          "cell_index": 16,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 288,
+          "cell_index": 16,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 289,
+          "cell_index": 16,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 290,
+          "cell_index": 16,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 293,
+          "cell_index": 18,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 294,
+          "cell_index": 18,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 297,
+          "cell_index": 19,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 298,
+          "cell_index": 19,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 299,
+          "cell_index": 19,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 300,
+          "cell_index": 19,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 301,
+          "cell_index": 19,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 302,
+          "cell_index": 19,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 303,
+          "cell_index": 19,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 304,
+          "cell_index": 19,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 305,
+          "cell_index": 19,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 306,
+          "cell_index": 19,
+          "cell_line": 10
+        },
+        {
+          "derived_line": 307,
+          "cell_index": 19,
+          "cell_line": 11
+        },
+        {
+          "derived_line": 308,
+          "cell_index": 19,
+          "cell_line": 12
+        },
+        {
+          "derived_line": 309,
+          "cell_index": 19,
+          "cell_line": 13
+        },
+        {
+          "derived_line": 310,
+          "cell_index": 19,
+          "cell_line": 14
+        },
+        {
+          "derived_line": 311,
+          "cell_index": 19,
+          "cell_line": 15
+        },
+        {
+          "derived_line": 312,
+          "cell_index": 19,
+          "cell_line": 16
+        },
+        {
+          "derived_line": 313,
+          "cell_index": 19,
+          "cell_line": 17
+        },
+        {
+          "derived_line": 314,
+          "cell_index": 19,
+          "cell_line": 18
+        },
+        {
+          "derived_line": 315,
+          "cell_index": 19,
+          "cell_line": 19
+        },
+        {
+          "derived_line": 316,
+          "cell_index": 19,
+          "cell_line": 20
+        },
+        {
+          "derived_line": 317,
+          "cell_index": 19,
+          "cell_line": 21
+        },
+        {
+          "derived_line": 318,
+          "cell_index": 19,
+          "cell_line": 22
+        },
+        {
+          "derived_line": 319,
+          "cell_index": 19,
+          "cell_line": 23
+        },
+        {
+          "derived_line": 320,
+          "cell_index": 19,
+          "cell_line": 24
+        },
+        {
+          "derived_line": 321,
+          "cell_index": 19,
+          "cell_line": 25
+        },
+        {
+          "derived_line": 324,
+          "cell_index": 20,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 325,
+          "cell_index": 20,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 326,
+          "cell_index": 20,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 327,
+          "cell_index": 20,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 328,
+          "cell_index": 20,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 329,
+          "cell_index": 20,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 330,
+          "cell_index": 20,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 331,
+          "cell_index": 20,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 332,
+          "cell_index": 20,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 333,
+          "cell_index": 20,
+          "cell_line": 10
+        },
+        {
+          "derived_line": 334,
+          "cell_index": 20,
+          "cell_line": 11
+        },
+        {
+          "derived_line": 335,
+          "cell_index": 20,
+          "cell_line": 12
+        },
+        {
+          "derived_line": 336,
+          "cell_index": 20,
+          "cell_line": 13
+        },
+        {
+          "derived_line": 337,
+          "cell_index": 20,
+          "cell_line": 14
+        },
+        {
+          "derived_line": 338,
+          "cell_index": 20,
+          "cell_line": 15
+        },
+        {
+          "derived_line": 339,
+          "cell_index": 20,
+          "cell_line": 16
+        },
+        {
+          "derived_line": 342,
+          "cell_index": 21,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 343,
+          "cell_index": 21,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 344,
+          "cell_index": 21,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 345,
+          "cell_index": 21,
+          "cell_line": 4
+        }
+      ],
+      "transformation": "code cells in order; notebook magic lines commented"
+    }
+  },
+  "license_files": [
+    "deeplearning-models-batch4/LICENSE"
+  ]
+}

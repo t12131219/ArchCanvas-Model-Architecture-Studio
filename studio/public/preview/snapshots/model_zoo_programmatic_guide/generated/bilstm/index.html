@@ -1,0 +1,38 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>BiLSTM (2-layer AGNews classifier) 源码架构图</title><style>body{font-family:DejaVu Sans,Arial,sans-serif;background:#edf0f5;color:#172336;margin:24px}main{max-width:1600px;margin:auto}section{background:white;padding:24px;margin-top:24px;border-radius:12px}img{width:100%;height:auto}a{color:#315479}nav{position:sticky;top:0;background:#edf0f5;padding:16px 0}pre{white-space:pre-wrap}</style><main><h1>BiLSTM (2-layer AGNews classifier)</h1><p>https://github.com/rasbt/deeplearning-models @ 59beda3aa253</p><nav><a href="../index.html">模型总览</a> · <a href="#overview">概览</a> · <a href="#modules">模块</a> · <a href="#detailed">详细</a> · <a href="source_map.md">逐节点源码映射</a> · <a href="source_evidence.json">源码证据</a> · <a href="semantic_ir.json">语义 IR</a> · <a href="layout_checks.json">检查</a></nav><details><summary>选定配置与边界</summary><pre>{
+  &quot;task&quot;: &quot;AGNews 4-class text classification&quot;,
+  &quot;mode&quot;: &quot;eval&quot;,
+  &quot;selected_caller&quot;: &quot;compute_accuracy: per-batch prediction segment&quot;,
+  &quot;vocabulary_size&quot;: &quot;V=len(TEXT.vocab)&quot;,
+  &quot;vocabulary_max_size_setting&quot;: 5000,
+  &quot;embedding_dim&quot;: 128,
+  &quot;hidden_dim&quot;: 256,
+  &quot;output_dim&quot;: 4,
+  &quot;num_layers&quot;: 2,
+  &quot;bidirectional&quot;: true,
+  &quot;batch_first&quot;: false,
+  &quot;bias&quot;: true,
+  &quot;recurrent_dropout&quot;: 0.5,
+  &quot;external_dropout&quot;: 0.5,
+  &quot;external_dropout_calls&quot;: 3,
+  &quot;recurrent_dropout_active&quot;: false,
+  &quot;external_dropout_active&quot;: false,
+  &quot;batch_size_setting&quot;: 128,
+  &quot;enforce_sorted&quot;: &quot;default True&quot;,
+  &quot;last_layer_hidden_indices&quot;: [
+    2,
+    3
+  ],
+  &quot;concatenation_width&quot;: 512,
+  &quot;classifier_widths&quot;: [
+    512,
+    64,
+    4
+  ],
+  &quot;classifier_first_width_source&quot;: &quot;hidden_dim * num_layers&quot;,
+  &quot;return_value&quot;: &quot;[B,4] logits&quot;,
+  &quot;caller_output&quot;: &quot;torch.max(logits,1) indices&quot;,
+  &quot;training_loss&quot;: &quot;cross_entropy outside forward&quot;,
+  &quot;vocabulary_vector_reference&quot;: &quot;glove.6B.100d, not copied into Embedding&quot;,
+  &quot;pretrained_embedding&quot;: false,
+  &quot;recurrent_internals&quot;: &quot;opaque PyTorch nn.LSTM library boundary&quot;
+}</pre></details><section id="overview"><h2>概览</h2><p><a href="figure1_overview.svg">SVG</a> · <a href="layout_overview.json">布局记录</a></p><img src="figure1_overview.svg" alt="overview"></section><section id="modules"><h2>模块</h2><p><a href="figure2_modules.svg">SVG</a> · <a href="layout_modules.json">布局记录</a></p><img src="figure2_modules.svg" alt="modules"></section><section id="detailed"><h2>详细</h2><p><a href="figure3_detailed.svg">SVG</a> · <a href="layout_detailed.json">布局记录</a></p><img src="figure3_detailed.svg" alt="detailed"></section></main></html>

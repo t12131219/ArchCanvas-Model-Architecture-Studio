@@ -1,0 +1,60 @@
+{
+  "source_project": "childsum-treelstm-sequence",
+  "repository": "dasguptar/treelstm.pytorch",
+  "commit": "228a314add09fc7f39ea752aa7b1fcf756cfe277",
+  "source_snapshot_sha256": "a5f94bc44a6f44e55a0405ce24b4b259432db7db9b4195e25bca7aa7f609a697",
+  "entry": "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "childsum-treelstm-sequence/LICENSE": {
+      "sha256": "fb249155a4ab012b6e2d16474df2565618464bb3c61ae3ae1af11ad7c65126a2",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/dasguptar/treelstm.pytorch/228a314add09fc7f39ea752aa7b1fcf756cfe277/LICENSE",
+      "derived_from": null
+    },
+    "childsum-treelstm-sequence/treelstm/model.py": {
+      "sha256": "69daf91a04a807fbee1ce8d05dbd4c3f0f7abcb5922aee1362029a07b036daef",
+      "lines": 87,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/dasguptar/treelstm.pytorch/228a314add09fc7f39ea752aa7b1fcf756cfe277/treelstm/model.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.__init__": {
+      "path": "childsum-treelstm-sequence/treelstm/model.py",
+      "symbol": "ChildSumTreeLSTM.__init__",
+      "start": 10,
+      "end": 17,
+      "snippet": "    def __init__(self, in_dim, mem_dim):\n        super(ChildSumTreeLSTM, self).__init__()\n        self.in_dim = in_dim\n        self.mem_dim = mem_dim\n        self.ioux = nn.Linear(self.in_dim, 3 * self.mem_dim)\n        self.iouh = nn.Linear(self.mem_dim, 3 * self.mem_dim)\n        self.fx = nn.Linear(self.in_dim, self.mem_dim)\n        self.fh = nn.Linear(self.mem_dim, self.mem_dim)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward": {
+      "path": "childsum-treelstm-sequence/treelstm/model.py",
+      "symbol": "ChildSumTreeLSTM.node_forward",
+      "start": 19,
+      "end": 34,
+      "snippet": "    def node_forward(self, inputs, child_c, child_h):\n        child_h_sum = torch.sum(child_h, dim=0, keepdim=True)\n\n        iou = self.ioux(inputs) + self.iouh(child_h_sum)\n        i, o, u = torch.split(iou, iou.size(1) // 3, dim=1)\n        i, o, u = F.sigmoid(i), F.sigmoid(o), F.tanh(u)\n\n        f = F.sigmoid(\n            self.fh(child_h) +\n            self.fx(inputs).repeat(len(child_h), 1)\n        )\n        fc = torch.mul(f, child_c)\n\n        c = torch.mul(i, u) + torch.sum(fc, dim=0, keepdim=True)\n        h = torch.mul(o, F.tanh(c))\n        return c, h",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.forward": {
+      "path": "childsum-treelstm-sequence/treelstm/model.py",
+      "symbol": "ChildSumTreeLSTM.forward",
+      "start": 36,
+      "end": 48,
+      "snippet": "    def forward(self, tree, inputs):\n        for idx in range(tree.num_children):\n            self.forward(tree.children[idx], inputs)\n\n        if tree.num_children == 0:\n            child_c = inputs[0].detach().new(1, self.mem_dim).fill_(0.).requires_grad_()\n            child_h = inputs[0].detach().new(1, self.mem_dim).fill_(0.).requires_grad_()\n        else:\n            child_c, child_h = zip(* map(lambda x: x.state, tree.children))\n            child_c, child_h = torch.cat(child_c, dim=0), torch.cat(child_h, dim=0)\n\n        tree.state = self.node_forward(inputs[tree.idx], child_c, child_h)\n        return tree.state",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "childsum-treelstm-sequence/LICENSE"
+  ]
+}

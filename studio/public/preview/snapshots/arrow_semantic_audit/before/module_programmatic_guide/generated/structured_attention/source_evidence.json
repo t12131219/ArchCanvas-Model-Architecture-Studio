@@ -1,0 +1,60 @@
+{
+  "source_project": "structured-self-attention-sequence",
+  "repository": "kaushalshetty/Structured-Self-Attention",
+  "commit": "84ed64f9cee75f84a5d871a46508a308182e4a6d",
+  "source_snapshot_sha256": "165508d19956eef562247b5a0f1eb548f4cc1127959b0778ab6b5532f55a9a43",
+  "entry": "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "structured-self-attention-sequence/LICENSE": {
+      "sha256": "4511c21b59ea4d62929b792144a7461f2dd9622dfbaaa9f3f3466676033f5fbe",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/kaushalshetty/Structured-Self-Attention/84ed64f9cee75f84a5d871a46508a308182e4a6d/LICENSE",
+      "derived_from": null
+    },
+    "structured-self-attention-sequence/attention/model.py": {
+      "sha256": "6e8a4b6005dfcb5be3944bb61008b4f4fe217caa457f5e906eeec98bbd33747c",
+      "lines": 131,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/kaushalshetty/Structured-Self-Attention/84ed64f9cee75f84a5d871a46508a308182e4a6d/attention/model.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.__init__": {
+      "path": "structured-self-attention-sequence/attention/model.py",
+      "symbol": "StructuredSelfAttention.__init__",
+      "start": 13,
+      "end": 51,
+      "snippet": "    def __init__(self,batch_size,lstm_hid_dim,d_a,r,max_len,emb_dim=100,vocab_size=None,use_pretrained_embeddings = False,embeddings=None,type=0,n_classes = 1):\n        \"\"\"\n        Initializes parameters suggested in paper\n \n        Args:\n            batch_size  : {int} batch_size used for training\n            lstm_hid_dim: {int} hidden dimension for lstm\n            d_a         : {int} hidden dimension for the dense layer\n            r           : {int} attention-hops or attention heads\n            max_len     : {int} number of lstm timesteps\n            emb_dim     : {int} embeddings dimension\n            vocab_size  : {int} size of the vocabulary\n            use_pretrained_embeddings: {bool} use or train your own embeddings\n            embeddings  : {torch.FloatTensor} loaded pretrained embeddings\n            type        : [0,1] 0-->binary_classification 1-->multiclass classification\n            n_classes   : {int} number of classes\n \n        Returns:\n            self\n \n        Raises:\n            Exception\n        \"\"\"\n        super(StructuredSelfAttention,self).__init__()\n       \n        self.embeddings,emb_dim = self._load_embeddings(use_pretrained_embeddings,embeddings,vocab_size,emb_dim)\n        self.lstm = torch.nn.LSTM(emb_dim,lstm_hid_dim,1,batch_first=True)\n        self.linear_first = torch.nn.Linear(lstm_hid_dim,d_a)\n        self.linear_first.bias.data.fill_(0)\n        self.linear_second = torch.nn.Linear(d_a,r)\n        self.linear_second.bias.data.fill_(0)\n        self.n_classes = n_classes\n        self.linear_final = torch.nn.Linear(lstm_hid_dim,self.n_classes)\n        self.batch_size = batch_size       \n        self.max_len = max_len\n        self.lstm_hid_dim = lstm_hid_dim\n        self.hidden_state = self.init_hidden()\n        self.r = r\n        self.type = type",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.softmax": {
+      "path": "structured-self-attention-sequence/attention/model.py",
+      "symbol": "StructuredSelfAttention.softmax",
+      "start": 73,
+      "end": 93,
+      "snippet": "    def softmax(self,input, axis=1):\n        \"\"\"\n        Softmax applied to axis=n\n \n        Args:\n           input: {Tensor,Variable} input on which softmax is to be applied\n           axis : {int} axis on which softmax is to be applied\n \n        Returns:\n            softmaxed tensors\n \n       \n        \"\"\"\n \n        input_size = input.size()\n        trans_input = input.transpose(axis, len(input_size)-1)\n        trans_size = trans_input.size()\n        input_2d = trans_input.contiguous().view(-1, trans_size[-1])\n        soft_max_2d = F.softmax(input_2d)\n        soft_max_nd = soft_max_2d.view(*trans_size)\n        return soft_max_nd.transpose(axis, len(input_size)-1)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "structured-self-attention-sequence/attention/model.py::StructuredSelfAttention.forward": {
+      "path": "structured-self-attention-sequence/attention/model.py",
+      "symbol": "StructuredSelfAttention.forward",
+      "start": 100,
+      "end": 115,
+      "snippet": "    def forward(self,x):\n        embeddings = self.embeddings(x)       \n        outputs, self.hidden_state = self.lstm(embeddings.view(self.batch_size,self.max_len,-1),self.hidden_state)       \n        x = F.tanh(self.linear_first(outputs))       \n        x = self.linear_second(x)       \n        x = self.softmax(x,1)       \n        attention = x.transpose(1,2)       \n        sentence_embeddings = attention@outputs       \n        avg_sentence_embeddings = torch.sum(sentence_embeddings,1)/self.r\n       \n        if not bool(self.type):\n            output = F.sigmoid(self.linear_final(avg_sentence_embeddings))\n           \n            return output,attention\n        else:\n            return F.log_softmax(self.linear_final(avg_sentence_embeddings)),attention",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "structured-self-attention-sequence/LICENSE"
+  ]
+}

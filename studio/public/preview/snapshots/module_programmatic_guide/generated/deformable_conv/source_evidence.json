@@ -1,0 +1,80 @@
+{
+  "source_project": "torchvision-v0.9.0-vision-extended",
+  "repository": "pytorch/vision",
+  "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+  "source_snapshot_sha256": "88b7578cd40309142e6f3aa152438e3ee450fcfd4e242f61cb3919c3efab888f",
+  "entry": "torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py::DeformConv2d",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "torchvision-v0.9.0-vision-extended/LICENSE": {
+      "sha256": "6502f676851cfe25f8af75531dfb32375b7325b73c37e7b43741fa422893e71d",
+      "lines": 29,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/LICENSE",
+      "derived_from": null
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py": {
+      "sha256": "9d1cc79524ad51af82fccc2694ed37dbe17fac92008d9e6471a786dd2e7f53ef",
+      "lines": 180,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/torchvision/ops/deform_conv.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py::deform_conv2d": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py",
+      "symbol": "deform_conv2d",
+      "start": 12,
+      "end": 103,
+      "snippet": "def deform_conv2d(\n    input: Tensor,\n    offset: Tensor,\n    weight: Tensor,\n    bias: Optional[Tensor] = None,\n    stride: Tuple[int, int] = (1, 1),\n    padding: Tuple[int, int] = (0, 0),\n    dilation: Tuple[int, int] = (1, 1),\n    mask: Optional[Tensor] = None,\n) -> Tensor:\n    r\"\"\"\n    Performs Deformable Convolution v2, described in\n    `Deformable ConvNets v2: More Deformable, Better Results\n    <https://arxiv.org/abs/1811.11168>`__ if :attr:`mask` is not ``None`` and\n    Performs Deformable Convolution, described in\n    `Deformable Convolutional Networks\n    <https://arxiv.org/abs/1703.06211>`__ if :attr:`mask` is ``None``.\n\n    Args:\n        input (Tensor[batch_size, in_channels, in_height, in_width]): input tensor\n        offset (Tensor[batch_size, 2 * offset_groups * kernel_height * kernel_width,\n            out_height, out_width]): offsets to be applied for each position in the\n            convolution kernel.\n        weight (Tensor[out_channels, in_channels // groups, kernel_height, kernel_width]):\n            convolution weights, split into groups of size (in_channels // groups)\n        bias (Tensor[out_channels]): optional bias of shape (out_channels,). Default: None\n        stride (int or Tuple[int, int]): distance between convolution centers. Default: 1\n        padding (int or Tuple[int, int]): height/width of padding of zeroes around\n            each image. Default: 0\n        dilation (int or Tuple[int, int]): the spacing between kernel elements. Default: 1\n        mask (Tensor[batch_size, offset_groups * kernel_height * kernel_width,\n            out_height, out_width]): masks to be applied for each position in the\n            convolution kernel. Default: None\n\n    Returns:\n        output (Tensor[batch_sz, out_channels, out_h, out_w]): result of convolution\n\n\n    Examples::\n        >>> input = torch.rand(4, 3, 10, 10)\n        >>> kh, kw = 3, 3\n        >>> weight = torch.rand(5, 3, kh, kw)\n        >>> # offset and mask should have the same spatial size as the output\n        >>> # of the convolution. In this case, for an input of 10, stride of 1\n        >>> # and kernel size of 3, without padding, the output size is 8\n        >>> offset = torch.rand(4, 2 * kh * kw, 8, 8)\n        >>> mask = torch.rand(4, kh * kw, 8, 8)\n        >>> out = deform_conv2d(input, offset, weight, mask=mask)\n        >>> print(out.shape)\n        >>> # returns\n        >>>  torch.Size([4, 5, 8, 8])\n    \"\"\"\n\n    _assert_has_ops()\n    out_channels = weight.shape[0]\n\n    use_mask = mask is not None\n\n    if mask is None:\n        mask = torch.zeros((input.shape[0], 0), device=input.device, dtype=input.dtype)\n\n    if bias is None:\n        bias = torch.zeros(out_channels, device=input.device, dtype=input.dtype)\n\n    stride_h, stride_w = _pair(stride)\n    pad_h, pad_w = _pair(padding)\n    dil_h, dil_w = _pair(dilation)\n    weights_h, weights_w = weight.shape[-2:]\n    _, n_in_channels, in_h, in_w = input.shape\n\n    n_offset_grps = offset.shape[1] // (2 * weights_h * weights_w)\n    n_weight_grps = n_in_channels // weight.shape[1]\n\n    if n_offset_grps == 0:\n        raise RuntimeError(\n            \"the shape of the offset tensor at dimension 1 is not valid. It should \"\n            \"be a multiple of 2 * weight.size[2] * weight.size[3].\\n\"\n            \"Got offset.shape[1]={}, while 2 * weight.size[2] * weight.size[3]={}\".format(\n                offset.shape[1], 2 * weights_h * weights_w))\n\n    return torch.ops.torchvision.deform_conv2d(\n        input,\n        weight,\n        offset,\n        mask,\n        bias,\n        stride_h, stride_w,\n        pad_h, pad_w,\n        dil_h, dil_w,\n        n_weight_grps,\n        n_offset_grps,\n        use_mask,)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E005"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py::DeformConv2d": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py",
+      "symbol": "DeformConv2d",
+      "start": 106,
+      "end": 180,
+      "snippet": "class DeformConv2d(nn.Module):\n    \"\"\"\n    See deform_conv2d\n    \"\"\"\n\n    def __init__(\n        self,\n        in_channels: int,\n        out_channels: int,\n        kernel_size: int,\n        stride: int = 1,\n        padding: int = 0,\n        dilation: int = 1,\n        groups: int = 1,\n        bias: bool = True,\n    ):\n        super(DeformConv2d, self).__init__()\n\n        if in_channels % groups != 0:\n            raise ValueError('in_channels must be divisible by groups')\n        if out_channels % groups != 0:\n            raise ValueError('out_channels must be divisible by groups')\n\n        self.in_channels = in_channels\n        self.out_channels = out_channels\n        self.kernel_size = _pair(kernel_size)\n        self.stride = _pair(stride)\n        self.padding = _pair(padding)\n        self.dilation = _pair(dilation)\n        self.groups = groups\n\n        self.weight = Parameter(torch.empty(out_channels, in_channels // groups,\n                                            self.kernel_size[0], self.kernel_size[1]))\n\n        if bias:\n            self.bias = Parameter(torch.empty(out_channels))\n        else:\n            self.register_parameter('bias', None)\n\n        self.reset_parameters()\n\n    def reset_parameters(self) -> None:\n        init.kaiming_uniform_(self.weight, a=math.sqrt(5))\n\n        if self.bias is not None:\n            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)\n            bound = 1 / math.sqrt(fan_in)\n            init.uniform_(self.bias, -bound, bound)\n\n    def forward(self, input: Tensor, offset: Tensor, mask: Tensor = None) -> Tensor:\n        \"\"\"\n        Args:\n            input (Tensor[batch_size, in_channels, in_height, in_width]): input tensor\n            offset (Tensor[batch_size, 2 * offset_groups * kernel_height * kernel_width,\n                out_height, out_width]): offsets to be applied for each position in the\n                convolution kernel.\n            mask (Tensor[batch_size, offset_groups * kernel_height * kernel_width,\n                out_height, out_width]): masks to be applied for each position in the\n                convolution kernel.\n        \"\"\"\n        return deform_conv2d(input, offset, self.weight, self.bias, stride=self.stride,\n                             padding=self.padding, dilation=self.dilation, mask=mask)\n\n    def __repr__(self) -> str:\n        s = self.__class__.__name__ + '('\n        s += '{in_channels}'\n        s += ', {out_channels}'\n        s += ', kernel_size={kernel_size}'\n        s += ', stride={stride}'\n        s += ', padding={padding}' if self.padding != (0, 0) else ''\n        s += ', dilation={dilation}' if self.dilation != (1, 1) else ''\n        s += ', groups={groups}' if self.groups != 1 else ''\n        s += ', bias=False' if self.bias is None else ''\n        s += ')'\n        return s.format(**self.__dict__)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py::DeformConv2d.__init__": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py",
+      "symbol": "DeformConv2d.__init__",
+      "start": 111,
+      "end": 145,
+      "snippet": "    def __init__(\n        self,\n        in_channels: int,\n        out_channels: int,\n        kernel_size: int,\n        stride: int = 1,\n        padding: int = 0,\n        dilation: int = 1,\n        groups: int = 1,\n        bias: bool = True,\n    ):\n        super(DeformConv2d, self).__init__()\n\n        if in_channels % groups != 0:\n            raise ValueError('in_channels must be divisible by groups')\n        if out_channels % groups != 0:\n            raise ValueError('out_channels must be divisible by groups')\n\n        self.in_channels = in_channels\n        self.out_channels = out_channels\n        self.kernel_size = _pair(kernel_size)\n        self.stride = _pair(stride)\n        self.padding = _pair(padding)\n        self.dilation = _pair(dilation)\n        self.groups = groups\n\n        self.weight = Parameter(torch.empty(out_channels, in_channels // groups,\n                                            self.kernel_size[0], self.kernel_size[1]))\n\n        if bias:\n            self.bias = Parameter(torch.empty(out_channels))\n        else:\n            self.register_parameter('bias', None)\n\n        self.reset_parameters()",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py::DeformConv2d.reset_parameters": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py",
+      "symbol": "DeformConv2d.reset_parameters",
+      "start": 147,
+      "end": 153,
+      "snippet": "    def reset_parameters(self) -> None:\n        init.kaiming_uniform_(self.weight, a=math.sqrt(5))\n\n        if self.bias is not None:\n            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)\n            bound = 1 / math.sqrt(fan_in)\n            init.uniform_(self.bias, -bound, bound)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py::DeformConv2d.forward": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py",
+      "symbol": "DeformConv2d.forward",
+      "start": 155,
+      "end": 167,
+      "snippet": "    def forward(self, input: Tensor, offset: Tensor, mask: Tensor = None) -> Tensor:\n        \"\"\"\n        Args:\n            input (Tensor[batch_size, in_channels, in_height, in_width]): input tensor\n            offset (Tensor[batch_size, 2 * offset_groups * kernel_height * kernel_width,\n                out_height, out_width]): offsets to be applied for each position in the\n                convolution kernel.\n            mask (Tensor[batch_size, offset_groups * kernel_height * kernel_width,\n                out_height, out_width]): masks to be applied for each position in the\n                convolution kernel.\n        \"\"\"\n        return deform_conv2d(input, offset, self.weight, self.bias, stride=self.stride,\n                             padding=self.padding, dilation=self.dilation, mask=mask)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "torchvision-v0.9.0-vision-extended/LICENSE"
+  ]
+}

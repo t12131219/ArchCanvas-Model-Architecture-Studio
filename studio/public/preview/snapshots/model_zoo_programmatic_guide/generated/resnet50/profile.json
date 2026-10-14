@@ -1,0 +1,51 @@
+{
+  "task": "MNIST classification",
+  "mode": "eval",
+  "input_channels": 1,
+  "input_size": [
+    28,
+    28
+  ],
+  "num_classes": 10,
+  "source_factory": "resnet34",
+  "factory_comment": "ResNet-34",
+  "actual_block": "Bottleneck",
+  "expansion": 4,
+  "stage_blocks": [
+    3,
+    4,
+    6,
+    3
+  ],
+  "bottleneck_planes": [
+    64,
+    128,
+    256,
+    512
+  ],
+  "stage_output_channels": [
+    256,
+    512,
+    1024,
+    2048
+  ],
+  "stage_spatial": [
+    7,
+    4,
+    2,
+    1
+  ],
+  "total_bottlenecks": 16,
+  "projection_blocks": 4,
+  "identity_blocks": 12,
+  "stride_location": "Bottleneck.conv2",
+  "avgpool_constructed": true,
+  "avgpool_called": false,
+  "classifier": [
+    2048,
+    10
+  ],
+  "batch_size_setting": 128,
+  "output": "(logits, probas)",
+  "config_source": "deeplearning-models-batch3/pytorch_ipynb/cnn/cnn-resnet50-mnist.py notebook cells10,12,15,16"
+}

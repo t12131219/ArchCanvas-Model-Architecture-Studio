@@ -1,0 +1,392 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1966" height="2087" viewBox="0 0 1966 2087">
+<defs><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<metadata id="source-binding">{&quot;model&quot;: &quot;mixhop_layer&quot;, &quot;source_snapshot_sha256&quot;: &quot;43f8f04f0fc217b8933576df0ba44ca6d5747e92c12346fb5cf5f73b90e1b25d&quot;, &quot;repository&quot;: &quot;benedekrozemberczki/MixHop-and-N-GCN&quot;, &quot;commit&quot;: &quot;e9df5eb988f0dbe5192ac87902c55cbe6d8191fe&quot;, &quot;semantic_ir_sha256&quot;: &quot;2e55ee3ab1db4a744fe1d418a8f4f948e82e5074983e5f43e3570a5e4503be6b&quot;, &quot;view&quot;: 2}</metadata>
+<metadata id="diagram-style">{&quot;name&quot;: &quot;transformer-paper-model-zoo&quot;, &quot;version&quot;: 1, &quot;font&quot;: &quot;DejaVu Sans, Arial, sans-serif&quot;, &quot;text&quot;: &quot;#172336&quot;, &quot;line&quot;: &quot;#263348&quot;, &quot;palette&quot;: {&quot;root&quot;: &quot;#ffffff&quot;, &quot;group&quot;: &quot;#ffffff&quot;, &quot;inner&quot;: &quot;#fffaf6&quot;, &quot;layer&quot;: &quot;#ffffff&quot;, &quot;encoder&quot;: &quot;#e7f5fe&quot;, &quot;decoder&quot;: &quot;#fff0f5&quot;, &quot;embedding&quot;: &quot;#f8d4e1&quot;, &quot;input&quot;: &quot;#f8d4e1&quot;, &quot;output&quot;: &quot;#dfdff8&quot;, &quot;attention&quot;: &quot;#ffddb3&quot;, &quot;ffn&quot;: &quot;#c8ebfb&quot;, &quot;mixing&quot;: &quot;#c8ebfb&quot;, &quot;conv&quot;: &quot;#c8ebfb&quot;, &quot;pool&quot;: &quot;#d6f0df&quot;, &quot;norm&quot;: &quot;#fff6bd&quot;, &quot;concat&quot;: &quot;#fff6bd&quot;, &quot;linear&quot;: &quot;#dfdff8&quot;, &quot;softmax&quot;: &quot;#c9f1cd&quot;, &quot;sampling&quot;: &quot;#c9f1cd&quot;, &quot;recurrent&quot;: &quot;#ffddb3&quot;, &quot;decomposition&quot;: &quot;#d6f0df&quot;, &quot;tensor&quot;: &quot;#cdeaf8&quot;, &quot;activation&quot;: &quot;#f3f5f7&quot;, &quot;control&quot;: &quot;#f3f5f7&quot;}, &quot;typography&quot;: {&quot;title&quot;: 30, &quot;subtitle&quot;: 16, &quot;module&quot;: 22, &quot;inner&quot;: 20, &quot;operator&quot;: 20, &quot;shape&quot;: 16, &quot;detail&quot;: 14, &quot;evidence&quot;: 12, &quot;footer&quot;: 14, &quot;line_height&quot;: 1.18}, &quot;fill_width_nodes&quot;: [], &quot;visual_roles&quot;: {&quot;mixhop_layer.adj&quot;: &quot;control&quot;, &quot;mixhop_layer.branch0&quot;: &quot;inner&quot;, &quot;mixhop_layer.branch0.bias&quot;: &quot;norm&quot;, &quot;mixhop_layer.branch0.drop&quot;: &quot;control&quot;, &quot;mixhop_layer.branch0.project&quot;: &quot;mixing&quot;, &quot;mixhop_layer.branch0.relu&quot;: &quot;activation&quot;, &quot;mixhop_layer.branch1&quot;: &quot;inner&quot;, &quot;mixhop_layer.branch1.bias&quot;: &quot;norm&quot;, &quot;mixhop_layer.branch1.drop&quot;: &quot;control&quot;, &quot;mixhop_layer.branch1.project&quot;: &quot;mixing&quot;, &quot;mixhop_layer.branch1.prop0&quot;: &quot;mixing&quot;, &quot;mixhop_layer.branch1.relu&quot;: &quot;activation&quot;, &quot;mixhop_layer.branch2&quot;: &quot;inner&quot;, &quot;mixhop_layer.branch2.bias&quot;: &quot;norm&quot;, &quot;mixhop_layer.branch2.drop&quot;: &quot;control&quot;, &quot;mixhop_layer.branch2.project&quot;: &quot;mixing&quot;, &quot;mixhop_layer.branch2.prop0&quot;: &quot;mixing&quot;, &quot;mixhop_layer.branch2.prop1&quot;: &quot;mixing&quot;, &quot;mixhop_layer.branch2.relu&quot;: &quot;activation&quot;, &quot;mixhop_layer.concat&quot;: &quot;concat&quot;, &quot;mixhop_layer.features&quot;: &quot;input&quot;, &quot;mixhop_layer.module&quot;: &quot;encoder&quot;, &quot;mixhop_layer.output&quot;: &quot;output&quot;, &quot;mixhop_layer.params0&quot;: &quot;linear&quot;, &quot;mixhop_layer.params1&quot;: &quot;linear&quot;, &quot;mixhop_layer.params2&quot;: &quot;linear&quot;, &quot;mixhop_layer.root&quot;: &quot;root&quot;}, &quot;semantics&quot;: &quot;presentation aliases only; color does not imply mathematical equivalence or parameter sharing&quot;}</metadata>
+<text x="983.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="983.0" dy="0">MixHop sparse multi-power stage  |  Operators &amp; tensor flow</tspan>
+</text>
+<text x="983.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="983.0" dy="0">module only / reviewed fixed source / independent operands  /  read bottom to top</tspan>
+</text>
+<g data-node-id="mixhop_layer.root" data-visual-role="root"><title>mixhop-modules/src/trainer_and_networks.py:101 MixHopNetwork.forward; parameter=not asserted; </title><rect x="230.0" y="98" width="1506" height="1707" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5"/></g>
+<text x="247.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="247.0" dy="0">MixHop sparse multi-power stage / module only</tspan>
+</text>
+<text x="1719.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1719.0" dy="0">[N,12]</tspan>
+</text>
+<text x="1723.0" y="160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1723.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="mixhop_layer.features" data-visual-role="input"><title>mixhop-modules/src/trainer_and_networks.py:101 MixHopNetwork.forward; parameter=not asserted; </title><rect x="262.0" y="1643.0" width="250" height="124" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="387.0" y="1670.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="387.0" dy="0">Supplied sparse</tspan>
+<tspan x="387.0" dy="23.599999999999998">node features</tspan>
+</text>
+<text x="387.0" y="1718.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="387.0" dy="0">indices / values;</tspan>
+<tspan x="387.0" dy="18.88">[N,8]</tspan>
+</text>
+<text x="499.0" y="1757.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="499.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="mixhop_layer.adj" data-visual-role="control"><title>mixhop-modules/src/trainer_and_networks.py:101 MixHopNetwork.forward; parameter=not asserted; </title><rect x="560.0" y="1631.0" width="250" height="148" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="685.0" y="1658.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="685.0" dy="0">Supplied</tspan>
+<tspan x="685.0" dy="23.599999999999998">normalized</tspan>
+<tspan x="685.0" dy="23.599999999999998">sparse A</tspan>
+</text>
+<text x="685.0" y="1730.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="685.0" dy="0">indices / values;</tspan>
+<tspan x="685.0" dy="18.88">[N,N]</tspan>
+</text>
+<text x="797.0" y="1769.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="797.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="mixhop_layer.params0" data-visual-role="linear"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=not asserted; </title><rect x="858.0" y="1652.5" width="250" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="983.0" y="1679.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="983.0" dy="0">Branch0 owned W,</tspan>
+<tspan x="983.0" dy="23.599999999999998">bias</tspan>
+</text>
+<text x="983.0" y="1727.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="983.0" dy="0">W[8,4]; b[1,4]</tspan>
+</text>
+<text x="1095.0" y="1747.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1095.0" dy="0">E004,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.params1" data-visual-role="linear"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=not asserted; </title><rect x="1156.0" y="1652.5" width="250" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="1281.0" y="1679.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1281.0" dy="0">Branch1 owned W,</tspan>
+<tspan x="1281.0" dy="23.599999999999998">bias</tspan>
+</text>
+<text x="1281.0" y="1727.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1281.0" dy="0">W[8,4]; b[1,4]</tspan>
+</text>
+<text x="1393.0" y="1747.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1393.0" dy="0">E004,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.params2" data-visual-role="linear"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=not asserted; </title><rect x="1454.0" y="1652.5" width="250" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="1579.0" y="1679.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1579.0" dy="0">Branch2 owned W,</tspan>
+<tspan x="1579.0" dy="23.599999999999998">bias</tspan>
+</text>
+<text x="1579.0" y="1727.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1579.0" dy="0">W[8,4]; b[1,4]</tspan>
+</text>
+<text x="1691.0" y="1747.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1691.0" dy="0">E004,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.module" data-visual-role="encoder"><title>mixhop-modules/src/trainer_and_networks.py:101 MixHopNetwork.forward; parameter=not asserted; </title><rect x="386.0" y="349.0" width="1194" height="1210" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="403.0" y="379.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="403.0" dy="0">MixHop sparse multi-power stage /</tspan>
+<tspan x="403.0" dy="28.32">operators</tspan>
+</text>
+<text x="1563.0" y="379.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1563.0" dy="0">[N,12]</tspan>
+</text>
+<text x="1567.0" y="431.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1567.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="mixhop_layer.branch0" data-visual-role="inner"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=not asserted; </title><rect x="418.0" y="773.0" width="334" height="631" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="435.0" y="803.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="435.0" dy="0">Branch0:</tspan>
+<tspan x="435.0" dy="23.599999999999998">A^0 /</tspan>
+<tspan x="435.0" dy="23.599999999999998">iterations1</tspan>
+</text>
+<text x="735.0" y="803.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="735.0" dy="0">[N,4]</tspan>
+</text>
+<text x="739.0" y="874.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="739.0" dy="0">E004,E002,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.branch0.project" data-visual-role="mixing"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=upper_layers.0.weight_matrix; </title><rect x="450.0" y="1273.0" width="270" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="585.0" y="1300.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="585.0" dy="0">Sparse X @ OWNED</tspan>
+<tspan x="585.0" dy="23.599999999999998">W</tspan>
+</text>
+<text x="585.0" y="1348.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="585.0" dy="0">[N,4]</tspan>
+</text>
+<text x="707.0" y="1368.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E004,E002,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.branch0.bias" data-visual-role="norm"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=upper_layers.0.bias; </title><rect x="450.0" y="1144.0" width="270" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="585.0" y="1171.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="585.0" dy="0">Add OWNED bias</tspan>
+<tspan x="585.0" dy="23.599999999999998">BEFORE A</tspan>
+</text>
+<text x="585.0" y="1219.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="585.0" dy="0">[N,4]</tspan>
+</text>
+<text x="707.0" y="1239.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E004,E002,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.branch0.drop" data-visual-role="control"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=not asserted; </title><rect x="450.0" y="1015.0" width="270" height="105" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="585.0" y="1042.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="585.0" dy="0">Dropout .5 /</tspan>
+<tspan x="585.0" dy="23.599999999999998">caller mode</tspan>
+</text>
+<text x="585.0" y="1090.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="585.0" dy="0">[N,4]</tspan>
+</text>
+<text x="707.0" y="1110.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E004,E002,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.branch0.relu" data-visual-role="activation"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=not asserted; </title><rect x="450.0" y="886.0" width="270" height="105" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="585.0" y="913.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="585.0" dy="0">ReLU BEFORE</tspan>
+<tspan x="585.0" dy="23.599999999999998">propagation</tspan>
+</text>
+<text x="585.0" y="961.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="585.0" dy="0">[N,4]</tspan>
+</text>
+<text x="707.0" y="981.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E004,E002,E001</tspan>
+</text>
+<path data-route-id="route-0001" d="M 585.0,1273.0 L 585.0,1249.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0002" d="M 585.0,1144.0 L 585.0,1120.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0003" d="M 585.0,1015.0 L 585.0,991.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0004" d="M 585.0,886.0 L 585.0,773.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="mixhop_layer.branch1" data-visual-role="inner"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=not asserted; </title><rect x="816.0" y="708.5" width="334" height="760" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="833.0" y="738.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="833.0" dy="0">Branch1:</tspan>
+<tspan x="833.0" dy="23.599999999999998">A^1 /</tspan>
+<tspan x="833.0" dy="23.599999999999998">iterations2</tspan>
+</text>
+<text x="1133.0" y="738.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1133.0" dy="0">[N,4]</tspan>
+</text>
+<text x="1137.0" y="809.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1137.0" dy="0">E004,E002,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.branch1.project" data-visual-role="mixing"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=upper_layers.1.weight_matrix; </title><rect x="848.0" y="1337.5" width="270" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="983.0" y="1364.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="983.0" dy="0">Sparse X @ OWNED</tspan>
+<tspan x="983.0" dy="23.599999999999998">W</tspan>
+</text>
+<text x="983.0" y="1412.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="983.0" dy="0">[N,4]</tspan>
+</text>
+<text x="1105.0" y="1432.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1105.0" dy="0">E004,E002,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.branch1.bias" data-visual-role="norm"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=upper_layers.1.bias; </title><rect x="848.0" y="1208.5" width="270" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="983.0" y="1235.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="983.0" dy="0">Add OWNED bias</tspan>
+<tspan x="983.0" dy="23.599999999999998">BEFORE A</tspan>
+</text>
+<text x="983.0" y="1283.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="983.0" dy="0">[N,4]</tspan>
+</text>
+<text x="1105.0" y="1303.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1105.0" dy="0">E004,E002,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.branch1.drop" data-visual-role="control"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=not asserted; </title><rect x="848.0" y="1079.5" width="270" height="105" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="983.0" y="1106.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="983.0" dy="0">Dropout .5 /</tspan>
+<tspan x="983.0" dy="23.599999999999998">caller mode</tspan>
+</text>
+<text x="983.0" y="1154.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="983.0" dy="0">[N,4]</tspan>
+</text>
+<text x="1105.0" y="1174.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1105.0" dy="0">E004,E002,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.branch1.relu" data-visual-role="activation"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=not asserted; </title><rect x="848.0" y="950.5" width="270" height="105" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="983.0" y="977.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="983.0" dy="0">ReLU BEFORE</tspan>
+<tspan x="983.0" dy="23.599999999999998">propagation</tspan>
+</text>
+<text x="983.0" y="1025.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="983.0" dy="0">[N,4]</tspan>
+</text>
+<text x="1105.0" y="1045.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1105.0" dy="0">E004,E002,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.branch1.prop0" data-visual-role="mixing"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=not asserted; </title><rect x="848.0" y="821.5" width="270" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="983.0" y="848.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="983.0" dy="0">A @ features /</tspan>
+<tspan x="983.0" dy="23.599999999999998">pass1</tspan>
+</text>
+<text x="983.0" y="896.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="983.0" dy="0">[N,4]</tspan>
+</text>
+<text x="1105.0" y="916.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1105.0" dy="0">E004,E002,E001</tspan>
+</text>
+<path data-route-id="route-0005" d="M 983.0,1337.5 L 983.0,1313.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0006" d="M 983.0,1208.5 L 983.0,1184.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0007" d="M 983.0,1079.5 L 983.0,1055.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0008" d="M 983.0,950.5 L 983.0,926.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0009" d="M 983.0,821.5 L 983.0,708.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="mixhop_layer.branch2" data-visual-role="inner"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=not asserted; </title><rect x="1214.0" y="644.0" width="334" height="889" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="1231.0" y="674.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1231.0" dy="0">Branch2:</tspan>
+<tspan x="1231.0" dy="23.599999999999998">A^2 /</tspan>
+<tspan x="1231.0" dy="23.599999999999998">iterations3</tspan>
+</text>
+<text x="1531.0" y="674.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1531.0" dy="0">[N,4]</tspan>
+</text>
+<text x="1535.0" y="745.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1535.0" dy="0">E004,E002,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.branch2.project" data-visual-role="mixing"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=upper_layers.2.weight_matrix; </title><rect x="1246.0" y="1402.0" width="270" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1381.0" y="1429.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1381.0" dy="0">Sparse X @ OWNED</tspan>
+<tspan x="1381.0" dy="23.599999999999998">W</tspan>
+</text>
+<text x="1381.0" y="1477.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1381.0" dy="0">[N,4]</tspan>
+</text>
+<text x="1503.0" y="1497.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1503.0" dy="0">E004,E002,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.branch2.bias" data-visual-role="norm"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=upper_layers.2.bias; </title><rect x="1246.0" y="1273.0" width="270" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="1381.0" y="1300.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1381.0" dy="0">Add OWNED bias</tspan>
+<tspan x="1381.0" dy="23.599999999999998">BEFORE A</tspan>
+</text>
+<text x="1381.0" y="1348.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1381.0" dy="0">[N,4]</tspan>
+</text>
+<text x="1503.0" y="1368.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1503.0" dy="0">E004,E002,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.branch2.drop" data-visual-role="control"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=not asserted; </title><rect x="1246.0" y="1144.0" width="270" height="105" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="1381.0" y="1171.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1381.0" dy="0">Dropout .5 /</tspan>
+<tspan x="1381.0" dy="23.599999999999998">caller mode</tspan>
+</text>
+<text x="1381.0" y="1219.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1381.0" dy="0">[N,4]</tspan>
+</text>
+<text x="1503.0" y="1239.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1503.0" dy="0">E004,E002,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.branch2.relu" data-visual-role="activation"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=not asserted; </title><rect x="1246.0" y="1015.0" width="270" height="105" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="1381.0" y="1042.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1381.0" dy="0">ReLU BEFORE</tspan>
+<tspan x="1381.0" dy="23.599999999999998">propagation</tspan>
+</text>
+<text x="1381.0" y="1090.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1381.0" dy="0">[N,4]</tspan>
+</text>
+<text x="1503.0" y="1110.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1503.0" dy="0">E004,E002,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.branch2.prop0" data-visual-role="mixing"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=not asserted; </title><rect x="1246.0" y="886.0" width="270" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1381.0" y="913.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1381.0" dy="0">A @ features /</tspan>
+<tspan x="1381.0" dy="23.599999999999998">pass1</tspan>
+</text>
+<text x="1381.0" y="961.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1381.0" dy="0">[N,4]</tspan>
+</text>
+<text x="1503.0" y="981.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1503.0" dy="0">E004,E002,E001</tspan>
+</text>
+<g data-node-id="mixhop_layer.branch2.prop1" data-visual-role="mixing"><title>mixhop-modules/src/trainer_and_networks.py:63 MixHopNetwork.setup_layer_structure; mixhop-modules/src/layers.py:48 SparseNGCNLayer.forward; mixhop-modules/src/layers.py:34 SparseNGCNLayer.define_parameters; parameter=not asserted; </title><rect x="1246.0" y="757.0" width="270" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1381.0" y="784.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1381.0" dy="0">A @ features /</tspan>
+<tspan x="1381.0" dy="23.599999999999998">pass2</tspan>
+</text>
+<text x="1381.0" y="832.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1381.0" dy="0">[N,4]</tspan>
+</text>
+<text x="1503.0" y="852.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1503.0" dy="0">E004,E002,E001</tspan>
+</text>
+<path data-route-id="route-0010" d="M 1381.0,1402.0 L 1381.0,1378.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0011" d="M 1381.0,1273.0 L 1381.0,1249.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0012" d="M 1381.0,1144.0 L 1381.0,1120.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0013" d="M 1381.0,1015.0 L 1381.0,991.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0014" d="M 1381.0,886.0 L 1381.0,862.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0015" d="M 1381.0,757.0 L 1381.0,644.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="mixhop_layer.concat" data-visual-role="concat"><title>mixhop-modules/src/trainer_and_networks.py:101 MixHopNetwork.forward; parameter=not asserted; </title><rect x="848.0" y="443.0" width="270" height="129" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="983.0" y="470.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="983.0" dy="0">Concat</tspan>
+<tspan x="983.0" dy="23.599999999999998">independent power</tspan>
+<tspan x="983.0" dy="23.599999999999998">branches</tspan>
+</text>
+<text x="983.0" y="542.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="983.0" dy="0">[N,12]</tspan>
+</text>
+<text x="1105.0" y="562.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1105.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="mixhop_layer.output" data-visual-role="output"><title>mixhop-modules/src/trainer_and_networks.py:101 MixHopNetwork.forward; parameter=not asserted; </title><rect x="848.0" y="172.0" width="270" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="983.0" y="199.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="983.0" dy="0">Selected module</tspan>
+<tspan x="983.0" dy="23.599999999999998">output</tspan>
+</text>
+<text x="983.0" y="247.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="983.0" dy="0">[N,12]</tspan>
+</text>
+<text x="1105.0" y="267.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1105.0" dy="0">E003</tspan>
+</text>
+<path data-route-id="route-0016" d="M 363.0,1643.0 L 363.0,1422.0 L 573.0,1422.0 L 573.0,1378.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>mixhop_layer.features:out -&gt; mixhop_layer.branch0.project:sparse_X; </title></path>
+<path data-route-id="route-0017" d="M 983.0,1652.5 L 983.0,1486.5 L 597.0,1486.5 L 597.0,1378.0" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>mixhop_layer.params0:out -&gt; mixhop_layer.branch0.project:W; </title></path>
+<path data-route-id="route-0018" d="M 1108.0,1705.0 L 1132.0,1705.0 L 1132.0,1486.5 L 744.0,1486.5 L 744.0,1196.5 L 720.0,1196.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>mixhop_layer.params0:out -&gt; mixhop_layer.branch0.bias:bias; </title></path>
+<path data-route-id="route-0019" d="M 585.0,886.0 L 585.0,596.0 L 959.0,596.0 L 959.0,572.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>mixhop_layer.branch0.relu:out -&gt; mixhop_layer.concat:branch0; </title></path>
+<path data-route-id="route-0020" d="M 387.0,1643.0 L 387.0,1551.0 L 971.0,1551.0 L 971.0,1442.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>mixhop_layer.features:out -&gt; mixhop_layer.branch1.project:sparse_X; </title></path>
+<path data-route-id="route-0021" d="M 1281.0,1652.5 L 1281.0,1551.0 L 995.0,1551.0 L 995.0,1442.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>mixhop_layer.params1:out -&gt; mixhop_layer.branch1.project:W; </title></path>
+<path data-route-id="route-0022" d="M 1406.0,1705.0 L 1430.0,1705.0 L 1430.0,1551.0 L 1142.0,1551.0 L 1142.0,1261.0 L 1118.0,1261.0" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>mixhop_layer.params1:out -&gt; mixhop_layer.branch1.bias:bias; </title></path>
+<path data-route-id="route-0023" d="M 810.0,1681.0 L 840.0,1681.0 L 840.0,1454.5 L 1138.0,1454.5 L 1138.0,880.0 L 1142.0,880.0 L 1142.0,874.0 L 1118.0,874.0" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>mixhop_layer.adj:out -&gt; mixhop_layer.branch1.prop0:A; </title></path>
+<path data-route-id="route-0024" d="M 983.0,821.5 L 983.0,572.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>mixhop_layer.branch1.prop0:out -&gt; mixhop_layer.concat:branch1; </title></path>
+<path data-route-id="route-0025" d="M 411.0,1643.0 L 411.0,1577.0 L 1369.0,1577.0 L 1369.0,1507.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>mixhop_layer.features:out -&gt; mixhop_layer.branch2.project:sparse_X; </title></path>
+<path data-route-id="route-0026" d="M 1579.0,1652.5 L 1579.0,1577.0 L 1393.0,1577.0 L 1393.0,1507.0" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>mixhop_layer.params2:out -&gt; mixhop_layer.branch2.project:W; </title></path>
+<path data-route-id="route-0027" d="M 1704.0,1705.0 L 1728.0,1705.0 L 1728.0,1325.5 L 1516.0,1325.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>mixhop_layer.params2:out -&gt; mixhop_layer.branch2.bias:bias; </title></path>
+<path data-route-id="route-0028" d="M 810.0,1705.0 L 840.0,1705.0 L 840.0,1519.0 L 1540.0,1519.0 L 1540.0,938.5 L 1516.0,938.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>mixhop_layer.adj:out -&gt; mixhop_layer.branch2.prop0:A; </title></path>
+<path data-route-id="route-0029" d="M 810.0,1729.0 L 840.0,1729.0 L 840.0,1519.0 L 1540.0,1519.0 L 1540.0,809.5 L 1516.0,809.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>mixhop_layer.adj:out -&gt; mixhop_layer.branch2.prop1:A; </title></path>
+<path data-route-id="route-0030" d="M 1381.0,757.0 L 1381.0,596.0 L 1007.0,596.0 L 1007.0,572.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>mixhop_layer.branch2.prop1:out -&gt; mixhop_layer.concat:branch2; </title></path>
+<path data-route-id="route-0031" d="M 983.0,443.0 L 983.0,277.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>mixhop_layer.concat:out -&gt; mixhop_layer.output:in; </title></path>
+<rect x="438.0" y="1842" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348"/>
+<text x="461.0" y="1855" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="461.0" dy="0">Inputs</tspan>
+</text>
+<rect x="623.0" y="1842" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348"/>
+<text x="646.0" y="1855" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="646.0" dy="0">Propagation</tspan>
+</text>
+<rect x="808.0" y="1842" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348"/>
+<text x="831.0" y="1855" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="831.0" dy="0">Parameters</tspan>
+</text>
+<rect x="993.0" y="1842" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348"/>
+<text x="1016.0" y="1855" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1016.0" dy="0">Add / norm</tspan>
+</text>
+<rect x="1178.0" y="1842" width="16" height="16" rx="3" fill="#cdeaf8" stroke="#263348"/>
+<text x="1201.0" y="1855" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1201.0" dy="0">Tensor ops</tspan>
+</text>
+<rect x="1363.0" y="1842" width="16" height="16" rx="3" fill="#c9f1cd" stroke="#263348"/>
+<text x="1386.0" y="1855" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1386.0" dy="0">Gates</tspan>
+</text>
+<rect x="808.0" y="1872" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348"/>
+<text x="831.0" y="1885" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="831.0" dy="0">Topology</tspan>
+</text>
+<rect x="993.0" y="1872" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348"/>
+<text x="1016.0" y="1885" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1016.0" dy="0">Output</tspan>
+</text>
+<text x="983.0" y="1913" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="983.0" dy="0">Read bottom to top; all module internals follow the same direction.</tspan>
+<tspan x="983.0" dy="16.52">Same operator color does not imply shared weights; instance/parameter identities are preserved in IR.</tspan>
+<tspan x="983.0" dy="16.52">Solid edges carry values; dashed edges carry topology, shape or loop state. Library kernels stay opaque.</tspan>
+</text>
+<text x="983.0" y="1987" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="983.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+<text x="983.0" y="2017" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="983.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+<text x="983.0" y="2042" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="983.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+</svg>

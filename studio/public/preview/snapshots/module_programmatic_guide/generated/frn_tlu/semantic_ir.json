@@ -1,0 +1,671 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "frn_tlu",
+  "profile": {
+    "num_features": 192,
+    "input_shape": "[B,192,32,32]",
+    "eps": 1e-06,
+    "mode": "train/eval same formula",
+    "selected_configuration": "192-channel32x32 example; FRN class direct module scope",
+    "statistic": "mean(x^2) over H,W only",
+    "mean_centered": false,
+    "running_statistics": false,
+    "learnable_parameters": [
+      "gamma",
+      "beta",
+      "tau"
+    ],
+    "parameter_shape": [
+      1,
+      192,
+      1,
+      1
+    ],
+    "initialization": "normal_ for all3",
+    "eps_registered_buffer": false,
+    "threshold": "maximum(gamma*x_hat+beta,tau)",
+    "notebook_redefinition_boundary": "NiN is redefined later as BN; selected module is the unique FRN class, not final NiN binding",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "7b66bbdafc476b135d919c11ba3b432b974b334e59e93ff1dc255dda7bf9a4f6"
+  },
+  "nodes": [
+    {
+      "id": "frn.root",
+      "label": "FRN + TLU module",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization"
+      ],
+      "shape": "[B,192,32,32]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "frn.input",
+      "label": "Feature map x",
+      "kind": "input",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.forward"
+      ],
+      "shape": "[B,192,32,32]",
+      "detail": [],
+      "parent": "frn.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "frn.module",
+      "label": "FRN / learned TLU",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.__init__",
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.forward"
+      ],
+      "shape": "[B,192,32,32]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "frn.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "frn.norm",
+      "label": "Response normalization",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.forward"
+      ],
+      "shape": "[B,192,32,32]",
+      "detail": [],
+      "retained_input": true,
+      "mode": "chain",
+      "parent": "frn.module",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "frn.square",
+      "label": "Elementwise x^2",
+      "kind": "power",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.forward"
+      ],
+      "shape": "[B,192,32,32]",
+      "detail": [],
+      "exponent": 2,
+      "parent": "frn.norm",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "frn.mean",
+      "label": "Mean over H,W",
+      "kind": "reduce_mean",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.forward"
+      ],
+      "shape": "[B,192,1,1]",
+      "detail": [
+        "torch.mean(x.pow(2),(2,3),keepdims=True); no batch reduction"
+      ],
+      "dims": [
+        2,
+        3
+      ],
+      "keepdims": true,
+      "statistic": "uncentered second moment",
+      "parent": "frn.norm",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "frn.eps_add",
+      "label": "nu2 + abs(eps)",
+      "kind": "add",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.forward"
+      ],
+      "shape": "[B,192,1,1]",
+      "detail": [],
+      "expression": "nu2 + torch.abs(self.eps)",
+      "parent": "frn.norm",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "epsilon"
+      ]
+    },
+    {
+      "id": "frn.rsqrt",
+      "label": "Reciprocal square root",
+      "kind": "rsqrt",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.forward"
+      ],
+      "shape": "[B,192,1,1]",
+      "detail": [],
+      "expression": "torch.rsqrt(nu2 + abs(eps))",
+      "parent": "frn.norm",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "frn.scale",
+      "label": "Retained x * rsqrt",
+      "kind": "multiply",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.forward"
+      ],
+      "shape": "[B,192,32,32]",
+      "detail": [
+        "same original x; per-B/per-channel spatial broadcast"
+      ],
+      "broadcast_axes": [
+        2,
+        3
+      ],
+      "parent": "frn.norm",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "frn.affine",
+      "label": "Affine + learned threshold",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.__init__",
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.forward"
+      ],
+      "shape": "[B,192,32,32]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "frn.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "frn.gamma_mul",
+      "label": "gamma * normalized x",
+      "kind": "multiply",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.__init__",
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.forward"
+      ],
+      "shape": "[B,192,32,32]",
+      "detail": [],
+      "parameter": "gamma",
+      "broadcast_axes": [
+        0,
+        2,
+        3
+      ],
+      "parent": "frn.affine",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "gamma"
+      ]
+    },
+    {
+      "id": "frn.beta_add",
+      "label": "Add beta",
+      "kind": "add",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.__init__",
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.forward"
+      ],
+      "shape": "[B,192,32,32]",
+      "detail": [],
+      "parameter": "beta",
+      "broadcast_axes": [
+        0,
+        2,
+        3
+      ],
+      "parent": "frn.affine",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "beta"
+      ]
+    },
+    {
+      "id": "frn.threshold",
+      "label": "Elementwise max(y,tau)",
+      "kind": "maximum",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.__init__",
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.forward"
+      ],
+      "shape": "[B,192,32,32]",
+      "detail": [
+        "torch.max(tensor,tensor); learned per-channel threshold, not max reduction or ReLU"
+      ],
+      "parameter": "tau",
+      "operation": "elementwise_maximum",
+      "reduction": false,
+      "parent": "frn.affine",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "tau"
+      ]
+    },
+    {
+      "id": "frn.output",
+      "label": "Normalized / thresholded x",
+      "kind": "output",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.forward"
+      ],
+      "shape": "[B,192,32,32]",
+      "detail": [],
+      "parent": "frn.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "frn.state",
+      "label": "Parameters / constant",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.__init__",
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.forward"
+      ],
+      "shape": "module-owned state",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "frn.gamma"
+        ],
+        [
+          "frn.beta"
+        ],
+        [
+          "frn.tau"
+        ],
+        [
+          "frn.epsilon"
+        ]
+      ],
+      "rank_gap": 48,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "frn.gamma",
+      "label": "gamma / channel Parameter",
+      "kind": "parameter",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.__init__"
+      ],
+      "shape": "[1,192,1,1]",
+      "detail": [
+        "torch.empty(...).normal_(); separate learnable channel entries"
+      ],
+      "parameter": "gamma",
+      "learnable": true,
+      "initialization": "normal_",
+      "parent": "frn.state",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "frn.beta",
+      "label": "beta / channel Parameter",
+      "kind": "parameter",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.__init__"
+      ],
+      "shape": "[1,192,1,1]",
+      "detail": [
+        "torch.empty(...).normal_(); separate learnable channel entries"
+      ],
+      "parameter": "beta",
+      "learnable": true,
+      "initialization": "normal_",
+      "parent": "frn.state",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "frn.tau",
+      "label": "tau / channel Parameter",
+      "kind": "parameter",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.__init__"
+      ],
+      "shape": "[1,192,1,1]",
+      "detail": [
+        "torch.empty(...).normal_(); separate learnable channel entries"
+      ],
+      "parameter": "tau",
+      "learnable": true,
+      "initialization": "normal_",
+      "parent": "frn.state",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "frn.epsilon",
+      "label": "eps / ordinary tensor",
+      "kind": "constant",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.__init__",
+        "rasbt-modules/pytorch_ipynb/cnn/nin-cifar10_filter-response-norm.py::FilterResponseNormalization.forward"
+      ],
+      "shape": "[1]",
+      "detail": [
+        "eps=1e-6; neither Parameter nor registered buffer; to(tau.device) in forward"
+      ],
+      "attribute_identity": "eps",
+      "value": 1e-06,
+      "learnable": false,
+      "registered_buffer": false,
+      "device_assignment": "self.eps = self.eps.to(self.tau.device)",
+      "parent": "frn.state",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "frn.norm:in->frn.square:in:boundary",
+      "src": "frn.norm",
+      "dst": "frn.square",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "frn.square:out->frn.mean:in:tensor",
+      "src": "frn.square",
+      "dst": "frn.mean",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "frn.mean:out->frn.eps_add:in:tensor",
+      "src": "frn.mean",
+      "dst": "frn.eps_add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "frn.eps_add:out->frn.rsqrt:in:tensor",
+      "src": "frn.eps_add",
+      "dst": "frn.rsqrt",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "frn.rsqrt:out->frn.scale:in:tensor",
+      "src": "frn.rsqrt",
+      "dst": "frn.scale",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "frn.scale:out->frn.norm:out:boundary",
+      "src": "frn.scale",
+      "dst": "frn.norm",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "frn.norm:in->frn.scale:side:retained_input",
+      "src": "frn.norm",
+      "dst": "frn.scale",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "retained_input"
+    },
+    {
+      "id": "frn.affine:in->frn.gamma_mul:in:boundary",
+      "src": "frn.affine",
+      "dst": "frn.gamma_mul",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "frn.gamma_mul:out->frn.beta_add:in:tensor",
+      "src": "frn.gamma_mul",
+      "dst": "frn.beta_add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "frn.beta_add:out->frn.threshold:in:tensor",
+      "src": "frn.beta_add",
+      "dst": "frn.threshold",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "frn.threshold:out->frn.affine:out:boundary",
+      "src": "frn.threshold",
+      "dst": "frn.affine",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "frn.module:in->frn.norm:in:boundary",
+      "src": "frn.module",
+      "dst": "frn.norm",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "frn.norm:out->frn.affine:in:tensor",
+      "src": "frn.norm",
+      "dst": "frn.affine",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "frn.affine:out->frn.module:out:boundary",
+      "src": "frn.affine",
+      "dst": "frn.module",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "frn.root:in->frn.input:in:boundary",
+      "src": "frn.root",
+      "dst": "frn.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "frn.input:out->frn.module:in:tensor",
+      "src": "frn.input",
+      "dst": "frn.module",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "frn.module:out->frn.output:in:tensor",
+      "src": "frn.module",
+      "dst": "frn.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "frn.output:out->frn.root:out:boundary",
+      "src": "frn.output",
+      "dst": "frn.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "frn.epsilon:out->frn.eps_add:epsilon:constant_operand",
+      "src": "frn.epsilon",
+      "dst": "frn.eps_add",
+      "src_port": "out",
+      "dst_port": "epsilon",
+      "role": "constant_operand"
+    },
+    {
+      "id": "frn.gamma:out->frn.gamma_mul:gamma:parameter_operand",
+      "src": "frn.gamma",
+      "dst": "frn.gamma_mul",
+      "src_port": "out",
+      "dst_port": "gamma",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "frn.beta:out->frn.beta_add:beta:parameter_operand",
+      "src": "frn.beta",
+      "dst": "frn.beta_add",
+      "src_port": "out",
+      "dst_port": "beta",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "frn.tau:out->frn.threshold:tau:parameter_operand",
+      "src": "frn.tau",
+      "dst": "frn.threshold",
+      "src_port": "out",
+      "dst_port": "tau",
+      "role": "parameter_operand"
+    }
+  ],
+  "facts": [
+    "Unique FilterResponseNormalization class computes mean(x.pow(2),(2,3),keepdims=True); no subtraction of mean, batch reduction or running statistics.",
+    "Original x multiplies rsqrt(nu2+abs(eps)); this retained input is a different value from the squared/statistic branch.",
+    "gamma,beta,tau are three registered Parameters of shape[1,C,1,1], each initialized with normal_ rather than usual FRN ones/zeros.",
+    "Threshold is torch.max(gamma*x_hat+beta,tau), an elementwise learned TLU; not a max-pool, scalar reduction or fixedzeroReLU.",
+    "eps is a plain Tensor attribute, not registered buffer/Parameter; forward explicitly moves it to tau.device.",
+    "Notebook later redefines NiN as a BN model. This example scopes the unique FRN class directly and does not claim the final NiN binding uses FRN."
+  ],
+  "corrections": [
+    "Do not reuse BatchNorm/LayerNorm statistics: source normalizes uncentered second moment over H,W separately for each B,C.",
+    "Do not set gamma=1/beta=tau=0 merely from the usual paper defaults; this source initializes all3 with normal_.",
+    "Do not draw eps as a learned parameter or registered buffer; its source storage identity differs.",
+    "Do not silently bind the duplicated NiN symbol; only the unique FilterResponseNormalization class is selected."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

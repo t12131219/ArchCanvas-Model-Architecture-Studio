@@ -1,0 +1,1022 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "highway",
+  "profile": {
+    "size": 16,
+    "num_layers": 2,
+    "f": "F.relu",
+    "configuration_origin": "explicit module example; f and size are constructor arguments",
+    "input_shape": "[B,16]",
+    "output_shape": "[B,16]",
+    "carry_is_identity": false,
+    "formula": "sigmoid(gate_i(x))*relu(nonlinear_i(x)) + (1-sigmoid(gate_i(x)))*linear_i(x)",
+    "learned_linears": 6,
+    "independent_parameters": true,
+    "shared_across_depth": false,
+    "mode": "same train/eval formula",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "analvikingur/pytorch_Highway",
+    "commit": "70b75db7a2d029f4bbe08fd4c7d69e36bf7b6d3a",
+    "snapshot": "07e0b73a4d5586d43146703a92c1de6c6c8a7b2875587bc51302f0aa7ee66f58"
+  },
+  "nodes": [
+    {
+      "id": "highway.root",
+      "label": "Highway module / two layers",
+      "kind": "group",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.__init__",
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "highway.input"
+        ],
+        [
+          "highway.layer0"
+        ],
+        [
+          "highway.layer1"
+        ],
+        [
+          "highway.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.input",
+      "label": "Input features x",
+      "kind": "input",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "highway.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer0",
+      "label": "Highway layer 0 / independent weights",
+      "kind": "group",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.__init__",
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "layer_index": 0,
+      "parameter_scopes": [
+        "gate.0",
+        "nonlinear.0",
+        "linear.0"
+      ],
+      "independent_parameters": true,
+      "mode": "graph",
+      "ranks": [
+        [
+          "highway.layer0.gate",
+          "highway.layer0.nonlinear",
+          "highway.layer0.carry"
+        ],
+        [
+          "highway.layer0.complement"
+        ],
+        [
+          "highway.layer0.nonlinear_product",
+          "highway.layer0.carry_product"
+        ],
+        [
+          "highway.layer0.add"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 56,
+      "parent": "highway.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer0.gate",
+      "label": "Transform gate",
+      "kind": "group",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.__init__",
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "highway.layer0",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer0.gate_linear",
+      "label": "Linear 16 -> 16",
+      "kind": "linear",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.__init__"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parameter": "gate.0",
+      "bias": true,
+      "parent": "highway.layer0.gate",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer0.sigmoid",
+      "label": "Sigmoid gate g",
+      "kind": "sigmoid",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "expression": "F.sigmoid(self.gate[0](x))",
+      "parent": "highway.layer0.gate",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer0.nonlinear",
+      "label": "Nonlinear transform",
+      "kind": "group",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.__init__",
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "highway.layer0",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer0.nonlinear_linear",
+      "label": "Linear 16 -> 16",
+      "kind": "linear",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.__init__"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parameter": "nonlinear.0",
+      "bias": true,
+      "parent": "highway.layer0.nonlinear",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer0.relu",
+      "label": "Selected f = ReLU",
+      "kind": "relu",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [
+        "callable f supplied explicitly in this example; source does not fix activation"
+      ],
+      "configuration": "f=F.relu",
+      "parent": "highway.layer0.nonlinear",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer0.carry",
+      "label": "Learned linear carry",
+      "kind": "group",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.__init__",
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "highway.layer0",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer0.carry_linear",
+      "label": "Linear 16 -> 16",
+      "kind": "linear",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.__init__",
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [
+        "source self.linear[layer](x); this branch is not identity x"
+      ],
+      "parameter": "linear.0",
+      "bias": true,
+      "parent": "highway.layer0.carry",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer0.complement",
+      "label": "1 - g",
+      "kind": "subtract",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "expression": "1 - gate",
+      "parent": "highway.layer0",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer0.nonlinear_product",
+      "label": "g * nonlinear",
+      "kind": "multiply",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operands": [
+        "gate",
+        "nonlinear"
+      ],
+      "parent": "highway.layer0",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "gate",
+        "value"
+      ]
+    },
+    {
+      "id": "highway.layer0.carry_product",
+      "label": "(1-g) * linear",
+      "kind": "multiply",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operands": [
+        "complement",
+        "linear"
+      ],
+      "parent": "highway.layer0",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "gate",
+        "value"
+      ]
+    },
+    {
+      "id": "highway.layer0.add",
+      "label": "Add gated branches",
+      "kind": "add",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [
+        "x = gate * nonlinear + (1-gate) * linear"
+      ],
+      "expression": "gate * nonlinear + (1 - gate) * linear",
+      "parent": "highway.layer0",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "nonlinear",
+        "carry"
+      ]
+    },
+    {
+      "id": "highway.layer1",
+      "label": "Highway layer 1 / independent weights",
+      "kind": "group",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.__init__",
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "layer_index": 1,
+      "parameter_scopes": [
+        "gate.1",
+        "nonlinear.1",
+        "linear.1"
+      ],
+      "independent_parameters": true,
+      "mode": "graph",
+      "ranks": [
+        [
+          "highway.layer1.gate",
+          "highway.layer1.nonlinear",
+          "highway.layer1.carry"
+        ],
+        [
+          "highway.layer1.complement"
+        ],
+        [
+          "highway.layer1.nonlinear_product",
+          "highway.layer1.carry_product"
+        ],
+        [
+          "highway.layer1.add"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 56,
+      "parent": "highway.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer1.gate",
+      "label": "Transform gate",
+      "kind": "group",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.__init__",
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "highway.layer1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer1.gate_linear",
+      "label": "Linear 16 -> 16",
+      "kind": "linear",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.__init__"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parameter": "gate.1",
+      "bias": true,
+      "parent": "highway.layer1.gate",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer1.sigmoid",
+      "label": "Sigmoid gate g",
+      "kind": "sigmoid",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "expression": "F.sigmoid(self.gate[1](x))",
+      "parent": "highway.layer1.gate",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer1.nonlinear",
+      "label": "Nonlinear transform",
+      "kind": "group",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.__init__",
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "highway.layer1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer1.nonlinear_linear",
+      "label": "Linear 16 -> 16",
+      "kind": "linear",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.__init__"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parameter": "nonlinear.1",
+      "bias": true,
+      "parent": "highway.layer1.nonlinear",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer1.relu",
+      "label": "Selected f = ReLU",
+      "kind": "relu",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [
+        "callable f supplied explicitly in this example; source does not fix activation"
+      ],
+      "configuration": "f=F.relu",
+      "parent": "highway.layer1.nonlinear",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer1.carry",
+      "label": "Learned linear carry",
+      "kind": "group",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.__init__",
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "highway.layer1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer1.carry_linear",
+      "label": "Linear 16 -> 16",
+      "kind": "linear",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.__init__",
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [
+        "source self.linear[layer](x); this branch is not identity x"
+      ],
+      "parameter": "linear.1",
+      "bias": true,
+      "parent": "highway.layer1.carry",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer1.complement",
+      "label": "1 - g",
+      "kind": "subtract",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "expression": "1 - gate",
+      "parent": "highway.layer1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "highway.layer1.nonlinear_product",
+      "label": "g * nonlinear",
+      "kind": "multiply",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operands": [
+        "gate",
+        "nonlinear"
+      ],
+      "parent": "highway.layer1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "gate",
+        "value"
+      ]
+    },
+    {
+      "id": "highway.layer1.carry_product",
+      "label": "(1-g) * linear",
+      "kind": "multiply",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operands": [
+        "complement",
+        "linear"
+      ],
+      "parent": "highway.layer1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "gate",
+        "value"
+      ]
+    },
+    {
+      "id": "highway.layer1.add",
+      "label": "Add gated branches",
+      "kind": "add",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [
+        "x = gate * nonlinear + (1-gate) * linear"
+      ],
+      "expression": "gate * nonlinear + (1 - gate) * linear",
+      "parent": "highway.layer1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "nonlinear",
+        "carry"
+      ]
+    },
+    {
+      "id": "highway.output",
+      "label": "Highway output x",
+      "kind": "output",
+      "source": [
+        "pytorch-highway/highway/highway.py::Highway.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "highway.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "highway.layer0.gate:in->highway.layer0.gate_linear:in:boundary",
+      "src": "highway.layer0.gate",
+      "dst": "highway.layer0.gate_linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "highway.layer0.gate_linear:out->highway.layer0.sigmoid:in:tensor",
+      "src": "highway.layer0.gate_linear",
+      "dst": "highway.layer0.sigmoid",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer0.sigmoid:out->highway.layer0.gate:out:boundary",
+      "src": "highway.layer0.sigmoid",
+      "dst": "highway.layer0.gate",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "highway.layer0.nonlinear:in->highway.layer0.nonlinear_linear:in:boundary",
+      "src": "highway.layer0.nonlinear",
+      "dst": "highway.layer0.nonlinear_linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "highway.layer0.nonlinear_linear:out->highway.layer0.relu:in:tensor",
+      "src": "highway.layer0.nonlinear_linear",
+      "dst": "highway.layer0.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer0.relu:out->highway.layer0.nonlinear:out:boundary",
+      "src": "highway.layer0.relu",
+      "dst": "highway.layer0.nonlinear",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "highway.layer0.carry:in->highway.layer0.carry_linear:in:boundary",
+      "src": "highway.layer0.carry",
+      "dst": "highway.layer0.carry_linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "highway.layer0.carry_linear:out->highway.layer0.carry:out:boundary",
+      "src": "highway.layer0.carry_linear",
+      "dst": "highway.layer0.carry",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "highway.layer1.gate:in->highway.layer1.gate_linear:in:boundary",
+      "src": "highway.layer1.gate",
+      "dst": "highway.layer1.gate_linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "highway.layer1.gate_linear:out->highway.layer1.sigmoid:in:tensor",
+      "src": "highway.layer1.gate_linear",
+      "dst": "highway.layer1.sigmoid",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer1.sigmoid:out->highway.layer1.gate:out:boundary",
+      "src": "highway.layer1.sigmoid",
+      "dst": "highway.layer1.gate",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "highway.layer1.nonlinear:in->highway.layer1.nonlinear_linear:in:boundary",
+      "src": "highway.layer1.nonlinear",
+      "dst": "highway.layer1.nonlinear_linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "highway.layer1.nonlinear_linear:out->highway.layer1.relu:in:tensor",
+      "src": "highway.layer1.nonlinear_linear",
+      "dst": "highway.layer1.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer1.relu:out->highway.layer1.nonlinear:out:boundary",
+      "src": "highway.layer1.relu",
+      "dst": "highway.layer1.nonlinear",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "highway.layer1.carry:in->highway.layer1.carry_linear:in:boundary",
+      "src": "highway.layer1.carry",
+      "dst": "highway.layer1.carry_linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "highway.layer1.carry_linear:out->highway.layer1.carry:out:boundary",
+      "src": "highway.layer1.carry_linear",
+      "dst": "highway.layer1.carry",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "highway.input:out->highway.layer0.gate:in:tensor",
+      "src": "highway.input",
+      "dst": "highway.layer0.gate",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.input:out->highway.layer0.nonlinear:in:tensor",
+      "src": "highway.input",
+      "dst": "highway.layer0.nonlinear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.input:out->highway.layer0.carry:in:tensor",
+      "src": "highway.input",
+      "dst": "highway.layer0.carry",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer0.sigmoid:out->highway.layer0.complement:in:tensor",
+      "src": "highway.layer0.sigmoid",
+      "dst": "highway.layer0.complement",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer0.sigmoid:out->highway.layer0.nonlinear_product:gate:tensor",
+      "src": "highway.layer0.sigmoid",
+      "dst": "highway.layer0.nonlinear_product",
+      "src_port": "out",
+      "dst_port": "gate",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer0.relu:out->highway.layer0.nonlinear_product:value:tensor",
+      "src": "highway.layer0.relu",
+      "dst": "highway.layer0.nonlinear_product",
+      "src_port": "out",
+      "dst_port": "value",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer0.complement:out->highway.layer0.carry_product:gate:tensor",
+      "src": "highway.layer0.complement",
+      "dst": "highway.layer0.carry_product",
+      "src_port": "out",
+      "dst_port": "gate",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer0.carry_linear:out->highway.layer0.carry_product:value:tensor",
+      "src": "highway.layer0.carry_linear",
+      "dst": "highway.layer0.carry_product",
+      "src_port": "out",
+      "dst_port": "value",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer0.nonlinear_product:out->highway.layer0.add:nonlinear:tensor",
+      "src": "highway.layer0.nonlinear_product",
+      "dst": "highway.layer0.add",
+      "src_port": "out",
+      "dst_port": "nonlinear",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer0.carry_product:out->highway.layer0.add:carry:tensor",
+      "src": "highway.layer0.carry_product",
+      "dst": "highway.layer0.add",
+      "src_port": "out",
+      "dst_port": "carry",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer0.add:out->highway.layer1.gate:in:tensor",
+      "src": "highway.layer0.add",
+      "dst": "highway.layer1.gate",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer0.add:out->highway.layer1.nonlinear:in:tensor",
+      "src": "highway.layer0.add",
+      "dst": "highway.layer1.nonlinear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer0.add:out->highway.layer1.carry:in:tensor",
+      "src": "highway.layer0.add",
+      "dst": "highway.layer1.carry",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer1.sigmoid:out->highway.layer1.complement:in:tensor",
+      "src": "highway.layer1.sigmoid",
+      "dst": "highway.layer1.complement",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer1.sigmoid:out->highway.layer1.nonlinear_product:gate:tensor",
+      "src": "highway.layer1.sigmoid",
+      "dst": "highway.layer1.nonlinear_product",
+      "src_port": "out",
+      "dst_port": "gate",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer1.relu:out->highway.layer1.nonlinear_product:value:tensor",
+      "src": "highway.layer1.relu",
+      "dst": "highway.layer1.nonlinear_product",
+      "src_port": "out",
+      "dst_port": "value",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer1.complement:out->highway.layer1.carry_product:gate:tensor",
+      "src": "highway.layer1.complement",
+      "dst": "highway.layer1.carry_product",
+      "src_port": "out",
+      "dst_port": "gate",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer1.carry_linear:out->highway.layer1.carry_product:value:tensor",
+      "src": "highway.layer1.carry_linear",
+      "dst": "highway.layer1.carry_product",
+      "src_port": "out",
+      "dst_port": "value",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer1.nonlinear_product:out->highway.layer1.add:nonlinear:tensor",
+      "src": "highway.layer1.nonlinear_product",
+      "dst": "highway.layer1.add",
+      "src_port": "out",
+      "dst_port": "nonlinear",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer1.carry_product:out->highway.layer1.add:carry:tensor",
+      "src": "highway.layer1.carry_product",
+      "dst": "highway.layer1.add",
+      "src_port": "out",
+      "dst_port": "carry",
+      "role": "tensor"
+    },
+    {
+      "id": "highway.layer1.add:out->highway.output:in:tensor",
+      "src": "highway.layer1.add",
+      "dst": "highway.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Three separate ModuleLists independently construct gate, nonlinear and linear transforms for each layer; six Linear modules for this2layer example.",
+    "All3 paths consume the same current layer input; nonlinear is f(self.nonlinear[layer](x)); gate is F.sigmoid(self.gate[layer](x)).",
+    "Source carry path is self.linear[layer](x), a learned affine transform, not original x.",
+    "Two gated products use complementary g and1-g, then Add; next layer reads updated x and uses its own weights.",
+    "Source accepts callable f without fixing it; f=F.relu,size16,layers2 are explicitly selected module example values.",
+    "Graph ranks allocate space only; every branch input, product operand and inter-layer dependency is an explicit edge, no fake tuple."
+  ],
+  "corrections": [
+    "Do not substitute textbook identity carry: source includes a learned linear branch.",
+    "Do not use three independent gates: the complement uses exactly1-g from the same gate tensor.",
+    "Do not share weights across Highway layers: the ModuleLists construct distinct Linear modules.",
+    "Do not claim activation was recovered asReLU from source; it is the selected f callable."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

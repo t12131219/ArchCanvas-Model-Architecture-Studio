@@ -1,0 +1,540 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2214" height="1923" viewBox="0 0 2214 1923">
+<defs xmlns="http://www.w3.org/2000/svg"><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348" /></marker></defs>
+
+<rect xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" fill="white" />
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="source-binding">{"model": "spectral_filter", "source_snapshot_sha256": "7b66bbdafc476b135d919c11ba3b432b974b334e59e93ff1dc255dda7bf9a4f6", "repository": "rasbt/deeplearning-models", "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3", "semantic_ir_sha256": "508cf1583a90062a53b77a0011c94f088b0be129965017c2b01cef23b6d032f4", "view": 2}</metadata>
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="diagram-style">{"name": "transformer-paper-model-zoo", "version": 1, "font": "DejaVu Sans, Arial, sans-serif", "text": "#172336", "line": "#263348", "palette": {"root": "#ffffff", "group": "#ffffff", "inner": "#fffaf6", "layer": "#ffffff", "encoder": "#e7f5fe", "decoder": "#fff0f5", "embedding": "#f8d4e1", "input": "#f8d4e1", "output": "#dfdff8", "attention": "#ffddb3", "ffn": "#c8ebfb", "mixing": "#c8ebfb", "conv": "#c8ebfb", "pool": "#d6f0df", "norm": "#fff6bd", "concat": "#fff6bd", "linear": "#dfdff8", "softmax": "#c9f1cd", "sampling": "#c9f1cd", "recurrent": "#ffddb3", "decomposition": "#d6f0df", "tensor": "#cdeaf8", "activation": "#f3f5f7", "control": "#f3f5f7"}, "typography": {"title": 30, "subtitle": 16, "module": 22, "inner": 20, "operator": 20, "shape": 16, "detail": 14, "evidence": 12, "footer": 14, "line_height": 1.18}, "fill_width_nodes": [], "visual_roles": {"spectral.basis_init": "control", "spectral.filter": "encoder", "spectral.product": "concat", "spectral.reconstruct": "mixing", "spectral.root": "root", "spectral.vbranch": "inner", "spectral.w_init": "control", "spectral.wbranch": "inner", "spectral.wproject": "mixing", "spectral.xbranch": "embedding", "spectral.xproject": "mixing"}, "semantics": "presentation aliases only; color does not imply mathematical equivalence or parameter sharing"}</metadata>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1107.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1107.0" dy="0">SpectralFilter (truncated graph basis module)  |  Operators &amp; tensor flow</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1107.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">N=784 / K=20 / F=2 / V,X,W operands / buffer W / module only  /  read bottom to top</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.root" data-visual-role="root"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="420.0" y="98" width="1374" height="1543" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="437.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="437.0" dy="0">SpectralFilter / selected subgraph</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1777.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1777.0" dy="0">X + V + W -&gt; Y</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1781.0" y="160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1781.0" dy="0">E001,E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.xbranch" data-visual-role="embedding"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="452.0" y="1286.0" width="394" height="329" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="469.0" y="1316.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="469.0" dy="0">Image to</tspan>
+<tspan x="469.0" dy="25.959999999999997">node</tspan>
+<tspan x="469.0" dy="25.959999999999997">features</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="829.0" y="1316.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="829.0" dy="0">X: [B,784,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="833.0" y="1391.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="833.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.input" data-visual-role="input"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="484.0" y="1508.0" width="330" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="649.0" y="1535.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="649.0" dy="0">Input grayscale image</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="649.0" y="1559.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="649.0" dy="0">[B,1,28,28]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="801.0" y="1579.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="801.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.reshape" data-visual-role="tensor"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="484.0" y="1403.0" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="649.0" y="1430.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="649.0" dy="0">view(B,-1,1)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="649.0" y="1454.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="649.0" dy="0">X: [B,784,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="801.0" y="1474.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="801.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.vbranch" data-visual-role="inner"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="910.0" y="1288.0" width="394" height="325" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="927.0" y="1318.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="927.0" dy="0">Basis read /</tspan>
+<tspan x="927.0" dy="23.599999999999998">transpose</tspan>
+<tspan x="927.0" dy="23.599999999999998">view</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1287.0" y="1318.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1287.0" dy="0">V_T:</tspan>
+<tspan x="1287.0" dy="18.88">[B,20,784]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1291.0" y="1389.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1291.0" dy="0">E001,E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.vread" data-visual-role="input"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="942.0" y="1506.0" width="330" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1107.0" y="1533.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1107.0" dy="0">Read same V buffer</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1107.0" y="1557.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">V: [784,20]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1259.0" y="1577.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1259.0" dy="0">E001,E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.vt" data-visual-role="tensor"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="942.0" y="1401.0" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1107.0" y="1428.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1107.0" dy="0">V.T.expand(B,-1,-1)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1107.0" y="1452.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">V_T: [B,20,784]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1259.0" y="1472.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1259.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.wbranch" data-visual-role="inner"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="1368.0" y="1300.0" width="394" height="301" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1385.0" y="1330.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1385.0" dy="0">Node-domain</tspan>
+<tspan x="1385.0" dy="23.599999999999998">filter read</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1745.0" y="1330.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1745.0" dy="0">W_batch:</tspan>
+<tspan x="1745.0" dy="18.88">[B,784,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1749.0" y="1377.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1749.0" dy="0">E001,E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.wread" data-visual-role="input"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="1400.0" y="1494.0" width="330" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1565.0" y="1521.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1565.0" dy="0">Read W_spectral buffer</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1565.0" y="1545.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1565.0" dy="0">W: [784,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1717.0" y="1565.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1717.0" dy="0">E001,E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.wexpand" data-visual-role="tensor"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="1400.0" y="1389.0" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1565.0" y="1416.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1565.0" dy="0">W.expand(B,-1,-1)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1565.0" y="1440.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1565.0" dy="0">W_batch: [B,784,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1717.0" y="1460.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1717.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.filter" data-visual-role="encoder"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; Two real projections; multiplication broadcasts channels; same V reconstructs nodes</title><rect x="649.0" y="349.0" width="916" height="865" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="666.0" y="379.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="666.0" dy="0">Truncated spectral</tspan>
+<tspan x="666.0" dy="28.32">filtering</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1548.0" y="379.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1548.0" dy="0">Y: [B,784,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1552.0" y="431.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1552.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.xproject" data-visual-role="mixing"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="681.0" y="940.0" width="394" height="248" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="698.0" y="970.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="698.0" dy="0">Signal</tspan>
+<tspan x="698.0" dy="25.959999999999997">projection /</tspan>
+<tspan x="698.0" dy="25.959999999999997">V_T @ X</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1058.0" y="970.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1058.0" dy="0">[B,20,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1062.0" y="1045.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1062.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.xproject.bmm" data-visual-role="mixing"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="713.0" y="1057.0" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="878.0" y="1084.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="878.0" dy="0">Batch MatMul / Signal</tspan>
+<tspan x="878.0" dy="23.599999999999998">projection</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="878.0" y="1132.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="878.0" dy="0">[B,20,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1030.0" y="1152.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1030.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.wproject" data-visual-role="mixing"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="1139.0" y="940.0" width="394" height="248" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1156.0" y="970.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1156.0" dy="0">Filter</tspan>
+<tspan x="1156.0" dy="25.959999999999997">projection /</tspan>
+<tspan x="1156.0" dy="25.959999999999997">V_T @ W</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1516.0" y="970.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1516.0" dy="0">[B,20,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1520.0" y="1045.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1520.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.wproject.bmm" data-visual-role="mixing"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="1171.0" y="1057.0" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1336.0" y="1084.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1336.0" dy="0">Batch MatMul / Filter</tspan>
+<tspan x="1336.0" dy="23.599999999999998">projection</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1336.0" y="1132.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1336.0" dy="0">[B,20,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1488.0" y="1152.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1488.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.vexpand" data-visual-role="tensor"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="713.0" y="775.0" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="878.0" y="802.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="878.0" dy="0">V.expand(B,-1,-1)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="878.0" y="826.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="878.0" dy="0">V_batch: [B,784,20]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1030.0" y="846.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1030.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.product" data-visual-role="concat" data-glyph-kind="binary-circle"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; [B,20,1] * [B,20,2]; singleton channel broadcasts across F=2</title><circle cx="1336.0" cy="815.5" r="16.0" fill="white" stroke="#263348" stroke-width="2" data-glyph-outline="circle" /><text x="1336.0" y="822.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="400" text-anchor="middle" fill="#172336" data-glyph-symbol="multiply"><tspan x="1336.0" dy="0">×</tspan></text><text x="1364.0" y="768.46" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1364.0" dy="0">Broadcast</tspan><tspan x="1364.0" dy="16.52">elementwise</tspan><tspan x="1364.0" dy="16.52">multiply</tspan></text><text x="1364.0" y="841.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="11" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1364.0" dy="0">[B,20,2]</tspan></text><text x="1364.0" y="865.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1364.0" dy="0">E002</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.reconstruct" data-visual-role="mixing"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="910.0" y="443.0" width="394" height="248" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="927.0" y="473.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="927.0" dy="0">Reconstruct</tspan>
+<tspan x="927.0" dy="25.959999999999997">/ V @</tspan>
+<tspan x="927.0" dy="25.959999999999997">product</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1287.0" y="473.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1287.0" dy="0">[B,784,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1291.0" y="548.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1291.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.reconstruct.bmm" data-visual-role="mixing"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="942.0" y="560.0" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1107.0" y="587.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1107.0" dy="0">Batch MatMul /</tspan>
+<tspan x="1107.0" dy="23.599999999999998">Reconstruct</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1107.0" y="635.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">[B,784,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1259.0" y="655.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1259.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.output" data-visual-role="output"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="942.0" y="172.0" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1107.0" y="199.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1107.0" dy="0">Module result / node</tspan>
+<tspan x="1107.0" dy="23.599999999999998">features Y</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1107.0" y="247.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">[B,784,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1259.0" y="267.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1259.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.basis_init" data-visual-role="control"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:85 precompute_adjacency_matrix; rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:114 get_graph_laplacian; rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; parameter=not asserted; </title><rect x="25" y="1013" width="364" height="635" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="42" y="1043" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="42" dy="0">Fixed basis</tspan>
+<tspan x="42" dy="25.959999999999997">/</tspan>
+<tspan x="42" dy="25.959999999999997">constructor</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="372" y="1043" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="372" dy="0">V:</tspan>
+<tspan x="372" dy="18.88">[N=784,K=20]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="376" y="1118" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="376" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.adj" data-visual-role="mixing"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:85 precompute_adjacency_matrix; parameter=not asserted; coords / img_size; Euclidean distance; exp(-dist/sigma^2); values&lt;.01 set to0</title><rect x="57.0" y="1517" width="300" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="207.0" y="1544" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="207.0" dy="0">Grid adjacency</tspan>
+<tspan x="207.0" dy="23.599999999999998">helper</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="207.0" y="1592" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="207.0" dy="0">A: [784,784]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="344.0" y="1612" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="344.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.laplacian" data-visual-role="norm"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:114 get_graph_laplacian; parameter=not asserted; D=sum(A,axis=0); D_hat=diag((D+1e-5)^(-.5)); L=I-D_hat A D_hat</title><rect x="57.0" y="1388" width="300" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="207.0" y="1415" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="207.0" dy="0">Normalized graph</tspan>
+<tspan x="207.0" dy="23.599999999999998">Laplacian</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="207.0" y="1463" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="207.0" dy="0">L: [784,784]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="344.0" y="1483" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="344.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.eigsh" data-visual-role="control"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; parameter=not asserted; eigsh(L.numpy(),k=20,which="SM"); library internals not expanded or executed</title><rect x="57.0" y="1259" width="300" height="105" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="207.0" y="1286" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="207.0" dy="0">eigsh / SciPy</tspan>
+<tspan x="207.0" dy="23.599999999999998">boundary</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="207.0" y="1334" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="207.0" dy="0">V: [784,20]; Lambda: [20]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="344.0" y="1354" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="344.0" dy="0">E001</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.vbuffer" data-visual-role="control"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; parameter=not asserted; A and L are also registered buffers; V has no explicit .float() in source</title><rect x="57.0" y="1130" width="300" height="105" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="207.0" y="1157" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="207.0" dy="0">from_numpy(V) /</tspan>
+<tspan x="207.0" dy="23.599999999999998">register V</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="207.0" y="1205" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="207.0" dy="0">V: [784,20]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="344.0" y="1225" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="344.0" dy="0">E001</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.w_init" data-visual-role="control"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; parameter=not asserted; </title><rect x="25" y="226" width="364" height="458" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="42" y="256" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="42" dy="0">Filter</tspan>
+<tspan x="42" dy="25.959999999999997">buffer /</tspan>
+<tspan x="42" dy="25.959999999999997">constructor</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="372" y="256" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="372" dy="0">registered W:</tspan>
+<tspan x="372" dy="18.88">[N=784,F=2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="376" y="331" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="376" dy="0">E001</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.wcreate" data-visual-role="control"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; parameter=not asserted; Constructor expression starts with nn.Parameter; storage is decided by later registration</title><rect x="57.0" y="553" width="300" height="105" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="207.0" y="580" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="207.0" dy="0">Create Parameter /</tspan>
+<tspan x="207.0" dy="23.599999999999998">cast float</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="207.0" y="628" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="207.0" dy="0">W: [784,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="344.0" y="648" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="344.0" dy="0">E001</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.wkaiming" data-visual-role="control"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; parameter=not asserted; </title><rect x="57.0" y="448" width="300" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="207.0" y="475" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="207.0" dy="0">Kaiming uniform init</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="207.0" y="499" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="207.0" dy="0">W: [784,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="344.0" y="519" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="344.0" dy="0">E001</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="spectral.wbuffer" data-visual-role="control"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; parameter=not asserted; Buffer registration does not expose W via model.parameters(); grad state is runtime dependent</title><rect x="57.0" y="343" width="300" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="207.0" y="370" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="207.0" dy="0">Register W buffer</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="207.0" y="394" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="207.0" dy="0">W_spectral: [784,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="344.0" y="414" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="344.0" dy="0">E001</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0001" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.reshape&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;spectral.input&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.reshape&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.input:out-&gt;spectral.reshape:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;spectral.reshape:in&quot;, &quot;rendered_src&quot;: &quot;spectral.input:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.input&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 649.0,1508.0 L 649.0,1484.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.input:out -&gt; spectral.reshape:in; visible spectral.input:out -&gt; spectral.reshape:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0002" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.vt&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;spectral.vread&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.vt&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.vread:out-&gt;spectral.vt:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;spectral.vt:in&quot;, &quot;rendered_src&quot;: &quot;spectral.vread:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.vread&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1107.0,1506.0 L 1107.0,1482.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.vread:out -&gt; spectral.vt:in; visible spectral.vread:out -&gt; spectral.vt:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0003" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.wexpand&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;spectral.wread&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.wexpand&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.wread:out-&gt;spectral.wexpand:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;spectral.wexpand:in&quot;, &quot;rendered_src&quot;: &quot;spectral.wread:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.wread&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1565.0,1494.0 L 1565.0,1470.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.wread:out -&gt; spectral.wexpand:in; visible spectral.wread:out -&gt; spectral.wexpand:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0004" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.laplacian&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;spectral.adj&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.laplacian&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.adj:out-&gt;spectral.laplacian:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;spectral.laplacian:in&quot;, &quot;rendered_src&quot;: &quot;spectral.adj:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.adj&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 207.0,1517 L 207.0,1493" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.adj:out -&gt; spectral.laplacian:in; visible spectral.adj:out -&gt; spectral.laplacian:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0005" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.eigsh&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;spectral.laplacian&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.eigsh&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.laplacian:out-&gt;spectral.eigsh:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;spectral.eigsh:in&quot;, &quot;rendered_src&quot;: &quot;spectral.laplacian:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.laplacian&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 207.0,1388 L 207.0,1364" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.laplacian:out -&gt; spectral.eigsh:in; visible spectral.laplacian:out -&gt; spectral.eigsh:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0006" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.vbuffer&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;spectral.eigsh&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.vbuffer&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.eigsh:out-&gt;spectral.vbuffer:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;spectral.vbuffer:in&quot;, &quot;rendered_src&quot;: &quot;spectral.eigsh:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.eigsh&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 207.0,1259 L 207.0,1235" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.eigsh:out -&gt; spectral.vbuffer:in; visible spectral.eigsh:out -&gt; spectral.vbuffer:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0007" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.wkaiming&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;spectral.wcreate&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.wkaiming&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.wcreate:out-&gt;spectral.wkaiming:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;spectral.wkaiming:in&quot;, &quot;rendered_src&quot;: &quot;spectral.wcreate:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.wcreate&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 207.0,553 L 207.0,529" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.wcreate:out -&gt; spectral.wkaiming:in; visible spectral.wcreate:out -&gt; spectral.wkaiming:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0008" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.wbuffer&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;spectral.wkaiming&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.wbuffer&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.wkaiming:out-&gt;spectral.wbuffer:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;spectral.wbuffer:in&quot;, &quot;rendered_src&quot;: &quot;spectral.wkaiming:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.wkaiming&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 207.0,448 L 207.0,424" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.wkaiming:out -&gt; spectral.wbuffer:in; visible spectral.wkaiming:out -&gt; spectral.wbuffer:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0009" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.vread&quot;, &quot;dst_port&quot;: &quot;V&quot;, &quot;role&quot;: &quot;fixed_buffer&quot;, &quot;src&quot;: &quot;spectral.basis_init&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.vread&quot;, &quot;port&quot;: &quot;V&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.basis_init:out-&gt;spectral.vread:V:fixed_buffer&quot;, &quot;rendered_dst&quot;: &quot;spectral.vread:left.aux0&quot;, &quot;rendered_src&quot;: &quot;spectral.vbuffer:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.vbuffer&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;spectral.basis_init&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;declared-interface&quot;}]}}" d="M 357.0,1182.5 L 589.12,1182.5 L 589.12,1271 L 918.0,1271 L 918.0,1534.5 L 942.0,1534.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>spectral.basis_init:out -&gt; spectral.vread:V; visible spectral.vbuffer:out -&gt; spectral.vread:V; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0010" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.wread&quot;, &quot;dst_port&quot;: &quot;W&quot;, &quot;role&quot;: &quot;fixed_buffer&quot;, &quot;src&quot;: &quot;spectral.w_init&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.wread&quot;, &quot;port&quot;: &quot;W&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.w_init:out-&gt;spectral.wread:W:fixed_buffer&quot;, &quot;rendered_dst&quot;: &quot;spectral.wread:left&quot;, &quot;rendered_src&quot;: &quot;spectral.wbuffer:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.wbuffer&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;spectral.w_init&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;declared-interface&quot;}]}}" d="M 357.0,383.5 L 601.12,383.5 L 601.12,1270.0 L 1376.0,1270.0 L 1376.0,1534.5 L 1400.0,1534.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>spectral.w_init:out -&gt; spectral.wread:W; visible spectral.wbuffer:out -&gt; spectral.wread:W; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0011" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.xproject.bmm&quot;, &quot;dst_port&quot;: &quot;X&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;spectral.reshape&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.xproject.bmm&quot;, &quot;port&quot;: &quot;X&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.reshape:out-&gt;spectral.xproject.bmm:X:tensor&quot;, &quot;rendered_dst&quot;: &quot;spectral.xproject.bmm:right.aux0&quot;, &quot;rendered_src&quot;: &quot;spectral.reshape:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.reshape&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 649.0,1403.0 L 649.0,1202 L 1067.0,1202 L 1067.0,1097.5 L 1043.0,1097.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.reshape:out -&gt; spectral.xproject.bmm:X; visible spectral.reshape:out -&gt; spectral.xproject.bmm:X; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0012" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.xproject.bmm&quot;, &quot;dst_port&quot;: &quot;V_T&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;spectral.vt&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.xproject.bmm&quot;, &quot;port&quot;: &quot;V_T&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.vt:out-&gt;spectral.xproject.bmm:V_T:tensor&quot;, &quot;rendered_dst&quot;: &quot;spectral.xproject.bmm:right.aux1&quot;, &quot;rendered_src&quot;: &quot;spectral.vt:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.vt&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1107.0,1401.0 L 1107.0,1121.5 L 1043.0,1121.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.vt:out -&gt; spectral.xproject.bmm:V_T; visible spectral.vt:out -&gt; spectral.xproject.bmm:V_T; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0013" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.wproject.bmm&quot;, &quot;dst_port&quot;: &quot;V_T&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;spectral.vt&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.wproject.bmm&quot;, &quot;port&quot;: &quot;V_T&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.vt:out-&gt;spectral.wproject.bmm:V_T:tensor&quot;, &quot;rendered_dst&quot;: &quot;spectral.wproject.bmm:right.aux0&quot;, &quot;rendered_src&quot;: &quot;spectral.vt:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.vt&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1107.0,1401.0 L 1107.0,1170.5 L 1525.0,1170.5 L 1525.0,1097.5 L 1501.0,1097.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.vt:out -&gt; spectral.wproject.bmm:V_T; visible spectral.vt:out -&gt; spectral.wproject.bmm:V_T; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0014" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.wproject.bmm&quot;, &quot;dst_port&quot;: &quot;W&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;spectral.wexpand&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.wproject.bmm&quot;, &quot;port&quot;: &quot;W&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.wexpand:out-&gt;spectral.wproject.bmm:W:tensor&quot;, &quot;rendered_dst&quot;: &quot;spectral.wproject.bmm:right.aux1&quot;, &quot;rendered_src&quot;: &quot;spectral.wexpand:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.wexpand&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1565.0,1389.0 L 1565.0,1202 L 1551.0,1202 L 1551.0,1121.5 L 1501.0,1121.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.wexpand:out -&gt; spectral.wproject.bmm:W; visible spectral.wexpand:out -&gt; spectral.wproject.bmm:W; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0015" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.product&quot;, &quot;dst_port&quot;: &quot;X_hat&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;spectral.xproject.bmm&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.product&quot;, &quot;port&quot;: &quot;X_hat&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.xproject.bmm:out-&gt;spectral.product:X_hat:tensor&quot;, &quot;rendered_dst&quot;: &quot;spectral.product:right.aux0&quot;, &quot;rendered_src&quot;: &quot;spectral.xproject.bmm:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.xproject.bmm&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 878.0,1057.0 L 878.0,869.5 L 1296.0,869.5 L 1296.0,815.5 L 1320.0,815.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.xproject.bmm:out -&gt; spectral.product:X_hat; visible spectral.xproject.bmm:out -&gt; spectral.product:X_hat; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0016" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.product&quot;, &quot;dst_port&quot;: &quot;W_hat&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;spectral.wproject.bmm&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.product&quot;, &quot;port&quot;: &quot;W_hat&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.wproject.bmm:out-&gt;spectral.product:W_hat:tensor&quot;, &quot;rendered_dst&quot;: &quot;spectral.product:right.aux1&quot;, &quot;rendered_src&quot;: &quot;spectral.wproject.bmm:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.wproject.bmm&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1336.0,1057.0 L 1336.0,831.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.wproject.bmm:out -&gt; spectral.product:W_hat; visible spectral.wproject.bmm:out -&gt; spectral.product:W_hat; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0017" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.vexpand&quot;, &quot;dst_port&quot;: &quot;V&quot;, &quot;role&quot;: &quot;fixed_buffer&quot;, &quot;src&quot;: &quot;spectral.vread&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.vexpand&quot;, &quot;port&quot;: &quot;V&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.vread:out-&gt;spectral.vexpand:V:fixed_buffer&quot;, &quot;rendered_dst&quot;: &quot;spectral.vexpand:left&quot;, &quot;rendered_src&quot;: &quot;spectral.vread:left.aux1&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.vread&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 942.0,1558.5 L 864.0,1558.5 L 864.0,1206.0 L 663.0,1206.0 L 663.0,815.5 L 713.0,815.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>spectral.vread:out -&gt; spectral.vexpand:V; visible spectral.vread:out -&gt; spectral.vexpand:V; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0018" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.reconstruct.bmm&quot;, &quot;dst_port&quot;: &quot;V&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;spectral.vexpand&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.reconstruct.bmm&quot;, &quot;port&quot;: &quot;V&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.vexpand:out-&gt;spectral.reconstruct.bmm:V:tensor&quot;, &quot;rendered_dst&quot;: &quot;spectral.reconstruct.bmm:right.aux0&quot;, &quot;rendered_src&quot;: &quot;spectral.vexpand:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.vexpand&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 878.0,775.0 L 878.0,676 L 1296.0,676 L 1296.0,600.5 L 1272.0,600.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.vexpand:out -&gt; spectral.reconstruct.bmm:V; visible spectral.vexpand:out -&gt; spectral.reconstruct.bmm:V; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0019" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.reconstruct.bmm&quot;, &quot;dst_port&quot;: &quot;product&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;spectral.product&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.reconstruct.bmm&quot;, &quot;port&quot;: &quot;product&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.product:out-&gt;spectral.reconstruct.bmm:product:tensor&quot;, &quot;rendered_dst&quot;: &quot;spectral.reconstruct.bmm:right.aux1&quot;, &quot;rendered_src&quot;: &quot;spectral.product:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.product&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1336.0,799.5 L 1336.0,624.5 L 1272.0,624.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.product:out -&gt; spectral.reconstruct.bmm:product; visible spectral.product:out -&gt; spectral.reconstruct.bmm:product; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0020" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.output&quot;, &quot;dst_port&quot;: &quot;Y&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;spectral.reconstruct.bmm&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.output&quot;, &quot;port&quot;: &quot;Y&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.reconstruct.bmm:out-&gt;spectral.output:Y:tensor&quot;, &quot;rendered_dst&quot;: &quot;spectral.output:right&quot;, &quot;rendered_src&quot;: &quot;spectral.reconstruct.bmm:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.reconstruct.bmm&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1107.0,560.0 L 1107.0,288.76 L 1296.0,288.76 L 1296.0,224.5 L 1272.0,224.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.reconstruct.bmm:out -&gt; spectral.output:Y; visible spectral.reconstruct.bmm:out -&gt; spectral.output:Y; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0021" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.vt&quot;, &quot;dst_port&quot;: &quot;B&quot;, &quot;role&quot;: &quot;shape_dependency&quot;, &quot;src&quot;: &quot;spectral.input&quot;, &quot;src_port&quot;: &quot;shape&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.vt&quot;, &quot;port&quot;: &quot;B&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.input:shape-&gt;spectral.vt:B:shape_dependency&quot;, &quot;rendered_dst&quot;: &quot;spectral.vt:right&quot;, &quot;rendered_src&quot;: &quot;spectral.input:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.input&quot;, &quot;port&quot;: &quot;shape&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 814.0,1548.5 L 838.0,1548.5 L 838.0,1605.0 L 1296.0,1605.0 L 1296.0,1441.5 L 1272.0,1441.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>spectral.input:shape -&gt; spectral.vt:B; visible spectral.input:shape -&gt; spectral.vt:B; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0022" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.vexpand&quot;, &quot;dst_port&quot;: &quot;B&quot;, &quot;role&quot;: &quot;shape_dependency&quot;, &quot;src&quot;: &quot;spectral.input&quot;, &quot;src_port&quot;: &quot;shape&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.vexpand&quot;, &quot;port&quot;: &quot;B&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.input:shape-&gt;spectral.vexpand:B:shape_dependency&quot;, &quot;rendered_dst&quot;: &quot;spectral.vexpand:right&quot;, &quot;rendered_src&quot;: &quot;spectral.input:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.input&quot;, &quot;port&quot;: &quot;shape&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 814.0,1548.5 L 892.0,1548.5 L 892.0,1259 L 1086.8,1259 L 1086.8,815.5 L 1043.0,815.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>spectral.input:shape -&gt; spectral.vexpand:B; visible spectral.input:shape -&gt; spectral.vexpand:B; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0023" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;spectral.wexpand&quot;, &quot;dst_port&quot;: &quot;B&quot;, &quot;role&quot;: &quot;shape_dependency&quot;, &quot;src&quot;: &quot;spectral.input&quot;, &quot;src_port&quot;: &quot;shape&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;spectral.wexpand&quot;, &quot;port&quot;: &quot;B&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;spectral.input:shape-&gt;spectral.wexpand:B:shape_dependency&quot;, &quot;rendered_dst&quot;: &quot;spectral.wexpand:right&quot;, &quot;rendered_src&quot;: &quot;spectral.input:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;spectral.input&quot;, &quot;port&quot;: &quot;shape&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 814.0,1548.5 L 838.0,1548.5 L 838.0,1625.16 L 1754.0,1625.16 L 1754.0,1429.5 L 1730.0,1429.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>spectral.input:shape -&gt; spectral.wexpand:B; visible spectral.input:shape -&gt; spectral.wexpand:B; </title></path>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="562.0" y="1678" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="585.0" y="1691" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="585.0" dy="0">X / V / W</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="747.0" y="1678" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="770.0" y="1691" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="770.0" dy="0">bmm</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="932.0" y="1678" width="16" height="16" rx="3" fill="#cdeaf8" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="955.0" y="1691" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="955.0" dy="0">Batch view</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1117.0" y="1678" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1140.0" y="1691" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1140.0" dy="0">Product</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1302.0" y="1678" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1325.0" y="1691" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1325.0" dy="0">Constructor</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1487.0" y="1678" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1510.0" y="1691" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1510.0" dy="0">Y</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1107.0" y="1719" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">Blue: batch views and bmm / yellow: Laplacian or elementwise merge / gray: constructor buffers</tspan>
+<tspan x="1107.0" dy="16.52">Three bottom operands are independent values, not a tuple fork from image pixels</tspan>
+<tspan x="1107.0" dy="16.52">V read/projection/reconstruction reuse one buffer identity; dashed shape edges carry B only</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1107.0" y="1823" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1107.0" y="1853" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1107.0" y="1878" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+
+</svg>

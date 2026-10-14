@@ -1,0 +1,178 @@
+{
+  "passed": true,
+  "scope": "batch4 source-bound IR and module caller evidence",
+  "model_executed": false,
+  "positive": [
+    {
+      "model": "mobilenetv3",
+      "passed": true,
+      "semantic_checks": 131,
+      "source": {
+        "files": 6,
+        "symbols": 17,
+        "nodes": 281,
+        "edges": 375,
+        "original_notebooks": 1,
+        "repository": "https://github.com/rasbt/deeplearning-models",
+        "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3"
+      }
+    },
+    {
+      "model": "resnet101",
+      "passed": true,
+      "semantic_checks": 19,
+      "source": {
+        "files": 3,
+        "symbols": 10,
+        "nodes": 67,
+        "edges": 88,
+        "original_notebooks": 1,
+        "repository": "https://github.com/rasbt/deeplearning-models",
+        "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3"
+      }
+    },
+    {
+      "model": "vgg19",
+      "passed": true,
+      "semantic_checks": 19,
+      "source": {
+        "files": 3,
+        "symbols": 5,
+        "nodes": 58,
+        "edges": 69,
+        "original_notebooks": 1,
+        "repository": "https://github.com/rasbt/deeplearning-models",
+        "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3"
+      }
+    },
+    {
+      "model": "convgan",
+      "passed": true,
+      "semantic_checks": 36,
+      "source": {
+        "files": 3,
+        "symbols": 9,
+        "nodes": 71,
+        "edges": 87,
+        "original_notebooks": 1,
+        "repository": "https://github.com/rasbt/deeplearning-models",
+        "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3"
+      }
+    },
+    {
+      "model": "dcwgan",
+      "passed": true,
+      "semantic_checks": 42,
+      "source": {
+        "files": 3,
+        "symbols": 10,
+        "nodes": 83,
+        "edges": 102,
+        "original_notebooks": 1,
+        "repository": "https://github.com/rasbt/deeplearning-models",
+        "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3"
+      }
+    },
+    {
+      "model": "graphnet",
+      "passed": true,
+      "semantic_checks": 11,
+      "source": {
+        "files": 3,
+        "symbols": 5,
+        "nodes": 28,
+        "edges": 38,
+        "original_notebooks": 1,
+        "repository": "https://github.com/rasbt/deeplearning-models",
+        "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3"
+      }
+    }
+  ],
+  "negative": [
+    {
+      "model": "mobilenetv3",
+      "case": "IR4 SE gate incorrectly replaced by Sigmoid",
+      "rejected": true,
+      "error": "MobileNetV3: IR4 gate multiplies retained depthwise tensor before project"
+    },
+    {
+      "model": "mobilenetv3",
+      "case": "IR4 squeeze width incorrectly set to unrounded C/4",
+      "rejected": true,
+      "error": "MobileNetV3: IR4 rounded SE channels"
+    },
+    {
+      "model": "mobilenetv3",
+      "case": "IR12 SE retained input incorrectly sourced from block input",
+      "rejected": true,
+      "error": "MobileNetV3: IR12 gate multiplies retained depthwise tensor before project"
+    },
+    {
+      "model": "mobilenetv3",
+      "case": "replacement head incorrectly assigned classifier.1 identity",
+      "rejected": true,
+      "error": "MobileNetV3: original hidden Linear and exact caller replacement identity"
+    },
+    {
+      "model": "resnet101",
+      "case": "Stage3 identity repeat incorrectly reduced22 to5",
+      "rejected": true,
+      "error": "resnet101: stage3 independent identity repetitions"
+    },
+    {
+      "model": "vgg19",
+      "case": "stale class name used to reduce actual Conv depth16 to13",
+      "rejected": true,
+      "error": "vgg19: real VGG16 symbol describes19-layer architecture"
+    },
+    {
+      "model": "convgan",
+      "case": "caller fake training detach incorrectly permits gradient to G",
+      "rejected": true,
+      "error": "convgan: shared fake values with caller detach only on discriminator objective"
+    },
+    {
+      "model": "convgan",
+      "case": "noise lower bound incorrectly changed to Gaussian-like range",
+      "rejected": true,
+      "error": "convgan: correct external uniform noise and latent width"
+    },
+    {
+      "model": "dcwgan",
+      "case": "caller fake training detach incorrectly permits gradient to G",
+      "rejected": true,
+      "error": "dcwgan: shared fake values with caller detach only on discriminator objective"
+    },
+    {
+      "model": "dcwgan",
+      "case": "noise lower bound incorrectly changed to Gaussian-like range",
+      "rejected": true,
+      "error": "dcwgan: correct external uniform noise and latent width"
+    },
+    {
+      "model": "graphnet",
+      "case": "registered fixed adjacency incorrectly made learnable",
+      "rejected": true,
+      "error": "graphnet: constructor-only registered non-learnable A buffer"
+    },
+    {
+      "model": "graphnet",
+      "case": "source Euclidean distance incorrectly squared in kernel",
+      "rejected": true,
+      "error": "graphnet: actual unsquared-distance kernel and .01 threshold"
+    },
+    {
+      "model": "mobilenetv3",
+      "case": "module caller evidence tamper: end",
+      "rejected": true,
+      "error": "AST range mismatch"
+    },
+    {
+      "model": "mobilenetv3",
+      "case": "module caller evidence tamper: snippet",
+      "rejected": true,
+      "error": "AST snippet mismatch"
+    }
+  ],
+  "limitation": "selected-profile assertions and deliberate negative examples; not full model equivalence"
+}

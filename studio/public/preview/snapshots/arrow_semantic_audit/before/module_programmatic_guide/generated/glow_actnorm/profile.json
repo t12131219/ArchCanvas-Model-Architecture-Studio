@@ -1,0 +1,37 @@
+{
+  "channels": 8,
+  "input_shape": [
+    "B",
+    8,
+    8,
+    8
+  ],
+  "logdet": true,
+  "initialization": "one-time data-dependent",
+  "parameters": [
+    "loc",
+    "scale"
+  ],
+  "buffers": [
+    "initialized"
+  ],
+  "logdet_shape": "scalar",
+  "shape_origin": "declared example; statically inferred, not observed",
+  "drawing_scope": "Only ActNorm with logdet=True; reverse is documented, not drawn as forward.",
+  "source_contracts": [
+    [
+      "ActNorm.forward",
+      "self.scale * (input + self.loc)"
+    ],
+    [
+      "ActNorm.forward",
+      "height * width * torch.sum(log_abs)"
+    ],
+    [
+      "ActNorm.initialize",
+      "1 / (std + 1e-6)"
+    ]
+  ],
+  "model_executed": false,
+  "artifact_scope": "module"
+}

@@ -1,0 +1,35 @@
+{
+  "in_features": 16,
+  "out_features": 8,
+  "num_svs": 1,
+  "num_itrs": 1,
+  "transpose": false,
+  "training": true,
+  "buffers": [
+    "u0",
+    "sv0"
+  ],
+  "parameters": [
+    "weight",
+    "bias"
+  ],
+  "sv_logging_only": true,
+  "shape_origin": "declared example; statically inferred, not observed",
+  "drawing_scope": "One SNLinear with one power iteration/singular value; conv and embedding wrappers are excluded.",
+  "source_contracts": [
+    [
+      "SN.W_",
+      "self.weight / svs[0]"
+    ],
+    [
+      "SNLinear.forward",
+      "F.linear(x, self.W_(), self.bias)"
+    ],
+    [
+      "power_iteration",
+      "torch.squeeze(torch.matmul(torch.matmul(v, W.t()), u.t()))"
+    ]
+  ],
+  "model_executed": false,
+  "artifact_scope": "module"
+}

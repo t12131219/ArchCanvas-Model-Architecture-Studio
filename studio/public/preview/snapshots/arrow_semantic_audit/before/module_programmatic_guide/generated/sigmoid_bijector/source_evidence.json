@@ -1,0 +1,50 @@
+{
+  "source_project": "density-flow-modules",
+  "repository": "ikostrikov/pytorch-flows",
+  "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+  "source_snapshot_sha256": "c0ebb6c1af0b9d8f0b8140bbc16c5cf7122408fa79a5b25da427fac8d15d657a",
+  "entry": "density-flow-modules/flows.py::Sigmoid.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "density-flow-modules/LICENSE": {
+      "sha256": "d541e764a331fbfb13f50107a3466d47cb2422f878160bdcaf433c259a5e121a",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ikostrikov/pytorch-flows/bf12ed91b86867b38d74982f5e2d44c248604df9/LICENSE",
+      "derived_from": null
+    },
+    "density-flow-modules/flows.py": {
+      "sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+      "lines": 504,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ikostrikov/pytorch-flows/bf12ed91b86867b38d74982f5e2d44c248604df9/flows.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "density-flow-modules/flows.py::Sigmoid.forward": {
+      "path": "density-flow-modules/flows.py",
+      "symbol": "Sigmoid.forward",
+      "start": 184,
+      "end": 192,
+      "snippet": "    def forward(self, inputs, cond_inputs=None, mode='direct'):\n        if mode == 'direct':\n            s = torch.sigmoid\n            return s(inputs), torch.log(s(inputs) * (1 - s(inputs))).sum(\n                -1, keepdim=True)\n        else:\n            return torch.log(inputs /\n                             (1 - inputs)), -torch.log(inputs - inputs**2).sum(\n                                 -1, keepdim=True)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "density-flow-modules/flows.py::Logit.forward": {
+      "path": "density-flow-modules/flows.py",
+      "symbol": "Logit.forward",
+      "start": 199,
+      "end": 203,
+      "snippet": "    def forward(self, inputs, cond_inputs=None, mode='direct'):\n        if mode == 'direct':\n            return super(Logit, self).forward(inputs, 'inverse')\n        else:\n            return super(Logit, self).forward(inputs, 'direct')",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "density-flow-modules/LICENSE"
+  ]
+}

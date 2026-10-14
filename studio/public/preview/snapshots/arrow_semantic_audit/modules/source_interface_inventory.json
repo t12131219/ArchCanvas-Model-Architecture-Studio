@@ -1,0 +1,1364 @@
+[
+  {
+    "module": "edge_predictor",
+    "scope": "edge.init",
+    "port": "out",
+    "target": {
+      "node": "edge.buffer",
+      "port": "out"
+    },
+    "source": [
+      {
+        "path": "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py",
+        "symbol": "GraphNet.__init__",
+        "start": 109,
+        "end": 123,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "GraphNet.__init__ registers make_coordinate_array result as buffer 'coord'."
+  },
+  {
+    "module": "spectral_filter",
+    "scope": "spectral.basis_init",
+    "port": "out",
+    "target": {
+      "node": "spectral.vbuffer",
+      "port": "out"
+    },
+    "source": [
+      {
+        "path": "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py",
+        "symbol": "GraphNet.__init__",
+        "start": 147,
+        "end": 166,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "GraphNet.__init__ registers the selected eigsh eigenvectors as buffer 'V'."
+  },
+  {
+    "module": "spectral_filter",
+    "scope": "spectral.w_init",
+    "port": "out",
+    "target": {
+      "node": "spectral.wbuffer",
+      "port": "out"
+    },
+    "source": [
+      {
+        "path": "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py",
+        "symbol": "GraphNet.__init__",
+        "start": 147,
+        "end": 166,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "GraphNet.__init__ registers node-domain W_spectral; forward reads that buffer."
+  },
+  {
+    "module": "glow_actnorm",
+    "scope": "glow_actnorm.affine",
+    "port": "loc",
+    "target": {
+      "node": "glow_actnorm.shift",
+      "port": "loc"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "ActNorm.forward",
+        "start": 42,
+        "end": 57,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_actnorm",
+    "scope": "glow_actnorm.affine",
+    "port": "scale",
+    "target": {
+      "node": "glow_actnorm.scale",
+      "port": "scale"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "ActNorm.forward",
+        "start": 42,
+        "end": 57,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_actnorm",
+    "scope": "glow_actnorm.det",
+    "port": "scale",
+    "target": {
+      "node": "glow_actnorm.abslog",
+      "port": "scale"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "ActNorm.forward",
+        "start": 42,
+        "end": 57,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_invconv",
+    "scope": "glow_invconv.conv",
+    "port": "weight",
+    "target": {
+      "node": "glow_invconv.convop",
+      "port": "weight"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "InvConv2d.forward",
+        "start": 72,
+        "end": 80,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_invconv",
+    "scope": "glow_invconv.det",
+    "port": "weight",
+    "target": {
+      "node": "glow_invconv.detop",
+      "port": "weight"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "InvConv2d.forward",
+        "start": 72,
+        "end": 80,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_invconv_lu",
+    "scope": "glow_invconv_lu.conv",
+    "port": "weight",
+    "target": {
+      "node": "glow_invconv_lu.convop",
+      "port": "weight"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "InvConv2dLU.forward",
+        "start": 114,
+        "end": 122,
+        "evidence_id": "E003"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_invconv_lu",
+    "scope": "glow_invconv_lu.det",
+    "port": "weight",
+    "target": {
+      "node": "glow_invconv_lu.detop",
+      "port": "weight"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "InvConv2dLU.forward",
+        "start": 114,
+        "end": 122,
+        "evidence_id": "E003"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_affine_coupling",
+    "scope": "glow_affine_coupling.split",
+    "port": "a",
+    "target": {
+      "node": "glow_affine_coupling.splitop",
+      "port": "a"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "AffineCoupling.forward",
+        "start": 176,
+        "end": 193,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_affine_coupling",
+    "scope": "glow_affine_coupling.split",
+    "port": "b",
+    "target": {
+      "node": "glow_affine_coupling.splitop",
+      "port": "b"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "AffineCoupling.forward",
+        "start": 176,
+        "end": 193,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_affine_coupling",
+    "scope": "glow_affine_coupling.heads",
+    "port": "t",
+    "target": {
+      "node": "glow_affine_coupling.headsop",
+      "port": "t"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "AffineCoupling.forward",
+        "start": 176,
+        "end": 193,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_affine_coupling",
+    "scope": "glow_affine_coupling.heads",
+    "port": "log_s",
+    "target": {
+      "node": "glow_affine_coupling.headsop",
+      "port": "log_s"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "AffineCoupling.forward",
+        "start": 176,
+        "end": 193,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_affine_coupling",
+    "scope": "glow_affine_coupling.transform",
+    "port": "scale",
+    "target": {
+      "node": "glow_affine_coupling.mulop",
+      "port": "scale"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "AffineCoupling.forward",
+        "start": 176,
+        "end": 193,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_affine_coupling",
+    "scope": "glow_affine_coupling.join",
+    "port": "out_b",
+    "target": {
+      "node": "glow_affine_coupling.catop",
+      "port": "out_b"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "AffineCoupling.forward",
+        "start": 176,
+        "end": 193,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_affine_coupling",
+    "scope": "glow_affine_coupling.join",
+    "port": "in_a",
+    "target": {
+      "node": "glow_affine_coupling.catop",
+      "port": "in_a"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "AffineCoupling.forward",
+        "start": 176,
+        "end": 193,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_additive_coupling",
+    "scope": "glow_additive_coupling.split",
+    "port": "a",
+    "target": {
+      "node": "glow_additive_coupling.splitop",
+      "port": "a"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "AffineCoupling.forward",
+        "start": 176,
+        "end": 193,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_additive_coupling",
+    "scope": "glow_additive_coupling.split",
+    "port": "b",
+    "target": {
+      "node": "glow_additive_coupling.splitop",
+      "port": "b"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "AffineCoupling.forward",
+        "start": 176,
+        "end": 193,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_additive_coupling",
+    "scope": "glow_additive_coupling.join",
+    "port": "out_b",
+    "target": {
+      "node": "glow_additive_coupling.catop",
+      "port": "out_b"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "AffineCoupling.forward",
+        "start": 176,
+        "end": 193,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_additive_coupling",
+    "scope": "glow_additive_coupling.join",
+    "port": "in_a",
+    "target": {
+      "node": "glow_additive_coupling.catop",
+      "port": "in_a"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "AffineCoupling.forward",
+        "start": 176,
+        "end": 193,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_split_prior",
+    "scope": "glow_split_prior.split",
+    "port": "out",
+    "target": {
+      "node": "glow_split_prior.splitop",
+      "port": "retained"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "Block.forward",
+        "start": 271,
+        "end": 296,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_split_prior",
+    "scope": "glow_split_prior.split",
+    "port": "z_new",
+    "target": {
+      "node": "glow_split_prior.splitop",
+      "port": "z_new"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "Block.forward",
+        "start": 271,
+        "end": 296,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_split_prior",
+    "scope": "glow_split_prior.heads",
+    "port": "mean_log_sd",
+    "target": {
+      "node": "glow_split_prior.headsop",
+      "port": "mean_log_sd"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "Block.forward",
+        "start": 271,
+        "end": 296,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_split_prior",
+    "scope": "glow_split_prior.density",
+    "port": "parameters",
+    "target": {
+      "node": "glow_split_prior.gauss",
+      "port": "parameters"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "Block.forward",
+        "start": 271,
+        "end": 296,
+        "evidence_id": "E002"
+      },
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "gaussian_log_p",
+        "start": 245,
+        "end": 246,
+        "evidence_id": "E005"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "glow_split_prior",
+    "scope": "glow_split_prior.density",
+    "port": "sample",
+    "target": {
+      "node": "glow_split_prior.gauss",
+      "port": "sample"
+    },
+    "source": [
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "Block.forward",
+        "start": 271,
+        "end": 296,
+        "evidence_id": "E002"
+      },
+      {
+        "path": "glow-modules/model.py",
+        "symbol": "gaussian_log_p",
+        "start": 245,
+        "end": 246,
+        "evidence_id": "E005"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "masked_linear",
+    "scope": "masked_linear.sum",
+    "port": "condition",
+    "target": {
+      "node": "masked_linear.add",
+      "port": "condition"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "MaskedLinear.forward",
+        "start": 47,
+        "end": 52,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "made_affine",
+    "scope": "made_affine.heads",
+    "port": "m",
+    "target": {
+      "node": "made_affine.chunk",
+      "port": "m"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "MADE.forward",
+        "start": 163,
+        "end": 177,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "made_affine",
+    "scope": "made_affine.heads",
+    "port": "a",
+    "target": {
+      "node": "made_affine.chunk",
+      "port": "a"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "MADE.forward",
+        "start": 163,
+        "end": 177,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "made_affine",
+    "scope": "made_affine.shift",
+    "port": "m",
+    "target": {
+      "node": "made_affine.sub",
+      "port": "m"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "MADE.forward",
+        "start": 163,
+        "end": 177,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "made_affine",
+    "scope": "made_affine.affine",
+    "port": "scale",
+    "target": {
+      "node": "made_affine.mul",
+      "port": "scale"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "MADE.forward",
+        "start": 163,
+        "end": 177,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "made_split",
+    "scope": "made_split.shift",
+    "port": "m",
+    "target": {
+      "node": "made_split.sub",
+      "port": "m"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "MADESplit.forward",
+        "start": 102,
+        "end": 130,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "made_split",
+    "scope": "made_split.affine",
+    "port": "scale",
+    "target": {
+      "node": "made_split.mul",
+      "port": "scale"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "MADESplit.forward",
+        "start": 102,
+        "end": 130,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "flow_batchnorm",
+    "scope": "flow_batchnorm.stats",
+    "port": "mean",
+    "target": {
+      "node": "flow_batchnorm.mean",
+      "port": "out"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "BatchNormFlow.forward",
+        "start": 223,
+        "end": 261,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "flow_batchnorm",
+    "scope": "flow_batchnorm.stats",
+    "port": "var",
+    "target": {
+      "node": "flow_batchnorm.var",
+      "port": "out"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "BatchNormFlow.forward",
+        "start": 223,
+        "end": 261,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "flow_batchnorm",
+    "scope": "flow_batchnorm.running",
+    "port": "mean",
+    "target": {
+      "node": "flow_batchnorm.ema",
+      "port": "mean"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "BatchNormFlow.__init__",
+        "start": 212,
+        "end": 221,
+        "evidence_id": "E001"
+      },
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "BatchNormFlow.forward",
+        "start": 223,
+        "end": 261,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "flow_batchnorm",
+    "scope": "flow_batchnorm.running",
+    "port": "var",
+    "target": {
+      "node": "flow_batchnorm.ema",
+      "port": "var"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "BatchNormFlow.__init__",
+        "start": 212,
+        "end": 221,
+        "evidence_id": "E001"
+      },
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "BatchNormFlow.forward",
+        "start": 223,
+        "end": 261,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "flow_batchnorm",
+    "scope": "flow_batchnorm.normalize",
+    "port": "mean",
+    "target": {
+      "node": "flow_batchnorm.norm",
+      "port": "mean"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "BatchNormFlow.forward",
+        "start": 223,
+        "end": 261,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "flow_batchnorm",
+    "scope": "flow_batchnorm.normalize",
+    "port": "var",
+    "target": {
+      "node": "flow_batchnorm.norm",
+      "port": "var"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "BatchNormFlow.forward",
+        "start": 223,
+        "end": 261,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "flow_batchnorm",
+    "scope": "flow_batchnorm.det",
+    "port": "var",
+    "target": {
+      "node": "flow_batchnorm.detop",
+      "port": "var"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "BatchNormFlow.forward",
+        "start": 223,
+        "end": 261,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "realnvp_coupling",
+    "scope": "realnvp_coupling.affine",
+    "port": "scale",
+    "target": {
+      "node": "realnvp_coupling.mul",
+      "port": "scale"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "CouplingLayer.forward",
+        "start": 442,
+        "end": 458,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "realnvp_coupling",
+    "scope": "realnvp_coupling.affine",
+    "port": "t",
+    "target": {
+      "node": "realnvp_coupling.mul",
+      "port": "t"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "CouplingLayer.forward",
+        "start": 442,
+        "end": 458,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "manual_fused_bn",
+    "scope": "manual_fused_bn.stats",
+    "port": "mean",
+    "target": {
+      "node": "manual_fused_bn.moments",
+      "port": "mean"
+    },
+    "source": [
+      {
+        "path": "biggan-modules/layers.py",
+        "symbol": "manual_bn",
+        "start": 191,
+        "end": 208,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "manual_fused_bn",
+    "scope": "manual_fused_bn.stats",
+    "port": "var",
+    "target": {
+      "node": "manual_fused_bn.variance",
+      "port": "out"
+    },
+    "source": [
+      {
+        "path": "biggan-modules/layers.py",
+        "symbol": "manual_bn",
+        "start": 191,
+        "end": 208,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "manual_fused_bn",
+    "scope": "manual_fused_bn.scale",
+    "port": "gain",
+    "target": {
+      "node": "manual_fused_bn.gainop",
+      "port": "gain"
+    },
+    "source": [
+      {
+        "path": "biggan-modules/layers.py",
+        "symbol": "fused_bn",
+        "start": 173,
+        "end": 185,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "manual_fused_bn",
+    "scope": "manual_fused_bn.shift",
+    "port": "mean",
+    "target": {
+      "node": "manual_fused_bn.shiftop",
+      "port": "mean"
+    },
+    "source": [
+      {
+        "path": "biggan-modules/layers.py",
+        "symbol": "fused_bn",
+        "start": 173,
+        "end": 185,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "manual_fused_bn",
+    "scope": "manual_fused_bn.shift",
+    "port": "scale",
+    "target": {
+      "node": "manual_fused_bn.shiftop",
+      "port": "scale"
+    },
+    "source": [
+      {
+        "path": "biggan-modules/layers.py",
+        "symbol": "fused_bn",
+        "start": 173,
+        "end": 185,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "manual_fused_bn",
+    "scope": "manual_fused_bn.shift",
+    "port": "bias",
+    "target": {
+      "node": "manual_fused_bn.shiftop",
+      "port": "bias"
+    },
+    "source": [
+      {
+        "path": "biggan-modules/layers.py",
+        "symbol": "fused_bn",
+        "start": 173,
+        "end": 185,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "manual_fused_bn",
+    "scope": "manual_fused_bn.affine",
+    "port": "scale",
+    "target": {
+      "node": "manual_fused_bn.out",
+      "port": "scale"
+    },
+    "source": [
+      {
+        "path": "biggan-modules/layers.py",
+        "symbol": "fused_bn",
+        "start": 173,
+        "end": 185,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "manual_fused_bn",
+    "scope": "manual_fused_bn.affine",
+    "port": "shift",
+    "target": {
+      "node": "manual_fused_bn.out",
+      "port": "shift"
+    },
+    "source": [
+      {
+        "path": "biggan-modules/layers.py",
+        "symbol": "fused_bn",
+        "start": 173,
+        "end": 185,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "conditional_bn",
+    "scope": "conditional_bn.multiply",
+    "port": "gain",
+    "target": {
+      "node": "conditional_bn.mul",
+      "port": "gain"
+    },
+    "source": [
+      {
+        "path": "biggan-modules/layers.py",
+        "symbol": "ccbn.forward",
+        "start": 306,
+        "end": 325,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "conditional_bn",
+    "scope": "conditional_bn.add",
+    "port": "bias",
+    "target": {
+      "node": "conditional_bn.addop",
+      "port": "bias"
+    },
+    "source": [
+      {
+        "path": "biggan-modules/layers.py",
+        "symbol": "ccbn.forward",
+        "start": 306,
+        "end": 325,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "nonlocal_attention",
+    "scope": "nonlocal_attention.beta",
+    "port": "theta",
+    "target": {
+      "node": "nonlocal_attention.score",
+      "port": "theta"
+    },
+    "source": [
+      {
+        "path": "biggan-modules/layers.py",
+        "symbol": "Attention.forward",
+        "start": 156,
+        "end": 169,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "nonlocal_attention",
+    "scope": "nonlocal_attention.beta",
+    "port": "phi",
+    "target": {
+      "node": "nonlocal_attention.score",
+      "port": "phi"
+    },
+    "source": [
+      {
+        "path": "biggan-modules/layers.py",
+        "symbol": "Attention.forward",
+        "start": 156,
+        "end": 169,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "nonlocal_attention",
+    "scope": "nonlocal_attention.aggregate",
+    "port": "beta",
+    "target": {
+      "node": "nonlocal_attention.bmm",
+      "port": "beta"
+    },
+    "source": [
+      {
+        "path": "biggan-modules/layers.py",
+        "symbol": "Attention.forward",
+        "start": 156,
+        "end": 169,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "nonlocal_attention",
+    "scope": "nonlocal_attention.aggregate",
+    "port": "values",
+    "target": {
+      "node": "nonlocal_attention.bmm",
+      "port": "values"
+    },
+    "source": [
+      {
+        "path": "biggan-modules/layers.py",
+        "symbol": "Attention.forward",
+        "start": 156,
+        "end": 169,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "coral_head",
+    "scope": "coral_head.broadcast",
+    "port": "threshold_bias",
+    "target": {
+      "node": "coral_head.add",
+      "port": "threshold_bias"
+    },
+    "source": [
+      {
+        "path": "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORAL_cement.py",
+        "symbol": "CoralLayer.forward",
+        "start": 147,
+        "end": 160,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "flow_sequential",
+    "scope": "flow_sequential.first",
+    "port": "features",
+    "target": {
+      "node": "flow_sequential.call0",
+      "port": "features"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "Sigmoid.forward",
+        "start": 184,
+        "end": 192,
+        "evidence_id": "E004"
+      },
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "FlowSequential.forward",
+        "start": 467,
+        "end": 488,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "flow_sequential",
+    "scope": "flow_sequential.first",
+    "port": "logdet",
+    "target": {
+      "node": "flow_sequential.call0",
+      "port": "logdet"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "Sigmoid.forward",
+        "start": 184,
+        "end": 192,
+        "evidence_id": "E004"
+      },
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "FlowSequential.forward",
+        "start": 467,
+        "end": 488,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "flow_sequential",
+    "scope": "flow_sequential.second",
+    "port": "features",
+    "target": {
+      "node": "flow_sequential.call1",
+      "port": "features"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "Reverse.forward",
+        "start": 393,
+        "end": 399,
+        "evidence_id": "E003"
+      },
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "Reverse.__init__",
+        "start": 388,
+        "end": 391,
+        "evidence_id": "E002"
+      },
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "FlowSequential.forward",
+        "start": 467,
+        "end": 488,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "flow_sequential",
+    "scope": "flow_sequential.second",
+    "port": "logdet",
+    "target": {
+      "node": "flow_sequential.call1",
+      "port": "logdet"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "Reverse.forward",
+        "start": 393,
+        "end": 399,
+        "evidence_id": "E003"
+      },
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "Reverse.__init__",
+        "start": 388,
+        "end": 391,
+        "evidence_id": "E002"
+      },
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "FlowSequential.forward",
+        "start": 467,
+        "end": 488,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "flow_sequential",
+    "scope": "flow_sequential.add0",
+    "port": "accumulator",
+    "target": {
+      "node": "flow_sequential.sum0",
+      "port": "accumulator"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "FlowSequential.forward",
+        "start": 467,
+        "end": 488,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "flow_sequential",
+    "scope": "flow_sequential.add0",
+    "port": "increment",
+    "target": {
+      "node": "flow_sequential.sum0",
+      "port": "increment"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "FlowSequential.forward",
+        "start": 467,
+        "end": 488,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "flow_sequential",
+    "scope": "flow_sequential.add1",
+    "port": "accumulator",
+    "target": {
+      "node": "flow_sequential.sum1",
+      "port": "accumulator"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "FlowSequential.forward",
+        "start": 467,
+        "end": 488,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "flow_sequential",
+    "scope": "flow_sequential.add1",
+    "port": "increment",
+    "target": {
+      "node": "flow_sequential.sum1",
+      "port": "increment"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "FlowSequential.forward",
+        "start": 467,
+        "end": 488,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "transformer_xl_relative",
+    "scope": "txl.shift",
+    "port": "out",
+    "target": {
+      "node": "txl.shift_slice",
+      "port": "out"
+    },
+    "source": [
+      {
+        "path": "transformer-xl-relative/pytorch/mem_transformer.py",
+        "symbol": "RelMultiHeadAttn._rel_shift",
+        "start": 194,
+        "end": 207,
+        "evidence_id": "E002"
+      }
+    ],
+    "rationale": "RelMultiHeadAttn._rel_shift returns x_padded[1:].view_as(x) in the selected zero_triu=False profile."
+  },
+  {
+    "module": "autoregressive_mask",
+    "scope": "autoregressive_mask.compare",
+    "port": "input_degrees",
+    "target": {
+      "node": "autoregressive_mask.ge",
+      "port": "input_degrees"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "get_mask",
+        "start": 12,
+        "end": 29,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  },
+  {
+    "module": "autoregressive_mask",
+    "scope": "autoregressive_mask.compare",
+    "port": "output_degrees",
+    "target": {
+      "node": "autoregressive_mask.ge",
+      "port": "output_degrees"
+    },
+    "source": [
+      {
+        "path": "density-flow-modules/flows.py",
+        "symbol": "get_mask",
+        "start": 12,
+        "end": 29,
+        "evidence_id": "E001"
+      }
+    ],
+    "rationale": "Reviewed source operand/result; target AST symbol is carried by the child."
+  }
+]

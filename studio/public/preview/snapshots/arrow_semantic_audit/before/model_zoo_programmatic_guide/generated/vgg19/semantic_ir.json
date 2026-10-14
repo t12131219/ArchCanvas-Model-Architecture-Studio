@@ -1,0 +1,2029 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "vgg19",
+  "profile": {
+    "task": "CIFAR-10 classification",
+    "mode": "eval",
+    "input_channels": 3,
+    "input_size": [
+      32,
+      32
+    ],
+    "num_classes": 10,
+    "supplied_num_features": 784,
+    "num_features_argument_used": false,
+    "source_class": "VGG16",
+    "actual_convolution_depth": 16,
+    "flatten_expression": "x.view(-1, 512)",
+    "weight_initialization": "normal_(0, 0.05)",
+    "block_conv_counts": [
+      2,
+      2,
+      4,
+      4,
+      4
+    ],
+    "block_channels": [
+      64,
+      128,
+      256,
+      512,
+      512
+    ],
+    "block_spatial": [
+      16,
+      8,
+      4,
+      2,
+      1
+    ],
+    "conv_bias": true,
+    "conv_kernel": 3,
+    "conv_padding": 1,
+    "classifier": [
+      512,
+      4096,
+      4096,
+      10
+    ],
+    "batch_size_setting": 128,
+    "dropout_constructed": false,
+    "batchnorm_constructed": false,
+    "avgpool_constructed": false,
+    "avgpool_called": false,
+    "output": "(logits, probas)",
+    "config_source": "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py notebook cells 8, 10, 12"
+  },
+  "source": {
+    "repository": "https://github.com/rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "d99aabf41ee783fdb7b603dc53fc09c290e223223a1576e510b40206f438e950"
+  },
+  "nodes": [
+    {
+      "id": "v19.root",
+      "label": "VGG19-type · CIFAR-10",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16"
+      ],
+      "shape": "2 x [B,10]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.input",
+      "label": "CIFAR-10 image",
+      "kind": "input",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,3,32,32]",
+      "detail": [
+        "actual Dataset is CIFAR10; nearby MNIST header is stale",
+        "ToTensor in caller; no resizing"
+      ],
+      "parent": "v19.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.features",
+      "label": "Five convolutional blocks",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,1,1]",
+      "detail": [
+        "16 independent Conv2d layers; 5 MaxPool steps"
+      ],
+      "mode": "chain",
+      "parent": "v19.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block1",
+      "label": "Block 1 · 2 Conv/ReLU pairs",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,64,16,16]",
+      "detail": [
+        "actual nn.Sequential block_1; distinct weights"
+      ],
+      "parameter_scope": "block_1",
+      "conv_count": 2,
+      "mode": "chain",
+      "parent": "v19.features",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block1.conv1",
+      "label": "Conv2d 3 -> 64",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; default bias=True"
+      ],
+      "parameter": "block_1.0",
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "in_channels": 3,
+      "out_channels": 64,
+      "parent": "v19.block1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block1.relu1",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [
+        "default inplace=False"
+      ],
+      "parent": "v19.block1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block1.conv2",
+      "label": "Conv2d 64 -> 64",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; default bias=True"
+      ],
+      "parameter": "block_1.2",
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "in_channels": 64,
+      "out_channels": 64,
+      "parent": "v19.block1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block1.relu2",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [
+        "default inplace=False"
+      ],
+      "parent": "v19.block1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block1.pool",
+      "label": "MaxPool2d 2x2 / 2",
+      "kind": "max_pool2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,64,16,16]",
+      "detail": [
+        "block_1.4; no padding"
+      ],
+      "kernel_size": 2,
+      "stride": 2,
+      "parent": "v19.block1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block2",
+      "label": "Block 2 · 2 Conv/ReLU pairs",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,128,8,8]",
+      "detail": [
+        "actual nn.Sequential block_2; distinct weights"
+      ],
+      "parameter_scope": "block_2",
+      "conv_count": 2,
+      "mode": "chain",
+      "parent": "v19.features",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block2.conv1",
+      "label": "Conv2d 64 -> 128",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,128,16,16]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; default bias=True"
+      ],
+      "parameter": "block_2.0",
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "in_channels": 64,
+      "out_channels": 128,
+      "parent": "v19.block2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block2.relu1",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,128,16,16]",
+      "detail": [
+        "default inplace=False"
+      ],
+      "parent": "v19.block2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block2.conv2",
+      "label": "Conv2d 128 -> 128",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,128,16,16]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; default bias=True"
+      ],
+      "parameter": "block_2.2",
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "in_channels": 128,
+      "out_channels": 128,
+      "parent": "v19.block2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block2.relu2",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,128,16,16]",
+      "detail": [
+        "default inplace=False"
+      ],
+      "parent": "v19.block2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block2.pool",
+      "label": "MaxPool2d 2x2 / 2",
+      "kind": "max_pool2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,128,8,8]",
+      "detail": [
+        "block_2.4; no padding"
+      ],
+      "kernel_size": 2,
+      "stride": 2,
+      "parent": "v19.block2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block3",
+      "label": "Block 3 · 4 Conv/ReLU pairs",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,256,4,4]",
+      "detail": [
+        "actual nn.Sequential block_3; distinct weights"
+      ],
+      "parameter_scope": "block_3",
+      "conv_count": 4,
+      "mode": "chain",
+      "parent": "v19.features",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block3.conv1",
+      "label": "Conv2d 128 -> 256",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; default bias=True"
+      ],
+      "parameter": "block_3.0",
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "in_channels": 128,
+      "out_channels": 256,
+      "parent": "v19.block3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block3.relu1",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [
+        "default inplace=False"
+      ],
+      "parent": "v19.block3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block3.conv2",
+      "label": "Conv2d 256 -> 256",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; default bias=True"
+      ],
+      "parameter": "block_3.2",
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "in_channels": 256,
+      "out_channels": 256,
+      "parent": "v19.block3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block3.relu2",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [
+        "default inplace=False"
+      ],
+      "parent": "v19.block3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block3.conv3",
+      "label": "Conv2d 256 -> 256",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; default bias=True"
+      ],
+      "parameter": "block_3.4",
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "in_channels": 256,
+      "out_channels": 256,
+      "parent": "v19.block3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block3.relu3",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [
+        "default inplace=False"
+      ],
+      "parent": "v19.block3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block3.conv4",
+      "label": "Conv2d 256 -> 256",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; default bias=True"
+      ],
+      "parameter": "block_3.6",
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "in_channels": 256,
+      "out_channels": 256,
+      "parent": "v19.block3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block3.relu4",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [
+        "default inplace=False"
+      ],
+      "parent": "v19.block3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block3.pool",
+      "label": "MaxPool2d 2x2 / 2",
+      "kind": "max_pool2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,256,4,4]",
+      "detail": [
+        "block_3.8; no padding"
+      ],
+      "kernel_size": 2,
+      "stride": 2,
+      "parent": "v19.block3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block4",
+      "label": "Block 4 · 4 Conv/ReLU pairs",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,2,2]",
+      "detail": [
+        "actual nn.Sequential block_4; distinct weights"
+      ],
+      "parameter_scope": "block_4",
+      "conv_count": 4,
+      "mode": "chain",
+      "parent": "v19.features",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block4.conv1",
+      "label": "Conv2d 256 -> 512",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; default bias=True"
+      ],
+      "parameter": "block_4.0",
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "in_channels": 256,
+      "out_channels": 512,
+      "parent": "v19.block4",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block4.relu1",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "default inplace=False"
+      ],
+      "parent": "v19.block4",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block4.conv2",
+      "label": "Conv2d 512 -> 512",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; default bias=True"
+      ],
+      "parameter": "block_4.2",
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "in_channels": 512,
+      "out_channels": 512,
+      "parent": "v19.block4",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block4.relu2",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "default inplace=False"
+      ],
+      "parent": "v19.block4",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block4.conv3",
+      "label": "Conv2d 512 -> 512",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; default bias=True"
+      ],
+      "parameter": "block_4.4",
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "in_channels": 512,
+      "out_channels": 512,
+      "parent": "v19.block4",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block4.relu3",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "default inplace=False"
+      ],
+      "parent": "v19.block4",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block4.conv4",
+      "label": "Conv2d 512 -> 512",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; default bias=True"
+      ],
+      "parameter": "block_4.6",
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "in_channels": 512,
+      "out_channels": 512,
+      "parent": "v19.block4",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block4.relu4",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "default inplace=False"
+      ],
+      "parent": "v19.block4",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block4.pool",
+      "label": "MaxPool2d 2x2 / 2",
+      "kind": "max_pool2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,2,2]",
+      "detail": [
+        "block_4.8; no padding"
+      ],
+      "kernel_size": 2,
+      "stride": 2,
+      "parent": "v19.block4",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block5",
+      "label": "Block 5 · 4 Conv/ReLU pairs",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,1,1]",
+      "detail": [
+        "actual nn.Sequential block_5; distinct weights"
+      ],
+      "parameter_scope": "block_5",
+      "conv_count": 4,
+      "mode": "chain",
+      "parent": "v19.features",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block5.conv1",
+      "label": "Conv2d 512 -> 512",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,2,2]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; default bias=True"
+      ],
+      "parameter": "block_5.0",
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "in_channels": 512,
+      "out_channels": 512,
+      "parent": "v19.block5",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block5.relu1",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,2,2]",
+      "detail": [
+        "default inplace=False"
+      ],
+      "parent": "v19.block5",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block5.conv2",
+      "label": "Conv2d 512 -> 512",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,2,2]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; default bias=True"
+      ],
+      "parameter": "block_5.2",
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "in_channels": 512,
+      "out_channels": 512,
+      "parent": "v19.block5",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block5.relu2",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,2,2]",
+      "detail": [
+        "default inplace=False"
+      ],
+      "parent": "v19.block5",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block5.conv3",
+      "label": "Conv2d 512 -> 512",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,2,2]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; default bias=True"
+      ],
+      "parameter": "block_5.4",
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "in_channels": 512,
+      "out_channels": 512,
+      "parent": "v19.block5",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block5.relu3",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,2,2]",
+      "detail": [
+        "default inplace=False"
+      ],
+      "parent": "v19.block5",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block5.conv4",
+      "label": "Conv2d 512 -> 512",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,2,2]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; default bias=True"
+      ],
+      "parameter": "block_5.6",
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "in_channels": 512,
+      "out_channels": 512,
+      "parent": "v19.block5",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block5.relu4",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,2,2]",
+      "detail": [
+        "default inplace=False"
+      ],
+      "parent": "v19.block5",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.block5.pool",
+      "label": "MaxPool2d 2x2 / 2",
+      "kind": "max_pool2d",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512,1,1]",
+      "detail": [
+        "block_5.8; no padding"
+      ],
+      "kernel_size": 2,
+      "stride": 2,
+      "parent": "v19.block5",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.flatten",
+      "label": "Flatten features",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,512]",
+      "detail": [
+        "x.view(-1,512); fixed 32x32 profile gives one row per example",
+        "hard-coded view width512; no avgpool is constructed"
+      ],
+      "expression": "x.view(-1, 512)",
+      "batch_preservation": "only for the selected final1x1 profile",
+      "parent": "v19.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.classifier",
+      "label": "Classifier head",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "logits: [B,10]",
+      "detail": [
+        "no Dropout and no BatchNorm in this implementation"
+      ],
+      "mode": "chain",
+      "parent": "v19.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.hidden1",
+      "label": "Linear / ReLU · 1",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,4096]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "v19.classifier",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.hidden1.linear",
+      "label": "Linear 512 -> 4096",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,4096]",
+      "detail": [],
+      "parameter": "classifier.0",
+      "parent": "v19.hidden1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.hidden1.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,4096]",
+      "detail": [
+        "inplace=True; no Dropout module in the source"
+      ],
+      "parent": "v19.hidden1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.hidden2",
+      "label": "Linear / ReLU · 2",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,4096]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "v19.classifier",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.hidden2.linear",
+      "label": "Linear 4096 -> 4096",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,4096]",
+      "detail": [],
+      "parameter": "classifier.2",
+      "parent": "v19.hidden2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.hidden2.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,4096]",
+      "detail": [
+        "inplace=True; no Dropout module in the source"
+      ],
+      "parent": "v19.hidden2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.fc3",
+      "label": "Linear 4096 -> 10",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.__init__",
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "logits: [B,10]",
+      "detail": [],
+      "parameter": "classifier.4",
+      "parent": "v19.classifier",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.returns",
+      "label": "Return logits / probabilities",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "(logits, probas)",
+      "detail": [
+        "same logits fan out to two actual return fields"
+      ],
+      "dispatch": false,
+      "mode": "parallel",
+      "parent": "v19.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]"
+      ]
+    },
+    {
+      "id": "v19.logits",
+      "label": "Retain logits",
+      "kind": "identity",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,10]",
+      "detail": [
+        "raw classifier output"
+      ],
+      "parent": "v19.returns",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.softmax",
+      "label": "Softmax",
+      "kind": "softmax",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "[B,10]",
+      "detail": [
+        "F.softmax(logits,dim=1)"
+      ],
+      "parent": "v19.returns",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "v19.output",
+      "label": "Forward return tuple",
+      "kind": "output",
+      "source": [
+        "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py::VGG16.forward"
+      ],
+      "shape": "2 x [B,10]",
+      "detail": [
+        "return logits, probas"
+      ],
+      "parent": "v19.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "v19.block1:in->v19.block1.conv1:in:boundary",
+      "src": "v19.block1",
+      "dst": "v19.block1.conv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.block1.conv1:out->v19.block1.relu1:in:tensor",
+      "src": "v19.block1.conv1",
+      "dst": "v19.block1.relu1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block1.relu1:out->v19.block1.conv2:in:tensor",
+      "src": "v19.block1.relu1",
+      "dst": "v19.block1.conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block1.conv2:out->v19.block1.relu2:in:tensor",
+      "src": "v19.block1.conv2",
+      "dst": "v19.block1.relu2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block1.relu2:out->v19.block1.pool:in:tensor",
+      "src": "v19.block1.relu2",
+      "dst": "v19.block1.pool",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block1.pool:out->v19.block1:out:boundary",
+      "src": "v19.block1.pool",
+      "dst": "v19.block1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.block2:in->v19.block2.conv1:in:boundary",
+      "src": "v19.block2",
+      "dst": "v19.block2.conv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.block2.conv1:out->v19.block2.relu1:in:tensor",
+      "src": "v19.block2.conv1",
+      "dst": "v19.block2.relu1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block2.relu1:out->v19.block2.conv2:in:tensor",
+      "src": "v19.block2.relu1",
+      "dst": "v19.block2.conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block2.conv2:out->v19.block2.relu2:in:tensor",
+      "src": "v19.block2.conv2",
+      "dst": "v19.block2.relu2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block2.relu2:out->v19.block2.pool:in:tensor",
+      "src": "v19.block2.relu2",
+      "dst": "v19.block2.pool",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block2.pool:out->v19.block2:out:boundary",
+      "src": "v19.block2.pool",
+      "dst": "v19.block2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.block3:in->v19.block3.conv1:in:boundary",
+      "src": "v19.block3",
+      "dst": "v19.block3.conv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.block3.conv1:out->v19.block3.relu1:in:tensor",
+      "src": "v19.block3.conv1",
+      "dst": "v19.block3.relu1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block3.relu1:out->v19.block3.conv2:in:tensor",
+      "src": "v19.block3.relu1",
+      "dst": "v19.block3.conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block3.conv2:out->v19.block3.relu2:in:tensor",
+      "src": "v19.block3.conv2",
+      "dst": "v19.block3.relu2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block3.relu2:out->v19.block3.conv3:in:tensor",
+      "src": "v19.block3.relu2",
+      "dst": "v19.block3.conv3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block3.conv3:out->v19.block3.relu3:in:tensor",
+      "src": "v19.block3.conv3",
+      "dst": "v19.block3.relu3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block3.relu3:out->v19.block3.conv4:in:tensor",
+      "src": "v19.block3.relu3",
+      "dst": "v19.block3.conv4",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block3.conv4:out->v19.block3.relu4:in:tensor",
+      "src": "v19.block3.conv4",
+      "dst": "v19.block3.relu4",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block3.relu4:out->v19.block3.pool:in:tensor",
+      "src": "v19.block3.relu4",
+      "dst": "v19.block3.pool",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block3.pool:out->v19.block3:out:boundary",
+      "src": "v19.block3.pool",
+      "dst": "v19.block3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.block4:in->v19.block4.conv1:in:boundary",
+      "src": "v19.block4",
+      "dst": "v19.block4.conv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.block4.conv1:out->v19.block4.relu1:in:tensor",
+      "src": "v19.block4.conv1",
+      "dst": "v19.block4.relu1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block4.relu1:out->v19.block4.conv2:in:tensor",
+      "src": "v19.block4.relu1",
+      "dst": "v19.block4.conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block4.conv2:out->v19.block4.relu2:in:tensor",
+      "src": "v19.block4.conv2",
+      "dst": "v19.block4.relu2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block4.relu2:out->v19.block4.conv3:in:tensor",
+      "src": "v19.block4.relu2",
+      "dst": "v19.block4.conv3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block4.conv3:out->v19.block4.relu3:in:tensor",
+      "src": "v19.block4.conv3",
+      "dst": "v19.block4.relu3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block4.relu3:out->v19.block4.conv4:in:tensor",
+      "src": "v19.block4.relu3",
+      "dst": "v19.block4.conv4",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block4.conv4:out->v19.block4.relu4:in:tensor",
+      "src": "v19.block4.conv4",
+      "dst": "v19.block4.relu4",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block4.relu4:out->v19.block4.pool:in:tensor",
+      "src": "v19.block4.relu4",
+      "dst": "v19.block4.pool",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block4.pool:out->v19.block4:out:boundary",
+      "src": "v19.block4.pool",
+      "dst": "v19.block4",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.block5:in->v19.block5.conv1:in:boundary",
+      "src": "v19.block5",
+      "dst": "v19.block5.conv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.block5.conv1:out->v19.block5.relu1:in:tensor",
+      "src": "v19.block5.conv1",
+      "dst": "v19.block5.relu1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block5.relu1:out->v19.block5.conv2:in:tensor",
+      "src": "v19.block5.relu1",
+      "dst": "v19.block5.conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block5.conv2:out->v19.block5.relu2:in:tensor",
+      "src": "v19.block5.conv2",
+      "dst": "v19.block5.relu2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block5.relu2:out->v19.block5.conv3:in:tensor",
+      "src": "v19.block5.relu2",
+      "dst": "v19.block5.conv3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block5.conv3:out->v19.block5.relu3:in:tensor",
+      "src": "v19.block5.conv3",
+      "dst": "v19.block5.relu3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block5.relu3:out->v19.block5.conv4:in:tensor",
+      "src": "v19.block5.relu3",
+      "dst": "v19.block5.conv4",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block5.conv4:out->v19.block5.relu4:in:tensor",
+      "src": "v19.block5.conv4",
+      "dst": "v19.block5.relu4",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block5.relu4:out->v19.block5.pool:in:tensor",
+      "src": "v19.block5.relu4",
+      "dst": "v19.block5.pool",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block5.pool:out->v19.block5:out:boundary",
+      "src": "v19.block5.pool",
+      "dst": "v19.block5",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.features:in->v19.block1:in:boundary",
+      "src": "v19.features",
+      "dst": "v19.block1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.block1:out->v19.block2:in:tensor",
+      "src": "v19.block1",
+      "dst": "v19.block2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block2:out->v19.block3:in:tensor",
+      "src": "v19.block2",
+      "dst": "v19.block3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block3:out->v19.block4:in:tensor",
+      "src": "v19.block3",
+      "dst": "v19.block4",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block4:out->v19.block5:in:tensor",
+      "src": "v19.block4",
+      "dst": "v19.block5",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.block5:out->v19.features:out:boundary",
+      "src": "v19.block5",
+      "dst": "v19.features",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.hidden1:in->v19.hidden1.linear:in:boundary",
+      "src": "v19.hidden1",
+      "dst": "v19.hidden1.linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.hidden1.linear:out->v19.hidden1.relu:in:tensor",
+      "src": "v19.hidden1.linear",
+      "dst": "v19.hidden1.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.hidden1.relu:out->v19.hidden1:out:boundary",
+      "src": "v19.hidden1.relu",
+      "dst": "v19.hidden1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.hidden2:in->v19.hidden2.linear:in:boundary",
+      "src": "v19.hidden2",
+      "dst": "v19.hidden2.linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.hidden2.linear:out->v19.hidden2.relu:in:tensor",
+      "src": "v19.hidden2.linear",
+      "dst": "v19.hidden2.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.hidden2.relu:out->v19.hidden2:out:boundary",
+      "src": "v19.hidden2.relu",
+      "dst": "v19.hidden2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.classifier:in->v19.hidden1:in:boundary",
+      "src": "v19.classifier",
+      "dst": "v19.hidden1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.hidden1:out->v19.hidden2:in:tensor",
+      "src": "v19.hidden1",
+      "dst": "v19.hidden2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.hidden2:out->v19.fc3:in:tensor",
+      "src": "v19.hidden2",
+      "dst": "v19.fc3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.fc3:out->v19.classifier:out:boundary",
+      "src": "v19.fc3",
+      "dst": "v19.classifier",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.returns:in->v19.logits:in:fork",
+      "src": "v19.returns",
+      "dst": "v19.logits",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "v19.logits:out->v19.returns:item[0]:tuple_collection",
+      "src": "v19.logits",
+      "dst": "v19.returns",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "v19.returns:in->v19.softmax:in:fork",
+      "src": "v19.returns",
+      "dst": "v19.softmax",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "v19.softmax:out->v19.returns:item[1]:tuple_collection",
+      "src": "v19.softmax",
+      "dst": "v19.returns",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "v19.root:in->v19.input:in:boundary",
+      "src": "v19.root",
+      "dst": "v19.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "v19.input:out->v19.features:in:tensor",
+      "src": "v19.input",
+      "dst": "v19.features",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.features:out->v19.flatten:in:tensor",
+      "src": "v19.features",
+      "dst": "v19.flatten",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.flatten:out->v19.classifier:in:tensor",
+      "src": "v19.flatten",
+      "dst": "v19.classifier",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.classifier:out->v19.returns:in:tensor",
+      "src": "v19.classifier",
+      "dst": "v19.returns",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.returns:out->v19.output:in:tensor",
+      "src": "v19.returns",
+      "dst": "v19.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "v19.output:out->v19.root:out:boundary",
+      "src": "v19.output",
+      "dst": "v19.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    }
+  ],
+  "facts": [
+    "The source class is still named VGG16, but16 Conv plus3 Linear with [2,2,4,4,4] blocks forms VGG19-type; keep the real class symbol.",
+    "Flatten uses x.view(-1,512), not a batch-preserving expression: it keeps B only for the selected32x32 profile.",
+    "Conv/Linear weights use normal_(0,0.05) and zero biases rather than the previous VGG16 notebook initialization.",
+    "The actual dataset is CIFAR10 with ToTensor and no resize; the MNIST comment and num_features=784 do not define input shape.",
+    "VGG16 accepts num_features but never uses it in __init__; selected input is3-channel32x32, and num_classes=10 controls the final Linear.",
+    "Five actual Sequential blocks contain2,2,4,4,4 independent Conv-ReLU pairs and one MaxPool2d(2,2) each.",
+    "All16 Conv2d layers use kernel3,stride1,padding1,bias=True; spatial sizes after pools are16,8,4,2,1.",
+    "Flatten receives [B,512,1,1] and outputs512 values; classifier is Linear512->4096->4096->10 with two ReLUs.",
+    "No Dropout, BatchNorm or adaptive avgpool is constructed in this notebook.",
+    "Feature-block ReLUs use default inplace=False; classifier ReLUs are explicitly inplace=True.",
+    "forward computes Softmax(dim=1) and returns logits and probabilities; loss uses logits outside forward.",
+    "All16 convolution and3 Linear modules have distinct parameters; blocks1 and3 expand as representative2- and4-convolution structures."
+  ],
+  "corrections": [
+    "Do not infer13 convolution layers from stale class name VGG16 or invent a VGG19 source class. Actual block depths are2,2,4,4,4.",
+    "Retain x.view(-1,512): larger inputs can alter the effective batch row count; arbitrary input sizes are not supported by merely changing labels.",
+    "Draw CIFAR-10 rather than the stale MNIST section label; unused num_features=784 is not a flatten width.",
+    "Do not copy ImageNet224x224 shapes, a512*7*7 classifier input or an AdaptiveAvgPool7x7 into this implementation.",
+    "Do not add standard VGG Dropout/AvgPool or introduce VGG-BN normalization absent from this implementation.",
+    "Retain all16 convolution parameter identities even when same-family blocks are folded.",
+    "Softmax is a real forward output here, not an unused local variable as in the grouped AlexNet notebook."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

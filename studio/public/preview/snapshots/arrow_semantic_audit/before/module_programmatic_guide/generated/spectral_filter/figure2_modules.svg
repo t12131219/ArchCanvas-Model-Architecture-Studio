@@ -1,0 +1,276 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2214" height="1637" viewBox="0 0 2214 1637">
+<defs><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<metadata id="source-binding">{&quot;model&quot;: &quot;spectral_filter&quot;, &quot;source_snapshot_sha256&quot;: &quot;7b66bbdafc476b135d919c11ba3b432b974b334e59e93ff1dc255dda7bf9a4f6&quot;, &quot;repository&quot;: &quot;rasbt/deeplearning-models&quot;, &quot;commit&quot;: &quot;59beda3aa25337e576564f1c18c6edd26f9f30e3&quot;, &quot;semantic_ir_sha256&quot;: &quot;3cc4b910ae4c1b6ba8cef6cc14920f2ea145004b8dfdf0214827b66eebf26cab&quot;, &quot;view&quot;: 1}</metadata>
+<metadata id="diagram-style">{&quot;name&quot;: &quot;transformer-paper-model-zoo&quot;, &quot;version&quot;: 1, &quot;font&quot;: &quot;DejaVu Sans, Arial, sans-serif&quot;, &quot;text&quot;: &quot;#172336&quot;, &quot;line&quot;: &quot;#263348&quot;, &quot;palette&quot;: {&quot;root&quot;: &quot;#ffffff&quot;, &quot;group&quot;: &quot;#ffffff&quot;, &quot;inner&quot;: &quot;#fffaf6&quot;, &quot;layer&quot;: &quot;#ffffff&quot;, &quot;encoder&quot;: &quot;#e7f5fe&quot;, &quot;decoder&quot;: &quot;#fff0f5&quot;, &quot;embedding&quot;: &quot;#f8d4e1&quot;, &quot;input&quot;: &quot;#f8d4e1&quot;, &quot;output&quot;: &quot;#dfdff8&quot;, &quot;attention&quot;: &quot;#ffddb3&quot;, &quot;ffn&quot;: &quot;#c8ebfb&quot;, &quot;mixing&quot;: &quot;#c8ebfb&quot;, &quot;conv&quot;: &quot;#c8ebfb&quot;, &quot;pool&quot;: &quot;#d6f0df&quot;, &quot;norm&quot;: &quot;#fff6bd&quot;, &quot;concat&quot;: &quot;#fff6bd&quot;, &quot;linear&quot;: &quot;#dfdff8&quot;, &quot;softmax&quot;: &quot;#c9f1cd&quot;, &quot;sampling&quot;: &quot;#c9f1cd&quot;, &quot;recurrent&quot;: &quot;#ffddb3&quot;, &quot;decomposition&quot;: &quot;#d6f0df&quot;, &quot;tensor&quot;: &quot;#cdeaf8&quot;, &quot;activation&quot;: &quot;#f3f5f7&quot;, &quot;control&quot;: &quot;#f3f5f7&quot;}, &quot;typography&quot;: {&quot;title&quot;: 30, &quot;subtitle&quot;: 16, &quot;module&quot;: 22, &quot;inner&quot;: 20, &quot;operator&quot;: 20, &quot;shape&quot;: 16, &quot;detail&quot;: 14, &quot;evidence&quot;: 12, &quot;footer&quot;: 14, &quot;line_height&quot;: 1.18}, &quot;fill_width_nodes&quot;: [], &quot;visual_roles&quot;: {&quot;spectral.basis_init&quot;: &quot;control&quot;, &quot;spectral.filter&quot;: &quot;encoder&quot;, &quot;spectral.product&quot;: &quot;concat&quot;, &quot;spectral.reconstruct&quot;: &quot;mixing&quot;, &quot;spectral.root&quot;: &quot;root&quot;, &quot;spectral.vbranch&quot;: &quot;inner&quot;, &quot;spectral.w_init&quot;: &quot;control&quot;, &quot;spectral.wbranch&quot;: &quot;inner&quot;, &quot;spectral.wproject&quot;: &quot;mixing&quot;, &quot;spectral.xbranch&quot;: &quot;embedding&quot;, &quot;spectral.xproject&quot;: &quot;mixing&quot;}, &quot;semantics&quot;: &quot;presentation aliases only; color does not imply mathematical equivalence or parameter sharing&quot;}</metadata>
+<text x="1107.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1107.0" dy="0">SpectralFilter (truncated graph basis module)  |  Module decomposition</tspan>
+</text>
+<text x="1107.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">N=784 / K=20 / F=2 / V,X,W operands / buffer W / module only  /  read bottom to top</tspan>
+</text>
+<g data-node-id="spectral.root" data-visual-role="root"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="420.0" y="98" width="1374" height="1257" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5"/></g>
+<text x="437.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="437.0" dy="0">SpectralFilter / selected subgraph</tspan>
+</text>
+<text x="1777.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1777.0" dy="0">X + V + W -&gt; Y</tspan>
+</text>
+<text x="1781.0" y="160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1781.0" dy="0">E001,E002</tspan>
+</text>
+<g data-node-id="spectral.xbranch" data-visual-role="embedding"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="452.0" y="1000.0" width="394" height="329" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="469.0" y="1030.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="469.0" dy="0">Image to</tspan>
+<tspan x="469.0" dy="25.959999999999997">node</tspan>
+<tspan x="469.0" dy="25.959999999999997">features</tspan>
+</text>
+<text x="829.0" y="1030.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="829.0" dy="0">X: [B,784,1]</tspan>
+</text>
+<text x="833.0" y="1105.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="833.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="spectral.input" data-visual-role="input"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="484.0" y="1222.0" width="330" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="649.0" y="1249.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="649.0" dy="0">Input grayscale image</tspan>
+</text>
+<text x="649.0" y="1273.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="649.0" dy="0">[B,1,28,28]</tspan>
+</text>
+<text x="801.0" y="1293.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="801.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="spectral.reshape" data-visual-role="tensor"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="484.0" y="1117.0" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="649.0" y="1144.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="649.0" dy="0">view(B,-1,1)</tspan>
+</text>
+<text x="649.0" y="1168.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="649.0" dy="0">X: [B,784,1]</tspan>
+</text>
+<text x="801.0" y="1188.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="801.0" dy="0">E002</tspan>
+</text>
+<path data-route-id="route-0001" d="M 649.0,1222.0 L 649.0,1198.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0002" d="M 649.0,1117.0 L 649.0,1000.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="spectral.vbranch" data-visual-role="inner"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="910.0" y="1002.0" width="394" height="325" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="927.0" y="1032.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="927.0" dy="0">Basis read /</tspan>
+<tspan x="927.0" dy="23.599999999999998">transpose</tspan>
+<tspan x="927.0" dy="23.599999999999998">view</tspan>
+</text>
+<text x="1287.0" y="1032.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1287.0" dy="0">V_T:</tspan>
+<tspan x="1287.0" dy="18.88">[B,20,784]</tspan>
+</text>
+<text x="1291.0" y="1103.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1291.0" dy="0">E001,E002</tspan>
+</text>
+<g data-node-id="spectral.vread" data-visual-role="input"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="942.0" y="1220.0" width="330" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="1107.0" y="1247.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1107.0" dy="0">Read same V buffer</tspan>
+</text>
+<text x="1107.0" y="1271.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">V: [784,20]</tspan>
+</text>
+<text x="1259.0" y="1291.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1259.0" dy="0">E001,E002</tspan>
+</text>
+<g data-node-id="spectral.vt" data-visual-role="tensor"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="942.0" y="1115.0" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="1107.0" y="1142.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1107.0" dy="0">V.T.expand(B,-1,-1)</tspan>
+</text>
+<text x="1107.0" y="1166.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">V_T: [B,20,784]</tspan>
+</text>
+<text x="1259.0" y="1186.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1259.0" dy="0">E002</tspan>
+</text>
+<path data-route-id="route-0003" d="M 1107.0,1220.0 L 1107.0,1196.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0004" d="M 1107.0,1115.0 L 1107.0,1002.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="spectral.wbranch" data-visual-role="inner"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="1368.0" y="1014.0" width="394" height="301" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="1385.0" y="1044.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1385.0" dy="0">Node-domain</tspan>
+<tspan x="1385.0" dy="23.599999999999998">filter read</tspan>
+</text>
+<text x="1745.0" y="1044.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1745.0" dy="0">W_batch:</tspan>
+<tspan x="1745.0" dy="18.88">[B,784,2]</tspan>
+</text>
+<text x="1749.0" y="1091.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1749.0" dy="0">E001,E002</tspan>
+</text>
+<g data-node-id="spectral.wread" data-visual-role="input"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="1400.0" y="1208.0" width="330" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="1565.0" y="1235.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1565.0" dy="0">Read W_spectral buffer</tspan>
+</text>
+<text x="1565.0" y="1259.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1565.0" dy="0">W: [784,2]</tspan>
+</text>
+<text x="1717.0" y="1279.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1717.0" dy="0">E001,E002</tspan>
+</text>
+<g data-node-id="spectral.wexpand" data-visual-role="tensor"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="1400.0" y="1103.0" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="1565.0" y="1130.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1565.0" dy="0">W.expand(B,-1,-1)</tspan>
+</text>
+<text x="1565.0" y="1154.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1565.0" dy="0">W_batch: [B,784,2]</tspan>
+</text>
+<text x="1717.0" y="1174.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1717.0" dy="0">E002</tspan>
+</text>
+<path data-route-id="route-0005" d="M 1565.0,1208.0 L 1565.0,1184.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0006" d="M 1565.0,1103.0 L 1565.0,1014.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="spectral.filter" data-visual-role="encoder"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; Two real projections; multiplication broadcasts channels; same V reconstructs nodes</title><rect x="713.0" y="349.0" width="788" height="579" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="730.0" y="379.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="730.0" dy="0">Truncated spectral</tspan>
+<tspan x="730.0" dy="28.32">filtering</tspan>
+</text>
+<text x="1484.0" y="379.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1484.0" dy="0">Y: [B,784,2]</tspan>
+</text>
+<text x="1488.0" y="431.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1488.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="spectral.xproject" data-visual-role="mixing"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="745.0" y="797.0" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="910.0" y="824.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="910.0" dy="0">Signal projection /</tspan>
+<tspan x="910.0" dy="23.599999999999998">V_T @ X</tspan>
+</text>
+<text x="910.0" y="872.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="910.0" dy="0">[B,20,1]</tspan>
+</text>
+<text x="1062.0" y="892.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1062.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="spectral.wproject" data-visual-role="mixing"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="1139.0" y="797.0" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1304.0" y="824.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1304.0" dy="0">Filter projection /</tspan>
+<tspan x="1304.0" dy="23.599999999999998">V_T @ W</tspan>
+</text>
+<text x="1304.0" y="872.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1304.0" dy="0">[B,20,2]</tspan>
+</text>
+<text x="1456.0" y="892.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1456.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="spectral.vexpand" data-visual-role="tensor"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="745.0" y="632.0" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="910.0" y="659.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="910.0" dy="0">V.expand(B,-1,-1)</tspan>
+</text>
+<text x="910.0" y="683.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="910.0" dy="0">V_batch: [B,784,20]</tspan>
+</text>
+<text x="1062.0" y="703.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1062.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="spectral.product" data-visual-role="concat"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; [B,20,1] * [B,20,2]; singleton channel broadcasts across F=2</title><rect x="1139.0" y="620.0" width="330" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="1304.0" y="647.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1304.0" dy="0">Broadcast elementwise</tspan>
+<tspan x="1304.0" dy="23.599999999999998">multiply</tspan>
+</text>
+<text x="1304.0" y="695.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1304.0" dy="0">[B,20,2]</tspan>
+</text>
+<text x="1456.0" y="715.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1456.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="spectral.reconstruct" data-visual-role="mixing"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="942.0" y="443.0" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1107.0" y="470.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1107.0" dy="0">Reconstruct / V @</tspan>
+<tspan x="1107.0" dy="23.599999999999998">product</tspan>
+</text>
+<text x="1107.0" y="518.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">[B,784,2]</tspan>
+</text>
+<text x="1259.0" y="538.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1259.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="spectral.output" data-visual-role="output"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:170 GraphNet.forward; parameter=not asserted; </title><rect x="942.0" y="172.0" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="1107.0" y="199.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1107.0" dy="0">Module result / node</tspan>
+<tspan x="1107.0" dy="23.599999999999998">features Y</tspan>
+</text>
+<text x="1107.0" y="247.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">[B,784,2]</tspan>
+</text>
+<text x="1259.0" y="267.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1259.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="spectral.basis_init" data-visual-role="control"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:85 precompute_adjacency_matrix; rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:114 get_graph_laplacian; rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; parameter=not asserted; </title><rect x="25" y="1257" width="330" height="105" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="190.0" y="1284" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="190.0" dy="0">Fixed basis /</tspan>
+<tspan x="190.0" dy="23.599999999999998">constructor</tspan>
+</text>
+<text x="190.0" y="1332" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="190.0" dy="0">V: [N=784,K=20]</tspan>
+</text>
+<text x="342" y="1352" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="342" dy="0">E004,E003,E001</tspan>
+</text>
+<g data-node-id="spectral.w_init" data-visual-role="control"><title>rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py:147 GraphNet.__init__; parameter=not asserted; </title><rect x="25" y="1128" width="330" height="105" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="190.0" y="1155" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="190.0" dy="0">Filter buffer /</tspan>
+<tspan x="190.0" dy="23.599999999999998">constructor</tspan>
+</text>
+<text x="190.0" y="1203" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="190.0" dy="0">registered W: [N=784,F=2]</tspan>
+</text>
+<text x="342" y="1223" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="342" dy="0">E001</tspan>
+</text>
+<path data-route-id="route-0007" d="M 355,1309.5 L 379,1309.5 L 379,1345.0 L 918.0,1345.0 L 918.0,1248.5 L 942.0,1248.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>spectral.basis_init:out -&gt; spectral.vread:V; </title></path>
+<path data-route-id="route-0008" d="M 355,1180.5 L 434.0,1180.5 L 434.0,1347.0 L 1376.0,1347.0 L 1376.0,1248.5 L 1400.0,1248.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>spectral.w_init:out -&gt; spectral.wread:W; </title></path>
+<path data-route-id="route-0009" d="M 649.0,1117.0 L 649.0,946.0 L 898.0,946.0 L 898.0,902.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.reshape:out -&gt; spectral.xproject.bmm:X; </title></path>
+<path data-route-id="route-0010" d="M 1095.0,1115.0 L 1095.0,946.0 L 922.0,946.0 L 922.0,902.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.vt:out -&gt; spectral.xproject.bmm:V_T; </title></path>
+<path data-route-id="route-0011" d="M 1119.0,1115.0 L 1119.0,946.0 L 1292.0,946.0 L 1292.0,902.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.vt:out -&gt; spectral.wproject.bmm:V_T; </title></path>
+<path data-route-id="route-0012" d="M 1565.0,1103.0 L 1565.0,946.0 L 1316.0,946.0 L 1316.0,902.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.wexpand:out -&gt; spectral.wproject.bmm:W; </title></path>
+<path data-route-id="route-0013" d="M 910.0,797.0 L 910.0,749.0 L 1292.0,749.0 L 1292.0,725.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.xproject.bmm:out -&gt; spectral.product:X_hat; </title></path>
+<path data-route-id="route-0014" d="M 1304.0,797.0 L 1304.0,749.0 L 1316.0,749.0 L 1316.0,725.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.wproject.bmm:out -&gt; spectral.product:W_hat; </title></path>
+<path data-route-id="route-0015" d="M 942.0,1272.5 L 864.0,1272.5 L 864.0,914.0 L 721.0,914.0 L 721.0,672.5 L 745.0,672.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>spectral.vread:out -&gt; spectral.vexpand:V; </title></path>
+<path data-route-id="route-0016" d="M 910.0,632.0 L 910.0,572.0 L 1095.0,572.0 L 1095.0,548.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.vexpand:out -&gt; spectral.reconstruct.bmm:V; </title></path>
+<path data-route-id="route-0017" d="M 1304.0,620.0 L 1304.0,572.0 L 1119.0,572.0 L 1119.0,548.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.product:out -&gt; spectral.reconstruct.bmm:product; </title></path>
+<path data-route-id="route-0018" d="M 1107.0,443.0 L 1107.0,277.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>spectral.reconstruct.bmm:out -&gt; spectral.output:Y; </title></path>
+<path data-route-id="route-0019" d="M 814.0,1238.5 L 934.0,1238.5 L 934.0,1204.0 L 1296.0,1204.0 L 1296.0,1155.5 L 1272.0,1155.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>spectral.input:shape -&gt; spectral.vt:B; </title></path>
+<path data-route-id="route-0020" d="M 814.0,1262.5 L 892.0,1262.5 L 892.0,914.0 L 1099.0,914.0 L 1099.0,672.5 L 1075.0,672.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>spectral.input:shape -&gt; spectral.vexpand:B; </title></path>
+<path data-route-id="route-0021" d="M 814.0,1286.5 L 838.0,1286.5 L 838.0,1335.0 L 1754.0,1335.0 L 1754.0,1143.5 L 1730.0,1143.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>spectral.input:shape -&gt; spectral.wexpand:B; </title></path>
+<rect x="562.0" y="1392" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348"/>
+<text x="585.0" y="1405" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="585.0" dy="0">X / V / W</tspan>
+</text>
+<rect x="747.0" y="1392" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348"/>
+<text x="770.0" y="1405" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="770.0" dy="0">bmm</tspan>
+</text>
+<rect x="932.0" y="1392" width="16" height="16" rx="3" fill="#cdeaf8" stroke="#263348"/>
+<text x="955.0" y="1405" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="955.0" dy="0">Batch view</tspan>
+</text>
+<rect x="1117.0" y="1392" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348"/>
+<text x="1140.0" y="1405" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1140.0" dy="0">Product</tspan>
+</text>
+<rect x="1302.0" y="1392" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348"/>
+<text x="1325.0" y="1405" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1325.0" dy="0">Constructor</tspan>
+</text>
+<rect x="1487.0" y="1392" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348"/>
+<text x="1510.0" y="1405" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1510.0" dy="0">Y</tspan>
+</text>
+<text x="1107.0" y="1433" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">Blue: batch views and bmm / yellow: Laplacian or elementwise merge / gray: constructor buffers</tspan>
+<tspan x="1107.0" dy="16.52">Three bottom operands are independent values, not a tuple fork from image pixels</tspan>
+<tspan x="1107.0" dy="16.52">V read/projection/reconstruction reuse one buffer identity; dashed shape edges carry B only</tspan>
+</text>
+<text x="1107.0" y="1537" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+<text x="1107.0" y="1567" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+<text x="1107.0" y="1592" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1107.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+</svg>

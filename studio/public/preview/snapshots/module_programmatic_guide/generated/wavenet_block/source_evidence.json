@@ -1,0 +1,77 @@
+{
+  "source_project": "pytorch-wavenet-sequence",
+  "repository": "vincentherrmann/pytorch-wavenet",
+  "commit": "26ba28989edcf8688f6216057aafda07601ff07e",
+  "source_snapshot_sha256": "2982d3a983045e452afd537d7b59d84765b12bbe7e5bf15224df2f9a6e08c690",
+  "entry": "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "pytorch-wavenet-sequence/LICENSE": {
+      "sha256": "01f17d9f1715791d04e736c01572f5a0f9d9583a42cfdc5d3007dda9114acdca",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/vincentherrmann/pytorch-wavenet/26ba28989edcf8688f6216057aafda07601ff07e/LICENSE",
+      "derived_from": null
+    },
+    "pytorch-wavenet-sequence/wavenet_model.py": {
+      "sha256": "0a577fa4355eaa46099be290e9b8a0fc688c0810117e28069f248e2d874cb8d0",
+      "lines": 346,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/vincentherrmann/pytorch-wavenet/26ba28989edcf8688f6216057aafda07601ff07e/wavenet_model.py",
+      "derived_from": null
+    },
+    "pytorch-wavenet-sequence/wavenet_modules.py": {
+      "sha256": "d59b98b42a162e7b1db3d83ab95e9cdca183443b307ac06dd9323f1d20c4f477",
+      "lines": 127,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/vincentherrmann/pytorch-wavenet/26ba28989edcf8688f6216057aafda07601ff07e/wavenet_modules.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.__init__": {
+      "path": "pytorch-wavenet-sequence/wavenet_model.py",
+      "symbol": "WaveNetModel.__init__",
+      "start": 28,
+      "end": 123,
+      "snippet": "    def __init__(self,\n                 layers=10,\n                 blocks=4,\n                 dilation_channels=32,\n                 residual_channels=32,\n                 skip_channels=256,\n                 end_channels=256,\n                 classes=256,\n                 output_length=32,\n                 kernel_size=2,\n                 dtype=torch.FloatTensor,\n                 bias=False):\n\n        super(WaveNetModel, self).__init__()\n\n        self.layers = layers\n        self.blocks = blocks\n        self.dilation_channels = dilation_channels\n        self.residual_channels = residual_channels\n        self.skip_channels = skip_channels\n        self.classes = classes\n        self.kernel_size = kernel_size\n        self.dtype = dtype\n\n        # build model\n        receptive_field = 1\n        init_dilation = 1\n\n        self.dilations = []\n        self.dilated_queues = []\n        # self.main_convs = nn.ModuleList()\n        self.filter_convs = nn.ModuleList()\n        self.gate_convs = nn.ModuleList()\n        self.residual_convs = nn.ModuleList()\n        self.skip_convs = nn.ModuleList()\n\n        # 1x1 convolution to create channels\n        self.start_conv = nn.Conv1d(in_channels=self.classes,\n                                    out_channels=residual_channels,\n                                    kernel_size=1,\n                                    bias=bias)\n\n        for b in range(blocks):\n            additional_scope = kernel_size - 1\n            new_dilation = 1\n            for i in range(layers):\n                # dilations of this layer\n                self.dilations.append((new_dilation, init_dilation))\n\n                # dilated queues for fast generation\n                self.dilated_queues.append(DilatedQueue(max_length=(kernel_size - 1) * new_dilation + 1,\n                                                        num_channels=residual_channels,\n                                                        dilation=new_dilation,\n                                                        dtype=dtype))\n\n                # dilated convolutions\n                self.filter_convs.append(nn.Conv1d(in_channels=residual_channels,\n                                                   out_channels=dilation_channels,\n                                                   kernel_size=kernel_size,\n                                                   bias=bias))\n\n                self.gate_convs.append(nn.Conv1d(in_channels=residual_channels,\n                                                 out_channels=dilation_channels,\n                                                 kernel_size=kernel_size,\n                                                 bias=bias))\n\n                # 1x1 convolution for residual connection\n                self.residual_convs.append(nn.Conv1d(in_channels=dilation_channels,\n                                                     out_channels=residual_channels,\n                                                     kernel_size=1,\n                                                     bias=bias))\n\n                # 1x1 convolution for skip connection\n                self.skip_convs.append(nn.Conv1d(in_channels=dilation_channels,\n                                                 out_channels=skip_channels,\n                                                 kernel_size=1,\n                                                 bias=bias))\n\n                receptive_field += additional_scope\n                additional_scope *= 2\n                init_dilation = new_dilation\n                new_dilation *= 2\n\n        self.end_conv_1 = nn.Conv1d(in_channels=skip_channels,\n                                  out_channels=end_channels,\n                                  kernel_size=1,\n                                  bias=True)\n\n        self.end_conv_2 = nn.Conv1d(in_channels=end_channels,\n                                    out_channels=classes,\n                                    kernel_size=1,\n                                    bias=True)\n\n        # self.output_length = 2 ** (layers - 1)\n        self.output_length = output_length\n        self.receptive_field = receptive_field",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet": {
+      "path": "pytorch-wavenet-sequence/wavenet_model.py",
+      "symbol": "WaveNetModel.wavenet",
+      "start": 125,
+      "end": 171,
+      "snippet": "    def wavenet(self, input, dilation_func):\n\n        x = self.start_conv(input)\n        skip = 0\n\n        # WaveNet layers\n        for i in range(self.blocks * self.layers):\n\n            #            |----------------------------------------|     *residual*\n            #            |                                        |\n            #            |    |-- conv -- tanh --|                |\n            # -> dilate -|----|                  * ----|-- 1x1 -- + -->\t*input*\n            #                 |-- conv -- sigm --|     |\n            #                                         1x1\n            #                                          |\n            # ---------------------------------------> + ------------->\t*skip*\n\n            (dilation, init_dilation) = self.dilations[i]\n\n            residual = dilation_func(x, dilation, init_dilation, i)\n\n            # dilated convolution\n            filter = self.filter_convs[i](residual)\n            filter = F.tanh(filter)\n            gate = self.gate_convs[i](residual)\n            gate = F.sigmoid(gate)\n            x = filter * gate\n\n            # parametrized skip connection\n            s = x\n            if x.size(2) != 1:\n                 s = dilate(x, 1, init_dilation=dilation)\n            s = self.skip_convs[i](s)\n            try:\n                skip = skip[:, :, -s.size(2):]\n            except:\n                skip = 0\n            skip = s + skip\n\n            x = self.residual_convs[i](x)\n            x = x + residual[:, :, (self.kernel_size - 1):]\n\n        x = F.relu(skip)\n        x = F.relu(self.end_conv_1(x))\n        x = self.end_conv_2(x)\n\n        return x",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet_dilate": {
+      "path": "pytorch-wavenet-sequence/wavenet_model.py",
+      "symbol": "WaveNetModel.wavenet_dilate",
+      "start": 173,
+      "end": 175,
+      "snippet": "    def wavenet_dilate(self, input, dilation, init_dilation, i):\n        x = dilate(input, dilation, init_dilation)\n        return x",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "pytorch-wavenet-sequence/wavenet_modules.py::dilate": {
+      "path": "pytorch-wavenet-sequence/wavenet_modules.py",
+      "symbol": "dilate",
+      "start": 10,
+      "end": 39,
+      "snippet": "def dilate(x, dilation, init_dilation=1, pad_start=True):\n    \"\"\"\n    :param x: Tensor of size (N, C, L), where N is the input dilation, C is the number of channels, and L is the input length\n    :param dilation: Target dilation. Will be the size of the first dimension of the output tensor.\n    :param pad_start: If the input length is not compatible with the specified dilation, zero padding is used. This parameter determines wether the zeros are added at the start or at the end.\n    :return: The dilated tensor of size (dilation, C, L*N / dilation). The output might be zero padded at the start\n    \"\"\"\n\n    [n, c, l] = x.size()\n    dilation_factor = dilation / init_dilation\n    if dilation_factor == 1:\n        return x\n\n    # zero padding for reshaping\n    new_l = int(np.ceil(l / dilation_factor) * dilation_factor)\n    if new_l != l:\n        l = new_l\n        x = constant_pad_1d(x, new_l, dimension=2, pad_start=pad_start)\n\n    l_old = int(round(l / dilation_factor))\n    n_old = int(round(n * dilation_factor))\n    l = math.ceil(l * init_dilation / dilation)\n    n = math.ceil(n * dilation / init_dilation)\n\n    # reshape according to dilation\n    x = x.permute(1, 2, 0).contiguous()  # (n, c, l) -> (c, l, n)\n    x = x.view(c, l, n)\n    x = x.permute(2, 0, 1).contiguous()  # (c, l, n) -> (n, c, l)\n\n    return x",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "pytorch-wavenet-sequence/LICENSE"
+  ]
+}

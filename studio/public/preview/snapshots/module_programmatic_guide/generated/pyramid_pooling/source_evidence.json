@@ -1,0 +1,61 @@
+{
+  "source_project": "pspnet-vision-extended",
+  "repository": "Lextal/pspnet-pytorch",
+  "commit": "4eb6ab61287e837f5e2d8c1ae09fadeaa0e31e37",
+  "source_snapshot_sha256": "ec03decbad220846c78d3b5fdba46c4a42932c5c1bf6011acff18db0ac46caa5",
+  "entry": "pspnet-vision-extended/pspnet.py::PSPModule",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "pspnet-vision-extended/pspnet.py": {
+      "sha256": "b6b4d77b42fc2c1cd93836daf1ad3b1c81ff2ae6dc3353fdf0b9ce5b1bba3021",
+      "lines": 83,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/Lextal/pspnet-pytorch/4eb6ab61287e837f5e2d8c1ae09fadeaa0e31e37/pspnet.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "pspnet-vision-extended/pspnet.py::PSPModule": {
+      "path": "pspnet-vision-extended/pspnet.py",
+      "symbol": "PSPModule",
+      "start": 8,
+      "end": 25,
+      "snippet": "class PSPModule(nn.Module):\n    def __init__(self, features, out_features=1024, sizes=(1, 2, 3, 6)):\n        super().__init__()\n        self.stages = []\n        self.stages = nn.ModuleList([self._make_stage(features, size) for size in sizes])\n        self.bottleneck = nn.Conv2d(features * (len(sizes) + 1), out_features, kernel_size=1)\n        self.relu = nn.ReLU()\n\n    def _make_stage(self, features, size):\n        prior = nn.AdaptiveAvgPool2d(output_size=(size, size))\n        conv = nn.Conv2d(features, features, kernel_size=1, bias=False)\n        return nn.Sequential(prior, conv)\n\n    def forward(self, feats):\n        h, w = feats.size(2), feats.size(3)\n        priors = [F.upsample(input=stage(feats), size=(h, w), mode='bilinear') for stage in self.stages] + [feats]\n        bottle = self.bottleneck(torch.cat(priors, 1))\n        return self.relu(bottle)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "pspnet-vision-extended/pspnet.py::PSPModule.__init__": {
+      "path": "pspnet-vision-extended/pspnet.py",
+      "symbol": "PSPModule.__init__",
+      "start": 9,
+      "end": 14,
+      "snippet": "    def __init__(self, features, out_features=1024, sizes=(1, 2, 3, 6)):\n        super().__init__()\n        self.stages = []\n        self.stages = nn.ModuleList([self._make_stage(features, size) for size in sizes])\n        self.bottleneck = nn.Conv2d(features * (len(sizes) + 1), out_features, kernel_size=1)\n        self.relu = nn.ReLU()",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "pspnet-vision-extended/pspnet.py::PSPModule._make_stage": {
+      "path": "pspnet-vision-extended/pspnet.py",
+      "symbol": "PSPModule._make_stage",
+      "start": 16,
+      "end": 19,
+      "snippet": "    def _make_stage(self, features, size):\n        prior = nn.AdaptiveAvgPool2d(output_size=(size, size))\n        conv = nn.Conv2d(features, features, kernel_size=1, bias=False)\n        return nn.Sequential(prior, conv)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "pspnet-vision-extended/pspnet.py::PSPModule.forward": {
+      "path": "pspnet-vision-extended/pspnet.py",
+      "symbol": "PSPModule.forward",
+      "start": 21,
+      "end": 25,
+      "snippet": "    def forward(self, feats):\n        h, w = feats.size(2), feats.size(3)\n        priors = [F.upsample(input=stage(feats), size=(h, w), mode='bilinear') for stage in self.stages] + [feats]\n        bottle = self.bottleneck(torch.cat(priors, 1))\n        return self.relu(bottle)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": []
+}

@@ -1,0 +1,40 @@
+{
+  "schema": "summary-merge-interaction-modes/1",
+  "default": "compat",
+  "modes": {
+    "compat": {
+      "label": "兼容模式",
+      "behavior": "requestAnimationFrame 轻量预览，松开后由 Worker 从拖动前快照执行完整 move 与校验"
+    },
+    "realtime": {
+      "label": "实时模式",
+      "behavior": "每帧从同一拖动快照执行权威 move，箭头、端点、分支、合并干线和跟随文字同步更新"
+    }
+  },
+  "persistence": {
+    "storageKey": "summary-merge:interaction-mode",
+    "scope": "same-origin global preference",
+    "exported": ["SVG metadata", "JSON edit document"]
+  },
+  "browser": {
+    "case": "01093cc06a87b35a",
+    "view": "detailed",
+    "realtime_drag": {
+      "node": "enc.norm2.layernorm",
+      "mode": "realtime",
+      "dataInteractionMode": "realtime",
+      "dataInteractionPhaseAfterCommit": "committed",
+      "invalidEdgesAfterCommit": 0,
+      "status": "实时更新已提交：节点、箭头、所属文字与连接同步保存。"
+    },
+    "reload_preserved": true,
+    "restored_mode": "compat"
+  },
+  "tests": {
+    "interaction-mode.test.cjs": 5,
+    "graph-engine.test.cjs": "passed",
+    "interaction-performance.test.cjs": "passed",
+    "source_contracts": {"views": 328, "negative_cases": 4002, "passed": true},
+    "semantic_verification": {"views": 328, "edges": 5538, "issues": 0, "overlaps": 0}
+  }
+}

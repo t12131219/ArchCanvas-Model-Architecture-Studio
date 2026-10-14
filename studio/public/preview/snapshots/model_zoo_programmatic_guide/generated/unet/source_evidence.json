@@ -1,0 +1,97 @@
+{
+  "source_project": "brain-segmentation-pytorch",
+  "repository": "mateuszbuda/brain-segmentation-pytorch",
+  "commit": "d45f8908ab2f0246ba204c702a6161c9eb25f902",
+  "source_snapshot_sha256": "63846dfc95a44122862734f46bfd09329bed91896797371d14e6643e8eca44fd",
+  "entry": "brain-segmentation-pytorch/unet.py::UNet",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "brain-segmentation-pytorch/LICENSE": {
+      "sha256": "abab224573115eb895db88fdf7f7196e777a9f32f05f9ad18c99af845ba65d48",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/mateuszbuda/brain-segmentation-pytorch/d45f8908ab2f0246ba204c702a6161c9eb25f902/LICENSE",
+      "derived_from": null
+    },
+    "brain-segmentation-pytorch/train.py": {
+      "sha256": "9ad26105049aab11167126cdd769d4ff1db12f28a89b2fe5a08652d6a1ccdfb0",
+      "lines": 254,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/mateuszbuda/brain-segmentation-pytorch/d45f8908ab2f0246ba204c702a6161c9eb25f902/train.py",
+      "derived_from": null
+    },
+    "brain-segmentation-pytorch/unet.py": {
+      "sha256": "47b2fbc1792897ba216fff24b4b034f0a1bdb0776e6848a5ada65623928239e7",
+      "lines": 98,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/mateuszbuda/brain-segmentation-pytorch/d45f8908ab2f0246ba204c702a6161c9eb25f902/unet.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "brain-segmentation-pytorch/train.py::main": {
+      "path": "brain-segmentation-pytorch/train.py",
+      "symbol": "main",
+      "start": 19,
+      "end": 109,
+      "snippet": "def main(args):\n    makedirs(args)\n    snapshotargs(args)\n    device = torch.device(\"cpu\" if not torch.cuda.is_available() else args.device)\n\n    loader_train, loader_valid = data_loaders(args)\n    loaders = {\"train\": loader_train, \"valid\": loader_valid}\n\n    unet = UNet(in_channels=Dataset.in_channels, out_channels=Dataset.out_channels)\n    unet.to(device)\n\n    dsc_loss = DiceLoss()\n    best_validation_dsc = 0.0\n\n    optimizer = optim.Adam(unet.parameters(), lr=args.lr)\n\n    logger = Logger(args.logs)\n    loss_train = []\n    loss_valid = []\n\n    step = 0\n\n    for epoch in tqdm(range(args.epochs), total=args.epochs):\n        for phase in [\"train\", \"valid\"]:\n            if phase == \"train\":\n                unet.train()\n            else:\n                unet.eval()\n\n            validation_pred = []\n            validation_true = []\n\n            for i, data in enumerate(loaders[phase]):\n                if phase == \"train\":\n                    step += 1\n\n                x, y_true = data\n                x, y_true = x.to(device), y_true.to(device)\n\n                optimizer.zero_grad()\n\n                with torch.set_grad_enabled(phase == \"train\"):\n                    y_pred = unet(x)\n\n                    loss = dsc_loss(y_pred, y_true)\n\n                    if phase == \"valid\":\n                        loss_valid.append(loss.item())\n                        y_pred_np = y_pred.detach().cpu().numpy()\n                        validation_pred.extend(\n                            [y_pred_np[s] for s in range(y_pred_np.shape[0])]\n                        )\n                        y_true_np = y_true.detach().cpu().numpy()\n                        validation_true.extend(\n                            [y_true_np[s] for s in range(y_true_np.shape[0])]\n                        )\n                        if (epoch % args.vis_freq == 0) or (epoch == args.epochs - 1):\n                            if i * args.batch_size < args.vis_images:\n                                tag = \"image/{}\".format(i)\n                                num_images = args.vis_images - i * args.batch_size\n                                logger.image_list_summary(\n                                    tag,\n                                    log_images(x, y_true, y_pred)[:num_images],\n                                    step,\n                                )\n\n                    if phase == \"train\":\n                        loss_train.append(loss.item())\n                        loss.backward()\n                        optimizer.step()\n\n                if phase == \"train\" and (step + 1) % 10 == 0:\n                    log_loss_summary(logger, loss_train, step)\n                    loss_train = []\n\n            if phase == \"valid\":\n                log_loss_summary(logger, loss_valid, step, prefix=\"val_\")\n                mean_dsc = np.mean(\n                    dsc_per_volume(\n                        validation_pred,\n                        validation_true,\n                        loader_valid.dataset.patient_slice_index,\n                    )\n                )\n                logger.scalar_summary(\"val_dsc\", mean_dsc, step)\n                if mean_dsc > best_validation_dsc:\n                    best_validation_dsc = mean_dsc\n                    torch.save(unet.state_dict(), os.path.join(args.weights, \"unet.pt\"))\n                loss_valid = []\n\n    print(\"Best validation mean DSC: {:4f}\".format(best_validation_dsc))",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "brain-segmentation-pytorch/train.py::datasets": {
+      "path": "brain-segmentation-pytorch/train.py",
+      "symbol": "datasets",
+      "start": 137,
+      "end": 150,
+      "snippet": "def datasets(args):\n    train = Dataset(\n        images_dir=args.images,\n        subset=\"train\",\n        image_size=args.image_size,\n        transform=transforms(scale=args.aug_scale, angle=args.aug_angle, flip_prob=0.5),\n    )\n    valid = Dataset(\n        images_dir=args.images,\n        subset=\"validation\",\n        image_size=args.image_size,\n        random_sampling=False,\n    )\n    return train, valid",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "brain-segmentation-pytorch/unet.py::UNet": {
+      "path": "brain-segmentation-pytorch/unet.py",
+      "symbol": "UNet",
+      "start": 7,
+      "end": 98,
+      "snippet": "class UNet(nn.Module):\n\n    def __init__(self, in_channels=3, out_channels=1, init_features=32):\n        super(UNet, self).__init__()\n\n        features = init_features\n        self.encoder1 = UNet._block(in_channels, features, name=\"enc1\")\n        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)\n        self.encoder2 = UNet._block(features, features * 2, name=\"enc2\")\n        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)\n        self.encoder3 = UNet._block(features * 2, features * 4, name=\"enc3\")\n        self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)\n        self.encoder4 = UNet._block(features * 4, features * 8, name=\"enc4\")\n        self.pool4 = nn.MaxPool2d(kernel_size=2, stride=2)\n\n        self.bottleneck = UNet._block(features * 8, features * 16, name=\"bottleneck\")\n\n        self.upconv4 = nn.ConvTranspose2d(\n            features * 16, features * 8, kernel_size=2, stride=2\n        )\n        self.decoder4 = UNet._block((features * 8) * 2, features * 8, name=\"dec4\")\n        self.upconv3 = nn.ConvTranspose2d(\n            features * 8, features * 4, kernel_size=2, stride=2\n        )\n        self.decoder3 = UNet._block((features * 4) * 2, features * 4, name=\"dec3\")\n        self.upconv2 = nn.ConvTranspose2d(\n            features * 4, features * 2, kernel_size=2, stride=2\n        )\n        self.decoder2 = UNet._block((features * 2) * 2, features * 2, name=\"dec2\")\n        self.upconv1 = nn.ConvTranspose2d(\n            features * 2, features, kernel_size=2, stride=2\n        )\n        self.decoder1 = UNet._block(features * 2, features, name=\"dec1\")\n\n        self.conv = nn.Conv2d(\n            in_channels=features, out_channels=out_channels, kernel_size=1\n        )\n\n    def forward(self, x):\n        enc1 = self.encoder1(x)\n        enc2 = self.encoder2(self.pool1(enc1))\n        enc3 = self.encoder3(self.pool2(enc2))\n        enc4 = self.encoder4(self.pool3(enc3))\n\n        bottleneck = self.bottleneck(self.pool4(enc4))\n\n        dec4 = self.upconv4(bottleneck)\n        dec4 = torch.cat((dec4, enc4), dim=1)\n        dec4 = self.decoder4(dec4)\n        dec3 = self.upconv3(dec4)\n        dec3 = torch.cat((dec3, enc3), dim=1)\n        dec3 = self.decoder3(dec3)\n        dec2 = self.upconv2(dec3)\n        dec2 = torch.cat((dec2, enc2), dim=1)\n        dec2 = self.decoder2(dec2)\n        dec1 = self.upconv1(dec2)\n        dec1 = torch.cat((dec1, enc1), dim=1)\n        dec1 = self.decoder1(dec1)\n        return torch.sigmoid(self.conv(dec1))\n\n    @staticmethod\n    def _block(in_channels, features, name):\n        return nn.Sequential(\n            OrderedDict(\n                [\n                    (\n                        name + \"conv1\",\n                        nn.Conv2d(\n                            in_channels=in_channels,\n                            out_channels=features,\n                            kernel_size=3,\n                            padding=1,\n                            bias=False,\n                        ),\n                    ),\n                    (name + \"norm1\", nn.BatchNorm2d(num_features=features)),\n                    (name + \"relu1\", nn.ReLU(inplace=True)),\n                    (\n                        name + \"conv2\",\n                        nn.Conv2d(\n                            in_channels=features,\n                            out_channels=features,\n                            kernel_size=3,\n                            padding=1,\n                            bias=False,\n                        ),\n                    ),\n                    (name + \"norm2\", nn.BatchNorm2d(num_features=features)),\n                    (name + \"relu2\", nn.ReLU(inplace=True)),\n                ]\n            )\n        )",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "brain-segmentation-pytorch/unet.py::UNet.__init__": {
+      "path": "brain-segmentation-pytorch/unet.py",
+      "symbol": "UNet.__init__",
+      "start": 9,
+      "end": 43,
+      "snippet": "    def __init__(self, in_channels=3, out_channels=1, init_features=32):\n        super(UNet, self).__init__()\n\n        features = init_features\n        self.encoder1 = UNet._block(in_channels, features, name=\"enc1\")\n        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)\n        self.encoder2 = UNet._block(features, features * 2, name=\"enc2\")\n        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)\n        self.encoder3 = UNet._block(features * 2, features * 4, name=\"enc3\")\n        self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)\n        self.encoder4 = UNet._block(features * 4, features * 8, name=\"enc4\")\n        self.pool4 = nn.MaxPool2d(kernel_size=2, stride=2)\n\n        self.bottleneck = UNet._block(features * 8, features * 16, name=\"bottleneck\")\n\n        self.upconv4 = nn.ConvTranspose2d(\n            features * 16, features * 8, kernel_size=2, stride=2\n        )\n        self.decoder4 = UNet._block((features * 8) * 2, features * 8, name=\"dec4\")\n        self.upconv3 = nn.ConvTranspose2d(\n            features * 8, features * 4, kernel_size=2, stride=2\n        )\n        self.decoder3 = UNet._block((features * 4) * 2, features * 4, name=\"dec3\")\n        self.upconv2 = nn.ConvTranspose2d(\n            features * 4, features * 2, kernel_size=2, stride=2\n        )\n        self.decoder2 = UNet._block((features * 2) * 2, features * 2, name=\"dec2\")\n        self.upconv1 = nn.ConvTranspose2d(\n            features * 2, features, kernel_size=2, stride=2\n        )\n        self.decoder1 = UNet._block(features * 2, features, name=\"dec1\")\n\n        self.conv = nn.Conv2d(\n            in_channels=features, out_channels=out_channels, kernel_size=1\n        )",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "brain-segmentation-pytorch/unet.py::UNet.forward": {
+      "path": "brain-segmentation-pytorch/unet.py",
+      "symbol": "UNet.forward",
+      "start": 45,
+      "end": 65,
+      "snippet": "    def forward(self, x):\n        enc1 = self.encoder1(x)\n        enc2 = self.encoder2(self.pool1(enc1))\n        enc3 = self.encoder3(self.pool2(enc2))\n        enc4 = self.encoder4(self.pool3(enc3))\n\n        bottleneck = self.bottleneck(self.pool4(enc4))\n\n        dec4 = self.upconv4(bottleneck)\n        dec4 = torch.cat((dec4, enc4), dim=1)\n        dec4 = self.decoder4(dec4)\n        dec3 = self.upconv3(dec4)\n        dec3 = torch.cat((dec3, enc3), dim=1)\n        dec3 = self.decoder3(dec3)\n        dec2 = self.upconv2(dec3)\n        dec2 = torch.cat((dec2, enc2), dim=1)\n        dec2 = self.decoder2(dec2)\n        dec1 = self.upconv1(dec2)\n        dec1 = torch.cat((dec1, enc1), dim=1)\n        dec1 = self.decoder1(dec1)\n        return torch.sigmoid(self.conv(dec1))",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E006"
+    },
+    "brain-segmentation-pytorch/unet.py::UNet._block": {
+      "path": "brain-segmentation-pytorch/unet.py",
+      "symbol": "UNet._block",
+      "start": 68,
+      "end": 98,
+      "snippet": "    def _block(in_channels, features, name):\n        return nn.Sequential(\n            OrderedDict(\n                [\n                    (\n                        name + \"conv1\",\n                        nn.Conv2d(\n                            in_channels=in_channels,\n                            out_channels=features,\n                            kernel_size=3,\n                            padding=1,\n                            bias=False,\n                        ),\n                    ),\n                    (name + \"norm1\", nn.BatchNorm2d(num_features=features)),\n                    (name + \"relu1\", nn.ReLU(inplace=True)),\n                    (\n                        name + \"conv2\",\n                        nn.Conv2d(\n                            in_channels=features,\n                            out_channels=features,\n                            kernel_size=3,\n                            padding=1,\n                            bias=False,\n                        ),\n                    ),\n                    (name + \"norm2\", nn.BatchNorm2d(num_features=features)),\n                    (name + \"relu2\", nn.ReLU(inplace=True)),\n                ]\n            )\n        )",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E005"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "brain-segmentation-pytorch/LICENSE"
+  ]
+}

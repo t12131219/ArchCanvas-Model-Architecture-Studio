@@ -1,0 +1,80 @@
+{
+  "source_project": "pytorch-sequence-kernels-v2.5.1",
+  "repository": "pytorch/pytorch",
+  "commit": "a8d6afb511a69687bbb2b7e88a3cf67917e1697e",
+  "source_snapshot_sha256": "c792f152fe79d547f576dbbc3ff5295b8f6a8dc0e3812f8d5ec2d3ddf6ccc3e6",
+  "entry": "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "pytorch-sequence-kernels-v2.5.1/LICENSE": {
+      "sha256": "47a26beb94e3f6b333a3677fc85d546f1fdfd2f0b3686c26d2fb5b10e0134165",
+      "lines": 80,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/pytorch/a8d6afb511a69687bbb2b7e88a3cf67917e1697e/LICENSE",
+      "derived_from": null
+    },
+    "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py": {
+      "sha256": "98611c6d890e44d1d75b1aac2fe56cc012f51db27c50f28fa9cf673e639924c4",
+      "lines": 510,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/pytorch/pytorch/a8d6afb511a69687bbb2b7e88a3cf67917e1697e/benchmarks/fastrnns/custom_lstms.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__": {
+      "path": "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py",
+      "symbol": "LayerNorm.__init__",
+      "start": 157,
+      "end": 168,
+      "snippet": "    def __init__(self, normalized_shape):\n        super().__init__()\n        if isinstance(normalized_shape, numbers.Integral):\n            normalized_shape = (normalized_shape,)\n        normalized_shape = torch.Size(normalized_shape)\n\n        # XXX: This is true for our LSTM / NLP use case and helps simplify code\n        assert len(normalized_shape) == 1\n\n        self.weight = Parameter(torch.ones(normalized_shape))\n        self.bias = Parameter(torch.zeros(normalized_shape))\n        self.normalized_shape = normalized_shape",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats": {
+      "path": "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py",
+      "symbol": "LayerNorm.compute_layernorm_stats",
+      "start": 171,
+      "end": 174,
+      "snippet": "    def compute_layernorm_stats(self, input):\n        mu = input.mean(-1, keepdim=True)\n        sigma = input.std(-1, keepdim=True, unbiased=False)\n        return mu, sigma",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward": {
+      "path": "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py",
+      "symbol": "LayerNorm.forward",
+      "start": 177,
+      "end": 179,
+      "snippet": "    def forward(self, input):\n        mu, sigma = self.compute_layernorm_stats(input)\n        return (input - mu) / sigma * self.weight + self.bias",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.__init__": {
+      "path": "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py",
+      "symbol": "LayerNormLSTMCell.__init__",
+      "start": 183,
+      "end": 198,
+      "snippet": "    def __init__(self, input_size, hidden_size, decompose_layernorm=False):\n        super().__init__()\n        self.input_size = input_size\n        self.hidden_size = hidden_size\n        self.weight_ih = Parameter(torch.randn(4 * hidden_size, input_size))\n        self.weight_hh = Parameter(torch.randn(4 * hidden_size, hidden_size))\n        # The layernorms provide learnable biases\n\n        if decompose_layernorm:\n            ln = LayerNorm\n        else:\n            ln = nn.LayerNorm\n\n        self.layernorm_i = ln(4 * hidden_size)\n        self.layernorm_h = ln(4 * hidden_size)\n        self.layernorm_c = ln(hidden_size)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward": {
+      "path": "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py",
+      "symbol": "LayerNormLSTMCell.forward",
+      "start": 201,
+      "end": 218,
+      "snippet": "    def forward(\n        self, input: Tensor, state: Tuple[Tensor, Tensor]\n    ) -> Tuple[Tensor, Tuple[Tensor, Tensor]]:\n        hx, cx = state\n        igates = self.layernorm_i(torch.mm(input, self.weight_ih.t()))\n        hgates = self.layernorm_h(torch.mm(hx, self.weight_hh.t()))\n        gates = igates + hgates\n        ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)\n\n        ingate = torch.sigmoid(ingate)\n        forgetgate = torch.sigmoid(forgetgate)\n        cellgate = torch.tanh(cellgate)\n        outgate = torch.sigmoid(outgate)\n\n        cy = self.layernorm_c((forgetgate * cx) + (ingate * cellgate))\n        hy = outgate * torch.tanh(cy)\n\n        return hy, (hy, cy)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E005"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "pytorch-sequence-kernels-v2.5.1/LICENSE"
+  ]
+}

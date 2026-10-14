@@ -1,0 +1,135 @@
+{
+  "passed": true,
+  "reviewer": "independent graph/multimodal agent",
+  "scope": "five selected vision adapters; fixed AST plus newly built IR plus detailed PNG",
+  "modules": [
+    {
+      "module": "aspp",
+      "passed": true,
+      "checks": [
+        {
+          "check": "source pool restore is bilinear with align_corners=False",
+          "passed": true
+        },
+        {
+          "check": "three actual rates with independent parameter families",
+          "passed": true
+        },
+        {
+          "check": "global resize has REAL original input shape operand",
+          "passed": true
+        },
+        {
+          "check": "global tensor operand comes from pooled/projected path",
+          "passed": true
+        },
+        {
+          "check": "Concat all five64ch paths then project and Dropout.5",
+          "passed": true
+        }
+      ],
+      "source_sha256": {
+        "torchvision-v0.9.0-vision-extended/LICENSE": "6502f676851cfe25f8af75531dfb32375b7325b73c37e7b43741fa422893e71d",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py": "21ba8df0ae76a1204d4716eacc679aff9107b776f0a9d35446516153f64c84fe"
+      },
+      "visual_review": "Detailed PNG checked: bottom-up flow, text containment, frame clearance and early terminal turns; no visual fault found."
+    },
+    {
+      "module": "fpn",
+      "passed": true,
+      "checks": [
+        {
+          "check": "topdown values are lateral2 then last_inner Add, never smoothed output Conv",
+          "passed": true
+        },
+        {
+          "check": "no substituted P2/P1 tensor in recurrence",
+          "passed": true
+        },
+        {
+          "check": "resize H/W are target lateral shape operands",
+          "passed": true
+        },
+        {
+          "check": "highest-resolution dictionary output order",
+          "passed": true
+        }
+      ],
+      "source_sha256": {
+        "torchvision-v0.9.0-vision-extended/LICENSE": "6502f676851cfe25f8af75531dfb32375b7325b73c37e7b43741fa422893e71d",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py": "90eadfe6e1146e23dc57f6e2d160dcae4dc436499abfef2478c6c398a6131ae3"
+      },
+      "visual_review": "Detailed PNG checked: bottom-up flow, text containment, frame clearance and early terminal turns; no visual fault found."
+    },
+    {
+      "module": "fpn_extra_levels",
+      "passed": true,
+      "checks": [
+        {
+          "check": "channel mismatch selects caller C5",
+          "passed": true
+        },
+        {
+          "check": "P7 uses ReLU(P6) while original P6 retained in returned list",
+          "passed": true
+        },
+        {
+          "check": "existing p and names retained, append order explicit",
+          "passed": true
+        }
+      ],
+      "source_sha256": {
+        "torchvision-v0.9.0-vision-extended/LICENSE": "6502f676851cfe25f8af75531dfb32375b7325b73c37e7b43741fa422893e71d",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py": "90eadfe6e1146e23dc57f6e2d160dcae4dc436499abfef2478c6c398a6131ae3"
+      },
+      "visual_review": "Detailed PNG checked: bottom-up flow, text containment, frame clearance and early terminal turns; no visual fault found."
+    },
+    {
+      "module": "roi_align",
+      "passed": true,
+      "checks": [
+        {
+          "check": "real independent RoI coordinate endpoint",
+          "passed": true
+        },
+        {
+          "check": "kernel implementation kept honestly opaque",
+          "passed": true
+        },
+        {
+          "check": "source-supported selected kernel parameters",
+          "passed": true
+        }
+      ],
+      "source_sha256": {
+        "torchvision-v0.9.0-vision-extended/LICENSE": "6502f676851cfe25f8af75531dfb32375b7325b73c37e7b43741fa422893e71d",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py": "7e7ab19350a5be28700f97b05863355d7baa25853ad74c55977e371d0bf6d04e"
+      },
+      "visual_review": "Detailed PNG checked: bottom-up flow, text containment, frame clearance and early terminal turns; no visual fault found."
+    },
+    {
+      "module": "psp_upsample",
+      "passed": true,
+      "checks": [
+        {
+          "check": "bilinear resize precedes Conv/BN/PReLU",
+          "passed": true
+        },
+        {
+          "check": "one independent learned scalar PReLU slope shared all channels",
+          "passed": true
+        },
+        {
+          "check": "historical omitted interpolation flag not silently invented",
+          "passed": true
+        }
+      ],
+      "source_sha256": {
+        "pspnet-vision-extended/pspnet.py": "b6b4d77b42fc2c1cd93836daf1ad3b1c81ff2ae6dc3353fdf0b9ce5b1bba3021"
+      },
+      "visual_review": "Detailed PNG checked: bottom-up flow, text containment, frame clearance and early terminal turns; no visual fault found."
+    }
+  ],
+  "issues": [],
+  "upstream_executed": false
+}

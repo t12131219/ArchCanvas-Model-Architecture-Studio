@@ -1,0 +1,43 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>LSTM (explicit gates, shared time steps) 源码架构图</title><style>body{font-family:DejaVu Sans,Arial,sans-serif;background:#edf0f5;color:#172336;margin:24px}main{max-width:1600px;margin:auto}section{background:white;padding:24px;margin-top:24px;border-radius:12px}img{width:100%;height:auto}a{color:#315479}nav{position:sticky;top:0;background:#edf0f5;padding:16px 0}pre{white-space:pre-wrap}</style><main><h1>LSTM (explicit gates, shared time steps)</h1><p>https://github.com/pytorch/pytorch @ a8d6afb511a6</p><nav><a href="../index.html">模型总览</a> · <a href="#overview">概览</a> · <a href="#modules">模块</a> · <a href="#detailed">详细</a> · <a href="source_map.md">逐节点源码映射</a> · <a href="source_evidence.json">源码证据</a> · <a href="semantic_ir.json">语义 IR</a> · <a href="layout_checks.json">检查</a></nav><details><summary>选定配置与边界</summary><pre>{
+  &quot;input_size&quot;: 8,
+  &quot;hidden_size&quot;: 16,
+  &quot;sequence_length&quot;: 3,
+  &quot;batch&quot;: &quot;B&quot;,
+  &quot;num_layers&quot;: 1,
+  &quot;bidirectional&quot;: false,
+  &quot;construction&quot;: &quot;LSTMLayer(LSTMCell, input_size=8, hidden_size=16)&quot;,
+  &quot;configuration_origin&quot;: &quot;explicit illustrative configuration, not upstream benchmark defaults&quot;,
+  &quot;input_layout&quot;: &quot;[T,B,I]&quot;,
+  &quot;initial_state&quot;: &quot;external h_init,c_init; no default assumed&quot;,
+  &quot;source_variant&quot;: &quot;LSTMCell, not LayerNormLSTMCell or premultiplied variants&quot;,
+  &quot;chunk_order&quot;: [
+    &quot;i&quot;,
+    &quot;f&quot;,
+    &quot;g&quot;,
+    &quot;o&quot;
+  ],
+  &quot;parameter_shapes&quot;: {
+    &quot;cell.weight_ih&quot;: [
+      64,
+      8
+    ],
+    &quot;cell.weight_hh&quot;: [
+      64,
+      16
+    ],
+    &quot;cell.bias_ih&quot;: [
+      64
+    ],
+    &quot;cell.bias_hh&quot;: [
+      64
+    ]
+  },
+  &quot;bias_initialization&quot;: &quot;torch.randn, no +1 forget bias&quot;,
+  &quot;temporal_parameter_sharing&quot;: true,
+  &quot;source_concat&quot;: false,
+  &quot;peepholes&quot;: false,
+  &quot;dropout&quot;: false,
+  &quot;model_executed&quot;: false,
+  &quot;shapes&quot;: &quot;static derivation&quot;,
+  &quot;output&quot;: &quot;(stacked h_0..h_2, (h_2,c_2))&quot;
+}</pre></details><section id="overview"><h2>概览</h2><p><a href="figure1_overview.svg">SVG</a> · <a href="layout_overview.json">布局记录</a></p><img src="figure1_overview.svg" alt="overview"></section><section id="modules"><h2>模块</h2><p><a href="figure2_modules.svg">SVG</a> · <a href="layout_modules.json">布局记录</a></p><img src="figure2_modules.svg" alt="modules"></section><section id="detailed"><h2>详细</h2><p><a href="figure3_detailed.svg">SVG</a> · <a href="layout_detailed.json">布局记录</a></p><img src="figure3_detailed.svg" alt="detailed"></section></main></html>

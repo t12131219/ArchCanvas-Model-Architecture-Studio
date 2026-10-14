@@ -1,0 +1,90 @@
+{
+  "source_project": "pytorch-lstmcell-v2.5.1",
+  "repository": "https://github.com/pytorch/pytorch",
+  "commit": "a8d6afb511a69687bbb2b7e88a3cf67917e1697e",
+  "source_snapshot_sha256": "e1da4f557911834356e07d9ef80995589ed30de16ae2931fab98679a90f4de1c",
+  "entry": "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "pytorch-lstmcell-v2.5.1/LICENSE": {
+      "sha256": "47a26beb94e3f6b333a3677fc85d546f1fdfd2f0b3686c26d2fb5b10e0134165",
+      "lines": 80,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/pytorch/a8d6afb511a69687bbb2b7e88a3cf67917e1697e/LICENSE",
+      "derived_from": null
+    },
+    "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py": {
+      "sha256": "98611c6d890e44d1d75b1aac2fe56cc012f51db27c50f28fa9cf673e639924c4",
+      "lines": 510,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/pytorch/pytorch/a8d6afb511a69687bbb2b7e88a3cf67917e1697e/benchmarks/fastrnns/custom_lstms.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell": {
+      "path": "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py",
+      "symbol": "LSTMCell",
+      "start": 122,
+      "end": 153,
+      "snippet": "class LSTMCell(jit.ScriptModule):\n    def __init__(self, input_size, hidden_size):\n        super().__init__()\n        self.input_size = input_size\n        self.hidden_size = hidden_size\n        self.weight_ih = Parameter(torch.randn(4 * hidden_size, input_size))\n        self.weight_hh = Parameter(torch.randn(4 * hidden_size, hidden_size))\n        self.bias_ih = Parameter(torch.randn(4 * hidden_size))\n        self.bias_hh = Parameter(torch.randn(4 * hidden_size))\n\n    @jit.script_method\n    def forward(\n        self, input: Tensor, state: Tuple[Tensor, Tensor]\n    ) -> Tuple[Tensor, Tuple[Tensor, Tensor]]:\n        hx, cx = state\n        gates = (\n            torch.mm(input, self.weight_ih.t())\n            + self.bias_ih\n            + torch.mm(hx, self.weight_hh.t())\n            + self.bias_hh\n        )\n        ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)\n\n        ingate = torch.sigmoid(ingate)\n        forgetgate = torch.sigmoid(forgetgate)\n        cellgate = torch.tanh(cellgate)\n        outgate = torch.sigmoid(outgate)\n\n        cy = (forgetgate * cx) + (ingate * cellgate)\n        hy = outgate * torch.tanh(cy)\n\n        return hy, (hy, cy)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.__init__": {
+      "path": "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py",
+      "symbol": "LSTMCell.__init__",
+      "start": 123,
+      "end": 130,
+      "snippet": "    def __init__(self, input_size, hidden_size):\n        super().__init__()\n        self.input_size = input_size\n        self.hidden_size = hidden_size\n        self.weight_ih = Parameter(torch.randn(4 * hidden_size, input_size))\n        self.weight_hh = Parameter(torch.randn(4 * hidden_size, hidden_size))\n        self.bias_ih = Parameter(torch.randn(4 * hidden_size))\n        self.bias_hh = Parameter(torch.randn(4 * hidden_size))",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward": {
+      "path": "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py",
+      "symbol": "LSTMCell.forward",
+      "start": 133,
+      "end": 153,
+      "snippet": "    def forward(\n        self, input: Tensor, state: Tuple[Tensor, Tensor]\n    ) -> Tuple[Tensor, Tuple[Tensor, Tensor]]:\n        hx, cx = state\n        gates = (\n            torch.mm(input, self.weight_ih.t())\n            + self.bias_ih\n            + torch.mm(hx, self.weight_hh.t())\n            + self.bias_hh\n        )\n        ingate, forgetgate, cellgate, outgate = gates.chunk(4, 1)\n\n        ingate = torch.sigmoid(ingate)\n        forgetgate = torch.sigmoid(forgetgate)\n        cellgate = torch.tanh(cellgate)\n        outgate = torch.sigmoid(outgate)\n\n        cy = (forgetgate * cx) + (ingate * cellgate)\n        hy = outgate * torch.tanh(cy)\n\n        return hy, (hy, cy)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer": {
+      "path": "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py",
+      "symbol": "LSTMLayer",
+      "start": 221,
+      "end": 235,
+      "snippet": "class LSTMLayer(jit.ScriptModule):\n    def __init__(self, cell, *cell_args):\n        super().__init__()\n        self.cell = cell(*cell_args)\n\n    @jit.script_method\n    def forward(\n        self, input: Tensor, state: Tuple[Tensor, Tensor]\n    ) -> Tuple[Tensor, Tuple[Tensor, Tensor]]:\n        inputs = input.unbind(0)\n        outputs = torch.jit.annotate(List[Tensor], [])\n        for i in range(len(inputs)):\n            out, state = self.cell(inputs[i], state)\n            outputs += [out]\n        return torch.stack(outputs), state",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.__init__": {
+      "path": "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py",
+      "symbol": "LSTMLayer.__init__",
+      "start": 222,
+      "end": 224,
+      "snippet": "    def __init__(self, cell, *cell_args):\n        super().__init__()\n        self.cell = cell(*cell_args)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E005"
+    },
+    "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward": {
+      "path": "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py",
+      "symbol": "LSTMLayer.forward",
+      "start": 227,
+      "end": 235,
+      "snippet": "    def forward(\n        self, input: Tensor, state: Tuple[Tensor, Tensor]\n    ) -> Tuple[Tensor, Tuple[Tensor, Tensor]]:\n        inputs = input.unbind(0)\n        outputs = torch.jit.annotate(List[Tensor], [])\n        for i in range(len(inputs)):\n            out, state = self.cell(inputs[i], state)\n            outputs += [out]\n        return torch.stack(outputs), state",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E006"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "pytorch-lstmcell-v2.5.1/LICENSE"
+  ]
+}

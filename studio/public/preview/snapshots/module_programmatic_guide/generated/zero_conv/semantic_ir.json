@@ -1,0 +1,366 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "zero_conv",
+  "profile": {
+    "in_channels": 16,
+    "out_channels": 8,
+    "padding_value": 1,
+    "conv_padding": 0,
+    "parameters": [
+      "conv.weight",
+      "conv.bias",
+      "scale"
+    ],
+    "initial_output": "zero before learning",
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "ZeroConv2d only; no surrounding Glow model or coupling input split.",
+    "source_contracts": [
+      [
+        "ZeroConv2d.forward",
+        "F.pad(input, [1, 1, 1, 1], value=1)"
+      ],
+      [
+        "ZeroConv2d.forward",
+        "out * torch.exp(self.scale * 3)"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "rosinality/glow-pytorch",
+    "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+    "snapshot": "1d5cf48ba47a5ecf7ea7059a37c9d1584a95871f52d5022f76b59cc51138d2ce"
+  },
+  "nodes": [
+    {
+      "id": "zero_conv.root",
+      "label": "ZeroConv2d conditioner",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::ZeroConv2d.__init__",
+        "glow-modules/model.py::ZeroConv2d.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "zero_conv.x"
+        ],
+        [
+          "zero_conv.body"
+        ],
+        [
+          "zero_conv.y"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "zero_conv.x",
+      "label": "Input features",
+      "kind": "input",
+      "source": [
+        "glow-modules/model.py::ZeroConv2d.forward"
+      ],
+      "shape": "[B,16,8,8]",
+      "detail": [],
+      "parent": "zero_conv.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "zero_conv.body",
+      "label": "ZeroConv2d module",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::ZeroConv2d.__init__",
+        "glow-modules/model.py::ZeroConv2d.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "zero_conv.pad"
+        ],
+        [
+          "zero_conv.conv"
+        ],
+        [
+          "zero_conv.scale"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "zero_conv.root",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "zero_conv.pad",
+      "label": "Explicit boundary padding",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::ZeroConv2d.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "zero_conv.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "zero_conv.padop",
+      "label": "F.pad / constant value 1",
+      "kind": "tensor",
+      "source": [
+        "glow-modules/model.py::ZeroConv2d.forward"
+      ],
+      "shape": "[B,16,10,10]",
+      "detail": [],
+      "expression": "F.pad(input, [1, 1, 1, 1], value=1)",
+      "padding": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "padding_value": 1,
+      "parent": "zero_conv.pad",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "zero_conv.conv",
+      "label": "Zero-initialized Conv3x3",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::ZeroConv2d.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "zero_conv.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "zero_conv.convop",
+      "label": "Conv 16 -> 8; padding0",
+      "kind": "conv2d",
+      "source": [
+        "glow-modules/model.py::ZeroConv2d.__init__",
+        "glow-modules/model.py::ZeroConv2d.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "parameters": [
+        "conv.weight",
+        "conv.bias"
+      ],
+      "kernel_size": 3,
+      "padding": 0,
+      "weight_init": "zero",
+      "bias_init": "zero",
+      "parent": "zero_conv.conv",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "zero_conv.scale",
+      "label": "Learned output scaling",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::ZeroConv2d.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "zero_conv.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "zero_conv.scaleop",
+      "label": "out * exp(scale * 3)",
+      "kind": "multiply",
+      "source": [
+        "glow-modules/model.py::ZeroConv2d.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "expression": "out * torch.exp(self.scale * 3)",
+      "parameters": [
+        "scale"
+      ],
+      "initial_scale": 0,
+      "parent": "zero_conv.scale",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "zero_conv.y",
+      "label": "Conditioner output",
+      "kind": "output",
+      "source": [
+        "glow-modules/model.py::ZeroConv2d.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "parent": "zero_conv.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "zero_conv.pad:in->zero_conv.padop:in:boundary",
+      "src": "zero_conv.pad",
+      "dst": "zero_conv.padop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "zero_conv.padop:out->zero_conv.pad:out:boundary",
+      "src": "zero_conv.padop",
+      "dst": "zero_conv.pad",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "zero_conv.conv:in->zero_conv.convop:in:boundary",
+      "src": "zero_conv.conv",
+      "dst": "zero_conv.convop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "zero_conv.convop:out->zero_conv.conv:out:boundary",
+      "src": "zero_conv.convop",
+      "dst": "zero_conv.conv",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "zero_conv.scale:in->zero_conv.scaleop:in:boundary",
+      "src": "zero_conv.scale",
+      "dst": "zero_conv.scaleop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "zero_conv.scaleop:out->zero_conv.scale:out:boundary",
+      "src": "zero_conv.scaleop",
+      "dst": "zero_conv.scale",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "zero_conv.x:out->zero_conv.pad:in:tensor",
+      "src": "zero_conv.x",
+      "dst": "zero_conv.pad",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "zero_conv.pad:out->zero_conv.conv:in:tensor",
+      "src": "zero_conv.pad",
+      "dst": "zero_conv.conv",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "zero_conv.conv:out->zero_conv.scale:in:tensor",
+      "src": "zero_conv.conv",
+      "dst": "zero_conv.scale",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "zero_conv.scale:out->zero_conv.y:in:tensor",
+      "src": "zero_conv.scale",
+      "dst": "zero_conv.y",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "The argument named padding in the constructor is unused; actual forward pads all four sides with value 1.",
+    "Conv weight and bias start at zero but remain learnable; exp(scale*3) starts at 1."
+  ],
+  "corrections": [
+    "Do not substitute standard zero padding or permanently frozen convolution."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

@@ -1,0 +1,2587 @@
+{
+  "schema": "timeseries-semantic-ir/1",
+  "model": "patchtst",
+  "profile": {
+    "path": "supervised forecast; no decomposition",
+    "profile_source": "PatchTST/PatchTST_supervised/run_longExp.py:31-70",
+    "seq_len": 96,
+    "pred_len": 96,
+    "enc_in": 7,
+    "patch_len": 16,
+    "stride": 8,
+    "padding_patch": "end",
+    "patch_count": 12,
+    "d_model": 512,
+    "d_ff": 2048,
+    "n_heads": 8,
+    "e_layers": 2,
+    "dropout": 0.05,
+    "head_dropout": 0.0,
+    "fc_dropout": 0.05,
+    "revin": true,
+    "affine": false,
+    "subtract_last": false,
+    "decomposition": false,
+    "individual": false,
+    "norm": "BatchNorm",
+    "act": "gelu",
+    "pre_norm": false,
+    "res_attention": true,
+    "pe": "zeros",
+    "learn_pe": true,
+    "pretrain_head": false,
+    "head_type": "flatten",
+    "attn_dropout": 0.0,
+    "attn_mask": null,
+    "key_padding_mask": null,
+    "symbolic_shapes": true,
+    "model_executed": false,
+    "mode": "eval"
+  },
+  "nodes": [
+    {
+      "id": "patchtst",
+      "label": "PatchTST supervised forecast",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/models/PatchTST.py::Model.forward"
+      ],
+      "shape": "(B,L,C) -> (B,H,C)",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E026"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_input",
+      "label": "Input time series",
+      "kind": "input",
+      "source": [
+        "PatchTST/PatchTST_supervised/models/PatchTST.py::Model.forward"
+      ],
+      "shape": "(B,L,C)",
+      "detail": [],
+      "parent": "patchtst",
+      "source_evidence": [
+        "E026"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_to_channels",
+      "label": "Permute to channels",
+      "kind": "tensor",
+      "source": [
+        "PatchTST/PatchTST_supervised/models/PatchTST.py::Model.forward"
+      ],
+      "shape": "(B,C,L)",
+      "detail": [
+        "Model interface is time-major"
+      ],
+      "parent": "patchtst",
+      "source_evidence": [
+        "E026"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_revin_norm",
+      "label": "RevIN normalize",
+      "kind": "norm",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::PatchTST_backbone.forward",
+        "PatchTST/PatchTST_supervised/layers/RevIN.py::RevIN._normalize"
+      ],
+      "shape": "(B,C,L)",
+      "detail": [
+        "Per-sample, per-variable mean / stdev",
+        "affine=False; stats retained for denorm"
+      ],
+      "parent": "patchtst",
+      "source_evidence": [
+        "E005",
+        "E022"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "stats"
+      ]
+    },
+    {
+      "id": "patch_patching",
+      "label": "End padding + patching",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::PatchTST_backbone.__init__",
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::PatchTST_backbone.forward"
+      ],
+      "shape": "(B,C,p,P)",
+      "detail": [],
+      "mode": "chain",
+      "parent": "patchtst",
+      "source_evidence": [
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_pad",
+      "label": "Repeat endpoint s times",
+      "kind": "tensor",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::PatchTST_backbone.__init__"
+      ],
+      "shape": "(B,C,L+s)",
+      "detail": [
+        "ReplicationPad1d((0,s))"
+      ],
+      "parent": "patch_patching",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_unfold",
+      "label": "Unfold temporal patches",
+      "kind": "tensor",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::PatchTST_backbone.forward"
+      ],
+      "shape": "(B,C,P,p)",
+      "detail": [
+        "P=floor((L-p)/s)+2",
+        "p=16, s=8, P=12"
+      ],
+      "parent": "patch_patching",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_permute_patch",
+      "label": "Permute for backbone",
+      "kind": "tensor",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::PatchTST_backbone.forward"
+      ],
+      "shape": "(B,C,p,P)",
+      "detail": [],
+      "parent": "patch_patching",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_embedding",
+      "label": "Patch embedding + position",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTiEncoder.__init__",
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTiEncoder.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [],
+      "mode": "chain",
+      "parent": "patchtst",
+      "source_evidence": [
+        "E010",
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_projection",
+      "label": "Patch Linear p -> D",
+      "kind": "embedding",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTiEncoder.__init__",
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTiEncoder.forward"
+      ],
+      "shape": "(B,C,P,D)",
+      "detail": [
+        "Permute back to (B,C,P,p)",
+        "One W_P shared across C and P"
+      ],
+      "param_identity": "backbone.W_P",
+      "parent": "patch_embedding",
+      "source_evidence": [
+        "E010",
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_fold_channels",
+      "label": "Fold B and C",
+      "kind": "tensor",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTiEncoder.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [
+        "Variables become independent batch items"
+      ],
+      "parent": "patch_embedding",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_position",
+      "label": "Add learnable position",
+      "kind": "embedding",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTiEncoder.forward",
+        "PatchTST/PatchTST_supervised/layers/PatchTST_layers.py::positional_encoding"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [
+        "W_pos:(P,D), pe='zeros'",
+        "Uniform initialization, not zero values"
+      ],
+      "param_identity": "backbone.W_pos",
+      "parent": "patch_embedding",
+      "source_evidence": [
+        "E011",
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_embedding_dropout",
+      "label": "Embedding dropout",
+      "kind": "control",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTiEncoder.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [
+        "p=0.05"
+      ],
+      "parent": "patch_embedding",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_encoder",
+      "label": "Channel-independent encoder",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTiEncoder.forward",
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoder.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [
+        "N=2 independent layers",
+        "Same weights for all C variables",
+        "Pre-softmax scores propagate between layers"
+      ],
+      "mode": "chain",
+      "parent": "patchtst",
+      "source_evidence": [
+        "E011",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1",
+      "label": "Encoder layer 1",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward",
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoder.__init__"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [
+        "Independent parameters by layer",
+        "Shared encoder across variables"
+      ],
+      "param_identity": "encoder.layers.0",
+      "mode": "chain",
+      "parent": "patch_encoder",
+      "source_evidence": [
+        "E009",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_attn_res",
+      "label": "Attention + residual",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [],
+      "residual": true,
+      "mode": "chain",
+      "parent": "patch_layer1",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_attention",
+      "label": "Self-attention",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_MultiheadAttention.forward",
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [],
+      "mode": "chain",
+      "parent": "patch_layer1_attn_res",
+      "source_evidence": [
+        "E013",
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_qkv",
+      "label": "Q / K / V projections",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_MultiheadAttention.forward"
+      ],
+      "shape": "tuple(Q,K,V)",
+      "detail": [],
+      "mode": "parallel",
+      "parent": "patch_layer1_attention",
+      "source_evidence": [
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "item[2]"
+      ]
+    },
+    {
+      "id": "patch_layer1_q",
+      "label": "Linear Q + split",
+      "kind": "linear",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_MultiheadAttention.forward"
+      ],
+      "shape": "(BC,h,P,d)",
+      "detail": [
+        "D -> h*d; d=D/h"
+      ],
+      "param_identity": "encoder.layers.0.W_Q",
+      "parent": "patch_layer1_qkv",
+      "source_evidence": [
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_k",
+      "label": "Linear K + split",
+      "kind": "linear",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_MultiheadAttention.forward"
+      ],
+      "shape": "(BC,h,d,P)",
+      "detail": [
+        "Transpose K for QK"
+      ],
+      "param_identity": "encoder.layers.0.W_K",
+      "parent": "patch_layer1_qkv",
+      "source_evidence": [
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_v",
+      "label": "Linear V + split",
+      "kind": "linear",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_MultiheadAttention.forward"
+      ],
+      "shape": "(BC,h,P,d)",
+      "detail": [
+        "Independent value operand"
+      ],
+      "param_identity": "encoder.layers.0.W_V",
+      "parent": "patch_layer1_qkv",
+      "source_evidence": [
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_sdpa",
+      "label": "Scaled dot-product attention",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "Z:(BC,h,P,d)",
+      "detail": [
+        "Raw scores leave before Softmax"
+      ],
+      "mode": "chain",
+      "parent": "patch_layer1_attention",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_sdpa_operands",
+      "label": "Attention weights and values",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "tuple(A,V)",
+      "detail": [],
+      "dispatch": true,
+      "mode": "parallel",
+      "parent": "patch_layer1_sdpa",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "Q,K",
+        "item[0]",
+        "V",
+        "item[1]"
+      ]
+    },
+    {
+      "id": "patch_layer1_weights",
+      "label": "QK -> attention weights",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "A:(BC,h,P,P)",
+      "detail": [],
+      "input_selector": "Q,K",
+      "mode": "chain",
+      "parent": "patch_layer1_sdpa_operands",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_raw_scores",
+      "label": "QK / sqrt(d) + prev",
+      "kind": "attention",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "S1:(BC,h,P,P)",
+      "detail": [
+        "Layer 1: prev=None",
+        "No causal or padding mask"
+      ],
+      "score_output": true,
+      "pre_softmax": true,
+      "param_identity": "encoder.layers.0.sdp_attn.scale (fixed)",
+      "parent": "patch_layer1_weights",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "scores"
+      ]
+    },
+    {
+      "id": "patch_layer1_softmax",
+      "label": "Softmax over key patches",
+      "kind": "activation",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "A:(BC,h,P,P)",
+      "detail": [
+        "dim=-1; normalize each query"
+      ],
+      "parent": "patch_layer1_weights",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_attention_dropout",
+      "label": "Attention dropout",
+      "kind": "control",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "A:(BC,h,P,P)",
+      "detail": [
+        "p=0.0 in selected profile"
+      ],
+      "parent": "patch_layer1_weights",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_value_bypass",
+      "label": "V: independent value operand",
+      "kind": "tensor",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "V:(BC,h,P,d)",
+      "detail": [
+        "Bypass QK, scaling and Softmax"
+      ],
+      "input_selector": "V",
+      "parent": "patch_layer1_sdpa_operands",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_weighted_values",
+      "label": "A @ V",
+      "kind": "attention",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "Z:(BC,h,P,d)",
+      "detail": [
+        "Weights and V are separate operands"
+      ],
+      "parent": "patch_layer1_sdpa",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_merge",
+      "label": "Merge + output projection",
+      "kind": "linear",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_MultiheadAttention.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [
+        "Concat heads; Linear(h*d -> D)",
+        "Output projection dropout"
+      ],
+      "param_identity": "encoder.layers.0.to_out",
+      "parent": "patch_layer1_attention",
+      "source_evidence": [
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_attndrop",
+      "label": "Residual dropout",
+      "kind": "control",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [
+        "p=0.05"
+      ],
+      "parent": "patch_layer1_attn_res",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_attnadd",
+      "label": "Add input",
+      "kind": "mixing",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [],
+      "parent": "patch_layer1_attn_res",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "patch_layer1_bn1",
+      "label": "Post BatchNorm",
+      "kind": "norm",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.__init__",
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [
+        "Transpose -> BatchNorm1d(D) -> back",
+        "Statistics over BC and P"
+      ],
+      "param_identity": "encoder.layers.0.norm_attn",
+      "parent": "patch_layer1",
+      "source_evidence": [
+        "E008",
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_ffn_res",
+      "label": "FFN + residual",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [],
+      "residual": true,
+      "mode": "chain",
+      "parent": "patch_layer1",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_ffn",
+      "label": "Position-wise FFN",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.__init__"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [],
+      "mode": "chain",
+      "parent": "patch_layer1_ffn_res",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_ff1",
+      "label": "Linear D -> F",
+      "kind": "linear",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.__init__"
+      ],
+      "shape": "(BC,P,F)",
+      "detail": [],
+      "param_identity": "encoder.layers.0.ff.0",
+      "parent": "patch_layer1_ffn",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_layers.py::get_activation_fn"
+      ],
+      "shape": "(BC,P,F)",
+      "detail": [],
+      "parent": "patch_layer1_ffn",
+      "source_evidence": [
+        "E016"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_ffdrop",
+      "label": "Dropout",
+      "kind": "control",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.__init__"
+      ],
+      "shape": "(BC,P,F)",
+      "detail": [
+        "p=0.05; identity at evaluation"
+      ],
+      "parent": "patch_layer1_ffn",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_ff2",
+      "label": "Linear F -> D",
+      "kind": "linear",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.__init__"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [],
+      "param_identity": "encoder.layers.0.ff.3",
+      "parent": "patch_layer1_ffn",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_ffnoutdrop",
+      "label": "Residual dropout",
+      "kind": "control",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [
+        "p=0.05"
+      ],
+      "parent": "patch_layer1_ffn_res",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer1_ffnadd",
+      "label": "Add input",
+      "kind": "mixing",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [],
+      "parent": "patch_layer1_ffn_res",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "patch_layer1_bn2",
+      "label": "Post BatchNorm",
+      "kind": "norm",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.__init__",
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [
+        "Post-norm; pre_norm=False"
+      ],
+      "param_identity": "encoder.layers.0.norm_ffn",
+      "parent": "patch_layer1",
+      "source_evidence": [
+        "E008",
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2",
+      "label": "Encoder layer 2",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward",
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoder.__init__"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [
+        "Independent parameters by layer",
+        "Shared encoder across variables"
+      ],
+      "param_identity": "encoder.layers.1",
+      "mode": "chain",
+      "parent": "patch_encoder",
+      "source_evidence": [
+        "E009",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_attn_res",
+      "label": "Attention + residual",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [],
+      "residual": true,
+      "mode": "chain",
+      "parent": "patch_layer2",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_attention",
+      "label": "Self-attention",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_MultiheadAttention.forward",
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [],
+      "mode": "chain",
+      "parent": "patch_layer2_attn_res",
+      "source_evidence": [
+        "E013",
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_qkv",
+      "label": "Q / K / V projections",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_MultiheadAttention.forward"
+      ],
+      "shape": "tuple(Q,K,V)",
+      "detail": [],
+      "mode": "parallel",
+      "parent": "patch_layer2_attention",
+      "source_evidence": [
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "item[2]"
+      ]
+    },
+    {
+      "id": "patch_layer2_q",
+      "label": "Linear Q + split",
+      "kind": "linear",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_MultiheadAttention.forward"
+      ],
+      "shape": "(BC,h,P,d)",
+      "detail": [
+        "D -> h*d; d=D/h"
+      ],
+      "param_identity": "encoder.layers.1.W_Q",
+      "parent": "patch_layer2_qkv",
+      "source_evidence": [
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_k",
+      "label": "Linear K + split",
+      "kind": "linear",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_MultiheadAttention.forward"
+      ],
+      "shape": "(BC,h,d,P)",
+      "detail": [
+        "Transpose K for QK"
+      ],
+      "param_identity": "encoder.layers.1.W_K",
+      "parent": "patch_layer2_qkv",
+      "source_evidence": [
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_v",
+      "label": "Linear V + split",
+      "kind": "linear",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_MultiheadAttention.forward"
+      ],
+      "shape": "(BC,h,P,d)",
+      "detail": [
+        "Independent value operand"
+      ],
+      "param_identity": "encoder.layers.1.W_V",
+      "parent": "patch_layer2_qkv",
+      "source_evidence": [
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_sdpa",
+      "label": "Scaled dot-product attention",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "Z:(BC,h,P,d)",
+      "detail": [
+        "Raw scores leave before Softmax"
+      ],
+      "mode": "chain",
+      "parent": "patch_layer2_attention",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_sdpa_operands",
+      "label": "Attention weights and values",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "tuple(A,V)",
+      "detail": [],
+      "dispatch": true,
+      "mode": "parallel",
+      "parent": "patch_layer2_sdpa",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "Q,K",
+        "item[0]",
+        "V",
+        "item[1]"
+      ]
+    },
+    {
+      "id": "patch_layer2_weights",
+      "label": "QK -> attention weights",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "A:(BC,h,P,P)",
+      "detail": [],
+      "input_selector": "Q,K",
+      "mode": "chain",
+      "parent": "patch_layer2_sdpa_operands",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_raw_scores",
+      "label": "QK / sqrt(d) + prev",
+      "kind": "attention",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "S2:(BC,h,P,P)",
+      "detail": [
+        "Layer 2: prev=S1",
+        "No causal or padding mask"
+      ],
+      "score_output": true,
+      "pre_softmax": true,
+      "param_identity": "encoder.layers.1.sdp_attn.scale (fixed)",
+      "parent": "patch_layer2_weights",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "patch_layer2_softmax",
+      "label": "Softmax over key patches",
+      "kind": "activation",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "A:(BC,h,P,P)",
+      "detail": [
+        "dim=-1; normalize each query"
+      ],
+      "parent": "patch_layer2_weights",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_attention_dropout",
+      "label": "Attention dropout",
+      "kind": "control",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "A:(BC,h,P,P)",
+      "detail": [
+        "p=0.0 in selected profile"
+      ],
+      "parent": "patch_layer2_weights",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_value_bypass",
+      "label": "V: independent value operand",
+      "kind": "tensor",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "V:(BC,h,P,d)",
+      "detail": [
+        "Bypass QK, scaling and Softmax"
+      ],
+      "input_selector": "V",
+      "parent": "patch_layer2_sdpa_operands",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_weighted_values",
+      "label": "A @ V",
+      "kind": "attention",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_ScaledDotProductAttention.forward"
+      ],
+      "shape": "Z:(BC,h,P,d)",
+      "detail": [
+        "Weights and V are separate operands"
+      ],
+      "parent": "patch_layer2_sdpa",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_merge",
+      "label": "Merge + output projection",
+      "kind": "linear",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::_MultiheadAttention.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [
+        "Concat heads; Linear(h*d -> D)",
+        "Output projection dropout"
+      ],
+      "param_identity": "encoder.layers.1.to_out",
+      "parent": "patch_layer2_attention",
+      "source_evidence": [
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_attndrop",
+      "label": "Residual dropout",
+      "kind": "control",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [
+        "p=0.05"
+      ],
+      "parent": "patch_layer2_attn_res",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_attnadd",
+      "label": "Add input",
+      "kind": "mixing",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [],
+      "parent": "patch_layer2_attn_res",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "patch_layer2_bn1",
+      "label": "Post BatchNorm",
+      "kind": "norm",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.__init__",
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [
+        "Transpose -> BatchNorm1d(D) -> back",
+        "Statistics over BC and P"
+      ],
+      "param_identity": "encoder.layers.1.norm_attn",
+      "parent": "patch_layer2",
+      "source_evidence": [
+        "E008",
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_ffn_res",
+      "label": "FFN + residual",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [],
+      "residual": true,
+      "mode": "chain",
+      "parent": "patch_layer2",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_ffn",
+      "label": "Position-wise FFN",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.__init__"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [],
+      "mode": "chain",
+      "parent": "patch_layer2_ffn_res",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_ff1",
+      "label": "Linear D -> F",
+      "kind": "linear",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.__init__"
+      ],
+      "shape": "(BC,P,F)",
+      "detail": [],
+      "param_identity": "encoder.layers.1.ff.0",
+      "parent": "patch_layer2_ffn",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_layers.py::get_activation_fn"
+      ],
+      "shape": "(BC,P,F)",
+      "detail": [],
+      "parent": "patch_layer2_ffn",
+      "source_evidence": [
+        "E016"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_ffdrop",
+      "label": "Dropout",
+      "kind": "control",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.__init__"
+      ],
+      "shape": "(BC,P,F)",
+      "detail": [
+        "p=0.05; identity at evaluation"
+      ],
+      "parent": "patch_layer2_ffn",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_ff2",
+      "label": "Linear F -> D",
+      "kind": "linear",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.__init__"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [],
+      "param_identity": "encoder.layers.1.ff.3",
+      "parent": "patch_layer2_ffn",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_ffnoutdrop",
+      "label": "Residual dropout",
+      "kind": "control",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [
+        "p=0.05"
+      ],
+      "parent": "patch_layer2_ffn_res",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_layer2_ffnadd",
+      "label": "Add input",
+      "kind": "mixing",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [],
+      "parent": "patch_layer2_ffn_res",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "patch_layer2_bn2",
+      "label": "Post BatchNorm",
+      "kind": "norm",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.__init__",
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTEncoderLayer.forward"
+      ],
+      "shape": "(BC,P,D)",
+      "detail": [
+        "Post-norm; pre_norm=False"
+      ],
+      "param_identity": "encoder.layers.1.norm_ffn",
+      "parent": "patch_layer2",
+      "source_evidence": [
+        "E008",
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_restore_channels",
+      "label": "Restore channels + permute",
+      "kind": "tensor",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::TSTiEncoder.forward"
+      ],
+      "shape": "(B,C,D,P)",
+      "detail": [
+        "Reshape (BC,P,D) -> (B,C,P,D)",
+        "Then permute to (B,C,D,P)"
+      ],
+      "parent": "patchtst",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_head",
+      "label": "Shared flatten forecast head",
+      "kind": "group",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::Flatten_Head.__init__",
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::Flatten_Head.forward"
+      ],
+      "shape": "(B,C,H)",
+      "detail": [],
+      "mode": "chain",
+      "parent": "patchtst",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_flatten",
+      "label": "Flatten D and P",
+      "kind": "tensor",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::Flatten_Head.forward"
+      ],
+      "shape": "(B,C,D*P)",
+      "detail": [],
+      "parent": "patch_head",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_head_linear",
+      "label": "Linear D*P -> H",
+      "kind": "linear",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::Flatten_Head.__init__",
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::Flatten_Head.forward"
+      ],
+      "shape": "(B,C,H)",
+      "detail": [
+        "individual=False: one shared head",
+        "D*P=6144; H=96"
+      ],
+      "param_identity": "head.linear",
+      "parent": "patch_head",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_head_dropout",
+      "label": "Head dropout",
+      "kind": "control",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::Flatten_Head.forward"
+      ],
+      "shape": "(B,C,H)",
+      "detail": [
+        "p=0.0 in selected profile"
+      ],
+      "parent": "patch_head",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_revin_denorm",
+      "label": "RevIN denormalize",
+      "kind": "norm",
+      "source": [
+        "PatchTST/PatchTST_supervised/layers/PatchTST_backbone.py::PatchTST_backbone.forward",
+        "PatchTST/PatchTST_supervised/layers/RevIN.py::RevIN._denormalize"
+      ],
+      "shape": "(B,C,H)",
+      "detail": [
+        "Reuse input mean / stdev",
+        "Internal permute to (B,H,C), then back"
+      ],
+      "parent": "patchtst",
+      "source_evidence": [
+        "E005",
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "patch_to_time",
+      "label": "Permute to forecast",
+      "kind": "tensor",
+      "source": [
+        "PatchTST/PatchTST_supervised/models/PatchTST.py::Model.forward"
+      ],
+      "shape": "(B,H,C)",
+      "detail": [],
+      "parent": "patchtst",
+      "source_evidence": [
+        "E026"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "patch_output",
+      "label": "Forecast",
+      "kind": "output",
+      "source": [
+        "PatchTST/PatchTST_supervised/models/PatchTST.py::Model.forward"
+      ],
+      "shape": "(B,H,C)",
+      "detail": [],
+      "parent": "patchtst",
+      "source_evidence": [
+        "E026"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "patch_patching:in->patch_pad:in:boundary",
+      "src": "patch_patching",
+      "dst": "patch_pad",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_pad:out->patch_unfold:in:tensor",
+      "src": "patch_pad",
+      "dst": "patch_unfold",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_unfold:out->patch_permute_patch:in:tensor",
+      "src": "patch_unfold",
+      "dst": "patch_permute_patch",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_permute_patch:out->patch_patching:out:boundary",
+      "src": "patch_permute_patch",
+      "dst": "patch_patching",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_embedding:in->patch_projection:in:boundary",
+      "src": "patch_embedding",
+      "dst": "patch_projection",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_projection:out->patch_fold_channels:in:tensor",
+      "src": "patch_projection",
+      "dst": "patch_fold_channels",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_fold_channels:out->patch_position:in:tensor",
+      "src": "patch_fold_channels",
+      "dst": "patch_position",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_position:out->patch_embedding_dropout:in:tensor",
+      "src": "patch_position",
+      "dst": "patch_embedding_dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_embedding_dropout:out->patch_embedding:out:boundary",
+      "src": "patch_embedding_dropout",
+      "dst": "patch_embedding",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer1_qkv:in->patch_layer1_q:in:fork",
+      "src": "patch_layer1_qkv",
+      "dst": "patch_layer1_q",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "patch_layer1_q:out->patch_layer1_qkv:item[0]:tuple_collection",
+      "src": "patch_layer1_q",
+      "dst": "patch_layer1_qkv",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "patch_layer1_qkv:in->patch_layer1_k:in:fork",
+      "src": "patch_layer1_qkv",
+      "dst": "patch_layer1_k",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "patch_layer1_k:out->patch_layer1_qkv:item[1]:tuple_collection",
+      "src": "patch_layer1_k",
+      "dst": "patch_layer1_qkv",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "patch_layer1_qkv:in->patch_layer1_v:in:fork",
+      "src": "patch_layer1_qkv",
+      "dst": "patch_layer1_v",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "patch_layer1_v:out->patch_layer1_qkv:item[2]:tuple_collection",
+      "src": "patch_layer1_v",
+      "dst": "patch_layer1_qkv",
+      "src_port": "out",
+      "dst_port": "item[2]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "patch_layer1_weights:in->patch_layer1_raw_scores:in:boundary",
+      "src": "patch_layer1_weights",
+      "dst": "patch_layer1_raw_scores",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer1_raw_scores:out->patch_layer1_softmax:in:tensor",
+      "src": "patch_layer1_raw_scores",
+      "dst": "patch_layer1_softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer1_softmax:out->patch_layer1_attention_dropout:in:tensor",
+      "src": "patch_layer1_softmax",
+      "dst": "patch_layer1_attention_dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer1_attention_dropout:out->patch_layer1_weights:out:boundary",
+      "src": "patch_layer1_attention_dropout",
+      "dst": "patch_layer1_weights",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer1_sdpa_operands:Q,K->patch_layer1_weights:in:dispatch",
+      "src": "patch_layer1_sdpa_operands",
+      "dst": "patch_layer1_weights",
+      "src_port": "Q,K",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "patch_layer1_weights:out->patch_layer1_sdpa_operands:item[0]:tuple_collection",
+      "src": "patch_layer1_weights",
+      "dst": "patch_layer1_sdpa_operands",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "patch_layer1_sdpa_operands:V->patch_layer1_value_bypass:in:dispatch",
+      "src": "patch_layer1_sdpa_operands",
+      "dst": "patch_layer1_value_bypass",
+      "src_port": "V",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "patch_layer1_value_bypass:out->patch_layer1_sdpa_operands:item[1]:tuple_collection",
+      "src": "patch_layer1_value_bypass",
+      "dst": "patch_layer1_sdpa_operands",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "patch_layer1_sdpa:in->patch_layer1_sdpa_operands:in:boundary",
+      "src": "patch_layer1_sdpa",
+      "dst": "patch_layer1_sdpa_operands",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer1_sdpa_operands:out->patch_layer1_weighted_values:in:tensor",
+      "src": "patch_layer1_sdpa_operands",
+      "dst": "patch_layer1_weighted_values",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer1_weighted_values:out->patch_layer1_sdpa:out:boundary",
+      "src": "patch_layer1_weighted_values",
+      "dst": "patch_layer1_sdpa",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer1_attention:in->patch_layer1_qkv:in:boundary",
+      "src": "patch_layer1_attention",
+      "dst": "patch_layer1_qkv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer1_qkv:out->patch_layer1_sdpa:in:tensor",
+      "src": "patch_layer1_qkv",
+      "dst": "patch_layer1_sdpa",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer1_sdpa:out->patch_layer1_merge:in:tensor",
+      "src": "patch_layer1_sdpa",
+      "dst": "patch_layer1_merge",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer1_merge:out->patch_layer1_attention:out:boundary",
+      "src": "patch_layer1_merge",
+      "dst": "patch_layer1_attention",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer1_attn_res:in->patch_layer1_attention:in:boundary",
+      "src": "patch_layer1_attn_res",
+      "dst": "patch_layer1_attention",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer1_attention:out->patch_layer1_attndrop:in:tensor",
+      "src": "patch_layer1_attention",
+      "dst": "patch_layer1_attndrop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer1_attndrop:out->patch_layer1_attnadd:in:tensor",
+      "src": "patch_layer1_attndrop",
+      "dst": "patch_layer1_attnadd",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer1_attnadd:out->patch_layer1_attn_res:out:boundary",
+      "src": "patch_layer1_attnadd",
+      "dst": "patch_layer1_attn_res",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer1_attn_res:in->patch_layer1_attnadd:side:residual",
+      "src": "patch_layer1_attn_res",
+      "dst": "patch_layer1_attnadd",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "residual"
+    },
+    {
+      "id": "patch_layer1_ffn:in->patch_layer1_ff1:in:boundary",
+      "src": "patch_layer1_ffn",
+      "dst": "patch_layer1_ff1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer1_ff1:out->patch_layer1_gelu:in:tensor",
+      "src": "patch_layer1_ff1",
+      "dst": "patch_layer1_gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer1_gelu:out->patch_layer1_ffdrop:in:tensor",
+      "src": "patch_layer1_gelu",
+      "dst": "patch_layer1_ffdrop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer1_ffdrop:out->patch_layer1_ff2:in:tensor",
+      "src": "patch_layer1_ffdrop",
+      "dst": "patch_layer1_ff2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer1_ff2:out->patch_layer1_ffn:out:boundary",
+      "src": "patch_layer1_ff2",
+      "dst": "patch_layer1_ffn",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer1_ffn_res:in->patch_layer1_ffn:in:boundary",
+      "src": "patch_layer1_ffn_res",
+      "dst": "patch_layer1_ffn",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer1_ffn:out->patch_layer1_ffnoutdrop:in:tensor",
+      "src": "patch_layer1_ffn",
+      "dst": "patch_layer1_ffnoutdrop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer1_ffnoutdrop:out->patch_layer1_ffnadd:in:tensor",
+      "src": "patch_layer1_ffnoutdrop",
+      "dst": "patch_layer1_ffnadd",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer1_ffnadd:out->patch_layer1_ffn_res:out:boundary",
+      "src": "patch_layer1_ffnadd",
+      "dst": "patch_layer1_ffn_res",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer1_ffn_res:in->patch_layer1_ffnadd:side:residual",
+      "src": "patch_layer1_ffn_res",
+      "dst": "patch_layer1_ffnadd",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "residual"
+    },
+    {
+      "id": "patch_layer1:in->patch_layer1_attn_res:in:boundary",
+      "src": "patch_layer1",
+      "dst": "patch_layer1_attn_res",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer1_attn_res:out->patch_layer1_bn1:in:tensor",
+      "src": "patch_layer1_attn_res",
+      "dst": "patch_layer1_bn1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer1_bn1:out->patch_layer1_ffn_res:in:tensor",
+      "src": "patch_layer1_bn1",
+      "dst": "patch_layer1_ffn_res",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer1_ffn_res:out->patch_layer1_bn2:in:tensor",
+      "src": "patch_layer1_ffn_res",
+      "dst": "patch_layer1_bn2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer1_bn2:out->patch_layer1:out:boundary",
+      "src": "patch_layer1_bn2",
+      "dst": "patch_layer1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer2_qkv:in->patch_layer2_q:in:fork",
+      "src": "patch_layer2_qkv",
+      "dst": "patch_layer2_q",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "patch_layer2_q:out->patch_layer2_qkv:item[0]:tuple_collection",
+      "src": "patch_layer2_q",
+      "dst": "patch_layer2_qkv",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "patch_layer2_qkv:in->patch_layer2_k:in:fork",
+      "src": "patch_layer2_qkv",
+      "dst": "patch_layer2_k",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "patch_layer2_k:out->patch_layer2_qkv:item[1]:tuple_collection",
+      "src": "patch_layer2_k",
+      "dst": "patch_layer2_qkv",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "patch_layer2_qkv:in->patch_layer2_v:in:fork",
+      "src": "patch_layer2_qkv",
+      "dst": "patch_layer2_v",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "patch_layer2_v:out->patch_layer2_qkv:item[2]:tuple_collection",
+      "src": "patch_layer2_v",
+      "dst": "patch_layer2_qkv",
+      "src_port": "out",
+      "dst_port": "item[2]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "patch_layer2_weights:in->patch_layer2_raw_scores:in:boundary",
+      "src": "patch_layer2_weights",
+      "dst": "patch_layer2_raw_scores",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer2_raw_scores:out->patch_layer2_softmax:in:tensor",
+      "src": "patch_layer2_raw_scores",
+      "dst": "patch_layer2_softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer2_softmax:out->patch_layer2_attention_dropout:in:tensor",
+      "src": "patch_layer2_softmax",
+      "dst": "patch_layer2_attention_dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer2_attention_dropout:out->patch_layer2_weights:out:boundary",
+      "src": "patch_layer2_attention_dropout",
+      "dst": "patch_layer2_weights",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer2_sdpa_operands:Q,K->patch_layer2_weights:in:dispatch",
+      "src": "patch_layer2_sdpa_operands",
+      "dst": "patch_layer2_weights",
+      "src_port": "Q,K",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "patch_layer2_weights:out->patch_layer2_sdpa_operands:item[0]:tuple_collection",
+      "src": "patch_layer2_weights",
+      "dst": "patch_layer2_sdpa_operands",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "patch_layer2_sdpa_operands:V->patch_layer2_value_bypass:in:dispatch",
+      "src": "patch_layer2_sdpa_operands",
+      "dst": "patch_layer2_value_bypass",
+      "src_port": "V",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "patch_layer2_value_bypass:out->patch_layer2_sdpa_operands:item[1]:tuple_collection",
+      "src": "patch_layer2_value_bypass",
+      "dst": "patch_layer2_sdpa_operands",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "patch_layer2_sdpa:in->patch_layer2_sdpa_operands:in:boundary",
+      "src": "patch_layer2_sdpa",
+      "dst": "patch_layer2_sdpa_operands",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer2_sdpa_operands:out->patch_layer2_weighted_values:in:tensor",
+      "src": "patch_layer2_sdpa_operands",
+      "dst": "patch_layer2_weighted_values",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer2_weighted_values:out->patch_layer2_sdpa:out:boundary",
+      "src": "patch_layer2_weighted_values",
+      "dst": "patch_layer2_sdpa",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer2_attention:in->patch_layer2_qkv:in:boundary",
+      "src": "patch_layer2_attention",
+      "dst": "patch_layer2_qkv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer2_qkv:out->patch_layer2_sdpa:in:tensor",
+      "src": "patch_layer2_qkv",
+      "dst": "patch_layer2_sdpa",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer2_sdpa:out->patch_layer2_merge:in:tensor",
+      "src": "patch_layer2_sdpa",
+      "dst": "patch_layer2_merge",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer2_merge:out->patch_layer2_attention:out:boundary",
+      "src": "patch_layer2_merge",
+      "dst": "patch_layer2_attention",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer2_attn_res:in->patch_layer2_attention:in:boundary",
+      "src": "patch_layer2_attn_res",
+      "dst": "patch_layer2_attention",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer2_attention:out->patch_layer2_attndrop:in:tensor",
+      "src": "patch_layer2_attention",
+      "dst": "patch_layer2_attndrop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer2_attndrop:out->patch_layer2_attnadd:in:tensor",
+      "src": "patch_layer2_attndrop",
+      "dst": "patch_layer2_attnadd",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer2_attnadd:out->patch_layer2_attn_res:out:boundary",
+      "src": "patch_layer2_attnadd",
+      "dst": "patch_layer2_attn_res",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer2_attn_res:in->patch_layer2_attnadd:side:residual",
+      "src": "patch_layer2_attn_res",
+      "dst": "patch_layer2_attnadd",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "residual"
+    },
+    {
+      "id": "patch_layer2_ffn:in->patch_layer2_ff1:in:boundary",
+      "src": "patch_layer2_ffn",
+      "dst": "patch_layer2_ff1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer2_ff1:out->patch_layer2_gelu:in:tensor",
+      "src": "patch_layer2_ff1",
+      "dst": "patch_layer2_gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer2_gelu:out->patch_layer2_ffdrop:in:tensor",
+      "src": "patch_layer2_gelu",
+      "dst": "patch_layer2_ffdrop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer2_ffdrop:out->patch_layer2_ff2:in:tensor",
+      "src": "patch_layer2_ffdrop",
+      "dst": "patch_layer2_ff2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer2_ff2:out->patch_layer2_ffn:out:boundary",
+      "src": "patch_layer2_ff2",
+      "dst": "patch_layer2_ffn",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer2_ffn_res:in->patch_layer2_ffn:in:boundary",
+      "src": "patch_layer2_ffn_res",
+      "dst": "patch_layer2_ffn",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer2_ffn:out->patch_layer2_ffnoutdrop:in:tensor",
+      "src": "patch_layer2_ffn",
+      "dst": "patch_layer2_ffnoutdrop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer2_ffnoutdrop:out->patch_layer2_ffnadd:in:tensor",
+      "src": "patch_layer2_ffnoutdrop",
+      "dst": "patch_layer2_ffnadd",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer2_ffnadd:out->patch_layer2_ffn_res:out:boundary",
+      "src": "patch_layer2_ffnadd",
+      "dst": "patch_layer2_ffn_res",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer2_ffn_res:in->patch_layer2_ffnadd:side:residual",
+      "src": "patch_layer2_ffn_res",
+      "dst": "patch_layer2_ffnadd",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "residual"
+    },
+    {
+      "id": "patch_layer2:in->patch_layer2_attn_res:in:boundary",
+      "src": "patch_layer2",
+      "dst": "patch_layer2_attn_res",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer2_attn_res:out->patch_layer2_bn1:in:tensor",
+      "src": "patch_layer2_attn_res",
+      "dst": "patch_layer2_bn1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer2_bn1:out->patch_layer2_ffn_res:in:tensor",
+      "src": "patch_layer2_bn1",
+      "dst": "patch_layer2_ffn_res",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer2_ffn_res:out->patch_layer2_bn2:in:tensor",
+      "src": "patch_layer2_ffn_res",
+      "dst": "patch_layer2_bn2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer2_bn2:out->patch_layer2:out:boundary",
+      "src": "patch_layer2_bn2",
+      "dst": "patch_layer2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_encoder:in->patch_layer1:in:boundary",
+      "src": "patch_encoder",
+      "dst": "patch_layer1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer1:out->patch_layer2:in:tensor",
+      "src": "patch_layer1",
+      "dst": "patch_layer2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_layer2:out->patch_encoder:out:boundary",
+      "src": "patch_layer2",
+      "dst": "patch_encoder",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_head:in->patch_flatten:in:boundary",
+      "src": "patch_head",
+      "dst": "patch_flatten",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_flatten:out->patch_head_linear:in:tensor",
+      "src": "patch_flatten",
+      "dst": "patch_head_linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_head_linear:out->patch_head_dropout:in:tensor",
+      "src": "patch_head_linear",
+      "dst": "patch_head_dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_head_dropout:out->patch_head:out:boundary",
+      "src": "patch_head_dropout",
+      "dst": "patch_head",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patchtst:in->patch_input:in:boundary",
+      "src": "patchtst",
+      "dst": "patch_input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_input:out->patch_to_channels:in:tensor",
+      "src": "patch_input",
+      "dst": "patch_to_channels",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_to_channels:out->patch_revin_norm:in:tensor",
+      "src": "patch_to_channels",
+      "dst": "patch_revin_norm",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_revin_norm:out->patch_patching:in:tensor",
+      "src": "patch_revin_norm",
+      "dst": "patch_patching",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_patching:out->patch_embedding:in:tensor",
+      "src": "patch_patching",
+      "dst": "patch_embedding",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_embedding:out->patch_encoder:in:tensor",
+      "src": "patch_embedding",
+      "dst": "patch_encoder",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_encoder:out->patch_restore_channels:in:tensor",
+      "src": "patch_encoder",
+      "dst": "patch_restore_channels",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_restore_channels:out->patch_head:in:tensor",
+      "src": "patch_restore_channels",
+      "dst": "patch_head",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_head:out->patch_revin_denorm:in:tensor",
+      "src": "patch_head",
+      "dst": "patch_revin_denorm",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_revin_denorm:out->patch_to_time:in:tensor",
+      "src": "patch_revin_denorm",
+      "dst": "patch_to_time",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_to_time:out->patch_output:in:tensor",
+      "src": "patch_to_time",
+      "dst": "patch_output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "patch_output:out->patchtst:out:boundary",
+      "src": "patch_output",
+      "dst": "patchtst",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "patch_layer1_raw_scores:scores->patch_layer2_raw_scores:side:scores",
+      "src": "patch_layer1_raw_scores",
+      "dst": "patch_layer2_raw_scores",
+      "src_port": "scores",
+      "dst_port": "side",
+      "role": "scores"
+    },
+    {
+      "id": "patch_revin_norm:stats->patch_revin_denorm:side:normalization",
+      "src": "patch_revin_norm",
+      "dst": "patch_revin_denorm",
+      "src_port": "stats",
+      "dst_port": "side",
+      "role": "normalization"
+    }
+  ],
+  "facts": [
+    "The selected entry is PatchTST_supervised.models.PatchTST.Model, not the self-supervised implementation.",
+    "Default run_longExp forecast profile: L=96,H=96,C=7,p=16,s=8,P=12,D=512,F=2048,h=8,N=2.",
+    "Channel independence folds C into batch; W_P, W_pos, encoder and the individual=False head are shared across variables.",
+    "Encoder layers are distinct ModuleList instances; repeated appearance does not mean shared layer weights.",
+    "Default post normalization is BatchNorm1d(D), whose statistics aggregate the folded BC batch and P patches.",
+    "res_attention=True passes pre-softmax attention scores to the next layer; it is separate from feature residual additions.",
+    "RevIN normalizes each sample/variable and restores the saved input statistics after the forecast head.",
+    "The adapter is explicit static source interpretation and does not import or execute the model."
+  ],
+  "corrections": [
+    "Reference image shows (B,C,L) input and (B,C,H) output; Model.forward actually exposes (B,L,C) and (B,H,C).",
+    "Flatten head projects D*P to H, not D to H; channel restoration yields (B,C,D,P), not (B,C,D).",
+    "Default Add & Norm uses BatchNorm, not LayerNorm, and the default path is post-norm.",
+    "End replication padding, RevIN normalization/denormalization and residual attention scores were missing from the reference image.",
+    "P is determined by patch_len, stride and padding; stride=8 differs from patch_len=16 in the selected profile.",
+    "The name pe='zeros' denotes a learnable (P,D) matrix initialized uniformly, not an all-zero fixed encoding."
+  ],
+  "semantics": "reviewed static adapter; selected profile; boundary and tuple edges explicit"
+}

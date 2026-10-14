@@ -1,0 +1,1349 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "layernorm_lstm_cell",
+  "profile": {
+    "input_size": 16,
+    "hidden_size": 16,
+    "decompose_layernorm": true,
+    "normalization": "source custom LayerNorm",
+    "norm_epsilon": null,
+    "affine_biases": false,
+    "label": "One step / I=H=16 / custom LayerNorm branch explicitly selected",
+    "mode": "reviewed static selected module profile",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "pytorch/pytorch",
+    "commit": "a8d6afb511a69687bbb2b7e88a3cf67917e1697e",
+    "snapshot": "c792f152fe79d547f576dbbc3ff5295b8f6a8dc0e3812f8d5ec2d3ddf6ccc3e6"
+  },
+  "nodes": [
+    {
+      "id": "layernorm_lstm_cell.root",
+      "label": "LayerNormLSTMCell / three independent norms",
+      "kind": "group",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "lnlstm.x",
+          "lnlstm.h",
+          "lnlstm.c"
+        ],
+        [
+          "lnlstm.body"
+        ],
+        [
+          "lnlstm.output"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E004",
+        "E001",
+        "E002",
+        "E003",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lnlstm.x",
+      "label": "Input x",
+      "kind": "input",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "layernorm_lstm_cell.root",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lnlstm.h",
+      "label": "State hidden hx",
+      "kind": "input",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "layernorm_lstm_cell.root",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lnlstm.c",
+      "label": "State cell cx",
+      "kind": "input",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "layernorm_lstm_cell.root",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lnlstm.body",
+      "label": "LayerNorm LSTM / one step",
+      "kind": "group",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "lnlstm.wi",
+          "lnlstm.wh"
+        ],
+        [
+          "lnlstm.lni",
+          "lnlstm.lnh"
+        ],
+        [
+          "lnlstm.gates"
+        ],
+        [
+          "lnlstm.split"
+        ],
+        [
+          "lnlstm.i",
+          "lnlstm.f",
+          "lnlstm.g",
+          "lnlstm.o"
+        ],
+        [
+          "lnlstm.keep",
+          "lnlstm.new"
+        ],
+        [
+          "lnlstm.cadd"
+        ],
+        [
+          "lnlstm.lnc"
+        ],
+        [
+          "lnlstm.ctanh"
+        ],
+        [
+          "lnlstm.hy"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": "layernorm_lstm_cell.root",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lnlstm.wi",
+      "label": "Input matrix product / no bias",
+      "kind": "matmul",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "parameters": [
+        "weight_ih"
+      ],
+      "parameter_shape": [
+        64,
+        16
+      ],
+      "bias": false,
+      "parent": "lnlstm.body",
+      "source_evidence": [
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "lnlstm.wh",
+      "label": "Hidden matrix product / no bias",
+      "kind": "matmul",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "parameters": [
+        "weight_hh"
+      ],
+      "parameter_shape": [
+        64,
+        16
+      ],
+      "bias": false,
+      "parent": "lnlstm.body",
+      "source_evidence": [
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "hidden"
+      ]
+    },
+    {
+      "id": "lnlstm.lni",
+      "label": "Custom LayerNorm / i",
+      "kind": "group",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "lnlstm.lni.mean",
+          "lnlstm.lni.std"
+        ],
+        [
+          "lnlstm.lni.center"
+        ],
+        [
+          "lnlstm.lni.divide"
+        ],
+        [
+          "lnlstm.lni.affine"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": "lnlstm.body",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lnlstm.lni.mean",
+      "label": "Mean over last axis",
+      "kind": "tensor",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "dim": -1,
+      "keepdim": true,
+      "parent": "lnlstm.lni",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "lnlstm.lni.std",
+      "label": "Std / unbiased=False",
+      "kind": "tensor",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "dim": -1,
+      "unbiased": false,
+      "epsilon": null,
+      "parent": "lnlstm.lni",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "lnlstm.lni.center",
+      "label": "Input - mean",
+      "kind": "subtract",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "parent": "lnlstm.lni",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input",
+        "mean"
+      ]
+    },
+    {
+      "id": "lnlstm.lni.divide",
+      "label": "Divide by std / no epsilon",
+      "kind": "tensor",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "expression": "(input - mu) / sigma",
+      "epsilon": null,
+      "parent": "lnlstm.lni",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "centered",
+        "std"
+      ]
+    },
+    {
+      "id": "lnlstm.lni.affine",
+      "label": "Learned gamma + beta",
+      "kind": "tensor",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "expression": "normalized * self.weight + self.bias",
+      "parameters": [
+        "layernorm_i.weight",
+        "layernorm_i.bias"
+      ],
+      "parameter_shape": [
+        64
+      ],
+      "parent": "lnlstm.lni",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "normalized"
+      ]
+    },
+    {
+      "id": "lnlstm.lnh",
+      "label": "Custom LayerNorm / h",
+      "kind": "group",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "lnlstm.lnh.mean",
+          "lnlstm.lnh.std"
+        ],
+        [
+          "lnlstm.lnh.center"
+        ],
+        [
+          "lnlstm.lnh.divide"
+        ],
+        [
+          "lnlstm.lnh.affine"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": "lnlstm.body",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lnlstm.lnh.mean",
+      "label": "Mean over last axis",
+      "kind": "tensor",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "dim": -1,
+      "keepdim": true,
+      "parent": "lnlstm.lnh",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "lnlstm.lnh.std",
+      "label": "Std / unbiased=False",
+      "kind": "tensor",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "dim": -1,
+      "unbiased": false,
+      "epsilon": null,
+      "parent": "lnlstm.lnh",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "lnlstm.lnh.center",
+      "label": "Input - mean",
+      "kind": "subtract",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "parent": "lnlstm.lnh",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input",
+        "mean"
+      ]
+    },
+    {
+      "id": "lnlstm.lnh.divide",
+      "label": "Divide by std / no epsilon",
+      "kind": "tensor",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "expression": "(input - mu) / sigma",
+      "epsilon": null,
+      "parent": "lnlstm.lnh",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "centered",
+        "std"
+      ]
+    },
+    {
+      "id": "lnlstm.lnh.affine",
+      "label": "Learned gamma + beta",
+      "kind": "tensor",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "expression": "normalized * self.weight + self.bias",
+      "parameters": [
+        "layernorm_h.weight",
+        "layernorm_h.bias"
+      ],
+      "parameter_shape": [
+        64
+      ],
+      "parent": "lnlstm.lnh",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "normalized"
+      ]
+    },
+    {
+      "id": "lnlstm.gates",
+      "label": "Add separately normalized affines",
+      "kind": "add",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "parent": "lnlstm.body",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input_affine",
+        "hidden_affine"
+      ]
+    },
+    {
+      "id": "lnlstm.split",
+      "label": "Chunk4 / input,forget,cell,output",
+      "kind": "tensor",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "chunk_dim": 1,
+      "fields": [
+        "ingate",
+        "forgetgate",
+        "cellgate",
+        "outgate"
+      ],
+      "parent": "lnlstm.body",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "ingate",
+        "forgetgate",
+        "cellgate",
+        "outgate"
+      ]
+    },
+    {
+      "id": "lnlstm.i",
+      "label": "Sigmoid input i",
+      "kind": "sigmoid",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "lnlstm.body",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lnlstm.f",
+      "label": "Sigmoid forget f",
+      "kind": "sigmoid",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "lnlstm.body",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lnlstm.g",
+      "label": "Tanh cell candidate g",
+      "kind": "tanh",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "lnlstm.body",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lnlstm.o",
+      "label": "Sigmoid output o",
+      "kind": "sigmoid",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "lnlstm.body",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lnlstm.keep",
+      "label": "f * previous cell",
+      "kind": "multiply",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "lnlstm.body",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "gate",
+        "previous_cell"
+      ]
+    },
+    {
+      "id": "lnlstm.new",
+      "label": "i * candidate g",
+      "kind": "multiply",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "lnlstm.body",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "gate",
+        "candidate"
+      ]
+    },
+    {
+      "id": "lnlstm.cadd",
+      "label": "Sum retained + new cell",
+      "kind": "add",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "lnlstm.body",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "retained",
+        "new"
+      ]
+    },
+    {
+      "id": "lnlstm.lnc",
+      "label": "Custom LayerNorm / c",
+      "kind": "group",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "lnlstm.lnc.mean",
+          "lnlstm.lnc.std"
+        ],
+        [
+          "lnlstm.lnc.center"
+        ],
+        [
+          "lnlstm.lnc.divide"
+        ],
+        [
+          "lnlstm.lnc.affine"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": "lnlstm.body",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lnlstm.lnc.mean",
+      "label": "Mean over last axis",
+      "kind": "tensor",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "dim": -1,
+      "keepdim": true,
+      "parent": "lnlstm.lnc",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "lnlstm.lnc.std",
+      "label": "Std / unbiased=False",
+      "kind": "tensor",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "dim": -1,
+      "unbiased": false,
+      "epsilon": null,
+      "parent": "lnlstm.lnc",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "lnlstm.lnc.center",
+      "label": "Input - mean",
+      "kind": "subtract",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "lnlstm.lnc",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input",
+        "mean"
+      ]
+    },
+    {
+      "id": "lnlstm.lnc.divide",
+      "label": "Divide by std / no epsilon",
+      "kind": "tensor",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "expression": "(input - mu) / sigma",
+      "epsilon": null,
+      "parent": "lnlstm.lnc",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "centered",
+        "std"
+      ]
+    },
+    {
+      "id": "lnlstm.lnc.affine",
+      "label": "Learned gamma + beta",
+      "kind": "tensor",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.__init__",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.compute_layernorm_stats",
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNorm.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "expression": "normalized * self.weight + self.bias",
+      "parameters": [
+        "layernorm_c.weight",
+        "layernorm_c.bias"
+      ],
+      "parameter_shape": [
+        16
+      ],
+      "parent": "lnlstm.lnc",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "normalized"
+      ]
+    },
+    {
+      "id": "lnlstm.ctanh",
+      "label": "Tanh normalized cell cy",
+      "kind": "tanh",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "lnlstm.body",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lnlstm.hy",
+      "label": "o * tanh(cy)",
+      "kind": "multiply",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "lnlstm.body",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "gate",
+        "value"
+      ]
+    },
+    {
+      "id": "lnlstm.output",
+      "label": "Return hy, (hy,cy)",
+      "kind": "output",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LayerNormLSTMCell.forward"
+      ],
+      "shape": "hy,cy:[B,16]",
+      "detail": [],
+      "return_fields": [
+        "hy",
+        [
+          "hy",
+          "cy"
+        ]
+      ],
+      "parent": "layernorm_lstm_cell.root",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "hy",
+        "state_hidden",
+        "state_cell"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "lnlstm.wi:out->lnlstm.lni.mean:input:tensor",
+      "src": "lnlstm.wi",
+      "dst": "lnlstm.lni.mean",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.wi:out->lnlstm.lni.std:input:tensor",
+      "src": "lnlstm.wi",
+      "dst": "lnlstm.lni.std",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.wi:out->lnlstm.lni.center:input:tensor",
+      "src": "lnlstm.wi",
+      "dst": "lnlstm.lni.center",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.lni.mean:out->lnlstm.lni.center:mean:tensor",
+      "src": "lnlstm.lni.mean",
+      "dst": "lnlstm.lni.center",
+      "src_port": "out",
+      "dst_port": "mean",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.lni.center:out->lnlstm.lni.divide:centered:tensor",
+      "src": "lnlstm.lni.center",
+      "dst": "lnlstm.lni.divide",
+      "src_port": "out",
+      "dst_port": "centered",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.lni.std:out->lnlstm.lni.divide:std:tensor",
+      "src": "lnlstm.lni.std",
+      "dst": "lnlstm.lni.divide",
+      "src_port": "out",
+      "dst_port": "std",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.lni.divide:out->lnlstm.lni.affine:normalized:tensor",
+      "src": "lnlstm.lni.divide",
+      "dst": "lnlstm.lni.affine",
+      "src_port": "out",
+      "dst_port": "normalized",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.wh:out->lnlstm.lnh.mean:input:tensor",
+      "src": "lnlstm.wh",
+      "dst": "lnlstm.lnh.mean",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.wh:out->lnlstm.lnh.std:input:tensor",
+      "src": "lnlstm.wh",
+      "dst": "lnlstm.lnh.std",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.wh:out->lnlstm.lnh.center:input:tensor",
+      "src": "lnlstm.wh",
+      "dst": "lnlstm.lnh.center",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.lnh.mean:out->lnlstm.lnh.center:mean:tensor",
+      "src": "lnlstm.lnh.mean",
+      "dst": "lnlstm.lnh.center",
+      "src_port": "out",
+      "dst_port": "mean",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.lnh.center:out->lnlstm.lnh.divide:centered:tensor",
+      "src": "lnlstm.lnh.center",
+      "dst": "lnlstm.lnh.divide",
+      "src_port": "out",
+      "dst_port": "centered",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.lnh.std:out->lnlstm.lnh.divide:std:tensor",
+      "src": "lnlstm.lnh.std",
+      "dst": "lnlstm.lnh.divide",
+      "src_port": "out",
+      "dst_port": "std",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.lnh.divide:out->lnlstm.lnh.affine:normalized:tensor",
+      "src": "lnlstm.lnh.divide",
+      "dst": "lnlstm.lnh.affine",
+      "src_port": "out",
+      "dst_port": "normalized",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.cadd:out->lnlstm.lnc.mean:input:tensor",
+      "src": "lnlstm.cadd",
+      "dst": "lnlstm.lnc.mean",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.cadd:out->lnlstm.lnc.std:input:tensor",
+      "src": "lnlstm.cadd",
+      "dst": "lnlstm.lnc.std",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.cadd:out->lnlstm.lnc.center:input:tensor",
+      "src": "lnlstm.cadd",
+      "dst": "lnlstm.lnc.center",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.lnc.mean:out->lnlstm.lnc.center:mean:tensor",
+      "src": "lnlstm.lnc.mean",
+      "dst": "lnlstm.lnc.center",
+      "src_port": "out",
+      "dst_port": "mean",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.lnc.center:out->lnlstm.lnc.divide:centered:tensor",
+      "src": "lnlstm.lnc.center",
+      "dst": "lnlstm.lnc.divide",
+      "src_port": "out",
+      "dst_port": "centered",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.lnc.std:out->lnlstm.lnc.divide:std:tensor",
+      "src": "lnlstm.lnc.std",
+      "dst": "lnlstm.lnc.divide",
+      "src_port": "out",
+      "dst_port": "std",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.lnc.divide:out->lnlstm.lnc.affine:normalized:tensor",
+      "src": "lnlstm.lnc.divide",
+      "dst": "lnlstm.lnc.affine",
+      "src_port": "out",
+      "dst_port": "normalized",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.x:out->lnlstm.wi:input:tensor",
+      "src": "lnlstm.x",
+      "dst": "lnlstm.wi",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.h:out->lnlstm.wh:hidden:tensor",
+      "src": "lnlstm.h",
+      "dst": "lnlstm.wh",
+      "src_port": "out",
+      "dst_port": "hidden",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.lni.affine:out->lnlstm.gates:input_affine:tensor",
+      "src": "lnlstm.lni.affine",
+      "dst": "lnlstm.gates",
+      "src_port": "out",
+      "dst_port": "input_affine",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.lnh.affine:out->lnlstm.gates:hidden_affine:tensor",
+      "src": "lnlstm.lnh.affine",
+      "dst": "lnlstm.gates",
+      "src_port": "out",
+      "dst_port": "hidden_affine",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.gates:out->lnlstm.split:in:tensor",
+      "src": "lnlstm.gates",
+      "dst": "lnlstm.split",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.f:out->lnlstm.keep:gate:tensor",
+      "src": "lnlstm.f",
+      "dst": "lnlstm.keep",
+      "src_port": "out",
+      "dst_port": "gate",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.c:out->lnlstm.keep:previous_cell:tensor",
+      "src": "lnlstm.c",
+      "dst": "lnlstm.keep",
+      "src_port": "out",
+      "dst_port": "previous_cell",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.i:out->lnlstm.new:gate:tensor",
+      "src": "lnlstm.i",
+      "dst": "lnlstm.new",
+      "src_port": "out",
+      "dst_port": "gate",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.g:out->lnlstm.new:candidate:tensor",
+      "src": "lnlstm.g",
+      "dst": "lnlstm.new",
+      "src_port": "out",
+      "dst_port": "candidate",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.keep:out->lnlstm.cadd:retained:tensor",
+      "src": "lnlstm.keep",
+      "dst": "lnlstm.cadd",
+      "src_port": "out",
+      "dst_port": "retained",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.new:out->lnlstm.cadd:new:tensor",
+      "src": "lnlstm.new",
+      "dst": "lnlstm.cadd",
+      "src_port": "out",
+      "dst_port": "new",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.lnc.affine:out->lnlstm.ctanh:in:tensor",
+      "src": "lnlstm.lnc.affine",
+      "dst": "lnlstm.ctanh",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.o:out->lnlstm.hy:gate:tensor",
+      "src": "lnlstm.o",
+      "dst": "lnlstm.hy",
+      "src_port": "out",
+      "dst_port": "gate",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.ctanh:out->lnlstm.hy:value:tensor",
+      "src": "lnlstm.ctanh",
+      "dst": "lnlstm.hy",
+      "src_port": "out",
+      "dst_port": "value",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.hy:out->lnlstm.output:hy:tensor",
+      "src": "lnlstm.hy",
+      "dst": "lnlstm.output",
+      "src_port": "out",
+      "dst_port": "hy",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.hy:out->lnlstm.output:state_hidden:tensor",
+      "src": "lnlstm.hy",
+      "dst": "lnlstm.output",
+      "src_port": "out",
+      "dst_port": "state_hidden",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.lnc.affine:out->lnlstm.output:state_cell:tensor",
+      "src": "lnlstm.lnc.affine",
+      "dst": "lnlstm.output",
+      "src_port": "out",
+      "dst_port": "state_cell",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.split:ingate->lnlstm.i:in:tensor",
+      "src": "lnlstm.split",
+      "dst": "lnlstm.i",
+      "src_port": "ingate",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.split:forgetgate->lnlstm.f:in:tensor",
+      "src": "lnlstm.split",
+      "dst": "lnlstm.f",
+      "src_port": "forgetgate",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.split:cellgate->lnlstm.g:in:tensor",
+      "src": "lnlstm.split",
+      "dst": "lnlstm.g",
+      "src_port": "cellgate",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lnlstm.split:outgate->lnlstm.o:in:tensor",
+      "src": "lnlstm.split",
+      "dst": "lnlstm.o",
+      "src_port": "outgate",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "The supplementary PyTorch benchmark source selects custom LayerNorm when decompose_layernorm=True; the defaultFalse branch uses opaque nn.LayerNorm.",
+    "Input and hidden products have no separate bias tensors; each has its own learned LayerNorm weight/bias.",
+    "The source custom norm uses population std(unbiased=False), no epsilon, then elementwise gamma/beta; three norms have independent parameters.",
+    "Cell accumulation is normalized by layernorm_c before both state return and tanh; hy returns twice in hy,(hy,cy)."
+  ],
+  "corrections": [
+    "Do not merge the two affine products before normalization; do not add bias_ih/bias_hh absent from this cell.",
+    "Do not substitute default nn.LayerNorm epsilon into the explicitly selected custom branch."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

@@ -1,0 +1,634 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "graphsage_mean",
+  "profile": {
+    "feature_dim": 8,
+    "embed_dim": 4,
+    "num_sample": 10,
+    "gcn": false,
+    "cuda": false,
+    "output_orientation": "[embed_dim,M]",
+    "nonempty_neighbors_assumed": true,
+    "feature_callable_shared": true,
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "williamleif/graphsage-simple",
+    "commit": "d3105e5223e9602ba3ef2dd27e343d044fe4bb5f",
+    "snapshot": "4cc04deac242a7149120c5f8dd8a3614fca244ca72ec4a3dd980049d363e3527"
+  },
+  "nodes": [
+    {
+      "id": "graphsage_mean.root",
+      "label": "GraphSAGE sampled mean / module only",
+      "kind": "group",
+      "source": [
+        "graphsage-modules/graphsage/encoders.py::Encoder.forward"
+      ],
+      "shape": "[4,M]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "graphsage_mean.nodes",
+          "graphsage_mean.adj",
+          "graphsage_mean.features",
+          "graphsage_mean.weight"
+        ],
+        [
+          "graphsage_mean.module"
+        ],
+        [
+          "graphsage_mean.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphsage_mean.nodes",
+      "label": "Queried node IDs",
+      "kind": "input",
+      "source": [
+        "graphsage-modules/graphsage/encoders.py::Encoder.forward"
+      ],
+      "shape": "[M]",
+      "detail": [],
+      "parent": "graphsage_mean.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphsage_mean.adj",
+      "label": "Supplied adjacency lists",
+      "kind": "control",
+      "source": [
+        "graphsage-modules/graphsage/encoders.py::Encoder.forward"
+      ],
+      "shape": "neighbor sets",
+      "detail": [],
+      "parent": "graphsage_mean.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphsage_mean.features",
+      "label": "Shared feature callable",
+      "kind": "control",
+      "source": [
+        "graphsage-modules/graphsage/encoders.py::Encoder.forward"
+      ],
+      "shape": "IDs -> [count,8]",
+      "detail": [],
+      "external_callable": true,
+      "instance_identity": "shared features callable",
+      "parameter_registration": "unknown at boundary",
+      "parent": "graphsage_mean.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphsage_mean.weight",
+      "label": "Owned Encoder weight",
+      "kind": "parameter",
+      "source": [
+        "graphsage-modules/graphsage/encoders.py::Encoder.__init__"
+      ],
+      "shape": "[4,16]",
+      "detail": [],
+      "parameter": "Encoder.weight",
+      "parent": "graphsage_mean.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphsage_mean.module",
+      "label": "GraphSAGE sampled mean / operators",
+      "kind": "group",
+      "source": [
+        "graphsage-modules/graphsage/encoders.py::Encoder.forward"
+      ],
+      "shape": "[4,M]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "graphsage_mean.neighbors"
+        ],
+        [
+          "graphsage_mean.sample"
+        ],
+        [
+          "graphsage_mean.unique"
+        ],
+        [
+          "graphsage_mean.mask",
+          "graphsage_mean.lookup"
+        ],
+        [
+          "graphsage_mean.selflookup",
+          "graphsage_mean.mean"
+        ],
+        [
+          "graphsage_mean.concat"
+        ],
+        [
+          "graphsage_mean.project"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "graphsage_mean.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphsage_mean.neighbors",
+      "label": "Read queried neighbor sets",
+      "kind": "control",
+      "source": [
+        "graphsage-modules/graphsage/encoders.py::Encoder.forward"
+      ],
+      "shape": "M sets",
+      "detail": [],
+      "parent": "graphsage_mean.module",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "nodes",
+        "adj_lists"
+      ]
+    },
+    {
+      "id": "graphsage_mean.sample",
+      "label": "Sample up to10 neighbors",
+      "kind": "control",
+      "source": [
+        "graphsage-modules/graphsage/aggregators.py::MeanAggregator.forward"
+      ],
+      "shape": "M sampled sets",
+      "detail": [],
+      "num_sample": 10,
+      "method": "random.sample only for degree>=10",
+      "parent": "graphsage_mean.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "neighbor_sets"
+      ]
+    },
+    {
+      "id": "graphsage_mean.unique",
+      "label": "Union / unique node IDs",
+      "kind": "tensor",
+      "source": [
+        "graphsage-modules/graphsage/aggregators.py::MeanAggregator.forward"
+      ],
+      "shape": "[U]",
+      "detail": [],
+      "unordered_set_enumeration": true,
+      "parent": "graphsage_mean.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "sets"
+      ]
+    },
+    {
+      "id": "graphsage_mean.mask",
+      "label": "Binary membership / row divide",
+      "kind": "normalize",
+      "source": [
+        "graphsage-modules/graphsage/aggregators.py::MeanAggregator.forward"
+      ],
+      "shape": "[M,U]",
+      "detail": [],
+      "normalization": "row count",
+      "epsilon_added": false,
+      "parent": "graphsage_mean.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "membership",
+        "columns"
+      ]
+    },
+    {
+      "id": "graphsage_mean.lookup",
+      "label": "Query features(unique IDs)",
+      "kind": "embedding",
+      "source": [
+        "graphsage-modules/graphsage/aggregators.py::MeanAggregator.forward"
+      ],
+      "shape": "[U,8]",
+      "detail": [],
+      "instance_identity": "shared features callable",
+      "parent": "graphsage_mean.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "ids",
+        "callable"
+      ]
+    },
+    {
+      "id": "graphsage_mean.selflookup",
+      "label": "Query SAME features(nodes)",
+      "kind": "embedding",
+      "source": [
+        "graphsage-modules/graphsage/encoders.py::Encoder.forward"
+      ],
+      "shape": "[M,8]",
+      "detail": [],
+      "instance_identity": "shared features callable",
+      "parent": "graphsage_mean.module",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "ids",
+        "callable"
+      ]
+    },
+    {
+      "id": "graphsage_mean.mean",
+      "label": "mask @ neighbor embeddings",
+      "kind": "matmul",
+      "source": [
+        "graphsage-modules/graphsage/aggregators.py::MeanAggregator.forward"
+      ],
+      "shape": "[M,8]",
+      "detail": [],
+      "expression": "mask.mm(embed_matrix)",
+      "parent": "graphsage_mean.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mask",
+        "embeddings"
+      ]
+    },
+    {
+      "id": "graphsage_mean.concat",
+      "label": "Concat SELF then NEIGHBOR",
+      "kind": "cat",
+      "source": [
+        "graphsage-modules/graphsage/encoders.py::Encoder.forward"
+      ],
+      "shape": "[M,16]",
+      "detail": [],
+      "ordered_operands": [
+        "self_feats",
+        "neigh_feats"
+      ],
+      "dim": 1,
+      "parent": "graphsage_mean.module",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "self",
+        "neighbors"
+      ]
+    },
+    {
+      "id": "graphsage_mean.project",
+      "label": "Projection / transposed node axis",
+      "kind": "group",
+      "source": [
+        "graphsage-modules/graphsage/encoders.py::Encoder.forward"
+      ],
+      "shape": "[4,M]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "graphsage_mean.module",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphsage_mean.project.transpose",
+      "label": "Transpose combined",
+      "kind": "tensor",
+      "source": [
+        "graphsage-modules/graphsage/encoders.py::Encoder.forward"
+      ],
+      "shape": "[16,M]",
+      "detail": [],
+      "expression": "combined.t()",
+      "parent": "graphsage_mean.project",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphsage_mean.project.mm",
+      "label": "W @ combined transpose",
+      "kind": "matmul",
+      "source": [
+        "graphsage-modules/graphsage/encoders.py::Encoder.forward"
+      ],
+      "shape": "[4,M]",
+      "detail": [],
+      "expression": "self.weight.mm(combined.t())",
+      "ordered_operands": [
+        "weight",
+        "combined.t()"
+      ],
+      "parent": "graphsage_mean.project",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "W"
+      ]
+    },
+    {
+      "id": "graphsage_mean.project.relu",
+      "label": "ReLU / retain [embed_dim,M]",
+      "kind": "relu",
+      "source": [
+        "graphsage-modules/graphsage/encoders.py::Encoder.forward"
+      ],
+      "shape": "[4,M]",
+      "detail": [],
+      "parent": "graphsage_mean.project",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphsage_mean.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "graphsage-modules/graphsage/encoders.py::Encoder.forward"
+      ],
+      "shape": "[4,M]",
+      "detail": [],
+      "parent": "graphsage_mean.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "graphsage_mean.project:in->graphsage_mean.project.transpose:in:boundary",
+      "src": "graphsage_mean.project",
+      "dst": "graphsage_mean.project.transpose",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "graphsage_mean.project.transpose:out->graphsage_mean.project.mm:in:tensor",
+      "src": "graphsage_mean.project.transpose",
+      "dst": "graphsage_mean.project.mm",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphsage_mean.project.mm:out->graphsage_mean.project.relu:in:tensor",
+      "src": "graphsage_mean.project.mm",
+      "dst": "graphsage_mean.project.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphsage_mean.project.relu:out->graphsage_mean.project:out:boundary",
+      "src": "graphsage_mean.project.relu",
+      "dst": "graphsage_mean.project",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "graphsage_mean.nodes:out->graphsage_mean.neighbors:nodes:tensor",
+      "src": "graphsage_mean.nodes",
+      "dst": "graphsage_mean.neighbors",
+      "src_port": "out",
+      "dst_port": "nodes",
+      "role": "tensor"
+    },
+    {
+      "id": "graphsage_mean.adj:out->graphsage_mean.neighbors:adj_lists:topology",
+      "src": "graphsage_mean.adj",
+      "dst": "graphsage_mean.neighbors",
+      "src_port": "out",
+      "dst_port": "adj_lists",
+      "role": "topology"
+    },
+    {
+      "id": "graphsage_mean.neighbors:out->graphsage_mean.sample:neighbor_sets:topology",
+      "src": "graphsage_mean.neighbors",
+      "dst": "graphsage_mean.sample",
+      "src_port": "out",
+      "dst_port": "neighbor_sets",
+      "role": "topology"
+    },
+    {
+      "id": "graphsage_mean.sample:out->graphsage_mean.unique:sets:topology",
+      "src": "graphsage_mean.sample",
+      "dst": "graphsage_mean.unique",
+      "src_port": "out",
+      "dst_port": "sets",
+      "role": "topology"
+    },
+    {
+      "id": "graphsage_mean.sample:out->graphsage_mean.mask:membership:topology",
+      "src": "graphsage_mean.sample",
+      "dst": "graphsage_mean.mask",
+      "src_port": "out",
+      "dst_port": "membership",
+      "role": "topology"
+    },
+    {
+      "id": "graphsage_mean.unique:out->graphsage_mean.mask:columns:topology",
+      "src": "graphsage_mean.unique",
+      "dst": "graphsage_mean.mask",
+      "src_port": "out",
+      "dst_port": "columns",
+      "role": "topology"
+    },
+    {
+      "id": "graphsage_mean.unique:out->graphsage_mean.lookup:ids:tensor",
+      "src": "graphsage_mean.unique",
+      "dst": "graphsage_mean.lookup",
+      "src_port": "out",
+      "dst_port": "ids",
+      "role": "tensor"
+    },
+    {
+      "id": "graphsage_mean.features:out->graphsage_mean.lookup:callable:callable",
+      "src": "graphsage_mean.features",
+      "dst": "graphsage_mean.lookup",
+      "src_port": "out",
+      "dst_port": "callable",
+      "role": "callable"
+    },
+    {
+      "id": "graphsage_mean.mask:out->graphsage_mean.mean:mask:tensor",
+      "src": "graphsage_mean.mask",
+      "dst": "graphsage_mean.mean",
+      "src_port": "out",
+      "dst_port": "mask",
+      "role": "tensor"
+    },
+    {
+      "id": "graphsage_mean.lookup:out->graphsage_mean.mean:embeddings:tensor",
+      "src": "graphsage_mean.lookup",
+      "dst": "graphsage_mean.mean",
+      "src_port": "out",
+      "dst_port": "embeddings",
+      "role": "tensor"
+    },
+    {
+      "id": "graphsage_mean.nodes:out->graphsage_mean.selflookup:ids:tensor",
+      "src": "graphsage_mean.nodes",
+      "dst": "graphsage_mean.selflookup",
+      "src_port": "out",
+      "dst_port": "ids",
+      "role": "tensor"
+    },
+    {
+      "id": "graphsage_mean.features:out->graphsage_mean.selflookup:callable:callable",
+      "src": "graphsage_mean.features",
+      "dst": "graphsage_mean.selflookup",
+      "src_port": "out",
+      "dst_port": "callable",
+      "role": "callable"
+    },
+    {
+      "id": "graphsage_mean.selflookup:out->graphsage_mean.concat:self:tensor",
+      "src": "graphsage_mean.selflookup",
+      "dst": "graphsage_mean.concat",
+      "src_port": "out",
+      "dst_port": "self",
+      "role": "tensor"
+    },
+    {
+      "id": "graphsage_mean.mean:out->graphsage_mean.concat:neighbors:tensor",
+      "src": "graphsage_mean.mean",
+      "dst": "graphsage_mean.concat",
+      "src_port": "out",
+      "dst_port": "neighbors",
+      "role": "tensor"
+    },
+    {
+      "id": "graphsage_mean.concat:out->graphsage_mean.project.transpose:in:tensor",
+      "src": "graphsage_mean.concat",
+      "dst": "graphsage_mean.project.transpose",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphsage_mean.weight:out->graphsage_mean.project.mm:W:parameter_operand",
+      "src": "graphsage_mean.weight",
+      "dst": "graphsage_mean.project.mm",
+      "src_port": "out",
+      "dst_port": "W",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "graphsage_mean.project.relu:out->graphsage_mean.output:in:tensor",
+      "src": "graphsage_mean.project.relu",
+      "dst": "graphsage_mean.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Neighbor sampling, membership-mask normalization and matrix multiplication are source operations; a textbook abstract mean glyph alone would hide these steps.",
+    "Both self and neighbor lookups call the SAME externally supplied features callable. Its parameter ownership is unknown at this module boundary.",
+    "Encoder owns weight[4,16], with no bias, and multiplies W by combined.t(); output is [4,M], not [M,4].",
+    "Selected gcn=False bypasses the source gcn=True set-addition branch. Nonempty neighborhoods are assumed for static shape discussion; division has no epsilon.",
+    "Frozen repository has no license file; README is retained and no license is invented.",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not include queried node itself in sampled neighbors under the selected gcn=False branch.",
+    "Do not infer separate learned embedding tables from the two lookup glyphs or silently transpose the returned output."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

@@ -1,0 +1,1226 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "alexnet",
+  "profile": {
+    "task": "CIFAR-10 classification",
+    "mode": "eval",
+    "input_channels": 3,
+    "input_size": [
+      64,
+      64
+    ],
+    "num_classes": 10,
+    "conv_channels": [
+      64,
+      192,
+      384,
+      256,
+      256
+    ],
+    "conv_groups": [
+      1,
+      2,
+      2,
+      2,
+      2
+    ],
+    "conv_kernel": [
+      11,
+      5,
+      3,
+      3,
+      3
+    ],
+    "conv_stride": [
+      4,
+      1,
+      1,
+      1,
+      1
+    ],
+    "adaptive_pool_output": [
+      6,
+      6
+    ],
+    "feature_spatial_output": [
+      1,
+      1
+    ],
+    "classifier": [
+      9216,
+      4096,
+      4096,
+      10
+    ],
+    "dropout": 0.5,
+    "output": "logits only",
+    "computed_unused": "Softmax(logits,dim=1)",
+    "config_source": "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py notebook cells 13, 17, 20, 21"
+  },
+  "source": {
+    "repository": "rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "d72c614d79563c7756290b44770a5262b15bfc58e12c9844311724d2862bc09c"
+  },
+  "nodes": [
+    {
+      "id": "alex.model",
+      "label": "Grouped AlexNet · CIFAR-10",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet"
+      ],
+      "shape": "logits: [B,10]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.input",
+      "label": "CIFAR-10 image",
+      "kind": "input",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,3,64,64]",
+      "detail": [
+        "caller Resize70 then Crop64; original CIFAR-10 is 32x32"
+      ],
+      "parent": "alex.model",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.features",
+      "label": "Conv features · 5 stages",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,256,1,1]",
+      "detail": [
+        "conv2 through conv5 use groups=2"
+      ],
+      "mode": "chain",
+      "parent": "alex.model",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage1",
+      "label": "Conv stage 1",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,64,7,7]",
+      "detail": [
+        "logical grouping of contiguous features Sequential items",
+        "ReLU is features.1"
+      ],
+      "mode": "chain",
+      "parent": "alex.features",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage1.conv",
+      "label": "Conv2d 3 -> 64",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,64,15,15]",
+      "detail": [
+        "kernel=11; stride=4; padding=2; groups=1",
+        "bias=True; grouped channels stay inside this single Conv2d"
+      ],
+      "parameter": "features.0",
+      "groups": 1,
+      "parent": "alex.conv_stage1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage1.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,64,15,15]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "alex.conv_stage1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage1.pool",
+      "label": "MaxPool2d 3x3 / 2",
+      "kind": "max_pool2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,64,7,7]",
+      "detail": [
+        "padding=0; ceil_mode=False; features.2"
+      ],
+      "parent": "alex.conv_stage1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage2",
+      "label": "Conv stage 2 · groups=2",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,192,3,3]",
+      "detail": [
+        "logical grouping of contiguous features Sequential items",
+        "ReLU is features.4"
+      ],
+      "mode": "chain",
+      "parent": "alex.features",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage2.conv",
+      "label": "Conv2d 64 -> 192",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,192,7,7]",
+      "detail": [
+        "kernel=5; stride=1; padding=2; groups=2",
+        "bias=True; grouped channels stay inside this single Conv2d"
+      ],
+      "parameter": "features.3",
+      "groups": 2,
+      "parent": "alex.conv_stage2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage2.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,192,7,7]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "alex.conv_stage2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage2.pool",
+      "label": "MaxPool2d 3x3 / 2",
+      "kind": "max_pool2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,192,3,3]",
+      "detail": [
+        "padding=0; ceil_mode=False; features.5"
+      ],
+      "parent": "alex.conv_stage2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage3",
+      "label": "Conv stage 3 · groups=2",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,384,3,3]",
+      "detail": [
+        "logical grouping of contiguous features Sequential items",
+        "ReLU is features.7"
+      ],
+      "mode": "chain",
+      "parent": "alex.features",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage3.conv",
+      "label": "Conv2d 192 -> 384",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,384,3,3]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; groups=2",
+        "bias=True; grouped channels stay inside this single Conv2d"
+      ],
+      "parameter": "features.6",
+      "groups": 2,
+      "parent": "alex.conv_stage3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage3.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,384,3,3]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "alex.conv_stage3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage4",
+      "label": "Conv stage 4 · groups=2",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,256,3,3]",
+      "detail": [
+        "logical grouping of contiguous features Sequential items",
+        "ReLU is features.9"
+      ],
+      "mode": "chain",
+      "parent": "alex.features",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage4.conv",
+      "label": "Conv2d 384 -> 256",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,256,3,3]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; groups=2",
+        "bias=True; grouped channels stay inside this single Conv2d"
+      ],
+      "parameter": "features.8",
+      "groups": 2,
+      "parent": "alex.conv_stage4",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage4.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,256,3,3]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "alex.conv_stage4",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage5",
+      "label": "Conv stage 5 · groups=2",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,256,1,1]",
+      "detail": [
+        "logical grouping of contiguous features Sequential items",
+        "ReLU is features.11"
+      ],
+      "mode": "chain",
+      "parent": "alex.features",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage5.conv",
+      "label": "Conv2d 256 -> 256",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,256,3,3]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; groups=2",
+        "bias=True; grouped channels stay inside this single Conv2d"
+      ],
+      "parameter": "features.10",
+      "groups": 2,
+      "parent": "alex.conv_stage5",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage5.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,256,3,3]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "alex.conv_stage5",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.conv_stage5.pool",
+      "label": "MaxPool2d 3x3 / 2",
+      "kind": "max_pool2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,256,1,1]",
+      "detail": [
+        "padding=0; ceil_mode=False; features.12"
+      ],
+      "parent": "alex.conv_stage5",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.adaptive_pool",
+      "label": "AdaptiveAvgPool2d 6x6",
+      "kind": "adaptive_avg_pool2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,256,6,6]",
+      "detail": [
+        "actual input here is 1x1; adaptive bins produce 6x6",
+        "this is not a fixed pooling kernel"
+      ],
+      "parent": "alex.model",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.flatten",
+      "label": "Flatten spatial features",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,9216]",
+      "detail": [
+        "x.view(x.size(0),256*6*6); preserve batch axis"
+      ],
+      "parent": "alex.model",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.classifier",
+      "label": "Classifier head",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "logits: [B,10]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "alex.model",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.hidden1",
+      "label": "Hidden classifier 1",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,4096]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "alex.classifier",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.hidden1.dropout",
+      "label": "Dropout 0.5",
+      "kind": "dropout",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,9216]",
+      "detail": [
+        "classifier.0; identity in selected eval mode",
+        "train mode randomly zeroes activations and rescales survivors"
+      ],
+      "parent": "alex.hidden1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.hidden1.linear",
+      "label": "Linear 9216 -> 4096",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,4096]",
+      "detail": [],
+      "parameter": "classifier.1",
+      "parent": "alex.hidden1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.hidden1.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,4096]",
+      "detail": [
+        "inplace=True; classifier.2"
+      ],
+      "parent": "alex.hidden1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.hidden2",
+      "label": "Hidden classifier 2",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,4096]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "alex.classifier",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.hidden2.dropout",
+      "label": "Dropout 0.5",
+      "kind": "dropout",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,4096]",
+      "detail": [
+        "classifier.3; identity in selected eval mode",
+        "train mode randomly zeroes activations and rescales survivors"
+      ],
+      "parent": "alex.hidden2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.hidden2.linear",
+      "label": "Linear 4096 -> 4096",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,4096]",
+      "detail": [],
+      "parameter": "classifier.4",
+      "parent": "alex.hidden2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.hidden2.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,4096]",
+      "detail": [
+        "inplace=True; classifier.5"
+      ],
+      "parent": "alex.hidden2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.fc3",
+      "label": "Linear 4096 -> 10",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "logits: [B,10]",
+      "detail": [],
+      "parameter": "classifier.6",
+      "parent": "alex.classifier",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.output",
+      "label": "Returned logits",
+      "kind": "output",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "[B,10]",
+      "detail": [
+        "return logits only; probabilities are computed but not returned"
+      ],
+      "parent": "alex.model",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "alex.unused_softmax",
+      "label": "Computed Softmax · unused",
+      "kind": "softmax",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py::AlexNet.forward"
+      ],
+      "shape": "probas: [B,10]",
+      "detail": [
+        "F.softmax(logits,dim=1) is executed",
+        "local probas is unused; no edge to forward return"
+      ],
+      "origin": "internal_derived_unused",
+      "returned": false,
+      "output_ports": [
+        "out"
+      ],
+      "parent": null,
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "alex.conv_stage1:in->alex.conv_stage1.conv:in:boundary",
+      "src": "alex.conv_stage1",
+      "dst": "alex.conv_stage1.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.conv_stage1.conv:out->alex.conv_stage1.relu:in:tensor",
+      "src": "alex.conv_stage1.conv",
+      "dst": "alex.conv_stage1.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.conv_stage1.relu:out->alex.conv_stage1.pool:in:tensor",
+      "src": "alex.conv_stage1.relu",
+      "dst": "alex.conv_stage1.pool",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.conv_stage1.pool:out->alex.conv_stage1:out:boundary",
+      "src": "alex.conv_stage1.pool",
+      "dst": "alex.conv_stage1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.conv_stage2:in->alex.conv_stage2.conv:in:boundary",
+      "src": "alex.conv_stage2",
+      "dst": "alex.conv_stage2.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.conv_stage2.conv:out->alex.conv_stage2.relu:in:tensor",
+      "src": "alex.conv_stage2.conv",
+      "dst": "alex.conv_stage2.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.conv_stage2.relu:out->alex.conv_stage2.pool:in:tensor",
+      "src": "alex.conv_stage2.relu",
+      "dst": "alex.conv_stage2.pool",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.conv_stage2.pool:out->alex.conv_stage2:out:boundary",
+      "src": "alex.conv_stage2.pool",
+      "dst": "alex.conv_stage2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.conv_stage3:in->alex.conv_stage3.conv:in:boundary",
+      "src": "alex.conv_stage3",
+      "dst": "alex.conv_stage3.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.conv_stage3.conv:out->alex.conv_stage3.relu:in:tensor",
+      "src": "alex.conv_stage3.conv",
+      "dst": "alex.conv_stage3.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.conv_stage3.relu:out->alex.conv_stage3:out:boundary",
+      "src": "alex.conv_stage3.relu",
+      "dst": "alex.conv_stage3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.conv_stage4:in->alex.conv_stage4.conv:in:boundary",
+      "src": "alex.conv_stage4",
+      "dst": "alex.conv_stage4.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.conv_stage4.conv:out->alex.conv_stage4.relu:in:tensor",
+      "src": "alex.conv_stage4.conv",
+      "dst": "alex.conv_stage4.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.conv_stage4.relu:out->alex.conv_stage4:out:boundary",
+      "src": "alex.conv_stage4.relu",
+      "dst": "alex.conv_stage4",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.conv_stage5:in->alex.conv_stage5.conv:in:boundary",
+      "src": "alex.conv_stage5",
+      "dst": "alex.conv_stage5.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.conv_stage5.conv:out->alex.conv_stage5.relu:in:tensor",
+      "src": "alex.conv_stage5.conv",
+      "dst": "alex.conv_stage5.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.conv_stage5.relu:out->alex.conv_stage5.pool:in:tensor",
+      "src": "alex.conv_stage5.relu",
+      "dst": "alex.conv_stage5.pool",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.conv_stage5.pool:out->alex.conv_stage5:out:boundary",
+      "src": "alex.conv_stage5.pool",
+      "dst": "alex.conv_stage5",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.features:in->alex.conv_stage1:in:boundary",
+      "src": "alex.features",
+      "dst": "alex.conv_stage1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.conv_stage1:out->alex.conv_stage2:in:tensor",
+      "src": "alex.conv_stage1",
+      "dst": "alex.conv_stage2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.conv_stage2:out->alex.conv_stage3:in:tensor",
+      "src": "alex.conv_stage2",
+      "dst": "alex.conv_stage3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.conv_stage3:out->alex.conv_stage4:in:tensor",
+      "src": "alex.conv_stage3",
+      "dst": "alex.conv_stage4",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.conv_stage4:out->alex.conv_stage5:in:tensor",
+      "src": "alex.conv_stage4",
+      "dst": "alex.conv_stage5",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.conv_stage5:out->alex.features:out:boundary",
+      "src": "alex.conv_stage5",
+      "dst": "alex.features",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.hidden1:in->alex.hidden1.dropout:in:boundary",
+      "src": "alex.hidden1",
+      "dst": "alex.hidden1.dropout",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.hidden1.dropout:out->alex.hidden1.linear:in:tensor",
+      "src": "alex.hidden1.dropout",
+      "dst": "alex.hidden1.linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.hidden1.linear:out->alex.hidden1.relu:in:tensor",
+      "src": "alex.hidden1.linear",
+      "dst": "alex.hidden1.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.hidden1.relu:out->alex.hidden1:out:boundary",
+      "src": "alex.hidden1.relu",
+      "dst": "alex.hidden1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.hidden2:in->alex.hidden2.dropout:in:boundary",
+      "src": "alex.hidden2",
+      "dst": "alex.hidden2.dropout",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.hidden2.dropout:out->alex.hidden2.linear:in:tensor",
+      "src": "alex.hidden2.dropout",
+      "dst": "alex.hidden2.linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.hidden2.linear:out->alex.hidden2.relu:in:tensor",
+      "src": "alex.hidden2.linear",
+      "dst": "alex.hidden2.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.hidden2.relu:out->alex.hidden2:out:boundary",
+      "src": "alex.hidden2.relu",
+      "dst": "alex.hidden2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.classifier:in->alex.hidden1:in:boundary",
+      "src": "alex.classifier",
+      "dst": "alex.hidden1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.hidden1:out->alex.hidden2:in:tensor",
+      "src": "alex.hidden1",
+      "dst": "alex.hidden2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.hidden2:out->alex.fc3:in:tensor",
+      "src": "alex.hidden2",
+      "dst": "alex.fc3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.fc3:out->alex.classifier:out:boundary",
+      "src": "alex.fc3",
+      "dst": "alex.classifier",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.model:in->alex.input:in:boundary",
+      "src": "alex.model",
+      "dst": "alex.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.input:out->alex.features:in:tensor",
+      "src": "alex.input",
+      "dst": "alex.features",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.features:out->alex.adaptive_pool:in:tensor",
+      "src": "alex.features",
+      "dst": "alex.adaptive_pool",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.adaptive_pool:out->alex.flatten:in:tensor",
+      "src": "alex.adaptive_pool",
+      "dst": "alex.flatten",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.flatten:out->alex.classifier:in:tensor",
+      "src": "alex.flatten",
+      "dst": "alex.classifier",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.classifier:out->alex.output:in:tensor",
+      "src": "alex.classifier",
+      "dst": "alex.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "alex.output:out->alex.model:out:boundary",
+      "src": "alex.output",
+      "dst": "alex.model",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "alex.classifier:out->alex.unused_softmax:in:computed_unused",
+      "src": "alex.classifier",
+      "dst": "alex.unused_softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "computed_unused"
+    }
+  ],
+  "facts": [
+    "The notebook resizes CIFAR-10 to 70x70 then crops to 64x64; the model receives [B,3,64,64].",
+    "Only the first convolution has groups=1; convolutions 2-5 have groups=2 within individual Conv2d modules.",
+    "The feature path spatial sizes are 64->15->7->3->1; no local response normalization exists in this implementation.",
+    "AdaptiveAvgPool2d((6,6)) consumes the actual 1x1 feature and produces 6x6, then view yields 256*6*6=9216 features.",
+    "The classifier uses Dropout0.5->Linear9216->4096->ReLU->Dropout0.5->Linear4096->4096->ReLU->Linear4096->10.",
+    "Dropout is retained as a source operator but is an identity in the selected eval profile.",
+    "forward computes local probas=Softmax(logits,dim=1) but returns only logits; the side node has no return dependency.",
+    "Eight parameterized Conv/Linear modules have distinct parameter paths; groups=2 does not create two Python-level modules or branches."
+  ],
+  "corrections": [
+    "Use the notebook's 64x64 crop rather than ImageNet 224x224 input; do not assume final convolutional maps are 6x6.",
+    "Do not add paper-era LRN, two-GPU split modules, or an explicit concatenation for the grouped Conv2d implementations.",
+    "Do not change the computed unused Softmax into a returned probability tuple; this source returns logits alone.",
+    "Keep AdaptiveAvgPool2d and its actual output target rather than silently replacing it with global average pooling."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

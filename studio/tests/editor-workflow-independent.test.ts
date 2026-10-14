@@ -411,10 +411,11 @@ function compileComponent(file: string, input?: string, suffix = ''): string {
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
   writeFileSync(target, ''); // Bound recursive imports to one temporary module per dependency.
   const resolved = output.replace(/import ['"][^'"]+\.css['"];?/g, '')
-    .replace(/(['"])(\.[^'"]+)\1/g, (_match, _quote, specifier: string) => {
+    .replace(/(\bfrom\s+|\bimport\s*\(?\s*)(['"])(\.[^'"]+)\2/g, (_match, prefix, _quote, specifier: string) => {
       const base = resolve(dirname(path), specifier), tsx = `${base}.tsx`, tsFile = `${base}.ts`;
-      const dependency = existsSync(tsx) ? compileComponent(tsx.slice(`${studio}src/`.length)) : existsSync(tsFile) ? tsFile : existsSync(base) && statSync(base).isFile() ? base : `${base}/index.ts`;
-      return `'${pathToFileURL(dependency).href}'`;
+      const component = specifier.endsWith('.tsx') && existsSync(base) ? base : existsSync(tsx) ? tsx : undefined;
+      const dependency = component ? compileComponent(component.slice(`${studio}src/`.length)) : existsSync(tsFile) ? tsFile : existsSync(base) && statSync(base).isFile() ? base : `${base}/index.ts`;
+      return `${prefix}'${pathToFileURL(dependency).href}'`;
     });
   writeFileSync(target, resolved); return target;
 }
@@ -435,7 +436,7 @@ test('actual editor top actions expose edit/view mode and custom-source launcher
   assert.match(html.slice(legend), /aria-label="收起悬浮图例"/); assert.match(html.slice(legend), /数据流/);
 });
 
-test('actual source-view top actions expose the same mode switch and keep root/title/legend out of the editor world', async () => {
+test('actual source-view preserves Studio panels, mode switch and legend controls around the embedded preview', async () => {
   const document = createGeneratedCanvas(generated.architecture, sourceDraft, generated).document;
   const input = readFileSync(`${studio}src/App.tsx`, 'utf8');
   const configured = input.replace('useState<HistoryState | null>(null)', `useState<HistoryState | null>(${JSON.stringify(createHistory(document))})`);
@@ -444,9 +445,12 @@ test('actual source-view top actions expose the same mode switch and keep root/t
   const html = renderToStaticMarkup(createElement(App));
   const header = html.slice(0, html.indexOf('</header>'));
   assert.match(header, /aria-pressed="true"[^>]*>视图/); assert.match(header, /aria-pressed="false"[^>]*>编辑/);
-  assert.match(html, /class="workspace-caption"/); assert.match(html, /aria-label="悬浮图例"/);
-  const scene = html.slice(html.indexOf('class="paper infinite-scene"'), html.indexOf('aria-label="悬浮图例"'));
-  assert.doesNotMatch(scene, /class="legend"|data-scene-node="module:model.AuthoredModel"/);
+  assert.match(html, /class="workspace-caption"/); assert.match(html, /class="inspector-tabs"[^]*?>图例<\/button>/);
+  assert.match(html, /<iframe[^>]+title="ArchCanvas 模型预览与连线编辑器"[^>]+surface=canvas/);
+  for (const panel of ['navigator', 'inspector', 'canvas-toolbar']) assert.ok(html.includes(`class="${panel}"`), panel);
+  const menu = html.slice(html.indexOf('class="workspace-menu"'), html.indexOf('</details>'));
+  assert.match(menu, /示例与模块库/);
+  assert.doesNotMatch(html, /data-scene-node="module:model.AuthoredModel"/);
 });
 
 test('actual custom-source modal renders class/source/constructor fields and named multi-output preview without a shape claim', async () => {

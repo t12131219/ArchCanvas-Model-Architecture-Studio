@@ -1,0 +1,617 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "conditional_bn",
+  "profile": {
+    "output_size": 8,
+    "input_size": 16,
+    "which_linear": "nn.Linear explicitly selected",
+    "cross_replica": false,
+    "mybn": false,
+    "norm_style": "bn",
+    "training": true,
+    "source_momentum_literal": 0.1,
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "ccbn with norm_style=bn, mybn=False, cross_replica=False, which_linear=nn.Linear selected.",
+    "source_contracts": [
+      [
+        "ccbn.forward",
+        "(1 + self.gain(y)).view(y.size(0), -1, 1, 1)"
+      ],
+      [
+        "ccbn.forward",
+        "F.batch_norm(x, self.stored_mean, self.stored_var, None, None, self.training, 0.1, self.eps)"
+      ],
+      [
+        "ccbn.forward",
+        "out * gain + bias"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "ajbrock/BigGAN-PyTorch",
+    "commit": "98459431a5d618d644d54cd1e9fceb1e5045648d",
+    "snapshot": "bcb65449b0e95aa5867f78a42d97c40578083152549d64d9cb4b1601d7388218"
+  },
+  "nodes": [
+    {
+      "id": "conditional_bn.root",
+      "label": "Conditional BatchNorm / two condition heads",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::ccbn.__init__",
+        "biggan-modules/layers.py::ccbn.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "conditional_bn.x",
+          "conditional_bn.condition"
+        ],
+        [
+          "conditional_bn.body"
+        ],
+        [
+          "conditional_bn.y"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "conditional_bn.x",
+      "label": "Feature x",
+      "kind": "input",
+      "source": [
+        "biggan-modules/layers.py::ccbn.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "parent": "conditional_bn.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "conditional_bn.condition",
+      "label": "Condition y",
+      "kind": "input",
+      "source": [
+        "biggan-modules/layers.py::ccbn.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "conditional_bn.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "conditional_bn.body",
+      "label": "Conditional BatchNorm module",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::ccbn.__init__",
+        "biggan-modules/layers.py::ccbn.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "conditional_bn.norm",
+          "conditional_bn.gain",
+          "conditional_bn.bias"
+        ],
+        [
+          "conditional_bn.multiply"
+        ],
+        [
+          "conditional_bn.add"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "conditional_bn.root",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "conditional_bn.norm",
+      "label": "BatchNorm without affine",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::ccbn.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "conditional_bn.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "conditional_bn.bn",
+      "label": "F.batch_norm / affine=None",
+      "kind": "norm",
+      "source": [
+        "biggan-modules/layers.py::ccbn.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "expression": "F.batch_norm(x, self.stored_mean, self.stored_var, None, None, self.training, 0.1, self.eps)",
+      "buffers": [
+        "stored_mean",
+        "stored_var"
+      ],
+      "momentum": 0.1,
+      "epsilon": 1e-05,
+      "affine": false,
+      "parent": "conditional_bn.norm",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "conditional_bn.gain",
+      "label": "Gain from condition",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::ccbn.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "conditional_bn.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "conditional_bn.gainlinear",
+      "label": "Independent Linear 16 -> 8",
+      "kind": "linear",
+      "source": [
+        "biggan-modules/layers.py::ccbn.__init__",
+        "biggan-modules/layers.py::ccbn.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parameters": [
+        "gain.weight",
+        "gain.bias"
+      ],
+      "module_identity": "gain",
+      "parent": "conditional_bn.gain",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "conditional_bn.gainview",
+      "label": "1+gain(y); view B,C,1,1",
+      "kind": "tensor",
+      "source": [
+        "biggan-modules/layers.py::ccbn.forward"
+      ],
+      "shape": "[B,8,1,1]",
+      "detail": [],
+      "expression": "(1 + self.gain(y)).view(y.size(0), -1, 1, 1)",
+      "offset": 1,
+      "parent": "conditional_bn.gain",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "conditional_bn.bias",
+      "label": "Bias from condition",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::ccbn.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "conditional_bn.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "conditional_bn.biaslinear",
+      "label": "Independent Linear 16 -> 8",
+      "kind": "linear",
+      "source": [
+        "biggan-modules/layers.py::ccbn.__init__",
+        "biggan-modules/layers.py::ccbn.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parameters": [
+        "bias.weight",
+        "bias.bias"
+      ],
+      "module_identity": "bias",
+      "parent": "conditional_bn.bias",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "conditional_bn.biasview",
+      "label": "bias(y); view B,C,1,1",
+      "kind": "tensor",
+      "source": [
+        "biggan-modules/layers.py::ccbn.forward"
+      ],
+      "shape": "[B,8,1,1]",
+      "detail": [],
+      "expression": "self.bias(y).view(y.size(0), -1, 1, 1)",
+      "parent": "conditional_bn.bias",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "conditional_bn.multiply",
+      "label": "Condition scale",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::ccbn.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "port_bindings": {
+        "gain": {
+          "node": "conditional_bn.mul",
+          "port": "gain"
+        }
+      },
+      "port_binding_evidence": {
+        "gain": {
+          "source": [
+            "biggan-modules/layers.py::ccbn.forward"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        }
+      },
+      "parent": "conditional_bn.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "gain"
+      ]
+    },
+    {
+      "id": "conditional_bn.mul",
+      "label": "out * gain",
+      "kind": "multiply",
+      "source": [
+        "biggan-modules/layers.py::ccbn.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "expression": "out * gain",
+      "parent": "conditional_bn.multiply",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "gain"
+      ]
+    },
+    {
+      "id": "conditional_bn.add",
+      "label": "Condition shift",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::ccbn.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "port_bindings": {
+        "bias": {
+          "node": "conditional_bn.addop",
+          "port": "bias"
+        }
+      },
+      "port_binding_evidence": {
+        "bias": {
+          "source": [
+            "biggan-modules/layers.py::ccbn.forward"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        }
+      },
+      "parent": "conditional_bn.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "bias"
+      ]
+    },
+    {
+      "id": "conditional_bn.addop",
+      "label": "scaled + bias",
+      "kind": "add",
+      "source": [
+        "biggan-modules/layers.py::ccbn.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "expression": "out * gain + bias",
+      "parent": "conditional_bn.add",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "bias"
+      ]
+    },
+    {
+      "id": "conditional_bn.y",
+      "label": "Conditioned features",
+      "kind": "output",
+      "source": [
+        "biggan-modules/layers.py::ccbn.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "parent": "conditional_bn.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "conditional_bn.norm:in->conditional_bn.bn:in:boundary",
+      "src": "conditional_bn.norm",
+      "dst": "conditional_bn.bn",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "conditional_bn.bn:out->conditional_bn.norm:out:boundary",
+      "src": "conditional_bn.bn",
+      "dst": "conditional_bn.norm",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "conditional_bn.gain:in->conditional_bn.gainlinear:in:boundary",
+      "src": "conditional_bn.gain",
+      "dst": "conditional_bn.gainlinear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "conditional_bn.gainlinear:out->conditional_bn.gainview:in:tensor",
+      "src": "conditional_bn.gainlinear",
+      "dst": "conditional_bn.gainview",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "conditional_bn.gainview:out->conditional_bn.gain:out:boundary",
+      "src": "conditional_bn.gainview",
+      "dst": "conditional_bn.gain",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "conditional_bn.bias:in->conditional_bn.biaslinear:in:boundary",
+      "src": "conditional_bn.bias",
+      "dst": "conditional_bn.biaslinear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "conditional_bn.biaslinear:out->conditional_bn.biasview:in:tensor",
+      "src": "conditional_bn.biaslinear",
+      "dst": "conditional_bn.biasview",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "conditional_bn.biasview:out->conditional_bn.bias:out:boundary",
+      "src": "conditional_bn.biasview",
+      "dst": "conditional_bn.bias",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "conditional_bn.multiply:in->conditional_bn.mul:in:boundary",
+      "src": "conditional_bn.multiply",
+      "dst": "conditional_bn.mul",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "conditional_bn.mul:out->conditional_bn.multiply:out:boundary",
+      "src": "conditional_bn.mul",
+      "dst": "conditional_bn.multiply",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "conditional_bn.add:in->conditional_bn.addop:in:boundary",
+      "src": "conditional_bn.add",
+      "dst": "conditional_bn.addop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "conditional_bn.addop:out->conditional_bn.add:out:boundary",
+      "src": "conditional_bn.addop",
+      "dst": "conditional_bn.add",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "conditional_bn.x:out->conditional_bn.norm:in:tensor",
+      "src": "conditional_bn.x",
+      "dst": "conditional_bn.norm",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "conditional_bn.condition:out->conditional_bn.gain:in:tensor",
+      "src": "conditional_bn.condition",
+      "dst": "conditional_bn.gain",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "conditional_bn.condition:out->conditional_bn.bias:in:tensor",
+      "src": "conditional_bn.condition",
+      "dst": "conditional_bn.bias",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "conditional_bn.norm:out->conditional_bn.multiply:in:tensor",
+      "src": "conditional_bn.norm",
+      "dst": "conditional_bn.multiply",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "conditional_bn.gain:out->conditional_bn.multiply:gain:tensor",
+      "src": "conditional_bn.gain",
+      "dst": "conditional_bn.multiply",
+      "src_port": "out",
+      "dst_port": "gain",
+      "role": "tensor"
+    },
+    {
+      "id": "conditional_bn.multiply:out->conditional_bn.add:in:tensor",
+      "src": "conditional_bn.multiply",
+      "dst": "conditional_bn.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "conditional_bn.bias:out->conditional_bn.add:bias:tensor",
+      "src": "conditional_bn.bias",
+      "dst": "conditional_bn.add",
+      "src_port": "out",
+      "dst_port": "bias",
+      "role": "tensor"
+    },
+    {
+      "id": "conditional_bn.add:out->conditional_bn.y:in:tensor",
+      "src": "conditional_bn.add",
+      "dst": "conditional_bn.y",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Two independent condition heads predict per-example gain and bias; gain has an explicit +1 offset.",
+    "Feature normalization has no affine parameters. stored_mean/var are buffers and the selected training call may update them inside the library.",
+    "F.batch_norm receives literal momentum .1, irrespective of the constructor self.momentum attribute.",
+    "Other branches are excluded. The GN path references self.normstyle, a source typo, and is not silently repaired."
+  ],
+  "corrections": [
+    "Do not replace conditional y by class indices or one-hot embeddings absent from this boundary."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

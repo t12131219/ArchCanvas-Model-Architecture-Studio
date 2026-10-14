@@ -1,0 +1,516 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "seq2seq_attention",
+  "profile": {
+    "dim": 16,
+    "query_length": 3,
+    "context_length": 8,
+    "mask_selected": true,
+    "score_scaled": false,
+    "label": "IBM Attention / D16,query3,context8 / masked unscaled dot / returns weights",
+    "mode": "reviewed static selected module profile",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "IBM/pytorch-seq2seq",
+    "commit": "f146087a9a271e9b50f46561e090324764b081fb",
+    "snapshot": "70a55845acd6db1afb3fa0c7b4a027b64773c11ebdf799a65bb0fa014c0dfe46"
+  },
+  "nodes": [
+    {
+      "id": "seq2seq_attention.root",
+      "label": "Seq2seq dot attention / context fusion",
+      "kind": "group",
+      "source": [
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.__init__",
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.set_mask",
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "ibm.query",
+          "ibm.context",
+          "ibm.external_mask"
+        ],
+        [
+          "ibm.body"
+        ],
+        [
+          "ibm.output"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E003",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ibm.query",
+      "label": "Decoder output / query",
+      "kind": "input",
+      "source": [
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.forward"
+      ],
+      "shape": "[B,3,16]",
+      "detail": [],
+      "parent": "seq2seq_attention.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ibm.context",
+      "label": "Encoder context / keys and values",
+      "kind": "input",
+      "source": [
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.forward"
+      ],
+      "shape": "[B,8,16]",
+      "detail": [],
+      "parent": "seq2seq_attention.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ibm.external_mask",
+      "label": "Mask set by caller / optional branch",
+      "kind": "input",
+      "source": [
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.set_mask"
+      ],
+      "shape": "[B,3,8]",
+      "detail": [],
+      "True_means": "blocked",
+      "selected": true,
+      "parent": "seq2seq_attention.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ibm.body",
+      "label": "Dot attention + decoder fusion",
+      "kind": "group",
+      "source": [
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.__init__",
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.forward"
+      ],
+      "shape": "[B,3,16]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "ibm.score"
+        ],
+        [
+          "ibm.mask"
+        ],
+        [
+          "ibm.softmax"
+        ],
+        [
+          "ibm.mix"
+        ],
+        [
+          "ibm.concat"
+        ],
+        [
+          "ibm.fusion"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": "seq2seq_attention.root",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ibm.score",
+      "label": "bmm(output, context^T)",
+      "kind": "bmm",
+      "source": [
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.forward"
+      ],
+      "shape": "[B,3,8]",
+      "detail": [],
+      "scale": null,
+      "expression": "torch.bmm(output, context.transpose(1, 2))",
+      "parent": "ibm.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "query",
+        "keys"
+      ]
+    },
+    {
+      "id": "ibm.mask",
+      "label": "masked_fill_ / True -> -inf",
+      "kind": "mask",
+      "source": [
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.forward",
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.set_mask"
+      ],
+      "shape": "[B,3,8]",
+      "detail": [],
+      "fill": "-inf",
+      "mask_selected": true,
+      "source_storage": "attn.data.masked_fill_",
+      "parent": "ibm.body",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "scores",
+        "mask"
+      ]
+    },
+    {
+      "id": "ibm.softmax",
+      "label": "View2D + Softmax input positions",
+      "kind": "softmax",
+      "source": [
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.forward"
+      ],
+      "shape": "[B,3,8]",
+      "detail": [],
+      "dim": 1,
+      "original_axis": 2,
+      "expression": "F.softmax(attn.view(-1, input_size), dim=1).view(batch_size, -1, input_size)",
+      "parent": "ibm.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ibm.mix",
+      "label": "bmm(attn, same context)",
+      "kind": "bmm",
+      "source": [
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.forward"
+      ],
+      "shape": "[B,3,16]",
+      "detail": [],
+      "parent": "ibm.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "weights",
+        "values"
+      ]
+    },
+    {
+      "id": "ibm.concat",
+      "label": "Concat [mix, original output]",
+      "kind": "concat",
+      "source": [
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.forward"
+      ],
+      "shape": "[B,3,32]",
+      "detail": [],
+      "dim": 2,
+      "ordered_operands": [
+        "mix",
+        "output"
+      ],
+      "parent": "ibm.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mix",
+        "output"
+      ]
+    },
+    {
+      "id": "ibm.fusion",
+      "label": "Output fusion / source view wrappers",
+      "kind": "group",
+      "source": [
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.__init__",
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.forward"
+      ],
+      "shape": "[B,3,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "ibm.body",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ibm.flat",
+      "label": "View2D / width32",
+      "kind": "tensor",
+      "source": [
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.forward"
+      ],
+      "shape": "[B*3,32]",
+      "detail": [],
+      "parent": "ibm.fusion",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ibm.linear",
+      "label": "Linear32 -> 16",
+      "kind": "linear",
+      "source": [
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.__init__"
+      ],
+      "shape": "[B*3,16]",
+      "detail": [],
+      "parameter": "linear_out",
+      "bias": true,
+      "parent": "ibm.fusion",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ibm.tanh",
+      "label": "Tanh + restore sequence view",
+      "kind": "tanh",
+      "source": [
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.forward"
+      ],
+      "shape": "[B,3,16]",
+      "detail": [],
+      "parent": "ibm.fusion",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ibm.output",
+      "label": "Return fused output, attention",
+      "kind": "output",
+      "source": [
+        "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.forward"
+      ],
+      "shape": "[B,3,16]; [B,3,8]",
+      "detail": [],
+      "return_fields": [
+        "output",
+        "attn"
+      ],
+      "parent": "seq2seq_attention.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "output",
+        "attention"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "ibm.fusion:in->ibm.flat:in:boundary",
+      "src": "ibm.fusion",
+      "dst": "ibm.flat",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ibm.flat:out->ibm.linear:in:tensor",
+      "src": "ibm.flat",
+      "dst": "ibm.linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ibm.linear:out->ibm.tanh:in:tensor",
+      "src": "ibm.linear",
+      "dst": "ibm.tanh",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ibm.tanh:out->ibm.fusion:out:boundary",
+      "src": "ibm.tanh",
+      "dst": "ibm.fusion",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ibm.query:out->ibm.score:query:tensor",
+      "src": "ibm.query",
+      "dst": "ibm.score",
+      "src_port": "out",
+      "dst_port": "query",
+      "role": "tensor"
+    },
+    {
+      "id": "ibm.context:out->ibm.score:keys:tensor",
+      "src": "ibm.context",
+      "dst": "ibm.score",
+      "src_port": "out",
+      "dst_port": "keys",
+      "role": "tensor"
+    },
+    {
+      "id": "ibm.score:out->ibm.mask:scores:tensor",
+      "src": "ibm.score",
+      "dst": "ibm.mask",
+      "src_port": "out",
+      "dst_port": "scores",
+      "role": "tensor"
+    },
+    {
+      "id": "ibm.external_mask:out->ibm.mask:mask:mask",
+      "src": "ibm.external_mask",
+      "dst": "ibm.mask",
+      "src_port": "out",
+      "dst_port": "mask",
+      "role": "mask"
+    },
+    {
+      "id": "ibm.mask:out->ibm.softmax:in:tensor",
+      "src": "ibm.mask",
+      "dst": "ibm.softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ibm.softmax:out->ibm.mix:weights:tensor",
+      "src": "ibm.softmax",
+      "dst": "ibm.mix",
+      "src_port": "out",
+      "dst_port": "weights",
+      "role": "tensor"
+    },
+    {
+      "id": "ibm.context:out->ibm.mix:values:tensor",
+      "src": "ibm.context",
+      "dst": "ibm.mix",
+      "src_port": "out",
+      "dst_port": "values",
+      "role": "tensor"
+    },
+    {
+      "id": "ibm.mix:out->ibm.concat:mix:tensor",
+      "src": "ibm.mix",
+      "dst": "ibm.concat",
+      "src_port": "out",
+      "dst_port": "mix",
+      "role": "tensor"
+    },
+    {
+      "id": "ibm.query:out->ibm.concat:output:tensor",
+      "src": "ibm.query",
+      "dst": "ibm.concat",
+      "src_port": "out",
+      "dst_port": "output",
+      "role": "tensor"
+    },
+    {
+      "id": "ibm.concat:out->ibm.fusion:in:tensor",
+      "src": "ibm.concat",
+      "dst": "ibm.fusion",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ibm.fusion:out->ibm.output:output:tensor",
+      "src": "ibm.fusion",
+      "dst": "ibm.output",
+      "src_port": "out",
+      "dst_port": "output",
+      "role": "tensor"
+    },
+    {
+      "id": "ibm.softmax:out->ibm.output:attention:tensor",
+      "src": "ibm.softmax",
+      "dst": "ibm.output",
+      "src_port": "out",
+      "dst_port": "attention",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Query is the decoder output, while context supplies both keys and values without learned QKV projections.",
+    "The source computes an unscaled dot product, optionally masks attn.data in place with-inf, then normalizes context positions.",
+    "mask startsNone; this example selects the real set_mask branch, and caller supplies the full broadcast-compatible score mask.",
+    "The context mixture is concatenated before original decoder output, passed through one biased linear_out and Tanh.",
+    "forward returns fused output and the same normalized attention weights; no attention Dropout is present."
+  ],
+  "corrections": [
+    "Do not insert sqrt(D) scaling, QKV linears or an additive scorer.",
+    "Do not swap concat order; do not feed the newly fused output into its own scoring path."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

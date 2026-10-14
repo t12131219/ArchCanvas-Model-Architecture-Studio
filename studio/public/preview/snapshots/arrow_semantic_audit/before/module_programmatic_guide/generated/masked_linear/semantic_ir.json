@@ -1,0 +1,442 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "masked_linear",
+  "profile": {
+    "in_features": 4,
+    "out_features": 8,
+    "cond_in_features": 3,
+    "mask_storage": "buffer",
+    "main_bias": true,
+    "conditional_bias": false,
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "One conditional MaskedLinear; get_mask supplies construction provenance, not a learned attention mask.",
+    "source_contracts": [
+      [
+        "MaskedLinear.forward",
+        "F.linear(inputs, self.linear.weight * self.mask, self.linear.bias)"
+      ],
+      [
+        "MaskedLinear.__init__",
+        "nn.Linear(cond_in_features, out_features, bias=False)"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "ikostrikov/pytorch-flows",
+    "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+    "snapshot": "c0ebb6c1af0b9d8f0b8140bbc16c5cf7122408fa79a5b25da427fac8d15d657a"
+  },
+  "nodes": [
+    {
+      "id": "masked_linear.root",
+      "label": "MaskedLinear / conditional projection",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MaskedLinear.__init__",
+        "density-flow-modules/flows.py::MaskedLinear.forward",
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "masked_linear.x",
+          "masked_linear.cond",
+          "masked_linear.mask"
+        ],
+        [
+          "masked_linear.body"
+        ],
+        [
+          "masked_linear.y"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "masked_linear.x",
+      "label": "Main input x",
+      "kind": "input",
+      "source": [
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parent": "masked_linear.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "masked_linear.cond",
+      "label": "Condition vector c",
+      "kind": "input",
+      "source": [
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "[B,3]",
+      "detail": [],
+      "parent": "masked_linear.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "masked_linear.mask",
+      "label": "Registered degree mask",
+      "kind": "input",
+      "source": [
+        "density-flow-modules/flows.py::MaskedLinear.__init__",
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "[8,4]",
+      "detail": [],
+      "storage_kind": "buffer",
+      "parent": "masked_linear.root",
+      "source_evidence": [
+        "E001",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "masked_linear.body",
+      "label": "MaskedLinear module",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MaskedLinear.__init__",
+        "density-flow-modules/flows.py::MaskedLinear.forward",
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "masked_linear.masked",
+          "masked_linear.conditional"
+        ],
+        [
+          "masked_linear.sum"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "masked_linear.root",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "masked_linear.masked",
+      "label": "Main masked affine",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "flow_role": "weight",
+      "mode": "chain",
+      "parent": "masked_linear.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "masked_linear.w_mask",
+      "label": "W * mask",
+      "kind": "multiply",
+      "source": [
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "[8,4]",
+      "detail": [],
+      "expression": "self.linear.weight * self.mask",
+      "parameters": [
+        "linear.weight"
+      ],
+      "storage_kind": "mask buffer",
+      "parent": "masked_linear.masked",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "masked_linear.linear",
+      "label": "F.linear(x,W*mask,b)",
+      "kind": "masked_linear",
+      "source": [
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "expression": "F.linear(inputs, self.linear.weight * self.mask, self.linear.bias)",
+      "parameters": [
+        "linear.weight",
+        "linear.bias"
+      ],
+      "bias": true,
+      "parent": "masked_linear.masked",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "masked_linear.conditional",
+      "label": "Independent condition affine",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "masked_linear.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "masked_linear.condlinear",
+      "label": "Linear 3 -> 8 / bias=False",
+      "kind": "linear",
+      "source": [
+        "density-flow-modules/flows.py::MaskedLinear.__init__",
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parameters": [
+        "cond_linear.weight"
+      ],
+      "bias": false,
+      "expression": "self.cond_linear(cond_inputs)",
+      "parent": "masked_linear.conditional",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "masked_linear.sum",
+      "label": "Add condition projection",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "masked_linear.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "condition"
+      ]
+    },
+    {
+      "id": "masked_linear.add",
+      "label": "output += cond_linear(c)",
+      "kind": "add",
+      "source": [
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "expression": "self.cond_linear(cond_inputs)",
+      "operation": "inplace_add",
+      "parent": "masked_linear.sum",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "masked_linear.y",
+      "label": "Combined projection",
+      "kind": "output",
+      "source": [
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parent": "masked_linear.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "masked_linear.w_mask:out->masked_linear.linear:in:weight",
+      "src": "masked_linear.w_mask",
+      "dst": "masked_linear.linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "weight"
+    },
+    {
+      "id": "masked_linear.linear:out->masked_linear.masked:out:boundary",
+      "src": "masked_linear.linear",
+      "dst": "masked_linear.masked",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "masked_linear.conditional:in->masked_linear.condlinear:in:boundary",
+      "src": "masked_linear.conditional",
+      "dst": "masked_linear.condlinear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "masked_linear.condlinear:out->masked_linear.conditional:out:boundary",
+      "src": "masked_linear.condlinear",
+      "dst": "masked_linear.conditional",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "masked_linear.sum:in->masked_linear.add:in:boundary",
+      "src": "masked_linear.sum",
+      "dst": "masked_linear.add",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "masked_linear.add:out->masked_linear.sum:out:boundary",
+      "src": "masked_linear.add",
+      "dst": "masked_linear.sum",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "masked_linear.x:out->masked_linear.linear:input:tensor",
+      "src": "masked_linear.x",
+      "dst": "masked_linear.linear",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "masked_linear.mask:out->masked_linear.w_mask:in:weight_mask",
+      "src": "masked_linear.mask",
+      "dst": "masked_linear.w_mask",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "weight_mask"
+    },
+    {
+      "id": "masked_linear.cond:out->masked_linear.conditional:in:tensor",
+      "src": "masked_linear.cond",
+      "dst": "masked_linear.conditional",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "masked_linear.masked:out->masked_linear.sum:in:tensor",
+      "src": "masked_linear.masked",
+      "dst": "masked_linear.sum",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "masked_linear.conditional:out->masked_linear.sum:condition:tensor",
+      "src": "masked_linear.conditional",
+      "dst": "masked_linear.sum",
+      "src_port": "out",
+      "dst_port": "condition",
+      "role": "tensor"
+    },
+    {
+      "id": "masked_linear.sum:out->masked_linear.y:in:tensor",
+      "src": "masked_linear.sum",
+      "dst": "masked_linear.y",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Main and condition projections have distinct weights; only the main weight is masked.",
+    "Source constructor accepts bias but does not pass it to the main Linear, which retains its default bias.",
+    "get_mask compares output and input degrees; a strict autoregressive output mask requires the output degree offset."
+  ],
+  "corrections": [
+    "No Softmax, dropout or trainable mask is present.",
+    "Do not apply the same mask to the conditional projection."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

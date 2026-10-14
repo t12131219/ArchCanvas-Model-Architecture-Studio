@@ -1,0 +1,617 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "capsule_routing",
+  "profile": {
+    "input_caps": 1152,
+    "output_caps": 10,
+    "output_dim": 16,
+    "n_iterations": 3,
+    "initial_routing_passes": 1,
+    "total_aggregation_passes": 4,
+    "learned_initial_logits": true,
+    "softmax_dim_argument": "omitted",
+    "detach_votes": false,
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "adambielski/CapsNet-pytorch",
+    "commit": "bee0cbee5bb8b30399e75c751d3085c2f261dea3",
+    "snapshot": "9383fe09d01bd93f3422c65372c8b1b3dc8e22c375562066b567e7eeb428d1b7"
+  },
+  "nodes": [
+    {
+      "id": "capsule_routing.root",
+      "label": "Capsule agreement routing / module only",
+      "kind": "group",
+      "source": [
+        "capsnet-modules/net.py::AgreementRouting.forward"
+      ],
+      "shape": "[B,10,16]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "capsule_routing.votes",
+          "capsule_routing.b"
+        ],
+        [
+          "capsule_routing.module"
+        ],
+        [
+          "capsule_routing.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "capsule_routing.votes",
+      "label": "Fixed votes u_predict",
+      "kind": "input",
+      "source": [
+        "capsnet-modules/net.py::AgreementRouting.forward"
+      ],
+      "shape": "[B,1152,10,16]",
+      "detail": [],
+      "parent": "capsule_routing.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "capsule_routing.b",
+      "label": "Learned initial routing logits b",
+      "kind": "parameter",
+      "source": [
+        "capsnet-modules/net.py::AgreementRouting.__init__"
+      ],
+      "shape": "[1152,10]",
+      "detail": [],
+      "parameter": "b",
+      "storage_kind": "parameter",
+      "parent": "capsule_routing.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "capsule_routing.module",
+      "label": "Capsule agreement routing / operators",
+      "kind": "group",
+      "source": [
+        "capsnet-modules/net.py::AgreementRouting.forward"
+      ],
+      "shape": "[B,10,16]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "capsule_routing.initial",
+          "capsule_routing.expand"
+        ],
+        [
+          "capsule_routing.agreement"
+        ],
+        [
+          "capsule_routing.update"
+        ],
+        [
+          "capsule_routing.couplings"
+        ],
+        [
+          "capsule_routing.sum"
+        ],
+        [
+          "capsule_routing.squash"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "capsule_routing.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "capsule_routing.initial",
+      "label": "Initial routing before loop",
+      "kind": "group",
+      "source": [
+        "capsnet-modules/net.py::AgreementRouting.forward",
+        "capsnet-modules/net.py::squash"
+      ],
+      "shape": "[B,10,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "capsule_routing.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "capsule_routing.initial.softmax",
+      "label": "Softmax b / dim omitted",
+      "kind": "softmax",
+      "source": [
+        "capsnet-modules/net.py::AgreementRouting.forward",
+        "capsnet-modules/net.py::squash"
+      ],
+      "shape": "[1152,10]",
+      "detail": [],
+      "dim_argument": "omitted",
+      "parent": "capsule_routing.initial",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "capsule_routing.initial.sum",
+      "label": "Broadcast c / sum input capsules",
+      "kind": "sum",
+      "source": [
+        "capsnet-modules/net.py::AgreementRouting.forward",
+        "capsnet-modules/net.py::squash"
+      ],
+      "shape": "[B,10,16]",
+      "detail": [],
+      "sum_dim": 1,
+      "parent": "capsule_routing.initial",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "votes"
+      ]
+    },
+    {
+      "id": "capsule_routing.initial.squash",
+      "label": "Squash capsule vectors",
+      "kind": "squash",
+      "source": [
+        "capsnet-modules/net.py::AgreementRouting.forward",
+        "capsnet-modules/net.py::squash"
+      ],
+      "shape": "[B,10,16]",
+      "detail": [],
+      "epsilon_added": false,
+      "parent": "capsule_routing.initial",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "capsule_routing.expand",
+      "label": "Expand SAME b over batch",
+      "kind": "tensor",
+      "source": [
+        "capsnet-modules/net.py::AgreementRouting.forward"
+      ],
+      "shape": "[B,1152,10]",
+      "detail": [],
+      "expression": "self.b.expand((batch_size, input_caps, output_caps))",
+      "parent": "capsule_routing.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "capsule_routing.agreement",
+      "label": "Unsqueeze v / vote agreement",
+      "kind": "multiply",
+      "source": [
+        "capsnet-modules/net.py::AgreementRouting.forward"
+      ],
+      "shape": "[B,1152,10]",
+      "detail": [],
+      "expression": "(u_predict * v).sum(-1)",
+      "vote_reuse": true,
+      "parent": "capsule_routing.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "v_initial",
+        "votes",
+        "v_next"
+      ]
+    },
+    {
+      "id": "capsule_routing.update",
+      "label": "Update batch routing state",
+      "kind": "add",
+      "source": [
+        "capsnet-modules/net.py::AgreementRouting.forward"
+      ],
+      "shape": "[B,1152,10]",
+      "detail": [],
+      "expression": "b_batch + (u_predict * v).sum(-1)",
+      "not_parameter_assignment": true,
+      "parent": "capsule_routing.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "agreement",
+        "b_initial",
+        "b_next"
+      ]
+    },
+    {
+      "id": "capsule_routing.couplings",
+      "label": "Repeat3 / new couplings",
+      "kind": "group",
+      "source": [
+        "capsnet-modules/net.py::AgreementRouting.forward"
+      ],
+      "shape": "[B,1152,10,1]",
+      "detail": [],
+      "iteration_template": true,
+      "repeat": 3,
+      "mode": "chain",
+      "parent": "capsule_routing.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "capsule_routing.couplings.view",
+      "label": "View batches of output capsules",
+      "kind": "tensor",
+      "source": [
+        "capsnet-modules/net.py::AgreementRouting.forward"
+      ],
+      "shape": "[B*1152,10]",
+      "detail": [],
+      "parent": "capsule_routing.couplings",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "capsule_routing.couplings.softmax",
+      "label": "Softmax / dim omitted",
+      "kind": "softmax",
+      "source": [
+        "capsnet-modules/net.py::AgreementRouting.forward"
+      ],
+      "shape": "[B*1152,10]",
+      "detail": [],
+      "dim_argument": "omitted",
+      "flatten_output_caps": true,
+      "parent": "capsule_routing.couplings",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "capsule_routing.couplings.restore",
+      "label": "Restore coupling axes",
+      "kind": "tensor",
+      "source": [
+        "capsnet-modules/net.py::AgreementRouting.forward"
+      ],
+      "shape": "[B,1152,10,1]",
+      "detail": [],
+      "parent": "capsule_routing.couplings",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "capsule_routing.sum",
+      "label": "Weighted vote sum over input caps",
+      "kind": "sum",
+      "source": [
+        "capsnet-modules/net.py::AgreementRouting.forward"
+      ],
+      "shape": "[B,10,16]",
+      "detail": [],
+      "expression": "(c * u_predict).sum(dim=1)",
+      "sum_dim": 1,
+      "parent": "capsule_routing.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "couplings",
+        "votes"
+      ]
+    },
+    {
+      "id": "capsule_routing.squash",
+      "label": "Squash / source has no epsilon",
+      "kind": "squash",
+      "source": [
+        "capsnet-modules/net.py::squash"
+      ],
+      "shape": "[B,10,16]",
+      "detail": [],
+      "epsilon_added": false,
+      "formula": "x * (lengths2 / (1+lengths2) / lengths)",
+      "parent": "capsule_routing.module",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "capsule_routing.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "capsnet-modules/net.py::AgreementRouting.forward"
+      ],
+      "shape": "[B,10,16]",
+      "detail": [],
+      "parent": "capsule_routing.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "capsule_routing.initial:in->capsule_routing.initial.softmax:in:boundary",
+      "src": "capsule_routing.initial",
+      "dst": "capsule_routing.initial.softmax",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "capsule_routing.initial.softmax:out->capsule_routing.initial.sum:in:tensor",
+      "src": "capsule_routing.initial.softmax",
+      "dst": "capsule_routing.initial.sum",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "capsule_routing.initial.sum:out->capsule_routing.initial.squash:in:tensor",
+      "src": "capsule_routing.initial.sum",
+      "dst": "capsule_routing.initial.squash",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "capsule_routing.initial.squash:out->capsule_routing.initial:out:boundary",
+      "src": "capsule_routing.initial.squash",
+      "dst": "capsule_routing.initial",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "capsule_routing.couplings:in->capsule_routing.couplings.view:in:boundary",
+      "src": "capsule_routing.couplings",
+      "dst": "capsule_routing.couplings.view",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "capsule_routing.couplings.view:out->capsule_routing.couplings.softmax:in:tensor",
+      "src": "capsule_routing.couplings.view",
+      "dst": "capsule_routing.couplings.softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "capsule_routing.couplings.softmax:out->capsule_routing.couplings.restore:in:tensor",
+      "src": "capsule_routing.couplings.softmax",
+      "dst": "capsule_routing.couplings.restore",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "capsule_routing.couplings.restore:out->capsule_routing.couplings:out:boundary",
+      "src": "capsule_routing.couplings.restore",
+      "dst": "capsule_routing.couplings",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "capsule_routing.b:out->capsule_routing.initial.softmax:in:parameter_operand",
+      "src": "capsule_routing.b",
+      "dst": "capsule_routing.initial.softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "capsule_routing.votes:out->capsule_routing.initial.sum:votes:retained_value",
+      "src": "capsule_routing.votes",
+      "dst": "capsule_routing.initial.sum",
+      "src_port": "out",
+      "dst_port": "votes",
+      "role": "retained_value"
+    },
+    {
+      "id": "capsule_routing.initial.squash:out->capsule_routing.agreement:v_initial:initial_state",
+      "src": "capsule_routing.initial.squash",
+      "dst": "capsule_routing.agreement",
+      "src_port": "out",
+      "dst_port": "v_initial",
+      "role": "initial_state"
+    },
+    {
+      "id": "capsule_routing.b:out->capsule_routing.expand:in:parameter_operand",
+      "src": "capsule_routing.b",
+      "dst": "capsule_routing.expand",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "capsule_routing.votes:out->capsule_routing.agreement:votes:retained_value",
+      "src": "capsule_routing.votes",
+      "dst": "capsule_routing.agreement",
+      "src_port": "out",
+      "dst_port": "votes",
+      "role": "retained_value"
+    },
+    {
+      "id": "capsule_routing.agreement:out->capsule_routing.update:agreement:tensor",
+      "src": "capsule_routing.agreement",
+      "dst": "capsule_routing.update",
+      "src_port": "out",
+      "dst_port": "agreement",
+      "role": "tensor"
+    },
+    {
+      "id": "capsule_routing.expand:out->capsule_routing.update:b_initial:initial_state",
+      "src": "capsule_routing.expand",
+      "dst": "capsule_routing.update",
+      "src_port": "out",
+      "dst_port": "b_initial",
+      "role": "initial_state"
+    },
+    {
+      "id": "capsule_routing.update:out->capsule_routing.couplings.view:in:tensor",
+      "src": "capsule_routing.update",
+      "dst": "capsule_routing.couplings.view",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "capsule_routing.couplings.restore:out->capsule_routing.sum:couplings:tensor",
+      "src": "capsule_routing.couplings.restore",
+      "dst": "capsule_routing.sum",
+      "src_port": "out",
+      "dst_port": "couplings",
+      "role": "tensor"
+    },
+    {
+      "id": "capsule_routing.votes:out->capsule_routing.sum:votes:retained_value",
+      "src": "capsule_routing.votes",
+      "dst": "capsule_routing.sum",
+      "src_port": "out",
+      "dst_port": "votes",
+      "role": "retained_value"
+    },
+    {
+      "id": "capsule_routing.sum:out->capsule_routing.squash:in:tensor",
+      "src": "capsule_routing.sum",
+      "dst": "capsule_routing.squash",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "capsule_routing.squash:out->capsule_routing.agreement:v_next:loop_recurrence",
+      "src": "capsule_routing.squash",
+      "dst": "capsule_routing.agreement",
+      "src_port": "out",
+      "dst_port": "v_next",
+      "role": "loop_recurrence"
+    },
+    {
+      "id": "capsule_routing.update:out->capsule_routing.update:b_next:loop_recurrence",
+      "src": "capsule_routing.update",
+      "dst": "capsule_routing.update",
+      "src_port": "out",
+      "dst_port": "b_next",
+      "role": "loop_recurrence"
+    },
+    {
+      "id": "capsule_routing.squash:out->capsule_routing.output:in:tensor",
+      "src": "capsule_routing.squash",
+      "dst": "capsule_routing.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Unlike common textbook routing, source b is a learned Parameter initialized to zero and shared across batch. b_batch is per-forward state, not a new Parameter.",
+    "Source performs an initial Softmax/sum/squash before the n_iterations loop; selected3 iterations therefore produce four aggregations, not three.",
+    "Votes are retained and reused in every agreement and weighted sum; no detach occurs. b_batch and v are loop-carried state.",
+    "Both F.softmax calls omit dim; loop reshapes to rows of output_caps, but runtime-dependent legacy dim behavior is preserved rather than silently repaired.",
+    "squash divides by lengths with no epsilon in source; shape reasoning does not establish numerical behavior at zero length.",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not draw learned b as a fixed buffer, claim3 total passes, or invent independent parameters per routing round.",
+    "Do not include CapsNet classifier/reconstruction in this module-only graph."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

@@ -71,7 +71,7 @@ function restored() {
   return { draft: createBlank(), storageRevision: 0, savedRevision: -1 };
 }
 
-export function AuthoringStudio({ onClose, onOpen, initialWorkspace, onViewState, browseBaseline, onReuseView, onNewBlank }: { onClose: () => void; onOpen: (generated: GeneratedDraft) => Promise<void>; initialWorkspace?: AuthoringWorkspace; onViewState?: (workspace: AuthoringWorkspace) => void; browseBaseline?: AuthoredDraft; onReuseView?: (workspace: AuthoringWorkspace) => void | boolean; onNewBlank?: (workspace: AuthoringWorkspace) => void }) {
+export function AuthoringStudio({ onClose, onOpen, initialWorkspace, onViewState, browseBaseline, onReuseView, onNewBlank }: { onClose: () => void; onOpen: (generated: GeneratedDraft) => Promise<void>; initialWorkspace?: AuthoringWorkspace; onViewState?: (workspace: AuthoringWorkspace) => void; browseBaseline?: AuthoredDraft; onReuseView?: (workspace: AuthoringWorkspace) => void | boolean | Promise<void | boolean>; onNewBlank?: (workspace: AuthoringWorkspace) => void }) {
   const [initial] = useState(() => initialWorkspace ?? restored());
   const [history, setHistory] = useState(() => initial.history ?? draftHistory(initial.draft));
   const [baseCatalog, setBaseCatalog] = useState<DraftCatalog | null>(null);
@@ -386,7 +386,9 @@ export function AuthoringStudio({ onClose, onOpen, initialWorkspace, onViewState
     const workspace: AuthoringWorkspace = { draft: snapshot, history: currentRef.current, storageRevision, savedRevision,
       selection: selectedIds, camera, viewport: cameraViewport.current, tool, sourceHistory: initial.sourceHistory, viewBaseline: initial.viewBaseline };
     if (browseBaseline && onReuseView && (sameGeneratedDraft(snapshot, browseBaseline) || sameSourceSemantics(snapshot, browseBaseline))) {
-      try { if (onReuseView(workspace) !== false) return; } catch (reason) { reportError(reason); return; }
+      setBusy(true); setBusyOperation('open');
+      try { if (await onReuseView(workspace) !== false) return; } catch (reason) { reportError(reason); return; }
+      finally { setBusy(false); setBusyOperation(null); }
     }
     browsing.current = true; setBusy(true); setBusyOperation('generate');
     try {

@@ -1,0 +1,1723 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "convvae",
+  "profile": {
+    "task": "MNIST reconstruction",
+    "mode": "forward with stochastic sampling in train and eval",
+    "latent_dim": 15,
+    "latent_levels": 1,
+    "num_classes": null,
+    "input_shape": [
+      "B",
+      1,
+      28,
+      28
+    ],
+    "encoder_input_channels": 1,
+    "encoder_channels": [
+      16,
+      32,
+      64
+    ],
+    "encoder_spatial": [
+      28,
+      12,
+      5,
+      2
+    ],
+    "decoder_channels": [
+      64,
+      32,
+      16,
+      1
+    ],
+    "decoder_spatial": [
+      2,
+      4,
+      11,
+      28
+    ],
+    "decoder_convtranspose": [
+      {
+        "kernel": 2,
+        "stride": 2,
+        "padding": 0
+      },
+      {
+        "kernel": 4,
+        "stride": 3,
+        "padding": 1
+      },
+      {
+        "kernel": 6,
+        "stride": 3,
+        "padding": 4
+      }
+    ],
+    "decoder_linear_input": 15,
+    "decoder_output_channels": 1,
+    "negative_slope": 0.01,
+    "batch_size_setting": 128,
+    "training_sampling_gate": false,
+    "num_features_argument_used": false,
+    "conditional": false,
+    "output_tuple": [
+      "mu",
+      "logvar",
+      "z",
+      "decoded"
+    ],
+    "symbolic_shapes": true,
+    "model_executed": false
+  },
+  "source": {
+    "repository": "https://github.com/rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "a1cb8ca6e3b3489daf1e2276769302cabd9a1ed9055ae534ae06aec90929c946"
+  },
+  "nodes": [
+    {
+      "id": "convvae.root",
+      "label": "ConvVAE / MNIST",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder"
+      ],
+      "shape": "image -> tuple",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.input",
+      "label": "MNIST grayscale image",
+      "kind": "input",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.forward"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [
+        "Caller ToTensor scales pixels to [0,1]; input is not flattened"
+      ],
+      "parent": "convvae.root",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.forward",
+      "label": "Model forward",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.forward"
+      ],
+      "shape": "four-tensor tuple",
+      "detail": [],
+      "mode": "chain",
+      "parent": "convvae.root",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.encoder",
+      "label": "Convolutional encoder",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "(mu,logvar,z): [B,15] x 3",
+      "detail": [],
+      "mode": "chain",
+      "parent": "convvae.forward",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.enc1",
+      "label": "Encode stage 1",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,16,12,12]",
+      "detail": [],
+      "parameter_scope": "enc_conv_1",
+      "mode": "chain",
+      "parent": "convvae.encoder",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.enc1.conv",
+      "label": "Conv2d 1 -> 16",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,16,12,12]",
+      "detail": [
+        "kernel=6; stride=2; padding=0; default bias=True"
+      ],
+      "parameter": "enc_conv_1",
+      "kernel_size": 6,
+      "stride": 2,
+      "padding": 0,
+      "convolution_type": "Conv2d",
+      "parent": "convvae.enc1",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.enc1.activation",
+      "label": "LeakyReLU 0.01",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,16,12,12]",
+      "detail": [
+        "F.leaky_relu(x); slope from API default",
+        "Also applied after the final decoder convolution"
+      ],
+      "negative_slope": 0.01,
+      "parent": "convvae.enc1",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.enc2",
+      "label": "Encode stage 2",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,32,5,5]",
+      "detail": [],
+      "parameter_scope": "enc_conv_2",
+      "mode": "chain",
+      "parent": "convvae.encoder",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.enc2.conv",
+      "label": "Conv2d 16 -> 32",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,32,5,5]",
+      "detail": [
+        "kernel=4; stride=2; padding=0; default bias=True"
+      ],
+      "parameter": "enc_conv_2",
+      "kernel_size": 4,
+      "stride": 2,
+      "padding": 0,
+      "convolution_type": "Conv2d",
+      "parent": "convvae.enc2",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.enc2.activation",
+      "label": "LeakyReLU 0.01",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,32,5,5]",
+      "detail": [
+        "F.leaky_relu(x); slope from API default",
+        "Also applied after the final decoder convolution"
+      ],
+      "negative_slope": 0.01,
+      "parent": "convvae.enc2",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.enc3",
+      "label": "Encode stage 3",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,64,2,2]",
+      "detail": [],
+      "parameter_scope": "enc_conv_3",
+      "mode": "chain",
+      "parent": "convvae.encoder",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.enc3.conv",
+      "label": "Conv2d 32 -> 64",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,64,2,2]",
+      "detail": [
+        "kernel=2; stride=2; padding=0; default bias=True"
+      ],
+      "parameter": "enc_conv_3",
+      "kernel_size": 2,
+      "stride": 2,
+      "padding": 0,
+      "convolution_type": "Conv2d",
+      "parent": "convvae.enc3",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.enc3.activation",
+      "label": "LeakyReLU 0.01",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,64,2,2]",
+      "detail": [
+        "F.leaky_relu(x); slope from API default",
+        "Also applied after the final decoder convolution"
+      ],
+      "negative_slope": 0.01,
+      "parent": "convvae.enc3",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.posterior",
+      "label": "Independent posterior heads",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "mu + logvar results",
+      "detail": [
+        "Logical head-result group; no source tuple is created at this point"
+      ],
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": false,
+      "child_inputs": {
+        "convvae.mean_head": {
+          "role": "value",
+          "producer": "convvae.enc3.activation",
+          "src_port": "out"
+        },
+        "convvae.logvar_head": {
+          "role": "value",
+          "producer": "convvae.enc3.activation",
+          "src_port": "out"
+        }
+      },
+      "mode": "parallel",
+      "parent": "convvae.encoder",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "convvae.mean_head",
+      "label": "Mean head",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,15]",
+      "detail": [],
+      "parameter_scope": "z_mean",
+      "mode": "chain",
+      "parent": "convvae.posterior",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.mean_view",
+      "label": "View 64x2x2 -> 256",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,256]",
+      "detail": [
+        "A separate x.view(-1,64*2*2) expression appears for each head"
+      ],
+      "parent": "convvae.mean_head",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.mu",
+      "label": "Linear 256 -> 15",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "mu: [B,15]",
+      "detail": [
+        "No activation after the posterior head"
+      ],
+      "parameter": "z_mean",
+      "parent": "convvae.mean_head",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "convvae.logvar_head",
+      "label": "Log-variance head",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,15]",
+      "detail": [],
+      "parameter_scope": "z_log_var",
+      "mode": "chain",
+      "parent": "convvae.posterior",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.logvar_view",
+      "label": "View 64x2x2 -> 256",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,256]",
+      "detail": [
+        "A separate x.view(-1,64*2*2) expression appears for each head"
+      ],
+      "parent": "convvae.logvar_head",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.logvar",
+      "label": "Linear 256 -> 15",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "logvar: [B,15]",
+      "detail": [
+        "No activation after the posterior head"
+      ],
+      "parameter": "z_log_var",
+      "parent": "convvae.logvar_head",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.sampling",
+      "label": "Reparameterization / single latent",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "z: [B,15]",
+      "detail": [
+        "No training/eval conditional; sampling always runs"
+      ],
+      "stochastic": true,
+      "training_gate": false,
+      "latent_levels": 1,
+      "mode": "chain",
+      "parent": "convvae.encoder",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.sample_args",
+      "label": "Mean / scaled-noise operands",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "mu + noise operands",
+      "detail": [],
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": false,
+      "child_inputs": {
+        "convvae.retain_mu": {
+          "role": "value",
+          "producer": "convvae.mu",
+          "src_port": "out"
+        },
+        "convvae.scaled_noise": {
+          "role": "value",
+          "producer": "convvae.logvar",
+          "src_port": "out"
+        }
+      },
+      "mode": "parallel",
+      "parent": "convvae.sampling",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "convvae.retain_mu",
+      "label": "Retain mu values",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "[B,15]",
+      "detail": [],
+      "parent": "convvae.sample_args",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.scaled_noise",
+      "label": "Scale Gaussian noise",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "std * epsilon: [B,15]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "convvae.sample_args",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.half_logvar",
+      "label": "Divide logvar by 2",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "[B,15]",
+      "detail": [],
+      "parent": "convvae.scaled_noise",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.std",
+      "label": "exp(logvar / 2)",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "std: [B,15]",
+      "detail": [],
+      "expression": "torch.exp(z_log_var/2.)",
+      "parent": "convvae.scaled_noise",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.noise_product",
+      "label": "Multiply std times epsilon",
+      "kind": "mixing",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "[B,15]",
+      "detail": [
+        "Elementwise product; independent internal noise enters epsilon port"
+      ],
+      "expression": "eps * torch.exp(z_log_var/2.)",
+      "parent": "convvae.scaled_noise",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "epsilon"
+      ]
+    },
+    {
+      "id": "convvae.z",
+      "label": "Add mu + std * epsilon",
+      "kind": "mixing",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "z: [B,15]",
+      "detail": [],
+      "expression": "z_mu + eps * torch.exp(z_log_var/2.)",
+      "parent": "convvae.sampling",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.encoder_return",
+      "label": "Return (mu, logvar, z)",
+      "kind": "output",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.encoder"
+      ],
+      "shape": "3 tensors [B,15]",
+      "detail": [
+        "Actual encoder return tuple; no feature concatenation"
+      ],
+      "output_tuple": [
+        "mu",
+        "logvar",
+        "z"
+      ],
+      "parent": "convvae.encoder",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mu",
+        "logvar"
+      ]
+    },
+    {
+      "id": "convvae.select_z",
+      "label": "Select encoded z from tuple",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.forward"
+      ],
+      "shape": "[B,15]",
+      "detail": [
+        "Decoder receives only encoded, plus targets in conditional variant"
+      ],
+      "input_selector": "encoded",
+      "parent": "convvae.forward",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.decoder",
+      "label": "Convolutional decoder",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.decoder"
+      ],
+      "shape": "decoded: [B,1,28,28]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "convvae.forward",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.latent_projection",
+      "label": "Latent projection + reshape",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,64,2,2]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "convvae.decoder",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.decoder_linear",
+      "label": "Linear 15 -> 256",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,256]",
+      "detail": [],
+      "parameter": "dec_linear_1",
+      "in_features": 15,
+      "out_features": 256,
+      "parent": "convvae.latent_projection",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.decoder_view",
+      "label": "View as 64x2x2 feature map",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,64,2,2]",
+      "detail": [
+        "x.view(-1,64,2,2)"
+      ],
+      "parent": "convvae.latent_projection",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.dec1",
+      "label": "Decode stage 1",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,32,4,4]",
+      "detail": [],
+      "parameter_scope": "dec_deconv_1",
+      "mode": "chain",
+      "parent": "convvae.decoder",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.dec1.conv",
+      "label": "ConvTranspose2d 64 -> 32",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,32,4,4]",
+      "detail": [
+        "kernel=2; stride=2; padding=0; default bias=True"
+      ],
+      "parameter": "dec_deconv_1",
+      "kernel_size": 2,
+      "stride": 2,
+      "padding": 0,
+      "convolution_type": "ConvTranspose2d",
+      "parent": "convvae.dec1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.dec1.activation",
+      "label": "LeakyReLU 0.01",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,32,4,4]",
+      "detail": [
+        "F.leaky_relu(x); slope from API default",
+        "Also applied after the final decoder convolution"
+      ],
+      "negative_slope": 0.01,
+      "parent": "convvae.dec1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.dec2",
+      "label": "Decode stage 2",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,16,11,11]",
+      "detail": [],
+      "parameter_scope": "dec_deconv_2",
+      "mode": "chain",
+      "parent": "convvae.decoder",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.dec2.conv",
+      "label": "ConvTranspose2d 32 -> 16",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,16,11,11]",
+      "detail": [
+        "kernel=4; stride=3; padding=1; default bias=True"
+      ],
+      "parameter": "dec_deconv_2",
+      "kernel_size": 4,
+      "stride": 3,
+      "padding": 1,
+      "convolution_type": "ConvTranspose2d",
+      "parent": "convvae.dec2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.dec2.activation",
+      "label": "LeakyReLU 0.01",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,16,11,11]",
+      "detail": [
+        "F.leaky_relu(x); slope from API default",
+        "Also applied after the final decoder convolution"
+      ],
+      "negative_slope": 0.01,
+      "parent": "convvae.dec2",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.dec3",
+      "label": "Decode stage 3",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [],
+      "parameter_scope": "dec_deconv_3",
+      "mode": "chain",
+      "parent": "convvae.decoder",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.dec3.conv",
+      "label": "ConvTranspose2d 16 -> 1",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [
+        "kernel=6; stride=3; padding=4; default bias=True"
+      ],
+      "parameter": "dec_deconv_3",
+      "kernel_size": 6,
+      "stride": 3,
+      "padding": 4,
+      "convolution_type": "ConvTranspose2d",
+      "parent": "convvae.dec3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.dec3.activation",
+      "label": "LeakyReLU 0.01",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [
+        "F.leaky_relu(x); slope from API default",
+        "Also applied after the final decoder convolution"
+      ],
+      "negative_slope": 0.01,
+      "parent": "convvae.dec3",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.sigmoid",
+      "label": "Sigmoid decoded pixels",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [
+        "Follows final LeakyReLU, not the raw final convolution"
+      ],
+      "expression": "torch.sigmoid(x)",
+      "parent": "convvae.decoder",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convvae.return",
+      "label": "Return (mu, logvar, z, decoded)",
+      "kind": "output",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.forward"
+      ],
+      "shape": "[B,15] x 3; [B,1,28,28]",
+      "detail": [
+        "Actual four-field forward return; no image-only implicit output"
+      ],
+      "output_tuple": [
+        "mu",
+        "logvar",
+        "z",
+        "decoded"
+      ],
+      "parent": "convvae.forward",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mu",
+        "logvar",
+        "encoded"
+      ]
+    },
+    {
+      "id": "convvae.epsilon",
+      "label": "Internal Gaussian epsilon",
+      "kind": "sampling",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py::ConvVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "[B,15]",
+      "detail": [
+        "torch.randn(z_mu.size(0),z_mu.size(1)).to(device)",
+        "Created inside reparameterize in train and eval"
+      ],
+      "origin": "internal_random_source",
+      "stochastic": true,
+      "learnable": false,
+      "shape_producer": "convvae.mu",
+      "input_ports": [
+        "shape"
+      ],
+      "parent": null,
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "convvae.enc1:in->convvae.enc1.conv:in:boundary",
+      "src": "convvae.enc1",
+      "dst": "convvae.enc1.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.enc1.conv:out->convvae.enc1.activation:in:tensor",
+      "src": "convvae.enc1.conv",
+      "dst": "convvae.enc1.activation",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.enc1.activation:out->convvae.enc1:out:boundary",
+      "src": "convvae.enc1.activation",
+      "dst": "convvae.enc1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.enc2:in->convvae.enc2.conv:in:boundary",
+      "src": "convvae.enc2",
+      "dst": "convvae.enc2.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.enc2.conv:out->convvae.enc2.activation:in:tensor",
+      "src": "convvae.enc2.conv",
+      "dst": "convvae.enc2.activation",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.enc2.activation:out->convvae.enc2:out:boundary",
+      "src": "convvae.enc2.activation",
+      "dst": "convvae.enc2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.enc3:in->convvae.enc3.conv:in:boundary",
+      "src": "convvae.enc3",
+      "dst": "convvae.enc3.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.enc3.conv:out->convvae.enc3.activation:in:tensor",
+      "src": "convvae.enc3.conv",
+      "dst": "convvae.enc3.activation",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.enc3.activation:out->convvae.enc3:out:boundary",
+      "src": "convvae.enc3.activation",
+      "dst": "convvae.enc3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.mean_head:in->convvae.mean_view:in:boundary",
+      "src": "convvae.mean_head",
+      "dst": "convvae.mean_view",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.mean_view:out->convvae.mu:in:tensor",
+      "src": "convvae.mean_view",
+      "dst": "convvae.mu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.mu:out->convvae.mean_head:out:boundary",
+      "src": "convvae.mu",
+      "dst": "convvae.mean_head",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.logvar_head:in->convvae.logvar_view:in:boundary",
+      "src": "convvae.logvar_head",
+      "dst": "convvae.logvar_view",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.logvar_view:out->convvae.logvar:in:tensor",
+      "src": "convvae.logvar_view",
+      "dst": "convvae.logvar",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.logvar:out->convvae.logvar_head:out:boundary",
+      "src": "convvae.logvar",
+      "dst": "convvae.logvar_head",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.enc3.activation:out->convvae.mean_head:in:value_operand",
+      "src": "convvae.enc3.activation",
+      "dst": "convvae.mean_head",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "convvae.mean_head:out->convvae.posterior:operand[0]:operand_collection",
+      "src": "convvae.mean_head",
+      "dst": "convvae.posterior",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "convvae.enc3.activation:out->convvae.logvar_head:in:value_operand",
+      "src": "convvae.enc3.activation",
+      "dst": "convvae.logvar_head",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "convvae.logvar_head:out->convvae.posterior:operand[1]:operand_collection",
+      "src": "convvae.logvar_head",
+      "dst": "convvae.posterior",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "convvae.scaled_noise:in->convvae.half_logvar:in:boundary",
+      "src": "convvae.scaled_noise",
+      "dst": "convvae.half_logvar",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.half_logvar:out->convvae.std:in:tensor",
+      "src": "convvae.half_logvar",
+      "dst": "convvae.std",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.std:out->convvae.noise_product:in:tensor",
+      "src": "convvae.std",
+      "dst": "convvae.noise_product",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.noise_product:out->convvae.scaled_noise:out:boundary",
+      "src": "convvae.noise_product",
+      "dst": "convvae.scaled_noise",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.mu:out->convvae.retain_mu:in:value_operand",
+      "src": "convvae.mu",
+      "dst": "convvae.retain_mu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "convvae.retain_mu:out->convvae.sample_args:operand[0]:operand_collection",
+      "src": "convvae.retain_mu",
+      "dst": "convvae.sample_args",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "convvae.logvar:out->convvae.scaled_noise:in:value_operand",
+      "src": "convvae.logvar",
+      "dst": "convvae.scaled_noise",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "convvae.scaled_noise:out->convvae.sample_args:operand[1]:operand_collection",
+      "src": "convvae.scaled_noise",
+      "dst": "convvae.sample_args",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "convvae.sampling:in->convvae.sample_args:in:boundary",
+      "src": "convvae.sampling",
+      "dst": "convvae.sample_args",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.sample_args:out->convvae.z:in:tensor",
+      "src": "convvae.sample_args",
+      "dst": "convvae.z",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.z:out->convvae.sampling:out:boundary",
+      "src": "convvae.z",
+      "dst": "convvae.sampling",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.encoder:in->convvae.enc1:in:boundary",
+      "src": "convvae.encoder",
+      "dst": "convvae.enc1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.enc1:out->convvae.enc2:in:tensor",
+      "src": "convvae.enc1",
+      "dst": "convvae.enc2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.enc2:out->convvae.enc3:in:tensor",
+      "src": "convvae.enc2",
+      "dst": "convvae.enc3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.enc3:out->convvae.posterior:in:tensor",
+      "src": "convvae.enc3",
+      "dst": "convvae.posterior",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.posterior:out->convvae.sampling:in:tensor",
+      "src": "convvae.posterior",
+      "dst": "convvae.sampling",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.sampling:out->convvae.encoder_return:in:tensor",
+      "src": "convvae.sampling",
+      "dst": "convvae.encoder_return",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.encoder_return:out->convvae.encoder:out:boundary",
+      "src": "convvae.encoder_return",
+      "dst": "convvae.encoder",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.latent_projection:in->convvae.decoder_linear:in:boundary",
+      "src": "convvae.latent_projection",
+      "dst": "convvae.decoder_linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.decoder_linear:out->convvae.decoder_view:in:tensor",
+      "src": "convvae.decoder_linear",
+      "dst": "convvae.decoder_view",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.decoder_view:out->convvae.latent_projection:out:boundary",
+      "src": "convvae.decoder_view",
+      "dst": "convvae.latent_projection",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.dec1:in->convvae.dec1.conv:in:boundary",
+      "src": "convvae.dec1",
+      "dst": "convvae.dec1.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.dec1.conv:out->convvae.dec1.activation:in:tensor",
+      "src": "convvae.dec1.conv",
+      "dst": "convvae.dec1.activation",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.dec1.activation:out->convvae.dec1:out:boundary",
+      "src": "convvae.dec1.activation",
+      "dst": "convvae.dec1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.dec2:in->convvae.dec2.conv:in:boundary",
+      "src": "convvae.dec2",
+      "dst": "convvae.dec2.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.dec2.conv:out->convvae.dec2.activation:in:tensor",
+      "src": "convvae.dec2.conv",
+      "dst": "convvae.dec2.activation",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.dec2.activation:out->convvae.dec2:out:boundary",
+      "src": "convvae.dec2.activation",
+      "dst": "convvae.dec2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.dec3:in->convvae.dec3.conv:in:boundary",
+      "src": "convvae.dec3",
+      "dst": "convvae.dec3.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.dec3.conv:out->convvae.dec3.activation:in:tensor",
+      "src": "convvae.dec3.conv",
+      "dst": "convvae.dec3.activation",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.dec3.activation:out->convvae.dec3:out:boundary",
+      "src": "convvae.dec3.activation",
+      "dst": "convvae.dec3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.decoder:in->convvae.latent_projection:in:boundary",
+      "src": "convvae.decoder",
+      "dst": "convvae.latent_projection",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.latent_projection:out->convvae.dec1:in:tensor",
+      "src": "convvae.latent_projection",
+      "dst": "convvae.dec1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.dec1:out->convvae.dec2:in:tensor",
+      "src": "convvae.dec1",
+      "dst": "convvae.dec2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.dec2:out->convvae.dec3:in:tensor",
+      "src": "convvae.dec2",
+      "dst": "convvae.dec3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.dec3:out->convvae.sigmoid:in:tensor",
+      "src": "convvae.dec3",
+      "dst": "convvae.sigmoid",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.sigmoid:out->convvae.decoder:out:boundary",
+      "src": "convvae.sigmoid",
+      "dst": "convvae.decoder",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.forward:in->convvae.encoder:in:boundary",
+      "src": "convvae.forward",
+      "dst": "convvae.encoder",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.encoder:out->convvae.select_z:in:tensor",
+      "src": "convvae.encoder",
+      "dst": "convvae.select_z",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.select_z:out->convvae.decoder:in:tensor",
+      "src": "convvae.select_z",
+      "dst": "convvae.decoder",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.decoder:out->convvae.return:in:tensor",
+      "src": "convvae.decoder",
+      "dst": "convvae.return",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.return:out->convvae.forward:out:boundary",
+      "src": "convvae.return",
+      "dst": "convvae.forward",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.root:in->convvae.input:in:boundary",
+      "src": "convvae.root",
+      "dst": "convvae.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.input:out->convvae.forward:in:tensor",
+      "src": "convvae.input",
+      "dst": "convvae.forward",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convvae.forward:out->convvae.root:out:boundary",
+      "src": "convvae.forward",
+      "dst": "convvae.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convvae.epsilon:out->convvae.noise_product:epsilon:random_sample",
+      "src": "convvae.epsilon",
+      "dst": "convvae.noise_product",
+      "src_port": "out",
+      "dst_port": "epsilon",
+      "role": "random_sample"
+    },
+    {
+      "id": "convvae.mu:shape->convvae.epsilon:shape:shape_dependency",
+      "src": "convvae.mu",
+      "dst": "convvae.epsilon",
+      "src_port": "shape",
+      "dst_port": "shape",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "convvae.mu:out->convvae.encoder_return:mu:retained_value",
+      "src": "convvae.mu",
+      "dst": "convvae.encoder_return",
+      "src_port": "out",
+      "dst_port": "mu",
+      "role": "retained_value"
+    },
+    {
+      "id": "convvae.mu:out->convvae.return:mu:retained_value",
+      "src": "convvae.mu",
+      "dst": "convvae.return",
+      "src_port": "out",
+      "dst_port": "mu",
+      "role": "retained_value"
+    },
+    {
+      "id": "convvae.logvar:out->convvae.encoder_return:logvar:retained_value",
+      "src": "convvae.logvar",
+      "dst": "convvae.encoder_return",
+      "src_port": "out",
+      "dst_port": "logvar",
+      "role": "retained_value"
+    },
+    {
+      "id": "convvae.logvar:out->convvae.return:logvar:retained_value",
+      "src": "convvae.logvar",
+      "dst": "convvae.return",
+      "src_port": "out",
+      "dst_port": "logvar",
+      "role": "retained_value"
+    },
+    {
+      "id": "convvae.z:out->convvae.return:encoded:retained_value",
+      "src": "convvae.z",
+      "dst": "convvae.return",
+      "src_port": "out",
+      "dst_port": "encoded",
+      "role": "retained_value"
+    }
+  ],
+  "facts": [
+    "Encoder convolutions use kernels 6/4/2, strides 2/2/2, zero padding, and channels 16/32/64; 28->12->5->2 spatial sizes.",
+    "Two independent Linear(256,latent) posterior heads each call x.view(-1,64*2*2); no intermediate hidden latent hierarchy exists.",
+    "Internal epsilon is randn(B,latent).to(module global device); z=mu+epsilon*exp(logvar/2) with no train/eval gate.",
+    "randn dimensions read z_mu.size(0/1); mu->epsilon is a shape dependency only, not a feature-value input.",
+    "encoder returns (mu,logvar,encoded), and forward returns (mu,logvar,encoded,decoded); decoder receives selected z.",
+    "Decoder Linear projects to 256 before reshape to 64x2x2; transposed convolutions use (k,s,p)=(2,2,0),(4,3,1),(6,3,4).",
+    "Decoder spatial sizes are 2->4->11->28; LeakyReLU follows all three transposed convolutions, then Sigmoid.",
+    "All six convolution calls use default bias=True; all six LeakyReLU calls use API default negative_slope=0.01; no BatchNorm or Dropout.",
+    "num_features constructor argument is unused; source fixes posterior/decoder base map at 64x2x2.",
+    "Losses, label-map reconstruction targets and standalone random decoder calls belong to notebook caller cells, outside forward."
+  ],
+  "corrections": [
+    "No model-specific reference PNG is supplied; this graph follows the fixed notebook rather than a generic VAE illustration.",
+    "Retain asymmetric decoder strides 2/3/3 and padding 0/1/4, rather than inventing a mirror of encoder stride 2.",
+    "Draw one latent level and distinct mean/log-variance heads; logical operand bundles are not literal source tuples.",
+    "Do not replace final LeakyReLU+Sigmoid by Sigmoid directly after convolution or by Softmax.",
+    "Evaluation still samples epsilon; no deterministic z=mu path is present in this source."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

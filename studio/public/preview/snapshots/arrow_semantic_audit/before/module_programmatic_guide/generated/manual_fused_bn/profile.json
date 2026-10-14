@@ -1,0 +1,28 @@
+{
+  "channels": 8,
+  "epsilon": 1e-05,
+  "return_mean_var": false,
+  "gain_provided": true,
+  "bias_provided": true,
+  "variance": "E[x²]-E[x]²",
+  "clamp": false,
+  "parameters": [],
+  "shape_origin": "declared example; statically inferred, not observed",
+  "drawing_scope": "manual_bn calling fused_bn; gain/bias supplied by caller, no running-statistics module.",
+  "source_contracts": [
+    [
+      "manual_bn",
+      "m2 - m ** 2"
+    ],
+    [
+      "fused_bn",
+      "x * scale - shift"
+    ],
+    [
+      "manual_bn",
+      "torch.mean(float_x, [0, 2, 3], keepdim=True)"
+    ]
+  ],
+  "model_executed": false,
+  "artifact_scope": "module"
+}

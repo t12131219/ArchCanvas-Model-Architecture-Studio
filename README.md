@@ -1,5 +1,9 @@
 # ArchCanvas Studio · 视觉与受限双向审核 Alpha
 
+2026-10-14：预览画布已迁入 `Summary_Merge` 的递归模型图、源码 AST 适配、连线编辑和自动布线技术，保留正式 Studio 的顶部工具、左右面板及基于图例的模型编辑。通过“模型 → 示例与模块库”打开完整案例目录；新技术用于中心预览，不增加一级工作台。前端资源、源码快照与证据已复制到正式项目，启动不依赖原型目录或其服务。迁移后的使用方法、双契约源码绑定、保存边界和本次验证范围见 [预览迁移说明](docs/preview-migration.md)。
+
+在已具备前端依赖和正式 `.venv` 的当前工作树中，可执行 `cd studio && npm run build`，随后在本目录执行 `PYTHONPATH=src .venv/bin/python -B -m archcanvas_cli serve --host 127.0.0.1 --port 8765`，打开 [Studio](http://127.0.0.1:8765)。源码分析不执行模型；PDF/PNG 是否可用以该解释器返回的 `capabilities` 为准。下方各日期的测试数量与构建记录是历史证据，不自动适用于本次迁移。
+
 2026-10-10 审计修复：`doctor` 返回实际运行时、构建文件摘要和目录数量；`open` 返回指定模型的文档/会话 ID 和精确 URL，`session read/apply/undo/redo/save/export` 复用 Studio 的视觉操作与持久历史。`serve --data-dir` 现在表示**完整状态根**，五类状态都在其子目录；默认仍为正式工程 `.archcanvas`。原先显式指定 `.../documents` 的服务若要重开旧状态，请明确指定其原父目录，修复不会自动迁移。导出先暂存产物和回执，普通失败保留或恢复旧文件；不承诺断电时跨文件原子提交。
 
 当前工作树为开发版；Beta.2 冻结包仍是历史 17/3。新候选包的实际版本、74/23 目录和构建摘要通过其安装后 `doctor` 核对，三宿主客户端、真人、性能与出版审看保持未认证。使用方式见 [审计修复说明](docs/skill-readiness-fixes-2026-10-10.md)。

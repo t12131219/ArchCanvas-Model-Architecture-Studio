@@ -1,0 +1,80 @@
+{
+  "source_project": "glow-modules",
+  "repository": "rosinality/glow-pytorch",
+  "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+  "source_snapshot_sha256": "1d5cf48ba47a5ecf7ea7059a37c9d1584a95871f52d5022f76b59cc51138d2ce",
+  "entry": "glow-modules/model.py::AffineCoupling.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "glow-modules/LICENSE": {
+      "sha256": "225b2842279abe5023f2642f82ca1bdc6653b801b8a354b4cbf5229d846a2f3c",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/rosinality/glow-pytorch/97081ff115a694cf04aeedbd58447f33d242c879/LICENSE",
+      "derived_from": null
+    },
+    "glow-modules/model.py": {
+      "sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+      "lines": 372,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/rosinality/glow-pytorch/97081ff115a694cf04aeedbd58447f33d242c879/model.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "glow-modules/model.py::ZeroConv2d.__init__": {
+      "path": "glow-modules/model.py",
+      "symbol": "ZeroConv2d.__init__",
+      "start": 140,
+      "end": 146,
+      "snippet": "    def __init__(self, in_channel, out_channel, padding=1):\n        super().__init__()\n\n        self.conv = nn.Conv2d(in_channel, out_channel, 3, padding=0)\n        self.conv.weight.data.zero_()\n        self.conv.bias.data.zero_()\n        self.scale = nn.Parameter(torch.zeros(1, out_channel, 1, 1))",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "glow-modules/model.py::ZeroConv2d.forward": {
+      "path": "glow-modules/model.py",
+      "symbol": "ZeroConv2d.forward",
+      "start": 148,
+      "end": 153,
+      "snippet": "    def forward(self, input):\n        out = F.pad(input, [1, 1, 1, 1], value=1)\n        out = self.conv(out)\n        out = out * torch.exp(self.scale * 3)\n\n        return out",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E005"
+    },
+    "glow-modules/model.py::AffineCoupling.__init__": {
+      "path": "glow-modules/model.py",
+      "symbol": "AffineCoupling.__init__",
+      "start": 157,
+      "end": 174,
+      "snippet": "    def __init__(self, in_channel, filter_size=512, affine=True):\n        super().__init__()\n\n        self.affine = affine\n\n        self.net = nn.Sequential(\n            nn.Conv2d(in_channel // 2, filter_size, 3, padding=1),\n            nn.ReLU(inplace=True),\n            nn.Conv2d(filter_size, filter_size, 1),\n            nn.ReLU(inplace=True),\n            ZeroConv2d(filter_size, in_channel if self.affine else in_channel // 2),\n        )\n\n        self.net[0].weight.data.normal_(0, 0.05)\n        self.net[0].bias.data.zero_()\n\n        self.net[2].weight.data.normal_(0, 0.05)\n        self.net[2].bias.data.zero_()",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "glow-modules/model.py::AffineCoupling.forward": {
+      "path": "glow-modules/model.py",
+      "symbol": "AffineCoupling.forward",
+      "start": 176,
+      "end": 193,
+      "snippet": "    def forward(self, input):\n        in_a, in_b = input.chunk(2, 1)\n\n        if self.affine:\n            log_s, t = self.net(in_a).chunk(2, 1)\n            # s = torch.exp(log_s)\n            s = F.sigmoid(log_s + 2)\n            # out_a = s * in_a + t\n            out_b = (in_b + t) * s\n\n            logdet = torch.sum(torch.log(s).view(input.shape[0], -1), 1)\n\n        else:\n            net_out = self.net(in_a)\n            out_b = in_b + net_out\n            logdet = None\n\n        return torch.cat([in_a, out_b], 1), logdet",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "glow-modules/model.py::AffineCoupling.reverse": {
+      "path": "glow-modules/model.py",
+      "symbol": "AffineCoupling.reverse",
+      "start": 195,
+      "end": 209,
+      "snippet": "    def reverse(self, output):\n        out_a, out_b = output.chunk(2, 1)\n\n        if self.affine:\n            log_s, t = self.net(out_a).chunk(2, 1)\n            # s = torch.exp(log_s)\n            s = F.sigmoid(log_s + 2)\n            # in_a = (out_a - t) / s\n            in_b = out_b / s - t\n\n        else:\n            net_out = self.net(out_a)\n            in_b = out_b - net_out\n\n        return torch.cat([out_a, in_b], 1)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "glow-modules/LICENSE"
+  ]
+}

@@ -1,0 +1,1361 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "vae",
+  "profile": {
+    "task": "MNIST reconstruction",
+    "mode": "forward incl. stochastic sampling",
+    "num_features": 784,
+    "num_hidden_1": 500,
+    "num_latent": 15,
+    "leaky_relu_negative_slope": 0.0001,
+    "batch_axis": "B",
+    "batch_size_setting": 128,
+    "input_range": [
+      0,
+      1
+    ],
+    "decoder_output": "784 sigmoid pixel probabilities",
+    "output_tuple": [
+      "z_mean",
+      "z_log_var",
+      "encoded",
+      "decoded"
+    ],
+    "external_input": "flattened features",
+    "random_source": "internal torch.randn",
+    "likelihood": "Bernoulli reconstruction",
+    "training_loss_in_forward": false
+  },
+  "source": {
+    "repository": "rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "591a881d04226e9e2e62669938cda2c197e2cf38e37f65e52864fa5070e08200"
+  },
+  "nodes": [
+    {
+      "id": "vae.root",
+      "label": "MNIST fully connected VAE",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.forward"
+      ],
+      "shape": "(mu, logvar, z, decoded)",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.input",
+      "label": "Flattened MNIST features",
+      "kind": "input",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.forward"
+      ],
+      "shape": "[B,784]",
+      "detail": [
+        "caller reshapes [B,1,28,28] to [B,784] before model(features)",
+        "pixel range [0,1] from dataset ToTensor"
+      ],
+      "caller_preparation": "features.view(-1, 28*28)",
+      "parent": "vae.root",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.forward",
+      "label": "Model forward",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.forward"
+      ],
+      "shape": "four-tensor tuple",
+      "detail": [],
+      "mode": "chain",
+      "port_bindings": {
+        "mu": {
+          "node": "vae.mu",
+          "port": "out"
+        },
+        "z_mean": {
+          "node": "vae.mu",
+          "port": "out"
+        },
+        "logvar": {
+          "node": "vae.logvar",
+          "port": "out"
+        },
+        "z_log_var": {
+          "node": "vae.logvar",
+          "port": "out"
+        },
+        "z": {
+          "node": "vae.z",
+          "port": "out"
+        },
+        "encoded": {
+          "node": "vae.z",
+          "port": "out"
+        },
+        "decoded": {
+          "node": "vae.dec_sigmoid",
+          "port": "out"
+        },
+        "item[0]": {
+          "node": "vae.mu",
+          "port": "out"
+        },
+        "item[1]": {
+          "node": "vae.logvar",
+          "port": "out"
+        },
+        "item[2]": {
+          "node": "vae.z",
+          "port": "out"
+        },
+        "item[3]": {
+          "node": "vae.dec_sigmoid",
+          "port": "out"
+        }
+      },
+      "parent": "vae.root",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mu",
+        "z_mean",
+        "logvar",
+        "z_log_var",
+        "z",
+        "encoded",
+        "decoded",
+        "item[0]",
+        "item[1]",
+        "item[2]",
+        "item[3]"
+      ]
+    },
+    {
+      "id": "vae.encoder",
+      "label": "Encoder",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.__init__",
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.encoder"
+      ],
+      "shape": "(mu, logvar, z)",
+      "detail": [],
+      "parameter_scope": "hidden_1 / z_mean / z_log_var",
+      "mode": "chain",
+      "port_bindings": {
+        "mu": {
+          "node": "vae.mu",
+          "port": "out"
+        },
+        "z_mean": {
+          "node": "vae.mu",
+          "port": "out"
+        },
+        "logvar": {
+          "node": "vae.logvar",
+          "port": "out"
+        },
+        "z_log_var": {
+          "node": "vae.logvar",
+          "port": "out"
+        },
+        "z": {
+          "node": "vae.z",
+          "port": "out"
+        },
+        "encoded": {
+          "node": "vae.z",
+          "port": "out"
+        },
+        "item[0]": {
+          "node": "vae.mu",
+          "port": "out"
+        },
+        "item[1]": {
+          "node": "vae.logvar",
+          "port": "out"
+        },
+        "item[2]": {
+          "node": "vae.z",
+          "port": "out"
+        }
+      },
+      "parent": "vae.forward",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mu",
+        "z_mean",
+        "logvar",
+        "z_log_var",
+        "z",
+        "encoded",
+        "item[0]",
+        "item[1]",
+        "item[2]"
+      ]
+    },
+    {
+      "id": "vae.enc_linear",
+      "label": "Linear 784 -> 500",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.__init__",
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,500]",
+      "detail": [
+        "self.hidden_1"
+      ],
+      "parameter": "hidden_1",
+      "parent": "vae.encoder",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.enc_activation",
+      "label": "LeakyReLU",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,500]",
+      "detail": [
+        "negative_slope=0.0001"
+      ],
+      "negative_slope": 0.0001,
+      "parent": "vae.encoder",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.posterior",
+      "label": "Posterior parameter heads",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.encoder"
+      ],
+      "shape": "mu / logvar: independent operands",
+      "detail": [
+        "same hidden input; independent Linear weights",
+        "parallel means two tensor results, not addition"
+      ],
+      "mode": "parallel",
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": false,
+      "child_inputs": {
+        "vae.mean_head": {
+          "role": "value",
+          "producer": "vae.enc_activation",
+          "src_port": "out"
+        },
+        "vae.logvar_head": {
+          "role": "value",
+          "producer": "vae.enc_activation",
+          "src_port": "out"
+        }
+      },
+      "port_bindings": {
+        "out": [
+          {
+            "node": "vae.mu",
+            "port": "out"
+          },
+          {
+            "node": "vae.logvar",
+            "port": "out"
+          }
+        ],
+        "item[0]": {
+          "node": "vae.mu",
+          "port": "out"
+        },
+        "item[1]": {
+          "node": "vae.logvar",
+          "port": "out"
+        },
+        "mu": {
+          "node": "vae.mu",
+          "port": "out"
+        },
+        "logvar": {
+          "node": "vae.logvar",
+          "port": "out"
+        }
+      },
+      "parent": "vae.encoder",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "mu",
+        "logvar",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "vae.mean_head",
+      "label": "Mean head",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.__init__",
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.encoder"
+      ],
+      "shape": "mu: [B,15]",
+      "detail": [],
+      "parameter_scope": "z_mean",
+      "mode": "chain",
+      "parent": "vae.posterior",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.mu",
+      "label": "Linear 500 -> 15",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.__init__",
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.encoder"
+      ],
+      "shape": "mu: [B,15]",
+      "detail": [
+        "self.z_mean; no activation"
+      ],
+      "parameter": "z_mean",
+      "parent": "vae.mean_head",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "vae.logvar_head",
+      "label": "Log-variance head",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.__init__",
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.encoder"
+      ],
+      "shape": "logvar: [B,15]",
+      "detail": [],
+      "parameter_scope": "z_log_var",
+      "mode": "chain",
+      "parent": "vae.posterior",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.logvar",
+      "label": "Linear 500 -> 15",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.__init__",
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.encoder"
+      ],
+      "shape": "logvar: [B,15]",
+      "detail": [
+        "self.z_log_var; unbounded log variance"
+      ],
+      "parameter": "z_log_var",
+      "parent": "vae.logvar_head",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.sampling",
+      "label": "Reparameterization",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.reparameterize"
+      ],
+      "shape": "z: [B,15]",
+      "detail": [
+        "sampling also happens in eval mode in this source"
+      ],
+      "mode": "chain",
+      "port_bindings": {
+        "out": {
+          "node": "vae.z",
+          "port": "out"
+        }
+      },
+      "parent": "vae.encoder",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.sample_operands",
+      "label": "Mean / scaled noise",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.reparameterize"
+      ],
+      "shape": "two Add operands",
+      "detail": [],
+      "dispatch": false,
+      "mode": "parallel",
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": false,
+      "child_inputs": {
+        "vae.mean_operand": {
+          "role": "value",
+          "producer": "vae.mu",
+          "src_port": "out"
+        },
+        "vae.scaled_noise": {
+          "role": "value",
+          "producer": "vae.logvar",
+          "src_port": "out"
+        }
+      },
+      "port_bindings": {
+        "out": [
+          {
+            "node": "vae.mean_operand",
+            "port": "out"
+          },
+          {
+            "node": "vae.noise_product",
+            "port": "out"
+          }
+        ],
+        "item[0]": {
+          "node": "vae.mean_operand",
+          "port": "out"
+        },
+        "item[1]": {
+          "node": "vae.noise_product",
+          "port": "out"
+        },
+        "mu": {
+          "node": "vae.mean_operand",
+          "port": "out"
+        },
+        "scaled_noise": {
+          "node": "vae.noise_product",
+          "port": "out"
+        }
+      },
+      "parent": "vae.sampling",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "mu",
+        "scaled_noise",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "vae.mean_operand",
+      "label": "Retain mu",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.reparameterize"
+      ],
+      "shape": "[B,15]",
+      "detail": [
+        "mu is used unchanged"
+      ],
+      "input_selector": "z_mu",
+      "parent": "vae.sample_operands",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.scaled_noise",
+      "label": "Standard deviation times noise",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.reparameterize"
+      ],
+      "shape": "[B,15]",
+      "detail": [],
+      "input_selector": "z_log_var",
+      "mode": "chain",
+      "parent": "vae.sample_operands",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.half_logvar",
+      "label": "Divide logvar by 2",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.reparameterize"
+      ],
+      "shape": "[B,15]",
+      "detail": [
+        "z_log_var / 2."
+      ],
+      "input_selector": "z_log_var",
+      "parent": "vae.scaled_noise",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.std",
+      "label": "Exponential",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.reparameterize"
+      ],
+      "shape": "std: [B,15]",
+      "detail": [
+        "exp(logvar/2), not exp(logvar)"
+      ],
+      "expression": "torch.exp(z_log_var / 2.)",
+      "parent": "vae.scaled_noise",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.noise_product",
+      "label": "std times epsilon",
+      "kind": "mixing",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.reparameterize"
+      ],
+      "shape": "[B,15]",
+      "detail": [
+        "elementwise; epsilon enters through a side port"
+      ],
+      "parent": "vae.scaled_noise",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "epsilon"
+      ]
+    },
+    {
+      "id": "vae.z",
+      "label": "Add mu + std*epsilon",
+      "kind": "mixing",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.reparameterize"
+      ],
+      "shape": "z: [B,15]",
+      "detail": [
+        "elementwise addition"
+      ],
+      "expression": "z_mu + eps * torch.exp(z_log_var/2.)",
+      "parent": "vae.sampling",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.encoder_return",
+      "label": "Return (mu, logvar, z)",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.encoder"
+      ],
+      "shape": "three [B,15] tensors",
+      "detail": [
+        "tuple fields are retained; no concatenation"
+      ],
+      "output_tuple": [
+        "mu",
+        "logvar",
+        "z"
+      ],
+      "port_bindings": {
+        "mu": {
+          "node": "vae.mu",
+          "port": "out",
+          "direction": "src"
+        },
+        "z_mean": {
+          "node": "vae.mu",
+          "port": "out",
+          "direction": "src"
+        },
+        "logvar": {
+          "node": "vae.logvar",
+          "port": "out",
+          "direction": "src"
+        },
+        "z_log_var": {
+          "node": "vae.logvar",
+          "port": "out",
+          "direction": "src"
+        },
+        "z": {
+          "node": "vae.z",
+          "port": "out",
+          "direction": "src"
+        },
+        "encoded": {
+          "node": "vae.z",
+          "port": "out",
+          "direction": "src"
+        },
+        "item[0]": {
+          "node": "vae.mu",
+          "port": "out",
+          "direction": "src"
+        },
+        "item[1]": {
+          "node": "vae.logvar",
+          "port": "out",
+          "direction": "src"
+        },
+        "item[2]": {
+          "node": "vae.z",
+          "port": "out",
+          "direction": "src"
+        }
+      },
+      "parent": "vae.encoder",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mu",
+        "z_mean",
+        "logvar",
+        "z_log_var",
+        "z",
+        "encoded",
+        "item[0]",
+        "item[1]",
+        "item[2]"
+      ]
+    },
+    {
+      "id": "vae.select_z",
+      "label": "Select encoded z",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.forward"
+      ],
+      "shape": "[B,15]",
+      "detail": [
+        "decoder receives encoded, not mu or concatenated statistics"
+      ],
+      "input_selector": "encoded",
+      "parent": "vae.forward",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.decoder",
+      "label": "Decoder",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.__init__",
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.decoder"
+      ],
+      "shape": "decoded: [B,784]",
+      "detail": [],
+      "parameter_scope": "linear_3 / linear_4",
+      "mode": "chain",
+      "parent": "vae.forward",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.dec_linear1",
+      "label": "Linear 15 -> 500",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.__init__",
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,500]",
+      "detail": [
+        "self.linear_3"
+      ],
+      "parameter": "linear_3",
+      "parent": "vae.decoder",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.dec_activation",
+      "label": "LeakyReLU",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,500]",
+      "detail": [
+        "negative_slope=0.0001"
+      ],
+      "negative_slope": 0.0001,
+      "parent": "vae.decoder",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.dec_linear2",
+      "label": "Linear 500 -> 784",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.__init__",
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,784]",
+      "detail": [
+        "self.linear_4"
+      ],
+      "parameter": "linear_4",
+      "parent": "vae.decoder",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.dec_sigmoid",
+      "label": "Sigmoid",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.decoder"
+      ],
+      "shape": "decoded: [B,784]",
+      "detail": [
+        "pixel probabilities in [0,1]"
+      ],
+      "expression": "torch.sigmoid(x)",
+      "parent": "vae.decoder",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vae.return",
+      "label": "Return (mu, logvar, z, decoded)",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.forward"
+      ],
+      "shape": "[B,15] x 3; [B,784]",
+      "detail": [
+        "actual four-tensor forward result",
+        "decoder output is one tuple field"
+      ],
+      "output_tuple": [
+        "mu",
+        "logvar",
+        "encoded",
+        "decoded"
+      ],
+      "port_bindings": {
+        "mu": {
+          "node": "vae.mu",
+          "port": "out",
+          "direction": "src"
+        },
+        "z_mean": {
+          "node": "vae.mu",
+          "port": "out",
+          "direction": "src"
+        },
+        "logvar": {
+          "node": "vae.logvar",
+          "port": "out",
+          "direction": "src"
+        },
+        "z_log_var": {
+          "node": "vae.logvar",
+          "port": "out",
+          "direction": "src"
+        },
+        "z": {
+          "node": "vae.z",
+          "port": "out",
+          "direction": "src"
+        },
+        "encoded": {
+          "node": "vae.z",
+          "port": "out",
+          "direction": "src"
+        },
+        "decoded": {
+          "node": "vae.dec_sigmoid",
+          "port": "out",
+          "direction": "src"
+        },
+        "item[0]": {
+          "node": "vae.mu",
+          "port": "out",
+          "direction": "src"
+        },
+        "item[1]": {
+          "node": "vae.logvar",
+          "port": "out",
+          "direction": "src"
+        },
+        "item[2]": {
+          "node": "vae.z",
+          "port": "out",
+          "direction": "src"
+        },
+        "item[3]": {
+          "node": "vae.dec_sigmoid",
+          "port": "out",
+          "direction": "src"
+        }
+      },
+      "parent": "vae.forward",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mu",
+        "z_mean",
+        "logvar",
+        "z_log_var",
+        "z",
+        "encoded",
+        "decoded",
+        "item[0]",
+        "item[1]",
+        "item[2]",
+        "item[3]"
+      ]
+    },
+    {
+      "id": "vae.epsilon",
+      "label": "Internal Gaussian sample",
+      "kind": "sampling",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.reparameterize"
+      ],
+      "shape": "epsilon: [B,15]",
+      "detail": [
+        "torch.randn(z_mu.size(0), z_mu.size(1)).to(device)",
+        "created inside reparameterize; not a user input"
+      ],
+      "stochastic": true,
+      "origin": "internal_random_source",
+      "learnable": false,
+      "parent": null,
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "vae.mean_head:in->vae.mu:in:boundary",
+      "src": "vae.mean_head",
+      "dst": "vae.mu",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "vae.mu:out->vae.mean_head:out:boundary",
+      "src": "vae.mu",
+      "dst": "vae.mean_head",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "vae.logvar_head:in->vae.logvar:in:boundary",
+      "src": "vae.logvar_head",
+      "dst": "vae.logvar",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "vae.logvar:out->vae.logvar_head:out:boundary",
+      "src": "vae.logvar",
+      "dst": "vae.logvar_head",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "vae.enc_activation:out->vae.mean_head:in:value_operand",
+      "src": "vae.enc_activation",
+      "dst": "vae.mean_head",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "vae.mean_head:out->vae.posterior:operand[0]:operand_collection",
+      "src": "vae.mean_head",
+      "dst": "vae.posterior",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "vae.enc_activation:out->vae.logvar_head:in:value_operand",
+      "src": "vae.enc_activation",
+      "dst": "vae.logvar_head",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "vae.logvar_head:out->vae.posterior:operand[1]:operand_collection",
+      "src": "vae.logvar_head",
+      "dst": "vae.posterior",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "vae.scaled_noise:in->vae.half_logvar:in:boundary",
+      "src": "vae.scaled_noise",
+      "dst": "vae.half_logvar",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "vae.half_logvar:out->vae.std:in:tensor",
+      "src": "vae.half_logvar",
+      "dst": "vae.std",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "vae.std:out->vae.noise_product:in:tensor",
+      "src": "vae.std",
+      "dst": "vae.noise_product",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "vae.noise_product:out->vae.scaled_noise:out:boundary",
+      "src": "vae.noise_product",
+      "dst": "vae.scaled_noise",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "vae.mu:out->vae.mean_operand:in:value_operand",
+      "src": "vae.mu",
+      "dst": "vae.mean_operand",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "vae.mean_operand:out->vae.sample_operands:operand[0]:operand_collection",
+      "src": "vae.mean_operand",
+      "dst": "vae.sample_operands",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "vae.logvar:out->vae.scaled_noise:in:value_operand",
+      "src": "vae.logvar",
+      "dst": "vae.scaled_noise",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "vae.scaled_noise:out->vae.sample_operands:operand[1]:operand_collection",
+      "src": "vae.scaled_noise",
+      "dst": "vae.sample_operands",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "vae.sampling:in->vae.sample_operands:in:boundary",
+      "src": "vae.sampling",
+      "dst": "vae.sample_operands",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "vae.sample_operands:out->vae.z:in:tensor",
+      "src": "vae.sample_operands",
+      "dst": "vae.z",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "vae.z:out->vae.sampling:out:boundary",
+      "src": "vae.z",
+      "dst": "vae.sampling",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "vae.encoder:in->vae.enc_linear:in:boundary",
+      "src": "vae.encoder",
+      "dst": "vae.enc_linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "vae.enc_linear:out->vae.enc_activation:in:tensor",
+      "src": "vae.enc_linear",
+      "dst": "vae.enc_activation",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "vae.enc_activation:out->vae.posterior:in:tensor",
+      "src": "vae.enc_activation",
+      "dst": "vae.posterior",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "vae.posterior:out->vae.sampling:in:tensor",
+      "src": "vae.posterior",
+      "dst": "vae.sampling",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "vae.sampling:out->vae.encoder_return:in:tensor",
+      "src": "vae.sampling",
+      "dst": "vae.encoder_return",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "vae.encoder_return:out->vae.encoder:out:boundary",
+      "src": "vae.encoder_return",
+      "dst": "vae.encoder",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "vae.decoder:in->vae.dec_linear1:in:boundary",
+      "src": "vae.decoder",
+      "dst": "vae.dec_linear1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "vae.dec_linear1:out->vae.dec_activation:in:tensor",
+      "src": "vae.dec_linear1",
+      "dst": "vae.dec_activation",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "vae.dec_activation:out->vae.dec_linear2:in:tensor",
+      "src": "vae.dec_activation",
+      "dst": "vae.dec_linear2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "vae.dec_linear2:out->vae.dec_sigmoid:in:tensor",
+      "src": "vae.dec_linear2",
+      "dst": "vae.dec_sigmoid",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "vae.dec_sigmoid:out->vae.decoder:out:boundary",
+      "src": "vae.dec_sigmoid",
+      "dst": "vae.decoder",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "vae.forward:in->vae.encoder:in:boundary",
+      "src": "vae.forward",
+      "dst": "vae.encoder",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "vae.encoder:out->vae.select_z:in:tensor",
+      "src": "vae.encoder",
+      "dst": "vae.select_z",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "vae.select_z:out->vae.decoder:in:tensor",
+      "src": "vae.select_z",
+      "dst": "vae.decoder",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "vae.decoder:out->vae.return:in:tensor",
+      "src": "vae.decoder",
+      "dst": "vae.return",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "vae.return:out->vae.forward:out:boundary",
+      "src": "vae.return",
+      "dst": "vae.forward",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "vae.root:in->vae.input:in:boundary",
+      "src": "vae.root",
+      "dst": "vae.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "vae.input:out->vae.forward:in:tensor",
+      "src": "vae.input",
+      "dst": "vae.forward",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "vae.forward:out->vae.root:out:boundary",
+      "src": "vae.forward",
+      "dst": "vae.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "vae.epsilon:out->vae.noise_product:epsilon:random_sample",
+      "src": "vae.epsilon",
+      "dst": "vae.noise_product",
+      "src_port": "out",
+      "dst_port": "epsilon",
+      "role": "random_sample"
+    },
+    {
+      "id": "vae.mu:out->vae.encoder_return:mu:retained_value",
+      "src": "vae.mu",
+      "dst": "vae.encoder_return",
+      "src_port": "out",
+      "dst_port": "mu",
+      "role": "retained_value"
+    },
+    {
+      "id": "vae.logvar:out->vae.encoder_return:logvar:retained_value",
+      "src": "vae.logvar",
+      "dst": "vae.encoder_return",
+      "src_port": "out",
+      "dst_port": "logvar",
+      "role": "retained_value"
+    },
+    {
+      "id": "vae.mu:out->vae.return:mu:retained_value",
+      "src": "vae.mu",
+      "dst": "vae.return",
+      "src_port": "out",
+      "dst_port": "mu",
+      "role": "retained_value"
+    },
+    {
+      "id": "vae.logvar:out->vae.return:logvar:retained_value",
+      "src": "vae.logvar",
+      "dst": "vae.return",
+      "src_port": "out",
+      "dst_port": "logvar",
+      "role": "retained_value"
+    },
+    {
+      "id": "vae.z:out->vae.return:encoded:retained_value",
+      "src": "vae.z",
+      "dst": "vae.return",
+      "src_port": "out",
+      "dst_port": "encoded",
+      "role": "retained_value"
+    },
+    {
+      "id": "vae.mu:shape->vae.epsilon:shape:shape_dependency",
+      "src": "vae.mu",
+      "dst": "vae.epsilon",
+      "src_port": "shape",
+      "dst_port": "shape",
+      "role": "shape_dependency"
+    }
+  ],
+  "facts": [
+    "hidden_1 feeds two independent Linear heads: z_mean and z_log_var.",
+    "z_log_var represents log variance; standard deviation is exp(logvar/2).",
+    "epsilon is created by torch.randn inside reparameterize and is not an external feature input.",
+    "This source samples in both train and eval; no training guard chooses mu instead of z.",
+    "encoder returns (mu, logvar, encoded); decoder consumes only encoded.",
+    "forward returns (mu, logvar, encoded, decoded), not only reconstruction.",
+    "The KL sum and binary cross entropy are computed in the notebook training loop, outside forward.",
+    "The decoder uses Linear 15->500->784, LeakyReLU then Sigmoid; no convolution or deconvolution.",
+    "The graph represents the selected reconstruction call; standalone decoder(rand_features) generation is a separate call."
+  ],
+  "corrections": [
+    "A generic VAE chart must show independent mean/log-variance heads, not one shared posterior Linear.",
+    "Sampling must use exp(logvar/2) and an independent epsilon operand, not variance as standard deviation.",
+    "The four-field forward tuple and the retained statistics are visible; drawing only reconstructed pixels omits returned values.",
+    "KL/BCE, optimizer, and dataset flattening are caller operations; no loss node is inserted into model.forward.",
+    "There is no Conv/BatchNorm/transposed-Conv stack in this supplied fully connected implementation.",
+    "Independent source operands are routed from their actual producers; a display scope does not invent a Python tuple or shared-value fork."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

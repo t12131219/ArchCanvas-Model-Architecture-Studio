@@ -1,0 +1,50 @@
+{
+  "source_project": "signed-gcn-modules",
+  "repository": "benedekrozemberczki/SGCN",
+  "commit": "c01e930c02968ea5b0eb72f1fe93eaab99e46eea",
+  "source_snapshot_sha256": "2796e2641cff6ac05598686c4f66c26abf749de03ccc8b3b11074555460c3261",
+  "entry": "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolutionDeep.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "signed-gcn-modules/LICENSE": {
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "lines": 674,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/benedekrozemberczki/SGCN/c01e930c02968ea5b0eb72f1fe93eaab99e46eea/LICENSE",
+      "derived_from": null
+    },
+    "signed-gcn-modules/src/signedsageconvolution.py": {
+      "sha256": "8e3a517d2da7df362a393af5f933fc028cb041317b0181f2bebe745e40812c61",
+      "lines": 162,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/benedekrozemberczki/SGCN/c01e930c02968ea5b0eb72f1fe93eaab99e46eea/src/signedsageconvolution.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolution.__init__": {
+      "path": "signed-gcn-modules/src/signedsageconvolution.py",
+      "symbol": "SignedSAGEConvolution.__init__",
+      "start": 65,
+      "end": 84,
+      "snippet": "    def __init__(self,\n                 in_channels,\n                 out_channels,\n                 norm=True,\n                 norm_embed=True,\n                 bias=True):\n        super(SignedSAGEConvolution, self).__init__()\n\n        self.in_channels = in_channels\n        self.out_channels = out_channels\n        self.norm = norm\n        self.norm_embed = norm_embed\n        self.weight = Parameter(torch.Tensor(self.in_channels, out_channels))\n\n        if bias:\n            self.bias = Parameter(torch.Tensor(out_channels))\n        else:\n            self.register_parameter(\"bias\", None)\n\n        self.reset_parameters()",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolutionDeep.forward": {
+      "path": "signed-gcn-modules/src/signedsageconvolution.py",
+      "symbol": "SignedSAGEConvolutionDeep.forward",
+      "start": 131,
+      "end": 162,
+      "snippet": "    def forward(self, x_1, x_2, edge_index_pos, edge_index_neg):\n        \"\"\"\n        Forward propagation pass with features an indices.\n        :param x_1: Features for left hand side vertices.\n        :param x_2: Features for right hand side vertices.\n        :param edge_index_pos: Positive indices.\n        :param edge_index_neg: Negative indices.\n        :return out: Abstract convolved features.\n        \"\"\"\n        edge_index_pos, _ = remove_self_loops(edge_index_pos, None)\n        edge_index_pos, _ = add_self_loops(edge_index_pos, num_nodes=x_1.size(0))\n        edge_index_neg, _ = remove_self_loops(edge_index_neg, None)\n        edge_index_neg, _ = add_self_loops(edge_index_neg, num_nodes=x_2.size(0))\n\n        row_pos, col_pos = edge_index_pos\n        row_neg, col_neg = edge_index_neg\n\n        if self.norm:\n            out_1 = scatter_mean(x_1[col_pos], row_pos, dim=0, dim_size=x_1.size(0))\n            out_2 = scatter_mean(x_2[col_neg], row_neg, dim=0, dim_size=x_2.size(0))\n        else:\n            out_1 = scatter_add(x_1[col_pos], row_pos, dim=0, dim_size=x_1.size(0))\n            out_2 = scatter_add(x_2[col_neg], row_neg, dim=0, dim_size=x_2.size(0))\n\n        out = torch.cat((out_1, out_2, x_1), 1)\n        out = torch.matmul(out, self.weight)\n        if self.bias is not None:\n            out = out + self.bias\n\n        if self.norm_embed:\n            out = F.normalize(out, p=2, dim=-1)\n        return out",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "signed-gcn-modules/LICENSE"
+  ]
+}

@@ -1,0 +1,4398 @@
+{
+  "schema": "timeseries-semantic-ir/1",
+  "model": "timemixer",
+  "profile": {
+    "task_name": "long_term_forecast",
+    "mode": "eval",
+    "seq_len": 96,
+    "label_len": 0,
+    "pred_len": 96,
+    "enc_in": 7,
+    "c_out": 7,
+    "d_model": 16,
+    "d_ff": 32,
+    "e_layers": 2,
+    "down_sampling_layers": 3,
+    "down_sampling_window": 2,
+    "down_sampling_method": "avg",
+    "channel_independence": 1,
+    "use_norm": 1,
+    "decomp_method": "moving_avg",
+    "moving_avg": 25,
+    "use_future_temporal_feature": 0,
+    "x_mark_enc": null,
+    "dropout": 0.1,
+    "embed": "timeF",
+    "freq": "h",
+    "config_source": "ETTh1 first shell invocation + run.py defaults; explicitly choose x_mark_enc=None"
+  },
+  "nodes": [
+    {
+      "id": "tm.model",
+      "label": "TimeMixer",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forward"
+      ],
+      "shape": "[B,L,N] -> [B,H,N]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E014"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.input",
+      "label": "Input time series",
+      "kind": "input",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forecast"
+      ],
+      "shape": "[B,96,7]",
+      "detail": [],
+      "parent": "tm.model",
+      "source_evidence": [
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pyramid",
+      "label": "Multi-scale input pyramid",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.__multi_scale_process_inputs"
+      ],
+      "shape": "list[B,L_i,N]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tm.model",
+      "source_evidence": [
+        "E012"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.scale0",
+      "label": "Retain original scale",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.__multi_scale_process_inputs"
+      ],
+      "shape": "[B,96,N]",
+      "detail": [],
+      "parent": "tm.pyramid",
+      "source_evidence": [
+        "E012"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pool1",
+      "label": "AvgPool scale 1",
+      "kind": "decomposition",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.__multi_scale_process_inputs"
+      ],
+      "shape": "[B,48,N]",
+      "detail": [
+        "Permute -> AvgPool1d(2) -> back"
+      ],
+      "parent": "tm.pyramid",
+      "source_evidence": [
+        "E012"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pool2",
+      "label": "AvgPool scale 2",
+      "kind": "decomposition",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.__multi_scale_process_inputs"
+      ],
+      "shape": "[B,24,N]",
+      "detail": [
+        "Permute -> AvgPool1d(2) -> back"
+      ],
+      "parent": "tm.pyramid",
+      "source_evidence": [
+        "E012"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pool3",
+      "label": "AvgPool scale 3",
+      "kind": "decomposition",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.__multi_scale_process_inputs"
+      ],
+      "shape": "[B,12,N]",
+      "detail": [
+        "Permute -> AvgPool1d(2) -> back"
+      ],
+      "parent": "tm.pyramid",
+      "source_evidence": [
+        "E012"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.collect",
+      "label": "Collect all four scales",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.__multi_scale_process_inputs"
+      ],
+      "shape": "list x_i: [B,L_i,N]",
+      "detail": [
+        "L_i = 96 / 2^i; i=0..3"
+      ],
+      "parent": "tm.pyramid",
+      "source_evidence": [
+        "E012"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "tm.embedding",
+      "label": "Per-scale normalize + embed",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forecast"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [],
+      "dispatch": true,
+      "mode": "parallel",
+      "parent": "tm.model",
+      "source_evidence": [
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "x[0]",
+        "item[0]",
+        "x[1]",
+        "item[1]",
+        "x[2]",
+        "item[2]",
+        "x[3]",
+        "item[3]"
+      ]
+    },
+    {
+      "id": "tm.input_scale0",
+      "label": "Scale 0: L=96",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forecast",
+        "TimeMixer-main/layers/Embed.py::TokenEmbedding.forward"
+      ],
+      "shape": "[BN,96,D]",
+      "detail": [],
+      "input_selector": "x[0]",
+      "mode": "chain",
+      "parent": "tm.embedding",
+      "source_evidence": [
+        "E013",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.norm0",
+      "label": "Normalize per variable",
+      "kind": "norm",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forecast",
+        "TimeMixer-main/layers/StandardNorm.py::Normalize.forward",
+        "TimeMixer-main/layers/StandardNorm.py::Normalize._normalize"
+      ],
+      "shape": "[B,96,N]",
+      "detail": [
+        "Separate normalization per scale; affine=True"
+      ],
+      "param_identity": "normalize_layers.0",
+      "parent": "tm.input_scale0",
+      "source_evidence": [
+        "E013",
+        "E009",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "statistics"
+      ]
+    },
+    {
+      "id": "tm.fold0",
+      "label": "Fold variables into batch",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forecast"
+      ],
+      "shape": "[BN,96,1]",
+      "detail": [
+        "B*N independent univariate series"
+      ],
+      "parent": "tm.input_scale0",
+      "source_evidence": [
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.embed0",
+      "label": "Shared value embedding",
+      "kind": "embedding",
+      "source": [
+        "TimeMixer-main/layers/Embed.py::DataEmbedding_wo_pos.forward"
+      ],
+      "shape": "[BN,96,D]",
+      "detail": [
+        "Conv1d 1 -> D, kernel=3; dropout",
+        "x_mark_enc=None; no position added"
+      ],
+      "param_identity": "enc_embedding.value_embedding.tokenConv",
+      "parent": "tm.input_scale0",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.input_scale1",
+      "label": "Scale 1: L=48",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forecast",
+        "TimeMixer-main/layers/Embed.py::TokenEmbedding.forward"
+      ],
+      "shape": "[BN,48,D]",
+      "detail": [],
+      "input_selector": "x[1]",
+      "mode": "chain",
+      "parent": "tm.embedding",
+      "source_evidence": [
+        "E013",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.norm1",
+      "label": "Normalize per variable",
+      "kind": "norm",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forecast",
+        "TimeMixer-main/layers/StandardNorm.py::Normalize.forward",
+        "TimeMixer-main/layers/StandardNorm.py::Normalize._normalize"
+      ],
+      "shape": "[B,48,N]",
+      "detail": [
+        "Separate normalization per scale; affine=True"
+      ],
+      "param_identity": "normalize_layers.1",
+      "parent": "tm.input_scale1",
+      "source_evidence": [
+        "E013",
+        "E009",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.fold1",
+      "label": "Fold variables into batch",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forecast"
+      ],
+      "shape": "[BN,48,1]",
+      "detail": [
+        "B*N independent univariate series"
+      ],
+      "parent": "tm.input_scale1",
+      "source_evidence": [
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.embed1",
+      "label": "Shared value embedding",
+      "kind": "embedding",
+      "source": [
+        "TimeMixer-main/layers/Embed.py::DataEmbedding_wo_pos.forward"
+      ],
+      "shape": "[BN,48,D]",
+      "detail": [
+        "Conv1d 1 -> D, kernel=3; dropout",
+        "x_mark_enc=None; no position added"
+      ],
+      "param_identity": "enc_embedding.value_embedding.tokenConv",
+      "parent": "tm.input_scale1",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.input_scale2",
+      "label": "Scale 2: L=24",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forecast",
+        "TimeMixer-main/layers/Embed.py::TokenEmbedding.forward"
+      ],
+      "shape": "[BN,24,D]",
+      "detail": [],
+      "input_selector": "x[2]",
+      "mode": "chain",
+      "parent": "tm.embedding",
+      "source_evidence": [
+        "E013",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.norm2",
+      "label": "Normalize per variable",
+      "kind": "norm",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forecast",
+        "TimeMixer-main/layers/StandardNorm.py::Normalize.forward",
+        "TimeMixer-main/layers/StandardNorm.py::Normalize._normalize"
+      ],
+      "shape": "[B,24,N]",
+      "detail": [
+        "Separate normalization per scale; affine=True"
+      ],
+      "param_identity": "normalize_layers.2",
+      "parent": "tm.input_scale2",
+      "source_evidence": [
+        "E013",
+        "E009",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.fold2",
+      "label": "Fold variables into batch",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forecast"
+      ],
+      "shape": "[BN,24,1]",
+      "detail": [
+        "B*N independent univariate series"
+      ],
+      "parent": "tm.input_scale2",
+      "source_evidence": [
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.embed2",
+      "label": "Shared value embedding",
+      "kind": "embedding",
+      "source": [
+        "TimeMixer-main/layers/Embed.py::DataEmbedding_wo_pos.forward"
+      ],
+      "shape": "[BN,24,D]",
+      "detail": [
+        "Conv1d 1 -> D, kernel=3; dropout",
+        "x_mark_enc=None; no position added"
+      ],
+      "param_identity": "enc_embedding.value_embedding.tokenConv",
+      "parent": "tm.input_scale2",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.input_scale3",
+      "label": "Scale 3: L=12",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forecast",
+        "TimeMixer-main/layers/Embed.py::TokenEmbedding.forward"
+      ],
+      "shape": "[BN,12,D]",
+      "detail": [],
+      "input_selector": "x[3]",
+      "mode": "chain",
+      "parent": "tm.embedding",
+      "source_evidence": [
+        "E013",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.norm3",
+      "label": "Normalize per variable",
+      "kind": "norm",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forecast",
+        "TimeMixer-main/layers/StandardNorm.py::Normalize.forward",
+        "TimeMixer-main/layers/StandardNorm.py::Normalize._normalize"
+      ],
+      "shape": "[B,12,N]",
+      "detail": [
+        "Separate normalization per scale; affine=True"
+      ],
+      "param_identity": "normalize_layers.3",
+      "parent": "tm.input_scale3",
+      "source_evidence": [
+        "E013",
+        "E009",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.fold3",
+      "label": "Fold variables into batch",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forecast"
+      ],
+      "shape": "[BN,12,1]",
+      "detail": [
+        "B*N independent univariate series"
+      ],
+      "parent": "tm.input_scale3",
+      "source_evidence": [
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.embed3",
+      "label": "Shared value embedding",
+      "kind": "embedding",
+      "source": [
+        "TimeMixer-main/layers/Embed.py::DataEmbedding_wo_pos.forward"
+      ],
+      "shape": "[BN,12,D]",
+      "detail": [
+        "Conv1d 1 -> D, kernel=3; dropout",
+        "x_mark_enc=None; no position added"
+      ],
+      "param_identity": "enc_embedding.value_embedding.tokenConv",
+      "parent": "tm.input_scale3",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm",
+      "label": "Past Decomposable Mixing x 2",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.__init__",
+        "TimeMixer-main/models/TimeMixer.py::Model.forecast"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tm.model",
+      "source_evidence": [
+        "E011",
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1",
+      "label": "PDM block 1",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.forward"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [],
+      "residual": true,
+      "param_identity": "pdm_blocks.0",
+      "mode": "chain",
+      "parent": "tm.pdm",
+      "source_evidence": [
+        "E021",
+        "E022"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.decomp",
+      "label": "Per-scale series decomposition",
+      "kind": "decomposition",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.forward",
+        "TimeMixer-main/layers/Autoformer_EncDec.py::series_decomp.forward"
+      ],
+      "shape": "(season_i, trend_i)",
+      "detail": [
+        "Moving average 25; season=x-trend",
+        "No independent third residual component"
+      ],
+      "parent": "tm.pdm1",
+      "source_evidence": [
+        "E022",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "season",
+        "trend"
+      ]
+    },
+    {
+      "id": "tm.pdm1.mix",
+      "label": "Directional scale mixing",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.forward"
+      ],
+      "shape": "(season_list, trend_list)",
+      "detail": [],
+      "dispatch": true,
+      "mode": "parallel",
+      "parent": "tm.pdm1",
+      "source_evidence": [
+        "E022"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "season",
+        "item[0]",
+        "trend",
+        "item[1]"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season",
+      "label": "Season: fine -> coarse",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [],
+      "input_selector": "season",
+      "mode": "chain",
+      "parent": "tm.pdm1.mix",
+      "source_evidence": [
+        "E017",
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season.initial",
+      "label": "Season scale 0",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "[BN,D,96]",
+      "detail": [
+        "Retain this scale in output list"
+      ],
+      "parent": "tm.pdm1.season",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season.step0",
+      "label": "0 -> 1: temporal mixing",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tm.pdm1.season",
+      "source_evidence": [
+        "E017",
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season.step0.linear1",
+      "label": "Linear 96 -> 48",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [],
+      "param_identity": "pdm_blocks.0.mixing_multi_scale_season.down_sampling_layers.0.0",
+      "parent": "tm.pdm1.season.step0",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season.step0.gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [],
+      "parent": "tm.pdm1.season.step0",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season.step0.linear2",
+      "label": "Linear 48 -> 48",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [],
+      "param_identity": "pdm_blocks.0.mixing_multi_scale_season.down_sampling_layers.0.2",
+      "parent": "tm.pdm1.season.step0",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season.step0.add",
+      "label": "Add original season scale 1",
+      "kind": "mixing",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [
+        "Original component is a separate operand"
+      ],
+      "parent": "tm.pdm1.season.step0",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season.step1",
+      "label": "1 -> 2: temporal mixing",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tm.pdm1.season",
+      "source_evidence": [
+        "E017",
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season.step1.linear1",
+      "label": "Linear 48 -> 24",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [],
+      "param_identity": "pdm_blocks.0.mixing_multi_scale_season.down_sampling_layers.1.0",
+      "parent": "tm.pdm1.season.step1",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season.step1.gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [],
+      "parent": "tm.pdm1.season.step1",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season.step1.linear2",
+      "label": "Linear 24 -> 24",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [],
+      "param_identity": "pdm_blocks.0.mixing_multi_scale_season.down_sampling_layers.1.2",
+      "parent": "tm.pdm1.season.step1",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season.step1.add",
+      "label": "Add original season scale 2",
+      "kind": "mixing",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [
+        "Original component is a separate operand"
+      ],
+      "parent": "tm.pdm1.season.step1",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season.step2",
+      "label": "2 -> 3: temporal mixing",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "[BN,D,12]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tm.pdm1.season",
+      "source_evidence": [
+        "E017",
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season.step2.linear1",
+      "label": "Linear 24 -> 12",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,12]",
+      "detail": [],
+      "param_identity": "pdm_blocks.0.mixing_multi_scale_season.down_sampling_layers.2.0",
+      "parent": "tm.pdm1.season.step2",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season.step2.gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,12]",
+      "detail": [],
+      "parent": "tm.pdm1.season.step2",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season.step2.linear2",
+      "label": "Linear 12 -> 12",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,12]",
+      "detail": [],
+      "param_identity": "pdm_blocks.0.mixing_multi_scale_season.down_sampling_layers.2.2",
+      "parent": "tm.pdm1.season.step2",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season.step2.add",
+      "label": "Add original season scale 3",
+      "kind": "mixing",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "[BN,D,12]",
+      "detail": [
+        "Original component is a separate operand"
+      ],
+      "parent": "tm.pdm1.season.step2",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "tm.pdm1.season.list",
+      "label": "Return all mixed scales",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [
+        "Restore [time,feature]; retain four scales"
+      ],
+      "parent": "tm.pdm1.season",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend",
+      "label": "Trend: coarse -> fine",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [],
+      "input_selector": "trend",
+      "mode": "chain",
+      "parent": "tm.pdm1.mix",
+      "source_evidence": [
+        "E019",
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend.initial",
+      "label": "Trend scale 3",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "[BN,D,12]",
+      "detail": [
+        "Retain this scale in output list"
+      ],
+      "parent": "tm.pdm1.trend",
+      "source_evidence": [
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend.step0",
+      "label": "3 -> 2: temporal mixing",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tm.pdm1.trend",
+      "source_evidence": [
+        "E019",
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend.step0.linear1",
+      "label": "Linear 12 -> 24",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [],
+      "param_identity": "pdm_blocks.0.mixing_multi_scale_trend.up_sampling_layers.0.0",
+      "parent": "tm.pdm1.trend.step0",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend.step0.gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [],
+      "parent": "tm.pdm1.trend.step0",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend.step0.linear2",
+      "label": "Linear 24 -> 24",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [],
+      "param_identity": "pdm_blocks.0.mixing_multi_scale_trend.up_sampling_layers.0.2",
+      "parent": "tm.pdm1.trend.step0",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend.step0.add",
+      "label": "Add original trend scale 2",
+      "kind": "mixing",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [
+        "Original component is a separate operand"
+      ],
+      "parent": "tm.pdm1.trend.step0",
+      "source_evidence": [
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend.step1",
+      "label": "2 -> 1: temporal mixing",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tm.pdm1.trend",
+      "source_evidence": [
+        "E019",
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend.step1.linear1",
+      "label": "Linear 24 -> 48",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [],
+      "param_identity": "pdm_blocks.0.mixing_multi_scale_trend.up_sampling_layers.1.0",
+      "parent": "tm.pdm1.trend.step1",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend.step1.gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [],
+      "parent": "tm.pdm1.trend.step1",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend.step1.linear2",
+      "label": "Linear 48 -> 48",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [],
+      "param_identity": "pdm_blocks.0.mixing_multi_scale_trend.up_sampling_layers.1.2",
+      "parent": "tm.pdm1.trend.step1",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend.step1.add",
+      "label": "Add original trend scale 1",
+      "kind": "mixing",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [
+        "Original component is a separate operand"
+      ],
+      "parent": "tm.pdm1.trend.step1",
+      "source_evidence": [
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend.step2",
+      "label": "1 -> 0: temporal mixing",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "[BN,D,96]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tm.pdm1.trend",
+      "source_evidence": [
+        "E019",
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend.step2.linear1",
+      "label": "Linear 48 -> 96",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,96]",
+      "detail": [],
+      "param_identity": "pdm_blocks.0.mixing_multi_scale_trend.up_sampling_layers.2.0",
+      "parent": "tm.pdm1.trend.step2",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend.step2.gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,96]",
+      "detail": [],
+      "parent": "tm.pdm1.trend.step2",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend.step2.linear2",
+      "label": "Linear 96 -> 96",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,96]",
+      "detail": [],
+      "param_identity": "pdm_blocks.0.mixing_multi_scale_trend.up_sampling_layers.2.2",
+      "parent": "tm.pdm1.trend.step2",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend.step2.add",
+      "label": "Add original trend scale 0",
+      "kind": "mixing",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "[BN,D,96]",
+      "detail": [
+        "Original component is a separate operand"
+      ],
+      "parent": "tm.pdm1.trend.step2",
+      "source_evidence": [
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "tm.pdm1.trend.list",
+      "label": "Return all mixed scales",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [
+        "Restore [time,feature]; retain four scales"
+      ],
+      "parent": "tm.pdm1.trend",
+      "source_evidence": [
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.sum",
+      "label": "Per-scale season + trend",
+      "kind": "mixing",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.forward"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [],
+      "parent": "tm.pdm1",
+      "source_evidence": [
+        "E022"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.out_cross",
+      "label": "Shared feature MLP",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.__init__"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tm.pdm1",
+      "source_evidence": [
+        "E021"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.mlp1",
+      "label": "Linear D -> F",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.__init__"
+      ],
+      "shape": "list[BN,L_i,F]",
+      "detail": [],
+      "param_identity": "pdm_blocks.0.out_cross_layer.0",
+      "parent": "tm.pdm1.out_cross",
+      "source_evidence": [
+        "E021"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.__init__"
+      ],
+      "shape": "list[BN,L_i,F]",
+      "detail": [],
+      "parent": "tm.pdm1.out_cross",
+      "source_evidence": [
+        "E021"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.mlp2",
+      "label": "Linear F -> D",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.__init__"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [],
+      "param_identity": "pdm_blocks.0.out_cross_layer.2",
+      "parent": "tm.pdm1.out_cross",
+      "source_evidence": [
+        "E021"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm1.add",
+      "label": "Add original scale states",
+      "kind": "mixing",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.forward"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [
+        "ori + out_cross_layer(season + trend)",
+        "Trim to original scale lengths"
+      ],
+      "parent": "tm.pdm1",
+      "source_evidence": [
+        "E022"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "tm.pdm2",
+      "label": "PDM block 2",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.forward"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [],
+      "residual": true,
+      "param_identity": "pdm_blocks.1",
+      "mode": "chain",
+      "parent": "tm.pdm",
+      "source_evidence": [
+        "E021",
+        "E022"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.decomp",
+      "label": "Per-scale series decomposition",
+      "kind": "decomposition",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.forward",
+        "TimeMixer-main/layers/Autoformer_EncDec.py::series_decomp.forward"
+      ],
+      "shape": "(season_i, trend_i)",
+      "detail": [
+        "Moving average 25; season=x-trend",
+        "No independent third residual component"
+      ],
+      "parent": "tm.pdm2",
+      "source_evidence": [
+        "E022",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "season",
+        "trend"
+      ]
+    },
+    {
+      "id": "tm.pdm2.mix",
+      "label": "Directional scale mixing",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.forward"
+      ],
+      "shape": "(season_list, trend_list)",
+      "detail": [],
+      "dispatch": true,
+      "mode": "parallel",
+      "parent": "tm.pdm2",
+      "source_evidence": [
+        "E022"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "season",
+        "item[0]",
+        "trend",
+        "item[1]"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season",
+      "label": "Season: fine -> coarse",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [],
+      "input_selector": "season",
+      "mode": "chain",
+      "parent": "tm.pdm2.mix",
+      "source_evidence": [
+        "E017",
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season.initial",
+      "label": "Season scale 0",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "[BN,D,96]",
+      "detail": [
+        "Retain this scale in output list"
+      ],
+      "parent": "tm.pdm2.season",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season.step0",
+      "label": "0 -> 1: temporal mixing",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tm.pdm2.season",
+      "source_evidence": [
+        "E017",
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season.step0.linear1",
+      "label": "Linear 96 -> 48",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [],
+      "param_identity": "pdm_blocks.1.mixing_multi_scale_season.down_sampling_layers.0.0",
+      "parent": "tm.pdm2.season.step0",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season.step0.gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [],
+      "parent": "tm.pdm2.season.step0",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season.step0.linear2",
+      "label": "Linear 48 -> 48",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [],
+      "param_identity": "pdm_blocks.1.mixing_multi_scale_season.down_sampling_layers.0.2",
+      "parent": "tm.pdm2.season.step0",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season.step0.add",
+      "label": "Add original season scale 1",
+      "kind": "mixing",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [
+        "Original component is a separate operand"
+      ],
+      "parent": "tm.pdm2.season.step0",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season.step1",
+      "label": "1 -> 2: temporal mixing",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tm.pdm2.season",
+      "source_evidence": [
+        "E017",
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season.step1.linear1",
+      "label": "Linear 48 -> 24",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [],
+      "param_identity": "pdm_blocks.1.mixing_multi_scale_season.down_sampling_layers.1.0",
+      "parent": "tm.pdm2.season.step1",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season.step1.gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [],
+      "parent": "tm.pdm2.season.step1",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season.step1.linear2",
+      "label": "Linear 24 -> 24",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [],
+      "param_identity": "pdm_blocks.1.mixing_multi_scale_season.down_sampling_layers.1.2",
+      "parent": "tm.pdm2.season.step1",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season.step1.add",
+      "label": "Add original season scale 2",
+      "kind": "mixing",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [
+        "Original component is a separate operand"
+      ],
+      "parent": "tm.pdm2.season.step1",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season.step2",
+      "label": "2 -> 3: temporal mixing",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "[BN,D,12]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tm.pdm2.season",
+      "source_evidence": [
+        "E017",
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season.step2.linear1",
+      "label": "Linear 24 -> 12",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,12]",
+      "detail": [],
+      "param_identity": "pdm_blocks.1.mixing_multi_scale_season.down_sampling_layers.2.0",
+      "parent": "tm.pdm2.season.step2",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season.step2.gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,12]",
+      "detail": [],
+      "parent": "tm.pdm2.season.step2",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season.step2.linear2",
+      "label": "Linear 12 -> 12",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__"
+      ],
+      "shape": "[BN,D,12]",
+      "detail": [],
+      "param_identity": "pdm_blocks.1.mixing_multi_scale_season.down_sampling_layers.2.2",
+      "parent": "tm.pdm2.season.step2",
+      "source_evidence": [
+        "E017"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season.step2.add",
+      "label": "Add original season scale 3",
+      "kind": "mixing",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "[BN,D,12]",
+      "detail": [
+        "Original component is a separate operand"
+      ],
+      "parent": "tm.pdm2.season.step2",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "tm.pdm2.season.list",
+      "label": "Return all mixed scales",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [
+        "Restore [time,feature]; retain four scales"
+      ],
+      "parent": "tm.pdm2.season",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend",
+      "label": "Trend: coarse -> fine",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [],
+      "input_selector": "trend",
+      "mode": "chain",
+      "parent": "tm.pdm2.mix",
+      "source_evidence": [
+        "E019",
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend.initial",
+      "label": "Trend scale 3",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "[BN,D,12]",
+      "detail": [
+        "Retain this scale in output list"
+      ],
+      "parent": "tm.pdm2.trend",
+      "source_evidence": [
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend.step0",
+      "label": "3 -> 2: temporal mixing",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tm.pdm2.trend",
+      "source_evidence": [
+        "E019",
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend.step0.linear1",
+      "label": "Linear 12 -> 24",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [],
+      "param_identity": "pdm_blocks.1.mixing_multi_scale_trend.up_sampling_layers.0.0",
+      "parent": "tm.pdm2.trend.step0",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend.step0.gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [],
+      "parent": "tm.pdm2.trend.step0",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend.step0.linear2",
+      "label": "Linear 24 -> 24",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [],
+      "param_identity": "pdm_blocks.1.mixing_multi_scale_trend.up_sampling_layers.0.2",
+      "parent": "tm.pdm2.trend.step0",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend.step0.add",
+      "label": "Add original trend scale 2",
+      "kind": "mixing",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "[BN,D,24]",
+      "detail": [
+        "Original component is a separate operand"
+      ],
+      "parent": "tm.pdm2.trend.step0",
+      "source_evidence": [
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend.step1",
+      "label": "2 -> 1: temporal mixing",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tm.pdm2.trend",
+      "source_evidence": [
+        "E019",
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend.step1.linear1",
+      "label": "Linear 24 -> 48",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [],
+      "param_identity": "pdm_blocks.1.mixing_multi_scale_trend.up_sampling_layers.1.0",
+      "parent": "tm.pdm2.trend.step1",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend.step1.gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [],
+      "parent": "tm.pdm2.trend.step1",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend.step1.linear2",
+      "label": "Linear 48 -> 48",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [],
+      "param_identity": "pdm_blocks.1.mixing_multi_scale_trend.up_sampling_layers.1.2",
+      "parent": "tm.pdm2.trend.step1",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend.step1.add",
+      "label": "Add original trend scale 1",
+      "kind": "mixing",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "[BN,D,48]",
+      "detail": [
+        "Original component is a separate operand"
+      ],
+      "parent": "tm.pdm2.trend.step1",
+      "source_evidence": [
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend.step2",
+      "label": "1 -> 0: temporal mixing",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__",
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "[BN,D,96]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tm.pdm2.trend",
+      "source_evidence": [
+        "E019",
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend.step2.linear1",
+      "label": "Linear 48 -> 96",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,96]",
+      "detail": [],
+      "param_identity": "pdm_blocks.1.mixing_multi_scale_trend.up_sampling_layers.2.0",
+      "parent": "tm.pdm2.trend.step2",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend.step2.gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,96]",
+      "detail": [],
+      "parent": "tm.pdm2.trend.step2",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend.step2.linear2",
+      "label": "Linear 96 -> 96",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__"
+      ],
+      "shape": "[BN,D,96]",
+      "detail": [],
+      "param_identity": "pdm_blocks.1.mixing_multi_scale_trend.up_sampling_layers.2.2",
+      "parent": "tm.pdm2.trend.step2",
+      "source_evidence": [
+        "E019"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend.step2.add",
+      "label": "Add original trend scale 0",
+      "kind": "mixing",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "[BN,D,96]",
+      "detail": [
+        "Original component is a separate operand"
+      ],
+      "parent": "tm.pdm2.trend.step2",
+      "source_evidence": [
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "tm.pdm2.trend.list",
+      "label": "Return all mixed scales",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [
+        "Restore [time,feature]; retain four scales"
+      ],
+      "parent": "tm.pdm2.trend",
+      "source_evidence": [
+        "E020"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.sum",
+      "label": "Per-scale season + trend",
+      "kind": "mixing",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.forward"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [],
+      "parent": "tm.pdm2",
+      "source_evidence": [
+        "E022"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.out_cross",
+      "label": "Shared feature MLP",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.__init__"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tm.pdm2",
+      "source_evidence": [
+        "E021"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.mlp1",
+      "label": "Linear D -> F",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.__init__"
+      ],
+      "shape": "list[BN,L_i,F]",
+      "detail": [],
+      "param_identity": "pdm_blocks.1.out_cross_layer.0",
+      "parent": "tm.pdm2.out_cross",
+      "source_evidence": [
+        "E021"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.gelu",
+      "label": "GELU",
+      "kind": "activation",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.__init__"
+      ],
+      "shape": "list[BN,L_i,F]",
+      "detail": [],
+      "parent": "tm.pdm2.out_cross",
+      "source_evidence": [
+        "E021"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.mlp2",
+      "label": "Linear F -> D",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.__init__"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [],
+      "param_identity": "pdm_blocks.1.out_cross_layer.2",
+      "parent": "tm.pdm2.out_cross",
+      "source_evidence": [
+        "E021"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.pdm2.add",
+      "label": "Add original scale states",
+      "kind": "mixing",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.forward"
+      ],
+      "shape": "list[BN,L_i,D]",
+      "detail": [
+        "ori + out_cross_layer(season + trend)",
+        "Trim to original scale lengths"
+      ],
+      "parent": "tm.pdm2",
+      "source_evidence": [
+        "E022"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "tm.fmm",
+      "label": "Future Multipredictor Mixing",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing"
+      ],
+      "shape": "tuple of 4 forecasts",
+      "detail": [],
+      "dispatch": true,
+      "mode": "parallel",
+      "parent": "tm.model",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "scale[0]",
+        "item[0]",
+        "scale[1]",
+        "item[1]",
+        "scale[2]",
+        "item[2]",
+        "scale[3]",
+        "item[3]"
+      ]
+    },
+    {
+      "id": "tm.predict0",
+      "label": "Scale 0 predictor",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing"
+      ],
+      "shape": "[B,H,N]",
+      "detail": [],
+      "input_selector": "scale[0]",
+      "mode": "chain",
+      "parent": "tm.fmm",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.temporal0",
+      "label": "Temporal Linear 96 -> H",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing"
+      ],
+      "shape": "[BN,H,D]",
+      "detail": [
+        "Permute -> predict_layers[i] -> back"
+      ],
+      "param_identity": "predict_layers.0",
+      "parent": "tm.predict0",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.project0",
+      "label": "Shared Linear D -> 1",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.__init__",
+        "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing"
+      ],
+      "shape": "[BN,H,1]",
+      "detail": [],
+      "param_identity": "projection_layer",
+      "parent": "tm.predict0",
+      "source_evidence": [
+        "E011",
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.restore0",
+      "label": "Restore variables",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing"
+      ],
+      "shape": "[B,H,N]",
+      "detail": [
+        "reshape(B,N,H) -> permute(0,2,1)"
+      ],
+      "parent": "tm.predict0",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.predict1",
+      "label": "Scale 1 predictor",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing"
+      ],
+      "shape": "[B,H,N]",
+      "detail": [],
+      "input_selector": "scale[1]",
+      "mode": "chain",
+      "parent": "tm.fmm",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.temporal1",
+      "label": "Temporal Linear 48 -> H",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing"
+      ],
+      "shape": "[BN,H,D]",
+      "detail": [
+        "Permute -> predict_layers[i] -> back"
+      ],
+      "param_identity": "predict_layers.1",
+      "parent": "tm.predict1",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.project1",
+      "label": "Shared Linear D -> 1",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.__init__",
+        "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing"
+      ],
+      "shape": "[BN,H,1]",
+      "detail": [],
+      "param_identity": "projection_layer",
+      "parent": "tm.predict1",
+      "source_evidence": [
+        "E011",
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.restore1",
+      "label": "Restore variables",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing"
+      ],
+      "shape": "[B,H,N]",
+      "detail": [
+        "reshape(B,N,H) -> permute(0,2,1)"
+      ],
+      "parent": "tm.predict1",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.predict2",
+      "label": "Scale 2 predictor",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing"
+      ],
+      "shape": "[B,H,N]",
+      "detail": [],
+      "input_selector": "scale[2]",
+      "mode": "chain",
+      "parent": "tm.fmm",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.temporal2",
+      "label": "Temporal Linear 24 -> H",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing"
+      ],
+      "shape": "[BN,H,D]",
+      "detail": [
+        "Permute -> predict_layers[i] -> back"
+      ],
+      "param_identity": "predict_layers.2",
+      "parent": "tm.predict2",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.project2",
+      "label": "Shared Linear D -> 1",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.__init__",
+        "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing"
+      ],
+      "shape": "[BN,H,1]",
+      "detail": [],
+      "param_identity": "projection_layer",
+      "parent": "tm.predict2",
+      "source_evidence": [
+        "E011",
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.restore2",
+      "label": "Restore variables",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing"
+      ],
+      "shape": "[B,H,N]",
+      "detail": [
+        "reshape(B,N,H) -> permute(0,2,1)"
+      ],
+      "parent": "tm.predict2",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.predict3",
+      "label": "Scale 3 predictor",
+      "kind": "group",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing"
+      ],
+      "shape": "[B,H,N]",
+      "detail": [],
+      "input_selector": "scale[3]",
+      "mode": "chain",
+      "parent": "tm.fmm",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.temporal3",
+      "label": "Temporal Linear 12 -> H",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing"
+      ],
+      "shape": "[BN,H,D]",
+      "detail": [
+        "Permute -> predict_layers[i] -> back"
+      ],
+      "param_identity": "predict_layers.3",
+      "parent": "tm.predict3",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.project3",
+      "label": "Shared Linear D -> 1",
+      "kind": "linear",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.__init__",
+        "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing"
+      ],
+      "shape": "[BN,H,1]",
+      "detail": [],
+      "param_identity": "projection_layer",
+      "parent": "tm.predict3",
+      "source_evidence": [
+        "E011",
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.restore3",
+      "label": "Restore variables",
+      "kind": "tensor",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing"
+      ],
+      "shape": "[B,H,N]",
+      "detail": [
+        "reshape(B,N,H) -> permute(0,2,1)"
+      ],
+      "parent": "tm.predict3",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.forecast_sum",
+      "label": "Sum four scale forecasts",
+      "kind": "mixing",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forecast"
+      ],
+      "shape": "[B,96,7]",
+      "detail": [
+        "stack(dim=-1).sum(-1); no concat head"
+      ],
+      "parent": "tm.model",
+      "source_evidence": [
+        "E013"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tm.denorm",
+      "label": "Restore original-scale statistics",
+      "kind": "norm",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forecast",
+        "TimeMixer-main/layers/StandardNorm.py::Normalize._denormalize"
+      ],
+      "shape": "[B,96,7]",
+      "detail": [
+        "normalize_layers[0](forecast, denorm)",
+        "Inverse affine; multiply std, add mean"
+      ],
+      "parent": "tm.model",
+      "source_evidence": [
+        "E013",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "tm.output",
+      "label": "Forecast",
+      "kind": "output",
+      "source": [
+        "TimeMixer-main/models/TimeMixer.py::Model.forward"
+      ],
+      "shape": "[B,96,7]",
+      "detail": [],
+      "parent": "tm.model",
+      "source_evidence": [
+        "E014"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "tm.pyramid:in->tm.scale0:in:boundary",
+      "src": "tm.pyramid",
+      "dst": "tm.scale0",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.scale0:out->tm.pool1:in:tensor",
+      "src": "tm.scale0",
+      "dst": "tm.pool1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pool1:out->tm.pool2:in:tensor",
+      "src": "tm.pool1",
+      "dst": "tm.pool2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pool2:out->tm.pool3:in:tensor",
+      "src": "tm.pool2",
+      "dst": "tm.pool3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pool3:out->tm.collect:in:tensor",
+      "src": "tm.pool3",
+      "dst": "tm.collect",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.collect:out->tm.pyramid:out:boundary",
+      "src": "tm.collect",
+      "dst": "tm.pyramid",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.input_scale0:in->tm.norm0:in:boundary",
+      "src": "tm.input_scale0",
+      "dst": "tm.norm0",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.norm0:out->tm.fold0:in:tensor",
+      "src": "tm.norm0",
+      "dst": "tm.fold0",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.fold0:out->tm.embed0:in:tensor",
+      "src": "tm.fold0",
+      "dst": "tm.embed0",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.embed0:out->tm.input_scale0:out:boundary",
+      "src": "tm.embed0",
+      "dst": "tm.input_scale0",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.input_scale1:in->tm.norm1:in:boundary",
+      "src": "tm.input_scale1",
+      "dst": "tm.norm1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.norm1:out->tm.fold1:in:tensor",
+      "src": "tm.norm1",
+      "dst": "tm.fold1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.fold1:out->tm.embed1:in:tensor",
+      "src": "tm.fold1",
+      "dst": "tm.embed1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.embed1:out->tm.input_scale1:out:boundary",
+      "src": "tm.embed1",
+      "dst": "tm.input_scale1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.input_scale2:in->tm.norm2:in:boundary",
+      "src": "tm.input_scale2",
+      "dst": "tm.norm2",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.norm2:out->tm.fold2:in:tensor",
+      "src": "tm.norm2",
+      "dst": "tm.fold2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.fold2:out->tm.embed2:in:tensor",
+      "src": "tm.fold2",
+      "dst": "tm.embed2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.embed2:out->tm.input_scale2:out:boundary",
+      "src": "tm.embed2",
+      "dst": "tm.input_scale2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.input_scale3:in->tm.norm3:in:boundary",
+      "src": "tm.input_scale3",
+      "dst": "tm.norm3",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.norm3:out->tm.fold3:in:tensor",
+      "src": "tm.norm3",
+      "dst": "tm.fold3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.fold3:out->tm.embed3:in:tensor",
+      "src": "tm.fold3",
+      "dst": "tm.embed3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.embed3:out->tm.input_scale3:out:boundary",
+      "src": "tm.embed3",
+      "dst": "tm.input_scale3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.embedding:x[0]->tm.input_scale0:in:dispatch",
+      "src": "tm.embedding",
+      "dst": "tm.input_scale0",
+      "src_port": "x[0]",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "tm.input_scale0:out->tm.embedding:item[0]:tuple_collection",
+      "src": "tm.input_scale0",
+      "dst": "tm.embedding",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "tm.embedding:x[1]->tm.input_scale1:in:dispatch",
+      "src": "tm.embedding",
+      "dst": "tm.input_scale1",
+      "src_port": "x[1]",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "tm.input_scale1:out->tm.embedding:item[1]:tuple_collection",
+      "src": "tm.input_scale1",
+      "dst": "tm.embedding",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "tm.embedding:x[2]->tm.input_scale2:in:dispatch",
+      "src": "tm.embedding",
+      "dst": "tm.input_scale2",
+      "src_port": "x[2]",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "tm.input_scale2:out->tm.embedding:item[2]:tuple_collection",
+      "src": "tm.input_scale2",
+      "dst": "tm.embedding",
+      "src_port": "out",
+      "dst_port": "item[2]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "tm.embedding:x[3]->tm.input_scale3:in:dispatch",
+      "src": "tm.embedding",
+      "dst": "tm.input_scale3",
+      "src_port": "x[3]",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "tm.input_scale3:out->tm.embedding:item[3]:tuple_collection",
+      "src": "tm.input_scale3",
+      "dst": "tm.embedding",
+      "src_port": "out",
+      "dst_port": "item[3]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "tm.pdm1.season.step0:in->tm.pdm1.season.step0.linear1:in:boundary",
+      "src": "tm.pdm1.season.step0",
+      "dst": "tm.pdm1.season.step0.linear1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.season.step0.linear1:out->tm.pdm1.season.step0.gelu:in:tensor",
+      "src": "tm.pdm1.season.step0.linear1",
+      "dst": "tm.pdm1.season.step0.gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.season.step0.gelu:out->tm.pdm1.season.step0.linear2:in:tensor",
+      "src": "tm.pdm1.season.step0.gelu",
+      "dst": "tm.pdm1.season.step0.linear2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.season.step0.linear2:out->tm.pdm1.season.step0.add:in:tensor",
+      "src": "tm.pdm1.season.step0.linear2",
+      "dst": "tm.pdm1.season.step0.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.season.step0.add:out->tm.pdm1.season.step0:out:boundary",
+      "src": "tm.pdm1.season.step0.add",
+      "dst": "tm.pdm1.season.step0",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.season.step1:in->tm.pdm1.season.step1.linear1:in:boundary",
+      "src": "tm.pdm1.season.step1",
+      "dst": "tm.pdm1.season.step1.linear1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.season.step1.linear1:out->tm.pdm1.season.step1.gelu:in:tensor",
+      "src": "tm.pdm1.season.step1.linear1",
+      "dst": "tm.pdm1.season.step1.gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.season.step1.gelu:out->tm.pdm1.season.step1.linear2:in:tensor",
+      "src": "tm.pdm1.season.step1.gelu",
+      "dst": "tm.pdm1.season.step1.linear2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.season.step1.linear2:out->tm.pdm1.season.step1.add:in:tensor",
+      "src": "tm.pdm1.season.step1.linear2",
+      "dst": "tm.pdm1.season.step1.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.season.step1.add:out->tm.pdm1.season.step1:out:boundary",
+      "src": "tm.pdm1.season.step1.add",
+      "dst": "tm.pdm1.season.step1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.season.step2:in->tm.pdm1.season.step2.linear1:in:boundary",
+      "src": "tm.pdm1.season.step2",
+      "dst": "tm.pdm1.season.step2.linear1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.season.step2.linear1:out->tm.pdm1.season.step2.gelu:in:tensor",
+      "src": "tm.pdm1.season.step2.linear1",
+      "dst": "tm.pdm1.season.step2.gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.season.step2.gelu:out->tm.pdm1.season.step2.linear2:in:tensor",
+      "src": "tm.pdm1.season.step2.gelu",
+      "dst": "tm.pdm1.season.step2.linear2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.season.step2.linear2:out->tm.pdm1.season.step2.add:in:tensor",
+      "src": "tm.pdm1.season.step2.linear2",
+      "dst": "tm.pdm1.season.step2.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.season.step2.add:out->tm.pdm1.season.step2:out:boundary",
+      "src": "tm.pdm1.season.step2.add",
+      "dst": "tm.pdm1.season.step2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.season:in->tm.pdm1.season.initial:in:boundary",
+      "src": "tm.pdm1.season",
+      "dst": "tm.pdm1.season.initial",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.season.initial:out->tm.pdm1.season.step0:in:tensor",
+      "src": "tm.pdm1.season.initial",
+      "dst": "tm.pdm1.season.step0",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.season.step0:out->tm.pdm1.season.step1:in:tensor",
+      "src": "tm.pdm1.season.step0",
+      "dst": "tm.pdm1.season.step1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.season.step1:out->tm.pdm1.season.step2:in:tensor",
+      "src": "tm.pdm1.season.step1",
+      "dst": "tm.pdm1.season.step2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.season.step2:out->tm.pdm1.season.list:in:tensor",
+      "src": "tm.pdm1.season.step2",
+      "dst": "tm.pdm1.season.list",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.season.list:out->tm.pdm1.season:out:boundary",
+      "src": "tm.pdm1.season.list",
+      "dst": "tm.pdm1.season",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.trend.step0:in->tm.pdm1.trend.step0.linear1:in:boundary",
+      "src": "tm.pdm1.trend.step0",
+      "dst": "tm.pdm1.trend.step0.linear1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.trend.step0.linear1:out->tm.pdm1.trend.step0.gelu:in:tensor",
+      "src": "tm.pdm1.trend.step0.linear1",
+      "dst": "tm.pdm1.trend.step0.gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.trend.step0.gelu:out->tm.pdm1.trend.step0.linear2:in:tensor",
+      "src": "tm.pdm1.trend.step0.gelu",
+      "dst": "tm.pdm1.trend.step0.linear2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.trend.step0.linear2:out->tm.pdm1.trend.step0.add:in:tensor",
+      "src": "tm.pdm1.trend.step0.linear2",
+      "dst": "tm.pdm1.trend.step0.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.trend.step0.add:out->tm.pdm1.trend.step0:out:boundary",
+      "src": "tm.pdm1.trend.step0.add",
+      "dst": "tm.pdm1.trend.step0",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.trend.step1:in->tm.pdm1.trend.step1.linear1:in:boundary",
+      "src": "tm.pdm1.trend.step1",
+      "dst": "tm.pdm1.trend.step1.linear1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.trend.step1.linear1:out->tm.pdm1.trend.step1.gelu:in:tensor",
+      "src": "tm.pdm1.trend.step1.linear1",
+      "dst": "tm.pdm1.trend.step1.gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.trend.step1.gelu:out->tm.pdm1.trend.step1.linear2:in:tensor",
+      "src": "tm.pdm1.trend.step1.gelu",
+      "dst": "tm.pdm1.trend.step1.linear2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.trend.step1.linear2:out->tm.pdm1.trend.step1.add:in:tensor",
+      "src": "tm.pdm1.trend.step1.linear2",
+      "dst": "tm.pdm1.trend.step1.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.trend.step1.add:out->tm.pdm1.trend.step1:out:boundary",
+      "src": "tm.pdm1.trend.step1.add",
+      "dst": "tm.pdm1.trend.step1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.trend.step2:in->tm.pdm1.trend.step2.linear1:in:boundary",
+      "src": "tm.pdm1.trend.step2",
+      "dst": "tm.pdm1.trend.step2.linear1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.trend.step2.linear1:out->tm.pdm1.trend.step2.gelu:in:tensor",
+      "src": "tm.pdm1.trend.step2.linear1",
+      "dst": "tm.pdm1.trend.step2.gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.trend.step2.gelu:out->tm.pdm1.trend.step2.linear2:in:tensor",
+      "src": "tm.pdm1.trend.step2.gelu",
+      "dst": "tm.pdm1.trend.step2.linear2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.trend.step2.linear2:out->tm.pdm1.trend.step2.add:in:tensor",
+      "src": "tm.pdm1.trend.step2.linear2",
+      "dst": "tm.pdm1.trend.step2.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.trend.step2.add:out->tm.pdm1.trend.step2:out:boundary",
+      "src": "tm.pdm1.trend.step2.add",
+      "dst": "tm.pdm1.trend.step2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.trend:in->tm.pdm1.trend.initial:in:boundary",
+      "src": "tm.pdm1.trend",
+      "dst": "tm.pdm1.trend.initial",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.trend.initial:out->tm.pdm1.trend.step0:in:tensor",
+      "src": "tm.pdm1.trend.initial",
+      "dst": "tm.pdm1.trend.step0",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.trend.step0:out->tm.pdm1.trend.step1:in:tensor",
+      "src": "tm.pdm1.trend.step0",
+      "dst": "tm.pdm1.trend.step1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.trend.step1:out->tm.pdm1.trend.step2:in:tensor",
+      "src": "tm.pdm1.trend.step1",
+      "dst": "tm.pdm1.trend.step2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.trend.step2:out->tm.pdm1.trend.list:in:tensor",
+      "src": "tm.pdm1.trend.step2",
+      "dst": "tm.pdm1.trend.list",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.trend.list:out->tm.pdm1.trend:out:boundary",
+      "src": "tm.pdm1.trend.list",
+      "dst": "tm.pdm1.trend",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.mix:season->tm.pdm1.season:in:dispatch",
+      "src": "tm.pdm1.mix",
+      "dst": "tm.pdm1.season",
+      "src_port": "season",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "tm.pdm1.season:out->tm.pdm1.mix:item[0]:tuple_collection",
+      "src": "tm.pdm1.season",
+      "dst": "tm.pdm1.mix",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "tm.pdm1.mix:trend->tm.pdm1.trend:in:dispatch",
+      "src": "tm.pdm1.mix",
+      "dst": "tm.pdm1.trend",
+      "src_port": "trend",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "tm.pdm1.trend:out->tm.pdm1.mix:item[1]:tuple_collection",
+      "src": "tm.pdm1.trend",
+      "dst": "tm.pdm1.mix",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "tm.pdm1.out_cross:in->tm.pdm1.mlp1:in:boundary",
+      "src": "tm.pdm1.out_cross",
+      "dst": "tm.pdm1.mlp1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.mlp1:out->tm.pdm1.gelu:in:tensor",
+      "src": "tm.pdm1.mlp1",
+      "dst": "tm.pdm1.gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.gelu:out->tm.pdm1.mlp2:in:tensor",
+      "src": "tm.pdm1.gelu",
+      "dst": "tm.pdm1.mlp2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.mlp2:out->tm.pdm1.out_cross:out:boundary",
+      "src": "tm.pdm1.mlp2",
+      "dst": "tm.pdm1.out_cross",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1:in->tm.pdm1.decomp:in:boundary",
+      "src": "tm.pdm1",
+      "dst": "tm.pdm1.decomp",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1.decomp:out->tm.pdm1.mix:in:tensor",
+      "src": "tm.pdm1.decomp",
+      "dst": "tm.pdm1.mix",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.mix:out->tm.pdm1.sum:in:tensor",
+      "src": "tm.pdm1.mix",
+      "dst": "tm.pdm1.sum",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.sum:out->tm.pdm1.out_cross:in:tensor",
+      "src": "tm.pdm1.sum",
+      "dst": "tm.pdm1.out_cross",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.out_cross:out->tm.pdm1.add:in:tensor",
+      "src": "tm.pdm1.out_cross",
+      "dst": "tm.pdm1.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm1.add:out->tm.pdm1:out:boundary",
+      "src": "tm.pdm1.add",
+      "dst": "tm.pdm1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1:in->tm.pdm1.add:side:residual",
+      "src": "tm.pdm1",
+      "dst": "tm.pdm1.add",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "residual"
+    },
+    {
+      "id": "tm.pdm2.season.step0:in->tm.pdm2.season.step0.linear1:in:boundary",
+      "src": "tm.pdm2.season.step0",
+      "dst": "tm.pdm2.season.step0.linear1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.season.step0.linear1:out->tm.pdm2.season.step0.gelu:in:tensor",
+      "src": "tm.pdm2.season.step0.linear1",
+      "dst": "tm.pdm2.season.step0.gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.season.step0.gelu:out->tm.pdm2.season.step0.linear2:in:tensor",
+      "src": "tm.pdm2.season.step0.gelu",
+      "dst": "tm.pdm2.season.step0.linear2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.season.step0.linear2:out->tm.pdm2.season.step0.add:in:tensor",
+      "src": "tm.pdm2.season.step0.linear2",
+      "dst": "tm.pdm2.season.step0.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.season.step0.add:out->tm.pdm2.season.step0:out:boundary",
+      "src": "tm.pdm2.season.step0.add",
+      "dst": "tm.pdm2.season.step0",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.season.step1:in->tm.pdm2.season.step1.linear1:in:boundary",
+      "src": "tm.pdm2.season.step1",
+      "dst": "tm.pdm2.season.step1.linear1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.season.step1.linear1:out->tm.pdm2.season.step1.gelu:in:tensor",
+      "src": "tm.pdm2.season.step1.linear1",
+      "dst": "tm.pdm2.season.step1.gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.season.step1.gelu:out->tm.pdm2.season.step1.linear2:in:tensor",
+      "src": "tm.pdm2.season.step1.gelu",
+      "dst": "tm.pdm2.season.step1.linear2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.season.step1.linear2:out->tm.pdm2.season.step1.add:in:tensor",
+      "src": "tm.pdm2.season.step1.linear2",
+      "dst": "tm.pdm2.season.step1.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.season.step1.add:out->tm.pdm2.season.step1:out:boundary",
+      "src": "tm.pdm2.season.step1.add",
+      "dst": "tm.pdm2.season.step1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.season.step2:in->tm.pdm2.season.step2.linear1:in:boundary",
+      "src": "tm.pdm2.season.step2",
+      "dst": "tm.pdm2.season.step2.linear1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.season.step2.linear1:out->tm.pdm2.season.step2.gelu:in:tensor",
+      "src": "tm.pdm2.season.step2.linear1",
+      "dst": "tm.pdm2.season.step2.gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.season.step2.gelu:out->tm.pdm2.season.step2.linear2:in:tensor",
+      "src": "tm.pdm2.season.step2.gelu",
+      "dst": "tm.pdm2.season.step2.linear2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.season.step2.linear2:out->tm.pdm2.season.step2.add:in:tensor",
+      "src": "tm.pdm2.season.step2.linear2",
+      "dst": "tm.pdm2.season.step2.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.season.step2.add:out->tm.pdm2.season.step2:out:boundary",
+      "src": "tm.pdm2.season.step2.add",
+      "dst": "tm.pdm2.season.step2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.season:in->tm.pdm2.season.initial:in:boundary",
+      "src": "tm.pdm2.season",
+      "dst": "tm.pdm2.season.initial",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.season.initial:out->tm.pdm2.season.step0:in:tensor",
+      "src": "tm.pdm2.season.initial",
+      "dst": "tm.pdm2.season.step0",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.season.step0:out->tm.pdm2.season.step1:in:tensor",
+      "src": "tm.pdm2.season.step0",
+      "dst": "tm.pdm2.season.step1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.season.step1:out->tm.pdm2.season.step2:in:tensor",
+      "src": "tm.pdm2.season.step1",
+      "dst": "tm.pdm2.season.step2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.season.step2:out->tm.pdm2.season.list:in:tensor",
+      "src": "tm.pdm2.season.step2",
+      "dst": "tm.pdm2.season.list",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.season.list:out->tm.pdm2.season:out:boundary",
+      "src": "tm.pdm2.season.list",
+      "dst": "tm.pdm2.season",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.trend.step0:in->tm.pdm2.trend.step0.linear1:in:boundary",
+      "src": "tm.pdm2.trend.step0",
+      "dst": "tm.pdm2.trend.step0.linear1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.trend.step0.linear1:out->tm.pdm2.trend.step0.gelu:in:tensor",
+      "src": "tm.pdm2.trend.step0.linear1",
+      "dst": "tm.pdm2.trend.step0.gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.trend.step0.gelu:out->tm.pdm2.trend.step0.linear2:in:tensor",
+      "src": "tm.pdm2.trend.step0.gelu",
+      "dst": "tm.pdm2.trend.step0.linear2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.trend.step0.linear2:out->tm.pdm2.trend.step0.add:in:tensor",
+      "src": "tm.pdm2.trend.step0.linear2",
+      "dst": "tm.pdm2.trend.step0.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.trend.step0.add:out->tm.pdm2.trend.step0:out:boundary",
+      "src": "tm.pdm2.trend.step0.add",
+      "dst": "tm.pdm2.trend.step0",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.trend.step1:in->tm.pdm2.trend.step1.linear1:in:boundary",
+      "src": "tm.pdm2.trend.step1",
+      "dst": "tm.pdm2.trend.step1.linear1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.trend.step1.linear1:out->tm.pdm2.trend.step1.gelu:in:tensor",
+      "src": "tm.pdm2.trend.step1.linear1",
+      "dst": "tm.pdm2.trend.step1.gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.trend.step1.gelu:out->tm.pdm2.trend.step1.linear2:in:tensor",
+      "src": "tm.pdm2.trend.step1.gelu",
+      "dst": "tm.pdm2.trend.step1.linear2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.trend.step1.linear2:out->tm.pdm2.trend.step1.add:in:tensor",
+      "src": "tm.pdm2.trend.step1.linear2",
+      "dst": "tm.pdm2.trend.step1.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.trend.step1.add:out->tm.pdm2.trend.step1:out:boundary",
+      "src": "tm.pdm2.trend.step1.add",
+      "dst": "tm.pdm2.trend.step1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.trend.step2:in->tm.pdm2.trend.step2.linear1:in:boundary",
+      "src": "tm.pdm2.trend.step2",
+      "dst": "tm.pdm2.trend.step2.linear1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.trend.step2.linear1:out->tm.pdm2.trend.step2.gelu:in:tensor",
+      "src": "tm.pdm2.trend.step2.linear1",
+      "dst": "tm.pdm2.trend.step2.gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.trend.step2.gelu:out->tm.pdm2.trend.step2.linear2:in:tensor",
+      "src": "tm.pdm2.trend.step2.gelu",
+      "dst": "tm.pdm2.trend.step2.linear2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.trend.step2.linear2:out->tm.pdm2.trend.step2.add:in:tensor",
+      "src": "tm.pdm2.trend.step2.linear2",
+      "dst": "tm.pdm2.trend.step2.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.trend.step2.add:out->tm.pdm2.trend.step2:out:boundary",
+      "src": "tm.pdm2.trend.step2.add",
+      "dst": "tm.pdm2.trend.step2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.trend:in->tm.pdm2.trend.initial:in:boundary",
+      "src": "tm.pdm2.trend",
+      "dst": "tm.pdm2.trend.initial",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.trend.initial:out->tm.pdm2.trend.step0:in:tensor",
+      "src": "tm.pdm2.trend.initial",
+      "dst": "tm.pdm2.trend.step0",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.trend.step0:out->tm.pdm2.trend.step1:in:tensor",
+      "src": "tm.pdm2.trend.step0",
+      "dst": "tm.pdm2.trend.step1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.trend.step1:out->tm.pdm2.trend.step2:in:tensor",
+      "src": "tm.pdm2.trend.step1",
+      "dst": "tm.pdm2.trend.step2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.trend.step2:out->tm.pdm2.trend.list:in:tensor",
+      "src": "tm.pdm2.trend.step2",
+      "dst": "tm.pdm2.trend.list",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.trend.list:out->tm.pdm2.trend:out:boundary",
+      "src": "tm.pdm2.trend.list",
+      "dst": "tm.pdm2.trend",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.mix:season->tm.pdm2.season:in:dispatch",
+      "src": "tm.pdm2.mix",
+      "dst": "tm.pdm2.season",
+      "src_port": "season",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "tm.pdm2.season:out->tm.pdm2.mix:item[0]:tuple_collection",
+      "src": "tm.pdm2.season",
+      "dst": "tm.pdm2.mix",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "tm.pdm2.mix:trend->tm.pdm2.trend:in:dispatch",
+      "src": "tm.pdm2.mix",
+      "dst": "tm.pdm2.trend",
+      "src_port": "trend",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "tm.pdm2.trend:out->tm.pdm2.mix:item[1]:tuple_collection",
+      "src": "tm.pdm2.trend",
+      "dst": "tm.pdm2.mix",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "tm.pdm2.out_cross:in->tm.pdm2.mlp1:in:boundary",
+      "src": "tm.pdm2.out_cross",
+      "dst": "tm.pdm2.mlp1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.mlp1:out->tm.pdm2.gelu:in:tensor",
+      "src": "tm.pdm2.mlp1",
+      "dst": "tm.pdm2.gelu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.gelu:out->tm.pdm2.mlp2:in:tensor",
+      "src": "tm.pdm2.gelu",
+      "dst": "tm.pdm2.mlp2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.mlp2:out->tm.pdm2.out_cross:out:boundary",
+      "src": "tm.pdm2.mlp2",
+      "dst": "tm.pdm2.out_cross",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2:in->tm.pdm2.decomp:in:boundary",
+      "src": "tm.pdm2",
+      "dst": "tm.pdm2.decomp",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2.decomp:out->tm.pdm2.mix:in:tensor",
+      "src": "tm.pdm2.decomp",
+      "dst": "tm.pdm2.mix",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.mix:out->tm.pdm2.sum:in:tensor",
+      "src": "tm.pdm2.mix",
+      "dst": "tm.pdm2.sum",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.sum:out->tm.pdm2.out_cross:in:tensor",
+      "src": "tm.pdm2.sum",
+      "dst": "tm.pdm2.out_cross",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.out_cross:out->tm.pdm2.add:in:tensor",
+      "src": "tm.pdm2.out_cross",
+      "dst": "tm.pdm2.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2.add:out->tm.pdm2:out:boundary",
+      "src": "tm.pdm2.add",
+      "dst": "tm.pdm2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm2:in->tm.pdm2.add:side:residual",
+      "src": "tm.pdm2",
+      "dst": "tm.pdm2.add",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "residual"
+    },
+    {
+      "id": "tm.pdm:in->tm.pdm1:in:boundary",
+      "src": "tm.pdm",
+      "dst": "tm.pdm1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.pdm1:out->tm.pdm2:in:tensor",
+      "src": "tm.pdm1",
+      "dst": "tm.pdm2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm2:out->tm.pdm:out:boundary",
+      "src": "tm.pdm2",
+      "dst": "tm.pdm",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.predict0:in->tm.temporal0:in:boundary",
+      "src": "tm.predict0",
+      "dst": "tm.temporal0",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.temporal0:out->tm.project0:in:tensor",
+      "src": "tm.temporal0",
+      "dst": "tm.project0",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.project0:out->tm.restore0:in:tensor",
+      "src": "tm.project0",
+      "dst": "tm.restore0",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.restore0:out->tm.predict0:out:boundary",
+      "src": "tm.restore0",
+      "dst": "tm.predict0",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.predict1:in->tm.temporal1:in:boundary",
+      "src": "tm.predict1",
+      "dst": "tm.temporal1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.temporal1:out->tm.project1:in:tensor",
+      "src": "tm.temporal1",
+      "dst": "tm.project1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.project1:out->tm.restore1:in:tensor",
+      "src": "tm.project1",
+      "dst": "tm.restore1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.restore1:out->tm.predict1:out:boundary",
+      "src": "tm.restore1",
+      "dst": "tm.predict1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.predict2:in->tm.temporal2:in:boundary",
+      "src": "tm.predict2",
+      "dst": "tm.temporal2",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.temporal2:out->tm.project2:in:tensor",
+      "src": "tm.temporal2",
+      "dst": "tm.project2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.project2:out->tm.restore2:in:tensor",
+      "src": "tm.project2",
+      "dst": "tm.restore2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.restore2:out->tm.predict2:out:boundary",
+      "src": "tm.restore2",
+      "dst": "tm.predict2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.predict3:in->tm.temporal3:in:boundary",
+      "src": "tm.predict3",
+      "dst": "tm.temporal3",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.temporal3:out->tm.project3:in:tensor",
+      "src": "tm.temporal3",
+      "dst": "tm.project3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.project3:out->tm.restore3:in:tensor",
+      "src": "tm.project3",
+      "dst": "tm.restore3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.restore3:out->tm.predict3:out:boundary",
+      "src": "tm.restore3",
+      "dst": "tm.predict3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.fmm:scale[0]->tm.predict0:in:dispatch",
+      "src": "tm.fmm",
+      "dst": "tm.predict0",
+      "src_port": "scale[0]",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "tm.predict0:out->tm.fmm:item[0]:tuple_collection",
+      "src": "tm.predict0",
+      "dst": "tm.fmm",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "tm.fmm:scale[1]->tm.predict1:in:dispatch",
+      "src": "tm.fmm",
+      "dst": "tm.predict1",
+      "src_port": "scale[1]",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "tm.predict1:out->tm.fmm:item[1]:tuple_collection",
+      "src": "tm.predict1",
+      "dst": "tm.fmm",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "tm.fmm:scale[2]->tm.predict2:in:dispatch",
+      "src": "tm.fmm",
+      "dst": "tm.predict2",
+      "src_port": "scale[2]",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "tm.predict2:out->tm.fmm:item[2]:tuple_collection",
+      "src": "tm.predict2",
+      "dst": "tm.fmm",
+      "src_port": "out",
+      "dst_port": "item[2]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "tm.fmm:scale[3]->tm.predict3:in:dispatch",
+      "src": "tm.fmm",
+      "dst": "tm.predict3",
+      "src_port": "scale[3]",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "tm.predict3:out->tm.fmm:item[3]:tuple_collection",
+      "src": "tm.predict3",
+      "dst": "tm.fmm",
+      "src_port": "out",
+      "dst_port": "item[3]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "tm.model:in->tm.input:in:boundary",
+      "src": "tm.model",
+      "dst": "tm.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.input:out->tm.pyramid:in:tensor",
+      "src": "tm.input",
+      "dst": "tm.pyramid",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pyramid:out->tm.embedding:in:tensor",
+      "src": "tm.pyramid",
+      "dst": "tm.embedding",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.embedding:out->tm.pdm:in:tensor",
+      "src": "tm.embedding",
+      "dst": "tm.pdm",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.pdm:out->tm.fmm:in:tensor",
+      "src": "tm.pdm",
+      "dst": "tm.fmm",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.fmm:out->tm.forecast_sum:in:tensor",
+      "src": "tm.fmm",
+      "dst": "tm.forecast_sum",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.forecast_sum:out->tm.denorm:in:tensor",
+      "src": "tm.forecast_sum",
+      "dst": "tm.denorm",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.denorm:out->tm.output:in:tensor",
+      "src": "tm.denorm",
+      "dst": "tm.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tm.output:out->tm.model:out:boundary",
+      "src": "tm.output",
+      "dst": "tm.model",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tm.scale0:out->tm.collect:side:scale",
+      "src": "tm.scale0",
+      "dst": "tm.collect",
+      "src_port": "out",
+      "dst_port": "side",
+      "role": "scale"
+    },
+    {
+      "id": "tm.pool1:out->tm.collect:side:scale",
+      "src": "tm.pool1",
+      "dst": "tm.collect",
+      "src_port": "out",
+      "dst_port": "side",
+      "role": "scale"
+    },
+    {
+      "id": "tm.pool2:out->tm.collect:side:scale",
+      "src": "tm.pool2",
+      "dst": "tm.collect",
+      "src_port": "out",
+      "dst_port": "side",
+      "role": "scale"
+    },
+    {
+      "id": "tm.pdm1.decomp:season->tm.pdm1.season.step0.add:side:component",
+      "src": "tm.pdm1.decomp",
+      "dst": "tm.pdm1.season.step0.add",
+      "src_port": "season",
+      "dst_port": "side",
+      "role": "component"
+    },
+    {
+      "id": "tm.pdm1.decomp:season->tm.pdm1.season.step1.add:side:component",
+      "src": "tm.pdm1.decomp",
+      "dst": "tm.pdm1.season.step1.add",
+      "src_port": "season",
+      "dst_port": "side",
+      "role": "component"
+    },
+    {
+      "id": "tm.pdm1.decomp:season->tm.pdm1.season.step2.add:side:component",
+      "src": "tm.pdm1.decomp",
+      "dst": "tm.pdm1.season.step2.add",
+      "src_port": "season",
+      "dst_port": "side",
+      "role": "component"
+    },
+    {
+      "id": "tm.pdm1.decomp:trend->tm.pdm1.trend.step0.add:side:component",
+      "src": "tm.pdm1.decomp",
+      "dst": "tm.pdm1.trend.step0.add",
+      "src_port": "trend",
+      "dst_port": "side",
+      "role": "component"
+    },
+    {
+      "id": "tm.pdm1.decomp:trend->tm.pdm1.trend.step1.add:side:component",
+      "src": "tm.pdm1.decomp",
+      "dst": "tm.pdm1.trend.step1.add",
+      "src_port": "trend",
+      "dst_port": "side",
+      "role": "component"
+    },
+    {
+      "id": "tm.pdm1.decomp:trend->tm.pdm1.trend.step2.add:side:component",
+      "src": "tm.pdm1.decomp",
+      "dst": "tm.pdm1.trend.step2.add",
+      "src_port": "trend",
+      "dst_port": "side",
+      "role": "component"
+    },
+    {
+      "id": "tm.pdm2.decomp:season->tm.pdm2.season.step0.add:side:component",
+      "src": "tm.pdm2.decomp",
+      "dst": "tm.pdm2.season.step0.add",
+      "src_port": "season",
+      "dst_port": "side",
+      "role": "component"
+    },
+    {
+      "id": "tm.pdm2.decomp:season->tm.pdm2.season.step1.add:side:component",
+      "src": "tm.pdm2.decomp",
+      "dst": "tm.pdm2.season.step1.add",
+      "src_port": "season",
+      "dst_port": "side",
+      "role": "component"
+    },
+    {
+      "id": "tm.pdm2.decomp:season->tm.pdm2.season.step2.add:side:component",
+      "src": "tm.pdm2.decomp",
+      "dst": "tm.pdm2.season.step2.add",
+      "src_port": "season",
+      "dst_port": "side",
+      "role": "component"
+    },
+    {
+      "id": "tm.pdm2.decomp:trend->tm.pdm2.trend.step0.add:side:component",
+      "src": "tm.pdm2.decomp",
+      "dst": "tm.pdm2.trend.step0.add",
+      "src_port": "trend",
+      "dst_port": "side",
+      "role": "component"
+    },
+    {
+      "id": "tm.pdm2.decomp:trend->tm.pdm2.trend.step1.add:side:component",
+      "src": "tm.pdm2.decomp",
+      "dst": "tm.pdm2.trend.step1.add",
+      "src_port": "trend",
+      "dst_port": "side",
+      "role": "component"
+    },
+    {
+      "id": "tm.pdm2.decomp:trend->tm.pdm2.trend.step2.add:side:component",
+      "src": "tm.pdm2.decomp",
+      "dst": "tm.pdm2.trend.step2.add",
+      "src_port": "trend",
+      "dst_port": "side",
+      "role": "component"
+    },
+    {
+      "id": "tm.norm0:statistics->tm.denorm:side:statistics",
+      "src": "tm.norm0",
+      "dst": "tm.denorm",
+      "src_port": "statistics",
+      "dst_port": "side",
+      "role": "statistics"
+    }
+  ],
+  "facts": [
+    "Multi-scale input pyramid precedes embedding; scale lengths are 96,48,24,12.",
+    "Channel independence reshapes each variable into the batch; embedding and projection are shared across scales and variables.",
+    "PDM decomposes each embedded scale into season and trend; there is no third independent residual component.",
+    "Season mixes fine to coarse; trend mixes coarse to fine, using learned temporal Linear/GELU/Linear maps.",
+    "Each PDM has independently parameterized scale transforms; the feature out_cross_layer is shared across scales within one block.",
+    "PDM.layer_norm and PDM.dropout are initialized but not used by its forward; they are not drawn.",
+    "FMM uses one independent Li->H temporal predictor per scale and a shared D->1 projection; forecasts are summed.",
+    "Denormalization reuses only normalize_layers[0] statistics, not an average of all scale statistics.",
+    "The second PDM is retained in IR and folded visually; no attention block exists on this path."
+  ],
+  "corrections": [
+    "Replace the reference short/mid/long Conv1d mixers with directional season/trend temporal MLPs.",
+    "Remove reference Add & Norm blocks; PDM forward does not call its initialized LayerNorm.",
+    "Replace X=Season+Trend+Residual with the actual two-output series decomposition.",
+    "Replace concat/fusion and flatten head with per-scale prediction, summation and denormalization.",
+    "No positional embedding is added by DataEmbedding_wo_pos.forward; embedding remains rank 3.",
+    "Multi-scale downsampling happens before normalization/embedding, not after a single embedding."
+  ],
+  "semantics": "reviewed static adapter; selected profile; boundary and tuple edges explicit"
+}

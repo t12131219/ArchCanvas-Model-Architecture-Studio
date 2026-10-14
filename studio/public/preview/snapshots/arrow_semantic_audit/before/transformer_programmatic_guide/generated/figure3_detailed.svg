@@ -1,0 +1,862 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="2742" viewBox="0 0 1600 2742">
+<defs><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<text x="800.0" y="38" font-family="DejaVu Sans, Arial, sans-serif" font-size="26" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="800.0" dy="0">3 · Source-grounded detailed view</tspan>
+</text>
+<text x="800.0" y="69" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="800.0" dy="0">Same semantic IR · Post-LayerNorm · independent layer parameters</tspan>
+</text>
+<text x="800.0" y="94" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="800.0" dy="0">Solid: model forward · dashed: explanation · cross-attention SDPA is folded</tspan>
+</text>
+<rect x="998.0" y="110" width="480" height="58" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" data-node-id="probabilities"><title>probabilities | source:  | parameter: None</title></rect>
+<text x="1238.0" y="134.92" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Softmax → probabilities [B,T,V]</tspan>
+<tspan x="1238.0" dy="20.06">Explanation only; outside Transformer.forward</tspan>
+</text>
+<rect x="1048.0" y="188" width="380" height="48" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="generator"><title>generator | source: Transformer.__init__, Transformer.forward | parameter: model.generator.weight</title></rect>
+<text x="1238.0" y="218.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Generator Linear D → vocabulary V</tspan>
+</text>
+<path data-route-id="logits-to-probabilities" d="M 1238.0,188 L 1238.0,168" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<text x="1456.0" y="216" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="1456.0" dy="0">logits</tspan>
+</text>
+<rect x="42" y="286" width="660" height="1452" rx="19" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" data-node-id="enc.layer_i"><title>enc.layer_i | source: EncoderLayer.forward | parameter: model.encoder.layers[i]</title></rect>
+<text x="62" y="266" font-family="DejaVu Sans, Arial, sans-serif" font-size="23" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="62" dy="0">Encoder × N_encoder</tspan>
+</text>
+<rect x="80" y="308" width="604" height="150" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" data-node-id="enc.norm2"><title>enc.norm2 | source: EncoderLayer.forward | parameter: model.encoder.layers[i].norm2</title></rect>
+<text x="102" y="335" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="102" dy="0">Add &amp; Norm · Post-LN</tspan>
+</text>
+<circle cx="382.0" cy="420" r="14" fill="white" stroke="#263348" stroke-width="2" data-node-id="enc.norm2.add"/>
+<text x="382.0" y="427" font-family="DejaVu Sans, Arial, sans-serif" font-size="25" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">+</tspan>
+</text>
+<text x="128" y="411" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="128" dy="0">x (skip)</tspan>
+</text>
+<path data-route-id="local-route-002" d="M 80,420 L 368.0,420" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc.norm2-branch-input" d="M 382.0,458 L 382.0,434" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="282.0" y="350" width="200" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.norm2.layernorm"><title>enc.norm2.layernorm | source: EncoderLayer.forward | parameter: model.encoder.layers[i].norm2</title></rect>
+<text x="382.0" y="372.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">LayerNorm</tspan>
+</text>
+<path data-route-id="enc.norm2-add-to-ln" d="M 382.0,406 L 382.0,382" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc.norm2-output" d="M 382.0,350 L 382.0,308" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="80" y="482" width="604" height="332" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" data-node-id="enc.ffn"><title>enc.ffn | source: PositionwiseFeedForward.forward, EncoderLayer.forward | parameter: model.encoder.layers[i].ffn</title></rect>
+<text x="102" y="508" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="102" dy="0">Position-wise</tspan>
+<tspan x="102" dy="23.599999999999998">feed-forward network</tspan>
+</text>
+<rect x="357.0" y="538.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="365.3333333333333" y="538.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="373.6666666666667" y="538.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="382.0" y="538.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="390.3333333333333" y="538.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="398.6666666666667" y="538.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="357.0" y="548.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="365.3333333333333" y="548.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="373.6666666666667" y="548.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="382.0" y="548.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="390.3333333333333" y="548.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="398.6666666666667" y="548.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="357.0" y="558.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="365.3333333333333" y="558.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="373.6666666666667" y="558.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="382.0" y="558.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="390.3333333333333" y="558.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="398.6666666666667" y="558.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<text x="348.0" y="558" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="end" fill="#172336">
+<tspan x="348.0" dy="0">Z</tspan>
+</text>
+<text x="417.0" y="558" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="417.0" dy="0">[B,L,D]</tspan>
+</text>
+<rect x="357.0" y="760.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="365.3333333333333" y="760.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="373.6666666666667" y="760.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="382.0" y="760.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="390.3333333333333" y="760.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="398.6666666666667" y="760.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="357.0" y="770.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="365.3333333333333" y="770.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="373.6666666666667" y="770.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="382.0" y="770.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="390.3333333333333" y="770.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="398.6666666666667" y="770.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="357.0" y="780.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="365.3333333333333" y="780.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="373.6666666666667" y="780.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="382.0" y="780.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="390.3333333333333" y="780.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="398.6666666666667" y="780.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<text x="348.0" y="780" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="end" fill="#172336">
+<tspan x="348.0" dy="0">X</tspan>
+</text>
+<text x="417.0" y="780" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="417.0" dy="0">[B,L,D]</tspan>
+</text>
+<rect x="272.0" y="592" width="220" height="32" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="enc.ffn.linear2"><title>enc.ffn.linear2 | source: PositionwiseFeedForward.forward | parameter: model.encoder.layers[i].ffn.linear2</title></rect>
+<text x="382.0" y="614.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Linear Dff → D</tspan>
+</text>
+<rect x="272.0" y="648" width="220" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.ffn.relu"><title>enc.ffn.relu | source: PositionwiseFeedForward.forward | parameter: None</title></rect>
+<text x="382.0" y="670.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">ReLU</tspan>
+</text>
+<rect x="272.0" y="704" width="220" height="32" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="enc.ffn.linear1"><title>enc.ffn.linear1 | source: PositionwiseFeedForward.forward | parameter: model.encoder.layers[i].ffn.linear1</title></rect>
+<text x="382.0" y="726.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Linear D → Dff</tspan>
+</text>
+<path data-route-id="enc.ffn-input" d="M 382.0,814 L 382.0,790" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="local-route-007" d="M 382.0,760 L 382.0,736" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc.ffn-linear1-to-relu" d="M 382.0,704 L 382.0,680" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc.ffn-relu-to-linear2" d="M 382.0,648 L 382.0,624" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="local-route-010" d="M 382.0,592 L 382.0,568" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc.ffn-output" d="M 382.0,538 L 382.0,482" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="160.0" y="649.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="168.33333333333334" y="649.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="176.66666666666666" y="649.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="185.0" y="649.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="193.33333333333334" y="649.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="201.66666666666666" y="649.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="160.0" y="659.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="168.33333333333334" y="659.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="176.66666666666666" y="659.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="185.0" y="659.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="193.33333333333334" y="659.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="201.66666666666666" y="659.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="160.0" y="669.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="168.33333333333334" y="669.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="176.66666666666666" y="669.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="185.0" y="669.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="193.33333333333334" y="669.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="201.66666666666666" y="669.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<text x="185.0" y="699" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="185.0" dy="0">[B,L,Dff]</tspan>
+</text>
+<text x="185" y="636" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="185" dy="0">hidden</tspan>
+</text>
+<path data-route-id="local-route-012" d="M 272.0,664 L 210,664" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 5"/>
+<path data-route-id="enc.ffn-to-norm" d="M 382.0,482 L 382.0,458" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc.ffn-residual" d="M 382.0,826.0 L 56,826.0 L 56,420 L 80,420" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<circle cx="382.0" cy="826.0" r="2.5" fill="#263348"/>
+<rect x="80" y="838" width="604" height="150" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" data-node-id="enc.norm1"><title>enc.norm1 | source: EncoderLayer.forward | parameter: model.encoder.layers[i].norm1</title></rect>
+<text x="102" y="865" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="102" dy="0">Add &amp; Norm · Post-LN</tspan>
+</text>
+<circle cx="382.0" cy="950" r="14" fill="white" stroke="#263348" stroke-width="2" data-node-id="enc.norm1.add"/>
+<text x="382.0" y="957" font-family="DejaVu Sans, Arial, sans-serif" font-size="25" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">+</tspan>
+</text>
+<text x="128" y="941" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="128" dy="0">x (skip)</tspan>
+</text>
+<path data-route-id="local-route-015" d="M 80,950 L 368.0,950" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc.norm1-branch-input" d="M 382.0,988 L 382.0,964" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="282.0" y="880" width="200" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.norm1.layernorm"><title>enc.norm1.layernorm | source: EncoderLayer.forward | parameter: model.encoder.layers[i].norm1</title></rect>
+<text x="382.0" y="902.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">LayerNorm</tspan>
+</text>
+<path data-route-id="enc.norm1-add-to-ln" d="M 382.0,936 L 382.0,912" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc.norm1-output" d="M 382.0,880 L 382.0,838" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="80" y="1012" width="604" height="704" rx="10" fill="#ffddb3" stroke="#263348" stroke-width="2" data-node-id="enc.self"><title>enc.self | source: MultiHeadAttention.forward, EncoderLayer.forward | parameter: model.encoder.layers[i].self_attn</title></rect>
+<text x="102" y="1038" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="102" dy="0">Encoder</tspan>
+<tspan x="102" dy="23.599999999999998">self-attention</tspan>
+</text>
+<text x="662" y="1038" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="662" dy="0">Q,K,V ← X</tspan>
+<tspan x="662" dy="18.88">[B,S,D]</tspan>
+</text>
+<path data-route-id="local-route-019" d="M 382.0,1716 L 382.0,1692" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path data-route-id="local-route-020" d="M 202.66666666666669,1692 L 561.3333333333334,1692" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path data-route-id="local-route-021" d="M 202.66666666666669,1692 L 202.66666666666669,1668" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="local-route-022" d="M 382.0,1692 L 382.0,1668" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="local-route-023" d="M 561.3333333333334,1692 L 561.3333333333334,1668" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="146.66666666666669" y="1634" width="112" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="enc.self.q"><title>enc.self.q | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.encoder.layers[i].self_attn.w_q</title></rect>
+<text x="202.66666666666669" y="1656.6" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="202.66666666666669" dy="0">Linear WQ</tspan>
+</text>
+<rect x="177.66666666666669" y="1580.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="186.00000000000003" y="1580.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="194.33333333333334" y="1580.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="202.66666666666669" y="1580.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="211.00000000000003" y="1580.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="219.33333333333334" y="1580.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="177.66666666666669" y="1590.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="186.00000000000003" y="1590.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="194.33333333333334" y="1590.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="202.66666666666669" y="1590.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="211.00000000000003" y="1590.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="219.33333333333334" y="1590.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="177.66666666666669" y="1600.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="186.00000000000003" y="1600.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="194.33333333333334" y="1600.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="202.66666666666669" y="1600.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="211.00000000000003" y="1600.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="219.33333333333334" y="1600.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<text x="168.66666666666669" y="1600" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="end" fill="#172336">
+<tspan x="168.66666666666669" dy="0">Q</tspan>
+</text>
+<text x="237.66666666666669" y="1600" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="237.66666666666669" dy="0">[B,S,D]</tspan>
+</text>
+<path data-route-id="enc.self-project-q" d="M 202.66666666666669,1634 L 202.66666666666669,1610" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc.self-tensor-q-to-split" d="M 202.66666666666669,1580 L 202.66666666666669,1556" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="326.0" y="1634" width="112" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="enc.self.k"><title>enc.self.k | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.encoder.layers[i].self_attn.w_k</title></rect>
+<text x="382.0" y="1656.6" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Linear WK</tspan>
+</text>
+<rect x="357.0" y="1580.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="365.3333333333333" y="1580.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="373.6666666666667" y="1580.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="382.0" y="1580.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="390.3333333333333" y="1580.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="398.6666666666667" y="1580.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="357.0" y="1590.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="365.3333333333333" y="1590.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="373.6666666666667" y="1590.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="382.0" y="1590.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="390.3333333333333" y="1590.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="398.6666666666667" y="1590.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="357.0" y="1600.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="365.3333333333333" y="1600.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="373.6666666666667" y="1600.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="382.0" y="1600.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="390.3333333333333" y="1600.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="398.6666666666667" y="1600.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<text x="348.0" y="1600" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="end" fill="#172336">
+<tspan x="348.0" dy="0">K</tspan>
+</text>
+<text x="417.0" y="1600" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="417.0" dy="0">[B,S,D]</tspan>
+</text>
+<path data-route-id="enc.self-project-k" d="M 382.0,1634 L 382.0,1610" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc.self-tensor-k-to-split" d="M 382.0,1580 L 382.0,1556" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="505.33333333333337" y="1634" width="112" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="enc.self.v"><title>enc.self.v | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.encoder.layers[i].self_attn.w_v</title></rect>
+<text x="561.3333333333334" y="1656.6" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="561.3333333333334" dy="0">Linear WV</tspan>
+</text>
+<rect x="536.3333333333334" y="1580.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="544.6666666666667" y="1580.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="553.0" y="1580.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="561.3333333333334" y="1580.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="569.6666666666667" y="1580.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="578.0" y="1580.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="536.3333333333334" y="1590.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="544.6666666666667" y="1590.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="553.0" y="1590.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="561.3333333333334" y="1590.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="569.6666666666667" y="1590.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="578.0" y="1590.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="536.3333333333334" y="1600.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="544.6666666666667" y="1600.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="553.0" y="1600.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="561.3333333333334" y="1600.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="569.6666666666667" y="1600.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="578.0" y="1600.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<text x="527.3333333333334" y="1600" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="end" fill="#172336">
+<tspan x="527.3333333333334" dy="0">V</tspan>
+</text>
+<text x="596.3333333333334" y="1600" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="596.3333333333334" dy="0">[B,S,D]</tspan>
+</text>
+<path data-route-id="enc.self-project-v" d="M 561.3333333333334,1634 L 561.3333333333334,1610" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc.self-tensor-v-to-split" d="M 561.3333333333334,1580 L 561.3333333333334,1556" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="122" y="1518" width="520" height="38" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.self.split"><title>enc.self.split | source: MultiHeadAttention._split_heads | parameter: None</title></rect>
+<text x="382.0" y="1542.95" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Split heads: Q / K / V → [B,H,L,Dh]</tspan>
+</text>
+<rect x="122" y="1206" width="520" height="288" rx="10" fill="#fffaf6" stroke="#263348" stroke-width="2" data-node-id="enc.self.sdpa"><title>enc.self.sdpa | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text x="136" y="1230" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="136" dy="0">SDPA · per head</tspan>
+</text>
+<rect x="282.0" y="1248" width="200" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.self.sdpa.av"><title>enc.self.sdpa.av | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text x="382.0" y="1270.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">A @ V</tspan>
+</text>
+<rect x="282.0" y="1298" width="200" height="32" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" data-node-id="enc.self.sdpa.softmax"><title>enc.self.sdpa.softmax | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text x="382.0" y="1320.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Softmax</tspan>
+</text>
+<rect x="282.0" y="1348" width="200" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.self.sdpa.mask"><title>enc.self.sdpa.mask | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text x="382.0" y="1369.6" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">padding mask (optional)</tspan>
+</text>
+<rect x="282.0" y="1398" width="200" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.self.sdpa.scale"><title>enc.self.sdpa.scale | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text x="382.0" y="1420.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">÷ √Dh</tspan>
+</text>
+<rect x="282.0" y="1448" width="200" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.self.sdpa.qkt"><title>enc.self.sdpa.qkt | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text x="382.0" y="1470.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Q @ Kᵀ</tspan>
+</text>
+<path data-route-id="enc.self-qkt-to-scale" d="M 382.0,1448 L 382.0,1430" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc.self-scale-to-mask" d="M 382.0,1398 L 382.0,1380" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc.self-mask-to-softmax" d="M 382.0,1348 L 382.0,1330" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc.self-softmax-to-av" d="M 382.0,1298 L 382.0,1280" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc.self-split-q" d="M 342.0,1518 L 342.0,1480" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="335.0" y="1510" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="335.0" dy="0">Qh</tspan>
+</text>
+<path data-route-id="enc.self-split-k" d="M 422.0,1518 L 422.0,1480" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="429.0" y="1510" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="429.0" dy="0">Kh</tspan>
+</text>
+<path data-route-id="enc.self-split-v" d="M 561.3333333333334,1518 L 561.3333333333334,1264 L 482.0,1264" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="569.3333333333334" y="1510" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="569.3333333333334" dy="0">Vh</tspan>
+</text>
+<text x="136" y="1325" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="136" dy="0">A</tspan>
+<tspan x="136" dy="17.7">[B,H,Lq,Lk]</tspan>
+</text>
+<text x="136" y="1398" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="136" dy="0">mask before</tspan>
+<tspan x="136" dy="17.7">Softmax</tspan>
+</text>
+<path data-route-id="enc.self-av-to-merge" d="M 382.0,1248 L 382.0,1182" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="122" y="1150" width="520" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.self.merge"><title>enc.self.merge | source: MultiHeadAttention._combine_heads | parameter: None</title></rect>
+<text x="382.0" y="1171.95" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Combine heads: [B,H,Lq,Dh] → [B,Lq,D]</tspan>
+</text>
+<path data-route-id="enc.self-merge-to-wo" d="M 382.0,1150 L 382.0,1126" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="272.0" y="1092" width="220" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="enc.self.wo"><title>enc.self.wo | source: MultiHeadAttention.forward | parameter: model.encoder.layers[i].self_attn.w_o</title></rect>
+<text x="382.0" y="1115.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Linear Wᴼ (D → D)</tspan>
+</text>
+<path data-route-id="enc.self-output" d="M 382.0,1092 L 382.0,1012" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc.self-to-norm" d="M 382.0,1012 L 382.0,988" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc.self-residual" d="M 382.0,1728.0 L 56,1728.0 L 56,950 L 80,950" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<circle cx="382.0" cy="1728.0" r="2.5" fill="#263348"/>
+<path data-route-id="enc.norm1-to-next" d="M 382.0,838 L 382.0,814" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="135" y="2492" width="494" height="62" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2" data-node-id="src_embed"><title>src_embed | source: TokenEmbedding.forward | parameter: model.src_embedding.embedding.weight</title></rect>
+<text x="382.0" y="2529.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Source token embedding × √D</tspan>
+</text>
+<path data-route-id="local-route-043" d="M 382.0,2492 L 382.0,2465" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<circle cx="382.0" cy="2450" r="15" fill="white" stroke="#263348" stroke-width="2"/>
+<text x="382.0" y="2457" font-family="DejaVu Sans, Arial, sans-serif" font-size="25" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">+</tspan>
+</text>
+<rect x="80.0" y="2427" width="210" height="46" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="src_pe"><title>src_pe | source: PositionalEncoding.forward | parameter: None</title></rect>
+<text x="185.0" y="2455.95" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="185.0" dy="0">Fixed sinusoidal PE</tspan>
+</text>
+<path data-route-id="local-route-044" d="M 290.0,2450 L 367.0,2450" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="enc-input" d="M 382.0,2435 L 382.0,1716" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="382.0" y="2583" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">src [B,S]</tspan>
+</text>
+<path data-route-id="local-route-046" d="M 382.0,2573 L 382.0,2554" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="382.0" y="2610" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Embedding output [B,L,D] · PE dropout folded</tspan>
+</text>
+<rect x="898" y="286" width="660" height="2118" rx="19" fill="#fff0f5" stroke="#263348" stroke-width="2.5" data-node-id="dec.layer_i"><title>dec.layer_i | source: DecoderLayer.forward | parameter: model.decoder.layers[i]</title></rect>
+<text x="918" y="266" font-family="DejaVu Sans, Arial, sans-serif" font-size="23" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="918" dy="0">Decoder × N_decoder</tspan>
+</text>
+<rect x="936" y="308" width="604" height="150" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" data-node-id="dec.norm3"><title>dec.norm3 | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm3</title></rect>
+<text x="958" y="335" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="958" dy="0">Add &amp; Norm · Post-LN</tspan>
+</text>
+<circle cx="1238.0" cy="420" r="14" fill="white" stroke="#263348" stroke-width="2" data-node-id="dec.norm3.add"/>
+<text x="1238.0" y="427" font-family="DejaVu Sans, Arial, sans-serif" font-size="25" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">+</tspan>
+</text>
+<text x="984" y="411" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="984" dy="0">x (skip)</tspan>
+</text>
+<path data-route-id="local-route-047" d="M 936,420 L 1224.0,420" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.norm3-branch-input" d="M 1238.0,458 L 1238.0,434" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1138.0" y="350" width="200" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.norm3.layernorm"><title>dec.norm3.layernorm | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm3</title></rect>
+<text x="1238.0" y="372.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">LayerNorm</tspan>
+</text>
+<path data-route-id="dec.norm3-add-to-ln" d="M 1238.0,406 L 1238.0,382" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.norm3-output" d="M 1238.0,350 L 1238.0,308" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="936" y="482" width="604" height="332" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" data-node-id="dec.ffn"><title>dec.ffn | source: PositionwiseFeedForward.forward, DecoderLayer.forward | parameter: model.decoder.layers[i].ffn</title></rect>
+<text x="958" y="508" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="958" dy="0">Position-wise</tspan>
+<tspan x="958" dy="23.599999999999998">feed-forward network</tspan>
+</text>
+<rect x="1213.0" y="538.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1221.3333333333333" y="538.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1229.6666666666667" y="538.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1238.0" y="538.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1246.3333333333333" y="538.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1254.6666666666667" y="538.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1213.0" y="548.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1221.3333333333333" y="548.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1229.6666666666667" y="548.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1238.0" y="548.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1246.3333333333333" y="548.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1254.6666666666667" y="548.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1213.0" y="558.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1221.3333333333333" y="558.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1229.6666666666667" y="558.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1238.0" y="558.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1246.3333333333333" y="558.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1254.6666666666667" y="558.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<text x="1204.0" y="558" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="end" fill="#172336">
+<tspan x="1204.0" dy="0">Z</tspan>
+</text>
+<text x="1273.0" y="558" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="1273.0" dy="0">[B,L,D]</tspan>
+</text>
+<rect x="1213.0" y="760.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1221.3333333333333" y="760.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1229.6666666666667" y="760.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1238.0" y="760.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1246.3333333333333" y="760.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1254.6666666666667" y="760.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1213.0" y="770.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1221.3333333333333" y="770.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1229.6666666666667" y="770.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1238.0" y="770.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1246.3333333333333" y="770.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1254.6666666666667" y="770.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1213.0" y="780.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1221.3333333333333" y="780.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1229.6666666666667" y="780.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1238.0" y="780.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1246.3333333333333" y="780.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1254.6666666666667" y="780.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<text x="1204.0" y="780" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="end" fill="#172336">
+<tspan x="1204.0" dy="0">X</tspan>
+</text>
+<text x="1273.0" y="780" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="1273.0" dy="0">[B,L,D]</tspan>
+</text>
+<rect x="1128.0" y="592" width="220" height="32" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.ffn.linear2"><title>dec.ffn.linear2 | source: PositionwiseFeedForward.forward | parameter: model.decoder.layers[i].ffn.linear2</title></rect>
+<text x="1238.0" y="614.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Linear Dff → D</tspan>
+</text>
+<rect x="1128.0" y="648" width="220" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.ffn.relu"><title>dec.ffn.relu | source: PositionwiseFeedForward.forward | parameter: None</title></rect>
+<text x="1238.0" y="670.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">ReLU</tspan>
+</text>
+<rect x="1128.0" y="704" width="220" height="32" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.ffn.linear1"><title>dec.ffn.linear1 | source: PositionwiseFeedForward.forward | parameter: model.decoder.layers[i].ffn.linear1</title></rect>
+<text x="1238.0" y="726.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Linear D → Dff</tspan>
+</text>
+<path data-route-id="dec.ffn-input" d="M 1238.0,814 L 1238.0,790" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="local-route-052" d="M 1238.0,760 L 1238.0,736" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.ffn-linear1-to-relu" d="M 1238.0,704 L 1238.0,680" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.ffn-relu-to-linear2" d="M 1238.0,648 L 1238.0,624" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="local-route-055" d="M 1238.0,592 L 1238.0,568" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.ffn-output" d="M 1238.0,538 L 1238.0,482" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1016.0" y="649.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1024.3333333333333" y="649.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1032.6666666666667" y="649.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1041.0" y="649.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1049.3333333333333" y="649.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1057.6666666666667" y="649.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1016.0" y="659.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1024.3333333333333" y="659.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1032.6666666666667" y="659.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1041.0" y="659.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1049.3333333333333" y="659.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1057.6666666666667" y="659.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1016.0" y="669.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1024.3333333333333" y="669.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1032.6666666666667" y="669.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1041.0" y="669.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1049.3333333333333" y="669.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1057.6666666666667" y="669.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<text x="1041.0" y="699" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1041.0" dy="0">[B,L,Dff]</tspan>
+</text>
+<text x="1041" y="636" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1041" dy="0">hidden</tspan>
+</text>
+<path data-route-id="local-route-057" d="M 1128.0,664 L 1066,664" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 5"/>
+<path data-route-id="dec.ffn-to-norm" d="M 1238.0,482 L 1238.0,458" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.ffn-residual" d="M 1238.0,826.0 L 912,826.0 L 912,420 L 936,420" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<circle cx="1238.0" cy="826.0" r="2.5" fill="#263348"/>
+<rect x="936" y="838" width="604" height="150" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" data-node-id="dec.norm2"><title>dec.norm2 | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm2</title></rect>
+<text x="958" y="865" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="958" dy="0">Add &amp; Norm · Post-LN</tspan>
+</text>
+<circle cx="1238.0" cy="950" r="14" fill="white" stroke="#263348" stroke-width="2" data-node-id="dec.norm2.add"/>
+<text x="1238.0" y="957" font-family="DejaVu Sans, Arial, sans-serif" font-size="25" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">+</tspan>
+</text>
+<text x="984" y="941" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="984" dy="0">x (skip)</tspan>
+</text>
+<path data-route-id="local-route-060" d="M 936,950 L 1224.0,950" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.norm2-branch-input" d="M 1238.0,988 L 1238.0,964" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1138.0" y="880" width="200" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.norm2.layernorm"><title>dec.norm2.layernorm | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm2</title></rect>
+<text x="1238.0" y="902.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">LayerNorm</tspan>
+</text>
+<path data-route-id="dec.norm2-add-to-ln" d="M 1238.0,936 L 1238.0,912" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.norm2-output" d="M 1238.0,880 L 1238.0,838" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="936" y="1012" width="604" height="468" rx="10" fill="#ffddb3" stroke="#263348" stroke-width="2" data-node-id="dec.cross"><title>dec.cross | source: MultiHeadAttention.forward, DecoderLayer.forward | parameter: model.decoder.layers[i].cross_attn</title></rect>
+<text x="958" y="1038" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="958" dy="0">Encoder–decoder</tspan>
+<tspan x="958" dy="23.599999999999998">cross-attention</tspan>
+</text>
+<text x="1518" y="1038" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="1518" dy="0">Q ← H [B,T,D]</tspan>
+<tspan x="1518" dy="18.88">K,V ← M [B,S,D]</tspan>
+</text>
+<rect x="972" y="1376" width="352.6666666666667" height="62" rx="7" fill="#fffaf6" stroke="#263348" stroke-width="1.2"><title> | source:  | parameter: None</title></rect>
+<rect x="1330.6666666666667" y="1376" width="173.33333333333334" height="62" rx="7" fill="#fffaf6" stroke="#263348" stroke-width="1.2"><title> | source:  | parameter: None</title></rect>
+<path data-route-id="local-route-064" d="M 936,1446 L 1238.0,1446" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path data-route-id="local-route-065" d="M 1058.6666666666667,1446 L 1058.6666666666667,1422" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="local-route-066" d="M 1238.0,1446 L 1238.0,1422" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.cross-query-input" d="M 1238.0,1480 L 1238.0,1456 L 1417.3333333333335,1456 L 1417.3333333333335,1422" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1002.6666666666667" y="1388" width="112" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.cross.k"><title>dec.cross.k | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.decoder.layers[i].cross_attn.w_k</title></rect>
+<text x="1058.6666666666667" y="1410.6" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1058.6666666666667" dy="0">Linear WK</tspan>
+</text>
+<rect x="1033.6666666666667" y="1334.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1042.0" y="1334.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1050.3333333333335" y="1334.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1058.6666666666667" y="1334.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1067.0" y="1334.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1075.3333333333335" y="1334.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1033.6666666666667" y="1344.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1042.0" y="1344.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1050.3333333333335" y="1344.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1058.6666666666667" y="1344.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1067.0" y="1344.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1075.3333333333335" y="1344.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1033.6666666666667" y="1354.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1042.0" y="1354.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1050.3333333333335" y="1354.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1058.6666666666667" y="1354.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1067.0" y="1354.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1075.3333333333335" y="1354.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<text x="1024.6666666666667" y="1354" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="end" fill="#172336">
+<tspan x="1024.6666666666667" dy="0">K</tspan>
+</text>
+<text x="1093.6666666666667" y="1354" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="1093.6666666666667" dy="0">[B,S,D]</tspan>
+</text>
+<path data-route-id="dec.cross-project-k" d="M 1058.6666666666667,1388 L 1058.6666666666667,1364" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.cross-tensor-k-to-split" d="M 1058.6666666666667,1334 L 1058.6666666666667,1310" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1182.0" y="1388" width="112" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.cross.v"><title>dec.cross.v | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.decoder.layers[i].cross_attn.w_v</title></rect>
+<text x="1238.0" y="1410.6" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Linear WV</tspan>
+</text>
+<rect x="1213.0" y="1334.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1221.3333333333333" y="1334.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1229.6666666666667" y="1334.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1238.0" y="1334.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1246.3333333333333" y="1334.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1254.6666666666667" y="1334.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1213.0" y="1344.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1221.3333333333333" y="1344.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1229.6666666666667" y="1344.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1238.0" y="1344.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1246.3333333333333" y="1344.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1254.6666666666667" y="1344.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1213.0" y="1354.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1221.3333333333333" y="1354.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1229.6666666666667" y="1354.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1238.0" y="1354.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1246.3333333333333" y="1354.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1254.6666666666667" y="1354.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<text x="1204.0" y="1354" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="end" fill="#172336">
+<tspan x="1204.0" dy="0">V</tspan>
+</text>
+<text x="1273.0" y="1354" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="1273.0" dy="0">[B,S,D]</tspan>
+</text>
+<path data-route-id="dec.cross-project-v" d="M 1238.0,1388 L 1238.0,1364" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.cross-tensor-v-to-split" d="M 1238.0,1334 L 1238.0,1310" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1361.3333333333335" y="1388" width="112" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.cross.q"><title>dec.cross.q | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.decoder.layers[i].cross_attn.w_q</title></rect>
+<text x="1417.3333333333335" y="1410.6" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1417.3333333333335" dy="0">Linear WQ</tspan>
+</text>
+<rect x="1392.3333333333335" y="1334.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1400.6666666666667" y="1334.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1409.0000000000002" y="1334.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1417.3333333333335" y="1334.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1425.6666666666667" y="1334.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1434.0000000000002" y="1334.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1392.3333333333335" y="1344.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1400.6666666666667" y="1344.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1409.0000000000002" y="1344.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1417.3333333333335" y="1344.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1425.6666666666667" y="1344.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1434.0000000000002" y="1344.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1392.3333333333335" y="1354.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1400.6666666666667" y="1354.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1409.0000000000002" y="1354.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1417.3333333333335" y="1354.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1425.6666666666667" y="1354.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1434.0000000000002" y="1354.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<text x="1383.3333333333335" y="1354" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="end" fill="#172336">
+<tspan x="1383.3333333333335" dy="0">Q</tspan>
+</text>
+<text x="1452.3333333333335" y="1354" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="1452.3333333333335" dy="0">[B,T,D]</tspan>
+</text>
+<path data-route-id="dec.cross-project-q" d="M 1417.3333333333335,1388 L 1417.3333333333335,1364" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.cross-tensor-q-to-split" d="M 1417.3333333333335,1334 L 1417.3333333333335,1310" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="978" y="1272" width="520" height="38" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.cross.split"><title>dec.cross.split | source: MultiHeadAttention._split_heads | parameter: None</title></rect>
+<text x="1238.0" y="1296.95" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Split heads: Q / K / V → [B,H,L,Dh]</tspan>
+</text>
+<rect x="978" y="1206" width="520" height="42" rx="10" fill="#f7eaf3" stroke="#263348" stroke-width="2" data-node-id="dec.cross.sdpa"><title>dec.cross.sdpa | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text x="1238.0" y="1233.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Scaled dot-product attention · per head</tspan>
+</text>
+<path data-route-id="dec.cross-split-k" d="M 1058.6666666666667,1272 L 1058.6666666666667,1248" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.cross-split-v" d="M 1238.0,1272 L 1238.0,1248" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.cross-split-q" d="M 1417.3333333333335,1272 L 1417.3333333333335,1248" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.cross-sdpa-to-merge" d="M 1238.0,1206 L 1238.0,1182" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="978" y="1150" width="520" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.cross.merge"><title>dec.cross.merge | source: MultiHeadAttention._combine_heads | parameter: None</title></rect>
+<text x="1238.0" y="1171.95" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Combine heads: [B,H,Lq,Dh] → [B,Lq,D]</tspan>
+</text>
+<path data-route-id="dec.cross-merge-to-wo" d="M 1238.0,1150 L 1238.0,1126" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1128.0" y="1092" width="220" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.cross.wo"><title>dec.cross.wo | source: MultiHeadAttention.forward | parameter: model.decoder.layers[i].cross_attn.w_o</title></rect>
+<text x="1238.0" y="1115.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Linear Wᴼ (D → D)</tspan>
+</text>
+<path data-route-id="dec.cross-output" d="M 1238.0,1092 L 1238.0,1012" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.cross-to-norm" d="M 1238.0,1012 L 1238.0,988" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.cross-residual" d="M 1238.0,1492.0 L 912,1492.0 L 912,950 L 936,950" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<circle cx="1238.0" cy="1492.0" r="2.5" fill="#263348"/>
+<path data-route-id="dec.norm2-to-next" d="M 1238.0,838 L 1238.0,814" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="936" y="1504" width="604" height="150" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" data-node-id="dec.norm1"><title>dec.norm1 | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm1</title></rect>
+<text x="958" y="1531" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="958" dy="0">Add &amp; Norm · Post-LN</tspan>
+</text>
+<circle cx="1238.0" cy="1616" r="14" fill="white" stroke="#263348" stroke-width="2" data-node-id="dec.norm1.add"/>
+<text x="1238.0" y="1623" font-family="DejaVu Sans, Arial, sans-serif" font-size="25" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">+</tspan>
+</text>
+<text x="984" y="1607" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="984" dy="0">x (skip)</tspan>
+</text>
+<path data-route-id="local-route-083" d="M 936,1616 L 1224.0,1616" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.norm1-branch-input" d="M 1238.0,1654 L 1238.0,1630" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1138.0" y="1546" width="200" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.norm1.layernorm"><title>dec.norm1.layernorm | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm1</title></rect>
+<text x="1238.0" y="1568.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">LayerNorm</tspan>
+</text>
+<path data-route-id="dec.norm1-add-to-ln" d="M 1238.0,1602 L 1238.0,1578" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.norm1-output" d="M 1238.0,1546 L 1238.0,1504" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="936" y="1678" width="604" height="704" rx="10" fill="#ffddb3" stroke="#263348" stroke-width="2" data-node-id="dec.self"><title>dec.self | source: MultiHeadAttention.forward, DecoderLayer.forward | parameter: model.decoder.layers[i].self_attn</title></rect>
+<text x="958" y="1704" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="958" dy="0">Decoder masked</tspan>
+<tspan x="958" dy="23.599999999999998">self-attention</tspan>
+</text>
+<text x="1518" y="1704" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="1518" dy="0">Q,K,V ← X</tspan>
+<tspan x="1518" dy="18.88">[B,T,D]</tspan>
+</text>
+<path data-route-id="local-route-087" d="M 1238.0,2382 L 1238.0,2358" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path data-route-id="local-route-088" d="M 1058.6666666666667,2358 L 1417.3333333333335,2358" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path data-route-id="local-route-089" d="M 1058.6666666666667,2358 L 1058.6666666666667,2334" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="local-route-090" d="M 1238.0,2358 L 1238.0,2334" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="local-route-091" d="M 1417.3333333333335,2358 L 1417.3333333333335,2334" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1002.6666666666667" y="2300" width="112" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.self.q"><title>dec.self.q | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.decoder.layers[i].self_attn.w_q</title></rect>
+<text x="1058.6666666666667" y="2322.6" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1058.6666666666667" dy="0">Linear WQ</tspan>
+</text>
+<rect x="1033.6666666666667" y="2246.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1042.0" y="2246.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1050.3333333333335" y="2246.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1058.6666666666667" y="2246.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1067.0" y="2246.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1075.3333333333335" y="2246.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1033.6666666666667" y="2256.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1042.0" y="2256.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1050.3333333333335" y="2256.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1058.6666666666667" y="2256.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1067.0" y="2256.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1075.3333333333335" y="2256.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1033.6666666666667" y="2266.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1042.0" y="2266.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1050.3333333333335" y="2266.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1058.6666666666667" y="2266.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1067.0" y="2266.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1075.3333333333335" y="2266.0" width="8.333333333333334" height="10.0" fill="#a9d9f4" stroke="#4d5d6b" stroke-width="0.65"/>
+<text x="1024.6666666666667" y="2266" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="end" fill="#172336">
+<tspan x="1024.6666666666667" dy="0">Q</tspan>
+</text>
+<text x="1093.6666666666667" y="2266" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="1093.6666666666667" dy="0">[B,T,D]</tspan>
+</text>
+<path data-route-id="dec.self-project-q" d="M 1058.6666666666667,2300 L 1058.6666666666667,2276" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.self-tensor-q-to-split" d="M 1058.6666666666667,2246 L 1058.6666666666667,2222" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1182.0" y="2300" width="112" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.self.k"><title>dec.self.k | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.decoder.layers[i].self_attn.w_k</title></rect>
+<text x="1238.0" y="2322.6" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Linear WK</tspan>
+</text>
+<rect x="1213.0" y="2246.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1221.3333333333333" y="2246.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1229.6666666666667" y="2246.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1238.0" y="2246.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1246.3333333333333" y="2246.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1254.6666666666667" y="2246.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1213.0" y="2256.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1221.3333333333333" y="2256.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1229.6666666666667" y="2256.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1238.0" y="2256.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1246.3333333333333" y="2256.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1254.6666666666667" y="2256.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1213.0" y="2266.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1221.3333333333333" y="2266.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1229.6666666666667" y="2266.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1238.0" y="2266.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1246.3333333333333" y="2266.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1254.6666666666667" y="2266.0" width="8.333333333333334" height="10.0" fill="#bce5b6" stroke="#4d5d6b" stroke-width="0.65"/>
+<text x="1204.0" y="2266" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="end" fill="#172336">
+<tspan x="1204.0" dy="0">K</tspan>
+</text>
+<text x="1273.0" y="2266" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="1273.0" dy="0">[B,T,D]</tspan>
+</text>
+<path data-route-id="dec.self-project-k" d="M 1238.0,2300 L 1238.0,2276" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.self-tensor-k-to-split" d="M 1238.0,2246 L 1238.0,2222" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1361.3333333333335" y="2300" width="112" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.self.v"><title>dec.self.v | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.decoder.layers[i].self_attn.w_v</title></rect>
+<text x="1417.3333333333335" y="2322.6" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1417.3333333333335" dy="0">Linear WV</tspan>
+</text>
+<rect x="1392.3333333333335" y="2246.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1400.6666666666667" y="2246.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1409.0000000000002" y="2246.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1417.3333333333335" y="2246.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1425.6666666666667" y="2246.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1434.0000000000002" y="2246.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1392.3333333333335" y="2256.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1400.6666666666667" y="2256.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1409.0000000000002" y="2256.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1417.3333333333335" y="2256.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1425.6666666666667" y="2256.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1434.0000000000002" y="2256.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1392.3333333333335" y="2266.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1400.6666666666667" y="2266.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1409.0000000000002" y="2266.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1417.3333333333335" y="2266.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1425.6666666666667" y="2266.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1434.0000000000002" y="2266.0" width="8.333333333333334" height="10.0" fill="#efb6d0" stroke="#4d5d6b" stroke-width="0.65"/>
+<text x="1383.3333333333335" y="2266" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="end" fill="#172336">
+<tspan x="1383.3333333333335" dy="0">V</tspan>
+</text>
+<text x="1452.3333333333335" y="2266" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="1452.3333333333335" dy="0">[B,T,D]</tspan>
+</text>
+<path data-route-id="dec.self-project-v" d="M 1417.3333333333335,2300 L 1417.3333333333335,2276" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.self-tensor-v-to-split" d="M 1417.3333333333335,2246 L 1417.3333333333335,2222" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="978" y="2184" width="520" height="38" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.self.split"><title>dec.self.split | source: MultiHeadAttention._split_heads | parameter: None</title></rect>
+<text x="1238.0" y="2208.95" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Split heads: Q / K / V → [B,H,L,Dh]</tspan>
+</text>
+<rect x="978" y="1872" width="520" height="288" rx="10" fill="#fffaf6" stroke="#263348" stroke-width="2" data-node-id="dec.self.sdpa"><title>dec.self.sdpa | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text x="992" y="1896" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="992" dy="0">SDPA · per head</tspan>
+</text>
+<rect x="1138.0" y="1914" width="200" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.self.sdpa.av"><title>dec.self.sdpa.av | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text x="1238.0" y="1936.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">A @ V</tspan>
+</text>
+<rect x="1138.0" y="1964" width="200" height="32" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" data-node-id="dec.self.sdpa.softmax"><title>dec.self.sdpa.softmax | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text x="1238.0" y="1986.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Softmax</tspan>
+</text>
+<rect x="1138.0" y="2014" width="200" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.self.sdpa.mask"><title>dec.self.sdpa.mask | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text x="1238.0" y="2035.6" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">causal + padding mask</tspan>
+</text>
+<rect x="1138.0" y="2064" width="200" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.self.sdpa.scale"><title>dec.self.sdpa.scale | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text x="1238.0" y="2086.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">÷ √Dh</tspan>
+</text>
+<rect x="1138.0" y="2114" width="200" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.self.sdpa.qkt"><title>dec.self.sdpa.qkt | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text x="1238.0" y="2136.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Q @ Kᵀ</tspan>
+</text>
+<path data-route-id="dec.self-qkt-to-scale" d="M 1238.0,2114 L 1238.0,2096" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.self-scale-to-mask" d="M 1238.0,2064 L 1238.0,2046" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.self-mask-to-softmax" d="M 1238.0,2014 L 1238.0,1996" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.self-softmax-to-av" d="M 1238.0,1964 L 1238.0,1946" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.self-split-q" d="M 1198.0,2184 L 1198.0,2146" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="1191.0" y="2176" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="1191.0" dy="0">Qh</tspan>
+</text>
+<path data-route-id="dec.self-split-k" d="M 1278.0,2184 L 1278.0,2146" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="1285.0" y="2176" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="1285.0" dy="0">Kh</tspan>
+</text>
+<path data-route-id="dec.self-split-v" d="M 1417.3333333333335,2184 L 1417.3333333333335,1930 L 1338.0,1930" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="1425.3333333333335" y="2176" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="1425.3333333333335" dy="0">Vh</tspan>
+</text>
+<text x="992" y="1991" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="992" dy="0">A</tspan>
+<tspan x="992" dy="17.7">[B,H,Lq,Lk]</tspan>
+</text>
+<text x="992" y="2064" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="992" dy="0">mask before</tspan>
+<tspan x="992" dy="17.7">Softmax</tspan>
+</text>
+<path data-route-id="dec.self-av-to-merge" d="M 1238.0,1914 L 1238.0,1848" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="978" y="1816" width="520" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.self.merge"><title>dec.self.merge | source: MultiHeadAttention._combine_heads | parameter: None</title></rect>
+<text x="1238.0" y="1837.95" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Combine heads: [B,H,Lq,Dh] → [B,Lq,D]</tspan>
+</text>
+<path data-route-id="dec.self-merge-to-wo" d="M 1238.0,1816 L 1238.0,1792" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1128.0" y="1758" width="220" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.self.wo"><title>dec.self.wo | source: MultiHeadAttention.forward | parameter: model.decoder.layers[i].self_attn.w_o</title></rect>
+<text x="1238.0" y="1781.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Linear Wᴼ (D → D)</tspan>
+</text>
+<path data-route-id="dec.self-output" d="M 1238.0,1758 L 1238.0,1678" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.self-to-norm" d="M 1238.0,1678 L 1238.0,1654" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec.self-residual" d="M 1238.0,2394.0 L 912,2394.0 L 912,1616 L 936,1616" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<circle cx="1238.0" cy="2394.0" r="2.5" fill="#263348"/>
+<path data-route-id="dec.norm1-to-next" d="M 1238.0,1504 L 1238.0,1480" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="991" y="2492" width="494" height="62" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2" data-node-id="tgt_embed"><title>tgt_embed | source: TokenEmbedding.forward | parameter: model.tgt_embedding.embedding.weight</title></rect>
+<text x="1238.0" y="2529.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Target token embedding × √D</tspan>
+</text>
+<path data-route-id="local-route-111" d="M 1238.0,2492 L 1238.0,2465" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<circle cx="1238.0" cy="2450" r="15" fill="white" stroke="#263348" stroke-width="2"/>
+<text x="1238.0" y="2457" font-family="DejaVu Sans, Arial, sans-serif" font-size="25" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">+</tspan>
+</text>
+<rect x="936.0" y="2427" width="210" height="46" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="tgt_pe"><title>tgt_pe | source: PositionalEncoding.forward | parameter: None</title></rect>
+<text x="1041.0" y="2455.95" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1041.0" dy="0">Fixed sinusoidal PE</tspan>
+</text>
+<path data-route-id="local-route-112" d="M 1146.0,2450 L 1223.0,2450" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<path data-route-id="dec-input" d="M 1238.0,2435 L 1238.0,2382" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="1238.0" y="2583" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">tgt [B,T] · shifted-right by caller</tspan>
+</text>
+<path data-route-id="local-route-114" d="M 1238.0,2573 L 1238.0,2554" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="1238.0" y="2610" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Embedding output [B,L,D] · PE dropout folded</tspan>
+</text>
+<path data-route-id="encoder-memory-to-cross" d="M 382.0,308 L 382.0,219 L 800.0,219 L 800.0,1446 L 936,1446" fill="none" stroke="#263348" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="720.0" y="318" width="160" height="104" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"><title> | source:  | parameter: None</title></rect>
+<text x="800.0" y="347.28000000000003" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="800.0" dy="0">Memory M</tspan>
+<tspan x="800.0" dy="18.88">[B,S,D]</tspan>
+<tspan x="800.0" dy="18.88">final Encoder</tspan>
+<tspan x="800.0" dy="18.88">output</tspan>
+</text>
+<path data-route-id="decoder-to-generator" d="M 1238.0,308 L 1238.0,236" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="800.0" y="2644" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="800.0" dy="0">Tensor glyphs: Q blue · K green · V pink. Same type ≠ shared parameters. Module computation flow ↑.</tspan>
+</text>
+<text x="800.0" y="2671" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="800.0" dy="0">Masks act before Softmax; causal mask is supplied by caller. ReLU · fixed sinusoidal PE · no generation loop shown.</tspan>
+</text>
+<text x="800.0" y="2698" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="800.0" dy="0">Dropout / NaN guard are folded in the view and retained in semantic_ir.json. Matrix grids are symbolic.</tspan>
+</text>
+</svg>

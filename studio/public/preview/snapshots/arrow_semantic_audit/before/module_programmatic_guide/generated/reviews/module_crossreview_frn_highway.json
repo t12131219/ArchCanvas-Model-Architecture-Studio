@@ -1,0 +1,100 @@
+{
+  "reviewer": "zoo_cnn_resnet",
+  "scope": "independent source -> module IR key operator/operand/parameter review; no model execution",
+  "findings": [],
+  "modules": [
+    {
+      "key": "frn_tlu",
+      "passed": true,
+      "source_sha256": "61babda99ccbe17a1e2ad67991429b639ef109e46798ae1777d23ce63ec4c047",
+      "adapter_sha256": "09f2c1c7cb69d6109bfb7716d11a352acc36f984b95fb3e00dc0c0f1b8ed4dcb",
+      "source_lines": {
+        "init": [
+          11,
+          26
+        ],
+        "forward": [
+          28,
+          37
+        ]
+      },
+      "independent_checks": [
+        "module-only and static evidence boundary",
+        "unique FRN class despite duplicate NiN definitions",
+        "three source Parameter registrations; names preserved",
+        "all three source channel Parameters use normal_ initialization",
+        "three distinct broadcast parameter identities and shapes",
+        "source eps is ordinary Tensor, not Parameter or registered buffer",
+        "plain eps identity/value and explicit tau device move",
+        "uncentered perB,C H,W second moment; no batch/channel/mean subtraction",
+        "second moment and abs plain eps reach the denominator Add",
+        "retained original x, not x squared, multiplies rsqrt output",
+        "normalization then gamma multiply, beta add, threshold in literal order",
+        "exact gamma/beta/tau operand sources and destination ports",
+        "learned elementwise TLU maximum, not pool/reduction/ReLU",
+        "state panel graph adds no fake sequence between independent parameters"
+      ],
+      "source_integrity": {
+        "files": 3,
+        "symbols": 3,
+        "nodes": 19,
+        "edges": 22,
+        "original_notebooks": 1,
+        "repository": "rasbt/deeplearning-models",
+        "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3"
+      },
+      "adapter_guards": 9,
+      "model_executed": false
+    },
+    {
+      "key": "highway",
+      "passed": true,
+      "source_sha256": "20b996a152a3cebe23a4e25276709823c1d364e7637fc97f3966971d0b91cac9",
+      "adapter_sha256": "6d4d477d1290bcc1250619a6bd6927f4d6ffff6db7e37cb56bc0197d62344bce",
+      "source_lines": {
+        "init": [
+          6,
+          18
+        ],
+        "forward": [
+          20,
+          37
+        ]
+      },
+      "independent_checks": [
+        "module-only and static evidence boundary",
+        "three independently constructed source ModuleLists, not a shared projection",
+        "size16/layers2/ReLU are explicit module arguments; source f remains callable",
+        "six distinct Linear owners with default bias",
+        "source gate/nonlinear/learned carry read current x",
+        "source complementary gated learned linear carry formula",
+        "layer0 same current input fans out to all3 paths; layer1 uses updated layer0 x",
+        "layer0 actual gate Linear -> Sigmoid",
+        "layer0 selected nonlinear Linear -> explicit ReLU",
+        "layer0 same gate supplies complement and transform product",
+        "layer0 complement multiplies learned carry, not retained identity",
+        "layer0 product operands enter distinct Add ports",
+        "layer1 same current input fans out to all3 paths; layer1 uses updated layer0 x",
+        "layer1 actual gate Linear -> Sigmoid",
+        "layer1 selected nonlinear Linear -> explicit ReLU",
+        "layer1 same gate supplies complement and transform product",
+        "layer1 complement multiplies learned carry, not retained identity",
+        "layer1 product operands enter distinct Add ports",
+        "updated final layer x reaches function output",
+        "graph containment introduces no fabricated tensor tuple or dispatch"
+      ],
+      "source_integrity": {
+        "files": 2,
+        "symbols": 3,
+        "nodes": 29,
+        "edges": 37,
+        "original_notebooks": 0,
+        "repository": "analvikingur/pytorch_Highway",
+        "commit": "70b75db7a2d029f4bbe08fd4c7d69e36bf7b6d3a"
+      },
+      "adapter_guards": 14,
+      "model_executed": false
+    }
+  ],
+  "status": "passed"
+}

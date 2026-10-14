@@ -1,0 +1,962 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "mixhop_layer",
+  "profile": {
+    "feature_dim": 8,
+    "layers_1": [
+      4,
+      4,
+      4
+    ],
+    "dropout": 0.5,
+    "source_iterations": [
+      1,
+      2,
+      3
+    ],
+    "adjacency_powers": [
+      0,
+      1,
+      2
+    ],
+    "independent_branch_parameters": true,
+    "topology_preprocessing": "external",
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "benedekrozemberczki/MixHop-and-N-GCN",
+    "commit": "e9df5eb988f0dbe5192ac87902c55cbe6d8191fe",
+    "snapshot": "43f8f04f0fc217b8933576df0ba44ca6d5747e92c12346fb5cf5f73b90e1b25d"
+  },
+  "nodes": [
+    {
+      "id": "mixhop_layer.root",
+      "label": "MixHop sparse multi-power stage / module only",
+      "kind": "group",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.forward"
+      ],
+      "shape": "[N,12]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "mixhop_layer.features",
+          "mixhop_layer.adj",
+          "mixhop_layer.params0",
+          "mixhop_layer.params1",
+          "mixhop_layer.params2"
+        ],
+        [
+          "mixhop_layer.module"
+        ],
+        [
+          "mixhop_layer.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_layer.features",
+      "label": "Supplied sparse node features",
+      "kind": "input",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.forward"
+      ],
+      "shape": "indices / values; [N,8]",
+      "detail": [],
+      "parent": "mixhop_layer.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_layer.adj",
+      "label": "Supplied normalized sparse A",
+      "kind": "control",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.forward"
+      ],
+      "shape": "indices / values; [N,N]",
+      "detail": [],
+      "parent": "mixhop_layer.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_layer.params0",
+      "label": "Branch0 owned W, bias",
+      "kind": "parameter",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "W[8,4]; b[1,4]",
+      "detail": [],
+      "instance_identity": "upper_layers.0",
+      "parameters": [
+        "weight_matrix",
+        "bias"
+      ],
+      "parent": "mixhop_layer.root",
+      "source_evidence": [
+        "E004",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_layer.params1",
+      "label": "Branch1 owned W, bias",
+      "kind": "parameter",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "W[8,4]; b[1,4]",
+      "detail": [],
+      "instance_identity": "upper_layers.1",
+      "parameters": [
+        "weight_matrix",
+        "bias"
+      ],
+      "parent": "mixhop_layer.root",
+      "source_evidence": [
+        "E004",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_layer.params2",
+      "label": "Branch2 owned W, bias",
+      "kind": "parameter",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "W[8,4]; b[1,4]",
+      "detail": [],
+      "instance_identity": "upper_layers.2",
+      "parameters": [
+        "weight_matrix",
+        "bias"
+      ],
+      "parent": "mixhop_layer.root",
+      "source_evidence": [
+        "E004",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_layer.module",
+      "label": "MixHop sparse multi-power stage / operators",
+      "kind": "group",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.forward"
+      ],
+      "shape": "[N,12]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "mixhop_layer.branch0",
+          "mixhop_layer.branch1",
+          "mixhop_layer.branch2"
+        ],
+        [
+          "mixhop_layer.concat"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "mixhop_layer.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch0",
+      "label": "Branch0: A^0 / iterations1",
+      "kind": "group",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "instance_identity": "upper_layers.0",
+      "iterations": 1,
+      "adjacency_multiplications": 0,
+      "mode": "chain",
+      "parent": "mixhop_layer.module",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch0.project",
+      "label": "Sparse X @ OWNED W",
+      "kind": "spmm",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "parameter_scope": "upper_layers.0.weight_matrix",
+      "parent": "mixhop_layer.branch0",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "sparse_X",
+        "W"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch0.bias",
+      "label": "Add OWNED bias BEFORE A",
+      "kind": "add",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "parameter_scope": "upper_layers.0.bias",
+      "before_propagation": true,
+      "parent": "mixhop_layer.branch0",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "bias"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch0.drop",
+      "label": "Dropout .5 / caller mode",
+      "kind": "dropout",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "p": 0.5,
+      "parent": "mixhop_layer.branch0",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch0.relu",
+      "label": "ReLU BEFORE propagation",
+      "kind": "relu",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "parent": "mixhop_layer.branch0",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch1",
+      "label": "Branch1: A^1 / iterations2",
+      "kind": "group",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "instance_identity": "upper_layers.1",
+      "iterations": 2,
+      "adjacency_multiplications": 1,
+      "mode": "chain",
+      "parent": "mixhop_layer.module",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch1.project",
+      "label": "Sparse X @ OWNED W",
+      "kind": "spmm",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "parameter_scope": "upper_layers.1.weight_matrix",
+      "parent": "mixhop_layer.branch1",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "sparse_X",
+        "W"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch1.bias",
+      "label": "Add OWNED bias BEFORE A",
+      "kind": "add",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "parameter_scope": "upper_layers.1.bias",
+      "before_propagation": true,
+      "parent": "mixhop_layer.branch1",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "bias"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch1.drop",
+      "label": "Dropout .5 / caller mode",
+      "kind": "dropout",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "p": 0.5,
+      "parent": "mixhop_layer.branch1",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch1.relu",
+      "label": "ReLU BEFORE propagation",
+      "kind": "relu",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "parent": "mixhop_layer.branch1",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch1.prop0",
+      "label": "A @ features / pass1",
+      "kind": "spmm",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "opaque_runtime_boundary": true,
+      "same_topology": true,
+      "parent": "mixhop_layer.branch1",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "A"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch2",
+      "label": "Branch2: A^2 / iterations3",
+      "kind": "group",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "instance_identity": "upper_layers.2",
+      "iterations": 3,
+      "adjacency_multiplications": 2,
+      "mode": "chain",
+      "parent": "mixhop_layer.module",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch2.project",
+      "label": "Sparse X @ OWNED W",
+      "kind": "spmm",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "parameter_scope": "upper_layers.2.weight_matrix",
+      "parent": "mixhop_layer.branch2",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "sparse_X",
+        "W"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch2.bias",
+      "label": "Add OWNED bias BEFORE A",
+      "kind": "add",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "parameter_scope": "upper_layers.2.bias",
+      "before_propagation": true,
+      "parent": "mixhop_layer.branch2",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "bias"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch2.drop",
+      "label": "Dropout .5 / caller mode",
+      "kind": "dropout",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "p": 0.5,
+      "parent": "mixhop_layer.branch2",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch2.relu",
+      "label": "ReLU BEFORE propagation",
+      "kind": "relu",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "parent": "mixhop_layer.branch2",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch2.prop0",
+      "label": "A @ features / pass1",
+      "kind": "spmm",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "opaque_runtime_boundary": true,
+      "same_topology": true,
+      "parent": "mixhop_layer.branch2",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "A"
+      ]
+    },
+    {
+      "id": "mixhop_layer.branch2.prop1",
+      "label": "A @ features / pass2",
+      "kind": "spmm",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.forward",
+        "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "opaque_runtime_boundary": true,
+      "same_topology": true,
+      "parent": "mixhop_layer.branch2",
+      "source_evidence": [
+        "E004",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "A"
+      ]
+    },
+    {
+      "id": "mixhop_layer.concat",
+      "label": "Concat independent power branches",
+      "kind": "cat",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.forward"
+      ],
+      "shape": "[N,12]",
+      "detail": [],
+      "dim": 1,
+      "ordered_operands": [
+        "upper_layers.0",
+        "upper_layers.1",
+        "upper_layers.2"
+      ],
+      "parent": "mixhop_layer.module",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "branch0",
+        "branch1",
+        "branch2"
+      ]
+    },
+    {
+      "id": "mixhop_layer.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.forward"
+      ],
+      "shape": "[N,12]",
+      "detail": [],
+      "parent": "mixhop_layer.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "mixhop_layer.branch0.project:out->mixhop_layer.branch0.bias:in:tensor",
+      "src": "mixhop_layer.branch0.project",
+      "dst": "mixhop_layer.branch0.bias",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.branch0.bias:out->mixhop_layer.branch0.drop:in:tensor",
+      "src": "mixhop_layer.branch0.bias",
+      "dst": "mixhop_layer.branch0.drop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.branch0.drop:out->mixhop_layer.branch0.relu:in:tensor",
+      "src": "mixhop_layer.branch0.drop",
+      "dst": "mixhop_layer.branch0.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.branch0.relu:out->mixhop_layer.branch0:out:boundary",
+      "src": "mixhop_layer.branch0.relu",
+      "dst": "mixhop_layer.branch0",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mixhop_layer.branch1.project:out->mixhop_layer.branch1.bias:in:tensor",
+      "src": "mixhop_layer.branch1.project",
+      "dst": "mixhop_layer.branch1.bias",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.branch1.bias:out->mixhop_layer.branch1.drop:in:tensor",
+      "src": "mixhop_layer.branch1.bias",
+      "dst": "mixhop_layer.branch1.drop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.branch1.drop:out->mixhop_layer.branch1.relu:in:tensor",
+      "src": "mixhop_layer.branch1.drop",
+      "dst": "mixhop_layer.branch1.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.branch1.relu:out->mixhop_layer.branch1.prop0:in:tensor",
+      "src": "mixhop_layer.branch1.relu",
+      "dst": "mixhop_layer.branch1.prop0",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.branch1.prop0:out->mixhop_layer.branch1:out:boundary",
+      "src": "mixhop_layer.branch1.prop0",
+      "dst": "mixhop_layer.branch1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mixhop_layer.branch2.project:out->mixhop_layer.branch2.bias:in:tensor",
+      "src": "mixhop_layer.branch2.project",
+      "dst": "mixhop_layer.branch2.bias",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.branch2.bias:out->mixhop_layer.branch2.drop:in:tensor",
+      "src": "mixhop_layer.branch2.bias",
+      "dst": "mixhop_layer.branch2.drop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.branch2.drop:out->mixhop_layer.branch2.relu:in:tensor",
+      "src": "mixhop_layer.branch2.drop",
+      "dst": "mixhop_layer.branch2.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.branch2.relu:out->mixhop_layer.branch2.prop0:in:tensor",
+      "src": "mixhop_layer.branch2.relu",
+      "dst": "mixhop_layer.branch2.prop0",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.branch2.prop0:out->mixhop_layer.branch2.prop1:in:tensor",
+      "src": "mixhop_layer.branch2.prop0",
+      "dst": "mixhop_layer.branch2.prop1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.branch2.prop1:out->mixhop_layer.branch2:out:boundary",
+      "src": "mixhop_layer.branch2.prop1",
+      "dst": "mixhop_layer.branch2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mixhop_layer.features:out->mixhop_layer.branch0.project:sparse_X:tensor",
+      "src": "mixhop_layer.features",
+      "dst": "mixhop_layer.branch0.project",
+      "src_port": "out",
+      "dst_port": "sparse_X",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.params0:out->mixhop_layer.branch0.project:W:parameter_operand",
+      "src": "mixhop_layer.params0",
+      "dst": "mixhop_layer.branch0.project",
+      "src_port": "out",
+      "dst_port": "W",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "mixhop_layer.params0:out->mixhop_layer.branch0.bias:bias:parameter_operand",
+      "src": "mixhop_layer.params0",
+      "dst": "mixhop_layer.branch0.bias",
+      "src_port": "out",
+      "dst_port": "bias",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "mixhop_layer.branch0.relu:out->mixhop_layer.concat:branch0:tensor",
+      "src": "mixhop_layer.branch0.relu",
+      "dst": "mixhop_layer.concat",
+      "src_port": "out",
+      "dst_port": "branch0",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.features:out->mixhop_layer.branch1.project:sparse_X:tensor",
+      "src": "mixhop_layer.features",
+      "dst": "mixhop_layer.branch1.project",
+      "src_port": "out",
+      "dst_port": "sparse_X",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.params1:out->mixhop_layer.branch1.project:W:parameter_operand",
+      "src": "mixhop_layer.params1",
+      "dst": "mixhop_layer.branch1.project",
+      "src_port": "out",
+      "dst_port": "W",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "mixhop_layer.params1:out->mixhop_layer.branch1.bias:bias:parameter_operand",
+      "src": "mixhop_layer.params1",
+      "dst": "mixhop_layer.branch1.bias",
+      "src_port": "out",
+      "dst_port": "bias",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "mixhop_layer.adj:out->mixhop_layer.branch1.prop0:A:topology",
+      "src": "mixhop_layer.adj",
+      "dst": "mixhop_layer.branch1.prop0",
+      "src_port": "out",
+      "dst_port": "A",
+      "role": "topology"
+    },
+    {
+      "id": "mixhop_layer.branch1.prop0:out->mixhop_layer.concat:branch1:tensor",
+      "src": "mixhop_layer.branch1.prop0",
+      "dst": "mixhop_layer.concat",
+      "src_port": "out",
+      "dst_port": "branch1",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.features:out->mixhop_layer.branch2.project:sparse_X:tensor",
+      "src": "mixhop_layer.features",
+      "dst": "mixhop_layer.branch2.project",
+      "src_port": "out",
+      "dst_port": "sparse_X",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.params2:out->mixhop_layer.branch2.project:W:parameter_operand",
+      "src": "mixhop_layer.params2",
+      "dst": "mixhop_layer.branch2.project",
+      "src_port": "out",
+      "dst_port": "W",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "mixhop_layer.params2:out->mixhop_layer.branch2.bias:bias:parameter_operand",
+      "src": "mixhop_layer.params2",
+      "dst": "mixhop_layer.branch2.bias",
+      "src_port": "out",
+      "dst_port": "bias",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "mixhop_layer.adj:out->mixhop_layer.branch2.prop0:A:topology",
+      "src": "mixhop_layer.adj",
+      "dst": "mixhop_layer.branch2.prop0",
+      "src_port": "out",
+      "dst_port": "A",
+      "role": "topology"
+    },
+    {
+      "id": "mixhop_layer.adj:out->mixhop_layer.branch2.prop1:A:topology",
+      "src": "mixhop_layer.adj",
+      "dst": "mixhop_layer.branch2.prop1",
+      "src_port": "out",
+      "dst_port": "A",
+      "role": "topology"
+    },
+    {
+      "id": "mixhop_layer.branch2.prop1:out->mixhop_layer.concat:branch2:tensor",
+      "src": "mixhop_layer.branch2.prop1",
+      "dst": "mixhop_layer.concat",
+      "src_port": "out",
+      "dst_port": "branch2",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_layer.concat:out->mixhop_layer.output:in:tensor",
+      "src": "mixhop_layer.concat",
+      "dst": "mixhop_layer.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "The selected source constructs three SparseNGCNLayer instances with iterations1,2,3, then concatenates their outputs.",
+    "Source loop range(iterations-1) produces ZERO, ONE, TWO adjacency multiplications; do not label branches A^1,A^2,A^3.",
+    "Each sparse branch applies sparse feature projection, bias, Dropout and ReLU BEFORE any adjacency propagation.",
+    "Branch weights/biases are independent owned instances; sparse input and supplied normalized topology are reused. Shape uses the source max sparse index+1 inference, not an observed execution.",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not substitute the DenseNGCN bias-at-end behavior or textbook sigma(A^j X W) ordering for this sparse source stage.",
+    "Do not include the entire MixHop task model in a module diagram."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

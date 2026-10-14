@@ -1,0 +1,668 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "lstm",
+  "profile": {
+    "task": "IMDB binary sentiment classification",
+    "mode": "batch evaluation",
+    "vocabulary_size": "V=len(TEXT.vocab)",
+    "vocabulary_max_size_setting": 20000,
+    "embedding_dim": 128,
+    "hidden_dim": 256,
+    "output_dim": 1,
+    "num_layers": 1,
+    "bidirectional": false,
+    "batch_first": false,
+    "default_bias": true,
+    "default_dropout": 0,
+    "batch_size_setting": 128,
+    "input_layout": "[T,B]",
+    "lengths_layout": "[B]",
+    "output_layout": "[B] logits from RNN.forward",
+    "packing": "sorted within batch, pack_padded_sequence",
+    "caller_output": "sigmoid probabilities, then threshold p>0.5 labels",
+    "training_loss": "binary_cross_entropy_with_logits outside forward",
+    "lstm_internals": "opaque PyTorch library implementation"
+  },
+  "source": {
+    "repository": "rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "591a881d04226e9e2e62669938cda2c197e2cf38e37f65e52864fa5070e08200"
+  },
+  "nodes": [
+    {
+      "id": "lstm.root",
+      "label": "Packed LSTM: IMDB sentiment",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.forward",
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::compute_binary_accuracy"
+      ],
+      "shape": "binary labels: [B]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstm.input",
+      "label": "Padded token IDs",
+      "kind": "input",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.forward",
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::compute_binary_accuracy"
+      ],
+      "shape": "text: [T,B]",
+      "detail": [
+        "batch_data.text is (text, text_lengths)",
+        "sequence-first; variable valid lengths per example"
+      ],
+      "parent": "lstm.root",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstm.forward",
+      "label": "RNN.forward: packed LSTM classifier",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "logits: [B]",
+      "detail": [
+        "Sigmoid is not called inside this model forward"
+      ],
+      "mode": "chain",
+      "parent": "lstm.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstm.embedding",
+      "label": "Token embedding",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.__init__",
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "[T,B,128]",
+      "detail": [],
+      "parameter_scope": "embedding",
+      "mode": "chain",
+      "parent": "lstm.forward",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstm.lookup",
+      "label": "Embedding V -> 128",
+      "kind": "embedding",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.__init__",
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "[T,B,128]",
+      "detail": [
+        "integer token IDs select rows of one shared vocabulary matrix",
+        "V=len(TEXT.vocab), not exactly the max_size setting"
+      ],
+      "parameter": "embedding.weight",
+      "runtime_dependency": "torch.nn.Embedding",
+      "parent": "lstm.embedding",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstm.packing",
+      "label": "Pack valid time steps",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "PackedSequence",
+      "detail": [],
+      "mode": "chain",
+      "parent": "lstm.forward",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstm.pack",
+      "label": "pack_padded_sequence",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "PackedSequence; data [sum(lengths),128]",
+      "detail": [
+        "sequence-first embedded input and external text_length",
+        "source does not pass batch_first or enforce_sorted arguments",
+        "BucketIterator(sort_within_batch=True) supplies the expected ordering"
+      ],
+      "runtime_dependency": "torch.nn.utils.rnn.pack_padded_sequence",
+      "batch_first": false,
+      "enforce_sorted": "default True",
+      "parent": "lstm.packing",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "lengths"
+      ]
+    },
+    {
+      "id": "lstm.recurrent",
+      "label": "Single-layer LSTM",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.__init__",
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "[B,256]",
+      "detail": [],
+      "parameter_scope": "rnn",
+      "temporal_parameter_sharing": true,
+      "mode": "chain",
+      "parent": "lstm.forward",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstm.core",
+      "label": "nn.LSTM 128 -> 256",
+      "kind": "recurrent",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.__init__",
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "(packed_output, (h_n,c_n))",
+      "detail": [
+        "PyTorch library module; gate implementation is not present in this notebook",
+        "one layer, unidirectional, no supplied initial state",
+        "one parameter set is reused across valid time steps"
+      ],
+      "parameter_scope": "rnn",
+      "parameters": [
+        "rnn.weight_ih_l0",
+        "rnn.weight_hh_l0",
+        "rnn.bias_ih_l0",
+        "rnn.bias_hh_l0"
+      ],
+      "runtime_dependency": "torch.nn.LSTM",
+      "opaque_runtime_boundary": true,
+      "num_layers": 1,
+      "bidirectional": false,
+      "initial_state": "PyTorch default zeros",
+      "output_tuple": [
+        "packed_output",
+        [
+          "hidden",
+          "cell"
+        ]
+      ],
+      "temporal_parameter_sharing": true,
+      "parent": "lstm.recurrent",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstm.select_hidden",
+      "label": "Select hidden h_n",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "[1,B,256]",
+      "detail": [
+        "assignment unpacks packed_output, (hidden, cell)",
+        "only hidden is used by the classifier; packed_output and cell are unused"
+      ],
+      "input_selector": "hidden",
+      "parent": "lstm.recurrent",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstm.squeeze",
+      "label": "Squeeze layer axis 0",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "[B,256]",
+      "detail": [
+        "hidden.squeeze(0); no time averaging or sequence unpacking"
+      ],
+      "parent": "lstm.recurrent",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstm.classifier",
+      "label": "Binary logit head",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.__init__",
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "logits: [B]",
+      "detail": [],
+      "parameter_scope": "fc",
+      "mode": "chain",
+      "parent": "lstm.forward",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstm.fc",
+      "label": "Linear 256 -> 1",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.__init__",
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [
+        "self.fc"
+      ],
+      "parameter": "fc",
+      "parent": "lstm.classifier",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstm.flatten",
+      "label": "view(-1)",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.forward"
+      ],
+      "shape": "logits: [B]",
+      "detail": [
+        "this tensor is the complete RNN.forward result"
+      ],
+      "parent": "lstm.classifier",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstm.caller",
+      "label": "Caller: binary accuracy decision",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::compute_binary_accuracy"
+      ],
+      "shape": "binary labels: [B]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "lstm.root",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstm.sigmoid",
+      "label": "Sigmoid",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::compute_binary_accuracy"
+      ],
+      "shape": "p(positive): [B]",
+      "detail": [
+        "compute_binary_accuracy calls sigmoid on returned logits"
+      ],
+      "boundary": "caller",
+      "expression": "torch.sigmoid(logits)",
+      "parent": "lstm.caller",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstm.threshold",
+      "label": "Threshold p > 0.5",
+      "kind": "control",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::compute_binary_accuracy"
+      ],
+      "shape": "predicted labels: [B]",
+      "detail": [
+        "comparison then .long(); caller-only evaluation"
+      ],
+      "boundary": "caller",
+      "expression": "(torch.sigmoid(logits) > 0.5).long()",
+      "parent": "lstm.caller",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstm.lengths",
+      "label": "External sequence lengths",
+      "kind": "input",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::RNN.forward",
+        "deeplearning-models/pytorch_ipynb/rnn/rnn_lstm_packed_imdb.py::compute_binary_accuracy"
+      ],
+      "shape": "text_length: [B]",
+      "detail": [
+        "provided alongside text by torchtext Field(include_lengths=True)",
+        "used by pack_padded_sequence; not a learned feature"
+      ],
+      "origin": "caller_batch_data.text[1]",
+      "learnable": false,
+      "parent": null,
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "lstm.embedding:in->lstm.lookup:in:boundary",
+      "src": "lstm.embedding",
+      "dst": "lstm.lookup",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "lstm.lookup:out->lstm.embedding:out:boundary",
+      "src": "lstm.lookup",
+      "dst": "lstm.embedding",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "lstm.packing:in->lstm.pack:in:boundary",
+      "src": "lstm.packing",
+      "dst": "lstm.pack",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "lstm.pack:out->lstm.packing:out:boundary",
+      "src": "lstm.pack",
+      "dst": "lstm.packing",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "lstm.recurrent:in->lstm.core:in:boundary",
+      "src": "lstm.recurrent",
+      "dst": "lstm.core",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "lstm.core:out->lstm.select_hidden:in:tensor",
+      "src": "lstm.core",
+      "dst": "lstm.select_hidden",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstm.select_hidden:out->lstm.squeeze:in:tensor",
+      "src": "lstm.select_hidden",
+      "dst": "lstm.squeeze",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstm.squeeze:out->lstm.recurrent:out:boundary",
+      "src": "lstm.squeeze",
+      "dst": "lstm.recurrent",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "lstm.classifier:in->lstm.fc:in:boundary",
+      "src": "lstm.classifier",
+      "dst": "lstm.fc",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "lstm.fc:out->lstm.flatten:in:tensor",
+      "src": "lstm.fc",
+      "dst": "lstm.flatten",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstm.flatten:out->lstm.classifier:out:boundary",
+      "src": "lstm.flatten",
+      "dst": "lstm.classifier",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "lstm.forward:in->lstm.embedding:in:boundary",
+      "src": "lstm.forward",
+      "dst": "lstm.embedding",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "lstm.embedding:out->lstm.packing:in:tensor",
+      "src": "lstm.embedding",
+      "dst": "lstm.packing",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstm.packing:out->lstm.recurrent:in:tensor",
+      "src": "lstm.packing",
+      "dst": "lstm.recurrent",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstm.recurrent:out->lstm.classifier:in:tensor",
+      "src": "lstm.recurrent",
+      "dst": "lstm.classifier",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstm.classifier:out->lstm.forward:out:boundary",
+      "src": "lstm.classifier",
+      "dst": "lstm.forward",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "lstm.caller:in->lstm.sigmoid:in:boundary",
+      "src": "lstm.caller",
+      "dst": "lstm.sigmoid",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "lstm.sigmoid:out->lstm.threshold:in:tensor",
+      "src": "lstm.sigmoid",
+      "dst": "lstm.threshold",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstm.threshold:out->lstm.caller:out:boundary",
+      "src": "lstm.threshold",
+      "dst": "lstm.caller",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "lstm.root:in->lstm.input:in:boundary",
+      "src": "lstm.root",
+      "dst": "lstm.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "lstm.input:out->lstm.forward:in:tensor",
+      "src": "lstm.input",
+      "dst": "lstm.forward",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstm.forward:out->lstm.caller:in:tensor",
+      "src": "lstm.forward",
+      "dst": "lstm.caller",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstm.caller:out->lstm.root:out:boundary",
+      "src": "lstm.caller",
+      "dst": "lstm.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "lstm.lengths:out->lstm.pack:lengths:sequence_length",
+      "src": "lstm.lengths",
+      "dst": "lstm.pack",
+      "src_port": "out",
+      "dst_port": "lengths",
+      "role": "sequence_length"
+    }
+  ],
+  "facts": [
+    "The notebook constructor is nn.Embedding(input_dim,128), nn.LSTM(128,256), nn.Linear(256,1).",
+    "The recurrent module is one-layer, unidirectional, sequence-first by the PyTorch API defaults used here.",
+    "input_dim is len(TEXT.vocab); max_size=20000 is a vocabulary construction limit, not an exact embedding row count.",
+    "pack_padded_sequence consumes embedded tokens and their external valid lengths.",
+    "BucketIterator(sort_within_batch=True) provides sorted minibatches for default packing behavior.",
+    "Only hidden.squeeze(0) feeds fc; packed_output and cell are not used by this classifier.",
+    "RNN.forward returns flattened logits; sigmoid and threshold belong to compute_binary_accuracy.",
+    "predict_sentiment also applies sigmoid externally, but its tokenization/single-sentence path is not the selected batch diagram.",
+    "binary_cross_entropy_with_logits is in the training loop, outside model forward; it must not be preceded by a model sigmoid.",
+    "Gate equations and the nn.LSTM implementation are external library behavior, not notebook-defined source nodes.",
+    "Within one nn.LSTM instance recurrent weights are reused across time; it is not a fresh Linear per token."
+  ],
+  "corrections": [
+    "A generic LSTM figure cannot replace the actual pack_padded_sequence call with a dense padded sequence or averaging head.",
+    "The head consumes the final hidden state; this source does not unpack/concatenate all time outputs.",
+    "No bidirectional, stacked LSTM, attention, or dropout module is added to this selected constructor.",
+    "The common four-gate textbook drawing is not presented as extracted notebook code; the nn.LSTM boundary remains explicit.",
+    "Sigmoid is shown above the model boundary as caller evaluation; model.forward returns logits.",
+    "The vocabulary row count remains V rather than asserting max_size is exactly the realized len(TEXT.vocab)."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

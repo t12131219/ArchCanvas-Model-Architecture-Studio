@@ -1,0 +1,904 @@
+{
+  "source_project": "deeplearning-models-batch4",
+  "repository": "https://github.com/rasbt/deeplearning-models",
+  "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+  "source_snapshot_sha256": "d99aabf41ee783fdb7b603dc53fc09c290e223223a1576e510b40206f438e950",
+  "entry": "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py::MobileNetV3",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "deeplearning-models-batch4/LICENSE": {
+      "sha256": "8cb709815881dd6d5380f3dd6d6327591a56639302e4372eebb84480dcf44024",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/rasbt/deeplearning-models/59beda3aa25337e576564f1c18c6edd26f9f30e3/LICENSE",
+      "derived_from": null,
+      "source_project": "deeplearning-models-batch4",
+      "repository": "https://github.com/rasbt/deeplearning-models",
+      "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3"
+    },
+    "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-mobilenet-v3-large-cifar10.ipynb": {
+      "sha256": "c40c687c50298aca11c816979e9ea2fa825509aa7d057fcab0805c3b5b8dd9bf",
+      "lines": 1321,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/rasbt/deeplearning-models/59beda3aa25337e576564f1c18c6edd26f9f30e3/pytorch_ipynb/cnn/cnn-mobilenet-v3-large-cifar10.ipynb",
+      "derived_from": null,
+      "source_project": "deeplearning-models-batch4",
+      "repository": "https://github.com/rasbt/deeplearning-models",
+      "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3"
+    },
+    "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-mobilenet-v3-large-cifar10.py": {
+      "sha256": "83d21f52e9d573dbe70f1399319757ce7df78b1b909e7c96deff64bb9e1effdb",
+      "lines": 149,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/rasbt/deeplearning-models/59beda3aa25337e576564f1c18c6edd26f9f30e3/pytorch_ipynb/cnn/cnn-mobilenet-v3-large-cifar10.ipynb",
+      "derived_from": "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-mobilenet-v3-large-cifar10.ipynb",
+      "source_project": "deeplearning-models-batch4",
+      "repository": "https://github.com/rasbt/deeplearning-models",
+      "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3"
+    },
+    "torchvision-v0.9.0-mobilev3/LICENSE": {
+      "sha256": "6502f676851cfe25f8af75531dfb32375b7325b73c37e7b43741fa422893e71d",
+      "lines": 29,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/LICENSE",
+      "derived_from": null,
+      "source_project": "torchvision-v0.9.0-mobilev3",
+      "repository": "pytorch/vision",
+      "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py": {
+      "sha256": "269de959ad7eb29ed4fc62a560fc89d8a891acbe25794e87ace68c36cb4ec610",
+      "lines": 215,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/torchvision/models/mobilenetv2.py",
+      "derived_from": null,
+      "source_project": "torchvision-v0.9.0-mobilev3",
+      "repository": "pytorch/vision",
+      "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py": {
+      "sha256": "9a280e4ea6094448a5c5c172ecc65cffbe1e143654acb9fcdf4052d035b2d6f5",
+      "lines": 278,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/torchvision/models/mobilenetv3.py",
+      "derived_from": null,
+      "source_project": "torchvision-v0.9.0-mobilev3",
+      "repository": "pytorch/vision",
+      "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020"
+    }
+  },
+  "symbols": {
+    "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-mobilenet-v3-large-cifar10.py::__module__": {
+      "path": "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-mobilenet-v3-large-cifar10.py",
+      "symbol": "__module__",
+      "start": 1,
+      "end": 149,
+      "snippet": "# %% Notebook cell 1\n# NOTEBOOK_MAGIC %load_ext watermark\n# NOTEBOOK_MAGIC %watermark -a 'Sebastian Raschka' -v -p torch\n\n# %% Notebook cell 4\nimport torch\nimport torchvision\nimport numpy as np\nimport matplotlib.pyplot as plt\n\n# %% Notebook cell 5\nimport sys\nsys.path.insert(0, \"..\") # to include ../helper_evaluate.py etc.\n\n# From local helper files\nfrom helper_utils import set_all_seeds, set_deterministic\nfrom helper_evaluate import compute_confusion_matrix, compute_accuracy\nfrom helper_train import train_classifier_simple_v2\nfrom helper_plotting import plot_training_loss, plot_accuracy, show_examples, plot_confusion_matrix\nfrom helper_data import get_dataloaders_cifar10, UnNormalize\n\n# %% Notebook cell 7\n##########################\n### SETTINGS\n##########################\n\nRANDOM_SEED = 123\nBATCH_SIZE = 128\nNUM_EPOCHS = 150\nDEVICE = torch.device('cuda:3' if torch.cuda.is_available() else 'cpu')\n\n# %% Notebook cell 8\nset_all_seeds(RANDOM_SEED)\n#set_deterministic()\n\n# %% Notebook cell 9\n##########################\n### CIFAR-10 DATASET\n##########################\n\n### Note: Network trains about 2-3x faster if you don't\n# resize (keeping the orig. 32x32 res.)\n# Test acc. I got via the 32x32 was lower though; ~77%\n\ntrain_transforms = torchvision.transforms.Compose([\n    torchvision.transforms.Resize((70, 70)),\n    torchvision.transforms.RandomCrop((64, 64)),\n    torchvision.transforms.ToTensor(),\n    torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])\n\ntest_transforms = torchvision.transforms.Compose([\n    torchvision.transforms.Resize((70, 70)),        \n    torchvision.transforms.CenterCrop((64, 64)),            \n    torchvision.transforms.ToTensor(),                \n    torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])\n\n\ntrain_loader, valid_loader, test_loader = get_dataloaders_cifar10(\n    batch_size=BATCH_SIZE,\n    validation_fraction=0.1,\n    train_transforms=train_transforms,\n    test_transforms=test_transforms,\n    num_workers=2)\n\n# Checking the dataset\nfor images, labels in train_loader:  \n    print('Image batch dimensions:', images.shape)\n    print('Image label dimensions:', labels.shape)\n    print('Class labels of 10 examples:', labels[:10])\n    break\n\n# %% Notebook cell 10\nplt.figure(figsize=(8, 8))\nplt.axis(\"off\")\nplt.title(\"Training Images\")\nplt.imshow(np.transpose(torchvision.utils.make_grid(images[:64], \n                                         padding=2, normalize=True),\n                        (1, 2, 0)))\n\n# %% Notebook cell 12\n##########################\n### MODEL\n##########################\n\n\nmodel = torch.hub.load('pytorch/vision:v0.9.0', 'mobilenet_v3_large',\n                       pretrained=False)\n\nmodel.classifier[-1] = torch.nn.Linear(in_features=1280, # as in original\n                                       out_features=10) # number of class labels in Cifar-10)\n\nmodel = model.to(DEVICE)\n\n# %% Notebook cell 13\noptimizer = torch.optim.Adam(model.parameters(), lr=0.01)\n\nminibatch_loss_list, train_acc_list, valid_acc_list = train_classifier_simple_v2(\n    model=model,\n    num_epochs=NUM_EPOCHS,\n    train_loader=train_loader,\n    valid_loader=valid_loader,\n    test_loader=test_loader,\n    optimizer=optimizer,\n    best_model_save_path='mobilenet-v2-best-1.pt',\n    device=DEVICE,\n    scheduler_on='valid_acc',\n    logging_interval=100)\n\n\nplot_training_loss(minibatch_loss_list=minibatch_loss_list,\n                   num_epochs=NUM_EPOCHS,\n                   iter_per_epoch=len(train_loader),\n                   results_dir=None,\n                   averaging_iterations=200)\nplt.show()\n\nplot_accuracy(train_acc_list=train_acc_list,\n              valid_acc_list=valid_acc_list,\n              results_dir=None)\nplt.ylim([60, 100])\nplt.show()\n\n# %% Notebook cell 14\nmodel.load_state_dict(torch.load('mobilenet-v2-best-1.pt'))\nmodel.eval()\ntest_acc = compute_accuracy(model, test_loader, device=DEVICE)\nprint(f'Test accuracy: {test_acc:.2f}%')\n\n# %% Notebook cell 15\nmodel.cpu()\nunnormalizer = UnNormalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))\nclass_dict = {0: 'airplane',\n              1: 'automobile',\n              2: 'bird',\n              3: 'cat',\n              4: 'deer',\n              5: 'dog',\n              6: 'frog',\n              7: 'horse',\n              8: 'ship',\n              9: 'truck'}\n\nshow_examples(model=model, data_loader=test_loader, unnormalizer=unnormalizer, class_dict=class_dict)\n\n# %% Notebook cell 16\nmat = compute_confusion_matrix(model=model, data_loader=test_loader, device=torch.device('cpu'))\nplot_confusion_matrix(mat, class_names=class_dict.values())\nplt.show()\n",
+      "notebook_cells": [
+        1,
+        4,
+        5,
+        7,
+        8,
+        9,
+        10,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "original_notebook": "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-mobilenet-v3-large-cifar10.ipynb",
+      "evidence_id": "E001"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py::_make_divisible": {
+      "path": "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py",
+      "symbol": "_make_divisible",
+      "start": 15,
+      "end": 28,
+      "snippet": "def _make_divisible(v: float, divisor: int, min_value: Optional[int] = None) -> int:\n    \"\"\"\n    This function is taken from the original tf repo.\n    It ensures that all layers have a channel number that is divisible by 8\n    It can be seen here:\n    https://github.com/tensorflow/models/blob/master/research/slim/nets/mobilenet/mobilenet.py\n    \"\"\"\n    if min_value is None:\n        min_value = divisor\n    new_v = max(min_value, int(v + divisor / 2) // divisor * divisor)\n    # Make sure that round down does not go down by more than 10%.\n    if new_v < 0.9 * v:\n        new_v += divisor\n    return new_v",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__": {
+      "path": "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py",
+      "symbol": "ConvBNActivation.__init__",
+      "start": 32,
+      "end": 54,
+      "snippet": "    def __init__(\n        self,\n        in_planes: int,\n        out_planes: int,\n        kernel_size: int = 3,\n        stride: int = 1,\n        groups: int = 1,\n        norm_layer: Optional[Callable[..., nn.Module]] = None,\n        activation_layer: Optional[Callable[..., nn.Module]] = None,\n        dilation: int = 1,\n    ) -> None:\n        padding = (kernel_size - 1) // 2 * dilation\n        if norm_layer is None:\n            norm_layer = nn.BatchNorm2d\n        if activation_layer is None:\n            activation_layer = nn.ReLU6\n        super(ConvBNReLU, self).__init__(\n            nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, dilation=dilation, groups=groups,\n                      bias=False),\n            norm_layer(out_planes),\n            activation_layer(inplace=True)\n        )\n        self.out_channels = out_planes",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py::SqueezeExcitation.__init__": {
+      "path": "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py",
+      "symbol": "SqueezeExcitation.__init__",
+      "start": 23,
+      "end": 28,
+      "snippet": "    def __init__(self, input_channels: int, squeeze_factor: int = 4):\n        super().__init__()\n        squeeze_channels = _make_divisible(input_channels // squeeze_factor, 8)\n        self.fc1 = nn.Conv2d(input_channels, squeeze_channels, 1)\n        self.relu = nn.ReLU(inplace=True)\n        self.fc2 = nn.Conv2d(squeeze_channels, input_channels, 1)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E012"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py::SqueezeExcitation._scale": {
+      "path": "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py",
+      "symbol": "SqueezeExcitation._scale",
+      "start": 30,
+      "end": 35,
+      "snippet": "    def _scale(self, input: Tensor, inplace: bool) -> Tensor:\n        scale = F.adaptive_avg_pool2d(input, 1)\n        scale = self.fc1(scale)\n        scale = self.relu(scale)\n        scale = self.fc2(scale)\n        return F.hardsigmoid(scale, inplace=inplace)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E013"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py::SqueezeExcitation.forward": {
+      "path": "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py",
+      "symbol": "SqueezeExcitation.forward",
+      "start": 37,
+      "end": 39,
+      "snippet": "    def forward(self, input: Tensor) -> Tensor:\n        scale = self._scale(input, True)\n        return scale * input",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E014"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py::InvertedResidualConfig.__init__": {
+      "path": "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py",
+      "symbol": "InvertedResidualConfig.__init__",
+      "start": 44,
+      "end": 53,
+      "snippet": "    def __init__(self, input_channels: int, kernel: int, expanded_channels: int, out_channels: int, use_se: bool,\n                 activation: str, stride: int, dilation: int, width_mult: float):\n        self.input_channels = self.adjust_channels(input_channels, width_mult)\n        self.kernel = kernel\n        self.expanded_channels = self.adjust_channels(expanded_channels, width_mult)\n        self.out_channels = self.adjust_channels(out_channels, width_mult)\n        self.use_se = use_se\n        self.use_hs = activation == \"HS\"\n        self.stride = stride\n        self.dilation = dilation",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E006"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py::InvertedResidualConfig.adjust_channels": {
+      "path": "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py",
+      "symbol": "InvertedResidualConfig.adjust_channels",
+      "start": 56,
+      "end": 57,
+      "snippet": "    def adjust_channels(channels: int, width_mult: float):\n        return _make_divisible(channels * width_mult, 8)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E007"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py::InvertedResidual.__init__": {
+      "path": "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py",
+      "symbol": "InvertedResidual.__init__",
+      "start": 62,
+      "end": 92,
+      "snippet": "    def __init__(self, cnf: InvertedResidualConfig, norm_layer: Callable[..., nn.Module],\n                 se_layer: Callable[..., nn.Module] = SqueezeExcitation):\n        super().__init__()\n        if not (1 <= cnf.stride <= 2):\n            raise ValueError('illegal stride value')\n\n        self.use_res_connect = cnf.stride == 1 and cnf.input_channels == cnf.out_channels\n\n        layers: List[nn.Module] = []\n        activation_layer = nn.Hardswish if cnf.use_hs else nn.ReLU\n\n        # expand\n        if cnf.expanded_channels != cnf.input_channels:\n            layers.append(ConvBNActivation(cnf.input_channels, cnf.expanded_channels, kernel_size=1,\n                                           norm_layer=norm_layer, activation_layer=activation_layer))\n\n        # depthwise\n        stride = 1 if cnf.dilation > 1 else cnf.stride\n        layers.append(ConvBNActivation(cnf.expanded_channels, cnf.expanded_channels, kernel_size=cnf.kernel,\n                                       stride=stride, dilation=cnf.dilation, groups=cnf.expanded_channels,\n                                       norm_layer=norm_layer, activation_layer=activation_layer))\n        if cnf.use_se:\n            layers.append(se_layer(cnf.expanded_channels))\n\n        # project\n        layers.append(ConvBNActivation(cnf.expanded_channels, cnf.out_channels, kernel_size=1, norm_layer=norm_layer,\n                                       activation_layer=nn.Identity))\n\n        self.block = nn.Sequential(*layers)\n        self.out_channels = cnf.out_channels\n        self._is_cn = cnf.stride > 1",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py::InvertedResidual.forward": {
+      "path": "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py",
+      "symbol": "InvertedResidual.forward",
+      "start": 94,
+      "end": 98,
+      "snippet": "    def forward(self, input: Tensor) -> Tensor:\n        result = self.block(input)\n        if self.use_res_connect:\n            result += input\n        return result",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E005"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py::MobileNetV3": {
+      "path": "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py",
+      "symbol": "MobileNetV3",
+      "start": 101,
+      "end": 184,
+      "snippet": "class MobileNetV3(nn.Module):\n\n    def __init__(\n            self,\n            inverted_residual_setting: List[InvertedResidualConfig],\n            last_channel: int,\n            num_classes: int = 1000,\n            block: Optional[Callable[..., nn.Module]] = None,\n            norm_layer: Optional[Callable[..., nn.Module]] = None\n    ) -> None:\n        \"\"\"\n        MobileNet V3 main class\n\n        Args:\n            inverted_residual_setting (List[InvertedResidualConfig]): Network structure\n            last_channel (int): The number of channels on the penultimate layer\n            num_classes (int): Number of classes\n            block (Optional[Callable[..., nn.Module]]): Module specifying inverted residual building block for mobilenet\n            norm_layer (Optional[Callable[..., nn.Module]]): Module specifying the normalization layer to use\n        \"\"\"\n        super().__init__()\n\n        if not inverted_residual_setting:\n            raise ValueError(\"The inverted_residual_setting should not be empty\")\n        elif not (isinstance(inverted_residual_setting, Sequence) and\n                  all([isinstance(s, InvertedResidualConfig) for s in inverted_residual_setting])):\n            raise TypeError(\"The inverted_residual_setting should be List[InvertedResidualConfig]\")\n\n        if block is None:\n            block = InvertedResidual\n\n        if norm_layer is None:\n            norm_layer = partial(nn.BatchNorm2d, eps=0.001, momentum=0.01)\n\n        layers: List[nn.Module] = []\n\n        # building first layer\n        firstconv_output_channels = inverted_residual_setting[0].input_channels\n        layers.append(ConvBNActivation(3, firstconv_output_channels, kernel_size=3, stride=2, norm_layer=norm_layer,\n                                       activation_layer=nn.Hardswish))\n\n        # building inverted residual blocks\n        for cnf in inverted_residual_setting:\n            layers.append(block(cnf, norm_layer))\n\n        # building last several layers\n        lastconv_input_channels = inverted_residual_setting[-1].out_channels\n        lastconv_output_channels = 6 * lastconv_input_channels\n        layers.append(ConvBNActivation(lastconv_input_channels, lastconv_output_channels, kernel_size=1,\n                                       norm_layer=norm_layer, activation_layer=nn.Hardswish))\n\n        self.features = nn.Sequential(*layers)\n        self.avgpool = nn.AdaptiveAvgPool2d(1)\n        self.classifier = nn.Sequential(\n            nn.Linear(lastconv_output_channels, last_channel),\n            nn.Hardswish(inplace=True),\n            nn.Dropout(p=0.2, inplace=True),\n            nn.Linear(last_channel, num_classes),\n        )\n\n        for m in self.modules():\n            if isinstance(m, nn.Conv2d):\n                nn.init.kaiming_normal_(m.weight, mode='fan_out')\n                if m.bias is not None:\n                    nn.init.zeros_(m.bias)\n            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):\n                nn.init.ones_(m.weight)\n                nn.init.zeros_(m.bias)\n            elif isinstance(m, nn.Linear):\n                nn.init.normal_(m.weight, 0, 0.01)\n                nn.init.zeros_(m.bias)\n\n    def _forward_impl(self, x: Tensor) -> Tensor:\n        x = self.features(x)\n\n        x = self.avgpool(x)\n        x = torch.flatten(x, 1)\n\n        x = self.classifier(x)\n\n        return x\n\n    def forward(self, x: Tensor) -> Tensor:\n        return self._forward_impl(x)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E008"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py::MobileNetV3.__init__": {
+      "path": "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py",
+      "symbol": "MobileNetV3.__init__",
+      "start": 103,
+      "end": 171,
+      "snippet": "    def __init__(\n            self,\n            inverted_residual_setting: List[InvertedResidualConfig],\n            last_channel: int,\n            num_classes: int = 1000,\n            block: Optional[Callable[..., nn.Module]] = None,\n            norm_layer: Optional[Callable[..., nn.Module]] = None\n    ) -> None:\n        \"\"\"\n        MobileNet V3 main class\n\n        Args:\n            inverted_residual_setting (List[InvertedResidualConfig]): Network structure\n            last_channel (int): The number of channels on the penultimate layer\n            num_classes (int): Number of classes\n            block (Optional[Callable[..., nn.Module]]): Module specifying inverted residual building block for mobilenet\n            norm_layer (Optional[Callable[..., nn.Module]]): Module specifying the normalization layer to use\n        \"\"\"\n        super().__init__()\n\n        if not inverted_residual_setting:\n            raise ValueError(\"The inverted_residual_setting should not be empty\")\n        elif not (isinstance(inverted_residual_setting, Sequence) and\n                  all([isinstance(s, InvertedResidualConfig) for s in inverted_residual_setting])):\n            raise TypeError(\"The inverted_residual_setting should be List[InvertedResidualConfig]\")\n\n        if block is None:\n            block = InvertedResidual\n\n        if norm_layer is None:\n            norm_layer = partial(nn.BatchNorm2d, eps=0.001, momentum=0.01)\n\n        layers: List[nn.Module] = []\n\n        # building first layer\n        firstconv_output_channels = inverted_residual_setting[0].input_channels\n        layers.append(ConvBNActivation(3, firstconv_output_channels, kernel_size=3, stride=2, norm_layer=norm_layer,\n                                       activation_layer=nn.Hardswish))\n\n        # building inverted residual blocks\n        for cnf in inverted_residual_setting:\n            layers.append(block(cnf, norm_layer))\n\n        # building last several layers\n        lastconv_input_channels = inverted_residual_setting[-1].out_channels\n        lastconv_output_channels = 6 * lastconv_input_channels\n        layers.append(ConvBNActivation(lastconv_input_channels, lastconv_output_channels, kernel_size=1,\n                                       norm_layer=norm_layer, activation_layer=nn.Hardswish))\n\n        self.features = nn.Sequential(*layers)\n        self.avgpool = nn.AdaptiveAvgPool2d(1)\n        self.classifier = nn.Sequential(\n            nn.Linear(lastconv_output_channels, last_channel),\n            nn.Hardswish(inplace=True),\n            nn.Dropout(p=0.2, inplace=True),\n            nn.Linear(last_channel, num_classes),\n        )\n\n        for m in self.modules():\n            if isinstance(m, nn.Conv2d):\n                nn.init.kaiming_normal_(m.weight, mode='fan_out')\n                if m.bias is not None:\n                    nn.init.zeros_(m.bias)\n            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):\n                nn.init.ones_(m.weight)\n                nn.init.zeros_(m.bias)\n            elif isinstance(m, nn.Linear):\n                nn.init.normal_(m.weight, 0, 0.01)\n                nn.init.zeros_(m.bias)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E009"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py::MobileNetV3._forward_impl": {
+      "path": "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py",
+      "symbol": "MobileNetV3._forward_impl",
+      "start": 173,
+      "end": 181,
+      "snippet": "    def _forward_impl(self, x: Tensor) -> Tensor:\n        x = self.features(x)\n\n        x = self.avgpool(x)\n        x = torch.flatten(x, 1)\n\n        x = self.classifier(x)\n\n        return x",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E010"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py::MobileNetV3.forward": {
+      "path": "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py",
+      "symbol": "MobileNetV3.forward",
+      "start": 183,
+      "end": 184,
+      "snippet": "    def forward(self, x: Tensor) -> Tensor:\n        return self._forward_impl(x)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E011"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py::_mobilenet_v3_conf": {
+      "path": "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py",
+      "symbol": "_mobilenet_v3_conf",
+      "start": 187,
+      "end": 233,
+      "snippet": "def _mobilenet_v3_conf(arch: str, params: Dict[str, Any]):\n    # non-public config parameters\n    reduce_divider = 2 if params.pop('_reduced_tail', False) else 1\n    dilation = 2 if params.pop('_dilated', False) else 1\n    width_mult = params.pop('_width_mult', 1.0)\n\n    bneck_conf = partial(InvertedResidualConfig, width_mult=width_mult)\n    adjust_channels = partial(InvertedResidualConfig.adjust_channels, width_mult=width_mult)\n\n    if arch == \"mobilenet_v3_large\":\n        inverted_residual_setting = [\n            bneck_conf(16, 3, 16, 16, False, \"RE\", 1, 1),\n            bneck_conf(16, 3, 64, 24, False, \"RE\", 2, 1),  # C1\n            bneck_conf(24, 3, 72, 24, False, \"RE\", 1, 1),\n            bneck_conf(24, 5, 72, 40, True, \"RE\", 2, 1),  # C2\n            bneck_conf(40, 5, 120, 40, True, \"RE\", 1, 1),\n            bneck_conf(40, 5, 120, 40, True, \"RE\", 1, 1),\n            bneck_conf(40, 3, 240, 80, False, \"HS\", 2, 1),  # C3\n            bneck_conf(80, 3, 200, 80, False, \"HS\", 1, 1),\n            bneck_conf(80, 3, 184, 80, False, \"HS\", 1, 1),\n            bneck_conf(80, 3, 184, 80, False, \"HS\", 1, 1),\n            bneck_conf(80, 3, 480, 112, True, \"HS\", 1, 1),\n            bneck_conf(112, 3, 672, 112, True, \"HS\", 1, 1),\n            bneck_conf(112, 5, 672, 160 // reduce_divider, True, \"HS\", 2, dilation),  # C4\n            bneck_conf(160 // reduce_divider, 5, 960 // reduce_divider, 160 // reduce_divider, True, \"HS\", 1, dilation),\n            bneck_conf(160 // reduce_divider, 5, 960 // reduce_divider, 160 // reduce_divider, True, \"HS\", 1, dilation),\n        ]\n        last_channel = adjust_channels(1280 // reduce_divider)  # C5\n    elif arch == \"mobilenet_v3_small\":\n        inverted_residual_setting = [\n            bneck_conf(16, 3, 16, 16, True, \"RE\", 2, 1),  # C1\n            bneck_conf(16, 3, 72, 24, False, \"RE\", 2, 1),  # C2\n            bneck_conf(24, 3, 88, 24, False, \"RE\", 1, 1),\n            bneck_conf(24, 5, 96, 40, True, \"HS\", 2, 1),  # C3\n            bneck_conf(40, 5, 240, 40, True, \"HS\", 1, 1),\n            bneck_conf(40, 5, 240, 40, True, \"HS\", 1, 1),\n            bneck_conf(40, 5, 120, 48, True, \"HS\", 1, 1),\n            bneck_conf(48, 5, 144, 48, True, \"HS\", 1, 1),\n            bneck_conf(48, 5, 288, 96 // reduce_divider, True, \"HS\", 2, dilation),  # C4\n            bneck_conf(96 // reduce_divider, 5, 576 // reduce_divider, 96 // reduce_divider, True, \"HS\", 1, dilation),\n            bneck_conf(96 // reduce_divider, 5, 576 // reduce_divider, 96 // reduce_divider, True, \"HS\", 1, dilation),\n        ]\n        last_channel = adjust_channels(1024 // reduce_divider)  # C5\n    else:\n        raise ValueError(\"Unsupported model type {}\".format(arch))\n\n    return inverted_residual_setting, last_channel",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E015"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py::_mobilenet_v3_model": {
+      "path": "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py",
+      "symbol": "_mobilenet_v3_model",
+      "start": 236,
+      "end": 250,
+      "snippet": "def _mobilenet_v3_model(\n    arch: str,\n    inverted_residual_setting: List[InvertedResidualConfig],\n    last_channel: int,\n    pretrained: bool,\n    progress: bool,\n    **kwargs: Any\n):\n    model = MobileNetV3(inverted_residual_setting, last_channel, **kwargs)\n    if pretrained:\n        if model_urls.get(arch, None) is None:\n            raise ValueError(\"No checkpoint is available for model type {}\".format(arch))\n        state_dict = load_state_dict_from_url(model_urls[arch], progress=progress)\n        model.load_state_dict(state_dict)\n    return model",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E016"
+    },
+    "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py::mobilenet_v3_large": {
+      "path": "torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py",
+      "symbol": "mobilenet_v3_large",
+      "start": 253,
+      "end": 264,
+      "snippet": "def mobilenet_v3_large(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> MobileNetV3:\n    \"\"\"\n    Constructs a large MobileNetV3 architecture from\n    `\"Searching for MobileNetV3\" <https://arxiv.org/abs/1905.02244>`_.\n\n    Args:\n        pretrained (bool): If True, returns a model pre-trained on ImageNet\n        progress (bool): If True, displays a progress bar of the download to stderr\n    \"\"\"\n    arch = \"mobilenet_v3_large\"\n    inverted_residual_setting, last_channel = _mobilenet_v3_conf(arch, kwargs)\n    return _mobilenet_v3_model(arch, inverted_residual_setting, last_channel, pretrained, progress, **kwargs)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E017"
+    }
+  },
+  "notebook_origins": {
+    "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-mobilenet-v3-large-cifar10.py": {
+      "original": "deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-mobilenet-v3-large-cifar10.ipynb",
+      "line_map": [
+        {
+          "derived_line": 2,
+          "cell_index": 1,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 3,
+          "cell_index": 1,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 6,
+          "cell_index": 4,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 7,
+          "cell_index": 4,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 8,
+          "cell_index": 4,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 9,
+          "cell_index": 4,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 12,
+          "cell_index": 5,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 13,
+          "cell_index": 5,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 14,
+          "cell_index": 5,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 15,
+          "cell_index": 5,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 16,
+          "cell_index": 5,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 17,
+          "cell_index": 5,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 18,
+          "cell_index": 5,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 19,
+          "cell_index": 5,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 20,
+          "cell_index": 5,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 23,
+          "cell_index": 7,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 24,
+          "cell_index": 7,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 25,
+          "cell_index": 7,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 26,
+          "cell_index": 7,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 27,
+          "cell_index": 7,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 28,
+          "cell_index": 7,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 29,
+          "cell_index": 7,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 30,
+          "cell_index": 7,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 33,
+          "cell_index": 8,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 34,
+          "cell_index": 8,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 37,
+          "cell_index": 9,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 38,
+          "cell_index": 9,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 39,
+          "cell_index": 9,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 40,
+          "cell_index": 9,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 41,
+          "cell_index": 9,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 42,
+          "cell_index": 9,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 43,
+          "cell_index": 9,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 44,
+          "cell_index": 9,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 45,
+          "cell_index": 9,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 46,
+          "cell_index": 9,
+          "cell_line": 10
+        },
+        {
+          "derived_line": 47,
+          "cell_index": 9,
+          "cell_line": 11
+        },
+        {
+          "derived_line": 48,
+          "cell_index": 9,
+          "cell_line": 12
+        },
+        {
+          "derived_line": 49,
+          "cell_index": 9,
+          "cell_line": 13
+        },
+        {
+          "derived_line": 50,
+          "cell_index": 9,
+          "cell_line": 14
+        },
+        {
+          "derived_line": 51,
+          "cell_index": 9,
+          "cell_line": 15
+        },
+        {
+          "derived_line": 52,
+          "cell_index": 9,
+          "cell_line": 16
+        },
+        {
+          "derived_line": 53,
+          "cell_index": 9,
+          "cell_line": 17
+        },
+        {
+          "derived_line": 54,
+          "cell_index": 9,
+          "cell_line": 18
+        },
+        {
+          "derived_line": 55,
+          "cell_index": 9,
+          "cell_line": 19
+        },
+        {
+          "derived_line": 56,
+          "cell_index": 9,
+          "cell_line": 20
+        },
+        {
+          "derived_line": 57,
+          "cell_index": 9,
+          "cell_line": 21
+        },
+        {
+          "derived_line": 58,
+          "cell_index": 9,
+          "cell_line": 22
+        },
+        {
+          "derived_line": 59,
+          "cell_index": 9,
+          "cell_line": 23
+        },
+        {
+          "derived_line": 60,
+          "cell_index": 9,
+          "cell_line": 24
+        },
+        {
+          "derived_line": 61,
+          "cell_index": 9,
+          "cell_line": 25
+        },
+        {
+          "derived_line": 62,
+          "cell_index": 9,
+          "cell_line": 26
+        },
+        {
+          "derived_line": 63,
+          "cell_index": 9,
+          "cell_line": 27
+        },
+        {
+          "derived_line": 64,
+          "cell_index": 9,
+          "cell_line": 28
+        },
+        {
+          "derived_line": 65,
+          "cell_index": 9,
+          "cell_line": 29
+        },
+        {
+          "derived_line": 66,
+          "cell_index": 9,
+          "cell_line": 30
+        },
+        {
+          "derived_line": 67,
+          "cell_index": 9,
+          "cell_line": 31
+        },
+        {
+          "derived_line": 68,
+          "cell_index": 9,
+          "cell_line": 32
+        },
+        {
+          "derived_line": 69,
+          "cell_index": 9,
+          "cell_line": 33
+        },
+        {
+          "derived_line": 70,
+          "cell_index": 9,
+          "cell_line": 34
+        },
+        {
+          "derived_line": 73,
+          "cell_index": 10,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 74,
+          "cell_index": 10,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 75,
+          "cell_index": 10,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 76,
+          "cell_index": 10,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 77,
+          "cell_index": 10,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 78,
+          "cell_index": 10,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 81,
+          "cell_index": 12,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 82,
+          "cell_index": 12,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 83,
+          "cell_index": 12,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 84,
+          "cell_index": 12,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 85,
+          "cell_index": 12,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 86,
+          "cell_index": 12,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 87,
+          "cell_index": 12,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 88,
+          "cell_index": 12,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 89,
+          "cell_index": 12,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 90,
+          "cell_index": 12,
+          "cell_line": 10
+        },
+        {
+          "derived_line": 91,
+          "cell_index": 12,
+          "cell_line": 11
+        },
+        {
+          "derived_line": 92,
+          "cell_index": 12,
+          "cell_line": 12
+        },
+        {
+          "derived_line": 95,
+          "cell_index": 13,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 96,
+          "cell_index": 13,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 97,
+          "cell_index": 13,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 98,
+          "cell_index": 13,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 99,
+          "cell_index": 13,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 100,
+          "cell_index": 13,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 101,
+          "cell_index": 13,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 102,
+          "cell_index": 13,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 103,
+          "cell_index": 13,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 104,
+          "cell_index": 13,
+          "cell_line": 10
+        },
+        {
+          "derived_line": 105,
+          "cell_index": 13,
+          "cell_line": 11
+        },
+        {
+          "derived_line": 106,
+          "cell_index": 13,
+          "cell_line": 12
+        },
+        {
+          "derived_line": 107,
+          "cell_index": 13,
+          "cell_line": 13
+        },
+        {
+          "derived_line": 108,
+          "cell_index": 13,
+          "cell_line": 14
+        },
+        {
+          "derived_line": 109,
+          "cell_index": 13,
+          "cell_line": 15
+        },
+        {
+          "derived_line": 110,
+          "cell_index": 13,
+          "cell_line": 16
+        },
+        {
+          "derived_line": 111,
+          "cell_index": 13,
+          "cell_line": 17
+        },
+        {
+          "derived_line": 112,
+          "cell_index": 13,
+          "cell_line": 18
+        },
+        {
+          "derived_line": 113,
+          "cell_index": 13,
+          "cell_line": 19
+        },
+        {
+          "derived_line": 114,
+          "cell_index": 13,
+          "cell_line": 20
+        },
+        {
+          "derived_line": 115,
+          "cell_index": 13,
+          "cell_line": 21
+        },
+        {
+          "derived_line": 116,
+          "cell_index": 13,
+          "cell_line": 22
+        },
+        {
+          "derived_line": 117,
+          "cell_index": 13,
+          "cell_line": 23
+        },
+        {
+          "derived_line": 118,
+          "cell_index": 13,
+          "cell_line": 24
+        },
+        {
+          "derived_line": 119,
+          "cell_index": 13,
+          "cell_line": 25
+        },
+        {
+          "derived_line": 120,
+          "cell_index": 13,
+          "cell_line": 26
+        },
+        {
+          "derived_line": 121,
+          "cell_index": 13,
+          "cell_line": 27
+        },
+        {
+          "derived_line": 124,
+          "cell_index": 14,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 125,
+          "cell_index": 14,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 126,
+          "cell_index": 14,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 127,
+          "cell_index": 14,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 130,
+          "cell_index": 15,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 131,
+          "cell_index": 15,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 132,
+          "cell_index": 15,
+          "cell_line": 3
+        },
+        {
+          "derived_line": 133,
+          "cell_index": 15,
+          "cell_line": 4
+        },
+        {
+          "derived_line": 134,
+          "cell_index": 15,
+          "cell_line": 5
+        },
+        {
+          "derived_line": 135,
+          "cell_index": 15,
+          "cell_line": 6
+        },
+        {
+          "derived_line": 136,
+          "cell_index": 15,
+          "cell_line": 7
+        },
+        {
+          "derived_line": 137,
+          "cell_index": 15,
+          "cell_line": 8
+        },
+        {
+          "derived_line": 138,
+          "cell_index": 15,
+          "cell_line": 9
+        },
+        {
+          "derived_line": 139,
+          "cell_index": 15,
+          "cell_line": 10
+        },
+        {
+          "derived_line": 140,
+          "cell_index": 15,
+          "cell_line": 11
+        },
+        {
+          "derived_line": 141,
+          "cell_index": 15,
+          "cell_line": 12
+        },
+        {
+          "derived_line": 142,
+          "cell_index": 15,
+          "cell_line": 13
+        },
+        {
+          "derived_line": 143,
+          "cell_index": 15,
+          "cell_line": 14
+        },
+        {
+          "derived_line": 146,
+          "cell_index": 16,
+          "cell_line": 1
+        },
+        {
+          "derived_line": 147,
+          "cell_index": 16,
+          "cell_line": 2
+        },
+        {
+          "derived_line": 148,
+          "cell_index": 16,
+          "cell_line": 3
+        }
+      ],
+      "transformation": "code cells in order; notebook magic lines commented"
+    }
+  },
+  "license_files": [
+    "deeplearning-models-batch4/LICENSE",
+    "torchvision-v0.9.0-mobilev3/LICENSE"
+  ],
+  "source_projects": {
+    "deeplearning-models-batch4": {
+      "repository": "https://github.com/rasbt/deeplearning-models",
+      "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+      "snapshot": "d99aabf41ee783fdb7b603dc53fc09c290e223223a1576e510b40206f438e950"
+    },
+    "torchvision-v0.9.0-mobilev3": {
+      "repository": "pytorch/vision",
+      "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+      "snapshot": "f3ab89879e79e5b8d12880bbf186513af2fa92e34d35071cb994daa46bf12f19"
+    }
+  }
+}

@@ -1,0 +1,719 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "fpn",
+  "profile": {
+    "scope": "FeaturePyramidNetwork only; caller backbone and extra blocks excluded",
+    "constructor": "FeaturePyramidNetwork([64,128,256],128,extra_blocks=None)",
+    "in_channels_list": [
+      64,
+      128,
+      256
+    ],
+    "out_channels": 128,
+    "extra_blocks": null,
+    "input_keys": [
+      "feat0",
+      "feat1",
+      "feat2"
+    ],
+    "loop_order": [
+      1,
+      0
+    ],
+    "input_shape": "OrderedDict(feat0[64,32,32],feat1[128,16,16],feat2[256,8,8])",
+    "output_shape": "OrderedDict(feat0[128,32,32],feat1[128,16,16],feat2[128,8,8])",
+    "shape_origin": "explicit static module profile; not observed",
+    "mode": "caller train/eval; not executed",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "pytorch/vision",
+    "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+    "snapshot": "88b7578cd40309142e6f3aa152438e3ee450fcfd4e242f61cb3919c3efab888f"
+  },
+  "nodes": [
+    {
+      "id": "fpn.root",
+      "label": "FeaturePyramidNetwork / module",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_inner_blocks",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_layer_blocks"
+      ],
+      "shape": "3 scales → 3 scales",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "fpn.input0",
+          "fpn.input1",
+          "fpn.input2"
+        ],
+        [
+          "fpn.module"
+        ],
+        [
+          "fpn.output"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 76,
+      "parent": null,
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn.input0",
+      "label": "feat0 / caller feature",
+      "kind": "input",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "feature_key": "feat0",
+      "learnable": false,
+      "parent": "fpn.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn.input1",
+      "label": "feat1 / caller feature",
+      "kind": "input",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.forward"
+      ],
+      "shape": "[B,128,16,16]",
+      "detail": [],
+      "feature_key": "feat1",
+      "learnable": false,
+      "parent": "fpn.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn.input2",
+      "label": "feat2 / caller feature",
+      "kind": "input",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [],
+      "feature_key": "feat2",
+      "learnable": false,
+      "parent": "fpn.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn.module",
+      "label": "FPN / lateral and top-down",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_inner_blocks",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_layer_blocks"
+      ],
+      "shape": "OrderedDict feat0/feat1/feat2",
+      "detail": [],
+      "align_x": {
+        "fpn.up1": "fpn.lateral1",
+        "fpn.add1": "fpn.lateral1",
+        "fpn.output_conv2": "fpn.lateral2",
+        "fpn.up0": "fpn.lateral0",
+        "fpn.add0": "fpn.lateral0",
+        "fpn.output_conv1": "fpn.lateral1",
+        "fpn.output_conv0": "fpn.lateral0"
+      },
+      "mode": "graph",
+      "ranks": [
+        [
+          "fpn.lateral0",
+          "fpn.lateral1",
+          "fpn.lateral2"
+        ],
+        [
+          "fpn.up1",
+          "fpn.output_conv2"
+        ],
+        [
+          "fpn.add1"
+        ],
+        [
+          "fpn.up0",
+          "fpn.output_conv1"
+        ],
+        [
+          "fpn.add0"
+        ],
+        [
+          "fpn.output_conv0"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 76,
+      "parent": "fpn.root",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn.lateral0",
+      "label": "Lateral1x1 / feat0",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_inner_blocks",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_layer_blocks"
+      ],
+      "shape": "[B,128,32,32]",
+      "detail": [],
+      "parameter": "inner_blocks.0",
+      "instance_identity": "fpn.inner_blocks.0",
+      "learnable": true,
+      "in_channels": 64,
+      "out_channels": 128,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": true,
+      "source_operation": "nn.Conv2d",
+      "initialization": "kaiming_uniform_(a=1); bias=0",
+      "feature_key": "feat0",
+      "parent": "fpn.module",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn.lateral1",
+      "label": "Lateral1x1 / feat1",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_inner_blocks",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_layer_blocks"
+      ],
+      "shape": "[B,128,16,16]",
+      "detail": [],
+      "parameter": "inner_blocks.1",
+      "instance_identity": "fpn.inner_blocks.1",
+      "learnable": true,
+      "in_channels": 128,
+      "out_channels": 128,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": true,
+      "source_operation": "nn.Conv2d",
+      "initialization": "kaiming_uniform_(a=1); bias=0",
+      "feature_key": "feat1",
+      "parent": "fpn.module",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn.lateral2",
+      "label": "Lateral1x1 / feat2",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_inner_blocks",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_layer_blocks"
+      ],
+      "shape": "[B,128,8,8]",
+      "detail": [],
+      "parameter": "inner_blocks.2",
+      "instance_identity": "fpn.inner_blocks.2",
+      "learnable": true,
+      "in_channels": 256,
+      "out_channels": 128,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": true,
+      "source_operation": "nn.Conv2d",
+      "initialization": "kaiming_uniform_(a=1); bias=0",
+      "feature_key": "feat2",
+      "parent": "fpn.module",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn.up1",
+      "label": "Nearest resize / 8→16",
+      "kind": "interpolate",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.forward"
+      ],
+      "shape": "[B,128,16,16]",
+      "detail": [],
+      "mode_argument": "nearest",
+      "size_from": "fpn.lateral1.shape[-2:]",
+      "library_boundary": true,
+      "parent": "fpn.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "size"
+      ]
+    },
+    {
+      "id": "fpn.add1",
+      "label": "Add lateral1 + top-down",
+      "kind": "add",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.forward"
+      ],
+      "shape": "[B,128,16,16]",
+      "detail": [],
+      "ordered_operands": [
+        "fpn.lateral1",
+        "fpn.up1"
+      ],
+      "learnable": false,
+      "parent": "fpn.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "lateral",
+        "top_down"
+      ]
+    },
+    {
+      "id": "fpn.up0",
+      "label": "Nearest resize / 16→32",
+      "kind": "interpolate",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.forward"
+      ],
+      "shape": "[B,128,32,32]",
+      "detail": [],
+      "mode_argument": "nearest",
+      "size_from": "fpn.lateral0.shape[-2:]",
+      "library_boundary": true,
+      "parent": "fpn.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "size"
+      ]
+    },
+    {
+      "id": "fpn.add0",
+      "label": "Add lateral0 + top-down",
+      "kind": "add",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.forward"
+      ],
+      "shape": "[B,128,32,32]",
+      "detail": [],
+      "ordered_operands": [
+        "fpn.lateral0",
+        "fpn.up0"
+      ],
+      "learnable": false,
+      "parent": "fpn.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "lateral",
+        "top_down"
+      ]
+    },
+    {
+      "id": "fpn.output_conv0",
+      "label": "Output3x3 / feat0",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_inner_blocks",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_layer_blocks"
+      ],
+      "shape": "[B,128,32,32]",
+      "detail": [],
+      "parameter": "layer_blocks.0",
+      "instance_identity": "fpn.layer_blocks.0",
+      "learnable": true,
+      "in_channels": 128,
+      "out_channels": 128,
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "groups": 1,
+      "bias": true,
+      "source_operation": "nn.Conv2d",
+      "initialization": "kaiming_uniform_(a=1); bias=0",
+      "feature_key": "feat0",
+      "parent": "fpn.module",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn.output_conv1",
+      "label": "Output3x3 / feat1",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_inner_blocks",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_layer_blocks"
+      ],
+      "shape": "[B,128,16,16]",
+      "detail": [],
+      "parameter": "layer_blocks.1",
+      "instance_identity": "fpn.layer_blocks.1",
+      "learnable": true,
+      "in_channels": 128,
+      "out_channels": 128,
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "groups": 1,
+      "bias": true,
+      "source_operation": "nn.Conv2d",
+      "initialization": "kaiming_uniform_(a=1); bias=0",
+      "feature_key": "feat1",
+      "parent": "fpn.module",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn.output_conv2",
+      "label": "Output3x3 / feat2",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_inner_blocks",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_layer_blocks"
+      ],
+      "shape": "[B,128,8,8]",
+      "detail": [],
+      "parameter": "layer_blocks.2",
+      "instance_identity": "fpn.layer_blocks.2",
+      "learnable": true,
+      "in_channels": 128,
+      "out_channels": 128,
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "groups": 1,
+      "bias": true,
+      "source_operation": "nn.Conv2d",
+      "initialization": "kaiming_uniform_(a=1); bias=0",
+      "feature_key": "feat2",
+      "parent": "fpn.module",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn.output",
+      "label": "OrderedDict / high resolution first",
+      "kind": "output",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.forward"
+      ],
+      "shape": "feat0[128,32,32] / feat1[128,16,16] / feat2[128,8,8]",
+      "detail": [],
+      "ordered_keys": [
+        "feat0",
+        "feat1",
+        "feat2"
+      ],
+      "ordered_values": [
+        "fpn.output_conv0",
+        "fpn.output_conv1",
+        "fpn.output_conv2"
+      ],
+      "learnable": false,
+      "parent": "fpn.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "feat0",
+        "feat1",
+        "feat2"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "fpn.input0:out->fpn.lateral0:in:tensor",
+      "src": "fpn.input0",
+      "dst": "fpn.lateral0",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn.input1:out->fpn.lateral1:in:tensor",
+      "src": "fpn.input1",
+      "dst": "fpn.lateral1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn.input2:out->fpn.lateral2:in:tensor",
+      "src": "fpn.input2",
+      "dst": "fpn.lateral2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn.lateral2:out->fpn.output_conv2:in:tensor",
+      "src": "fpn.lateral2",
+      "dst": "fpn.output_conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn.lateral2:out->fpn.up1:in:tensor",
+      "src": "fpn.lateral2",
+      "dst": "fpn.up1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn.lateral1:out->fpn.up1:size:shape_dependency",
+      "src": "fpn.lateral1",
+      "dst": "fpn.up1",
+      "src_port": "out",
+      "dst_port": "size",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "fpn.lateral1:out->fpn.add1:lateral:tensor",
+      "src": "fpn.lateral1",
+      "dst": "fpn.add1",
+      "src_port": "out",
+      "dst_port": "lateral",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn.up1:out->fpn.add1:top_down:tensor",
+      "src": "fpn.up1",
+      "dst": "fpn.add1",
+      "src_port": "out",
+      "dst_port": "top_down",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn.add1:out->fpn.output_conv1:in:tensor",
+      "src": "fpn.add1",
+      "dst": "fpn.output_conv1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn.add1:out->fpn.up0:in:tensor",
+      "src": "fpn.add1",
+      "dst": "fpn.up0",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn.lateral0:out->fpn.up0:size:shape_dependency",
+      "src": "fpn.lateral0",
+      "dst": "fpn.up0",
+      "src_port": "out",
+      "dst_port": "size",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "fpn.lateral0:out->fpn.add0:lateral:tensor",
+      "src": "fpn.lateral0",
+      "dst": "fpn.add0",
+      "src_port": "out",
+      "dst_port": "lateral",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn.up0:out->fpn.add0:top_down:tensor",
+      "src": "fpn.up0",
+      "dst": "fpn.add0",
+      "src_port": "out",
+      "dst_port": "top_down",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn.add0:out->fpn.output_conv0:in:tensor",
+      "src": "fpn.add0",
+      "dst": "fpn.output_conv0",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn.output_conv0:out->fpn.output:feat0:tensor",
+      "src": "fpn.output_conv0",
+      "dst": "fpn.output",
+      "src_port": "out",
+      "dst_port": "feat0",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn.output_conv1:out->fpn.output:feat1:tensor",
+      "src": "fpn.output_conv1",
+      "dst": "fpn.output",
+      "src_port": "out",
+      "dst_port": "feat1",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn.output_conv2:out->fpn.output:feat2:tensor",
+      "src": "fpn.output_conv2",
+      "dst": "fpn.output",
+      "src_port": "out",
+      "dst_port": "feat2",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Three different dictionary features feed independent lateral1x1 Conv weights, not one same-input fork.",
+    "Coarsest lateral2 produces output2 and the first top-down value. Later last_inner values are Add results, not layer_blocks outputs.",
+    "Nearest resize reads target H/W from the current lateral feature; shape-only edges do not carry tensor values.",
+    "Processing loop is low-resolution to high-resolution; results.insert(0,...) restores caller key order/highest resolution first.",
+    "Six independent Conv families retain default biases, Kaiming(a=1) and zero bias initialization; no BN or ReLU is present."
+  ],
+  "corrections": [
+    "Do not send smoothed output2/output1 into top-down interpolation.",
+    "Different input resolutions are explicit operands, not three visual copies of one tensor.",
+    "extra_blocks=None excludes P6/P7 and MaxPool."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

@@ -1,0 +1,190 @@
+{
+  "batch": "batch3",
+  "source_mode": "frozen source + reviewed adapters; notebook/model code never executed",
+  "review": "Source and adapters cross-reviewed by a reviewer other than their author; rendered exports visually inspected.",
+  "previous_batches": {
+    "models": 12,
+    "files_checked": 230,
+    "changed_files": [],
+    "baseline_sha256": "22efa6af581a41fdff073f22f078c0dd3e1a7918d66285a60be077a7d1a99adf"
+  },
+  "negative_semantic_cases": [
+    {
+      "model": "vgg16",
+      "mutation": "vgg.hidden1.relu: kind relu -> dropout, inventing an operator present only in comments",
+      "rejected": true,
+      "error": "vgg16: no commented Dropout/avgpool or invented BatchNorm"
+    },
+    {
+      "model": "resnet50",
+      "mutation": "Stage2 first bottleneck: move stride2 from conv2 3x3 to conv1 1x1",
+      "rejected": true,
+      "error": "resnet50: stage2 stride on conv2 and matching projection"
+    },
+    {
+      "model": "convvae",
+      "mutation": "internal random epsilon changed into caller input",
+      "rejected": true,
+      "error": "convvae: sampling epsilon must be internal independent operand"
+    },
+    {
+      "model": "ccvae",
+      "mutation": "decoder output set to 1 channel despite hard-coded source 11",
+      "rejected": true,
+      "error": "ccvae: source returns 11 augmented channels"
+    },
+    {
+      "model": "gru",
+      "mutation": {
+        "node": "gru.core",
+        "field": "output_tuple",
+        "before": [
+          "packed_output",
+          "hidden"
+        ],
+        "after": [
+          "packed_output",
+          [
+            "hidden",
+            "cell"
+          ]
+        ]
+      },
+      "rejected": true,
+      "error": "gru: GRU hidden selected without cell state"
+    },
+    {
+      "model": "bilstm",
+      "mutation": {
+        "node": "bilstm.forward_state",
+        "field": "expression",
+        "before": "hidden[-2,:,:]",
+        "after": "hidden[-4,:,:]"
+      },
+      "rejected": true,
+      "error": "bilstm: only last-layer forward/reverse hidden slices"
+    }
+  ],
+  "main_flow_negative": "Reversing a real GRU main segment was rejected as downward main flow.",
+  "models": [
+    {
+      "model": "vgg16",
+      "semantic_nodes": 52,
+      "semantic_edges": 63,
+      "canvases": {
+        "overview": [
+          1200,
+          1151
+        ],
+        "modules": [
+          1296,
+          2186
+        ],
+        "detailed": [
+          1296,
+          3852
+        ]
+      }
+    },
+    {
+      "model": "resnet50",
+      "semantic_nodes": 67,
+      "semantic_edges": 88,
+      "canvases": {
+        "overview": [
+          1200,
+          1313
+        ],
+        "modules": [
+          1200,
+          3273
+        ],
+        "detailed": [
+          1552,
+          6998
+        ]
+      }
+    },
+    {
+      "model": "convvae",
+      "semantic_nodes": 46,
+      "semantic_edges": 70,
+      "canvases": {
+        "overview": [
+          1466,
+          1163
+        ],
+        "modules": [
+          1530,
+          2464
+        ],
+        "detailed": [
+          2100,
+          4482
+        ]
+      }
+    },
+    {
+      "model": "ccvae",
+      "semantic_nodes": 58,
+      "semantic_edges": 86,
+      "canvases": {
+        "overview": [
+          1538,
+          1189
+        ],
+        "modules": [
+          1602,
+          2997
+        ],
+        "detailed": [
+          2172,
+          5660
+        ]
+      }
+    },
+    {
+      "model": "gru",
+      "semantic_nodes": 18,
+      "semantic_edges": 24,
+      "canvases": {
+        "overview": [
+          1258,
+          862
+        ],
+        "modules": [
+          1322,
+          1527
+        ],
+        "detailed": [
+          1386,
+          2280
+        ]
+      }
+    },
+    {
+      "model": "bilstm",
+      "semantic_nodes": 24,
+      "semantic_edges": 33,
+      "canvases": {
+        "overview": [
+          1258,
+          860
+        ],
+        "modules": [
+          1386,
+          1939
+        ],
+        "detailed": [
+          1828,
+          2875
+        ]
+      }
+    }
+  ],
+  "export_report": "export_checks_batch3.json",
+  "limitations": [
+    "Static reviewed facts and geometry; no execution or numeric equivalence proof.",
+    "Negative cases cover selected errors, not all possible adapter mistakes."
+  ]
+}

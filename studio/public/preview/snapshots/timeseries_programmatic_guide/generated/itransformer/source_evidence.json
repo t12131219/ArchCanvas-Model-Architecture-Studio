@@ -1,0 +1,231 @@
+{
+  "archive": "iTransformer.zip",
+  "archive_sha256": "e76d8a408568db102e1c0a227e7aa1d2c0e0433a4ba7fff784e4ba752448c1fa",
+  "entry": "iTransformer/model/iTransformer.py::Model",
+  "mode": "static AST + reviewed handwritten adapter; model code never imported or executed",
+  "files": {
+    "iTransformer/data_provider/data_factory.py": {
+      "sha256": "767842dd13738391e0b850dc4b6d869350946fe8f0382ccf04bf472889c8b6e5",
+      "lines": 54,
+      "configuration_reference": false
+    },
+    "iTransformer/data_provider/data_loader.py": {
+      "sha256": "8e68d2d9ed29f74a7645a96cebe6aee20d53722f4ca993a8f1e6d4b5a997193c",
+      "lines": 535,
+      "configuration_reference": false
+    },
+    "iTransformer/layers/Embed.py": {
+      "sha256": "2de7e5049a696d320a23a8bdb6e08e823cf7fa3f246a0a49555fcd729c5c8398",
+      "lines": 143,
+      "configuration_reference": false
+    },
+    "iTransformer/layers/SelfAttention_Family.py": {
+      "sha256": "38ac67428d528b8e145e4944ca059b40629a8446c891142602d5aaadc38dfd9e",
+      "lines": 331,
+      "configuration_reference": false
+    },
+    "iTransformer/layers/Transformer_EncDec.py": {
+      "sha256": "985c31f4ae187b08afaa9663dc960a40544b2ec33ab55389ceab3930edc1ce02",
+      "lines": 134,
+      "configuration_reference": false
+    },
+    "iTransformer/model/iTransformer.py": {
+      "sha256": "6f34777a5a12c253a293f79e7e1fd5b6f79ac100b443951e051e269e7e2542db",
+      "lines": 80,
+      "configuration_reference": false
+    },
+    "iTransformer/run.py": {
+      "sha256": "650873cfd6fee1f0415d4e8fd69943ad736fd1bab6495b640aa27b1a769f59f9",
+      "lines": 166,
+      "configuration_reference": true
+    },
+    "iTransformer/scripts/multivariate_forecasting/ETT/iTransformer_ETTh1.sh": {
+      "sha256": "81f8409cff60b754b45ed2e76133c7e3b6e585a50c8361f04fa3daf3b6997cc0",
+      "lines": 79,
+      "configuration_reference": true
+    },
+    "iTransformer/utils/timefeatures.py": {
+      "sha256": "319b3da2ef15ccae95162b1b4f4a9a0b0da63fa0062a7f6006a06dd567258d85",
+      "lines": 148,
+      "configuration_reference": false
+    }
+  },
+  "symbols": {
+    "iTransformer/data_provider/data_factory.py::data_provider": {
+      "path": "iTransformer/data_provider/data_factory.py",
+      "symbol": "data_provider",
+      "start": 16,
+      "end": 54,
+      "snippet": "def data_provider(args, flag):\n    Data = data_dict[args.data]\n    timeenc = 0 if args.embed != 'timeF' else 1\n\n    if flag == 'test':\n        shuffle_flag = False\n        drop_last = True\n        batch_size = 1  # bsz=1 for evaluation\n        freq = args.freq\n    elif flag == 'pred':\n        shuffle_flag = False\n        drop_last = False\n        batch_size = 1\n        freq = args.freq\n        Data = Dataset_Pred\n    else:\n        shuffle_flag = True\n        drop_last = True\n        batch_size = args.batch_size  # bsz for train and valid\n        freq = args.freq\n\n    data_set = Data(\n        root_path=args.root_path,\n        data_path=args.data_path,\n        flag=flag,\n        size=[args.seq_len, args.label_len, args.pred_len],\n        features=args.features,\n        target=args.target,\n        timeenc=timeenc,\n        freq=freq,\n    )\n    print(flag, len(data_set))\n    data_loader = DataLoader(\n        data_set,\n        batch_size=batch_size,\n        shuffle=shuffle_flag,\n        num_workers=args.num_workers,\n        drop_last=drop_last)\n    return data_set, data_loader",
+      "evidence_id": "E001"
+    },
+    "iTransformer/data_provider/data_loader.py::Dataset_ETT_hour.__read_data__": {
+      "path": "iTransformer/data_provider/data_loader.py",
+      "symbol": "Dataset_ETT_hour.__read_data__",
+      "start": 42,
+      "end": 79,
+      "snippet": "    def __read_data__(self):\n        self.scaler = StandardScaler()\n        df_raw = pd.read_csv(os.path.join(self.root_path,\n                                          self.data_path))\n\n        border1s = [0, 12 * 30 * 24 - self.seq_len, 12 * 30 * 24 + 4 * 30 * 24 - self.seq_len]\n        border2s = [12 * 30 * 24, 12 * 30 * 24 + 4 * 30 * 24, 12 * 30 * 24 + 8 * 30 * 24]\n        border1 = border1s[self.set_type]\n        border2 = border2s[self.set_type]\n\n        if self.features == 'M' or self.features == 'MS':\n            cols_data = df_raw.columns[1:]\n            df_data = df_raw[cols_data]\n        elif self.features == 'S':\n            df_data = df_raw[[self.target]]\n\n        if self.scale:\n            train_data = df_data[border1s[0]:border2s[0]]\n            self.scaler.fit(train_data.values)\n            data = self.scaler.transform(df_data.values)\n        else:\n            data = df_data.values\n\n        df_stamp = df_raw[['date']][border1:border2]\n        df_stamp['date'] = pd.to_datetime(df_stamp.date)\n        if self.timeenc == 0:\n            df_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)\n            df_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)\n            df_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)\n            df_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)\n            data_stamp = df_stamp.drop(['date'], 1).values\n        elif self.timeenc == 1:\n            data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)\n            data_stamp = data_stamp.transpose(1, 0)\n\n        self.data_x = data[border1:border2]\n        self.data_y = data[border1:border2]\n        self.data_stamp = data_stamp",
+      "evidence_id": "E002"
+    },
+    "iTransformer/layers/Embed.py::DataEmbedding_inverted": {
+      "path": "iTransformer/layers/Embed.py",
+      "symbol": "DataEmbedding_inverted",
+      "start": 127,
+      "end": 142,
+      "snippet": "class DataEmbedding_inverted(nn.Module):\n    def __init__(self, c_in, d_model, embed_type='fixed', freq='h', dropout=0.1):\n        super(DataEmbedding_inverted, self).__init__()\n        self.value_embedding = nn.Linear(c_in, d_model)\n        self.dropout = nn.Dropout(p=dropout)\n\n    def forward(self, x, x_mark):\n        x = x.permute(0, 2, 1)\n        # x: [Batch Variate Time]\n        if x_mark is None:\n            x = self.value_embedding(x)\n        else:\n            # the potential to take covariates (e.g. timestamps) as tokens\n            x = self.value_embedding(torch.cat([x, x_mark.permute(0, 2, 1)], 1)) \n        # x: [Batch Variate d_model]\n        return self.dropout(x)",
+      "evidence_id": "E003"
+    },
+    "iTransformer/layers/Embed.py::DataEmbedding_inverted.__init__": {
+      "path": "iTransformer/layers/Embed.py",
+      "symbol": "DataEmbedding_inverted.__init__",
+      "start": 128,
+      "end": 131,
+      "snippet": "    def __init__(self, c_in, d_model, embed_type='fixed', freq='h', dropout=0.1):\n        super(DataEmbedding_inverted, self).__init__()\n        self.value_embedding = nn.Linear(c_in, d_model)\n        self.dropout = nn.Dropout(p=dropout)",
+      "evidence_id": "E004"
+    },
+    "iTransformer/layers/Embed.py::DataEmbedding_inverted.forward": {
+      "path": "iTransformer/layers/Embed.py",
+      "symbol": "DataEmbedding_inverted.forward",
+      "start": 133,
+      "end": 142,
+      "snippet": "    def forward(self, x, x_mark):\n        x = x.permute(0, 2, 1)\n        # x: [Batch Variate Time]\n        if x_mark is None:\n            x = self.value_embedding(x)\n        else:\n            # the potential to take covariates (e.g. timestamps) as tokens\n            x = self.value_embedding(torch.cat([x, x_mark.permute(0, 2, 1)], 1)) \n        # x: [Batch Variate d_model]\n        return self.dropout(x)",
+      "evidence_id": "E005"
+    },
+    "iTransformer/layers/SelfAttention_Family.py::FullAttention": {
+      "path": "iTransformer/layers/SelfAttention_Family.py",
+      "symbol": "FullAttention",
+      "start": 134,
+      "end": 161,
+      "snippet": "class FullAttention(nn.Module):\n    def __init__(self, mask_flag=True, factor=5, scale=None, attention_dropout=0.1, output_attention=False):\n        super(FullAttention, self).__init__()\n        self.scale = scale\n        self.mask_flag = mask_flag\n        self.output_attention = output_attention\n        self.dropout = nn.Dropout(attention_dropout)\n\n    def forward(self, queries, keys, values, attn_mask, tau=None, delta=None):\n        B, L, H, E = queries.shape\n        _, S, _, D = values.shape\n        scale = self.scale or 1. / sqrt(E)\n\n        scores = torch.einsum(\"blhe,bshe->bhls\", queries, keys)\n\n        if self.mask_flag:\n            if attn_mask is None:\n                attn_mask = TriangularCausalMask(B, L, device=queries.device)\n\n            scores.masked_fill_(attn_mask.mask, -np.inf)\n\n        A = self.dropout(torch.softmax(scale * scores, dim=-1))\n        V = torch.einsum(\"bhls,bshd->blhd\", A, values)\n\n        if self.output_attention:\n            return (V.contiguous(), A)\n        else:\n            return (V.contiguous(), None)",
+      "evidence_id": "E009"
+    },
+    "iTransformer/layers/SelfAttention_Family.py::FullAttention.__init__": {
+      "path": "iTransformer/layers/SelfAttention_Family.py",
+      "symbol": "FullAttention.__init__",
+      "start": 135,
+      "end": 140,
+      "snippet": "    def __init__(self, mask_flag=True, factor=5, scale=None, attention_dropout=0.1, output_attention=False):\n        super(FullAttention, self).__init__()\n        self.scale = scale\n        self.mask_flag = mask_flag\n        self.output_attention = output_attention\n        self.dropout = nn.Dropout(attention_dropout)",
+      "evidence_id": "E010"
+    },
+    "iTransformer/layers/SelfAttention_Family.py::FullAttention.forward": {
+      "path": "iTransformer/layers/SelfAttention_Family.py",
+      "symbol": "FullAttention.forward",
+      "start": 142,
+      "end": 161,
+      "snippet": "    def forward(self, queries, keys, values, attn_mask, tau=None, delta=None):\n        B, L, H, E = queries.shape\n        _, S, _, D = values.shape\n        scale = self.scale or 1. / sqrt(E)\n\n        scores = torch.einsum(\"blhe,bshe->bhls\", queries, keys)\n\n        if self.mask_flag:\n            if attn_mask is None:\n                attn_mask = TriangularCausalMask(B, L, device=queries.device)\n\n            scores.masked_fill_(attn_mask.mask, -np.inf)\n\n        A = self.dropout(torch.softmax(scale * scores, dim=-1))\n        V = torch.einsum(\"bhls,bshd->blhd\", A, values)\n\n        if self.output_attention:\n            return (V.contiguous(), A)\n        else:\n            return (V.contiguous(), None)",
+      "evidence_id": "E011"
+    },
+    "iTransformer/layers/SelfAttention_Family.py::AttentionLayer": {
+      "path": "iTransformer/layers/SelfAttention_Family.py",
+      "symbol": "AttentionLayer",
+      "start": 266,
+      "end": 300,
+      "snippet": "class AttentionLayer(nn.Module):\n    def __init__(self, attention, d_model, n_heads, d_keys=None,\n                 d_values=None):\n        super(AttentionLayer, self).__init__()\n\n        d_keys = d_keys or (d_model // n_heads)\n        d_values = d_values or (d_model // n_heads)\n\n        self.inner_attention = attention\n        self.query_projection = nn.Linear(d_model, d_keys * n_heads)\n        self.key_projection = nn.Linear(d_model, d_keys * n_heads)\n        self.value_projection = nn.Linear(d_model, d_values * n_heads)\n        self.out_projection = nn.Linear(d_values * n_heads, d_model)\n        self.n_heads = n_heads\n\n    def forward(self, queries, keys, values, attn_mask, tau=None, delta=None):\n        B, L, _ = queries.shape\n        _, S, _ = keys.shape\n        H = self.n_heads\n\n        queries = self.query_projection(queries).view(B, L, H, -1)\n        keys = self.key_projection(keys).view(B, S, H, -1)\n        values = self.value_projection(values).view(B, S, H, -1)\n\n        out, attn = self.inner_attention(\n            queries,\n            keys,\n            values,\n            attn_mask,\n            tau=tau,\n            delta=delta\n        )\n        out = out.view(B, L, -1)\n\n        return self.out_projection(out), attn",
+      "evidence_id": "E006"
+    },
+    "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.__init__": {
+      "path": "iTransformer/layers/SelfAttention_Family.py",
+      "symbol": "AttentionLayer.__init__",
+      "start": 267,
+      "end": 279,
+      "snippet": "    def __init__(self, attention, d_model, n_heads, d_keys=None,\n                 d_values=None):\n        super(AttentionLayer, self).__init__()\n\n        d_keys = d_keys or (d_model // n_heads)\n        d_values = d_values or (d_model // n_heads)\n\n        self.inner_attention = attention\n        self.query_projection = nn.Linear(d_model, d_keys * n_heads)\n        self.key_projection = nn.Linear(d_model, d_keys * n_heads)\n        self.value_projection = nn.Linear(d_model, d_values * n_heads)\n        self.out_projection = nn.Linear(d_values * n_heads, d_model)\n        self.n_heads = n_heads",
+      "evidence_id": "E007"
+    },
+    "iTransformer/layers/SelfAttention_Family.py::AttentionLayer.forward": {
+      "path": "iTransformer/layers/SelfAttention_Family.py",
+      "symbol": "AttentionLayer.forward",
+      "start": 281,
+      "end": 300,
+      "snippet": "    def forward(self, queries, keys, values, attn_mask, tau=None, delta=None):\n        B, L, _ = queries.shape\n        _, S, _ = keys.shape\n        H = self.n_heads\n\n        queries = self.query_projection(queries).view(B, L, H, -1)\n        keys = self.key_projection(keys).view(B, S, H, -1)\n        values = self.value_projection(values).view(B, S, H, -1)\n\n        out, attn = self.inner_attention(\n            queries,\n            keys,\n            values,\n            attn_mask,\n            tau=tau,\n            delta=delta\n        )\n        out = out.view(B, L, -1)\n\n        return self.out_projection(out), attn",
+      "evidence_id": "E008"
+    },
+    "iTransformer/layers/Transformer_EncDec.py::EncoderLayer": {
+      "path": "iTransformer/layers/Transformer_EncDec.py",
+      "symbol": "EncoderLayer",
+      "start": 26,
+      "end": 50,
+      "snippet": "class EncoderLayer(nn.Module):\n    def __init__(self, attention, d_model, d_ff=None, dropout=0.1, activation=\"relu\"):\n        super(EncoderLayer, self).__init__()\n        d_ff = d_ff or 4 * d_model\n        self.attention = attention\n        self.conv1 = nn.Conv1d(in_channels=d_model, out_channels=d_ff, kernel_size=1)\n        self.conv2 = nn.Conv1d(in_channels=d_ff, out_channels=d_model, kernel_size=1)\n        self.norm1 = nn.LayerNorm(d_model)\n        self.norm2 = nn.LayerNorm(d_model)\n        self.dropout = nn.Dropout(dropout)\n        self.activation = F.relu if activation == \"relu\" else F.gelu\n\n    def forward(self, x, attn_mask=None, tau=None, delta=None):\n        new_x, attn = self.attention(\n            x, x, x,\n            attn_mask=attn_mask,\n            tau=tau, delta=delta\n        )\n        x = x + self.dropout(new_x)\n\n        y = x = self.norm1(x)\n        y = self.dropout(self.activation(self.conv1(y.transpose(-1, 1))))\n        y = self.dropout(self.conv2(y).transpose(-1, 1))\n\n        return self.norm2(x + y), attn",
+      "evidence_id": "E015"
+    },
+    "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.__init__": {
+      "path": "iTransformer/layers/Transformer_EncDec.py",
+      "symbol": "EncoderLayer.__init__",
+      "start": 27,
+      "end": 36,
+      "snippet": "    def __init__(self, attention, d_model, d_ff=None, dropout=0.1, activation=\"relu\"):\n        super(EncoderLayer, self).__init__()\n        d_ff = d_ff or 4 * d_model\n        self.attention = attention\n        self.conv1 = nn.Conv1d(in_channels=d_model, out_channels=d_ff, kernel_size=1)\n        self.conv2 = nn.Conv1d(in_channels=d_ff, out_channels=d_model, kernel_size=1)\n        self.norm1 = nn.LayerNorm(d_model)\n        self.norm2 = nn.LayerNorm(d_model)\n        self.dropout = nn.Dropout(dropout)\n        self.activation = F.relu if activation == \"relu\" else F.gelu",
+      "evidence_id": "E016"
+    },
+    "iTransformer/layers/Transformer_EncDec.py::EncoderLayer.forward": {
+      "path": "iTransformer/layers/Transformer_EncDec.py",
+      "symbol": "EncoderLayer.forward",
+      "start": 38,
+      "end": 50,
+      "snippet": "    def forward(self, x, attn_mask=None, tau=None, delta=None):\n        new_x, attn = self.attention(\n            x, x, x,\n            attn_mask=attn_mask,\n            tau=tau, delta=delta\n        )\n        x = x + self.dropout(new_x)\n\n        y = x = self.norm1(x)\n        y = self.dropout(self.activation(self.conv1(y.transpose(-1, 1))))\n        y = self.dropout(self.conv2(y).transpose(-1, 1))\n\n        return self.norm2(x + y), attn",
+      "evidence_id": "E017"
+    },
+    "iTransformer/layers/Transformer_EncDec.py::Encoder": {
+      "path": "iTransformer/layers/Transformer_EncDec.py",
+      "symbol": "Encoder",
+      "start": 53,
+      "end": 79,
+      "snippet": "class Encoder(nn.Module):\n    def __init__(self, attn_layers, conv_layers=None, norm_layer=None):\n        super(Encoder, self).__init__()\n        self.attn_layers = nn.ModuleList(attn_layers)\n        self.conv_layers = nn.ModuleList(conv_layers) if conv_layers is not None else None\n        self.norm = norm_layer\n\n    def forward(self, x, attn_mask=None, tau=None, delta=None):\n        # x [B, L, D]\n        attns = []\n        if self.conv_layers is not None:\n            for i, (attn_layer, conv_layer) in enumerate(zip(self.attn_layers, self.conv_layers)):\n                delta = delta if i == 0 else None\n                x, attn = attn_layer(x, attn_mask=attn_mask, tau=tau, delta=delta)\n                x = conv_layer(x)\n                attns.append(attn)\n            x, attn = self.attn_layers[-1](x, tau=tau, delta=None)\n            attns.append(attn)\n        else:\n            for attn_layer in self.attn_layers:\n                x, attn = attn_layer(x, attn_mask=attn_mask, tau=tau, delta=delta)\n                attns.append(attn)\n\n        if self.norm is not None:\n            x = self.norm(x)\n\n        return x, attns",
+      "evidence_id": "E012"
+    },
+    "iTransformer/layers/Transformer_EncDec.py::Encoder.__init__": {
+      "path": "iTransformer/layers/Transformer_EncDec.py",
+      "symbol": "Encoder.__init__",
+      "start": 54,
+      "end": 58,
+      "snippet": "    def __init__(self, attn_layers, conv_layers=None, norm_layer=None):\n        super(Encoder, self).__init__()\n        self.attn_layers = nn.ModuleList(attn_layers)\n        self.conv_layers = nn.ModuleList(conv_layers) if conv_layers is not None else None\n        self.norm = norm_layer",
+      "evidence_id": "E013"
+    },
+    "iTransformer/layers/Transformer_EncDec.py::Encoder.forward": {
+      "path": "iTransformer/layers/Transformer_EncDec.py",
+      "symbol": "Encoder.forward",
+      "start": 60,
+      "end": 79,
+      "snippet": "    def forward(self, x, attn_mask=None, tau=None, delta=None):\n        # x [B, L, D]\n        attns = []\n        if self.conv_layers is not None:\n            for i, (attn_layer, conv_layer) in enumerate(zip(self.attn_layers, self.conv_layers)):\n                delta = delta if i == 0 else None\n                x, attn = attn_layer(x, attn_mask=attn_mask, tau=tau, delta=delta)\n                x = conv_layer(x)\n                attns.append(attn)\n            x, attn = self.attn_layers[-1](x, tau=tau, delta=None)\n            attns.append(attn)\n        else:\n            for attn_layer in self.attn_layers:\n                x, attn = attn_layer(x, attn_mask=attn_mask, tau=tau, delta=delta)\n                attns.append(attn)\n\n        if self.norm is not None:\n            x = self.norm(x)\n\n        return x, attns",
+      "evidence_id": "E014"
+    },
+    "iTransformer/model/iTransformer.py::Model": {
+      "path": "iTransformer/model/iTransformer.py",
+      "symbol": "Model",
+      "start": 10,
+      "end": 80,
+      "snippet": "class Model(nn.Module):\n    \"\"\"\n    Paper link: https://arxiv.org/abs/2310.06625\n    \"\"\"\n\n    def __init__(self, configs):\n        super(Model, self).__init__()\n        self.seq_len = configs.seq_len\n        self.pred_len = configs.pred_len\n        self.output_attention = configs.output_attention\n        self.use_norm = configs.use_norm\n        # Embedding\n        self.enc_embedding = DataEmbedding_inverted(configs.seq_len, configs.d_model, configs.embed, configs.freq,\n                                                    configs.dropout)\n        self.class_strategy = configs.class_strategy\n        # Encoder-only architecture\n        self.encoder = Encoder(\n            [\n                EncoderLayer(\n                    AttentionLayer(\n                        FullAttention(False, configs.factor, attention_dropout=configs.dropout,\n                                      output_attention=configs.output_attention), configs.d_model, configs.n_heads),\n                    configs.d_model,\n                    configs.d_ff,\n                    dropout=configs.dropout,\n                    activation=configs.activation\n                ) for l in range(configs.e_layers)\n            ],\n            norm_layer=torch.nn.LayerNorm(configs.d_model)\n        )\n        self.projector = nn.Linear(configs.d_model, configs.pred_len, bias=True)\n\n    def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):\n        if self.use_norm:\n            # Normalization from Non-stationary Transformer\n            means = x_enc.mean(1, keepdim=True).detach()\n            x_enc = x_enc - means\n            stdev = torch.sqrt(torch.var(x_enc, dim=1, keepdim=True, unbiased=False) + 1e-5)\n            x_enc /= stdev\n\n        _, _, N = x_enc.shape # B L N\n        # B: batch_size;    E: d_model; \n        # L: seq_len;       S: pred_len;\n        # N: number of variate (tokens), can also includes covariates\n\n        # Embedding\n        # B L N -> B N E                (B L N -> B L E in the vanilla Transformer)\n        enc_out = self.enc_embedding(x_enc, x_mark_enc) # covariates (e.g timestamp) can be also embedded as tokens\n        \n        # B N E -> B N E                (B L E -> B L E in the vanilla Transformer)\n        # the dimensions of embedded time series has been inverted, and then processed by native attn, layernorm and ffn modules\n        enc_out, attns = self.encoder(enc_out, attn_mask=None)\n\n        # B N E -> B N S -> B S N \n        dec_out = self.projector(enc_out).permute(0, 2, 1)[:, :, :N] # filter the covariates\n\n        if self.use_norm:\n            # De-Normalization from Non-stationary Transformer\n            dec_out = dec_out * (stdev[:, 0, :].unsqueeze(1).repeat(1, self.pred_len, 1))\n            dec_out = dec_out + (means[:, 0, :].unsqueeze(1).repeat(1, self.pred_len, 1))\n\n        return dec_out, attns\n\n\n    def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):\n        dec_out, attns = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec)\n        \n        if self.output_attention:\n            return dec_out[:, -self.pred_len:, :], attns\n        else:\n            return dec_out[:, -self.pred_len:, :]  # [B, L, D]",
+      "evidence_id": "E018"
+    },
+    "iTransformer/model/iTransformer.py::Model.__init__": {
+      "path": "iTransformer/model/iTransformer.py",
+      "symbol": "Model.__init__",
+      "start": 15,
+      "end": 40,
+      "snippet": "    def __init__(self, configs):\n        super(Model, self).__init__()\n        self.seq_len = configs.seq_len\n        self.pred_len = configs.pred_len\n        self.output_attention = configs.output_attention\n        self.use_norm = configs.use_norm\n        # Embedding\n        self.enc_embedding = DataEmbedding_inverted(configs.seq_len, configs.d_model, configs.embed, configs.freq,\n                                                    configs.dropout)\n        self.class_strategy = configs.class_strategy\n        # Encoder-only architecture\n        self.encoder = Encoder(\n            [\n                EncoderLayer(\n                    AttentionLayer(\n                        FullAttention(False, configs.factor, attention_dropout=configs.dropout,\n                                      output_attention=configs.output_attention), configs.d_model, configs.n_heads),\n                    configs.d_model,\n                    configs.d_ff,\n                    dropout=configs.dropout,\n                    activation=configs.activation\n                ) for l in range(configs.e_layers)\n            ],\n            norm_layer=torch.nn.LayerNorm(configs.d_model)\n        )\n        self.projector = nn.Linear(configs.d_model, configs.pred_len, bias=True)",
+      "evidence_id": "E019"
+    },
+    "iTransformer/model/iTransformer.py::Model.forecast": {
+      "path": "iTransformer/model/iTransformer.py",
+      "symbol": "Model.forecast",
+      "start": 42,
+      "end": 71,
+      "snippet": "    def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):\n        if self.use_norm:\n            # Normalization from Non-stationary Transformer\n            means = x_enc.mean(1, keepdim=True).detach()\n            x_enc = x_enc - means\n            stdev = torch.sqrt(torch.var(x_enc, dim=1, keepdim=True, unbiased=False) + 1e-5)\n            x_enc /= stdev\n\n        _, _, N = x_enc.shape # B L N\n        # B: batch_size;    E: d_model; \n        # L: seq_len;       S: pred_len;\n        # N: number of variate (tokens), can also includes covariates\n\n        # Embedding\n        # B L N -> B N E                (B L N -> B L E in the vanilla Transformer)\n        enc_out = self.enc_embedding(x_enc, x_mark_enc) # covariates (e.g timestamp) can be also embedded as tokens\n        \n        # B N E -> B N E                (B L E -> B L E in the vanilla Transformer)\n        # the dimensions of embedded time series has been inverted, and then processed by native attn, layernorm and ffn modules\n        enc_out, attns = self.encoder(enc_out, attn_mask=None)\n\n        # B N E -> B N S -> B S N \n        dec_out = self.projector(enc_out).permute(0, 2, 1)[:, :, :N] # filter the covariates\n\n        if self.use_norm:\n            # De-Normalization from Non-stationary Transformer\n            dec_out = dec_out * (stdev[:, 0, :].unsqueeze(1).repeat(1, self.pred_len, 1))\n            dec_out = dec_out + (means[:, 0, :].unsqueeze(1).repeat(1, self.pred_len, 1))\n\n        return dec_out, attns",
+      "evidence_id": "E020"
+    },
+    "iTransformer/model/iTransformer.py::Model.forward": {
+      "path": "iTransformer/model/iTransformer.py",
+      "symbol": "Model.forward",
+      "start": 74,
+      "end": 80,
+      "snippet": "    def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):\n        dec_out, attns = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec)\n        \n        if self.output_attention:\n            return dec_out[:, -self.pred_len:, :], attns\n        else:\n            return dec_out[:, -self.pred_len:, :]  # [B, L, D]",
+      "evidence_id": "E021"
+    },
+    "iTransformer/utils/timefeatures.py::time_features_from_frequency_str": {
+      "path": "iTransformer/utils/timefeatures.py",
+      "symbol": "time_features_from_frequency_str",
+      "start": 90,
+      "end": 144,
+      "snippet": "def time_features_from_frequency_str(freq_str: str) -> List[TimeFeature]:\n    \"\"\"\n    Returns a list of time features that will be appropriate for the given frequency string.\n    Parameters\n    ----------\n    freq_str\n        Frequency string of the form [multiple][granularity] such as \"12H\", \"5min\", \"1D\" etc.\n    \"\"\"\n\n    features_by_offsets = {\n        offsets.YearEnd: [],\n        offsets.QuarterEnd: [MonthOfYear],\n        offsets.MonthEnd: [MonthOfYear],\n        offsets.Week: [DayOfMonth, WeekOfYear],\n        offsets.Day: [DayOfWeek, DayOfMonth, DayOfYear],\n        offsets.BusinessDay: [DayOfWeek, DayOfMonth, DayOfYear],\n        offsets.Hour: [HourOfDay, DayOfWeek, DayOfMonth, DayOfYear],\n        offsets.Minute: [\n            MinuteOfHour,\n            HourOfDay,\n            DayOfWeek,\n            DayOfMonth,\n            DayOfYear,\n        ],\n        offsets.Second: [\n            SecondOfMinute,\n            MinuteOfHour,\n            HourOfDay,\n            DayOfWeek,\n            DayOfMonth,\n            DayOfYear,\n        ],\n    }\n\n    offset = to_offset(freq_str)\n\n    for offset_type, feature_classes in features_by_offsets.items():\n        if isinstance(offset, offset_type):\n            return [cls() for cls in feature_classes]\n\n    supported_freq_msg = f\"\"\"\n    Unsupported frequency {freq_str}\n    The following frequencies are supported:\n        Y   - yearly\n            alias: A\n        M   - monthly\n        W   - weekly\n        D   - daily\n        B   - business days\n        H   - hourly\n        T   - minutely\n            alias: min\n        S   - secondly\n    \"\"\"\n    raise RuntimeError(supported_freq_msg)",
+      "evidence_id": "E022"
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "task": "AGNews 4-class text classification",
+  "mode": "eval",
+  "selected_caller": "compute_accuracy: per-batch prediction segment",
+  "vocabulary_size": "V=len(TEXT.vocab)",
+  "vocabulary_max_size_setting": 5000,
+  "embedding_dim": 128,
+  "hidden_dim": 256,
+  "output_dim": 4,
+  "num_layers": 2,
+  "bidirectional": true,
+  "batch_first": false,
+  "bias": true,
+  "recurrent_dropout": 0.5,
+  "external_dropout": 0.5,
+  "external_dropout_calls": 3,
+  "recurrent_dropout_active": false,
+  "external_dropout_active": false,
+  "batch_size_setting": 128,
+  "enforce_sorted": "default True",
+  "last_layer_hidden_indices": [
+    2,
+    3
+  ],
+  "concatenation_width": 512,
+  "classifier_widths": [
+    512,
+    64,
+    4
+  ],
+  "classifier_first_width_source": "hidden_dim * num_layers",
+  "return_value": "[B,4] logits",
+  "caller_output": "torch.max(logits,1) indices",
+  "training_loss": "cross_entropy outside forward",
+  "vocabulary_vector_reference": "glove.6B.100d, not copied into Embedding",
+  "pretrained_embedding": false,
+  "recurrent_internals": "opaque PyTorch nn.LSTM library boundary"
+}

@@ -1,0 +1,625 @@
+{
+  "schema": "module-root-independent-source-review/1",
+  "reviewer": "vision adapter agent independent of root implementation",
+  "passed": true,
+  "source_executed": false,
+  "model_executed": false,
+  "scope": "22 fixed flow/generative/ordinal module profiles; direct source operand and parameter-identity review, followed by fresh IR endpoint assertions",
+  "reviewed_module_count": 22,
+  "modules": [
+    {
+      "module": "glow_actnorm",
+      "passed": true,
+      "source": "glow-modules/model.py",
+      "source_sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+      "reviewed_facts": [
+        "loc/scale are learned Parameters; initialized is uint8 buffer; one-time no_grad statistics update.",
+        "Selected forward uses scale*(input+loc), with scalar H*W log determinant separate from data output."
+      ],
+      "source_symbols": [
+        "ActNorm.__init__",
+        "ActNorm.initialize",
+        "ActNorm.forward",
+        "ActNorm.reverse"
+      ],
+      "node_count": 16,
+      "edge_count": 17
+    },
+    {
+      "module": "glow_invconv",
+      "passed": true,
+      "source": "glow-modules/model.py",
+      "source_sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+      "reviewed_facts": [
+        "QR occurs only at construction; learned W is used by conv and float64 slogdet with float32 cast.",
+        "Independent convolution and scalar log-volume outputs; no bias or spatial 3x3 kernel."
+      ],
+      "source_symbols": [
+        "InvConv2d.__init__",
+        "InvConv2d.forward",
+        "InvConv2d.reverse"
+      ],
+      "node_count": 12,
+      "edge_count": 13
+    },
+    {
+      "module": "glow_invconv_lu",
+      "passed": true,
+      "source": "glow-modules/model.py",
+      "source_sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+      "reviewed_facts": [
+        "Learned w_l,w_u,w_s are distinct from P/masks/sign/I buffers; P@(L)@(U) is compound weight materialization.",
+        "Scalar determinant reads log diagonal, while conv reads reconstructed weight; neither output feeds the other."
+      ],
+      "source_symbols": [
+        "InvConv2dLU.__init__",
+        "InvConv2dLU.forward",
+        "InvConv2dLU.reverse",
+        "InvConv2dLU.calc_weight"
+      ],
+      "node_count": 13,
+      "edge_count": 14
+    },
+    {
+      "module": "zero_conv",
+      "passed": true,
+      "source": "glow-modules/model.py",
+      "source_sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+      "reviewed_facts": [
+        "Constant-value-1 explicit padding precedes Conv(padding=0); zero initialization still yields learned weight/bias.",
+        "Output scaling is exp(scale*3), with independent learned scale."
+      ],
+      "source_symbols": [
+        "ZeroConv2d.__init__",
+        "ZeroConv2d.forward"
+      ],
+      "node_count": 10,
+      "edge_count": 10
+    },
+    {
+      "module": "glow_affine_coupling",
+      "passed": true,
+      "source": "glow-modules/model.py",
+      "source_sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+      "reviewed_facts": [
+        "Conditioner reads in_a only; untouched in_a rejoins updated in_b.",
+        "Source is sigmoid(log_s+2) and (in_b+t)*s, rather than exp(log_s) or scale-then-shift."
+      ],
+      "source_symbols": [
+        "AffineCoupling.__init__",
+        "AffineCoupling.forward",
+        "AffineCoupling.reverse",
+        "ZeroConv2d.__init__",
+        "ZeroConv2d.forward"
+      ],
+      "node_count": 25,
+      "edge_count": 34
+    },
+    {
+      "module": "glow_additive_coupling",
+      "passed": true,
+      "source": "glow-modules/model.py",
+      "source_sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+      "reviewed_facts": [
+        "Same retained-a conditioner boundary, source additive in_b+net_out.",
+        "Selected non-affine branch returns logdet=None, not a fabricated scalar-zero Jacobian tensor."
+      ],
+      "source_symbols": [
+        "AffineCoupling.__init__",
+        "AffineCoupling.forward",
+        "AffineCoupling.reverse",
+        "ZeroConv2d.__init__",
+        "ZeroConv2d.forward"
+      ],
+      "node_count": 19,
+      "edge_count": 22
+    },
+    {
+      "module": "glow_squeeze",
+      "passed": true,
+      "source": "glow-modules/model.py",
+      "source_sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+      "reviewed_facts": [
+        "Source view/permute/contiguous/view is parameter-free space-to-channel; output C*4,H/2,W/2.",
+        "Permutation is (0,1,3,5,2,4); reverse PixelShuffle was not substituted."
+      ],
+      "source_symbols": [
+        "Block.forward"
+      ],
+      "node_count": 11,
+      "edge_count": 11
+    },
+    {
+      "module": "glow_split_prior",
+      "passed": true,
+      "source": "glow-modules/model.py",
+      "source_sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+      "reviewed_facts": [
+        "Prior is conditioned on retained out, density evaluated on independent z_new.",
+        "Gaussian scale is log standard deviation, denominator exp(2*log_sd); kept tensor, latent and log probability are separate outputs."
+      ],
+      "source_symbols": [
+        "Block.__init__",
+        "Block.forward",
+        "ZeroConv2d.__init__",
+        "ZeroConv2d.forward",
+        "gaussian_log_p"
+      ],
+      "node_count": 16,
+      "edge_count": 19
+    },
+    {
+      "module": "masked_linear",
+      "passed": true,
+      "source": "density-flow-modules/flows.py",
+      "source_sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+      "reviewed_facts": [
+        "Actual masked W feeds F.linear; main bias True because constructor bias argument is not passed.",
+        "Conditional Linear is independent with bias False, degree mask is buffer rather than learned attention."
+      ],
+      "source_symbols": [
+        "MaskedLinear.__init__",
+        "MaskedLinear.forward",
+        "get_mask"
+      ],
+      "node_count": 13,
+      "edge_count": 12
+    },
+    {
+      "module": "made_affine",
+      "passed": true,
+      "source": "density-flow-modules/flows.py",
+      "source_sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+      "reviewed_facts": [
+        "Single joiner/trunk produces m,a; registered parameter paths joiner,trunk.1,trunk.3 are accurate.",
+        "Direct profile uses (inputs-m)*exp(-a); inverse is sequential coordinate iteration using same weights."
+      ],
+      "source_symbols": [
+        "MADE.__init__",
+        "MADE.forward",
+        "MaskedLinear.__init__",
+        "MaskedLinear.forward",
+        "get_mask"
+      ],
+      "node_count": 21,
+      "edge_count": 26
+    },
+    {
+      "module": "made_split",
+      "passed": true,
+      "source": "density-flow-modules/flows.py",
+      "source_sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+      "reviewed_facts": [
+        "Distinct s_ and t_ parameter namespaces; source s_ Tanh predicts m, t_ ReLU predicts a.",
+        "Selected pre_exp_tanh False branch is explicit; split networks cannot be drawn as shared heads."
+      ],
+      "source_symbols": [
+        "MADESplit.__init__",
+        "MADESplit.forward",
+        "MaskedLinear.__init__",
+        "MaskedLinear.forward",
+        "get_mask"
+      ],
+      "node_count": 25,
+      "edge_count": 30
+    },
+    {
+      "module": "flow_batchnorm",
+      "passed": true,
+      "source": "density-flow-modules/flows.py",
+      "source_sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+      "reviewed_facts": [
+        "Biased batch variance includes epsilon, with raw input and mean as separate operands; literal determinant shape [1].",
+        "Momentum weights the old running statistics; log_gamma/beta are Parameters while running mean/var are buffers."
+      ],
+      "source_symbols": [
+        "BatchNormFlow.__init__",
+        "BatchNormFlow.forward"
+      ],
+      "node_count": 16,
+      "edge_count": 20
+    },
+    {
+      "module": "realnvp_coupling",
+      "passed": true,
+      "source": "density-flow-modules/flows.py",
+      "source_sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+      "reviewed_facts": [
+        "Fixed ordinary tensor mask conditions both separate MLPs and their complementary output masks.",
+        "Source computes x*s+t, unlike Glow shift-then-scale; init(m) is not invoked by constructor."
+      ],
+      "source_symbols": [
+        "CouplingLayer.__init__",
+        "CouplingLayer.forward"
+      ],
+      "node_count": 20,
+      "edge_count": 27
+    },
+    {
+      "module": "sigmoid_bijector",
+      "passed": true,
+      "source": "density-flow-modules/flows.py",
+      "source_sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+      "reviewed_facts": [
+        "Sigmoid has data and summed log derivative outputs; direct/inverse branches remain explicit.",
+        "Historical Logit positional argument bug is recorded instead of silently corrected in the drawing."
+      ],
+      "source_symbols": [
+        "Sigmoid.forward",
+        "Logit.forward"
+      ],
+      "node_count": 10,
+      "edge_count": 9
+    },
+    {
+      "module": "spectral_norm_linear",
+      "passed": true,
+      "source": "biggan-modules/layers.py",
+      "source_sha256": "aaf26237cb86c7b0e8bdabc24e13d83e5253c0f969f16183155668e1b144f0e5",
+      "reviewed_facts": [
+        "Power vectors estimated under no_grad; scalar sigma still participates in weight autograd.",
+        "Training controls u/sv buffer writes, not W normalization; sv0 is logging only, new sigma is divisor."
+      ],
+      "source_symbols": [
+        "SN.__init__",
+        "SN.W_",
+        "SNLinear.__init__",
+        "SNLinear.forward",
+        "power_iteration",
+        "gram_schmidt",
+        "proj"
+      ],
+      "node_count": 15,
+      "edge_count": 19
+    },
+    {
+      "module": "manual_fused_bn",
+      "passed": true,
+      "source": "biggan-modules/layers.py",
+      "source_sha256": "aaf26237cb86c7b0e8bdabc24e13d83e5253c0f969f16183155668e1b144f0e5",
+      "reviewed_facts": [
+        "Statistics accumulated float32 then cast back; var=E[x^2]-E[x]^2 has no clamp.",
+        "gain/bias come from caller; fused arithmetic has distinct mean,var,gain,bias inputs and no invented running-state module."
+      ],
+      "source_symbols": [
+        "manual_bn",
+        "fused_bn"
+      ],
+      "node_count": 16,
+      "edge_count": 21
+    },
+    {
+      "module": "conditional_bn",
+      "passed": true,
+      "source": "biggan-modules/layers.py",
+      "source_sha256": "aaf26237cb86c7b0e8bdabc24e13d83e5253c0f969f16183155668e1b144f0e5",
+      "reviewed_facts": [
+        "Selected caller constructor nn.Linear yields independent gain and bias parameter families, gain has +1 offset.",
+        "F.batch_norm affine=None, literal momentum .1; GN typo path and other alternate branches excluded."
+      ],
+      "source_symbols": [
+        "ccbn.__init__",
+        "ccbn.forward"
+      ],
+      "node_count": 17,
+      "edge_count": 20
+    },
+    {
+      "module": "nonlocal_attention",
+      "passed": true,
+      "source": "biggan-modules/layers.py",
+      "source_sha256": "aaf26237cb86c7b0e8bdabc24e13d83e5253c0f969f16183155668e1b144f0e5",
+      "reviewed_facts": [
+        "theta positions 64, pooled phi/g positions16; four distinct SNConv weights, no sqrt(d) scaling.",
+        "Softmax axis -1; learned gamma initializes0; original x enters residual Add directly."
+      ],
+      "source_symbols": [
+        "Attention.__init__",
+        "Attention.forward",
+        "SNConv2d.__init__",
+        "SNConv2d.forward"
+      ],
+      "node_count": 23,
+      "edge_count": 33
+    },
+    {
+      "module": "coral_head",
+      "passed": true,
+      "source": "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORAL_cement.py",
+      "source_sha256": "b1a143b32d8dc27c8d8f9dbdb8b76476da5878ad0e9cfae42da9ea2bf4252b31",
+      "reviewed_facts": [
+        "Notebook local CoralLayer overrides import; one biasless16->1 score shared across4 thresholds.",
+        "Four learned biases initialize1,.75,.5,.25; initialization does not prove maintained training order."
+      ],
+      "source_symbols": [
+        "CoralLayer.__init__",
+        "CoralLayer.forward"
+      ],
+      "node_count": 9,
+      "edge_count": 8
+    },
+    {
+      "module": "corn_decoder",
+      "passed": true,
+      "source": "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORN_cement.py",
+      "source_sha256": "e4580084d1377b19d011018700a4cf0652eccbdbfe6700d32f1012a96e456821",
+      "reviewed_facts": [
+        "Actual notebook caller sigmoid(logits) followed by cumprod(dim=1); only probability decoder scope.",
+        "No invented CORN class or CORAL shared score; MLP weights excluded from the selected function boundary."
+      ],
+      "source_symbols": [
+        "__module__",
+        "MLP.__init__",
+        "MLP.forward"
+      ],
+      "node_count": 8,
+      "edge_count": 7
+    },
+    {
+      "module": "flow_sequential",
+      "passed": true,
+      "source": "density-flow-modules/flows.py",
+      "source_sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+      "reviewed_facts": [
+        "Selected Sigmoid->Reverse composition is declared constructor example rather than upstream instantiation claim.",
+        "Feature stream and accumulated logdet stream remain separate; inverse traverses same component instances in reverse order."
+      ],
+      "source_symbols": [
+        "FlowSequential.forward",
+        "Sigmoid.forward",
+        "Reverse.__init__",
+        "Reverse.forward"
+      ],
+      "node_count": 15,
+      "edge_count": 18
+    },
+    {
+      "module": "autoregressive_mask",
+      "passed": true,
+      "source": "density-flow-modules/flows.py",
+      "source_sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+      "reviewed_facts": [
+        "Source output mask degrees use hidden moduloD-1 and output moduloD minus1.",
+        "Comparison rows=output, columns=input, >= then float; get_mask returns tensor and caller alone registers buffer."
+      ],
+      "source_symbols": [
+        "get_mask"
+      ],
+      "node_count": 13,
+      "edge_count": 14
+    }
+  ],
+  "independent_assertions": [
+    {
+      "module": "glow_actnorm",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "glow_invconv",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "glow_invconv_lu",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "zero_conv",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "glow_affine_coupling",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "glow_additive_coupling",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "glow_squeeze",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "glow_split_prior",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "masked_linear",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "made_affine",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "made_split",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "flow_batchnorm",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "realnvp_coupling",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "sigmoid_bijector",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "spectral_norm_linear",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "manual_fused_bn",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "conditional_bn",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "nonlocal_attention",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "coral_head",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "corn_decoder",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "flow_sequential",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "autoregressive_mask",
+      "check": "Module scope with statically declared shape and no model execution",
+      "passed": true
+    },
+    {
+      "module": "glow_actnorm",
+      "check": "Initialization raw input independently feeds statistics, state feeds guard",
+      "passed": true
+    },
+    {
+      "module": "glow_actnorm",
+      "check": "Guard is control boundary, not fabricated input tensor",
+      "passed": true
+    },
+    {
+      "module": "flow_batchnorm",
+      "check": "Variance receives raw inputs independently of mean",
+      "passed": true
+    },
+    {
+      "module": "flow_batchnorm",
+      "check": "Normalization receives mean/variance; logdet receives variance only",
+      "passed": true
+    },
+    {
+      "module": "realnvp_coupling",
+      "check": "Both complementary output masks receive actual fixed mask operand",
+      "passed": true
+    },
+    {
+      "module": "spectral_norm_linear",
+      "check": "New vector and scalar sigma enter distinct state-write ports",
+      "passed": true
+    },
+    {
+      "module": "spectral_norm_linear",
+      "check": "State write declares actual vector and scalar bundle",
+      "passed": true
+    },
+    {
+      "module": "spectral_norm_linear",
+      "check": "Sigma receives weight independently of vector-estimation chain",
+      "passed": true
+    },
+    {
+      "module": "nonlocal_attention",
+      "check": "Retained x enters residual Add independently of attention-scaled output",
+      "passed": true
+    },
+    {
+      "module": "manual_fused_bn",
+      "check": "Each independent arithmetic operand reaches real target port",
+      "passed": true
+    },
+    {
+      "module": "flow_sequential",
+      "check": "Feature stream and logdet accumulator have distinct ports",
+      "passed": true
+    },
+    {
+      "module": "glow_actnorm",
+      "check": "Scalar determinant has explicit original spatial shape dependency",
+      "passed": true
+    },
+    {
+      "module": "glow_invconv",
+      "check": "Scalar determinant has explicit original spatial shape dependency",
+      "passed": true
+    },
+    {
+      "module": "glow_invconv_lu",
+      "check": "Scalar determinant has explicit original spatial shape dependency",
+      "passed": true
+    },
+    {
+      "module": "glow_affine_coupling",
+      "check": "Scalar determinant has explicit original spatial shape dependency",
+      "passed": true
+    },
+    {
+      "module": "autoregressive_mask",
+      "check": "Fixed output degree arrays reflect literal minus1 causal offset",
+      "passed": true
+    },
+    {
+      "module": "autoregressive_mask",
+      "check": "Greater-or-equal comparison and float cast preserve output-row orientation",
+      "passed": true
+    }
+  ],
+  "resolved_findings": [
+    {
+      "module": "glow_actnorm",
+      "finding": "Initialization control chain had no raw input operand for statistics.",
+      "resolution": "suppress_input_boundary plus x->stats:input and state->guard",
+      "status": "resolved"
+    },
+    {
+      "module": "flow_batchnorm",
+      "finding": "Variance chain consumed mean but omitted raw x.",
+      "resolution": "x->var:input plus explicit mean_var and var statistics ports",
+      "status": "resolved"
+    },
+    {
+      "module": "realnvp_coupling",
+      "finding": "Both complementary output masks lacked fixed mask operands.",
+      "resolution": "mask->smask:mask and mask->tmask:mask",
+      "status": "resolved"
+    },
+    {
+      "module": "spectral_norm_linear",
+      "finding": "Generic estimate->state edge conflated new vector with scalar singular value.",
+      "resolution": "remove generic edge; vectors->write:u and sigma->write:sv plus declared bundle",
+      "status": "resolved"
+    }
+  ],
+  "unresolved_findings": [],
+  "adapter_sha256": {
+    "module_adapters/root_definitions.py": "315ecb7e89de97cfc1fecfccad1ce2e28b4b2341cad3994156d6c86465c99037",
+    "module_adapters/root_support.py": "7160a52bf0ac223c9307f989fb3f651759e3da353912b37c40255298c7f662a0"
+  },
+  "limitations": [
+    "Review validates the explicitly selected profiles only; it is not arbitrary-source extraction.",
+    "IR bundle glyphs preserve compound operations; backend library kernels remain source API boundaries.",
+    "Visual validation and formal generated hashes are recorded by root; this report focuses on independent source semantics."
+  ]
+}

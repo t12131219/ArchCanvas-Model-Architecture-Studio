@@ -1,0 +1,469 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "simgnn_readout",
+  "profile": {
+    "filters_3": 8,
+    "node_count": "N",
+    "global_reduction": "mean nodes",
+    "attention_normalizer": "sigmoid, not Softmax",
+    "weighted_readout": "sum, not normalized mean",
+    "output_orientation": "[8,1]",
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "benedekrozemberczki/SimGNN",
+    "commit": "be3ee6193a7c286336260f6479a6aee8bdc56f8c",
+    "snapshot": "d3666eba597ebe6c5de1c3de3cbc2225d3aeeae9e82be33497c1ed0a9418e63a"
+  },
+  "nodes": [
+    {
+      "id": "simgnn_readout.root",
+      "label": "SimGNN graph attention readout / module only",
+      "kind": "group",
+      "source": [
+        "simgnn-modules/src/layers.py::AttentionModule.forward"
+      ],
+      "shape": "[8,1]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "simgnn_readout.embedding",
+          "simgnn_readout.weight"
+        ],
+        [
+          "simgnn_readout.module"
+        ],
+        [
+          "simgnn_readout.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "simgnn_readout.embedding",
+      "label": "Retained node embeddings X",
+      "kind": "input",
+      "source": [
+        "simgnn-modules/src/layers.py::AttentionModule.forward"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "parent": "simgnn_readout.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "simgnn_readout.weight",
+      "label": "Owned context weight W",
+      "kind": "parameter",
+      "source": [
+        "simgnn-modules/src/layers.py::AttentionModule.setup_weights"
+      ],
+      "shape": "[8,8]",
+      "detail": [],
+      "parameter": "weight_matrix",
+      "parent": "simgnn_readout.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "simgnn_readout.module",
+      "label": "SimGNN graph attention readout / operators",
+      "kind": "group",
+      "source": [
+        "simgnn-modules/src/layers.py::AttentionModule.forward"
+      ],
+      "shape": "[8,1]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "simgnn_readout.context"
+        ],
+        [
+          "simgnn_readout.score",
+          "simgnn_readout.transpose"
+        ],
+        [
+          "simgnn_readout.readout"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "simgnn_readout.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "simgnn_readout.context",
+      "label": "Mean projected global context",
+      "kind": "group",
+      "source": [
+        "simgnn-modules/src/layers.py::AttentionModule.forward"
+      ],
+      "shape": "[8,1]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "mode": "chain",
+      "parent": "simgnn_readout.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "simgnn_readout.context.mm",
+      "label": "Node embeddings @ W",
+      "kind": "matmul",
+      "source": [
+        "simgnn-modules/src/layers.py::AttentionModule.forward"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "expression": "torch.matmul(embedding, self.weight_matrix)",
+      "parent": "simgnn_readout.context",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "X",
+        "W"
+      ]
+    },
+    {
+      "id": "simgnn_readout.context.mean",
+      "label": "Mean over nodes / dim0",
+      "kind": "mean",
+      "source": [
+        "simgnn-modules/src/layers.py::AttentionModule.forward"
+      ],
+      "shape": "[8]",
+      "detail": [],
+      "dim": 0,
+      "expression": "torch.mean(torch.matmul(embedding, self.weight_matrix), dim=0)",
+      "parent": "simgnn_readout.context",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "simgnn_readout.context.tanh",
+      "label": "Tanh global context",
+      "kind": "tanh",
+      "source": [
+        "simgnn-modules/src/layers.py::AttentionModule.forward"
+      ],
+      "shape": "[8]",
+      "detail": [],
+      "parent": "simgnn_readout.context",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "simgnn_readout.context.view",
+      "label": "View column context",
+      "kind": "tensor",
+      "source": [
+        "simgnn-modules/src/layers.py::AttentionModule.forward"
+      ],
+      "shape": "[8,1]",
+      "detail": [],
+      "parent": "simgnn_readout.context",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "simgnn_readout.score",
+      "label": "Independent per-node gates",
+      "kind": "group",
+      "source": [
+        "simgnn-modules/src/layers.py::AttentionModule.forward"
+      ],
+      "shape": "[N,1]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "mode": "chain",
+      "parent": "simgnn_readout.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "simgnn_readout.score.mm",
+      "label": "SAME X @ context",
+      "kind": "matmul",
+      "source": [
+        "simgnn-modules/src/layers.py::AttentionModule.forward"
+      ],
+      "shape": "[N,1]",
+      "detail": [],
+      "parent": "simgnn_readout.score",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "X",
+        "context"
+      ]
+    },
+    {
+      "id": "simgnn_readout.score.sigmoid",
+      "label": "Sigmoid / NOT Softmax",
+      "kind": "sigmoid",
+      "source": [
+        "simgnn-modules/src/layers.py::AttentionModule.forward"
+      ],
+      "shape": "[N,1]",
+      "detail": [],
+      "normalization": "independent node gates; no Softmax",
+      "parent": "simgnn_readout.score",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "simgnn_readout.transpose",
+      "label": "Transpose SAME node embeddings",
+      "kind": "tensor",
+      "source": [
+        "simgnn-modules/src/layers.py::AttentionModule.forward"
+      ],
+      "shape": "[8,N]",
+      "detail": [],
+      "expression": "torch.t(embedding)",
+      "parent": "simgnn_readout.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "X"
+      ]
+    },
+    {
+      "id": "simgnn_readout.readout",
+      "label": "X.T @ sigmoid node weights",
+      "kind": "matmul",
+      "source": [
+        "simgnn-modules/src/layers.py::AttentionModule.forward"
+      ],
+      "shape": "[8,1]",
+      "detail": [],
+      "expression": "torch.mm(torch.t(embedding), sigmoid_scores)",
+      "ordered_operands": [
+        "embedding.T",
+        "sigmoid_scores"
+      ],
+      "parent": "simgnn_readout.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "X_transpose",
+        "node_weights"
+      ]
+    },
+    {
+      "id": "simgnn_readout.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "simgnn-modules/src/layers.py::AttentionModule.forward"
+      ],
+      "shape": "[8,1]",
+      "detail": [],
+      "parent": "simgnn_readout.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "simgnn_readout.context.mm:out->simgnn_readout.context.mean:in:tensor",
+      "src": "simgnn_readout.context.mm",
+      "dst": "simgnn_readout.context.mean",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "simgnn_readout.context.mean:out->simgnn_readout.context.tanh:in:tensor",
+      "src": "simgnn_readout.context.mean",
+      "dst": "simgnn_readout.context.tanh",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "simgnn_readout.context.tanh:out->simgnn_readout.context.view:in:tensor",
+      "src": "simgnn_readout.context.tanh",
+      "dst": "simgnn_readout.context.view",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "simgnn_readout.context.view:out->simgnn_readout.context:out:boundary",
+      "src": "simgnn_readout.context.view",
+      "dst": "simgnn_readout.context",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "simgnn_readout.score.mm:out->simgnn_readout.score.sigmoid:in:tensor",
+      "src": "simgnn_readout.score.mm",
+      "dst": "simgnn_readout.score.sigmoid",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "simgnn_readout.score.sigmoid:out->simgnn_readout.score:out:boundary",
+      "src": "simgnn_readout.score.sigmoid",
+      "dst": "simgnn_readout.score",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "simgnn_readout.embedding:out->simgnn_readout.context.mm:X:tensor",
+      "src": "simgnn_readout.embedding",
+      "dst": "simgnn_readout.context.mm",
+      "src_port": "out",
+      "dst_port": "X",
+      "role": "tensor"
+    },
+    {
+      "id": "simgnn_readout.weight:out->simgnn_readout.context.mm:W:parameter_operand",
+      "src": "simgnn_readout.weight",
+      "dst": "simgnn_readout.context.mm",
+      "src_port": "out",
+      "dst_port": "W",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "simgnn_readout.embedding:out->simgnn_readout.score.mm:X:retained_value",
+      "src": "simgnn_readout.embedding",
+      "dst": "simgnn_readout.score.mm",
+      "src_port": "out",
+      "dst_port": "X",
+      "role": "retained_value"
+    },
+    {
+      "id": "simgnn_readout.context.view:out->simgnn_readout.score.mm:context:tensor",
+      "src": "simgnn_readout.context.view",
+      "dst": "simgnn_readout.score.mm",
+      "src_port": "out",
+      "dst_port": "context",
+      "role": "tensor"
+    },
+    {
+      "id": "simgnn_readout.embedding:out->simgnn_readout.transpose:X:retained_value",
+      "src": "simgnn_readout.embedding",
+      "dst": "simgnn_readout.transpose",
+      "src_port": "out",
+      "dst_port": "X",
+      "role": "retained_value"
+    },
+    {
+      "id": "simgnn_readout.transpose:out->simgnn_readout.readout:X_transpose:tensor",
+      "src": "simgnn_readout.transpose",
+      "dst": "simgnn_readout.readout",
+      "src_port": "out",
+      "dst_port": "X_transpose",
+      "role": "tensor"
+    },
+    {
+      "id": "simgnn_readout.score.sigmoid:out->simgnn_readout.readout:node_weights:tensor",
+      "src": "simgnn_readout.score.sigmoid",
+      "dst": "simgnn_readout.readout",
+      "src_port": "out",
+      "dst_port": "node_weights",
+      "role": "tensor"
+    },
+    {
+      "id": "simgnn_readout.readout:out->simgnn_readout.output:in:tensor",
+      "src": "simgnn_readout.readout",
+      "dst": "simgnn_readout.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "One W[8,8] creates a mean projected global context, then Tanh. The ORIGINAL node embeddings independently compute sigmoid gates against this context.",
+    "Final representation is X.T @ sigmoid_scores, a weighted SUM. Sigmoid gates neither sum to one nor become Softmax attention.",
+    "The SAME original embedding appears in context projection, node scoring and final readout; the output is a column [8,1].",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not substitute graph GAT incoming edge Softmax, dot-product sequence attention or normalize the weighted readout."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

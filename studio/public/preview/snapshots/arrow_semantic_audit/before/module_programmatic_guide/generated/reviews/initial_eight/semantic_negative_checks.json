@@ -1,0 +1,841 @@
+{
+  "passed": true,
+  "groups": {
+    "frn_highway": {
+      "passed": true,
+      "source_contracts": [
+        "FRN AST H/W uncentered second moment",
+        "FRN AST original x and abs eps normalization",
+        "FRN AST two-tensor learned threshold",
+        "FRN AST three normal_ Parameters and plain epsilon",
+        "FRN Notebook actual NiN redefinition",
+        "Highway AST three separately constructed ModuleLists",
+        "Highway AST supplied f and learned carry",
+        "Highway AST complementary same gate products and update",
+        "Highway AST sequential depth loop",
+        {
+          "module": "frn_tlu",
+          "positive_ir_checks": [
+            "selected C; no centered or running statistics",
+            "perB,C H,W second moment",
+            "original x and rsqrt both enter normalization Multiply",
+            "plain eps tensor attribute, abs epsilon",
+            "epsilon and second-moment add",
+            "three distinct normal-initialized Parameters",
+            "learned TLU elementwise max",
+            "parameter identity and operand endpoints",
+            "state panel introduces no tensor chain"
+          ]
+        },
+        {
+          "module": "highway",
+          "positive_ir_checks": [
+            "explicit module arguments",
+            "learned carry in six Linear modules",
+            "six distinct source ModuleList parameter identities",
+            "layer0 receives same current x at all3branches",
+            "layer0 same complementary gate",
+            "layer0 gate times nonlinear",
+            "layer0 complement times learned carry",
+            "layer0 explicit product sum",
+            "layer1 receives same current x at all3branches",
+            "layer1 same complementary gate",
+            "layer1 gate times nonlinear",
+            "layer1 complement times learned carry",
+            "layer1 explicit product sum",
+            "last layer output"
+          ]
+        }
+      ],
+      "negative_cases": [
+        {
+          "case": "ambiguous NiN binding",
+          "rejected": true,
+          "reason": "Ambiguous duplicate source symbol: NiN"
+        },
+        {
+          "module": "frn_tlu",
+          "case": "wrong FRN reduction axes",
+          "rejected": true,
+          "reason": "FRN: perB,C H,W second moment"
+        },
+        {
+          "module": "frn_tlu",
+          "case": "squared x used as retained input",
+          "rejected": true,
+          "reason": "FRN: original x and rsqrt both enter normalization Multiply"
+        },
+        {
+          "module": "frn_tlu",
+          "case": "tau wired into beta Add",
+          "rejected": true,
+          "reason": "FRN: parameter identity and operand endpoints"
+        },
+        {
+          "module": "frn_tlu",
+          "case": "epsilon incorrectly registered buffer",
+          "rejected": true,
+          "reason": "FRN: plain eps tensor attribute, abs epsilon"
+        },
+        {
+          "module": "frn_tlu",
+          "case": "TLU incorrectly reduced maximum",
+          "rejected": true,
+          "reason": "FRN: learned TLU elementwise max"
+        },
+        {
+          "module": "highway",
+          "case": "identity carry replaces learned value",
+          "rejected": true,
+          "reason": "Highway: layer0 complement times learned carry"
+        },
+        {
+          "module": "highway",
+          "case": "complement from wrong source",
+          "rejected": true,
+          "reason": "Highway: layer0 same complementary gate"
+        },
+        {
+          "module": "highway",
+          "case": "depth weights wrongly shared",
+          "rejected": true,
+          "reason": "Highway: six distinct source ModuleList parameter identities"
+        },
+        {
+          "module": "highway",
+          "case": "layer1 uses original input",
+          "rejected": true,
+          "reason": "Highway: layer1 receives same current x at all3branches"
+        }
+      ],
+      "model_executed": false
+    },
+    "inception_shuffle": {
+      "schema": "module-inception-shuffle-checks/1",
+      "passed": true,
+      "source_executed": false,
+      "modules": [
+        {
+          "module": "inception_a",
+          "passed": true,
+          "model_executed": false,
+          "source_integrity": {
+            "files": 2,
+            "symbols": 8,
+            "nodes": 39,
+            "edges": 55,
+            "original_notebooks": 0,
+            "repository": "pytorch/vision",
+            "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020"
+          },
+          "source_contract": [
+            "AST attributes and seven exact kernels/channels",
+            "AST literal output list/order and cat dim1",
+            "AST BasicConv Conv/no-bias -> BN/eps.001 -> inplace ReLU"
+          ],
+          "semantic_checks": [
+            "explicit nonexecuted module scope",
+            "selected192/32/35 default BasicConv configuration",
+            "root contains input -> isolated module -> output",
+            "literal ordered four-field list, no Add or tuple dispatch",
+            "1x1 branch receives same x and preserves ordered collection slot",
+            "1x1 exact operation order",
+            "branch1x1 exact Conv channels/kernel/padding/no-bias",
+            "branch1x1 distinct scoped parameter identities",
+            "branch1x1 BN eps/defaults then inplace ReLU",
+            "branch1x1 Conv -> BN -> ReLU",
+            "branch1x1 preserved spatial shape",
+            "5x5 branch receives same x and preserves ordered collection slot",
+            "5x5 exact operation order",
+            "branch5x5_1 exact Conv channels/kernel/padding/no-bias",
+            "branch5x5_1 distinct scoped parameter identities",
+            "branch5x5_1 BN eps/defaults then inplace ReLU",
+            "branch5x5_1 Conv -> BN -> ReLU",
+            "branch5x5_1 preserved spatial shape",
+            "branch5x5_2 exact Conv channels/kernel/padding/no-bias",
+            "branch5x5_2 distinct scoped parameter identities",
+            "branch5x5_2 BN eps/defaults then inplace ReLU",
+            "branch5x5_2 Conv -> BN -> ReLU",
+            "branch5x5_2 preserved spatial shape",
+            "3x3dbl branch receives same x and preserves ordered collection slot",
+            "3x3dbl exact operation order",
+            "branch3x3dbl_1 exact Conv channels/kernel/padding/no-bias",
+            "branch3x3dbl_1 distinct scoped parameter identities",
+            "branch3x3dbl_1 BN eps/defaults then inplace ReLU",
+            "branch3x3dbl_1 Conv -> BN -> ReLU",
+            "branch3x3dbl_1 preserved spatial shape",
+            "branch3x3dbl_2 exact Conv channels/kernel/padding/no-bias",
+            "branch3x3dbl_2 distinct scoped parameter identities",
+            "branch3x3dbl_2 BN eps/defaults then inplace ReLU",
+            "branch3x3dbl_2 Conv -> BN -> ReLU",
+            "branch3x3dbl_2 preserved spatial shape",
+            "branch3x3dbl_3 exact Conv channels/kernel/padding/no-bias",
+            "branch3x3dbl_3 distinct scoped parameter identities",
+            "branch3x3dbl_3 BN eps/defaults then inplace ReLU",
+            "branch3x3dbl_3 Conv -> BN -> ReLU",
+            "branch3x3dbl_3 preserved spatial shape",
+            "pool branch receives same x and preserves ordered collection slot",
+            "pool exact operation order",
+            "branch_pool exact Conv channels/kernel/padding/no-bias",
+            "branch_pool distinct scoped parameter identities",
+            "branch_pool BN eps/defaults then inplace ReLU",
+            "branch_pool Conv -> BN -> ReLU",
+            "branch_pool preserved spatial shape",
+            "literal average-pool3/1/1 functional defaults",
+            "list -> channel Concat256 -> module output",
+            "seven Conv/BN pairs; fourteen separate learned parameter owners",
+            "no invented residual, classifier, MaxPool or input dispatch"
+          ],
+          "negative_cases": [
+            {
+              "case": "Concat changed to Add",
+              "rejected": true,
+              "error": "InceptionA: list -> channel Concat256 -> module output"
+            },
+            {
+              "case": "Wrong concat axis",
+              "rejected": true,
+              "error": "InceptionA: list -> channel Concat256 -> module output"
+            },
+            {
+              "case": "Wrong literal list order",
+              "rejected": true,
+              "error": "InceptionA: literal ordered four-field list, no Add or tuple dispatch"
+            },
+            {
+              "case": "AvgPool changed to MaxPool",
+              "rejected": true,
+              "error": "InceptionA: literal average-pool3/1/1 functional defaults"
+            },
+            {
+              "case": "5x5 replaced by3x3",
+              "rejected": true,
+              "error": "InceptionA: branch5x5_2 exact Conv channels/kernel/padding/no-bias"
+            },
+            {
+              "case": "BN eps changed",
+              "rejected": true,
+              "error": "InceptionA: branch1x1 BN eps/defaults then inplace ReLU"
+            },
+            {
+              "case": "Distinct branch parameter conflated",
+              "rejected": true,
+              "error": "InceptionA: branch3x3dbl_1 distinct scoped parameter identities"
+            },
+            {
+              "case": "Output changed to288 channels",
+              "rejected": true,
+              "error": "InceptionA: list -> channel Concat256 -> module output"
+            },
+            {
+              "case": "Same-input fork removed",
+              "rejected": true,
+              "error": "InceptionA: pool branch receives same x and preserves ordered collection slot"
+            }
+          ],
+          "source_sha256": "bed2e45c0ea37d0e9caa966b009fdfaa7750098b8c783456da470dea7cb3fa31",
+          "adapter_sha256": "29c7d7eb4b32847280e6dde0011854c13c252f2039b3aeafe55c134ebbd94e20"
+        },
+        {
+          "module": "channel_shuffle",
+          "passed": true,
+          "model_executed": false,
+          "source_integrity": {
+            "files": 2,
+            "symbols": 1,
+            "nodes": 9,
+            "edges": 11,
+            "original_notebooks": 0,
+            "repository": "pytorch/vision",
+            "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020"
+          },
+          "source_contract": [
+            "AST first view named axes",
+            "AST transpose(1,2).contiguous() exact composition",
+            "AST final view -1 and direct return"
+          ],
+          "semantic_checks": [
+            "explicit nonexecuted function/module scope",
+            "declared two-group24-channel8x8 input/output",
+            "root input -> single function -> output",
+            "first view splits channel axis into group and within-group axes",
+            "transpose1,2 exchanges group axes only",
+            "contiguous materialization preserves transposed logical shape",
+            "last view flattens swapped group axes to24 channels",
+            "exact view -> transpose -> contiguous -> view tensor flow",
+            "derived output-to-input channel map is a24-channel bijection",
+            "function scope contains no surrounding ShuffleNet operations or invented gather",
+            "all nodes are nonparameterized; no learned weight identities",
+            "declared input satisfies first view storage assumption"
+          ],
+          "negative_cases": [
+            {
+              "case": "Contiguous deleted",
+              "rejected": true,
+              "error": "'shuffle.contiguous'"
+            },
+            {
+              "case": "Wrong transpose axes",
+              "rejected": true,
+              "error": "ChannelShuffle: transpose1,2 exchanges group axes only"
+            },
+            {
+              "case": "groups changed to12",
+              "rejected": true,
+              "error": "ChannelShuffle: declared two-group24-channel8x8 input/output"
+            },
+            {
+              "case": "Swapped shape left unchanged",
+              "rejected": true,
+              "error": "ChannelShuffle: transpose1,2 exchanges group axes only"
+            },
+            {
+              "case": "Final inferred channel count changed",
+              "rejected": true,
+              "error": "ChannelShuffle: last view flattens swapped group axes to24 channels"
+            },
+            {
+              "case": "Identity permutation supplied",
+              "rejected": true,
+              "error": "ChannelShuffle: derived output-to-input channel map is a24-channel bijection"
+            },
+            {
+              "case": "Learned parameter invented",
+              "rejected": true,
+              "error": "ChannelShuffle: all nodes are nonparameterized; no learned weight identities"
+            },
+            {
+              "case": "Contiguous bypassed",
+              "rejected": true,
+              "error": "ChannelShuffle: exact view -> transpose -> contiguous -> view tensor flow"
+            }
+          ],
+          "source_sha256": "25466b1f6dda0e3fe0d0c43a731f841ed016d6b0919f60f45b4d66c4fa4a3255",
+          "adapter_sha256": "01c45c76581306e8bd5350f8d33bcb6594546d9de4ffe7e308dee79216bf0a4f"
+        }
+      ],
+      "negative_case_count": 17
+    },
+    "spatial_modules": {
+      "passed": true,
+      "failures": [],
+      "upstream_code_executed": false,
+      "source_contract_count": 42,
+      "source_contracts": [
+        {
+          "module": "stn",
+          "name": "literal localization Sequential has Conv/Pool/ReLU/Conv/Pool/ReLU order",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.conv1: exact Sequential member identity",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.conv1: source channels/kernel and omitted Conv defaults",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.conv1: separate learned weight and bias owner",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.conv1: independently calculated spatial extent",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.pool1: exact Sequential member identity",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.pool1: source Pool kernel and stride",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.pool1: independently calculated spatial extent",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.relu1: exact Sequential member identity",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.relu1: source positional inplace ReLU",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.relu1: independently calculated spatial extent",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.conv2: exact Sequential member identity",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.conv2: source channels/kernel and omitted Conv defaults",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.conv2: separate learned weight and bias owner",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.conv2: independently calculated spatial extent",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.pool2: exact Sequential member identity",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.pool2: source Pool kernel and stride",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.pool2: independently calculated spatial extent",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.relu2: exact Sequential member identity",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.relu2: source positional inplace ReLU",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.loc.relu2: independently calculated spatial extent",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "literal fc_loc is Linear/ReLU/Linear",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.fc1: source dimensions, unique owner, omitted bias default",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "stn.fc2: source dimensions, unique owner, omitted bias default",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "flatten derives90 localization features instead of784 original pixels",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "entire selected stn method preserves source operands/order and returns warped x",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "source identity initialization retains learnable fc_loc.2 parameters",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "affine_grid reads theta and original image shape only",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "grid_sample reads retained original image pixels and generated grid",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "caller omits sampling options; library implementations stay opaque",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "exactly eight learned parameter tensors, excluding separate classifier members",
+          "passed": true
+        },
+        {
+          "module": "stn",
+          "name": "static module-only selected shape and classifier exclusion",
+          "passed": true
+        },
+        {
+          "module": "pixelshuffle",
+          "name": "literal Conv4 is32->r², kernel3, stride1, padding1; bias defaultTrue",
+          "passed": true
+        },
+        {
+          "module": "pixelshuffle",
+          "name": "one actual nn.PixelShuffle constructor using same upscale_factor",
+          "passed": true
+        },
+        {
+          "module": "pixelshuffle",
+          "name": "exact scope follows omitted Conv3/ReLU and ends Conv4->PixelShuffle->return",
+          "passed": true
+        },
+        {
+          "module": "pixelshuffle",
+          "name": "Conv4 weight orthogonally initialized; bias not explicitly reinitialized",
+          "passed": true
+        },
+        {
+          "module": "pixelshuffle",
+          "name": "explicit r3 profile independently yields32->9->1 channels and8->24 spatial size",
+          "passed": true
+        },
+        {
+          "module": "pixelshuffle",
+          "name": "two Conv4 parameter tensors, constructor context, no post-convolution ReLU",
+          "passed": true
+        },
+        {
+          "module": "pixelshuffle",
+          "name": "parameter-free single real library call remains opaque",
+          "passed": true
+        },
+        {
+          "module": "pixelshuffle",
+          "name": "offset equation explicitly attributed to standard API, not invented source children",
+          "passed": true
+        },
+        {
+          "module": "pixelshuffle",
+          "name": "projection boundary forwards Conv4 result once; no fake reshape/permute internals",
+          "passed": true
+        },
+        {
+          "module": "pixelshuffle",
+          "name": "module scope preserves feature-input boundary instead of claiming full model",
+          "passed": true
+        }
+      ],
+      "adapter_guard_count": 21,
+      "adapter_guards": {
+        "stn": [
+          "module-only static scope excludes Net classifier",
+          "selected image input and warped-image output shapes",
+          "source Conv-Pool-ReLU localization order",
+          "unpadded localization convolution and pooling shapes",
+          "90->32->6 affine regressor and2x3 theta",
+          "identity initialization does not remove learnable affine parameters",
+          "normalized x-y grid and original-image shape-only dependency",
+          "sampler uses generated grid and original image pixels",
+          "source omissions retained without invented align_corners value",
+          "functional grid generator and sampler remain opaque library boundaries",
+          "no classifier, dropout or Softmax is drawn within Net.stn"
+        ],
+        "pixelshuffle": [
+          "module-only static tail scope",
+          "explicit r3 input, channel-expanded intermediate and24x24 output",
+          "actual conv4 channel count and3x3 stride1 padding1 geometry",
+          "learned conv4 parameters and no post-convolution activation",
+          "actual nn.PixelShuffle opaque library boundary",
+          "parameter-free rearrangement, not interpolation or learned convolution",
+          "channel-offset mapping attributed to API contract rather than source operators",
+          "Conv4 projection feeds PixelShuffle in source order",
+          "omitted feature extractor remains explicit input scope boundary",
+          "no invented PixelShuffle implementation graph or extra activation"
+        ]
+      },
+      "negative_count": 12,
+      "negative_cases": [
+        {
+          "module": "stn",
+          "name": "sampler consumes localization feature map",
+          "rejected": true,
+          "reason": "stn: sampler uses generated grid and original image pixels",
+          "kind": "semantic"
+        },
+        {
+          "module": "stn",
+          "name": "shape dependency incorrectly becomes image-pixel dependency",
+          "rejected": true,
+          "reason": "stn: normalized x-y grid and original-image shape-only dependency",
+          "kind": "semantic"
+        },
+        {
+          "module": "stn",
+          "name": "invent explicit align_corners=True",
+          "rejected": true,
+          "reason": "stn: source omissions retained without invented align_corners value",
+          "kind": "semantic"
+        },
+        {
+          "module": "stn",
+          "name": "identity initialization loses lower diagonal",
+          "rejected": true,
+          "reason": "stn: identity initialization does not remove learnable affine parameters",
+          "kind": "semantic"
+        },
+        {
+          "module": "stn",
+          "name": "localization wrongly pads first convolution",
+          "rejected": true,
+          "reason": "stn: unpadded localization convolution and pooling shapes",
+          "kind": "semantic"
+        },
+        {
+          "module": "pixelshuffle",
+          "name": "profile changes r3 to r2",
+          "rejected": true,
+          "reason": "pixelshuffle: explicit r3 input, channel-expanded intermediate and24x24 output",
+          "kind": "semantic"
+        },
+        {
+          "module": "pixelshuffle",
+          "name": "shuffle claims learned parameters",
+          "rejected": true,
+          "reason": "pixelshuffle: parameter-free rearrangement, not interpolation or learned convolution",
+          "kind": "semantic"
+        },
+        {
+          "module": "pixelshuffle",
+          "name": "invent postConv ReLU",
+          "rejected": true,
+          "reason": "pixelshuffle: learned conv4 parameters and no post-convolution activation",
+          "kind": "semantic"
+        },
+        {
+          "module": "pixelshuffle",
+          "name": "wrong channel-offset order",
+          "rejected": true,
+          "reason": "pixelshuffle: channel-offset mapping attributed to API contract rather than source operators",
+          "kind": "semantic"
+        },
+        {
+          "module": "pixelshuffle",
+          "name": "invent internal source reshape operator",
+          "rejected": true,
+          "reason": "pixelshuffle: no invented PixelShuffle implementation graph or extra activation",
+          "kind": "semantic"
+        },
+        {
+          "module": "stn",
+          "name": "changed frozen source: F.affine_grid(theta, x.size(), align_corners=True)",
+          "rejected": true,
+          "reason": "Source changed; review adapter before drawing: pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py",
+          "kind": "frozen_source"
+        },
+        {
+          "module": "pixelshuffle",
+          "name": "changed frozen source: nn.Upsample(scale_factor=upscale_factor)",
+          "rejected": true,
+          "reason": "Source changed; review adapter before drawing: pytorch-examples-superres/super_resolution/model.py",
+          "kind": "frozen_source"
+        }
+      ],
+      "source_checks": {
+        "stn": {
+          "files": 2,
+          "symbols": 2,
+          "nodes": 20,
+          "edges": 26,
+          "original_notebooks": 0,
+          "repository": "pytorch/tutorials",
+          "commit": "ce8d551d11baebcf8064be3caba7b28a4d84a15d"
+        },
+        "pixelshuffle": {
+          "files": 2,
+          "symbols": 3,
+          "nodes": 7,
+          "edges": 9,
+          "original_notebooks": 0,
+          "repository": "pytorch/examples",
+          "commit": "acc295dc7b90714f1bf47f06004fc19a7fe235c4"
+        }
+      }
+    },
+    "graph_modules": {
+      "passed": true,
+      "modules": {
+        "edge_predictor": {
+          "passed": true,
+          "source_checks": [
+            "grid coordinate order is col,row",
+            "per-coordinate standardization and epsilon",
+            "fixed coordinates converted to float tensor",
+            "ordered pairs place j coordinates before i coordinates",
+            "coord actual buffer registration",
+            "one actual shared MLP with default Linear biases and Tanh",
+            "module expression depends only on coord and MLP, then ordinary attribute assignment",
+            "source default img_size28 and coord_features4",
+            "A is not constructor-registered buffer or parameter"
+          ],
+          "semantic_checks": [
+            "module-only boundary",
+            "selected coordinate and adjacency shapes",
+            "source ordered pair construction",
+            "fixed standardized coordinate buffer",
+            "edge.linear1 true shared parameter identity",
+            "edge.linear2 true shared parameter identity",
+            "only selected MLP weights/biases",
+            "ReLU followed by signed unnormalized Tanh",
+            "actual undimensioned squeeze and forward reassignment",
+            "A storage identity differs from coord buffer",
+            "adjacency independent of image values and B",
+            "constructor supplies real registered input",
+            "no invented aggregation, head or normalization"
+          ],
+          "source": {
+            "repository": "rasbt/deeplearning-models",
+            "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+            "snapshot": "7b66bbdafc476b135d919c11ba3b432b974b334e59e93ff1dc255dda7bf9a4f6"
+          },
+          "node_count": 14,
+          "edge_count": 17
+        },
+        "spectral_filter": {
+          "passed": true,
+          "source_checks": [
+            "grid coords use division by img_size",
+            "Euclidean distance library call",
+            "actual unsquared-distance kernel",
+            "actual adjacency threshold",
+            "helper returns A; triple-quoted normalization is not executable AST",
+            "degree sum uses axis0",
+            "Laplacian epsilon and inverse sqrt",
+            "normalized Laplacian expression",
+            "eigsh exact20-mode SM library boundary",
+            "V is not explicitly cast to float32",
+            "W originates from Parameter followed by runtime-dependent float conversion",
+            "constructor Kaiming initialization",
+            "A real buffer registration",
+            "L real buffer registration",
+            "V real buffer registration",
+            "W_spectral real buffer registration",
+            "source default img_size28 and num_filters2",
+            "V batch view reads self.V directly",
+            "V transpose batch view reads self.V.T directly",
+            "W batch view reads registered W directly",
+            "single-channel image node view",
+            "ordered signal projection operands",
+            "ordered node-domain filter projection operands",
+            "elementwise product then V reconstruction",
+            "V_tensor unsqueeze result is immediately overwritten",
+            "V_tensor_T unsqueeze result is immediately overwritten",
+            "W_spectral_tensor unsqueeze result is immediately overwritten",
+            "Lambda eigenvalues unused in filtering forward",
+            "optimizer discovers model parameters, not W buffer by registration"
+          ],
+          "semantic_checks": [
+            "module-only forward filtering boundary",
+            "actual truncated basis and two-channel output shapes",
+            "constructor eigsh library boundary remains unexecuted",
+            "real adjacency/laplacian provenance, not string-block normalization",
+            "source registered graph/basis buffers",
+            "W buffer is not discovered through model.parameters",
+            "conditional autograd state separate from buffer registration",
+            "no invented V dtype cast",
+            "spectral.vt direct buffer expansion with real B shape dependency",
+            "spectral.vexpand direct buffer expansion with real B shape dependency",
+            "spectral.wexpand direct buffer expansion with real B shape dependency",
+            "two projections consume independent correct ordered operands",
+            "signal and node-domain filter projected every forward",
+            "singleton-channel broadcast multiply, not matmul or concat",
+            "same truncated V reconstructs two node-feature channels",
+            "unused eigenvalues and overwritten unsqueeze omitted from live dependencies",
+            "no artificial image fork, classifier or activation"
+          ],
+          "source": {
+            "repository": "rasbt/deeplearning-models",
+            "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+            "snapshot": "7b66bbdafc476b135d919c11ba3b432b974b334e59e93ff1dc255dda7bf9a4f6"
+          },
+          "node_count": 29,
+          "edge_count": 33
+        }
+      },
+      "negative_cases": [
+        {
+          "module": "edge_predictor",
+          "case": "image-conditioned adjacency",
+          "rejected": true,
+          "error": "edge_predictor: adjacency independent of image values and B"
+        },
+        {
+          "module": "edge_predictor",
+          "case": "unshared per-pair Linear",
+          "rejected": true,
+          "error": "edge_predictor: edge.linear1 true shared parameter identity"
+        },
+        {
+          "module": "edge_predictor",
+          "case": "Softmax replacing Tanh",
+          "rejected": true,
+          "error": "edge_predictor: ReLU followed by signed unnormalized Tanh"
+        },
+        {
+          "module": "edge_predictor",
+          "case": "A misregistered as parameter",
+          "rejected": true,
+          "error": "edge_predictor: A storage identity differs from coord buffer"
+        },
+        {
+          "module": "spectral_filter",
+          "case": "buffer mislabeled optimizer parameter",
+          "rejected": true,
+          "error": "spectral_filter: W buffer is not discovered through model.parameters"
+        },
+        {
+          "module": "spectral_filter",
+          "case": "unconditional no-grad assumption",
+          "rejected": true,
+          "error": "spectral_filter: conditional autograd state separate from buffer registration"
+        },
+        {
+          "module": "spectral_filter",
+          "case": "one-channel output",
+          "rejected": true,
+          "error": "spectral_filter: same truncated V reconstructs two node-feature channels"
+        },
+        {
+          "module": "spectral_filter",
+          "case": "reversed signal bmm operands",
+          "rejected": true,
+          "error": "spectral_filter: signal and node-domain filter projected every forward"
+        },
+        {
+          "module": "spectral_filter",
+          "case": "invented squared-distance kernel",
+          "rejected": true,
+          "error": "spectral_filter: real adjacency/laplacian provenance, not string-block normalization"
+        },
+        {
+          "module": "spectral_filter",
+          "case": "missing V transpose batch shape source",
+          "rejected": true,
+          "error": "spectral_filter: spectral.vt direct buffer expansion with real B shape dependency"
+        }
+      ],
+      "upstream_executed": false,
+      "scope": "frozen-source AST contracts + newly built module IR + ten semantic negatives"
+    }
+  },
+  "negative_case_count": 49,
+  "model_executed": false,
+  "limitation": "Contracts target reviewed module profiles, not arbitrary changed implementations."
+}

@@ -1,0 +1,70 @@
+{
+  "source_project": "transformer-xl-relative",
+  "repository": "kimiyoung/transformer-xl",
+  "commit": "44781ed21dbaec88b280f74d9ae2877f52b492a5",
+  "source_snapshot_sha256": "7636308c1d47cacc643fe001e71f31da745c7a23e46b83c12eb12e4c44313381",
+  "entry": "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "transformer-xl-relative/LICENSE": {
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "lines": 201,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/kimiyoung/transformer-xl/44781ed21dbaec88b280f74d9ae2877f52b492a5/LICENSE",
+      "derived_from": null
+    },
+    "transformer-xl-relative/pytorch/mem_transformer.py": {
+      "sha256": "38cbc93a8f7b06b85976e88e161349b34f2ac226b8a7796bd6d82c30dc592827",
+      "lines": 812,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/kimiyoung/transformer-xl/44781ed21dbaec88b280f74d9ae2877f52b492a5/pytorch/mem_transformer.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn.__init__": {
+      "path": "transformer-xl-relative/pytorch/mem_transformer.py",
+      "symbol": "RelMultiHeadAttn.__init__",
+      "start": 144,
+      "end": 163,
+      "snippet": "    def __init__(self, n_head, d_model, d_head, dropout, dropatt=0,\n                 tgt_len=None, ext_len=None, mem_len=None, pre_lnorm=False):\n        super(RelMultiHeadAttn, self).__init__()\n\n        self.n_head = n_head\n        self.d_model = d_model\n        self.d_head = d_head\n        self.dropout = dropout\n\n        self.qkv_net = nn.Linear(d_model, 3 * n_head * d_head, bias=False)\n\n        self.drop = nn.Dropout(dropout)\n        self.dropatt = nn.Dropout(dropatt)\n        self.o_net = nn.Linear(n_head * d_head, d_model, bias=False)\n\n        self.layer_norm = nn.LayerNorm(d_model)\n\n        self.scale = 1 / (d_head ** 0.5)\n\n        self.pre_lnorm = pre_lnorm",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn._rel_shift": {
+      "path": "transformer-xl-relative/pytorch/mem_transformer.py",
+      "symbol": "RelMultiHeadAttn._rel_shift",
+      "start": 194,
+      "end": 207,
+      "snippet": "    def _rel_shift(self, x, zero_triu=False):\n        zero_pad = torch.zeros((x.size(0), 1, *x.size()[2:]),\n                               device=x.device, dtype=x.dtype)\n        x_padded = torch.cat([zero_pad, x], dim=1)\n\n        x_padded = x_padded.view(x.size(1) + 1, x.size(0), *x.size()[2:])\n\n        x = x_padded[1:].view_as(x)\n\n        if zero_triu:\n            ones = torch.ones((x.size(0), x.size(1)))\n            x = x * torch.tril(ones, x.size(1) - x.size(0))[:,:,None,None]\n\n        return x",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.__init__": {
+      "path": "transformer-xl-relative/pytorch/mem_transformer.py",
+      "symbol": "RelPartialLearnableMultiHeadAttn.__init__",
+      "start": 213,
+      "end": 216,
+      "snippet": "    def __init__(self, *args, **kwargs):\n        super(RelPartialLearnableMultiHeadAttn, self).__init__(*args, **kwargs)\n\n        self.r_net = nn.Linear(self.d_model, self.n_head * self.d_head, bias=False)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward": {
+      "path": "transformer-xl-relative/pytorch/mem_transformer.py",
+      "symbol": "RelPartialLearnableMultiHeadAttn.forward",
+      "start": 218,
+      "end": 291,
+      "snippet": "    def forward(self, w, r, r_w_bias, r_r_bias, attn_mask=None, mems=None):\n        qlen, rlen, bsz = w.size(0), r.size(0), w.size(1)\n\n        if mems is not None:\n            cat = torch.cat([mems, w], 0)\n            if self.pre_lnorm:\n                w_heads = self.qkv_net(self.layer_norm(cat))\n            else:\n                w_heads = self.qkv_net(cat)\n            r_head_k = self.r_net(r)\n\n            w_head_q, w_head_k, w_head_v = torch.chunk(w_heads, 3, dim=-1)\n            w_head_q = w_head_q[-qlen:]\n        else:\n            if self.pre_lnorm:\n                w_heads = self.qkv_net(self.layer_norm(w))\n            else:\n                w_heads = self.qkv_net(w)\n            r_head_k = self.r_net(r)\n\n            w_head_q, w_head_k, w_head_v = torch.chunk(w_heads, 3, dim=-1)\n\n        klen = w_head_k.size(0)\n\n        w_head_q = w_head_q.view(qlen, bsz, self.n_head, self.d_head)           # qlen x bsz x n_head x d_head\n        w_head_k = w_head_k.view(klen, bsz, self.n_head, self.d_head)           # qlen x bsz x n_head x d_head\n        w_head_v = w_head_v.view(klen, bsz, self.n_head, self.d_head)           # qlen x bsz x n_head x d_head\n\n        r_head_k = r_head_k.view(rlen, self.n_head, self.d_head)                # qlen x n_head x d_head\n\n        #### compute attention score\n        rw_head_q = w_head_q + r_w_bias                                         # qlen x bsz x n_head x d_head\n        AC = torch.einsum('ibnd,jbnd->ijbn', (rw_head_q, w_head_k))             # qlen x klen x bsz x n_head\n\n        rr_head_q = w_head_q + r_r_bias\n        BD = torch.einsum('ibnd,jnd->ijbn', (rr_head_q, r_head_k))              # qlen x klen x bsz x n_head\n        BD = self._rel_shift(BD)\n\n        # [qlen x klen x bsz x n_head]\n        attn_score = AC + BD\n        attn_score.mul_(self.scale)\n\n        #### compute attention probability\n        if attn_mask is not None and attn_mask.any().item():\n            if attn_mask.dim() == 2:\n                attn_score = attn_score.float().masked_fill(\n                    attn_mask[None,:,:,None], -float('inf')).type_as(attn_score)\n            elif attn_mask.dim() == 3:\n                attn_score = attn_score.float().masked_fill(\n                    attn_mask[:,:,:,None], -float('inf')).type_as(attn_score)\n\n        # [qlen x klen x bsz x n_head]\n        attn_prob = F.softmax(attn_score, dim=1)\n        attn_prob = self.dropatt(attn_prob)\n\n        #### compute attention vector\n        attn_vec = torch.einsum('ijbn,jbnd->ibnd', (attn_prob, w_head_v))\n\n        # [qlen x bsz x n_head x d_head]\n        attn_vec = attn_vec.contiguous().view(\n            attn_vec.size(0), attn_vec.size(1), self.n_head * self.d_head)\n\n        ##### linear projection\n        attn_out = self.o_net(attn_vec)\n        attn_out = self.drop(attn_out)\n\n        if self.pre_lnorm:\n            ##### residual connection\n            output = w + attn_out\n        else:\n            ##### residual connection + layer normalization\n            output = self.layer_norm(w + attn_out)\n\n        return output",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "transformer-xl-relative/LICENSE"
+  ]
+}

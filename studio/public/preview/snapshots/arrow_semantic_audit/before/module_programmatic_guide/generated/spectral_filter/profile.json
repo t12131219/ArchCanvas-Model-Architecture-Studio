@@ -1,0 +1,50 @@
+{
+  "img_size": 28,
+  "nodes": 784,
+  "input_channels": 1,
+  "num_filters": 2,
+  "k": 20,
+  "which": "SM",
+  "input_shape": [
+    "B",
+    1,
+    28,
+    28
+  ],
+  "basis_shape": [
+    784,
+    20
+  ],
+  "filter_shape": [
+    784,
+    2
+  ],
+  "output_shape": [
+    "B",
+    784,
+    2
+  ],
+  "registered_buffers": [
+    "A",
+    "L",
+    "V",
+    "W_spectral"
+  ],
+  "module_parameter_families": [],
+  "W_spectral_storage": "buffer",
+  "W_spectral_optimizer_parameter": false,
+  "W_spectral_requires_grad": "runtime-dependent: Parameter created requires_grad=True; float/to identity not executed",
+  "V_dtype": "torch.from_numpy preserves eigsh array dtype; compatibility not executed",
+  "spectral_coefficients": "V_T @ node-domain W at each forward; not a stored20xF coefficient parameter",
+  "reconstruction": "V @ ((V_T @ X) * (V_T @ W))",
+  "eigenvalues_used_in_forward": false,
+  "dead_assignments": [
+    "V_tensor = self.V.unsqueeze(0)",
+    "V_tensor_T = self.V.T.unsqueeze(0)",
+    "W_spectral_tensor = self.W_spectral.unsqueeze(0)"
+  ],
+  "dead_assignment_reason": "Each temporary is immediately overwritten by direct buffer.expand, not used by returned filtering values",
+  "source_activation": null,
+  "model_executed": false,
+  "artifact_scope": "module"
+}

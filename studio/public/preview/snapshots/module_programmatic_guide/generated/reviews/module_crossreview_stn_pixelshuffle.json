@@ -1,0 +1,118 @@
+{
+  "passed": true,
+  "modules": {
+    "stn": {
+      "passed": true,
+      "independent_source_checks": [
+        "AST localization sequence, channel counts and default unpadded geometry match",
+        "AST affine regressor is90->32->6 with learned Linear families",
+        "AST zero weight/identity bias initialization retained without fixing future theta",
+        "AST grid has image shape input; sampler retains unmodified original image value",
+        "IR ordered operands separate shape and image values",
+        "Omitted align_corners preserved; no environment-default claim",
+        "Functional calls opaque; no invented interpolation implementation",
+        "Independent integer shape derivation28->22->11->7->3 and flatten90"
+      ],
+      "adapter_semantic_checks": [
+        "module-only static scope excludes Net classifier",
+        "selected image input and warped-image output shapes",
+        "source Conv-Pool-ReLU localization order",
+        "unpadded localization convolution and pooling shapes",
+        "90->32->6 affine regressor and2x3 theta",
+        "identity initialization does not remove learnable affine parameters",
+        "normalized x-y grid and original-image shape-only dependency",
+        "sampler uses generated grid and original image pixels",
+        "source omissions retained without invented align_corners value",
+        "functional grid generator and sampler remain opaque library boundaries",
+        "no classifier, dropout or Softmax is drawn within Net.stn"
+      ],
+      "negative_cases": [
+        {
+          "case": "missing real image sampler operand",
+          "rejected": true,
+          "error": "stn: sampler uses generated grid and original image pixels"
+        },
+        {
+          "case": "shape mislabeled as pixel values",
+          "rejected": true,
+          "error": "stn: normalized x-y grid and original-image shape-only dependency"
+        },
+        {
+          "case": "fixed identity regressor",
+          "rejected": true,
+          "error": "stn: identity initialization does not remove learnable affine parameters"
+        },
+        {
+          "case": "explicit corner convention invented",
+          "rejected": true,
+          "error": "stn: source omissions retained without invented align_corners value"
+        }
+      ],
+      "findings": [],
+      "nodes": 20,
+      "edges": 26,
+      "source": {
+        "repository": "pytorch/tutorials",
+        "commit": "ce8d551d11baebcf8064be3caba7b28a4d84a15d",
+        "snapshot": "66714505e40795e84cd7cbb187313080db88e81582c7b8611ac19ec1145bbab3"
+      }
+    },
+    "pixelshuffle": {
+      "passed": true,
+      "independent_source_checks": [
+        "AST Conv4 then real PixelShuffle constructor; r is explicit example parameter",
+        "AST direct tail call has no post-Conv4 ReLU or other activation",
+        "AST Conv4 orthogonal weight init without explicit bias reset",
+        "IR artifact starts at omitted feature extractor output; no whole-model claim",
+        "One parameter-free opaque library glyph; no invented reshape/permute AST",
+        "Standard channel-offset formula correctly attributed to public API contract",
+        "Independent r3 channels and spatial dimensions"
+      ],
+      "adapter_semantic_checks": [
+        "module-only static tail scope",
+        "explicit r3 input, channel-expanded intermediate and24x24 output",
+        "actual conv4 channel count and3x3 stride1 padding1 geometry",
+        "learned conv4 parameters and no post-convolution activation",
+        "actual nn.PixelShuffle opaque library boundary",
+        "parameter-free rearrangement, not interpolation or learned convolution",
+        "channel-offset mapping attributed to API contract rather than source operators",
+        "Conv4 projection feeds PixelShuffle in source order",
+        "omitted feature extractor remains explicit input scope boundary",
+        "no invented PixelShuffle implementation graph or extra activation"
+      ],
+      "negative_cases": [
+        {
+          "case": "invented shuffle parameter",
+          "rejected": true,
+          "error": "pixelshuffle: parameter-free rearrangement, not interpolation or learned convolution"
+        },
+        {
+          "case": "extra tail activation",
+          "rejected": true,
+          "error": "pixelshuffle: learned conv4 parameters and no post-convolution activation"
+        },
+        {
+          "case": "unreviewed hidden library expansion",
+          "rejected": true,
+          "error": "pixelshuffle: actual nn.PixelShuffle opaque library boundary"
+        },
+        {
+          "case": "formula falsely attributed to AST",
+          "rejected": true,
+          "error": "pixelshuffle: channel-offset mapping attributed to API contract rather than source operators"
+        }
+      ],
+      "findings": [],
+      "nodes": 7,
+      "edges": 9,
+      "source": {
+        "repository": "pytorch/examples",
+        "commit": "acc295dc7b90714f1bf47f06004fc19a7fe235c4",
+        "snapshot": "41c071f0632a5bfca6c2948969429e95fd10db4effce5341e006d772f20c4f44"
+      }
+    }
+  },
+  "reviewer": "independent graph-module adapter author",
+  "upstream_executed": false,
+  "scope": "static AST + newly built semantic IR + semantic negatives"
+}

@@ -1,0 +1,646 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "compact_bilinear_pooling",
+  "profile": {
+    "input1_size": 8,
+    "input2_size": 6,
+    "output_size": 16,
+    "force_cpu_scatter_add": false,
+    "y_is_none": false,
+    "learned_parameters": 0,
+    "spatial_reduction": false,
+    "historical_fft_api": true,
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "gdlg/pytorch_compact_bilinear_pooling",
+    "commit": "ecbb98bdccaf8987f2c2432ac0f1db5f370811e8",
+    "snapshot": "a6d156dcd117aba64b967cb13290eacd9db25034902767e6746cf0b23b7756d5"
+  },
+  "nodes": [
+    {
+      "id": "compact_bilinear_pooling.root",
+      "label": "Compact bilinear TensorSketch / module only",
+      "kind": "group",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CompactBilinearPoolingFn.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "compact_bilinear_pooling.x",
+          "compact_bilinear_pooling.y",
+          "compact_bilinear_pooling.xbuffers",
+          "compact_bilinear_pooling.ybuffers"
+        ],
+        [
+          "compact_bilinear_pooling.module"
+        ],
+        [
+          "compact_bilinear_pooling.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.x",
+      "label": "Input x",
+      "kind": "input",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CompactBilinearPoolingFn.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parent": "compact_bilinear_pooling.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.y",
+      "label": "Independent input y",
+      "kind": "input",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CompactBilinearPoolingFn.forward"
+      ],
+      "shape": "[B,6]",
+      "detail": [],
+      "parent": "compact_bilinear_pooling.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.xbuffers",
+      "label": "Fixed sketch1 buffers h, s",
+      "kind": "control",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CountSketch.__init__"
+      ],
+      "shape": "each[8]",
+      "detail": [],
+      "storage_kind": "registered buffers",
+      "buffers": [
+        "sketch1.h",
+        "sketch1.s"
+      ],
+      "learned": false,
+      "parent": "compact_bilinear_pooling.root",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "s",
+        "h"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.ybuffers",
+      "label": "Distinct sketch2 buffers h, s",
+      "kind": "control",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CountSketch.__init__"
+      ],
+      "shape": "each[6]",
+      "detail": [],
+      "storage_kind": "registered buffers",
+      "buffers": [
+        "sketch2.h",
+        "sketch2.s"
+      ],
+      "learned": false,
+      "parent": "compact_bilinear_pooling.root",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "s",
+        "h"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.module",
+      "label": "Compact bilinear TensorSketch / operators",
+      "kind": "group",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CompactBilinearPoolingFn.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "compact_bilinear_pooling.xsketch",
+          "compact_bilinear_pooling.ysketch"
+        ],
+        [
+          "compact_bilinear_pooling.xfft",
+          "compact_bilinear_pooling.yfft"
+        ],
+        [
+          "compact_bilinear_pooling.product"
+        ],
+        [
+          "compact_bilinear_pooling.inverse"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "compact_bilinear_pooling.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.xsketch",
+      "label": "X fixed CountSketch",
+      "kind": "group",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CountSketchFn_forward",
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CountSketch.__init__"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "compact_bilinear_pooling.module",
+      "source_evidence": [
+        "E006",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.xsketch.sign",
+      "label": "Multiply by fixed random signs",
+      "kind": "multiply",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CountSketchFn_forward",
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CountSketch.__init__"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "source_buffers": [
+        "sketch1.s"
+      ],
+      "parent": "compact_bilinear_pooling.xsketch",
+      "source_evidence": [
+        "E006",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "s"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.xsketch.scatter",
+      "label": "Hash-index scatter_add",
+      "kind": "scatter",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CountSketchFn_forward",
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CountSketch.__init__"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operation": "scatter_add",
+      "fixed_buffers": [
+        "sketch1.h",
+        "sketch1.s"
+      ],
+      "parent": "compact_bilinear_pooling.xsketch",
+      "source_evidence": [
+        "E006",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "h"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.xfft",
+      "label": "Historical rFFT / library",
+      "kind": "tensor",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CompactBilinearPoolingFn.forward"
+      ],
+      "shape": "[B,9,2]",
+      "detail": [],
+      "expression": "torch.rfft(px,1)",
+      "opaque_runtime_boundary": true,
+      "parent": "compact_bilinear_pooling.module",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.ysketch",
+      "label": "Y fixed CountSketch",
+      "kind": "group",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CountSketchFn_forward",
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CountSketch.__init__"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "compact_bilinear_pooling.module",
+      "source_evidence": [
+        "E006",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.ysketch.sign",
+      "label": "Multiply by fixed random signs",
+      "kind": "multiply",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CountSketchFn_forward",
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CountSketch.__init__"
+      ],
+      "shape": "[B,6]",
+      "detail": [],
+      "source_buffers": [
+        "sketch2.s"
+      ],
+      "parent": "compact_bilinear_pooling.ysketch",
+      "source_evidence": [
+        "E006",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "s"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.ysketch.scatter",
+      "label": "Hash-index scatter_add",
+      "kind": "scatter",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CountSketchFn_forward",
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CountSketch.__init__"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operation": "scatter_add",
+      "fixed_buffers": [
+        "sketch2.h",
+        "sketch2.s"
+      ],
+      "parent": "compact_bilinear_pooling.ysketch",
+      "source_evidence": [
+        "E006",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "h"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.yfft",
+      "label": "Historical rFFT / library",
+      "kind": "tensor",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CompactBilinearPoolingFn.forward"
+      ],
+      "shape": "[B,9,2]",
+      "detail": [],
+      "expression": "torch.rfft(py,1)",
+      "opaque_runtime_boundary": true,
+      "parent": "compact_bilinear_pooling.module",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.product",
+      "label": "Complex product / real and imag",
+      "kind": "multiply",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::ComplexMultiply_forward"
+      ],
+      "shape": "[B,9] real + imag",
+      "detail": [],
+      "real": "X_re*Y_re-X_im*Y_im",
+      "imag": "X_re*Y_im+X_im*Y_re",
+      "parent": "compact_bilinear_pooling.module",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "Xcomplex",
+        "Ycomplex"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.inverse",
+      "label": "Stack complex pair / inverse FFT",
+      "kind": "group",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CompactBilinearPoolingFn.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "compact_bilinear_pooling.module",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.inverse.stack",
+      "label": "Stack real / imaginary",
+      "kind": "tensor",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CompactBilinearPoolingFn.forward"
+      ],
+      "shape": "[B,9,2]",
+      "detail": [],
+      "parent": "compact_bilinear_pooling.inverse",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.inverse.irfft",
+      "label": "Historical irFFT / library",
+      "kind": "tensor",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CompactBilinearPoolingFn.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "signal_size": 16,
+      "expression": "torch.irfft(torch.stack((re_prod, im_prod), re_prod.dim()), 1, signal_sizes=(output_size,))",
+      "opaque_runtime_boundary": true,
+      "parent": "compact_bilinear_pooling.inverse",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "compact_bilinear_pooling.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CompactBilinearPoolingFn.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "compact_bilinear_pooling.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "compact_bilinear_pooling.xsketch:in->compact_bilinear_pooling.xsketch.sign:in:boundary",
+      "src": "compact_bilinear_pooling.xsketch",
+      "dst": "compact_bilinear_pooling.xsketch.sign",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "compact_bilinear_pooling.xsketch.sign:out->compact_bilinear_pooling.xsketch.scatter:in:tensor",
+      "src": "compact_bilinear_pooling.xsketch.sign",
+      "dst": "compact_bilinear_pooling.xsketch.scatter",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "compact_bilinear_pooling.xsketch.scatter:out->compact_bilinear_pooling.xsketch:out:boundary",
+      "src": "compact_bilinear_pooling.xsketch.scatter",
+      "dst": "compact_bilinear_pooling.xsketch",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "compact_bilinear_pooling.ysketch:in->compact_bilinear_pooling.ysketch.sign:in:boundary",
+      "src": "compact_bilinear_pooling.ysketch",
+      "dst": "compact_bilinear_pooling.ysketch.sign",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "compact_bilinear_pooling.ysketch.sign:out->compact_bilinear_pooling.ysketch.scatter:in:tensor",
+      "src": "compact_bilinear_pooling.ysketch.sign",
+      "dst": "compact_bilinear_pooling.ysketch.scatter",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "compact_bilinear_pooling.ysketch.scatter:out->compact_bilinear_pooling.ysketch:out:boundary",
+      "src": "compact_bilinear_pooling.ysketch.scatter",
+      "dst": "compact_bilinear_pooling.ysketch",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "compact_bilinear_pooling.inverse:in->compact_bilinear_pooling.inverse.stack:in:boundary",
+      "src": "compact_bilinear_pooling.inverse",
+      "dst": "compact_bilinear_pooling.inverse.stack",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "compact_bilinear_pooling.inverse.stack:out->compact_bilinear_pooling.inverse.irfft:in:tensor",
+      "src": "compact_bilinear_pooling.inverse.stack",
+      "dst": "compact_bilinear_pooling.inverse.irfft",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "compact_bilinear_pooling.inverse.irfft:out->compact_bilinear_pooling.inverse:out:boundary",
+      "src": "compact_bilinear_pooling.inverse.irfft",
+      "dst": "compact_bilinear_pooling.inverse",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "compact_bilinear_pooling.x:out->compact_bilinear_pooling.xsketch.sign:in:tensor",
+      "src": "compact_bilinear_pooling.x",
+      "dst": "compact_bilinear_pooling.xsketch.sign",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "compact_bilinear_pooling.y:out->compact_bilinear_pooling.ysketch.sign:in:tensor",
+      "src": "compact_bilinear_pooling.y",
+      "dst": "compact_bilinear_pooling.ysketch.sign",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "compact_bilinear_pooling.xbuffers:s->compact_bilinear_pooling.xsketch.sign:s:fixed_buffer",
+      "src": "compact_bilinear_pooling.xbuffers",
+      "dst": "compact_bilinear_pooling.xsketch.sign",
+      "src_port": "s",
+      "dst_port": "s",
+      "role": "fixed_buffer"
+    },
+    {
+      "id": "compact_bilinear_pooling.xbuffers:h->compact_bilinear_pooling.xsketch.scatter:h:fixed_buffer",
+      "src": "compact_bilinear_pooling.xbuffers",
+      "dst": "compact_bilinear_pooling.xsketch.scatter",
+      "src_port": "h",
+      "dst_port": "h",
+      "role": "fixed_buffer"
+    },
+    {
+      "id": "compact_bilinear_pooling.ybuffers:s->compact_bilinear_pooling.ysketch.sign:s:fixed_buffer",
+      "src": "compact_bilinear_pooling.ybuffers",
+      "dst": "compact_bilinear_pooling.ysketch.sign",
+      "src_port": "s",
+      "dst_port": "s",
+      "role": "fixed_buffer"
+    },
+    {
+      "id": "compact_bilinear_pooling.ybuffers:h->compact_bilinear_pooling.ysketch.scatter:h:fixed_buffer",
+      "src": "compact_bilinear_pooling.ybuffers",
+      "dst": "compact_bilinear_pooling.ysketch.scatter",
+      "src_port": "h",
+      "dst_port": "h",
+      "role": "fixed_buffer"
+    },
+    {
+      "id": "compact_bilinear_pooling.xsketch.scatter:out->compact_bilinear_pooling.xfft:in:tensor",
+      "src": "compact_bilinear_pooling.xsketch.scatter",
+      "dst": "compact_bilinear_pooling.xfft",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "compact_bilinear_pooling.ysketch.scatter:out->compact_bilinear_pooling.yfft:in:tensor",
+      "src": "compact_bilinear_pooling.ysketch.scatter",
+      "dst": "compact_bilinear_pooling.yfft",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "compact_bilinear_pooling.xfft:out->compact_bilinear_pooling.product:Xcomplex:tensor",
+      "src": "compact_bilinear_pooling.xfft",
+      "dst": "compact_bilinear_pooling.product",
+      "src_port": "out",
+      "dst_port": "Xcomplex",
+      "role": "tensor"
+    },
+    {
+      "id": "compact_bilinear_pooling.yfft:out->compact_bilinear_pooling.product:Ycomplex:tensor",
+      "src": "compact_bilinear_pooling.yfft",
+      "dst": "compact_bilinear_pooling.product",
+      "src_port": "out",
+      "dst_port": "Ycomplex",
+      "role": "tensor"
+    },
+    {
+      "id": "compact_bilinear_pooling.product:out->compact_bilinear_pooling.inverse.stack:in:tensor",
+      "src": "compact_bilinear_pooling.product",
+      "dst": "compact_bilinear_pooling.inverse.stack",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "compact_bilinear_pooling.inverse.irfft:out->compact_bilinear_pooling.output:in:tensor",
+      "src": "compact_bilinear_pooling.inverse.irfft",
+      "dst": "compact_bilinear_pooling.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Each sketch owns independently generated h/s buffers registered at construction; they are shared across calls and have no optimizer parameters.",
+    "CountSketch uses signed hash scatter_add, then legacy torch.rfft spectra are multiplied using the actual real/imag formula, followed by legacy irfft.",
+    "This is feature-axis circular convolution of sketches; source does not explicitly sum spatial positions, normalize, or add signed square-root postprocessing.",
+    "Historical FFT APIs are preserved as source boundaries; no upstream code was run or silently migrated.",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not replace fixed sketches by learned Linear projections or confuse this compact convolution with BAN weighted bilinear pooling."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

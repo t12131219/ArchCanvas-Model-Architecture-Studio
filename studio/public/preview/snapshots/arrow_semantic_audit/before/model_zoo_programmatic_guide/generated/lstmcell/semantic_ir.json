@@ -1,0 +1,3164 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "lstmcell",
+  "profile": {
+    "input_size": 8,
+    "hidden_size": 16,
+    "sequence_length": 3,
+    "batch": "B",
+    "num_layers": 1,
+    "bidirectional": false,
+    "construction": "LSTMLayer(LSTMCell, input_size=8, hidden_size=16)",
+    "configuration_origin": "explicit illustrative configuration, not upstream benchmark defaults",
+    "input_layout": "[T,B,I]",
+    "initial_state": "external h_init,c_init; no default assumed",
+    "source_variant": "LSTMCell, not LayerNormLSTMCell or premultiplied variants",
+    "chunk_order": [
+      "i",
+      "f",
+      "g",
+      "o"
+    ],
+    "parameter_shapes": {
+      "cell.weight_ih": [
+        64,
+        8
+      ],
+      "cell.weight_hh": [
+        64,
+        16
+      ],
+      "cell.bias_ih": [
+        64
+      ],
+      "cell.bias_hh": [
+        64
+      ]
+    },
+    "bias_initialization": "torch.randn, no +1 forget bias",
+    "temporal_parameter_sharing": true,
+    "source_concat": false,
+    "peepholes": false,
+    "dropout": false,
+    "model_executed": false,
+    "shapes": "static derivation",
+    "output": "(stacked h_0..h_2, (h_2,c_2))"
+  },
+  "source": {
+    "repository": "https://github.com/pytorch/pytorch",
+    "commit": "a8d6afb511a69687bbb2b7e88a3cf67917e1697e",
+    "snapshot": "e1da4f557911834356e07d9ef80995589ed30de16ae2931fab98679a90f4de1c"
+  },
+  "nodes": [
+    {
+      "id": "lstmcell.root",
+      "label": "One LSTMLayer / three shared time steps",
+      "kind": "group",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.__init__",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward"
+      ],
+      "shape": "T=3, one layer, one direction",
+      "detail": [],
+      "align_x": {
+        "lstmcell.x0": "lstmcell.step0",
+        "lstmcell.x1": "lstmcell.step1",
+        "lstmcell.x2": "lstmcell.step2"
+      },
+      "mode": "graph",
+      "ranks": [
+        [
+          "lstmcell.sequence"
+        ],
+        [
+          "lstmcell.unbind"
+        ],
+        [
+          "lstmcell.x0",
+          "lstmcell.x1",
+          "lstmcell.x2"
+        ],
+        [
+          "lstmcell.step0",
+          "lstmcell.step1",
+          "lstmcell.step2"
+        ],
+        [
+          "lstmcell.stack"
+        ],
+        [
+          "lstmcell.return"
+        ]
+      ],
+      "rank_gap": 52,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E005",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.sequence",
+      "label": "Sequence input X",
+      "kind": "input",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward"
+      ],
+      "shape": "[T=3,B,I=8]",
+      "detail": [],
+      "origin": "external argument input",
+      "selected_sequence_length": 3,
+      "parent": "lstmcell.root",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.unbind",
+      "label": "Unbind time axis 0",
+      "kind": "tensor",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward"
+      ],
+      "shape": "3 tensors [B,8]",
+      "detail": [],
+      "expression": "input.unbind(0)",
+      "dim": 0,
+      "parent": "lstmcell.root",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "item[2]"
+      ]
+    },
+    {
+      "id": "lstmcell.x0",
+      "label": "Select x_0",
+      "kind": "input",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "input_selector": "item[0]",
+      "time_index": 0,
+      "parent": "lstmcell.root",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.x1",
+      "label": "Select x_1",
+      "kind": "input",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "input_selector": "item[1]",
+      "time_index": 1,
+      "parent": "lstmcell.root",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.x2",
+      "label": "Select x_2",
+      "kind": "input",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "input_selector": "item[2]",
+      "time_index": 2,
+      "parent": "lstmcell.root",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0",
+      "label": "LSTM cell / time 0",
+      "kind": "group",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "(output h, state(h,c))",
+      "detail": [
+        "Same self.cell instance and same four parameter tensors at every time step"
+      ],
+      "instance_identity": "self.cell",
+      "parameter_scope": "cell",
+      "time_index": 0,
+      "temporal_parameter_sharing": true,
+      "mode": "graph",
+      "ranks": [
+        [
+          "lstmcell.step0.x",
+          "lstmcell.step0.hx",
+          "lstmcell.step0.cx"
+        ],
+        [
+          "lstmcell.step0.affine"
+        ],
+        [
+          "lstmcell.step0.chunk"
+        ],
+        [
+          "lstmcell.step0.gates"
+        ],
+        [
+          "lstmcell.step0.cell_update"
+        ],
+        [
+          "lstmcell.step0.hidden_update"
+        ],
+        [
+          "lstmcell.step0.return"
+        ]
+      ],
+      "rank_gap": 52,
+      "column_gap": 48,
+      "parent": "lstmcell.root",
+      "source_evidence": [
+        "E006",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.x",
+      "label": "Input x_0",
+      "kind": "input",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "expression": "inputs[0]",
+      "time_index": 0,
+      "parent": "lstmcell.step0",
+      "source_evidence": [
+        "E006",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.hx",
+      "label": "Previous hidden h_-1",
+      "kind": "tensor",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "input_selector": "state[0]",
+      "state_role": "hidden",
+      "time_index": -1,
+      "parent": "lstmcell.step0",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.cx",
+      "label": "Previous cell c_-1",
+      "kind": "tensor",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "input_selector": "state[1]",
+      "state_role": "cell",
+      "time_index": -1,
+      "parent": "lstmcell.step0",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.affine",
+      "label": "Fused four-gate affine",
+      "kind": "group",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.__init__",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "gates: [B,4H=64]",
+      "detail": [
+        "Two matrices store all four gate row slices; source does not concatenate x and h"
+      ],
+      "parameter_scope": "cell",
+      "source_addition_order": [
+        "x_mm",
+        "bias_ih",
+        "h_mm",
+        "bias_hh"
+      ],
+      "mode": "graph",
+      "ranks": [
+        [
+          "lstmcell.step0.x_mm",
+          "lstmcell.step0.h_mm"
+        ],
+        [
+          "lstmcell.step0.b_ih"
+        ],
+        [
+          "lstmcell.step0.affine_add"
+        ],
+        [
+          "lstmcell.step0.b_hh"
+        ]
+      ],
+      "rank_gap": 52,
+      "column_gap": 48,
+      "parent": "lstmcell.step0",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.x_mm",
+      "label": "MatMul x W_ih^T",
+      "kind": "linear",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.__init__",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "parameter": "cell.weight_ih",
+      "parameter_shape": [
+        64,
+        8
+      ],
+      "expression": "torch.mm(input, self.weight_ih.t())",
+      "parent": "lstmcell.step0.affine",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.h_mm",
+      "label": "MatMul h W_hh^T",
+      "kind": "linear",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.__init__",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "parameter": "cell.weight_hh",
+      "parameter_shape": [
+        64,
+        16
+      ],
+      "expression": "torch.mm(hx, self.weight_hh.t())",
+      "parent": "lstmcell.step0.affine",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.b_ih",
+      "label": "Add input bias b_ih",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.__init__",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "operation": "add",
+      "parameter": "cell.bias_ih",
+      "parameter_shape": [
+        64
+      ],
+      "expression": "x_affine + self.bias_ih",
+      "parent": "lstmcell.step0.affine",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.affine_add",
+      "label": "Add hidden projection",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "operation": "add",
+      "expression": "(x_affine + bias_ih) + h_affine",
+      "parent": "lstmcell.step0.affine",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "x_affine",
+        "h_affine"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.b_hh",
+      "label": "Add hidden bias b_hh",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.__init__",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "operation": "add",
+      "parameter": "cell.bias_hh",
+      "parameter_shape": [
+        64
+      ],
+      "expression": "((x_affine + bias_ih) + h_affine) + self.bias_hh",
+      "parent": "lstmcell.step0.affine",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.chunk",
+      "label": "Chunk gates: i / f / g / o",
+      "kind": "tensor",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "4 x [B,16]",
+      "detail": [],
+      "expression": "gates.chunk(4, 1)",
+      "chunk_order": [
+        "i",
+        "f",
+        "g",
+        "o"
+      ],
+      "dim": 1,
+      "parent": "lstmcell.step0",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "item[2]",
+        "item[3]"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.gates",
+      "label": "Four distinct gate slices",
+      "kind": "group",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "i, f, g, o: [B,H]",
+      "detail": [
+        "i/f/o use sigmoid; candidate g uses tanh; slices belong to the same fused matrices"
+      ],
+      "mode": "graph",
+      "ranks": [
+        [
+          "lstmcell.step0.i",
+          "lstmcell.step0.f",
+          "lstmcell.step0.g",
+          "lstmcell.step0.o"
+        ]
+      ],
+      "rank_gap": 52,
+      "column_gap": 48,
+      "parent": "lstmcell.step0",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.i",
+      "label": "Input gate i: Sigmoid",
+      "kind": "activation",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "activation": "sigmoid",
+      "gate_name": "i",
+      "input_selector": "item[0]",
+      "param_identity": "cell four fused parameters; i rows [0:16]",
+      "parameter_slice": {
+        "parameters": [
+          "cell.weight_ih",
+          "cell.weight_hh",
+          "cell.bias_ih",
+          "cell.bias_hh"
+        ],
+        "rows": [
+          0,
+          16
+        ]
+      },
+      "expression": "torch.sigmoid(ingate)",
+      "parent": "lstmcell.step0.gates",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.f",
+      "label": "Forget gate f: Sigmoid",
+      "kind": "activation",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "activation": "sigmoid",
+      "gate_name": "f",
+      "input_selector": "item[1]",
+      "param_identity": "cell four fused parameters; f rows [16:32]",
+      "parameter_slice": {
+        "parameters": [
+          "cell.weight_ih",
+          "cell.weight_hh",
+          "cell.bias_ih",
+          "cell.bias_hh"
+        ],
+        "rows": [
+          16,
+          32
+        ]
+      },
+      "expression": "torch.sigmoid(forgetgate)",
+      "parent": "lstmcell.step0.gates",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.g",
+      "label": "Candidate g: Tanh",
+      "kind": "activation",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "activation": "tanh",
+      "gate_name": "g",
+      "input_selector": "item[2]",
+      "param_identity": "cell four fused parameters; g rows [32:48]",
+      "parameter_slice": {
+        "parameters": [
+          "cell.weight_ih",
+          "cell.weight_hh",
+          "cell.bias_ih",
+          "cell.bias_hh"
+        ],
+        "rows": [
+          32,
+          48
+        ]
+      },
+      "expression": "torch.tanh(cellgate)",
+      "parent": "lstmcell.step0.gates",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.o",
+      "label": "Output gate o: Sigmoid",
+      "kind": "activation",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "activation": "sigmoid",
+      "gate_name": "o",
+      "input_selector": "item[3]",
+      "param_identity": "cell four fused parameters; o rows [48:64]",
+      "parameter_slice": {
+        "parameters": [
+          "cell.weight_ih",
+          "cell.weight_hh",
+          "cell.bias_ih",
+          "cell.bias_hh"
+        ],
+        "rows": [
+          48,
+          64
+        ]
+      },
+      "expression": "torch.sigmoid(outgate)",
+      "parent": "lstmcell.step0.gates",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.cell_update",
+      "label": "Cell state update",
+      "kind": "group",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "c_t = f*c_prev + i*g",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "lstmcell.step0.forget_mul",
+          "lstmcell.step0.input_mul"
+        ],
+        [
+          "lstmcell.step0.cy"
+        ]
+      ],
+      "rank_gap": 52,
+      "column_gap": 48,
+      "parent": "lstmcell.step0",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.forget_mul",
+      "label": "Multiply f * previous c",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operation": "multiply",
+      "expression": "forgetgate * cx",
+      "operands": [
+        "lstmcell.step0.f",
+        "lstmcell.step0.cx"
+      ],
+      "parent": "lstmcell.step0.cell_update",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "f",
+        "previous_c"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.input_mul",
+      "label": "Multiply i * candidate g",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operation": "multiply",
+      "expression": "ingate * cellgate",
+      "operands": [
+        "lstmcell.step0.i",
+        "lstmcell.step0.g"
+      ],
+      "parent": "lstmcell.step0.cell_update",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "i",
+        "g"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.cy",
+      "label": "Add terms -> cell c_0",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operation": "add",
+      "expression": "(forgetgate * cx) + (ingate * cellgate)",
+      "operands": [
+        "lstmcell.step0.forget_mul",
+        "lstmcell.step0.input_mul"
+      ],
+      "state_role": "cell",
+      "time_index": 0,
+      "parent": "lstmcell.step0.cell_update",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "retained",
+        "new"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.hidden_update",
+      "label": "Hidden state update",
+      "kind": "group",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "h_t = o*tanh(c_t)",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "lstmcell.step0.tanh_c"
+        ],
+        [
+          "lstmcell.step0.hy"
+        ]
+      ],
+      "rank_gap": 52,
+      "column_gap": 48,
+      "parent": "lstmcell.step0",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.tanh_c",
+      "label": "Tanh updated cell",
+      "kind": "activation",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "activation": "tanh",
+      "expression": "torch.tanh(cy)",
+      "parent": "lstmcell.step0.hidden_update",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.hy",
+      "label": "Multiply o * tanh(c) -> h_0",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operation": "multiply",
+      "expression": "outgate * torch.tanh(cy)",
+      "operands": [
+        "lstmcell.step0.o",
+        "lstmcell.step0.tanh_c"
+      ],
+      "state_role": "hidden",
+      "time_index": 0,
+      "parent": "lstmcell.step0.hidden_update",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "tanh_c",
+        "o"
+      ]
+    },
+    {
+      "id": "lstmcell.step0.return",
+      "label": "Return h, (h, c)",
+      "kind": "output",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "h: [B,16]; state: 2 tensors",
+      "detail": [],
+      "output_tuple": [
+        "hy",
+        [
+          "hy",
+          "cy"
+        ]
+      ],
+      "aliases": {
+        "output": "state[0]"
+      },
+      "parent": "lstmcell.step0",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "output_hidden",
+        "state_hidden",
+        "state_cell"
+      ]
+    },
+    {
+      "id": "lstmcell.step1",
+      "label": "LSTM cell / time 1",
+      "kind": "group",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "(output h, state(h,c))",
+      "detail": [
+        "Same self.cell instance and same four parameter tensors at every time step"
+      ],
+      "instance_identity": "self.cell",
+      "parameter_scope": "cell",
+      "time_index": 1,
+      "temporal_parameter_sharing": true,
+      "mode": "graph",
+      "ranks": [
+        [
+          "lstmcell.step1.x",
+          "lstmcell.step1.hx",
+          "lstmcell.step1.cx"
+        ],
+        [
+          "lstmcell.step1.affine"
+        ],
+        [
+          "lstmcell.step1.chunk"
+        ],
+        [
+          "lstmcell.step1.gates"
+        ],
+        [
+          "lstmcell.step1.cell_update"
+        ],
+        [
+          "lstmcell.step1.hidden_update"
+        ],
+        [
+          "lstmcell.step1.return"
+        ]
+      ],
+      "rank_gap": 52,
+      "column_gap": 48,
+      "parent": "lstmcell.root",
+      "source_evidence": [
+        "E006",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.x",
+      "label": "Input x_1",
+      "kind": "input",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "expression": "inputs[1]",
+      "time_index": 1,
+      "parent": "lstmcell.step1",
+      "source_evidence": [
+        "E006",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.hx",
+      "label": "Previous hidden h_0",
+      "kind": "tensor",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "input_selector": "state[0]",
+      "state_role": "hidden",
+      "time_index": 0,
+      "parent": "lstmcell.step1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.cx",
+      "label": "Previous cell c_0",
+      "kind": "tensor",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "input_selector": "state[1]",
+      "state_role": "cell",
+      "time_index": 0,
+      "parent": "lstmcell.step1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.affine",
+      "label": "Fused four-gate affine",
+      "kind": "group",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.__init__",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "gates: [B,4H=64]",
+      "detail": [
+        "Two matrices store all four gate row slices; source does not concatenate x and h"
+      ],
+      "parameter_scope": "cell",
+      "source_addition_order": [
+        "x_mm",
+        "bias_ih",
+        "h_mm",
+        "bias_hh"
+      ],
+      "mode": "graph",
+      "ranks": [
+        [
+          "lstmcell.step1.x_mm",
+          "lstmcell.step1.h_mm"
+        ],
+        [
+          "lstmcell.step1.b_ih"
+        ],
+        [
+          "lstmcell.step1.affine_add"
+        ],
+        [
+          "lstmcell.step1.b_hh"
+        ]
+      ],
+      "rank_gap": 52,
+      "column_gap": 48,
+      "parent": "lstmcell.step1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.x_mm",
+      "label": "MatMul x W_ih^T",
+      "kind": "linear",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.__init__",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "parameter": "cell.weight_ih",
+      "parameter_shape": [
+        64,
+        8
+      ],
+      "expression": "torch.mm(input, self.weight_ih.t())",
+      "parent": "lstmcell.step1.affine",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.h_mm",
+      "label": "MatMul h W_hh^T",
+      "kind": "linear",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.__init__",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "parameter": "cell.weight_hh",
+      "parameter_shape": [
+        64,
+        16
+      ],
+      "expression": "torch.mm(hx, self.weight_hh.t())",
+      "parent": "lstmcell.step1.affine",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.b_ih",
+      "label": "Add input bias b_ih",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.__init__",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "operation": "add",
+      "parameter": "cell.bias_ih",
+      "parameter_shape": [
+        64
+      ],
+      "expression": "x_affine + self.bias_ih",
+      "parent": "lstmcell.step1.affine",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.affine_add",
+      "label": "Add hidden projection",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "operation": "add",
+      "expression": "(x_affine + bias_ih) + h_affine",
+      "parent": "lstmcell.step1.affine",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "x_affine",
+        "h_affine"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.b_hh",
+      "label": "Add hidden bias b_hh",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.__init__",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "operation": "add",
+      "parameter": "cell.bias_hh",
+      "parameter_shape": [
+        64
+      ],
+      "expression": "((x_affine + bias_ih) + h_affine) + self.bias_hh",
+      "parent": "lstmcell.step1.affine",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.chunk",
+      "label": "Chunk gates: i / f / g / o",
+      "kind": "tensor",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "4 x [B,16]",
+      "detail": [],
+      "expression": "gates.chunk(4, 1)",
+      "chunk_order": [
+        "i",
+        "f",
+        "g",
+        "o"
+      ],
+      "dim": 1,
+      "parent": "lstmcell.step1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "item[2]",
+        "item[3]"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.gates",
+      "label": "Four distinct gate slices",
+      "kind": "group",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "i, f, g, o: [B,H]",
+      "detail": [
+        "i/f/o use sigmoid; candidate g uses tanh; slices belong to the same fused matrices"
+      ],
+      "mode": "graph",
+      "ranks": [
+        [
+          "lstmcell.step1.i",
+          "lstmcell.step1.f",
+          "lstmcell.step1.g",
+          "lstmcell.step1.o"
+        ]
+      ],
+      "rank_gap": 52,
+      "column_gap": 48,
+      "parent": "lstmcell.step1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.i",
+      "label": "Input gate i: Sigmoid",
+      "kind": "activation",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "activation": "sigmoid",
+      "gate_name": "i",
+      "input_selector": "item[0]",
+      "param_identity": "cell four fused parameters; i rows [0:16]",
+      "parameter_slice": {
+        "parameters": [
+          "cell.weight_ih",
+          "cell.weight_hh",
+          "cell.bias_ih",
+          "cell.bias_hh"
+        ],
+        "rows": [
+          0,
+          16
+        ]
+      },
+      "expression": "torch.sigmoid(ingate)",
+      "parent": "lstmcell.step1.gates",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.f",
+      "label": "Forget gate f: Sigmoid",
+      "kind": "activation",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "activation": "sigmoid",
+      "gate_name": "f",
+      "input_selector": "item[1]",
+      "param_identity": "cell four fused parameters; f rows [16:32]",
+      "parameter_slice": {
+        "parameters": [
+          "cell.weight_ih",
+          "cell.weight_hh",
+          "cell.bias_ih",
+          "cell.bias_hh"
+        ],
+        "rows": [
+          16,
+          32
+        ]
+      },
+      "expression": "torch.sigmoid(forgetgate)",
+      "parent": "lstmcell.step1.gates",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.g",
+      "label": "Candidate g: Tanh",
+      "kind": "activation",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "activation": "tanh",
+      "gate_name": "g",
+      "input_selector": "item[2]",
+      "param_identity": "cell four fused parameters; g rows [32:48]",
+      "parameter_slice": {
+        "parameters": [
+          "cell.weight_ih",
+          "cell.weight_hh",
+          "cell.bias_ih",
+          "cell.bias_hh"
+        ],
+        "rows": [
+          32,
+          48
+        ]
+      },
+      "expression": "torch.tanh(cellgate)",
+      "parent": "lstmcell.step1.gates",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.o",
+      "label": "Output gate o: Sigmoid",
+      "kind": "activation",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "activation": "sigmoid",
+      "gate_name": "o",
+      "input_selector": "item[3]",
+      "param_identity": "cell four fused parameters; o rows [48:64]",
+      "parameter_slice": {
+        "parameters": [
+          "cell.weight_ih",
+          "cell.weight_hh",
+          "cell.bias_ih",
+          "cell.bias_hh"
+        ],
+        "rows": [
+          48,
+          64
+        ]
+      },
+      "expression": "torch.sigmoid(outgate)",
+      "parent": "lstmcell.step1.gates",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.cell_update",
+      "label": "Cell state update",
+      "kind": "group",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "c_t = f*c_prev + i*g",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "lstmcell.step1.forget_mul",
+          "lstmcell.step1.input_mul"
+        ],
+        [
+          "lstmcell.step1.cy"
+        ]
+      ],
+      "rank_gap": 52,
+      "column_gap": 48,
+      "parent": "lstmcell.step1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.forget_mul",
+      "label": "Multiply f * previous c",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operation": "multiply",
+      "expression": "forgetgate * cx",
+      "operands": [
+        "lstmcell.step1.f",
+        "lstmcell.step1.cx"
+      ],
+      "parent": "lstmcell.step1.cell_update",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "f",
+        "previous_c"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.input_mul",
+      "label": "Multiply i * candidate g",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operation": "multiply",
+      "expression": "ingate * cellgate",
+      "operands": [
+        "lstmcell.step1.i",
+        "lstmcell.step1.g"
+      ],
+      "parent": "lstmcell.step1.cell_update",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "i",
+        "g"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.cy",
+      "label": "Add terms -> cell c_1",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operation": "add",
+      "expression": "(forgetgate * cx) + (ingate * cellgate)",
+      "operands": [
+        "lstmcell.step1.forget_mul",
+        "lstmcell.step1.input_mul"
+      ],
+      "state_role": "cell",
+      "time_index": 1,
+      "parent": "lstmcell.step1.cell_update",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "retained",
+        "new"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.hidden_update",
+      "label": "Hidden state update",
+      "kind": "group",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "h_t = o*tanh(c_t)",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "lstmcell.step1.tanh_c"
+        ],
+        [
+          "lstmcell.step1.hy"
+        ]
+      ],
+      "rank_gap": 52,
+      "column_gap": 48,
+      "parent": "lstmcell.step1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.tanh_c",
+      "label": "Tanh updated cell",
+      "kind": "activation",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "activation": "tanh",
+      "expression": "torch.tanh(cy)",
+      "parent": "lstmcell.step1.hidden_update",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.hy",
+      "label": "Multiply o * tanh(c) -> h_1",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operation": "multiply",
+      "expression": "outgate * torch.tanh(cy)",
+      "operands": [
+        "lstmcell.step1.o",
+        "lstmcell.step1.tanh_c"
+      ],
+      "state_role": "hidden",
+      "time_index": 1,
+      "parent": "lstmcell.step1.hidden_update",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "tanh_c",
+        "o"
+      ]
+    },
+    {
+      "id": "lstmcell.step1.return",
+      "label": "Return h, (h, c)",
+      "kind": "output",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "h: [B,16]; state: 2 tensors",
+      "detail": [],
+      "output_tuple": [
+        "hy",
+        [
+          "hy",
+          "cy"
+        ]
+      ],
+      "aliases": {
+        "output": "state[0]"
+      },
+      "parent": "lstmcell.step1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "output_hidden",
+        "state_hidden",
+        "state_cell"
+      ]
+    },
+    {
+      "id": "lstmcell.step2",
+      "label": "LSTM cell / time 2",
+      "kind": "group",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "(output h, state(h,c))",
+      "detail": [
+        "Same self.cell instance and same four parameter tensors at every time step"
+      ],
+      "instance_identity": "self.cell",
+      "parameter_scope": "cell",
+      "time_index": 2,
+      "temporal_parameter_sharing": true,
+      "mode": "graph",
+      "ranks": [
+        [
+          "lstmcell.step2.x",
+          "lstmcell.step2.hx",
+          "lstmcell.step2.cx"
+        ],
+        [
+          "lstmcell.step2.affine"
+        ],
+        [
+          "lstmcell.step2.chunk"
+        ],
+        [
+          "lstmcell.step2.gates"
+        ],
+        [
+          "lstmcell.step2.cell_update"
+        ],
+        [
+          "lstmcell.step2.hidden_update"
+        ],
+        [
+          "lstmcell.step2.return"
+        ]
+      ],
+      "rank_gap": 52,
+      "column_gap": 48,
+      "parent": "lstmcell.root",
+      "source_evidence": [
+        "E006",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.x",
+      "label": "Input x_2",
+      "kind": "input",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "expression": "inputs[2]",
+      "time_index": 2,
+      "parent": "lstmcell.step2",
+      "source_evidence": [
+        "E006",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.hx",
+      "label": "Previous hidden h_1",
+      "kind": "tensor",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "input_selector": "state[0]",
+      "state_role": "hidden",
+      "time_index": 1,
+      "parent": "lstmcell.step2",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.cx",
+      "label": "Previous cell c_1",
+      "kind": "tensor",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "input_selector": "state[1]",
+      "state_role": "cell",
+      "time_index": 1,
+      "parent": "lstmcell.step2",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.affine",
+      "label": "Fused four-gate affine",
+      "kind": "group",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.__init__",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "gates: [B,4H=64]",
+      "detail": [
+        "Two matrices store all four gate row slices; source does not concatenate x and h"
+      ],
+      "parameter_scope": "cell",
+      "source_addition_order": [
+        "x_mm",
+        "bias_ih",
+        "h_mm",
+        "bias_hh"
+      ],
+      "mode": "graph",
+      "ranks": [
+        [
+          "lstmcell.step2.x_mm",
+          "lstmcell.step2.h_mm"
+        ],
+        [
+          "lstmcell.step2.b_ih"
+        ],
+        [
+          "lstmcell.step2.affine_add"
+        ],
+        [
+          "lstmcell.step2.b_hh"
+        ]
+      ],
+      "rank_gap": 52,
+      "column_gap": 48,
+      "parent": "lstmcell.step2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.x_mm",
+      "label": "MatMul x W_ih^T",
+      "kind": "linear",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.__init__",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "parameter": "cell.weight_ih",
+      "parameter_shape": [
+        64,
+        8
+      ],
+      "expression": "torch.mm(input, self.weight_ih.t())",
+      "parent": "lstmcell.step2.affine",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.h_mm",
+      "label": "MatMul h W_hh^T",
+      "kind": "linear",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.__init__",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "parameter": "cell.weight_hh",
+      "parameter_shape": [
+        64,
+        16
+      ],
+      "expression": "torch.mm(hx, self.weight_hh.t())",
+      "parent": "lstmcell.step2.affine",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.b_ih",
+      "label": "Add input bias b_ih",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.__init__",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "operation": "add",
+      "parameter": "cell.bias_ih",
+      "parameter_shape": [
+        64
+      ],
+      "expression": "x_affine + self.bias_ih",
+      "parent": "lstmcell.step2.affine",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.affine_add",
+      "label": "Add hidden projection",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "operation": "add",
+      "expression": "(x_affine + bias_ih) + h_affine",
+      "parent": "lstmcell.step2.affine",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "x_affine",
+        "h_affine"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.b_hh",
+      "label": "Add hidden bias b_hh",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.__init__",
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "operation": "add",
+      "parameter": "cell.bias_hh",
+      "parameter_shape": [
+        64
+      ],
+      "expression": "((x_affine + bias_ih) + h_affine) + self.bias_hh",
+      "parent": "lstmcell.step2.affine",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.chunk",
+      "label": "Chunk gates: i / f / g / o",
+      "kind": "tensor",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "4 x [B,16]",
+      "detail": [],
+      "expression": "gates.chunk(4, 1)",
+      "chunk_order": [
+        "i",
+        "f",
+        "g",
+        "o"
+      ],
+      "dim": 1,
+      "parent": "lstmcell.step2",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "item[2]",
+        "item[3]"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.gates",
+      "label": "Four distinct gate slices",
+      "kind": "group",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "i, f, g, o: [B,H]",
+      "detail": [
+        "i/f/o use sigmoid; candidate g uses tanh; slices belong to the same fused matrices"
+      ],
+      "mode": "graph",
+      "ranks": [
+        [
+          "lstmcell.step2.i",
+          "lstmcell.step2.f",
+          "lstmcell.step2.g",
+          "lstmcell.step2.o"
+        ]
+      ],
+      "rank_gap": 52,
+      "column_gap": 48,
+      "parent": "lstmcell.step2",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.i",
+      "label": "Input gate i: Sigmoid",
+      "kind": "activation",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "activation": "sigmoid",
+      "gate_name": "i",
+      "input_selector": "item[0]",
+      "param_identity": "cell four fused parameters; i rows [0:16]",
+      "parameter_slice": {
+        "parameters": [
+          "cell.weight_ih",
+          "cell.weight_hh",
+          "cell.bias_ih",
+          "cell.bias_hh"
+        ],
+        "rows": [
+          0,
+          16
+        ]
+      },
+      "expression": "torch.sigmoid(ingate)",
+      "parent": "lstmcell.step2.gates",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.f",
+      "label": "Forget gate f: Sigmoid",
+      "kind": "activation",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "activation": "sigmoid",
+      "gate_name": "f",
+      "input_selector": "item[1]",
+      "param_identity": "cell four fused parameters; f rows [16:32]",
+      "parameter_slice": {
+        "parameters": [
+          "cell.weight_ih",
+          "cell.weight_hh",
+          "cell.bias_ih",
+          "cell.bias_hh"
+        ],
+        "rows": [
+          16,
+          32
+        ]
+      },
+      "expression": "torch.sigmoid(forgetgate)",
+      "parent": "lstmcell.step2.gates",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.g",
+      "label": "Candidate g: Tanh",
+      "kind": "activation",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "activation": "tanh",
+      "gate_name": "g",
+      "input_selector": "item[2]",
+      "param_identity": "cell four fused parameters; g rows [32:48]",
+      "parameter_slice": {
+        "parameters": [
+          "cell.weight_ih",
+          "cell.weight_hh",
+          "cell.bias_ih",
+          "cell.bias_hh"
+        ],
+        "rows": [
+          32,
+          48
+        ]
+      },
+      "expression": "torch.tanh(cellgate)",
+      "parent": "lstmcell.step2.gates",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.o",
+      "label": "Output gate o: Sigmoid",
+      "kind": "activation",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "activation": "sigmoid",
+      "gate_name": "o",
+      "input_selector": "item[3]",
+      "param_identity": "cell four fused parameters; o rows [48:64]",
+      "parameter_slice": {
+        "parameters": [
+          "cell.weight_ih",
+          "cell.weight_hh",
+          "cell.bias_ih",
+          "cell.bias_hh"
+        ],
+        "rows": [
+          48,
+          64
+        ]
+      },
+      "expression": "torch.sigmoid(outgate)",
+      "parent": "lstmcell.step2.gates",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.cell_update",
+      "label": "Cell state update",
+      "kind": "group",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "c_t = f*c_prev + i*g",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "lstmcell.step2.forget_mul",
+          "lstmcell.step2.input_mul"
+        ],
+        [
+          "lstmcell.step2.cy"
+        ]
+      ],
+      "rank_gap": 52,
+      "column_gap": 48,
+      "parent": "lstmcell.step2",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.forget_mul",
+      "label": "Multiply f * previous c",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operation": "multiply",
+      "expression": "forgetgate * cx",
+      "operands": [
+        "lstmcell.step2.f",
+        "lstmcell.step2.cx"
+      ],
+      "parent": "lstmcell.step2.cell_update",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "f",
+        "previous_c"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.input_mul",
+      "label": "Multiply i * candidate g",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operation": "multiply",
+      "expression": "ingate * cellgate",
+      "operands": [
+        "lstmcell.step2.i",
+        "lstmcell.step2.g"
+      ],
+      "parent": "lstmcell.step2.cell_update",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "i",
+        "g"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.cy",
+      "label": "Add terms -> cell c_2",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operation": "add",
+      "expression": "(forgetgate * cx) + (ingate * cellgate)",
+      "operands": [
+        "lstmcell.step2.forget_mul",
+        "lstmcell.step2.input_mul"
+      ],
+      "state_role": "cell",
+      "time_index": 2,
+      "parent": "lstmcell.step2.cell_update",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "retained",
+        "new"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.hidden_update",
+      "label": "Hidden state update",
+      "kind": "group",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "h_t = o*tanh(c_t)",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "lstmcell.step2.tanh_c"
+        ],
+        [
+          "lstmcell.step2.hy"
+        ]
+      ],
+      "rank_gap": 52,
+      "column_gap": 48,
+      "parent": "lstmcell.step2",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.tanh_c",
+      "label": "Tanh updated cell",
+      "kind": "activation",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "activation": "tanh",
+      "expression": "torch.tanh(cy)",
+      "parent": "lstmcell.step2.hidden_update",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.hy",
+      "label": "Multiply o * tanh(c) -> h_2",
+      "kind": "arithmetic",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "operation": "multiply",
+      "expression": "outgate * torch.tanh(cy)",
+      "operands": [
+        "lstmcell.step2.o",
+        "lstmcell.step2.tanh_c"
+      ],
+      "state_role": "hidden",
+      "time_index": 2,
+      "parent": "lstmcell.step2.hidden_update",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "tanh_c",
+        "o"
+      ]
+    },
+    {
+      "id": "lstmcell.step2.return",
+      "label": "Return h, (h, c)",
+      "kind": "output",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMCell.forward"
+      ],
+      "shape": "h: [B,16]; state: 2 tensors",
+      "detail": [],
+      "output_tuple": [
+        "hy",
+        [
+          "hy",
+          "cy"
+        ]
+      ],
+      "aliases": {
+        "output": "state[0]"
+      },
+      "parent": "lstmcell.step2",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "output_hidden",
+        "state_hidden",
+        "state_cell"
+      ]
+    },
+    {
+      "id": "lstmcell.stack",
+      "label": "Stack all time outputs",
+      "kind": "tensor",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward"
+      ],
+      "shape": "[3,B,16]",
+      "detail": [],
+      "expression": "torch.stack(outputs)",
+      "dim": 0,
+      "ordered_inputs": [
+        "lstmcell.step0.hy",
+        "lstmcell.step1.hy",
+        "lstmcell.step2.hy"
+      ],
+      "parent": "lstmcell.root",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "item[2]"
+      ]
+    },
+    {
+      "id": "lstmcell.return",
+      "label": "Layer return: sequence, final state",
+      "kind": "output",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward"
+      ],
+      "shape": "[3,B,16], ([B,16],[B,16])",
+      "detail": [],
+      "output_tuple": [
+        "outputs",
+        [
+          "h_final",
+          "c_final"
+        ]
+      ],
+      "final_time_index": 2,
+      "parent": "lstmcell.root",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "output_sequence",
+        "final_hidden",
+        "final_cell"
+      ]
+    },
+    {
+      "id": "lstmcell.initial_h",
+      "label": "External initial hidden",
+      "kind": "input",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "origin": "external state argument",
+      "initial_state_default": null,
+      "state_role": "hidden",
+      "parent": null,
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lstmcell.initial_c",
+      "label": "External initial cell",
+      "kind": "input",
+      "source": [
+        "pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py::LSTMLayer.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "origin": "external state argument",
+      "initial_state_default": null,
+      "state_role": "cell",
+      "parent": null,
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "lstmcell.step0.x:out->lstmcell.step0.x_mm:in:tensor",
+      "src": "lstmcell.step0.x",
+      "dst": "lstmcell.step0.x_mm",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.hx:out->lstmcell.step0.h_mm:in:tensor",
+      "src": "lstmcell.step0.hx",
+      "dst": "lstmcell.step0.h_mm",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.x_mm:out->lstmcell.step0.b_ih:in:tensor",
+      "src": "lstmcell.step0.x_mm",
+      "dst": "lstmcell.step0.b_ih",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.b_ih:out->lstmcell.step0.affine_add:x_affine:tensor",
+      "src": "lstmcell.step0.b_ih",
+      "dst": "lstmcell.step0.affine_add",
+      "src_port": "out",
+      "dst_port": "x_affine",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.h_mm:out->lstmcell.step0.affine_add:h_affine:tensor",
+      "src": "lstmcell.step0.h_mm",
+      "dst": "lstmcell.step0.affine_add",
+      "src_port": "out",
+      "dst_port": "h_affine",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.affine_add:out->lstmcell.step0.b_hh:in:tensor",
+      "src": "lstmcell.step0.affine_add",
+      "dst": "lstmcell.step0.b_hh",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.b_hh:out->lstmcell.step0.chunk:in:tensor",
+      "src": "lstmcell.step0.b_hh",
+      "dst": "lstmcell.step0.chunk",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.chunk:item[0]->lstmcell.step0.i:in:gate_slice",
+      "src": "lstmcell.step0.chunk",
+      "dst": "lstmcell.step0.i",
+      "src_port": "item[0]",
+      "dst_port": "in",
+      "role": "gate_slice"
+    },
+    {
+      "id": "lstmcell.step0.chunk:item[1]->lstmcell.step0.f:in:gate_slice",
+      "src": "lstmcell.step0.chunk",
+      "dst": "lstmcell.step0.f",
+      "src_port": "item[1]",
+      "dst_port": "in",
+      "role": "gate_slice"
+    },
+    {
+      "id": "lstmcell.step0.chunk:item[2]->lstmcell.step0.g:in:gate_slice",
+      "src": "lstmcell.step0.chunk",
+      "dst": "lstmcell.step0.g",
+      "src_port": "item[2]",
+      "dst_port": "in",
+      "role": "gate_slice"
+    },
+    {
+      "id": "lstmcell.step0.chunk:item[3]->lstmcell.step0.o:in:gate_slice",
+      "src": "lstmcell.step0.chunk",
+      "dst": "lstmcell.step0.o",
+      "src_port": "item[3]",
+      "dst_port": "in",
+      "role": "gate_slice"
+    },
+    {
+      "id": "lstmcell.step0.f:out->lstmcell.step0.forget_mul:f:tensor",
+      "src": "lstmcell.step0.f",
+      "dst": "lstmcell.step0.forget_mul",
+      "src_port": "out",
+      "dst_port": "f",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.cx:out->lstmcell.step0.forget_mul:previous_c:tensor",
+      "src": "lstmcell.step0.cx",
+      "dst": "lstmcell.step0.forget_mul",
+      "src_port": "out",
+      "dst_port": "previous_c",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.i:out->lstmcell.step0.input_mul:i:tensor",
+      "src": "lstmcell.step0.i",
+      "dst": "lstmcell.step0.input_mul",
+      "src_port": "out",
+      "dst_port": "i",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.g:out->lstmcell.step0.input_mul:g:tensor",
+      "src": "lstmcell.step0.g",
+      "dst": "lstmcell.step0.input_mul",
+      "src_port": "out",
+      "dst_port": "g",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.forget_mul:out->lstmcell.step0.cy:retained:tensor",
+      "src": "lstmcell.step0.forget_mul",
+      "dst": "lstmcell.step0.cy",
+      "src_port": "out",
+      "dst_port": "retained",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.input_mul:out->lstmcell.step0.cy:new:tensor",
+      "src": "lstmcell.step0.input_mul",
+      "dst": "lstmcell.step0.cy",
+      "src_port": "out",
+      "dst_port": "new",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.cy:out->lstmcell.step0.tanh_c:in:tensor",
+      "src": "lstmcell.step0.cy",
+      "dst": "lstmcell.step0.tanh_c",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.tanh_c:out->lstmcell.step0.hy:tanh_c:tensor",
+      "src": "lstmcell.step0.tanh_c",
+      "dst": "lstmcell.step0.hy",
+      "src_port": "out",
+      "dst_port": "tanh_c",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.o:out->lstmcell.step0.hy:o:tensor",
+      "src": "lstmcell.step0.o",
+      "dst": "lstmcell.step0.hy",
+      "src_port": "out",
+      "dst_port": "o",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.hy:out->lstmcell.step0.return:output_hidden:tensor",
+      "src": "lstmcell.step0.hy",
+      "dst": "lstmcell.step0.return",
+      "src_port": "out",
+      "dst_port": "output_hidden",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.hy:out->lstmcell.step0.return:state_hidden:tensor",
+      "src": "lstmcell.step0.hy",
+      "dst": "lstmcell.step0.return",
+      "src_port": "out",
+      "dst_port": "state_hidden",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.cy:out->lstmcell.step0.return:state_cell:tensor",
+      "src": "lstmcell.step0.cy",
+      "dst": "lstmcell.step0.return",
+      "src_port": "out",
+      "dst_port": "state_cell",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.x:out->lstmcell.step1.x_mm:in:tensor",
+      "src": "lstmcell.step1.x",
+      "dst": "lstmcell.step1.x_mm",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.hx:out->lstmcell.step1.h_mm:in:tensor",
+      "src": "lstmcell.step1.hx",
+      "dst": "lstmcell.step1.h_mm",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.x_mm:out->lstmcell.step1.b_ih:in:tensor",
+      "src": "lstmcell.step1.x_mm",
+      "dst": "lstmcell.step1.b_ih",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.b_ih:out->lstmcell.step1.affine_add:x_affine:tensor",
+      "src": "lstmcell.step1.b_ih",
+      "dst": "lstmcell.step1.affine_add",
+      "src_port": "out",
+      "dst_port": "x_affine",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.h_mm:out->lstmcell.step1.affine_add:h_affine:tensor",
+      "src": "lstmcell.step1.h_mm",
+      "dst": "lstmcell.step1.affine_add",
+      "src_port": "out",
+      "dst_port": "h_affine",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.affine_add:out->lstmcell.step1.b_hh:in:tensor",
+      "src": "lstmcell.step1.affine_add",
+      "dst": "lstmcell.step1.b_hh",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.b_hh:out->lstmcell.step1.chunk:in:tensor",
+      "src": "lstmcell.step1.b_hh",
+      "dst": "lstmcell.step1.chunk",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.chunk:item[0]->lstmcell.step1.i:in:gate_slice",
+      "src": "lstmcell.step1.chunk",
+      "dst": "lstmcell.step1.i",
+      "src_port": "item[0]",
+      "dst_port": "in",
+      "role": "gate_slice"
+    },
+    {
+      "id": "lstmcell.step1.chunk:item[1]->lstmcell.step1.f:in:gate_slice",
+      "src": "lstmcell.step1.chunk",
+      "dst": "lstmcell.step1.f",
+      "src_port": "item[1]",
+      "dst_port": "in",
+      "role": "gate_slice"
+    },
+    {
+      "id": "lstmcell.step1.chunk:item[2]->lstmcell.step1.g:in:gate_slice",
+      "src": "lstmcell.step1.chunk",
+      "dst": "lstmcell.step1.g",
+      "src_port": "item[2]",
+      "dst_port": "in",
+      "role": "gate_slice"
+    },
+    {
+      "id": "lstmcell.step1.chunk:item[3]->lstmcell.step1.o:in:gate_slice",
+      "src": "lstmcell.step1.chunk",
+      "dst": "lstmcell.step1.o",
+      "src_port": "item[3]",
+      "dst_port": "in",
+      "role": "gate_slice"
+    },
+    {
+      "id": "lstmcell.step1.f:out->lstmcell.step1.forget_mul:f:tensor",
+      "src": "lstmcell.step1.f",
+      "dst": "lstmcell.step1.forget_mul",
+      "src_port": "out",
+      "dst_port": "f",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.cx:out->lstmcell.step1.forget_mul:previous_c:tensor",
+      "src": "lstmcell.step1.cx",
+      "dst": "lstmcell.step1.forget_mul",
+      "src_port": "out",
+      "dst_port": "previous_c",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.i:out->lstmcell.step1.input_mul:i:tensor",
+      "src": "lstmcell.step1.i",
+      "dst": "lstmcell.step1.input_mul",
+      "src_port": "out",
+      "dst_port": "i",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.g:out->lstmcell.step1.input_mul:g:tensor",
+      "src": "lstmcell.step1.g",
+      "dst": "lstmcell.step1.input_mul",
+      "src_port": "out",
+      "dst_port": "g",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.forget_mul:out->lstmcell.step1.cy:retained:tensor",
+      "src": "lstmcell.step1.forget_mul",
+      "dst": "lstmcell.step1.cy",
+      "src_port": "out",
+      "dst_port": "retained",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.input_mul:out->lstmcell.step1.cy:new:tensor",
+      "src": "lstmcell.step1.input_mul",
+      "dst": "lstmcell.step1.cy",
+      "src_port": "out",
+      "dst_port": "new",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.cy:out->lstmcell.step1.tanh_c:in:tensor",
+      "src": "lstmcell.step1.cy",
+      "dst": "lstmcell.step1.tanh_c",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.tanh_c:out->lstmcell.step1.hy:tanh_c:tensor",
+      "src": "lstmcell.step1.tanh_c",
+      "dst": "lstmcell.step1.hy",
+      "src_port": "out",
+      "dst_port": "tanh_c",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.o:out->lstmcell.step1.hy:o:tensor",
+      "src": "lstmcell.step1.o",
+      "dst": "lstmcell.step1.hy",
+      "src_port": "out",
+      "dst_port": "o",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.hy:out->lstmcell.step1.return:output_hidden:tensor",
+      "src": "lstmcell.step1.hy",
+      "dst": "lstmcell.step1.return",
+      "src_port": "out",
+      "dst_port": "output_hidden",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.hy:out->lstmcell.step1.return:state_hidden:tensor",
+      "src": "lstmcell.step1.hy",
+      "dst": "lstmcell.step1.return",
+      "src_port": "out",
+      "dst_port": "state_hidden",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.cy:out->lstmcell.step1.return:state_cell:tensor",
+      "src": "lstmcell.step1.cy",
+      "dst": "lstmcell.step1.return",
+      "src_port": "out",
+      "dst_port": "state_cell",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.x:out->lstmcell.step2.x_mm:in:tensor",
+      "src": "lstmcell.step2.x",
+      "dst": "lstmcell.step2.x_mm",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.hx:out->lstmcell.step2.h_mm:in:tensor",
+      "src": "lstmcell.step2.hx",
+      "dst": "lstmcell.step2.h_mm",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.x_mm:out->lstmcell.step2.b_ih:in:tensor",
+      "src": "lstmcell.step2.x_mm",
+      "dst": "lstmcell.step2.b_ih",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.b_ih:out->lstmcell.step2.affine_add:x_affine:tensor",
+      "src": "lstmcell.step2.b_ih",
+      "dst": "lstmcell.step2.affine_add",
+      "src_port": "out",
+      "dst_port": "x_affine",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.h_mm:out->lstmcell.step2.affine_add:h_affine:tensor",
+      "src": "lstmcell.step2.h_mm",
+      "dst": "lstmcell.step2.affine_add",
+      "src_port": "out",
+      "dst_port": "h_affine",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.affine_add:out->lstmcell.step2.b_hh:in:tensor",
+      "src": "lstmcell.step2.affine_add",
+      "dst": "lstmcell.step2.b_hh",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.b_hh:out->lstmcell.step2.chunk:in:tensor",
+      "src": "lstmcell.step2.b_hh",
+      "dst": "lstmcell.step2.chunk",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.chunk:item[0]->lstmcell.step2.i:in:gate_slice",
+      "src": "lstmcell.step2.chunk",
+      "dst": "lstmcell.step2.i",
+      "src_port": "item[0]",
+      "dst_port": "in",
+      "role": "gate_slice"
+    },
+    {
+      "id": "lstmcell.step2.chunk:item[1]->lstmcell.step2.f:in:gate_slice",
+      "src": "lstmcell.step2.chunk",
+      "dst": "lstmcell.step2.f",
+      "src_port": "item[1]",
+      "dst_port": "in",
+      "role": "gate_slice"
+    },
+    {
+      "id": "lstmcell.step2.chunk:item[2]->lstmcell.step2.g:in:gate_slice",
+      "src": "lstmcell.step2.chunk",
+      "dst": "lstmcell.step2.g",
+      "src_port": "item[2]",
+      "dst_port": "in",
+      "role": "gate_slice"
+    },
+    {
+      "id": "lstmcell.step2.chunk:item[3]->lstmcell.step2.o:in:gate_slice",
+      "src": "lstmcell.step2.chunk",
+      "dst": "lstmcell.step2.o",
+      "src_port": "item[3]",
+      "dst_port": "in",
+      "role": "gate_slice"
+    },
+    {
+      "id": "lstmcell.step2.f:out->lstmcell.step2.forget_mul:f:tensor",
+      "src": "lstmcell.step2.f",
+      "dst": "lstmcell.step2.forget_mul",
+      "src_port": "out",
+      "dst_port": "f",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.cx:out->lstmcell.step2.forget_mul:previous_c:tensor",
+      "src": "lstmcell.step2.cx",
+      "dst": "lstmcell.step2.forget_mul",
+      "src_port": "out",
+      "dst_port": "previous_c",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.i:out->lstmcell.step2.input_mul:i:tensor",
+      "src": "lstmcell.step2.i",
+      "dst": "lstmcell.step2.input_mul",
+      "src_port": "out",
+      "dst_port": "i",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.g:out->lstmcell.step2.input_mul:g:tensor",
+      "src": "lstmcell.step2.g",
+      "dst": "lstmcell.step2.input_mul",
+      "src_port": "out",
+      "dst_port": "g",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.forget_mul:out->lstmcell.step2.cy:retained:tensor",
+      "src": "lstmcell.step2.forget_mul",
+      "dst": "lstmcell.step2.cy",
+      "src_port": "out",
+      "dst_port": "retained",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.input_mul:out->lstmcell.step2.cy:new:tensor",
+      "src": "lstmcell.step2.input_mul",
+      "dst": "lstmcell.step2.cy",
+      "src_port": "out",
+      "dst_port": "new",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.cy:out->lstmcell.step2.tanh_c:in:tensor",
+      "src": "lstmcell.step2.cy",
+      "dst": "lstmcell.step2.tanh_c",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.tanh_c:out->lstmcell.step2.hy:tanh_c:tensor",
+      "src": "lstmcell.step2.tanh_c",
+      "dst": "lstmcell.step2.hy",
+      "src_port": "out",
+      "dst_port": "tanh_c",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.o:out->lstmcell.step2.hy:o:tensor",
+      "src": "lstmcell.step2.o",
+      "dst": "lstmcell.step2.hy",
+      "src_port": "out",
+      "dst_port": "o",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.hy:out->lstmcell.step2.return:output_hidden:tensor",
+      "src": "lstmcell.step2.hy",
+      "dst": "lstmcell.step2.return",
+      "src_port": "out",
+      "dst_port": "output_hidden",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.hy:out->lstmcell.step2.return:state_hidden:tensor",
+      "src": "lstmcell.step2.hy",
+      "dst": "lstmcell.step2.return",
+      "src_port": "out",
+      "dst_port": "state_hidden",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.cy:out->lstmcell.step2.return:state_cell:tensor",
+      "src": "lstmcell.step2.cy",
+      "dst": "lstmcell.step2.return",
+      "src_port": "out",
+      "dst_port": "state_cell",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.sequence:out->lstmcell.unbind:in:tensor",
+      "src": "lstmcell.sequence",
+      "dst": "lstmcell.unbind",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.unbind:item[0]->lstmcell.x0:in:time_slice",
+      "src": "lstmcell.unbind",
+      "dst": "lstmcell.x0",
+      "src_port": "item[0]",
+      "dst_port": "in",
+      "role": "time_slice"
+    },
+    {
+      "id": "lstmcell.x0:out->lstmcell.step0.x:in:tensor",
+      "src": "lstmcell.x0",
+      "dst": "lstmcell.step0.x",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step0.hy:out->lstmcell.stack:item[0]:sequence_output",
+      "src": "lstmcell.step0.hy",
+      "dst": "lstmcell.stack",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "sequence_output"
+    },
+    {
+      "id": "lstmcell.unbind:item[1]->lstmcell.x1:in:time_slice",
+      "src": "lstmcell.unbind",
+      "dst": "lstmcell.x1",
+      "src_port": "item[1]",
+      "dst_port": "in",
+      "role": "time_slice"
+    },
+    {
+      "id": "lstmcell.x1:out->lstmcell.step1.x:in:tensor",
+      "src": "lstmcell.x1",
+      "dst": "lstmcell.step1.x",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step1.hy:out->lstmcell.stack:item[1]:sequence_output",
+      "src": "lstmcell.step1.hy",
+      "dst": "lstmcell.stack",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "sequence_output"
+    },
+    {
+      "id": "lstmcell.step0.hy:out->lstmcell.step1.hx:in:recurrent_state",
+      "src": "lstmcell.step0.hy",
+      "dst": "lstmcell.step1.hx",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "recurrent_state"
+    },
+    {
+      "id": "lstmcell.step0.cy:out->lstmcell.step1.cx:in:recurrent_state",
+      "src": "lstmcell.step0.cy",
+      "dst": "lstmcell.step1.cx",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "recurrent_state"
+    },
+    {
+      "id": "lstmcell.unbind:item[2]->lstmcell.x2:in:time_slice",
+      "src": "lstmcell.unbind",
+      "dst": "lstmcell.x2",
+      "src_port": "item[2]",
+      "dst_port": "in",
+      "role": "time_slice"
+    },
+    {
+      "id": "lstmcell.x2:out->lstmcell.step2.x:in:tensor",
+      "src": "lstmcell.x2",
+      "dst": "lstmcell.step2.x",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.hy:out->lstmcell.stack:item[2]:sequence_output",
+      "src": "lstmcell.step2.hy",
+      "dst": "lstmcell.stack",
+      "src_port": "out",
+      "dst_port": "item[2]",
+      "role": "sequence_output"
+    },
+    {
+      "id": "lstmcell.step1.hy:out->lstmcell.step2.hx:in:recurrent_state",
+      "src": "lstmcell.step1.hy",
+      "dst": "lstmcell.step2.hx",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "recurrent_state"
+    },
+    {
+      "id": "lstmcell.step1.cy:out->lstmcell.step2.cx:in:recurrent_state",
+      "src": "lstmcell.step1.cy",
+      "dst": "lstmcell.step2.cx",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "recurrent_state"
+    },
+    {
+      "id": "lstmcell.stack:out->lstmcell.return:output_sequence:tensor",
+      "src": "lstmcell.stack",
+      "dst": "lstmcell.return",
+      "src_port": "out",
+      "dst_port": "output_sequence",
+      "role": "tensor"
+    },
+    {
+      "id": "lstmcell.step2.hy:out->lstmcell.return:final_hidden:final_state",
+      "src": "lstmcell.step2.hy",
+      "dst": "lstmcell.return",
+      "src_port": "out",
+      "dst_port": "final_hidden",
+      "role": "final_state"
+    },
+    {
+      "id": "lstmcell.step2.cy:out->lstmcell.return:final_cell:final_state",
+      "src": "lstmcell.step2.cy",
+      "dst": "lstmcell.return",
+      "src_port": "out",
+      "dst_port": "final_cell",
+      "role": "final_state"
+    },
+    {
+      "id": "lstmcell.initial_h:out->lstmcell.step0.hx:in:initial_state",
+      "src": "lstmcell.initial_h",
+      "dst": "lstmcell.step0.hx",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "initial_state"
+    },
+    {
+      "id": "lstmcell.initial_c:out->lstmcell.step0.cx:in:initial_state",
+      "src": "lstmcell.initial_c",
+      "dst": "lstmcell.step0.cx",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "initial_state"
+    }
+  ],
+  "facts": [
+    "Official custom LSTMCell explicitly defines two 4H matrices and two biases; no opaque nn.LSTM is substituted.",
+    "Source affine addition order is x W_ih^T + b_ih + h_prev W_hh^T + b_hh; the diagram preserves that order.",
+    "gates.chunk(4,1) yields i,f,g,o; i/f/o use Sigmoid and candidate g uses Tanh.",
+    "Cell update is f*c_prev+i*g; hidden update is o*tanh(c); c_prev never directly supplies the affine gates.",
+    "Cell returns hy,(hy,cy), with the exact same hy tensor as output and state hidden.",
+    "LSTMLayer creates one self.cell; its time loop reuses all four parameter tensors and carries both h and c.",
+    "Three steps are a selected T=3 input; the input and hidden widths 8/16 are illustrative configuration, not inferred defaults.",
+    "Layer unbinds time axis0 and stacks all outputs, returning the complete sequence and only the final h/c state.",
+    "Initial h/c are mandatory supplied state arguments; the source does not create a zero default inside LSTMLayer.forward."
+  ],
+  "corrections": [
+    "The reference image shows temporal recurrence and cell equations; replace implicit concatenation with the actual two source MatMuls.",
+    "Draw one input gate, one forget gate, one output gate and a Tanh candidate; four gates are slices, not four independently constructed Linear modules.",
+    "The candidate is not a fourth Sigmoid; the cell memory route is separate from the hidden-state route.",
+    "Do not add peepholes, forget-bias+1, Dropout, LayerNorm, packing or a classifier absent from this chosen source variant.",
+    "Time advances horizontally; operator dependencies inside the central cell advance bottom-to-top.",
+    "Existing packed and bidirectional LSTM examples retain their separate source/configuration and explicit library boundaries."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

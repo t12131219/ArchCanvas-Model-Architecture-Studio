@@ -19,6 +19,7 @@ import archcanvas_transactions
 import archcanvas_publication
 import archcanvas_runtime
 import archcanvas_authoring
+import archcanvas_preview
 from archcanvas_python import AnalysisError, analyze_project, analyze_source, validate_output_paths
 from archcanvas_transactions import TransactionManager
 from .workspace import Workspace
@@ -55,13 +56,14 @@ def runtime_config() -> dict[str, str] | None:
 
 def capabilities() -> dict:
     root = project_root()
-    modules = {name: str(Path(module.__file__).resolve()) for name, module in {"archcanvas_cli": archcanvas_cli, "archcanvas_python": archcanvas_python, "archcanvas_transactions": archcanvas_transactions, "archcanvas_publication": archcanvas_publication, "archcanvas_runtime": archcanvas_runtime, "archcanvas_authoring": archcanvas_authoring}.items()}
+    modules = {name: str(Path(module.__file__).resolve()) for name, module in {"archcanvas_cli": archcanvas_cli, "archcanvas_python": archcanvas_python, "archcanvas_transactions": archcanvas_transactions, "archcanvas_publication": archcanvas_publication, "archcanvas_runtime": archcanvas_runtime, "archcanvas_authoring": archcanvas_authoring, "archcanvas_preview": archcanvas_preview}.items()}
     independent = all("ArchCanvas_Model Architecture Studio_Temp" not in path for path in modules.values())
     runtime_profile = archcanvas_runtime.runtime_capabilities(runtime_config())
     return {
         "schemaVersion": 1,
         "runtimeVersion": archcanvas_cli.__version__,
         "sourceAnalysis": True,
+        "preview": archcanvas_preview.capabilities(),
         "modelAuthoring": {"mode": "authored-draft", "catalog": "/api/authoring/catalog", "generation": "new-managed-copy", "sourceImport": "/api/authoring/import-source", "sourceFrontier": "/api/authoring/source-frontier", "customModulePreview": "/api/authoring/custom-modules/preview", "runtimeVerified": False},
         "documentPersistence": True,
         "canvasSessions": {"open": "/api/open", "read": "/api/canvas-sessions/{documentId}", "actions": ["apply", "undo", "redo", "export"],
@@ -332,7 +334,7 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError as exc:
             raise ValueError("Content-Length must be an integer.") from exc
         path = unquote(urlsplit(self.path).path)
-        source_authoring = path in {"/api/authoring/import-source", "/api/authoring/source-frontier", "/api/authoring/validate", "/api/authoring/generate"} or path.startswith("/api/authoring/drafts/")
+        source_authoring = path in {"/api/authoring/import-source", "/api/authoring/source-frontier", "/api/authoring/validate", "/api/authoring/generate", "/api/preview/exports"} or path.startswith("/api/authoring/drafts/")
         budget = MAX_SOURCE_REQUEST_BYTES if source_authoring else MAX_REQUEST_BYTES
         if not 0 <= length <= budget:
             raise ValueError(f"JSON request body must fit within {budget // 1_000_000} MB.")
@@ -447,7 +449,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.guard():
             return
         path = urlsplit(self.path).path
-        if path != "/api/analyze" and not self.session_guard():
+        if path not in ("/api/analyze", "/api/preview/analyze", "/api/source-adapter/analyze") and not self.session_guard():
             return
         try:
             payload = self.body()
@@ -496,6 +498,18 @@ class Handler(BaseHTTPRequestHandler):
                 if not isinstance(payload.get("entry"), str) or not isinstance(payload.get("filename", "model.py"), str):
                     raise ValueError("Entry and filename must be text.")
                 self.send_json(200, analyze_source(payload.get("source"), payload["entry"], payload.get("filename", "model.py")))
+            elif path in ("/api/preview/analyze", "/api/source-adapter/analyze"):
+                if set(payload) - {"files", "entry", "config"} or "files" not in payload:
+                    raise ValueError("Preview analysis accepts files, entry and optional config only; filesystem paths are not accepted.")
+                self.send_json(200, archcanvas_preview.analyze(payload["files"], payload.get("entry"), payload.get("config")))
+            elif path == "/api/preview/edit-source":
+                if set(payload) != {"files", "entry"}:
+                    raise ValueError("Preview source editing requires files and entry only; filesystem paths are not accepted.")
+                self.send_json(200, archcanvas_preview.analyze_for_authoring(payload["files"], payload["entry"]))
+            elif path == "/api/preview/exports":
+                if set(payload) != {"svg", "format", "dpi", "widthMm", "binding"}:
+                    raise ValueError("Preview export requires svg, format, dpi, widthMm and binding only.")
+                self.send_json(201, self.server.workspace.export_preview(payload["svg"], payload["format"], payload["dpi"], payload["widthMm"], payload["binding"]))
             elif path == "/api/projects":
                 self.send_json(201, self.server.workspace.register(payload))
             elif path == "/api/authoring/import-source":
@@ -540,6 +554,19 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(201, self.server.workspace.export(document, payload["format"], payload["dpi"], payload.get("options")))
             elif path.startswith("/api/projects/"):
                 parts = path.removeprefix("/api/projects/").split("/")
+                if len(parts) == 2 and parts[1] == "preview":
+                    if set(payload) - {"config", "baseSourceDigest", "baseIrDigest"}:
+                        raise ValueError("Managed preview accepts only optional config and source/IR versions.")
+                    with self.server.workspace.lock:
+                        project = self.server.workspace.project(parts[0])
+                        if any(key in payload and payload[key] != project[field] for key, field in (("baseSourceDigest", "sourceDigest"), ("baseIrDigest", "irDigest"))):
+                            self.send_json(409, {"error": "The project source or IR changed; reload before previewing."})
+                            return
+                        files = {source["path"]: source["content"] for source in project["architecture"]["sources"]}
+                        result = archcanvas_preview.analyze(files, project["entry"], payload.get("config"))
+                        result["studioBinding"] = {"projectId": project["id"], **{key: project[key] for key in ("entry", "sourceDigest", "irDigest")}}
+                    self.send_json(200, result)
+                    return
                 if len(parts) == 4 and parts[1] == "runtime-jobs" and parts[3] == "cancel":
                     if payload:
                         raise ValueError("Runtime cancellation accepts no model or environment fields.")

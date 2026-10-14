@@ -1,0 +1,658 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2172" height="5660" viewBox="0 0 2172 5660">
+<defs><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<metadata id="source-binding">{&quot;model&quot;: &quot;ccvae&quot;, &quot;source_snapshot_sha256&quot;: &quot;a1cb8ca6e3b3489daf1e2276769302cabd9a1ed9055ae534ae06aec90929c946&quot;, &quot;repository&quot;: &quot;https://github.com/rasbt/deeplearning-models&quot;, &quot;commit&quot;: &quot;59beda3aa25337e576564f1c18c6edd26f9f30e3&quot;, &quot;semantic_ir_sha256&quot;: &quot;f9a7129361382b5fd259583e47a8ca2c43a2feffe044722339414ccb7caecf49&quot;, &quot;view&quot;: 2}</metadata>
+<metadata id="diagram-style">{&quot;name&quot;: &quot;transformer-paper-model-zoo&quot;, &quot;version&quot;: 1, &quot;font&quot;: &quot;DejaVu Sans, Arial, sans-serif&quot;, &quot;text&quot;: &quot;#172336&quot;, &quot;line&quot;: &quot;#263348&quot;, &quot;palette&quot;: {&quot;root&quot;: &quot;#ffffff&quot;, &quot;group&quot;: &quot;#ffffff&quot;, &quot;inner&quot;: &quot;#fffaf6&quot;, &quot;layer&quot;: &quot;#ffffff&quot;, &quot;encoder&quot;: &quot;#e7f5fe&quot;, &quot;decoder&quot;: &quot;#fff0f5&quot;, &quot;embedding&quot;: &quot;#f8d4e1&quot;, &quot;input&quot;: &quot;#f8d4e1&quot;, &quot;output&quot;: &quot;#dfdff8&quot;, &quot;attention&quot;: &quot;#ffddb3&quot;, &quot;ffn&quot;: &quot;#c8ebfb&quot;, &quot;mixing&quot;: &quot;#c8ebfb&quot;, &quot;conv&quot;: &quot;#c8ebfb&quot;, &quot;pool&quot;: &quot;#d6f0df&quot;, &quot;norm&quot;: &quot;#fff6bd&quot;, &quot;concat&quot;: &quot;#fff6bd&quot;, &quot;linear&quot;: &quot;#dfdff8&quot;, &quot;softmax&quot;: &quot;#c9f1cd&quot;, &quot;sampling&quot;: &quot;#c9f1cd&quot;, &quot;recurrent&quot;: &quot;#ffddb3&quot;, &quot;decomposition&quot;: &quot;#d6f0df&quot;, &quot;tensor&quot;: &quot;#cdeaf8&quot;, &quot;activation&quot;: &quot;#f3f5f7&quot;, &quot;control&quot;: &quot;#f3f5f7&quot;}, &quot;typography&quot;: {&quot;title&quot;: 30, &quot;subtitle&quot;: 16, &quot;module&quot;: 22, &quot;inner&quot;: 20, &quot;operator&quot;: 20, &quot;shape&quot;: 16, &quot;detail&quot;: 14, &quot;evidence&quot;: 12, &quot;footer&quot;: 14, &quot;line_height&quot;: 1.18}, &quot;fill_width_nodes&quot;: [&quot;ccvae.dec1&quot;, &quot;ccvae.dec2&quot;, &quot;ccvae.dec3&quot;, &quot;ccvae.decoder&quot;, &quot;ccvae.enc1&quot;, &quot;ccvae.enc2&quot;, &quot;ccvae.enc3&quot;, &quot;ccvae.encoder&quot;, &quot;ccvae.forward&quot;, &quot;ccvae.latent_projection&quot;, &quot;ccvae.posterior&quot;, &quot;ccvae.sampling&quot;], &quot;visual_roles&quot;: {&quot;ccvae.condition_maps&quot;: &quot;tensor&quot;, &quot;ccvae.condition_view&quot;: &quot;tensor&quot;, &quot;ccvae.dec1&quot;: &quot;conv&quot;, &quot;ccvae.dec1.activation&quot;: &quot;activation&quot;, &quot;ccvae.dec1.conv&quot;: &quot;conv&quot;, &quot;ccvae.dec2&quot;: &quot;conv&quot;, &quot;ccvae.dec2.activation&quot;: &quot;activation&quot;, &quot;ccvae.dec2.conv&quot;: &quot;conv&quot;, &quot;ccvae.dec3&quot;: &quot;conv&quot;, &quot;ccvae.dec3.activation&quot;: &quot;activation&quot;, &quot;ccvae.dec3.conv&quot;: &quot;conv&quot;, &quot;ccvae.decoder&quot;: &quot;decoder&quot;, &quot;ccvae.decoder_args&quot;: &quot;inner&quot;, &quot;ccvae.decoder_concat&quot;: &quot;concat&quot;, &quot;ccvae.decoder_linear&quot;: &quot;linear&quot;, &quot;ccvae.decoder_onehot&quot;: &quot;tensor&quot;, &quot;ccvae.decoder_view&quot;: &quot;tensor&quot;, &quot;ccvae.enc1&quot;: &quot;conv&quot;, &quot;ccvae.enc1.activation&quot;: &quot;activation&quot;, &quot;ccvae.enc1.conv&quot;: &quot;conv&quot;, &quot;ccvae.enc2&quot;: &quot;conv&quot;, &quot;ccvae.enc2.activation&quot;: &quot;activation&quot;, &quot;ccvae.enc2.conv&quot;: &quot;conv&quot;, &quot;ccvae.enc3&quot;: &quot;conv&quot;, &quot;ccvae.enc3.activation&quot;: &quot;activation&quot;, &quot;ccvae.enc3.conv&quot;: &quot;conv&quot;, &quot;ccvae.encoder&quot;: &quot;encoder&quot;, &quot;ccvae.encoder_args&quot;: &quot;inner&quot;, &quot;ccvae.encoder_concat&quot;: &quot;concat&quot;, &quot;ccvae.encoder_condition&quot;: &quot;group&quot;, &quot;ccvae.encoder_onehot&quot;: &quot;tensor&quot;, &quot;ccvae.encoder_return&quot;: &quot;output&quot;, &quot;ccvae.epsilon&quot;: &quot;sampling&quot;, &quot;ccvae.forward&quot;: &quot;group&quot;, &quot;ccvae.half_logvar&quot;: &quot;tensor&quot;, &quot;ccvae.input&quot;: &quot;input&quot;, &quot;ccvae.labels&quot;: &quot;input&quot;, &quot;ccvae.latent_projection&quot;: &quot;ffn&quot;, &quot;ccvae.logvar&quot;: &quot;linear&quot;, &quot;ccvae.logvar_head&quot;: &quot;inner&quot;, &quot;ccvae.logvar_view&quot;: &quot;tensor&quot;, &quot;ccvae.mean_head&quot;: &quot;inner&quot;, &quot;ccvae.mean_view&quot;: &quot;tensor&quot;, &quot;ccvae.mu&quot;: &quot;linear&quot;, &quot;ccvae.noise_product&quot;: &quot;norm&quot;, &quot;ccvae.posterior&quot;: &quot;ffn&quot;, &quot;ccvae.retain_image&quot;: &quot;tensor&quot;, &quot;ccvae.retain_mu&quot;: &quot;tensor&quot;, &quot;ccvae.retain_z&quot;: &quot;tensor&quot;, &quot;ccvae.return&quot;: &quot;output&quot;, &quot;ccvae.root&quot;: &quot;root&quot;, &quot;ccvae.sample_args&quot;: &quot;inner&quot;, &quot;ccvae.sampling&quot;: &quot;sampling&quot;, &quot;ccvae.scaled_noise&quot;: &quot;inner&quot;, &quot;ccvae.select_z&quot;: &quot;tensor&quot;, &quot;ccvae.sigmoid&quot;: &quot;softmax&quot;, &quot;ccvae.std&quot;: &quot;activation&quot;, &quot;ccvae.z&quot;: &quot;norm&quot;}, &quot;semantics&quot;: &quot;presentation aliases only; color does not imply mathematical equivalence or parameter sharing&quot;}</metadata>
+<text x="1086.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">Conditional ConvVAE  |  Operators &amp; tensor flow</tspan>
+</text>
+<text x="1086.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">MNIST 28x28 / latent=50 / 10 labels + 11-channel output / stochastic forward  /  read bottom to top</tspan>
+</text>
+<g data-node-id="ccvae.root" data-visual-role="root"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:83 ConditionalVariationalAutoencoder; parameter=not asserted; </title><rect x="540.0" y="98" width="1092" height="5280" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5"/></g>
+<text x="557.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="557.0" dy="0">Conditional ConvVAE / MNIST</tspan>
+</text>
+<text x="1615.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1615.0" dy="0">image + labels -&gt; tuple</tspan>
+</text>
+<text x="1619.0" y="160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1619.0" dy="0">E001</tspan>
+</text>
+<g data-node-id="ccvae.input" data-visual-role="input"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:216 ConditionalVariationalAutoencoder.forward; parameter=not asserted; Caller ToTensor scales pixels to [0,1]; input is not flattened</title><rect x="921.0" y="5271" width="330" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="5298" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">MNIST grayscale image</tspan>
+</text>
+<text x="1086.0" y="5322" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,1,28,28]</tspan>
+</text>
+<text x="1238.0" y="5342" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E005</tspan>
+</text>
+<g data-node-id="ccvae.forward" data-visual-role="group"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:216 ConditionalVariationalAutoencoder.forward; parameter=not asserted; </title><rect x="572.0" y="172" width="1028" height="5075" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2"/></g>
+<text x="589.0" y="202" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="589.0" dy="0">Model forward</tspan>
+</text>
+<text x="1583.0" y="202" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1583.0" dy="0">four-tensor tuple</tspan>
+</text>
+<text x="1587.0" y="234" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1587.0" dy="0">E005</tspan>
+</text>
+<g data-node-id="ccvae.encoder" data-visual-role="encoder"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=not asserted; </title><rect x="604.0" y="2213" width="964" height="3008" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="621.0" y="2243" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="621.0" dy="0">Conditional encoder</tspan>
+</text>
+<text x="1551.0" y="2243" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1551.0" dy="0">(mu,logvar,z): [B,50] x 3</tspan>
+</text>
+<text x="1555.0" y="2275" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1555.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="ccvae.encoder_args" data-visual-role="inner"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=not asserted; </title><rect x="668.0" y="4567" width="836" height="628" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="685.0" y="4597" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="685.0" dy="0">Image / condition operands</tspan>
+</text>
+<text x="1487.0" y="4597" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1487.0" dy="0">image + 10 label maps</tspan>
+</text>
+<text x="1491.0" y="4629" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1491.0" dy="0">E004</tspan>
+</text>
+<g data-node-id="ccvae.retain_image" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=not asserted; </title><rect x="700.0" y="5040" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="865.0" y="5067" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="865.0" dy="0">Retain image values</tspan>
+</text>
+<text x="865.0" y="5091" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="865.0" dy="0">[B,1,28,28]</tspan>
+</text>
+<text x="1017.0" y="5111" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1017.0" dy="0">E004</tspan>
+</text>
+<g data-node-id="ccvae.encoder_condition" data-visual-role="group"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:75 to_onehot; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=not asserted; </title><rect x="1078.0" y="4641" width="394" height="480" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2"/></g>
+<text x="1095.0" y="4671" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1095.0" dy="0">Encoder</tspan>
+<tspan x="1095.0" dy="25.959999999999997">label maps</tspan>
+</text>
+<text x="1455.0" y="4671" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1455.0" dy="0">[B,10,28,28]</tspan>
+</text>
+<text x="1459.0" y="4720" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1459.0" dy="0">E007,E004</tspan>
+</text>
+<g data-node-id="ccvae.encoder_onehot" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:75 to_onehot; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=not asserted; to_onehot: zeros + scatter_(1,targets.view(-1,1),1) | Separate helper call in encoder</title><rect x="1110.0" y="4990" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="1275.0" y="5017" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1275.0" dy="0">One-hot labels / 10</tspan>
+<tspan x="1275.0" dy="23.599999999999998">classes</tspan>
+</text>
+<text x="1275.0" y="5065" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1275.0" dy="0">[B,10]</tspan>
+</text>
+<text x="1427.0" y="5085" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1427.0" dy="0">E007,E004</tspan>
+</text>
+<g data-node-id="ccvae.condition_view" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=not asserted; </title><rect x="1110.0" y="4861" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="1275.0" y="4888" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1275.0" dy="0">View one-hot as</tspan>
+<tspan x="1275.0" dy="23.599999999999998">channels</tspan>
+</text>
+<text x="1275.0" y="4936" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1275.0" dy="0">[B,10,1,1]</tspan>
+</text>
+<text x="1427.0" y="4956" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1427.0" dy="0">E004</tspan>
+</text>
+<g data-node-id="ccvae.condition_maps" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=not asserted; ones=ones(B,K,H,W,dtype=features.dtype).to(device) | ones * onehot_targets; spatially constant label channels</title><rect x="1110.0" y="4732" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="1275.0" y="4759" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1275.0" dy="0">Ones times one-hot /</tspan>
+<tspan x="1275.0" dy="23.599999999999998">broadcast H,W</tspan>
+</text>
+<text x="1275.0" y="4807" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1275.0" dy="0">[B,10,28,28]</tspan>
+</text>
+<text x="1427.0" y="4827" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1427.0" dy="0">E004</tspan>
+</text>
+<g data-node-id="ccvae.encoder_concat" data-visual-role="concat"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=not asserted; torch.cat((features,ones),dim=1) | Condition enters BEFORE enc_conv_1</title><rect x="921.0" y="4438" width="330" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="4465" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">Concat image + label</tspan>
+<tspan x="1086.0" dy="23.599999999999998">channels</tspan>
+</text>
+<text x="1086.0" y="4513" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,11,28,28]</tspan>
+</text>
+<text x="1238.0" y="4533" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E004</tspan>
+</text>
+<g data-node-id="ccvae.enc1" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=enc_conv_1; </title><rect x="636.0" y="4128" width="900" height="286" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="653.0" y="4158" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="653.0" dy="0">Encode stage 1</tspan>
+</text>
+<text x="1519.0" y="4158" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1519.0" dy="0">[B,16,12,12]</tspan>
+</text>
+<text x="1523.0" y="4190" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1523.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="ccvae.enc1.conv" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=enc_conv_1; kernel=6; stride=2; padding=0; default bias=True</title><rect x="921.0" y="4307" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="4334" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">Conv2d 11 -&gt; 16</tspan>
+</text>
+<text x="1086.0" y="4358" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,16,12,12]</tspan>
+</text>
+<text x="1238.0" y="4378" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="ccvae.enc1.activation" data-visual-role="activation"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=not asserted; F.leaky_relu(x); slope from API default | Also applied after the final decoder convolution</title><rect x="921.0" y="4202" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="4229" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">LeakyReLU 0.01</tspan>
+</text>
+<text x="1086.0" y="4253" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,16,12,12]</tspan>
+</text>
+<text x="1238.0" y="4273" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E004</tspan>
+</text>
+<g data-node-id="ccvae.enc2" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=enc_conv_2; </title><rect x="636.0" y="4023" width="900" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="4050" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">Encode stage 2</tspan>
+</text>
+<text x="1086.0" y="4074" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,32,5,5]</tspan>
+</text>
+<text x="1523.0" y="4094" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1523.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="ccvae.enc3" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=enc_conv_3; </title><rect x="636.0" y="3713" width="900" height="286" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="653.0" y="3743" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="653.0" dy="0">Encode stage 3</tspan>
+</text>
+<text x="1519.0" y="3743" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1519.0" dy="0">[B,64,2,2]</tspan>
+</text>
+<text x="1523.0" y="3775" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1523.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="ccvae.enc3.conv" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=enc_conv_3; kernel=2; stride=2; padding=0; default bias=True</title><rect x="921.0" y="3892" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="3919" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">Conv2d 32 -&gt; 64</tspan>
+</text>
+<text x="1086.0" y="3943" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,64,2,2]</tspan>
+</text>
+<text x="1238.0" y="3963" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="ccvae.enc3.activation" data-visual-role="activation"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=not asserted; F.leaky_relu(x); slope from API default | Also applied after the final decoder convolution</title><rect x="921.0" y="3787" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="3814" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">LeakyReLU 0.01</tspan>
+</text>
+<text x="1086.0" y="3838" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,64,2,2]</tspan>
+</text>
+<text x="1238.0" y="3858" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E004</tspan>
+</text>
+<g data-node-id="ccvae.posterior" data-visual-role="ffn"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=not asserted; Logical head-result group; no source tuple is created at this point</title><rect x="636.0" y="3240" width="900" height="449" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="653.0" y="3270" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="653.0" dy="0">Independent posterior heads</tspan>
+</text>
+<text x="1519.0" y="3270" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1519.0" dy="0">mu + logvar results</tspan>
+</text>
+<text x="1523.0" y="3302" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1523.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="ccvae.mean_head" data-visual-role="inner"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=z_mean; </title><rect x="668.0" y="3329" width="394" height="286" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="685.0" y="3359" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="685.0" dy="0">Mean head</tspan>
+</text>
+<text x="1045.0" y="3359" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1045.0" dy="0">[B,50]</tspan>
+</text>
+<text x="1049.0" y="3391" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1049.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="ccvae.mean_view" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=not asserted; A separate x.view(-1,64*2*2) expression appears for each head</title><rect x="700.0" y="3508" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="865.0" y="3535" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="865.0" dy="0">View 64x2x2 -&gt; 256</tspan>
+</text>
+<text x="865.0" y="3559" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="865.0" dy="0">[B,256]</tspan>
+</text>
+<text x="1017.0" y="3579" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1017.0" dy="0">E004</tspan>
+</text>
+<g data-node-id="ccvae.mu" data-visual-role="linear"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=z_mean; No activation after the posterior head</title><rect x="700.0" y="3403" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="865.0" y="3430" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="865.0" dy="0">Linear 256 -&gt; 50</tspan>
+</text>
+<text x="865.0" y="3454" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="865.0" dy="0">mu: [B,50]</tspan>
+</text>
+<text x="1017.0" y="3474" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1017.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="ccvae.logvar_head" data-visual-role="inner"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=z_log_var; </title><rect x="1110.0" y="3314" width="394" height="301" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="1127.0" y="3344" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1127.0" dy="0">Log-variance</tspan>
+<tspan x="1127.0" dy="23.599999999999998">head</tspan>
+</text>
+<text x="1487.0" y="3344" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1487.0" dy="0">[B,50]</tspan>
+</text>
+<text x="1491.0" y="3391" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1491.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="ccvae.logvar_view" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=not asserted; A separate x.view(-1,64*2*2) expression appears for each head</title><rect x="1142.0" y="3508" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="1307.0" y="3535" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1307.0" dy="0">View 64x2x2 -&gt; 256</tspan>
+</text>
+<text x="1307.0" y="3559" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1307.0" dy="0">[B,256]</tspan>
+</text>
+<text x="1459.0" y="3579" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1459.0" dy="0">E004</tspan>
+</text>
+<g data-node-id="ccvae.logvar" data-visual-role="linear"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=z_log_var; No activation after the posterior head</title><rect x="1142.0" y="3403" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="1307.0" y="3430" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1307.0" dy="0">Linear 256 -&gt; 50</tspan>
+</text>
+<text x="1307.0" y="3454" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1307.0" dy="0">logvar: [B,50]</tspan>
+</text>
+<text x="1459.0" y="3474" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1459.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="ccvae.sampling" data-visual-role="sampling"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:154 ConditionalVariationalAutoencoder.reparameterize; parameter=not asserted; No training/eval conditional; sampling always runs</title><rect x="636.0" y="2392" width="900" height="824" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2"/></g>
+<text x="653.0" y="2422" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="653.0" dy="0">Reparameterization / single</tspan>
+<tspan x="653.0" dy="25.959999999999997">latent</tspan>
+</text>
+<text x="1519.0" y="2422" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1519.0" dy="0">z: [B,50]</tspan>
+</text>
+<text x="1523.0" y="2471" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1523.0" dy="0">E006</tspan>
+</text>
+<g data-node-id="ccvae.sample_args" data-visual-role="inner"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:154 ConditionalVariationalAutoencoder.reparameterize; parameter=not asserted; </title><rect x="668.0" y="2588" width="836" height="602" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="685.0" y="2618" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="685.0" dy="0">Mean / scaled-noise operands</tspan>
+</text>
+<text x="1487.0" y="2618" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1487.0" dy="0">mu + noise operands</tspan>
+</text>
+<text x="1491.0" y="2650" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1491.0" dy="0">E006</tspan>
+</text>
+<g data-node-id="ccvae.retain_mu" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:154 ConditionalVariationalAutoencoder.reparameterize; parameter=not asserted; </title><rect x="700.0" y="3035" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="865.0" y="3062" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="865.0" dy="0">Retain mu values</tspan>
+</text>
+<text x="865.0" y="3086" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="865.0" dy="0">[B,50]</tspan>
+</text>
+<text x="1017.0" y="3106" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1017.0" dy="0">E006</tspan>
+</text>
+<g data-node-id="ccvae.scaled_noise" data-visual-role="inner"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:154 ConditionalVariationalAutoencoder.reparameterize; parameter=not asserted; </title><rect x="1078.0" y="2662" width="394" height="454" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="1095.0" y="2692" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1095.0" dy="0">Scale</tspan>
+<tspan x="1095.0" dy="23.599999999999998">Gaussian</tspan>
+<tspan x="1095.0" dy="23.599999999999998">noise</tspan>
+</text>
+<text x="1455.0" y="2692" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1455.0" dy="0">std * epsilon:</tspan>
+<tspan x="1455.0" dy="18.88">[B,50]</tspan>
+</text>
+<text x="1459.0" y="2763" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1459.0" dy="0">E006</tspan>
+</text>
+<g data-node-id="ccvae.half_logvar" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:154 ConditionalVariationalAutoencoder.reparameterize; parameter=not asserted; </title><rect x="1110.0" y="3009" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="1275.0" y="3036" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1275.0" dy="0">Divide logvar by 2</tspan>
+</text>
+<text x="1275.0" y="3060" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1275.0" dy="0">[B,50]</tspan>
+</text>
+<text x="1427.0" y="3080" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1427.0" dy="0">E006</tspan>
+</text>
+<g data-node-id="ccvae.std" data-visual-role="activation"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:154 ConditionalVariationalAutoencoder.reparameterize; parameter=not asserted; </title><rect x="1110.0" y="2904" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="1275.0" y="2931" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1275.0" dy="0">exp(logvar / 2)</tspan>
+</text>
+<text x="1275.0" y="2955" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1275.0" dy="0">std: [B,50]</tspan>
+</text>
+<text x="1427.0" y="2975" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1427.0" dy="0">E006</tspan>
+</text>
+<g data-node-id="ccvae.noise_product" data-visual-role="norm"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:154 ConditionalVariationalAutoencoder.reparameterize; parameter=not asserted; Elementwise product; independent internal noise enters epsilon port</title><rect x="1110.0" y="2775" width="330" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="1275.0" y="2802" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1275.0" dy="0">Multiply std times</tspan>
+<tspan x="1275.0" dy="23.599999999999998">epsilon</tspan>
+</text>
+<text x="1275.0" y="2850" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1275.0" dy="0">[B,50]</tspan>
+</text>
+<text x="1427.0" y="2870" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1427.0" dy="0">E006</tspan>
+</text>
+<g data-node-id="ccvae.z" data-visual-role="norm"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:154 ConditionalVariationalAutoencoder.reparameterize; parameter=not asserted; </title><rect x="921.0" y="2483" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="2510" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">Add mu + std * epsilon</tspan>
+</text>
+<text x="1086.0" y="2534" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">z: [B,50]</tspan>
+</text>
+<text x="1238.0" y="2554" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E006</tspan>
+</text>
+<g data-node-id="ccvae.encoder_return" data-visual-role="output"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:162 ConditionalVariationalAutoencoder.encoder; parameter=not asserted; Actual encoder return tuple; no feature concatenation</title><rect x="921.0" y="2287" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="2314" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">Return (mu, logvar, z)</tspan>
+</text>
+<text x="1086.0" y="2338" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">3 tensors [B,50]</tspan>
+</text>
+<text x="1238.0" y="2358" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E004</tspan>
+</text>
+<g data-node-id="ccvae.select_z" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:216 ConditionalVariationalAutoencoder.forward; parameter=not asserted; Decoder receives only encoded, plus targets in conditional variant</title><rect x="921.0" y="2084" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="2111" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">Select encoded z from</tspan>
+<tspan x="1086.0" dy="23.599999999999998">tuple</tspan>
+</text>
+<text x="1086.0" y="2159" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,50]</tspan>
+</text>
+<text x="1238.0" y="2179" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E005</tspan>
+</text>
+<g data-node-id="ccvae.decoder" data-visual-role="decoder"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:193 ConditionalVariationalAutoencoder.decoder; parameter=not asserted; </title><rect x="604.0" y="375" width="964" height="1685" rx="18" fill="#fff0f5" stroke="#263348" stroke-width="2.5"/></g>
+<text x="621.0" y="405" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="621.0" dy="0">Conditional decoder</tspan>
+</text>
+<text x="1551.0" y="405" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1551.0" dy="0">decoded: [B,11,28,28]</tspan>
+</text>
+<text x="1555.0" y="437" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1555.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="ccvae.decoder_args" data-visual-role="inner"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:193 ConditionalVariationalAutoencoder.decoder; parameter=not asserted; </title><rect x="700.0" y="1790" width="772" height="244" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="717.0" y="1820" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="717.0" dy="0">Latent / decoder-label</tspan>
+<tspan x="717.0" dy="23.599999999999998">operands</tspan>
+</text>
+<text x="1455.0" y="1820" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1455.0" dy="0">z + 10 label entries</tspan>
+</text>
+<text x="1459.0" y="1867" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1459.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="ccvae.retain_z" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:193 ConditionalVariationalAutoencoder.decoder; parameter=not asserted; </title><rect x="732.0" y="1879" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="897.0" y="1906" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="897.0" dy="0">Retain sampled z</tspan>
+</text>
+<text x="897.0" y="1930" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="897.0" dy="0">[B,50]</tspan>
+</text>
+<text x="1049.0" y="1950" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1049.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="ccvae.decoder_onehot" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:75 to_onehot; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:193 ConditionalVariationalAutoencoder.decoder; parameter=not asserted; Fresh to_onehot(targets,self.num_classes,device) call | Not reuse of the spatial encoder maps</title><rect x="1110.0" y="1879" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="1275.0" y="1906" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1275.0" dy="0">One-hot labels again</tspan>
+</text>
+<text x="1275.0" y="1930" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1275.0" dy="0">[B,10]</tspan>
+</text>
+<text x="1427.0" y="1950" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1427.0" dy="0">E007,E003</tspan>
+</text>
+<g data-node-id="ccvae.decoder_concat" data-visual-role="concat"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:193 ConditionalVariationalAutoencoder.decoder; parameter=not asserted; torch.cat((encoded,onehot_targets),dim=1) | Condition enters BEFORE dec_linear_1</title><rect x="921.0" y="1661" width="330" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="1688" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">Concat z + one-hot</tspan>
+<tspan x="1086.0" dy="23.599999999999998">labels</tspan>
+</text>
+<text x="1086.0" y="1736" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,60]</tspan>
+</text>
+<text x="1238.0" y="1756" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="ccvae.latent_projection" data-visual-role="ffn"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:193 ConditionalVariationalAutoencoder.decoder; parameter=not asserted; </title><rect x="636.0" y="1327" width="900" height="310" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="653.0" y="1357" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="653.0" dy="0">Latent projection + reshape</tspan>
+</text>
+<text x="1519.0" y="1357" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1519.0" dy="0">[B,64,2,2]</tspan>
+</text>
+<text x="1523.0" y="1389" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1523.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="ccvae.decoder_linear" data-visual-role="linear"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:193 ConditionalVariationalAutoencoder.decoder; parameter=dec_linear_1; </title><rect x="921.0" y="1530" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="1557" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">Linear 60 -&gt; 256</tspan>
+</text>
+<text x="1086.0" y="1581" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,256]</tspan>
+</text>
+<text x="1238.0" y="1601" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="ccvae.decoder_view" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:193 ConditionalVariationalAutoencoder.decoder; parameter=not asserted; x.view(-1,64,2,2)</title><rect x="921.0" y="1401" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="1428" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">View as 64x2x2 feature</tspan>
+<tspan x="1086.0" dy="23.599999999999998">map</tspan>
+</text>
+<text x="1086.0" y="1476" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,64,2,2]</tspan>
+</text>
+<text x="1238.0" y="1496" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="ccvae.dec1" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:193 ConditionalVariationalAutoencoder.decoder; parameter=dec_deconv_1; </title><rect x="636.0" y="993" width="900" height="310" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="653.0" y="1023" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="653.0" dy="0">Decode stage 1</tspan>
+</text>
+<text x="1519.0" y="1023" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1519.0" dy="0">[B,32,4,4]</tspan>
+</text>
+<text x="1523.0" y="1055" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1523.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="ccvae.dec1.conv" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:193 ConditionalVariationalAutoencoder.decoder; parameter=dec_deconv_1; kernel=2; stride=2; padding=0; default bias=True</title><rect x="921.0" y="1172" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="1199" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">ConvTranspose2d 64 -&gt;</tspan>
+<tspan x="1086.0" dy="23.599999999999998">32</tspan>
+</text>
+<text x="1086.0" y="1247" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,32,4,4]</tspan>
+</text>
+<text x="1238.0" y="1267" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="ccvae.dec1.activation" data-visual-role="activation"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:193 ConditionalVariationalAutoencoder.decoder; parameter=not asserted; F.leaky_relu(x); slope from API default | Also applied after the final decoder convolution</title><rect x="921.0" y="1067" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="1094" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">LeakyReLU 0.01</tspan>
+</text>
+<text x="1086.0" y="1118" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,32,4,4]</tspan>
+</text>
+<text x="1238.0" y="1138" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="ccvae.dec2" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:193 ConditionalVariationalAutoencoder.decoder; parameter=dec_deconv_2; </title><rect x="636.0" y="888" width="900" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="915" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">Decode stage 2</tspan>
+</text>
+<text x="1086.0" y="939" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,16,11,11]</tspan>
+</text>
+<text x="1523.0" y="959" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1523.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="ccvae.dec3" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:193 ConditionalVariationalAutoencoder.decoder; parameter=dec_deconv_3; </title><rect x="636.0" y="554" width="900" height="310" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="653.0" y="584" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="653.0" dy="0">Decode stage 3</tspan>
+</text>
+<text x="1519.0" y="584" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1519.0" dy="0">[B,11,28,28]</tspan>
+</text>
+<text x="1523.0" y="616" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1523.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="ccvae.dec3.conv" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:85 ConditionalVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:193 ConditionalVariationalAutoencoder.decoder; parameter=dec_deconv_3; kernel=6; stride=3; padding=4; default bias=True</title><rect x="921.0" y="733" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="760" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">ConvTranspose2d 16 -&gt;</tspan>
+<tspan x="1086.0" dy="23.599999999999998">11</tspan>
+</text>
+<text x="1086.0" y="808" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,11,28,28]</tspan>
+</text>
+<text x="1238.0" y="828" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="ccvae.dec3.activation" data-visual-role="activation"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:193 ConditionalVariationalAutoencoder.decoder; parameter=not asserted; F.leaky_relu(x); slope from API default | Also applied after the final decoder convolution</title><rect x="921.0" y="628" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="655" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">LeakyReLU 0.01</tspan>
+</text>
+<text x="1086.0" y="679" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,11,28,28]</tspan>
+</text>
+<text x="1238.0" y="699" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="ccvae.sigmoid" data-visual-role="softmax"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:193 ConditionalVariationalAutoencoder.decoder; parameter=not asserted; Follows final LeakyReLU, not the raw final convolution</title><rect x="921.0" y="449" width="330" height="81" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="476" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">Sigmoid decoded pixels</tspan>
+</text>
+<text x="1086.0" y="500" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,11,28,28]</tspan>
+</text>
+<text x="1238.0" y="520" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="ccvae.return" data-visual-role="output"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:216 ConditionalVariationalAutoencoder.forward; parameter=not asserted; Actual four-field forward return; no image-only implicit output</title><rect x="921.0" y="246" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="1086.0" y="273" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1086.0" dy="0">Return (mu, logvar, z,</tspan>
+<tspan x="1086.0" dy="23.599999999999998">decoded)</tspan>
+</text>
+<text x="1086.0" y="321" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">[B,50] x 3; [B,11,28,28]</tspan>
+</text>
+<text x="1238.0" y="341" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1238.0" dy="0">E005</tspan>
+</text>
+<g data-node-id="ccvae.epsilon" data-visual-role="sampling"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:154 ConditionalVariationalAutoencoder.reparameterize; parameter=not asserted; torch.randn(z_mu.size(0),z_mu.size(1)).to(device) | Created inside reparameterize in train and eval</title><rect x="1817" y="2877.5" width="330" height="105" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2"/></g>
+<text x="1982.0" y="2904.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1982.0" dy="0">Internal Gaussian</tspan>
+<tspan x="1982.0" dy="23.599999999999998">epsilon</tspan>
+</text>
+<text x="1982.0" y="2952.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1982.0" dy="0">[B,50]</tspan>
+</text>
+<text x="2134" y="2972.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2134" dy="0">E006</tspan>
+</text>
+<g data-node-id="ccvae.labels" data-visual-role="input"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py:216 ConditionalVariationalAutoencoder.forward; parameter=not asserted; Integer digit labels 0...9; supplied to BOTH encoder and decoder</title><rect x="1817" y="5092.5" width="330" height="105" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="1982.0" y="5119.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1982.0" dy="0">External MNIST class</tspan>
+<tspan x="1982.0" dy="23.599999999999998">labels</tspan>
+</text>
+<text x="1982.0" y="5167.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1982.0" dy="0">targets: [B]</tspan>
+</text>
+<text x="2134" y="5187.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2134" dy="0">E005</tspan>
+</text>
+<path data-route-id="route-0001" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.condition_view&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.encoder_onehot&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.condition_view&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.encoder_onehot:out-&gt;ccvae.condition_view:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.condition_view:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.encoder_onehot:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.encoder_onehot&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1275.0,4990 L 1275.0,4966" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.encoder_onehot:out -&gt; ccvae.condition_view:in; visible ccvae.encoder_onehot:out -&gt; ccvae.condition_view:in; tensor</title></path>
+<path data-route-id="route-0002" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.condition_maps&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.condition_view&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.condition_maps&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.condition_view:out-&gt;ccvae.condition_maps:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.condition_maps:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.condition_view:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.condition_view&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1275.0,4861 L 1275.0,4837" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.condition_view:out -&gt; ccvae.condition_maps:in; visible ccvae.condition_view:out -&gt; ccvae.condition_maps:in; tensor</title></path>
+<path data-route-id="route-0003" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.retain_image&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;value_operand&quot;, &quot;src&quot;: &quot;ccvae.input&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.retain_image&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.input:out-&gt;ccvae.retain_image:in:value_operand&quot;, &quot;rendered_dst&quot;: &quot;ccvae.retain_image:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.input:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.input&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1086.0,5271 L 1086.0,5145 L 865.0,5145 L 865.0,5121" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.input:out -&gt; ccvae.retain_image:in; visible ccvae.input:out -&gt; ccvae.retain_image:in; value_operand</title></path>
+<path data-route-id="route-0004" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.enc1.activation&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.enc1.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.enc1.activation&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.enc1.conv:out-&gt;ccvae.enc1.activation:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.enc1.activation:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.enc1.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.enc1.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1086.0,4307 L 1086.0,4283" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.enc1.conv:out -&gt; ccvae.enc1.activation:in; visible ccvae.enc1.conv:out -&gt; ccvae.enc1.activation:in; tensor</title></path>
+<path data-route-id="route-0005" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.enc3.activation&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.enc3.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.enc3.activation&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.enc3.conv:out-&gt;ccvae.enc3.activation:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.enc3.activation:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.enc3.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.enc3.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1086.0,3892 L 1086.0,3868" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.enc3.conv:out -&gt; ccvae.enc3.activation:in; visible ccvae.enc3.conv:out -&gt; ccvae.enc3.activation:in; tensor</title></path>
+<path data-route-id="route-0006" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.mu&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.mean_view&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.mu&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.mean_view:out-&gt;ccvae.mu:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.mu:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.mean_view:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.mean_view&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 865.0,3508 L 865.0,3484" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.mean_view:out -&gt; ccvae.mu:in; visible ccvae.mean_view:out -&gt; ccvae.mu:in; tensor</title></path>
+<path data-route-id="route-0007" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.logvar&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.logvar_view&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.logvar&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.logvar_view:out-&gt;ccvae.logvar:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.logvar:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.logvar_view:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.logvar_view&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1307.0,3508 L 1307.0,3484" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.logvar_view:out -&gt; ccvae.logvar:in; visible ccvae.logvar_view:out -&gt; ccvae.logvar:in; tensor</title></path>
+<path data-route-id="route-0008" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.mean_head&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;value_operand&quot;, &quot;src&quot;: &quot;ccvae.enc3.activation&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.mean_view&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.mean_head&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;ccvae.enc3.activation:out-&gt;ccvae.mean_head:in:value_operand&quot;, &quot;rendered_dst&quot;: &quot;ccvae.mean_view:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.enc3.activation:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.enc3.activation&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1086.0,3787 L 1086.0,3613 L 865.0,3613 L 865.0,3589" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.enc3.activation:out -&gt; ccvae.mean_head:in; visible ccvae.enc3.activation:out -&gt; ccvae.mean_view:in; value_operand</title></path>
+<path data-route-id="route-0009" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.logvar_head&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;value_operand&quot;, &quot;src&quot;: &quot;ccvae.enc3.activation&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.logvar_view&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.logvar_head&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;ccvae.enc3.activation:out-&gt;ccvae.logvar_head:in:value_operand&quot;, &quot;rendered_dst&quot;: &quot;ccvae.logvar_view:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.enc3.activation:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.enc3.activation&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1086.0,3787 L 1086.0,3613 L 1307.0,3613 L 1307.0,3589" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.enc3.activation:out -&gt; ccvae.logvar_head:in; visible ccvae.enc3.activation:out -&gt; ccvae.logvar_view:in; value_operand</title></path>
+<path data-route-id="route-0010" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.std&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.half_logvar&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.std&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.half_logvar:out-&gt;ccvae.std:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.std:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.half_logvar:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.half_logvar&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1275.0,3009 L 1275.0,2985" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.half_logvar:out -&gt; ccvae.std:in; visible ccvae.half_logvar:out -&gt; ccvae.std:in; tensor</title></path>
+<path data-route-id="route-0011" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.noise_product&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.std&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.noise_product&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.std:out-&gt;ccvae.noise_product:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.noise_product:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.std:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.std&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1275.0,2904 L 1275.0,2880" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.std:out -&gt; ccvae.noise_product:in; visible ccvae.std:out -&gt; ccvae.noise_product:in; tensor</title></path>
+<path data-route-id="route-0012" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.retain_mu&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;value_operand&quot;, &quot;src&quot;: &quot;ccvae.mu&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.retain_mu&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.mu:out-&gt;ccvae.retain_mu:in:value_operand&quot;, &quot;rendered_dst&quot;: &quot;ccvae.retain_mu:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.mu:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.mu&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 865.0,3403 L 865.0,3279 L 1025.4,3279 L 1025.4,3140 L 865.0,3140 L 865.0,3116" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.mu:out -&gt; ccvae.retain_mu:in; visible ccvae.mu:out -&gt; ccvae.retain_mu:in; value_operand</title></path>
+<path data-route-id="route-0013" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.scaled_noise&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;value_operand&quot;, &quot;src&quot;: &quot;ccvae.logvar&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.half_logvar&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.scaled_noise&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;ccvae.logvar:out-&gt;ccvae.scaled_noise:in:value_operand&quot;, &quot;rendered_dst&quot;: &quot;ccvae.half_logvar:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.logvar:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.logvar&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1307.0,3403 L 1307.0,3114 L 1275.0,3114 L 1275.0,3090" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.logvar:out -&gt; ccvae.scaled_noise:in; visible ccvae.logvar:out -&gt; ccvae.half_logvar:in; value_operand</title></path>
+<path data-route-id="route-0014" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.z&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.sample_args&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.z&quot;, &quot;port&quot;: &quot;operand[0]&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.sample_args:out-&gt;ccvae.z:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.z:right.aux0&quot;, &quot;rendered_src&quot;: &quot;ccvae.retain_mu:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.retain_mu&quot;, &quot;operand&quot;: 0, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.sample_args&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;declared-interface&quot;}]}}" d="M 1030.0,3075.5 L 1074.0,3075.5 L 1074.0,2567.16 L 1275.0,2567.16 L 1275.0,2499.5 L 1251.0,2499.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.sample_args:out -&gt; ccvae.z:in; visible ccvae.retain_mu:out -&gt; ccvae.z:operand[0]; tensor</title></path>
+<path data-route-id="route-0015" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.z&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.sample_args&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.z&quot;, &quot;port&quot;: &quot;operand[1]&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.sample_args:out-&gt;ccvae.z:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.z:right.aux1&quot;, &quot;rendered_src&quot;: &quot;ccvae.noise_product:right.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.noise_product&quot;, &quot;operand&quot;: 1, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.sample_args&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;declared-interface&quot;}]}}" d="M 1440.0,2815.5 L 1464.0,2815.5 L 1464.0,2661 L 1286.8,2661 L 1286.8,2523.5 L 1251.0,2523.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.sample_args:out -&gt; ccvae.z:in; visible ccvae.noise_product:out -&gt; ccvae.z:operand[1]; tensor</title></path>
+<path data-route-id="route-0016" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.encoder_concat&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.encoder_args&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.encoder_concat&quot;, &quot;port&quot;: &quot;operand[0]&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.encoder_args:out-&gt;ccvae.encoder_concat:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.encoder_concat:right.aux0&quot;, &quot;rendered_src&quot;: &quot;ccvae.retain_image:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.retain_image&quot;, &quot;operand&quot;: 0, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.encoder_args&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1030.0,5080.5 L 1074.0,5080.5 L 1074.0,4546.16 L 1275.0,4546.16 L 1275.0,4478.5 L 1251.0,4478.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.encoder_args:out -&gt; ccvae.encoder_concat:in; visible ccvae.retain_image:out -&gt; ccvae.encoder_concat:operand[0]; tensor</title></path>
+<path data-route-id="route-0017" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.encoder_concat&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.encoder_args&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.encoder_concat&quot;, &quot;port&quot;: &quot;operand[1]&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.encoder_args:out-&gt;ccvae.encoder_concat:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.encoder_concat:right.aux1&quot;, &quot;rendered_src&quot;: &quot;ccvae.condition_maps:right.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.condition_maps&quot;, &quot;operand&quot;: 1, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.encoder_args&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}, {&quot;node&quot;: &quot;ccvae.encoder_condition&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1440.0,4772.5 L 1498.0,4772.5 L 1498.0,4502.5 L 1251.0,4502.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.encoder_args:out -&gt; ccvae.encoder_concat:in; visible ccvae.condition_maps:out -&gt; ccvae.encoder_concat:operand[1]; tensor</title></path>
+<path data-route-id="route-0018" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.enc1&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.encoder_concat&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.enc1.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.enc1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;ccvae.encoder_concat:out-&gt;ccvae.enc1:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.enc1.conv:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.encoder_concat:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.encoder_concat&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1086.0,4438 L 1086.0,4388" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.encoder_concat:out -&gt; ccvae.enc1:in; visible ccvae.encoder_concat:out -&gt; ccvae.enc1.conv:in; tensor</title></path>
+<path data-route-id="route-0019" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.enc2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.enc1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.enc2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.enc1:out-&gt;ccvae.enc2:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.enc2:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.enc1.activation:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.enc1.activation&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.enc1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1086.0,4202 L 1086.0,4104" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.enc1:out -&gt; ccvae.enc2:in; visible ccvae.enc1.activation:out -&gt; ccvae.enc2:in; tensor</title></path>
+<path data-route-id="route-0020" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.enc3&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.enc2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.enc3.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.enc3&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;ccvae.enc2:out-&gt;ccvae.enc3:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.enc3.conv:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.enc2:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.enc2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1086.0,4023 L 1086.0,3973" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.enc2:out -&gt; ccvae.enc3:in; visible ccvae.enc2:out -&gt; ccvae.enc3.conv:in; tensor</title></path>
+<path data-route-id="route-0021" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.encoder_return&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.sampling&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.encoder_return&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.sampling:out-&gt;ccvae.encoder_return:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.encoder_return:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.z:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.z&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.sampling&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;declared-interface&quot;}]}}" d="M 1086.0,2483 L 1086.0,2368" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.sampling:out -&gt; ccvae.encoder_return:in; visible ccvae.z:out -&gt; ccvae.encoder_return:in; tensor</title></path>
+<path data-route-id="route-0022" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.retain_z&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;value_operand&quot;, &quot;src&quot;: &quot;ccvae.select_z&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.retain_z&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.select_z:out-&gt;ccvae.retain_z:in:value_operand&quot;, &quot;rendered_dst&quot;: &quot;ccvae.retain_z:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.select_z:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.select_z&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1086.0,2084 L 1086.0,1984 L 897.0,1984 L 897.0,1960" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.select_z:out -&gt; ccvae.retain_z:in; visible ccvae.select_z:out -&gt; ccvae.retain_z:in; value_operand</title></path>
+<path data-route-id="route-0023" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.decoder_view&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.decoder_linear&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.decoder_view&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.decoder_linear:out-&gt;ccvae.decoder_view:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.decoder_view:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.decoder_linear:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.decoder_linear&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1086.0,1530 L 1086.0,1506" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.decoder_linear:out -&gt; ccvae.decoder_view:in; visible ccvae.decoder_linear:out -&gt; ccvae.decoder_view:in; tensor</title></path>
+<path data-route-id="route-0024" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.dec1.activation&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.dec1.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.dec1.activation&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.dec1.conv:out-&gt;ccvae.dec1.activation:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.dec1.activation:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.dec1.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.dec1.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1086.0,1172 L 1086.0,1148" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.dec1.conv:out -&gt; ccvae.dec1.activation:in; visible ccvae.dec1.conv:out -&gt; ccvae.dec1.activation:in; tensor</title></path>
+<path data-route-id="route-0025" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.dec3.activation&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.dec3.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.dec3.activation&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.dec3.conv:out-&gt;ccvae.dec3.activation:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.dec3.activation:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.dec3.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.dec3.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1086.0,733 L 1086.0,709" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.dec3.conv:out -&gt; ccvae.dec3.activation:in; visible ccvae.dec3.conv:out -&gt; ccvae.dec3.activation:in; tensor</title></path>
+<path data-route-id="route-0026" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.decoder_concat&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.decoder_args&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.decoder_concat&quot;, &quot;port&quot;: &quot;operand[0]&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.decoder_args:out-&gt;ccvae.decoder_concat:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.decoder_concat:right.aux0&quot;, &quot;rendered_src&quot;: &quot;ccvae.retain_z:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.retain_z&quot;, &quot;operand&quot;: 0, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.decoder_args&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1062.0,1919.5 L 1098.0,1919.5 L 1098.0,1769.16 L 1275.0,1769.16 L 1275.0,1701.5 L 1251.0,1701.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.decoder_args:out -&gt; ccvae.decoder_concat:in; visible ccvae.retain_z:out -&gt; ccvae.decoder_concat:operand[0]; tensor</title></path>
+<path data-route-id="route-0027" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.decoder_concat&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.decoder_args&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.decoder_concat&quot;, &quot;port&quot;: &quot;operand[1]&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.decoder_args:out-&gt;ccvae.decoder_concat:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.decoder_concat:right.aux1&quot;, &quot;rendered_src&quot;: &quot;ccvae.decoder_onehot:right.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.decoder_onehot&quot;, &quot;operand&quot;: 1, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.decoder_args&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1440.0,1907.5 L 1464.0,1907.5 L 1464.0,1725.5 L 1251.0,1725.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.decoder_args:out -&gt; ccvae.decoder_concat:in; visible ccvae.decoder_onehot:out -&gt; ccvae.decoder_concat:operand[1]; tensor</title></path>
+<path data-route-id="route-0028" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.latent_projection&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.decoder_concat&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.decoder_linear&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.latent_projection&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;ccvae.decoder_concat:out-&gt;ccvae.latent_projection:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.decoder_linear:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.decoder_concat:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.decoder_concat&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1086.0,1661 L 1086.0,1611" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.decoder_concat:out -&gt; ccvae.latent_projection:in; visible ccvae.decoder_concat:out -&gt; ccvae.decoder_linear:in; tensor</title></path>
+<path data-route-id="route-0029" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.dec1&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.latent_projection&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.dec1.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.dec1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;ccvae.latent_projection:out-&gt;ccvae.dec1:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.dec1.conv:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.decoder_view:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.decoder_view&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.latent_projection&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1086.0,1401 L 1086.0,1277" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.latent_projection:out -&gt; ccvae.dec1:in; visible ccvae.decoder_view:out -&gt; ccvae.dec1.conv:in; tensor</title></path>
+<path data-route-id="route-0030" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.dec2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.dec1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.dec2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.dec1:out-&gt;ccvae.dec2:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.dec2:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.dec1.activation:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.dec1.activation&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.dec1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1086.0,1067 L 1086.0,969" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.dec1:out -&gt; ccvae.dec2:in; visible ccvae.dec1.activation:out -&gt; ccvae.dec2:in; tensor</title></path>
+<path data-route-id="route-0031" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.dec3&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.dec2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.dec3.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.dec3&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;ccvae.dec2:out-&gt;ccvae.dec3:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.dec3.conv:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.dec2:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.dec2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1086.0,888 L 1086.0,838" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.dec2:out -&gt; ccvae.dec3:in; visible ccvae.dec2:out -&gt; ccvae.dec3.conv:in; tensor</title></path>
+<path data-route-id="route-0032" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.sigmoid&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.dec3&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.sigmoid&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.dec3:out-&gt;ccvae.sigmoid:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.sigmoid:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.dec3.activation:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.dec3.activation&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.dec3&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1086.0,628 L 1086.0,530" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.dec3:out -&gt; ccvae.sigmoid:in; visible ccvae.dec3.activation:out -&gt; ccvae.sigmoid:in; tensor</title></path>
+<path data-route-id="route-0033" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.select_z&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.encoder&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.select_z&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.encoder:out-&gt;ccvae.select_z:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.select_z:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.z:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.z&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.encoder&quot;, &quot;port&quot;: &quot;encoded&quot;, &quot;rule&quot;: &quot;declared-interface&quot;}]}}" d="M 1086.0,2483 L 1086.0,2371.16 L 914.72,2371.16 L 914.72,2216 L 1086.0,2216 L 1086.0,2189" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.encoder:out -&gt; ccvae.select_z:in; visible ccvae.z:out -&gt; ccvae.select_z:in; tensor</title></path>
+<path data-route-id="route-0034" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.return&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ccvae.decoder&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.return&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.decoder:out-&gt;ccvae.return:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ccvae.return:in&quot;, &quot;rendered_src&quot;: &quot;ccvae.sigmoid:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.sigmoid&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;ccvae.decoder&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1086.0,449 L 1086.0,351" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ccvae.decoder:out -&gt; ccvae.return:in; visible ccvae.sigmoid:out -&gt; ccvae.return:in; tensor</title></path>
+<path data-route-id="route-0035" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.encoder_onehot&quot;, &quot;dst_port&quot;: &quot;labels&quot;, &quot;role&quot;: &quot;condition&quot;, &quot;src&quot;: &quot;ccvae.labels&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.encoder_onehot&quot;, &quot;port&quot;: &quot;labels&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.labels:out-&gt;ccvae.encoder_onehot:labels:condition&quot;, &quot;rendered_dst&quot;: &quot;ccvae.encoder_onehot:right&quot;, &quot;rendered_src&quot;: &quot;ccvae.labels:left&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.labels&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1817,5145.0 L 1464.0,5145.0 L 1464.0,5042.5 L 1440.0,5042.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>ccvae.labels:out -&gt; ccvae.encoder_onehot:labels; visible ccvae.labels:out -&gt; ccvae.encoder_onehot:labels; targets / encoder</title></path>
+<path data-route-id="route-0036" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.condition_maps&quot;, &quot;dst_port&quot;: &quot;image_shape&quot;, &quot;role&quot;: &quot;shape_dependency&quot;, &quot;src&quot;: &quot;ccvae.input&quot;, &quot;src_port&quot;: &quot;shape&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.condition_maps&quot;, &quot;port&quot;: &quot;image_shape&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.input:shape-&gt;ccvae.condition_maps:image_shape:shape_dependency&quot;, &quot;rendered_dst&quot;: &quot;ccvae.condition_maps:right.aux1&quot;, &quot;rendered_src&quot;: &quot;ccvae.input:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.input&quot;, &quot;port&quot;: &quot;shape&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1251.0,5311.5 L 1466.0,5311.5 L 1466.0,4796.5 L 1440.0,4796.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>ccvae.input:shape -&gt; ccvae.condition_maps:image_shape; visible ccvae.input:shape -&gt; ccvae.condition_maps:image_shape; image B,H,W + dtype</title></path>
+<path data-route-id="route-0037" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.decoder_onehot&quot;, &quot;dst_port&quot;: &quot;labels&quot;, &quot;role&quot;: &quot;condition&quot;, &quot;src&quot;: &quot;ccvae.labels&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.decoder_onehot&quot;, &quot;port&quot;: &quot;labels&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.labels:out-&gt;ccvae.decoder_onehot:labels:condition&quot;, &quot;rendered_dst&quot;: &quot;ccvae.decoder_onehot:right.aux1&quot;, &quot;rendered_src&quot;: &quot;ccvae.labels:left&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.labels&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1817,5145.0 L 1578.24,5145.0 L 1578.24,1931.5 L 1440.0,1931.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>ccvae.labels:out -&gt; ccvae.decoder_onehot:labels; visible ccvae.labels:out -&gt; ccvae.decoder_onehot:labels; targets / decoder</title></path>
+<path data-route-id="route-0038" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.noise_product&quot;, &quot;dst_port&quot;: &quot;epsilon&quot;, &quot;role&quot;: &quot;random_sample&quot;, &quot;src&quot;: &quot;ccvae.epsilon&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.noise_product&quot;, &quot;port&quot;: &quot;epsilon&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.epsilon:out-&gt;ccvae.noise_product:epsilon:random_sample&quot;, &quot;rendered_dst&quot;: &quot;ccvae.noise_product:right.aux1&quot;, &quot;rendered_src&quot;: &quot;ccvae.epsilon:left.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.epsilon&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1817,2918.0 L 1464.0,2918.0 L 1464.0,2839.5 L 1440.0,2839.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>ccvae.epsilon:out -&gt; ccvae.noise_product:epsilon; visible ccvae.epsilon:out -&gt; ccvae.noise_product:epsilon; epsilon</title></path>
+<path data-route-id="route-0039" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.epsilon&quot;, &quot;dst_port&quot;: &quot;shape&quot;, &quot;role&quot;: &quot;shape_dependency&quot;, &quot;src&quot;: &quot;ccvae.mu&quot;, &quot;src_port&quot;: &quot;shape&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.epsilon&quot;, &quot;port&quot;: &quot;shape&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.mu:shape-&gt;ccvae.epsilon:shape:shape_dependency&quot;, &quot;rendered_dst&quot;: &quot;ccvae.epsilon:left.aux1&quot;, &quot;rendered_src&quot;: &quot;ccvae.mu:right.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.mu&quot;, &quot;port&quot;: &quot;shape&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1030.0,3431.5 L 1098.0,3431.5 L 1098.0,3222 L 1793,3222 L 1793,2942.0 L 1817,2942.0" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>ccvae.mu:shape -&gt; ccvae.epsilon:shape; visible ccvae.mu:shape -&gt; ccvae.epsilon:shape; mu B,latent / shape only</title></path>
+<path data-route-id="route-0040" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.encoder_return&quot;, &quot;dst_port&quot;: &quot;mu&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;ccvae.mu&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.encoder_return&quot;, &quot;port&quot;: &quot;mu&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.mu:out-&gt;ccvae.encoder_return:mu:retained_value&quot;, &quot;rendered_dst&quot;: &quot;ccvae.encoder_return:right.aux0&quot;, &quot;rendered_src&quot;: &quot;ccvae.mu:right.aux1&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.mu&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1030.0,3455.5 L 1098.0,3455.5 L 1098.0,3313 L 2165,3313 L 2165,2315.5 L 1251.0,2315.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>ccvae.mu:out -&gt; ccvae.encoder_return:mu; visible ccvae.mu:out -&gt; ccvae.encoder_return:mu; mu</title></path>
+<path data-route-id="route-0041" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.return&quot;, &quot;dst_port&quot;: &quot;mu&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;ccvae.mu&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.return&quot;, &quot;port&quot;: &quot;mu&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.mu:out-&gt;ccvae.return:mu:retained_value&quot;, &quot;rendered_dst&quot;: &quot;ccvae.return:right.aux0&quot;, &quot;rendered_src&quot;: &quot;ccvae.mu:right.aux1&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.mu&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1030.0,3455.5 L 1098.0,3455.5 L 1098.0,3313 L 2165,3313 L 2165,274.5 L 1251.0,274.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>ccvae.mu:out -&gt; ccvae.return:mu; visible ccvae.mu:out -&gt; ccvae.return:mu; mu</title></path>
+<path data-route-id="route-0042" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.encoder_return&quot;, &quot;dst_port&quot;: &quot;logvar&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;ccvae.logvar&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.encoder_return&quot;, &quot;port&quot;: &quot;logvar&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.logvar:out-&gt;ccvae.encoder_return:logvar:retained_value&quot;, &quot;rendered_dst&quot;: &quot;ccvae.encoder_return:right.aux1&quot;, &quot;rendered_src&quot;: &quot;ccvae.logvar:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.logvar&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1472.0,3443.5 L 2154,3443.5 L 2154,2339.5 L 1251.0,2339.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>ccvae.logvar:out -&gt; ccvae.encoder_return:logvar; visible ccvae.logvar:out -&gt; ccvae.encoder_return:logvar; logvar</title></path>
+<path data-route-id="route-0043" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.return&quot;, &quot;dst_port&quot;: &quot;logvar&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;ccvae.logvar&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.return&quot;, &quot;port&quot;: &quot;logvar&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.logvar:out-&gt;ccvae.return:logvar:retained_value&quot;, &quot;rendered_dst&quot;: &quot;ccvae.return:right.aux1&quot;, &quot;rendered_src&quot;: &quot;ccvae.logvar:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.logvar&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1472.0,3443.5 L 2154,3443.5 L 2154,298.5 L 1251.0,298.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>ccvae.logvar:out -&gt; ccvae.return:logvar; visible ccvae.logvar:out -&gt; ccvae.return:logvar; logvar</title></path>
+<path data-route-id="route-0044" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ccvae.return&quot;, &quot;dst_port&quot;: &quot;encoded&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;ccvae.z&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ccvae.return&quot;, &quot;port&quot;: &quot;encoded&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ccvae.z:out-&gt;ccvae.return:encoded:retained_value&quot;, &quot;rendered_dst&quot;: &quot;ccvae.return:right.aux2&quot;, &quot;rendered_src&quot;: &quot;ccvae.z:right.aux2&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ccvae.z&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1251.0,2547.5 L 2153,2547.5 L 2153,322.5 L 1251.0,322.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>ccvae.z:out -&gt; ccvae.return:encoded; visible ccvae.z:out -&gt; ccvae.return:encoded; encoded z</title></path>
+<rect x="541.0" y="5415" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348"/>
+<text x="564.0" y="5428" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="564.0" dy="0">Input / Embed</tspan>
+</text>
+<rect x="726.0" y="5415" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348"/>
+<text x="749.0" y="5428" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="749.0" dy="0">Conv / MLP</tspan>
+</text>
+<rect x="911.0" y="5415" width="16" height="16" rx="3" fill="#d6f0df" stroke="#263348"/>
+<text x="934.0" y="5428" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="934.0" dy="0">Pool</tspan>
+</text>
+<rect x="1096.0" y="5415" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348"/>
+<text x="1119.0" y="5428" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1119.0" dy="0">Norm / Add / Cat</tspan>
+</text>
+<rect x="1281.0" y="5415" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348"/>
+<text x="1304.0" y="5428" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1304.0" dy="0">Linear / Output</tspan>
+</text>
+<rect x="1466.0" y="5415" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348"/>
+<text x="1489.0" y="5428" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1489.0" dy="0">Activation</tspan>
+</text>
+<rect x="1003.5" y="5445" width="16" height="16" rx="3" fill="#c9f1cd" stroke="#263348"/>
+<text x="1026.5" y="5458" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1026.5" dy="0">Prob. / Sample</tspan>
+</text>
+<text x="1086.0" y="5486" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">B batch; image [B,1,28,28]; one latent vector per example</tspan>
+<tspan x="1086.0" dy="16.52">mu/logvar/z each [B,50]; decoder output [B,11,28,28]</tspan>
+<tspan x="1086.0" dy="16.52">Internal Gaussian sampling always runs; no deterministic eval branch</tspan>
+</text>
+<text x="1086.0" y="5560" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+<text x="1086.0" y="5590" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+<text x="1086.0" y="5615" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1086.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+</svg>

@@ -1,0 +1,487 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "autoregressive_mask",
+  "profile": {
+    "in_features": 8,
+    "out_features": 8,
+    "in_flow_features": 4,
+    "mask_type": "output",
+    "parameters": [],
+    "dtype": "float32",
+    "input_degrees": [
+      0,
+      1,
+      2,
+      0,
+      1,
+      2,
+      0,
+      1
+    ],
+    "output_degrees": [
+      -1,
+      0,
+      1,
+      2,
+      -1,
+      0,
+      1,
+      2
+    ],
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "get_mask(mask_type=output) construction function only; no MaskedLinear forward or MADE model.",
+    "source_contracts": [
+      [
+        "get_mask",
+        "torch.arange(in_features) % (in_flow_features - 1)"
+      ],
+      [
+        "get_mask",
+        "torch.arange(out_features) % in_flow_features - 1"
+      ],
+      [
+        "get_mask",
+        "(out_degrees.unsqueeze(-1) >= in_degrees.unsqueeze(0)).float()"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "ikostrikov/pytorch-flows",
+    "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+    "snapshot": "c0ebb6c1af0b9d8f0b8140bbc16c5cf7122408fa79a5b25da427fac8d15d657a"
+  },
+  "nodes": [
+    {
+      "id": "autoregressive_mask.root",
+      "label": "Degree mask / strict autoregressive topology",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "autoregressive_mask.dims"
+        ],
+        [
+          "autoregressive_mask.body"
+        ],
+        [
+          "autoregressive_mask.mask"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "autoregressive_mask.dims",
+      "label": "Static constructor dimensions",
+      "kind": "input",
+      "source": [
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "in=8; out=8; flowD=4",
+      "detail": [],
+      "configuration_input": true,
+      "parent": "autoregressive_mask.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "autoregressive_mask.body",
+      "label": "Degree mask module",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "[8,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "autoregressive_mask.inputdegree",
+          "autoregressive_mask.outputdegree"
+        ],
+        [
+          "autoregressive_mask.compare"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "autoregressive_mask.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "autoregressive_mask.inputdegree",
+      "label": "Hidden-input degrees",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "autoregressive_mask.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "autoregressive_mask.i_arange",
+      "label": "arange(in_features)",
+      "kind": "tensor",
+      "source": [
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "[8]",
+      "detail": [],
+      "expression": "torch.arange(in_features)",
+      "parent": "autoregressive_mask.inputdegree",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "autoregressive_mask.i_mod",
+      "label": "modulo (flowD - 1)",
+      "kind": "tensor",
+      "source": [
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "[8]",
+      "detail": [],
+      "expression": "torch.arange(in_features) % (in_flow_features - 1)",
+      "modulus": 3,
+      "parent": "autoregressive_mask.inputdegree",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "autoregressive_mask.outputdegree",
+      "label": "Strict output degrees",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "autoregressive_mask.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "autoregressive_mask.o_arange",
+      "label": "arange(out_features)",
+      "kind": "tensor",
+      "source": [
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "[8]",
+      "detail": [],
+      "expression": "torch.arange(out_features)",
+      "parent": "autoregressive_mask.outputdegree",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "autoregressive_mask.o_mod",
+      "label": "modulo flowD; subtract 1",
+      "kind": "tensor",
+      "source": [
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "[8]",
+      "detail": [],
+      "expression": "torch.arange(out_features) % in_flow_features - 1",
+      "modulus": 4,
+      "offset": -1,
+      "parent": "autoregressive_mask.outputdegree",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "autoregressive_mask.compare",
+      "label": "Broadcast dependency comparison",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "port_bindings": {
+        "input_degrees": {
+          "node": "autoregressive_mask.ge",
+          "port": "input_degrees"
+        },
+        "output_degrees": {
+          "node": "autoregressive_mask.ge",
+          "port": "output_degrees"
+        }
+      },
+      "port_binding_evidence": {
+        "input_degrees": {
+          "source": [
+            "density-flow-modules/flows.py::get_mask"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        },
+        "output_degrees": {
+          "source": [
+            "density-flow-modules/flows.py::get_mask"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        }
+      },
+      "parent": "autoregressive_mask.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input_degrees",
+        "output_degrees"
+      ]
+    },
+    {
+      "id": "autoregressive_mask.ge",
+      "label": "out_deg[:,None] >= in_deg[None,:]",
+      "kind": "tensor",
+      "source": [
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "[8,8]",
+      "detail": [],
+      "expression": "out_degrees.unsqueeze(-1) >= in_degrees.unsqueeze(0)",
+      "comparison": "greater_or_equal",
+      "output_degree_offset": -1,
+      "parent": "autoregressive_mask.compare",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input_degrees",
+        "output_degrees"
+      ]
+    },
+    {
+      "id": "autoregressive_mask.float",
+      "label": "float() / binary connectivity",
+      "kind": "tensor",
+      "source": [
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "[8,8]",
+      "detail": [],
+      "expression": "(out_degrees.unsqueeze(-1) >= in_degrees.unsqueeze(0)).float()",
+      "dtype": "float32",
+      "learnable": false,
+      "parent": "autoregressive_mask.compare",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "autoregressive_mask.mask",
+      "label": "Output-layer mask",
+      "kind": "output",
+      "source": [
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "[8,8]",
+      "detail": [],
+      "storage_origin": "return tensor; MaskedLinear registers caller mask separately",
+      "parent": "autoregressive_mask.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "autoregressive_mask.inputdegree:in->autoregressive_mask.i_arange:in:boundary",
+      "src": "autoregressive_mask.inputdegree",
+      "dst": "autoregressive_mask.i_arange",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "autoregressive_mask.i_arange:out->autoregressive_mask.i_mod:in:tensor",
+      "src": "autoregressive_mask.i_arange",
+      "dst": "autoregressive_mask.i_mod",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "autoregressive_mask.i_mod:out->autoregressive_mask.inputdegree:out:boundary",
+      "src": "autoregressive_mask.i_mod",
+      "dst": "autoregressive_mask.inputdegree",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "autoregressive_mask.outputdegree:in->autoregressive_mask.o_arange:in:boundary",
+      "src": "autoregressive_mask.outputdegree",
+      "dst": "autoregressive_mask.o_arange",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "autoregressive_mask.o_arange:out->autoregressive_mask.o_mod:in:tensor",
+      "src": "autoregressive_mask.o_arange",
+      "dst": "autoregressive_mask.o_mod",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "autoregressive_mask.o_mod:out->autoregressive_mask.outputdegree:out:boundary",
+      "src": "autoregressive_mask.o_mod",
+      "dst": "autoregressive_mask.outputdegree",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "autoregressive_mask.compare:in->autoregressive_mask.ge:in:boundary",
+      "src": "autoregressive_mask.compare",
+      "dst": "autoregressive_mask.ge",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "autoregressive_mask.ge:out->autoregressive_mask.float:in:tensor",
+      "src": "autoregressive_mask.ge",
+      "dst": "autoregressive_mask.float",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "autoregressive_mask.float:out->autoregressive_mask.compare:out:boundary",
+      "src": "autoregressive_mask.float",
+      "dst": "autoregressive_mask.compare",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "autoregressive_mask.dims:out->autoregressive_mask.inputdegree:in:configuration",
+      "src": "autoregressive_mask.dims",
+      "dst": "autoregressive_mask.inputdegree",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "configuration"
+    },
+    {
+      "id": "autoregressive_mask.dims:out->autoregressive_mask.outputdegree:in:configuration",
+      "src": "autoregressive_mask.dims",
+      "dst": "autoregressive_mask.outputdegree",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "configuration"
+    },
+    {
+      "id": "autoregressive_mask.inputdegree:out->autoregressive_mask.compare:input_degrees:tensor",
+      "src": "autoregressive_mask.inputdegree",
+      "dst": "autoregressive_mask.compare",
+      "src_port": "out",
+      "dst_port": "input_degrees",
+      "role": "tensor"
+    },
+    {
+      "id": "autoregressive_mask.outputdegree:out->autoregressive_mask.compare:output_degrees:tensor",
+      "src": "autoregressive_mask.outputdegree",
+      "dst": "autoregressive_mask.compare",
+      "src_port": "out",
+      "dst_port": "output_degrees",
+      "role": "tensor"
+    },
+    {
+      "id": "autoregressive_mask.compare:out->autoregressive_mask.mask:in:tensor",
+      "src": "autoregressive_mask.compare",
+      "dst": "autoregressive_mask.mask",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Input degrees use modulo D-1 for hidden units. Output degrees use modulo D then minus1, so output coordinate i can only depend on preceding input degrees.",
+    "Comparison result has row=output unit and column=input unit. The float mask is fixed topology, not an attention probability or learned parameter.",
+    "This function merely returns a tensor; register_buffer belongs to its MaskedLinear caller. Input/hidden mask types are alternate source branches not mixed into this selected view."
+  ],
+  "corrections": [
+    "Do not omit output degree minus1, transpose the mask, or treat the >= comparison as a Softmax."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

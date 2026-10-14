@@ -1,0 +1,194 @@
+{
+  "badge": "布局已就绪",
+  "edges": 85,
+  "invalid": [],
+  "junctions": [
+    {
+      "edges": [
+        "binding-002-1",
+        "binding-003-2",
+        "binding-004-3"
+      ],
+      "id": "tensor-junction-1",
+      "owner": "src_pe.add",
+      "point": [
+        382,
+        1692
+      ]
+    },
+    {
+      "edges": [
+        "binding-002-1",
+        "binding-003-2",
+        "binding-004-3",
+        "binding-005-4"
+      ],
+      "id": "tensor-junction-2",
+      "owner": "src_pe.add",
+      "point": [
+        382,
+        1728
+      ]
+    },
+    {
+      "edges": [
+        "binding-009-8",
+        "binding-010-9",
+        "binding-011-10"
+      ],
+      "id": "tensor-junction-3",
+      "owner": "tgt_pe.add",
+      "point": [
+        1238,
+        2358
+      ]
+    },
+    {
+      "edges": [
+        "binding-009-8",
+        "binding-010-9",
+        "binding-011-10",
+        "binding-012-11"
+      ],
+      "id": "tensor-junction-4",
+      "owner": "tgt_pe.add",
+      "point": [
+        1238,
+        2394
+      ]
+    },
+    {
+      "edges": [
+        "binding-032-31",
+        "binding-039-38"
+      ],
+      "id": "tensor-junction-5",
+      "owner": "enc.norm1.layernorm",
+      "point": [
+        446.3708801269531,
+        826
+      ]
+    },
+    {
+      "edges": [
+        "encoder-memory-to-cross-040-40",
+        "encoder-memory-to-cross-042-42"
+      ],
+      "id": "tensor-junction-6",
+      "owner": "enc.memory.value",
+      "point": [
+        1058.6666666666667,
+        1446
+      ]
+    },
+    {
+      "edges": [
+        "binding-061-60",
+        "binding-075-74"
+      ],
+      "id": "tensor-junction-7",
+      "owner": "dec.norm1.layernorm",
+      "point": [
+        1238,
+        1492
+      ]
+    },
+    {
+      "edges": [
+        "binding-076-75",
+        "binding-083-82"
+      ],
+      "id": "tensor-junction-8",
+      "owner": "dec.norm2.layernorm",
+      "point": [
+        1238,
+        826
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "enc.ffn.linear1:in",
+        "canonical_src": "enc.norm1.layernorm:out",
+        "dashed": false,
+        "dst": "enc.ffn.input_value:in",
+        "id": "binding-032",
+        "points": [
+          [
+            382,
+            880
+          ],
+          [
+            382,
+            790
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "enc.norm1.layernorm:out",
+          "target": "enc.ffn.linear1:in"
+        },
+        "semantic_edges": [
+          "enc.ffn:in->enc.ffn.linear1:in",
+          "enc.norm1.layernorm:out->enc.norm1:out",
+          "enc.norm1:out->enc.ffn:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "enc.norm1.layernorm:out",
+        "width": 2.2
+      },
+      "id": "binding-032-31",
+      "path": "M 446.37 880 L 446.37 799 L 382 799 L 382 790"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "enc.norm2.add:x",
+        "canonical_src": "enc.norm1.layernorm:out",
+        "dashed": false,
+        "dst": "enc.norm2.add:x",
+        "id": "binding-039",
+        "points": [
+          [
+            382,
+            880
+          ],
+          [
+            382,
+            826
+          ],
+          [
+            56,
+            826
+          ],
+          [
+            56,
+            420
+          ],
+          [
+            368,
+            420
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "enc.norm1.layernorm:out",
+          "target": "enc.norm2.add:x"
+        },
+        "semantic_edges": [
+          "enc.norm1.layernorm:out->enc.norm1:out",
+          "enc.norm1:out->enc.norm2:skip",
+          "enc.norm2:skip->enc.norm2.add:x"
+        ],
+        "semantic_kind": "residual",
+        "src": "enc.norm1.layernorm:out",
+        "width": 2.2
+      },
+      "id": "binding-039-38",
+      "path": "M 446.37 880 L 446.37 826 L 56 826 L 56 420 L 368 420"
+    }
+  ],
+  "sourceValid": "true"
+}

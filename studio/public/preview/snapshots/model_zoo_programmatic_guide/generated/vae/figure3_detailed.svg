@@ -1,0 +1,511 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2100" height="3039" viewBox="0 0 2100 3039">
+<defs xmlns="http://www.w3.org/2000/svg"><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348" /></marker></defs>
+
+<rect xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" fill="white" />
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="source-binding">{"model": "vae", "source_snapshot_sha256": "591a881d04226e9e2e62669938cda2c197e2cf38e37f65e52864fa5070e08200", "repository": "rasbt/deeplearning-models", "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3", "semantic_ir_sha256": "167abb9b08ba6de34f97e1f9e6c45ab5a28b9fe90f3fca463fae65cfc938b094", "view": 2}</metadata>
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="diagram-style">{"name": "transformer-paper-model-zoo", "version": 1, "font": "DejaVu Sans, Arial, sans-serif", "text": "#172336", "line": "#263348", "palette": {"root": "#ffffff", "group": "#ffffff", "inner": "#fffaf6", "layer": "#ffffff", "encoder": "#e7f5fe", "decoder": "#fff0f5", "embedding": "#f8d4e1", "input": "#f8d4e1", "output": "#dfdff8", "attention": "#ffddb3", "ffn": "#c8ebfb", "mixing": "#c8ebfb", "conv": "#c8ebfb", "pool": "#d6f0df", "norm": "#fff6bd", "concat": "#fff6bd", "linear": "#dfdff8", "softmax": "#c9f1cd", "sampling": "#c9f1cd", "recurrent": "#ffddb3", "decomposition": "#d6f0df", "tensor": "#cdeaf8", "activation": "#f3f5f7", "control": "#f3f5f7"}, "typography": {"title": 30, "subtitle": 16, "module": 22, "inner": 20, "operator": 20, "shape": 16, "detail": 14, "evidence": 12, "footer": 14, "line_height": 1.18}, "fill_width_nodes": ["vae.decoder", "vae.encoder", "vae.forward", "vae.posterior", "vae.sampling"], "visual_roles": {"vae.dec_activation": "activation", "vae.dec_sigmoid": "softmax", "vae.decoder": "decoder", "vae.enc_activation": "activation", "vae.encoder": "encoder", "vae.epsilon": "sampling", "vae.forward": "group", "vae.half_logvar": "tensor", "vae.input": "input", "vae.logvar_head": "inner", "vae.mean_head": "inner", "vae.mean_operand": "tensor", "vae.noise_product": "norm", "vae.posterior": "ffn", "vae.return": "output", "vae.root": "root", "vae.sample_operands": "inner", "vae.sampling": "sampling", "vae.scaled_noise": "inner", "vae.std": "activation", "vae.z": "norm"}, "semantics": "presentation aliases only; color does not imply mathematical equivalence or parameter sharing"}</metadata>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">VAE (MNIST fully connected)  |  Operators &amp; tensor flow</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">MNIST 784 / hidden 500 / latent 15 / independent posterior heads  /  read bottom to top</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.root" data-visual-role="root"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:119 VariationalAutoencoder.forward; parameter=not asserted; </title><rect x="504.0" y="98" width="1092" height="2659" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="521.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="521.0" dy="0">MNIST fully connected VAE</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1579.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1579.0" dy="0">(mu, logvar, z, decoded)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1583.0" y="160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1583.0" dy="0">E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.input" data-visual-role="input" data-glyph-kind="tensor-grid"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:119 VariationalAutoencoder.forward; parameter=not asserted; caller reshapes [B,1,28,28] to [B,784] before model(features) | pixel range [0,1] from dataset ToTensor</title><rect x="1014.0" y="2662.5" width="72" height="32" rx="0" fill="#f8d4e1" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="1026.0" x2="1026.0" y1="2662.5" y2="2694.5" stroke="#263348" stroke-width=".6" /><line x1="1038.0" x2="1038.0" y1="2662.5" y2="2694.5" stroke="#263348" stroke-width=".6" /><line x1="1050.0" x2="1050.0" y1="2662.5" y2="2694.5" stroke="#263348" stroke-width=".6" /><line x1="1062.0" x2="1062.0" y1="2662.5" y2="2694.5" stroke="#263348" stroke-width=".6" /><line x1="1074.0" x2="1074.0" y1="2662.5" y2="2694.5" stroke="#263348" stroke-width=".6" /><line x1="1014.0" x2="1086.0" y1="2673.1666666666665" y2="2673.1666666666665" stroke="#263348" stroke-width=".6" /><line x1="1014.0" x2="1086.0" y1="2683.8333333333335" y2="2683.8333333333335" stroke="#263348" stroke-width=".6" /><text x="1004.0" y="2667.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="1004.0" dy="0">Flattened</tspan><tspan x="1004.0" dy="16.52">MNIST</tspan><tspan x="1004.0" dy="16.52">features</tspan></text><text x="1096.0" y="2683.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1096.0" dy="0">[B,784]</tspan></text><text x="1096.0" y="2728" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1096.0" dy="0">E005</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.forward" data-visual-role="group"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:119 VariationalAutoencoder.forward; parameter=not asserted; </title><rect x="536.0" y="172" width="1028" height="2430" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="553.0" y="202" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="553.0" dy="0">Model forward</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1547.0" y="202" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1547.0" dy="0">four-tensor tuple</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1551.0" y="234" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1551.0" dy="0">E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.encoder" data-visual-role="encoder"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=hidden_1 / z_mean / z_log_var; </title><rect x="568.0" y="1000" width="964" height="1576" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="585.0" y="1030" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="585.0" dy="0">Encoder</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1515.0" y="1030" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1515.0" dy="0">(mu, logvar, z)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1519.0" y="1062" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1519.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.enc_linear" data-visual-role="linear"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=hidden_1; self.hidden_1</title><rect x="885.0" y="2469" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="2496" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Linear 784 -&gt; 500</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="2520" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,500]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="2540" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.enc_activation" data-visual-role="activation"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=not asserted; negative_slope=0.0001</title><rect x="885.0" y="2364" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="2391" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">LeakyReLU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="2415" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,500]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="2435" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.posterior" data-visual-role="ffn"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=not asserted; same hidden input; independent Linear weights | parallel means two tensor results, not addition</title><rect x="600.0" y="1986" width="900" height="354" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="617.0" y="2016" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="617.0" dy="0">Posterior parameter heads</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1483.0" y="2016" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1483.0" dy="0">mu / logvar: independent</tspan>
+<tspan x="1483.0" dy="18.88">operands</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1487.0" y="2058" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1487.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.mean_head" data-visual-role="inner"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=z_mean; </title><rect x="632.0" y="2085" width="394" height="181" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="649.0" y="2115" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="649.0" dy="0">Mean head</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1009.0" y="2115" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1009.0" dy="0">mu: [B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1013.0" y="2147" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1013.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.mu" data-visual-role="linear"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=z_mean; self.z_mean; no activation</title><rect x="664.0" y="2159" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="829.0" y="2186" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="829.0" dy="0">Linear 500 -&gt; 15</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="829.0" y="2210" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="829.0" dy="0">mu: [B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="981.0" y="2230" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="981.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.logvar_head" data-visual-role="inner"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=z_log_var; </title><rect x="1074.0" y="2070" width="394" height="196" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1091.0" y="2100" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1091.0" dy="0">Log-variance</tspan>
+<tspan x="1091.0" dy="23.599999999999998">head</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1451.0" y="2100" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1451.0" dy="0">logvar: [B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1455.0" y="2147" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1455.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.logvar" data-visual-role="linear"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=z_log_var; self.z_log_var; unbounded log variance</title><rect x="1106.0" y="2159" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1271.0" y="2186" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1271.0" dy="0">Linear 500 -&gt; 15</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1271.0" y="2210" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1271.0" dy="0">logvar: [B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1423.0" y="2230" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1423.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.sampling" data-visual-role="sampling"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:96 VariationalAutoencoder.reparameterize; parameter=not asserted; sampling also happens in eval mode in this source</title><rect x="600.0" y="1179" width="900" height="783" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="617.0" y="1209" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="617.0" dy="0">Reparameterization</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1483.0" y="1209" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1483.0" dy="0">z: [B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1487.0" y="1241" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1487.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.sample_operands" data-visual-role="inner"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:96 VariationalAutoencoder.reparameterize; parameter=not asserted; </title><rect x="632.0" y="1358" width="836" height="578" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="649.0" y="1388" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="649.0" dy="0">Mean / scaled noise</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1451.0" y="1388" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1451.0" dy="0">two Add operands</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1455.0" y="1420" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1455.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.mean_operand" data-visual-role="tensor"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:96 VariationalAutoencoder.reparameterize; parameter=not asserted; mu is used unchanged</title><rect x="664.0" y="1781" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="829.0" y="1808" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="829.0" dy="0">Retain mu</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="829.0" y="1832" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="829.0" dy="0">[B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="981.0" y="1852" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="981.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.scaled_noise" data-visual-role="inner"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:96 VariationalAutoencoder.reparameterize; parameter=not asserted; </title><rect x="1042.0" y="1432" width="394" height="430" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1059.0" y="1462" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1059.0" dy="0">Standard</tspan>
+<tspan x="1059.0" dy="23.599999999999998">deviation</tspan>
+<tspan x="1059.0" dy="23.599999999999998">times noise</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1419.0" y="1462" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1419.0" dy="0">[B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1423.0" y="1533" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1423.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.half_logvar" data-visual-role="tensor"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:96 VariationalAutoencoder.reparameterize; parameter=not asserted; z_log_var / 2.</title><rect x="1074.0" y="1755" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1239.0" y="1782" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1239.0" dy="0">Divide logvar by 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1239.0" y="1806" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1239.0" dy="0">[B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1391.0" y="1826" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1391.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.std" data-visual-role="activation"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:96 VariationalAutoencoder.reparameterize; parameter=not asserted; exp(logvar/2), not exp(logvar)</title><rect x="1074.0" y="1650" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1239.0" y="1677" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1239.0" dy="0">Exponential</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1239.0" y="1701" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1239.0" dy="0">std: [B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1391.0" y="1721" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1391.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.noise_product" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:96 VariationalAutoencoder.reparameterize; parameter=not asserted; elementwise; epsilon enters through a side port</title><rect x="1074.0" y="1545" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1239.0" y="1572" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1239.0" dy="0">std times epsilon</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1239.0" y="1596" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1239.0" dy="0">[B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1391.0" y="1616" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1391.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.z" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:96 VariationalAutoencoder.reparameterize; parameter=not asserted; elementwise addition</title><rect x="885.0" y="1253" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="1280" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Add mu + std*epsilon</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="1304" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">z: [B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="1324" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.encoder_return" data-visual-role="tensor"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=not asserted; tuple fields are retained; no concatenation</title><rect x="885.0" y="1074" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="1101" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Return (mu, logvar, z)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="1125" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">three [B,15] tensors</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="1145" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.select_z" data-visual-role="tensor"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:119 VariationalAutoencoder.forward; parameter=not asserted; decoder receives encoded, not mu or concatenated statistics</title><rect x="885.0" y="895" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="922" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Select encoded z</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="946" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="966" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.decoder" data-visual-role="decoder"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:112 VariationalAutoencoder.decoder; parameter=linear_3 / linear_4; </title><rect x="568.0" y="375" width="964" height="496" rx="18" fill="#fff0f5" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="585.0" y="405" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="585.0" dy="0">Decoder</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1515.0" y="405" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1515.0" dy="0">decoded: [B,784]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1519.0" y="437" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1519.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.dec_linear1" data-visual-role="linear"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:112 VariationalAutoencoder.decoder; parameter=linear_3; self.linear_3</title><rect x="885.0" y="764" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="791" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Linear 15 -&gt; 500</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="815" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,500]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="835" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.dec_activation" data-visual-role="activation"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:112 VariationalAutoencoder.decoder; parameter=not asserted; negative_slope=0.0001</title><rect x="885.0" y="659" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="686" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">LeakyReLU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="710" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,500]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="730" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.dec_linear2" data-visual-role="linear"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:112 VariationalAutoencoder.decoder; parameter=linear_4; self.linear_4</title><rect x="885.0" y="554" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="581" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Linear 500 -&gt; 784</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="605" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,784]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="625" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.dec_sigmoid" data-visual-role="softmax"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:112 VariationalAutoencoder.decoder; parameter=not asserted; pixel probabilities in [0,1]</title><rect x="885.0" y="449" width="330" height="81" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="476" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Sigmoid</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="500" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">decoded: [B,784]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="520" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.return" data-visual-role="output"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:119 VariationalAutoencoder.forward; parameter=not asserted; actual four-tensor forward result | decoder output is one tuple field</title><rect x="885.0" y="246" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="273" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Return (mu, logvar, z,</tspan>
+<tspan x="1050.0" dy="23.599999999999998">decoded)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="321" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,15] x 3; [B,784]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="341" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="vae.epsilon" data-visual-role="sampling"><title>deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:96 VariationalAutoencoder.reparameterize; parameter=not asserted; torch.randn(z_mu.size(0), z_mu.size(1)).to(device) | created inside reparameterize; not a user input</title><rect x="1745" y="1635.5" width="330" height="105" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1910.0" y="1662.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1910.0" dy="0">Internal Gaussian</tspan>
+<tspan x="1910.0" dy="23.599999999999998">sample</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1910.0" y="1710.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1910.0" dy="0">epsilon: [B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2062" y="1730.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2062" dy="0">E006</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0001" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.mean_head&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;value_operand&quot;, &quot;src&quot;: &quot;vae.enc_activation&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.mu&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;vae.mean_head&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;vae.enc_activation:out-&gt;vae.mean_head:in:value_operand&quot;, &quot;rendered_dst&quot;: &quot;vae.mu:in&quot;, &quot;rendered_src&quot;: &quot;vae.enc_activation:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.enc_activation&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,2364 L 1050.0,2264 L 829.0,2264 L 829.0,2240" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>vae.enc_activation:out -&gt; vae.mean_head:in; visible vae.enc_activation:out -&gt; vae.mu:in; value_operand</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0002" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.logvar_head&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;value_operand&quot;, &quot;src&quot;: &quot;vae.enc_activation&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.logvar&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;vae.logvar_head&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;vae.enc_activation:out-&gt;vae.logvar_head:in:value_operand&quot;, &quot;rendered_dst&quot;: &quot;vae.logvar:in&quot;, &quot;rendered_src&quot;: &quot;vae.enc_activation:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.enc_activation&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,2364 L 1050.0,2264 L 1271.0,2264 L 1271.0,2240" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>vae.enc_activation:out -&gt; vae.logvar_head:in; visible vae.enc_activation:out -&gt; vae.logvar:in; value_operand</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0003" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.std&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;vae.half_logvar&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.std&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.half_logvar:out-&gt;vae.std:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;vae.std:in&quot;, &quot;rendered_src&quot;: &quot;vae.half_logvar:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.half_logvar&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1239.0,1755 L 1239.0,1731" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>vae.half_logvar:out -&gt; vae.std:in; visible vae.half_logvar:out -&gt; vae.std:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0004" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.noise_product&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;vae.std&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.noise_product&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.std:out-&gt;vae.noise_product:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;vae.noise_product:in&quot;, &quot;rendered_src&quot;: &quot;vae.std:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.std&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1239.0,1650 L 1239.0,1626" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>vae.std:out -&gt; vae.noise_product:in; visible vae.std:out -&gt; vae.noise_product:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0005" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.mean_operand&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;value_operand&quot;, &quot;src&quot;: &quot;vae.mu&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.mean_operand&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.mu:out-&gt;vae.mean_operand:in:value_operand&quot;, &quot;rendered_dst&quot;: &quot;vae.mean_operand:left&quot;, &quot;rendered_src&quot;: &quot;vae.mu:left&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.mu&quot;, &quot;port&quot;: &quot;z_mu&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 664.0,2199.5 L 614.0,2199.5 L 614.0,1821.5 L 664.0,1821.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>vae.mu:out -&gt; vae.mean_operand:in; visible vae.mu:z_mu -&gt; vae.mean_operand:in; value_operand</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0006" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.scaled_noise&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;value_operand&quot;, &quot;src&quot;: &quot;vae.logvar&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.half_logvar&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;vae.scaled_noise&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;vae.logvar:out-&gt;vae.scaled_noise:in:value_operand&quot;, &quot;rendered_dst&quot;: &quot;vae.half_logvar:right&quot;, &quot;rendered_src&quot;: &quot;vae.logvar:right.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.logvar&quot;, &quot;port&quot;: &quot;z_log_var&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1436.0,2187.5 L 1492.52,2187.5 L 1492.52,1795.5 L 1404.0,1795.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>vae.logvar:out -&gt; vae.scaled_noise:in; visible vae.logvar:z_log_var -&gt; vae.half_logvar:in; value_operand</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0007" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.z&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;vae.sample_operands&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.z&quot;, &quot;port&quot;: &quot;operand[0]&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.sample_operands:out-&gt;vae.z:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;vae.z:right.aux0&quot;, &quot;rendered_src&quot;: &quot;vae.mean_operand:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.mean_operand&quot;, &quot;operand&quot;: 0, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;vae.sample_operands&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;declared-interface&quot;}]}}" d="M 994.0,1821.5 L 1038.0,1821.5 L 1038.0,1337.16 L 1239.0,1337.16 L 1239.0,1269.5 L 1215.0,1269.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>vae.sample_operands:out -&gt; vae.z:in; visible vae.mean_operand:out -&gt; vae.z:operand[0]; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0008" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.z&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;vae.sample_operands&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.z&quot;, &quot;port&quot;: &quot;operand[1]&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.sample_operands:out-&gt;vae.z:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;vae.z:right.aux1&quot;, &quot;rendered_src&quot;: &quot;vae.noise_product:right.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.noise_product&quot;, &quot;operand&quot;: 1, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;vae.sample_operands&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;declared-interface&quot;}]}}" d="M 1404.0,1573.5 L 1428.0,1573.5 L 1428.0,1427.5 L 1250.8,1427.5 L 1250.8,1293.5 L 1215.0,1293.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>vae.sample_operands:out -&gt; vae.z:in; visible vae.noise_product:out -&gt; vae.z:operand[1]; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0009" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.enc_activation&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;vae.enc_linear&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.enc_activation&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.enc_linear:out-&gt;vae.enc_activation:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;vae.enc_activation:in&quot;, &quot;rendered_src&quot;: &quot;vae.enc_linear:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.enc_linear&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,2469 L 1050.0,2445" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>vae.enc_linear:out -&gt; vae.enc_activation:in; visible vae.enc_linear:out -&gt; vae.enc_activation:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0010" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.encoder_return&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;vae.sampling&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.encoder_return&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.sampling:out-&gt;vae.encoder_return:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;vae.encoder_return:in&quot;, &quot;rendered_src&quot;: &quot;vae.z:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.z&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;vae.sampling&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;declared-interface&quot;}]}}" d="M 1050.0,1253 L 1050.0,1155" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>vae.sampling:out -&gt; vae.encoder_return:in; visible vae.z:out -&gt; vae.encoder_return:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0011" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.dec_activation&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;vae.dec_linear1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.dec_activation&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.dec_linear1:out-&gt;vae.dec_activation:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;vae.dec_activation:in&quot;, &quot;rendered_src&quot;: &quot;vae.dec_linear1:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.dec_linear1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,764 L 1050.0,740" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>vae.dec_linear1:out -&gt; vae.dec_activation:in; visible vae.dec_linear1:out -&gt; vae.dec_activation:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0012" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.dec_linear2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;vae.dec_activation&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.dec_linear2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.dec_activation:out-&gt;vae.dec_linear2:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;vae.dec_linear2:in&quot;, &quot;rendered_src&quot;: &quot;vae.dec_activation:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.dec_activation&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,659 L 1050.0,635" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>vae.dec_activation:out -&gt; vae.dec_linear2:in; visible vae.dec_activation:out -&gt; vae.dec_linear2:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0013" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.dec_sigmoid&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;vae.dec_linear2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.dec_sigmoid&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.dec_linear2:out-&gt;vae.dec_sigmoid:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;vae.dec_sigmoid:in&quot;, &quot;rendered_src&quot;: &quot;vae.dec_linear2:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.dec_linear2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,554 L 1050.0,530" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>vae.dec_linear2:out -&gt; vae.dec_sigmoid:in; visible vae.dec_linear2:out -&gt; vae.dec_sigmoid:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0014" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.select_z&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;vae.encoder&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.select_z&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.encoder:out-&gt;vae.select_z:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;vae.select_z:in&quot;, &quot;rendered_src&quot;: &quot;vae.z:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.z&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;vae.encoder&quot;, &quot;port&quot;: &quot;encoded&quot;, &quot;rule&quot;: &quot;declared-interface&quot;}]}}" d="M 1050.0,1253 L 1050.0,1158.16 L 873.52,1158.16 L 873.52,1003 L 1050.0,1003 L 1050.0,976" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>vae.encoder:out -&gt; vae.select_z:in; visible vae.z:out -&gt; vae.select_z:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0015" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.decoder&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;vae.select_z&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.dec_linear1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;vae.decoder&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;vae.select_z:out-&gt;vae.decoder:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;vae.dec_linear1:in&quot;, &quot;rendered_src&quot;: &quot;vae.select_z:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.select_z&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,895 L 1050.0,845" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>vae.select_z:out -&gt; vae.decoder:in; visible vae.select_z:out -&gt; vae.dec_linear1:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0016" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.return&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;vae.decoder&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.return&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.decoder:out-&gt;vae.return:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;vae.return:in&quot;, &quot;rendered_src&quot;: &quot;vae.dec_sigmoid:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.dec_sigmoid&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;vae.decoder&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1050.0,449 L 1050.0,351" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>vae.decoder:out -&gt; vae.return:in; visible vae.dec_sigmoid:out -&gt; vae.return:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0017" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.forward&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;vae.input&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.enc_linear&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;vae.forward&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}, {&quot;node&quot;: &quot;vae.encoder&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;vae.input:out-&gt;vae.forward:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;vae.enc_linear:in&quot;, &quot;rendered_src&quot;: &quot;vae.input:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.input&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,2662.5 L 1050.0,2550" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>vae.input:out -&gt; vae.forward:in; visible vae.input:out -&gt; vae.enc_linear:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0018" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.noise_product&quot;, &quot;dst_port&quot;: &quot;epsilon&quot;, &quot;role&quot;: &quot;random_sample&quot;, &quot;src&quot;: &quot;vae.epsilon&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.noise_product&quot;, &quot;port&quot;: &quot;epsilon&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.epsilon:out-&gt;vae.noise_product:epsilon:random_sample&quot;, &quot;rendered_dst&quot;: &quot;vae.noise_product:right.aux1&quot;, &quot;rendered_src&quot;: &quot;vae.epsilon:left.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.epsilon&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1745,1676.0 L 1428.0,1676.0 L 1428.0,1597.5 L 1404.0,1597.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>vae.epsilon:out -&gt; vae.noise_product:epsilon; visible vae.epsilon:out -&gt; vae.noise_product:epsilon; epsilon</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0019" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.encoder_return&quot;, &quot;dst_port&quot;: &quot;mu&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;vae.mu&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.encoder_return&quot;, &quot;port&quot;: &quot;mu&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.mu:out-&gt;vae.encoder_return:mu:retained_value&quot;, &quot;rendered_dst&quot;: &quot;vae.encoder_return:right.aux0&quot;, &quot;rendered_src&quot;: &quot;vae.mu:right.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.mu&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 994.0,2187.5 L 1062.0,2187.5 L 1062.0,2069 L 2093,2069 L 2093,1102.5 L 1215.0,1102.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>vae.mu:out -&gt; vae.encoder_return:mu; visible vae.mu:out -&gt; vae.encoder_return:mu; mu</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0020" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.encoder_return&quot;, &quot;dst_port&quot;: &quot;logvar&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;vae.logvar&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.encoder_return&quot;, &quot;port&quot;: &quot;logvar&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.logvar:out-&gt;vae.encoder_return:logvar:retained_value&quot;, &quot;rendered_dst&quot;: &quot;vae.encoder_return:right.aux1&quot;, &quot;rendered_src&quot;: &quot;vae.logvar:right.aux1&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.logvar&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1436.0,2211.5 L 2082,2211.5 L 2082,1126.5 L 1215.0,1126.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>vae.logvar:out -&gt; vae.encoder_return:logvar; visible vae.logvar:out -&gt; vae.encoder_return:logvar; logvar</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0021" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.return&quot;, &quot;dst_port&quot;: &quot;mu&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;vae.mu&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.return&quot;, &quot;port&quot;: &quot;mu&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.mu:out-&gt;vae.return:mu:retained_value&quot;, &quot;rendered_dst&quot;: &quot;vae.return:right.aux0&quot;, &quot;rendered_src&quot;: &quot;vae.mu:right.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.mu&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 994.0,2187.5 L 1062.0,2187.5 L 1062.0,2069 L 2094,2069 L 2094,274.5 L 1215.0,274.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>vae.mu:out -&gt; vae.return:mu; visible vae.mu:out -&gt; vae.return:mu; mu</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0022" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.return&quot;, &quot;dst_port&quot;: &quot;logvar&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;vae.logvar&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.return&quot;, &quot;port&quot;: &quot;logvar&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.logvar:out-&gt;vae.return:logvar:retained_value&quot;, &quot;rendered_dst&quot;: &quot;vae.return:right.aux1&quot;, &quot;rendered_src&quot;: &quot;vae.logvar:right.aux1&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.logvar&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1436.0,2211.5 L 2082,2211.5 L 2082,1098 L 2093,1098 L 2093,298.5 L 1215.0,298.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>vae.logvar:out -&gt; vae.return:logvar; visible vae.logvar:out -&gt; vae.return:logvar; logvar</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0023" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.return&quot;, &quot;dst_port&quot;: &quot;encoded&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;vae.z&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.return&quot;, &quot;port&quot;: &quot;encoded&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.z:out-&gt;vae.return:encoded:retained_value&quot;, &quot;rendered_dst&quot;: &quot;vae.return:right.aux2&quot;, &quot;rendered_src&quot;: &quot;vae.z:right.aux2&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.z&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1215.0,1317.5 L 2081,1317.5 L 2081,322.5 L 1215.0,322.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>vae.z:out -&gt; vae.return:encoded; visible vae.z:out -&gt; vae.return:encoded; encoded z</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0024" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;vae.epsilon&quot;, &quot;dst_port&quot;: &quot;shape&quot;, &quot;role&quot;: &quot;shape_dependency&quot;, &quot;src&quot;: &quot;vae.mu&quot;, &quot;src_port&quot;: &quot;shape&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;vae.epsilon&quot;, &quot;port&quot;: &quot;shape&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;vae.mu:shape-&gt;vae.epsilon:shape:shape_dependency&quot;, &quot;rendered_dst&quot;: &quot;vae.epsilon:left.aux1&quot;, &quot;rendered_src&quot;: &quot;vae.mu:right.aux1&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;vae.mu&quot;, &quot;port&quot;: &quot;shape&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 994.0,2211.5 L 1062.0,2211.5 L 1062.0,1968 L 1721,1968 L 1721,1700.0 L 1745,1700.0" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>vae.mu:shape -&gt; vae.epsilon:shape; visible vae.mu:shape -&gt; vae.epsilon:shape; mu B,latent / shape only</title></path>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="505.0" y="2794" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="528.0" y="2807" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="528.0" dy="0">Input / Embed</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="690.0" y="2794" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="713.0" y="2807" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="713.0" dy="0">Conv / MLP</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="875.0" y="2794" width="16" height="16" rx="3" fill="#d6f0df" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="898.0" y="2807" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="898.0" dy="0">Pool</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1060.0" y="2794" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1083.0" y="2807" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1083.0" dy="0">Norm / Add / Cat</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1245.0" y="2794" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1268.0" y="2807" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1268.0" dy="0">Linear / Output</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1430.0" y="2794" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1453.0" y="2807" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1453.0" dy="0">Activation</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="967.5" y="2824" width="16" height="16" rx="3" fill="#c9f1cd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="990.5" y="2837" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="990.5" dy="0">Prob. / Sample</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="2865" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">B: batch; image 1x28x28 -&gt; caller flatten 784; latent width 15</tspan>
+<tspan x="1050.0" dy="16.52">input pink / forward return purple / LeakyReLU and exponential gray / Sigmoid green</tspan>
+<tspan x="1050.0" dy="16.52">side routes retain tuple fields; epsilon side route is an internal random source</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="2939" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="2969" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="2994" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+
+</svg>

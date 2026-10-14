@@ -139,6 +139,11 @@ function appHarness(scope:MoveScope=all, ids:string[]=['output'], commandText=''
     setCommand:(value:string)=>{commands.push(value);},setLayoutMoveScope:(value:MoveScope)=>{scopeChanges.push(value);},
     setHistory:(value:HistoryState)=>{assert.equal(value,historyRef.current);},
     useCallback:<T>(callback:T)=>callback,
+    // Bridge transport is controlled infrastructure; the actual App still
+    // validates and commits the formal operations under test.
+    mapPreviewOperations:(value:VisualOperation[])=>value,
+    readyPreview:()=>true,
+    previewEngine:{current:{visual:async()=>{}}},
     prepareMovePreview:(document:CanvasDocument,selection:readonly string[],value?:MoveScope)=>{
       previewCalls.push(value??all);return prepareMovePreview(document,selection,value);},
     planLayoutRecovery:(document:CanvasDocument,id:string,value?:MoveScope)=>{

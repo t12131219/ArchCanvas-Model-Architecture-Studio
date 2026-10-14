@@ -1,0 +1,2465 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "ccvae",
+  "profile": {
+    "task": "MNIST conditioned augmented reconstruction",
+    "mode": "forward with stochastic sampling in train and eval",
+    "latent_dim": 50,
+    "latent_levels": 1,
+    "num_classes": 10,
+    "input_shape": [
+      "B",
+      1,
+      28,
+      28
+    ],
+    "encoder_input_channels": 11,
+    "encoder_channels": [
+      16,
+      32,
+      64
+    ],
+    "encoder_spatial": [
+      28,
+      12,
+      5,
+      2
+    ],
+    "decoder_channels": [
+      64,
+      32,
+      16,
+      11
+    ],
+    "decoder_spatial": [
+      2,
+      4,
+      11,
+      28
+    ],
+    "decoder_convtranspose": [
+      {
+        "kernel": 2,
+        "stride": 2,
+        "padding": 0
+      },
+      {
+        "kernel": 4,
+        "stride": 3,
+        "padding": 1
+      },
+      {
+        "kernel": 6,
+        "stride": 3,
+        "padding": 4
+      }
+    ],
+    "decoder_linear_input": 60,
+    "decoder_output_channels": 11,
+    "negative_slope": 0.01,
+    "batch_size_setting": 128,
+    "training_sampling_gate": false,
+    "num_features_argument_used": false,
+    "conditional": true,
+    "output_tuple": [
+      "mu",
+      "logvar",
+      "z",
+      "decoded"
+    ],
+    "symbolic_shapes": true,
+    "model_executed": false
+  },
+  "source": {
+    "repository": "https://github.com/rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "a1cb8ca6e3b3489daf1e2276769302cabd9a1ed9055ae534ae06aec90929c946"
+  },
+  "nodes": [
+    {
+      "id": "ccvae.root",
+      "label": "Conditional ConvVAE / MNIST",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder"
+      ],
+      "shape": "image + labels -> tuple",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.input",
+      "label": "MNIST grayscale image",
+      "kind": "input",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.forward"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [
+        "Caller ToTensor scales pixels to [0,1]; input is not flattened"
+      ],
+      "parent": "ccvae.root",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "ccvae.forward",
+      "label": "Model forward",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.forward"
+      ],
+      "shape": "four-tensor tuple",
+      "detail": [],
+      "mode": "chain",
+      "port_bindings": {
+        "mu": {
+          "node": "ccvae.mu",
+          "port": "out"
+        },
+        "z_mean": {
+          "node": "ccvae.mu",
+          "port": "out"
+        },
+        "logvar": {
+          "node": "ccvae.logvar",
+          "port": "out"
+        },
+        "z_log_var": {
+          "node": "ccvae.logvar",
+          "port": "out"
+        },
+        "z": {
+          "node": "ccvae.z",
+          "port": "out"
+        },
+        "encoded": {
+          "node": "ccvae.z",
+          "port": "out"
+        },
+        "decoded": {
+          "node": "ccvae.sigmoid",
+          "port": "out"
+        },
+        "item[0]": {
+          "node": "ccvae.mu",
+          "port": "out"
+        },
+        "item[1]": {
+          "node": "ccvae.logvar",
+          "port": "out"
+        },
+        "item[2]": {
+          "node": "ccvae.z",
+          "port": "out"
+        },
+        "item[3]": {
+          "node": "ccvae.sigmoid",
+          "port": "out"
+        }
+      },
+      "parent": "ccvae.root",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mu",
+        "z_mean",
+        "logvar",
+        "z_log_var",
+        "z",
+        "encoded",
+        "decoded",
+        "item[0]",
+        "item[1]",
+        "item[2]",
+        "item[3]"
+      ]
+    },
+    {
+      "id": "ccvae.encoder",
+      "label": "Conditional encoder",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "(mu,logvar,z): [B,50] x 3",
+      "detail": [],
+      "mode": "chain",
+      "port_bindings": {
+        "mu": {
+          "node": "ccvae.mu",
+          "port": "out"
+        },
+        "z_mean": {
+          "node": "ccvae.mu",
+          "port": "out"
+        },
+        "logvar": {
+          "node": "ccvae.logvar",
+          "port": "out"
+        },
+        "z_log_var": {
+          "node": "ccvae.logvar",
+          "port": "out"
+        },
+        "z": {
+          "node": "ccvae.z",
+          "port": "out"
+        },
+        "encoded": {
+          "node": "ccvae.z",
+          "port": "out"
+        },
+        "item[0]": {
+          "node": "ccvae.mu",
+          "port": "out"
+        },
+        "item[1]": {
+          "node": "ccvae.logvar",
+          "port": "out"
+        },
+        "item[2]": {
+          "node": "ccvae.z",
+          "port": "out"
+        }
+      },
+      "parent": "ccvae.forward",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mu",
+        "z_mean",
+        "logvar",
+        "z_log_var",
+        "z",
+        "encoded",
+        "item[0]",
+        "item[1]",
+        "item[2]"
+      ]
+    },
+    {
+      "id": "ccvae.encoder_args",
+      "label": "Image / condition operands",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "image + 10 label maps",
+      "detail": [],
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": false,
+      "child_inputs": {
+        "ccvae.retain_image": {
+          "role": "value",
+          "producer": "ccvae.input",
+          "src_port": "out"
+        },
+        "ccvae.encoder_condition": {
+          "role": "external",
+          "producer": "ccvae.labels",
+          "src_port": "out"
+        }
+      },
+      "mode": "parallel",
+      "parent": "ccvae.encoder",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "ccvae.retain_image",
+      "label": "Retain image values",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [],
+      "parent": "ccvae.encoder_args",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.encoder_condition",
+      "label": "Encoder label maps",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::to_onehot",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,10,28,28]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "input_relation": {
+        "role": "external",
+        "producer": "ccvae.labels",
+        "src_port": "out"
+      },
+      "mode": "chain",
+      "parent": "ccvae.encoder_args",
+      "source_evidence": [
+        "E007",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.encoder_onehot",
+      "label": "One-hot labels / 10 classes",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::to_onehot",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,10]",
+      "detail": [
+        "to_onehot: zeros + scatter_(1,targets.view(-1,1),1)",
+        "Separate helper call in encoder"
+      ],
+      "input_ports": [
+        "labels"
+      ],
+      "input_relation": {
+        "role": "external",
+        "producer": "ccvae.labels",
+        "src_port": "out"
+      },
+      "parent": "ccvae.encoder_condition",
+      "source_evidence": [
+        "E007",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "labels"
+      ]
+    },
+    {
+      "id": "ccvae.condition_view",
+      "label": "View one-hot as channels",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,10,1,1]",
+      "detail": [],
+      "parent": "ccvae.encoder_condition",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.condition_maps",
+      "label": "Ones times one-hot / broadcast H,W",
+      "kind": "mixing",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,10,28,28]",
+      "detail": [
+        "ones=ones(B,K,H,W,dtype=features.dtype).to(device)",
+        "ones * onehot_targets; spatially constant label channels"
+      ],
+      "expression": "torch.ones(B,K,H,W,dtype=features.dtype).to(device) * onehot_targets",
+      "shape_producer": "ccvae.input",
+      "parent": "ccvae.encoder_condition",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "image_shape"
+      ]
+    },
+    {
+      "id": "ccvae.encoder_concat",
+      "label": "Concat image + label channels",
+      "kind": "concat",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,11,28,28]",
+      "detail": [
+        "torch.cat((features,ones),dim=1)",
+        "Condition enters BEFORE enc_conv_1"
+      ],
+      "concat_dim": 1,
+      "operands": [
+        "ccvae.input",
+        "ccvae.condition_maps"
+      ],
+      "parent": "ccvae.encoder",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.enc1",
+      "label": "Encode stage 1",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,16,12,12]",
+      "detail": [],
+      "parameter_scope": "enc_conv_1",
+      "mode": "chain",
+      "parent": "ccvae.encoder",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.enc1.conv",
+      "label": "Conv2d 11 -> 16",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,16,12,12]",
+      "detail": [
+        "kernel=6; stride=2; padding=0; default bias=True"
+      ],
+      "parameter": "enc_conv_1",
+      "kernel_size": 6,
+      "stride": 2,
+      "padding": 0,
+      "convolution_type": "Conv2d",
+      "parent": "ccvae.enc1",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.enc1.activation",
+      "label": "LeakyReLU 0.01",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,16,12,12]",
+      "detail": [
+        "F.leaky_relu(x); slope from API default",
+        "Also applied after the final decoder convolution"
+      ],
+      "negative_slope": 0.01,
+      "parent": "ccvae.enc1",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.enc2",
+      "label": "Encode stage 2",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,32,5,5]",
+      "detail": [],
+      "parameter_scope": "enc_conv_2",
+      "mode": "chain",
+      "parent": "ccvae.encoder",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.enc2.conv",
+      "label": "Conv2d 16 -> 32",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,32,5,5]",
+      "detail": [
+        "kernel=4; stride=2; padding=0; default bias=True"
+      ],
+      "parameter": "enc_conv_2",
+      "kernel_size": 4,
+      "stride": 2,
+      "padding": 0,
+      "convolution_type": "Conv2d",
+      "parent": "ccvae.enc2",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.enc2.activation",
+      "label": "LeakyReLU 0.01",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,32,5,5]",
+      "detail": [
+        "F.leaky_relu(x); slope from API default",
+        "Also applied after the final decoder convolution"
+      ],
+      "negative_slope": 0.01,
+      "parent": "ccvae.enc2",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.enc3",
+      "label": "Encode stage 3",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,64,2,2]",
+      "detail": [],
+      "parameter_scope": "enc_conv_3",
+      "mode": "chain",
+      "parent": "ccvae.encoder",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.enc3.conv",
+      "label": "Conv2d 32 -> 64",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,64,2,2]",
+      "detail": [
+        "kernel=2; stride=2; padding=0; default bias=True"
+      ],
+      "parameter": "enc_conv_3",
+      "kernel_size": 2,
+      "stride": 2,
+      "padding": 0,
+      "convolution_type": "Conv2d",
+      "parent": "ccvae.enc3",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.enc3.activation",
+      "label": "LeakyReLU 0.01",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,64,2,2]",
+      "detail": [
+        "F.leaky_relu(x); slope from API default",
+        "Also applied after the final decoder convolution"
+      ],
+      "negative_slope": 0.01,
+      "parent": "ccvae.enc3",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.posterior",
+      "label": "Independent posterior heads",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "mu + logvar results",
+      "detail": [
+        "Logical head-result group; no source tuple is created at this point"
+      ],
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": false,
+      "child_inputs": {
+        "ccvae.mean_head": {
+          "role": "value",
+          "producer": "ccvae.enc3.activation",
+          "src_port": "out"
+        },
+        "ccvae.logvar_head": {
+          "role": "value",
+          "producer": "ccvae.enc3.activation",
+          "src_port": "out"
+        }
+      },
+      "mode": "parallel",
+      "port_bindings": {
+        "out": [
+          {
+            "node": "ccvae.mu",
+            "port": "out"
+          },
+          {
+            "node": "ccvae.logvar",
+            "port": "out"
+          }
+        ],
+        "item[0]": {
+          "node": "ccvae.mu",
+          "port": "out"
+        },
+        "item[1]": {
+          "node": "ccvae.logvar",
+          "port": "out"
+        },
+        "mu": {
+          "node": "ccvae.mu",
+          "port": "out"
+        },
+        "logvar": {
+          "node": "ccvae.logvar",
+          "port": "out"
+        }
+      },
+      "parent": "ccvae.encoder",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "mu",
+        "logvar",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "ccvae.mean_head",
+      "label": "Mean head",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,50]",
+      "detail": [],
+      "parameter_scope": "z_mean",
+      "mode": "chain",
+      "parent": "ccvae.posterior",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.mean_view",
+      "label": "View 64x2x2 -> 256",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,256]",
+      "detail": [
+        "A separate x.view(-1,64*2*2) expression appears for each head"
+      ],
+      "parent": "ccvae.mean_head",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.mu",
+      "label": "Linear 256 -> 50",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "mu: [B,50]",
+      "detail": [
+        "No activation after the posterior head"
+      ],
+      "parameter": "z_mean",
+      "parent": "ccvae.mean_head",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "ccvae.logvar_head",
+      "label": "Log-variance head",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,50]",
+      "detail": [],
+      "parameter_scope": "z_log_var",
+      "mode": "chain",
+      "parent": "ccvae.posterior",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.logvar_view",
+      "label": "View 64x2x2 -> 256",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "[B,256]",
+      "detail": [
+        "A separate x.view(-1,64*2*2) expression appears for each head"
+      ],
+      "parent": "ccvae.logvar_head",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.logvar",
+      "label": "Linear 256 -> 50",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "logvar: [B,50]",
+      "detail": [
+        "No activation after the posterior head"
+      ],
+      "parameter": "z_log_var",
+      "parent": "ccvae.logvar_head",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.sampling",
+      "label": "Reparameterization / single latent",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "z: [B,50]",
+      "detail": [
+        "No training/eval conditional; sampling always runs"
+      ],
+      "stochastic": true,
+      "training_gate": false,
+      "latent_levels": 1,
+      "mode": "chain",
+      "port_bindings": {
+        "out": {
+          "node": "ccvae.z",
+          "port": "out"
+        }
+      },
+      "parent": "ccvae.encoder",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.sample_args",
+      "label": "Mean / scaled-noise operands",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "mu + noise operands",
+      "detail": [],
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": false,
+      "child_inputs": {
+        "ccvae.retain_mu": {
+          "role": "value",
+          "producer": "ccvae.mu",
+          "src_port": "out"
+        },
+        "ccvae.scaled_noise": {
+          "role": "value",
+          "producer": "ccvae.logvar",
+          "src_port": "out"
+        }
+      },
+      "mode": "parallel",
+      "port_bindings": {
+        "out": [
+          {
+            "node": "ccvae.retain_mu",
+            "port": "out"
+          },
+          {
+            "node": "ccvae.noise_product",
+            "port": "out"
+          }
+        ],
+        "item[0]": {
+          "node": "ccvae.retain_mu",
+          "port": "out"
+        },
+        "item[1]": {
+          "node": "ccvae.noise_product",
+          "port": "out"
+        },
+        "mu": {
+          "node": "ccvae.retain_mu",
+          "port": "out"
+        },
+        "scaled_noise": {
+          "node": "ccvae.noise_product",
+          "port": "out"
+        }
+      },
+      "parent": "ccvae.sampling",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "mu",
+        "scaled_noise",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "ccvae.retain_mu",
+      "label": "Retain mu values",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "[B,50]",
+      "detail": [],
+      "parent": "ccvae.sample_args",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.scaled_noise",
+      "label": "Scale Gaussian noise",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "std * epsilon: [B,50]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "ccvae.sample_args",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.half_logvar",
+      "label": "Divide logvar by 2",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "[B,50]",
+      "detail": [],
+      "parent": "ccvae.scaled_noise",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.std",
+      "label": "exp(logvar / 2)",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "std: [B,50]",
+      "detail": [],
+      "expression": "torch.exp(z_log_var/2.)",
+      "parent": "ccvae.scaled_noise",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.noise_product",
+      "label": "Multiply std times epsilon",
+      "kind": "mixing",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "[B,50]",
+      "detail": [
+        "Elementwise product; independent internal noise enters epsilon port"
+      ],
+      "expression": "eps * torch.exp(z_log_var/2.)",
+      "parent": "ccvae.scaled_noise",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "epsilon"
+      ]
+    },
+    {
+      "id": "ccvae.z",
+      "label": "Add mu + std * epsilon",
+      "kind": "mixing",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "z: [B,50]",
+      "detail": [],
+      "expression": "z_mu + eps * torch.exp(z_log_var/2.)",
+      "parent": "ccvae.sampling",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.encoder_return",
+      "label": "Return (mu, logvar, z)",
+      "kind": "output",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.encoder"
+      ],
+      "shape": "3 tensors [B,50]",
+      "detail": [
+        "Actual encoder return tuple; no feature concatenation"
+      ],
+      "output_tuple": [
+        "mu",
+        "logvar",
+        "z"
+      ],
+      "port_bindings": {
+        "mu": {
+          "node": "ccvae.mu",
+          "port": "out",
+          "direction": "src"
+        },
+        "z_mean": {
+          "node": "ccvae.mu",
+          "port": "out",
+          "direction": "src"
+        },
+        "logvar": {
+          "node": "ccvae.logvar",
+          "port": "out",
+          "direction": "src"
+        },
+        "z_log_var": {
+          "node": "ccvae.logvar",
+          "port": "out",
+          "direction": "src"
+        },
+        "z": {
+          "node": "ccvae.z",
+          "port": "out",
+          "direction": "src"
+        },
+        "encoded": {
+          "node": "ccvae.z",
+          "port": "out",
+          "direction": "src"
+        },
+        "item[0]": {
+          "node": "ccvae.mu",
+          "port": "out",
+          "direction": "src"
+        },
+        "item[1]": {
+          "node": "ccvae.logvar",
+          "port": "out",
+          "direction": "src"
+        },
+        "item[2]": {
+          "node": "ccvae.z",
+          "port": "out",
+          "direction": "src"
+        }
+      },
+      "parent": "ccvae.encoder",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mu",
+        "z_mean",
+        "logvar",
+        "z_log_var",
+        "z",
+        "encoded",
+        "item[0]",
+        "item[1]",
+        "item[2]"
+      ]
+    },
+    {
+      "id": "ccvae.select_z",
+      "label": "Select encoded z from tuple",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.forward"
+      ],
+      "shape": "[B,50]",
+      "detail": [
+        "Decoder receives only encoded, plus targets in conditional variant"
+      ],
+      "input_selector": "encoded",
+      "parent": "ccvae.forward",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.decoder",
+      "label": "Conditional decoder",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "decoded: [B,11,28,28]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "ccvae.forward",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.decoder_args",
+      "label": "Latent / decoder-label operands",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "z + 10 label entries",
+      "detail": [],
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": false,
+      "child_inputs": {
+        "ccvae.retain_z": {
+          "role": "value",
+          "producer": "ccvae.select_z",
+          "src_port": "out"
+        },
+        "ccvae.decoder_onehot": {
+          "role": "external",
+          "producer": "ccvae.labels",
+          "src_port": "out"
+        }
+      },
+      "mode": "parallel",
+      "parent": "ccvae.decoder",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "ccvae.retain_z",
+      "label": "Retain sampled z",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,50]",
+      "detail": [],
+      "parent": "ccvae.decoder_args",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.decoder_onehot",
+      "label": "One-hot labels again",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::to_onehot",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,10]",
+      "detail": [
+        "Fresh to_onehot(targets,self.num_classes,device) call",
+        "Not reuse of the spatial encoder maps"
+      ],
+      "input_ports": [
+        "labels"
+      ],
+      "input_relation": {
+        "role": "external",
+        "producer": "ccvae.labels",
+        "src_port": "out"
+      },
+      "parent": "ccvae.decoder_args",
+      "source_evidence": [
+        "E007",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "labels"
+      ]
+    },
+    {
+      "id": "ccvae.decoder_concat",
+      "label": "Concat z + one-hot labels",
+      "kind": "concat",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,60]",
+      "detail": [
+        "torch.cat((encoded,onehot_targets),dim=1)",
+        "Condition enters BEFORE dec_linear_1"
+      ],
+      "concat_dim": 1,
+      "operands": [
+        "ccvae.select_z",
+        "ccvae.decoder_onehot"
+      ],
+      "parent": "ccvae.decoder",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.latent_projection",
+      "label": "Latent projection + reshape",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,64,2,2]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "ccvae.decoder",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.decoder_linear",
+      "label": "Linear 60 -> 256",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,256]",
+      "detail": [],
+      "parameter": "dec_linear_1",
+      "in_features": 60,
+      "out_features": 256,
+      "parent": "ccvae.latent_projection",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.decoder_view",
+      "label": "View as 64x2x2 feature map",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,64,2,2]",
+      "detail": [
+        "x.view(-1,64,2,2)"
+      ],
+      "parent": "ccvae.latent_projection",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.dec1",
+      "label": "Decode stage 1",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,32,4,4]",
+      "detail": [],
+      "parameter_scope": "dec_deconv_1",
+      "mode": "chain",
+      "parent": "ccvae.decoder",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.dec1.conv",
+      "label": "ConvTranspose2d 64 -> 32",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,32,4,4]",
+      "detail": [
+        "kernel=2; stride=2; padding=0; default bias=True"
+      ],
+      "parameter": "dec_deconv_1",
+      "kernel_size": 2,
+      "stride": 2,
+      "padding": 0,
+      "convolution_type": "ConvTranspose2d",
+      "parent": "ccvae.dec1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.dec1.activation",
+      "label": "LeakyReLU 0.01",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,32,4,4]",
+      "detail": [
+        "F.leaky_relu(x); slope from API default",
+        "Also applied after the final decoder convolution"
+      ],
+      "negative_slope": 0.01,
+      "parent": "ccvae.dec1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.dec2",
+      "label": "Decode stage 2",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,16,11,11]",
+      "detail": [],
+      "parameter_scope": "dec_deconv_2",
+      "mode": "chain",
+      "parent": "ccvae.decoder",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.dec2.conv",
+      "label": "ConvTranspose2d 32 -> 16",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,16,11,11]",
+      "detail": [
+        "kernel=4; stride=3; padding=1; default bias=True"
+      ],
+      "parameter": "dec_deconv_2",
+      "kernel_size": 4,
+      "stride": 3,
+      "padding": 1,
+      "convolution_type": "ConvTranspose2d",
+      "parent": "ccvae.dec2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.dec2.activation",
+      "label": "LeakyReLU 0.01",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,16,11,11]",
+      "detail": [
+        "F.leaky_relu(x); slope from API default",
+        "Also applied after the final decoder convolution"
+      ],
+      "negative_slope": 0.01,
+      "parent": "ccvae.dec2",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.dec3",
+      "label": "Decode stage 3",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,11,28,28]",
+      "detail": [],
+      "parameter_scope": "dec_deconv_3",
+      "mode": "chain",
+      "parent": "ccvae.decoder",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.dec3.conv",
+      "label": "ConvTranspose2d 16 -> 11",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,11,28,28]",
+      "detail": [
+        "kernel=6; stride=3; padding=4; default bias=True"
+      ],
+      "parameter": "dec_deconv_3",
+      "kernel_size": 6,
+      "stride": 3,
+      "padding": 4,
+      "convolution_type": "ConvTranspose2d",
+      "parent": "ccvae.dec3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.dec3.activation",
+      "label": "LeakyReLU 0.01",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,11,28,28]",
+      "detail": [
+        "F.leaky_relu(x); slope from API default",
+        "Also applied after the final decoder convolution"
+      ],
+      "negative_slope": 0.01,
+      "parent": "ccvae.dec3",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.sigmoid",
+      "label": "Sigmoid decoded pixels",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.decoder"
+      ],
+      "shape": "[B,11,28,28]",
+      "detail": [
+        "Follows final LeakyReLU, not the raw final convolution"
+      ],
+      "expression": "torch.sigmoid(x)",
+      "parent": "ccvae.decoder",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "ccvae.return",
+      "label": "Return (mu, logvar, z, decoded)",
+      "kind": "output",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.forward"
+      ],
+      "shape": "[B,50] x 3; [B,11,28,28]",
+      "detail": [
+        "Actual four-field forward return; no image-only implicit output"
+      ],
+      "output_tuple": [
+        "mu",
+        "logvar",
+        "z",
+        "decoded"
+      ],
+      "port_bindings": {
+        "mu": {
+          "node": "ccvae.mu",
+          "port": "out",
+          "direction": "src"
+        },
+        "z_mean": {
+          "node": "ccvae.mu",
+          "port": "out",
+          "direction": "src"
+        },
+        "logvar": {
+          "node": "ccvae.logvar",
+          "port": "out",
+          "direction": "src"
+        },
+        "z_log_var": {
+          "node": "ccvae.logvar",
+          "port": "out",
+          "direction": "src"
+        },
+        "z": {
+          "node": "ccvae.z",
+          "port": "out",
+          "direction": "src"
+        },
+        "encoded": {
+          "node": "ccvae.z",
+          "port": "out",
+          "direction": "src"
+        },
+        "decoded": {
+          "node": "ccvae.sigmoid",
+          "port": "out",
+          "direction": "src"
+        },
+        "item[0]": {
+          "node": "ccvae.mu",
+          "port": "out",
+          "direction": "src"
+        },
+        "item[1]": {
+          "node": "ccvae.logvar",
+          "port": "out",
+          "direction": "src"
+        },
+        "item[2]": {
+          "node": "ccvae.z",
+          "port": "out",
+          "direction": "src"
+        },
+        "item[3]": {
+          "node": "ccvae.sigmoid",
+          "port": "out",
+          "direction": "src"
+        }
+      },
+      "parent": "ccvae.forward",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mu",
+        "z_mean",
+        "logvar",
+        "z_log_var",
+        "z",
+        "encoded",
+        "decoded",
+        "item[0]",
+        "item[1]",
+        "item[2]",
+        "item[3]"
+      ]
+    },
+    {
+      "id": "ccvae.epsilon",
+      "label": "Internal Gaussian epsilon",
+      "kind": "sampling",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.reparameterize"
+      ],
+      "shape": "[B,50]",
+      "detail": [
+        "torch.randn(z_mu.size(0),z_mu.size(1)).to(device)",
+        "Created inside reparameterize in train and eval"
+      ],
+      "origin": "internal_random_source",
+      "stochastic": true,
+      "learnable": false,
+      "shape_producer": "ccvae.mu",
+      "input_ports": [
+        "shape"
+      ],
+      "parent": null,
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "ccvae.labels",
+      "label": "External MNIST class labels",
+      "kind": "input",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-cnn-cvae.py::ConditionalVariationalAutoencoder.forward"
+      ],
+      "shape": "targets: [B]",
+      "detail": [
+        "Integer digit labels 0...9; supplied to BOTH encoder and decoder"
+      ],
+      "origin": "caller targets",
+      "learnable": false,
+      "parent": null,
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "ccvae.encoder_onehot:out->ccvae.condition_view:in:tensor",
+      "src": "ccvae.encoder_onehot",
+      "dst": "ccvae.condition_view",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.condition_view:out->ccvae.condition_maps:in:tensor",
+      "src": "ccvae.condition_view",
+      "dst": "ccvae.condition_maps",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.condition_maps:out->ccvae.encoder_condition:out:boundary",
+      "src": "ccvae.condition_maps",
+      "dst": "ccvae.encoder_condition",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.input:out->ccvae.retain_image:in:value_operand",
+      "src": "ccvae.input",
+      "dst": "ccvae.retain_image",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "ccvae.retain_image:out->ccvae.encoder_args:operand[0]:operand_collection",
+      "src": "ccvae.retain_image",
+      "dst": "ccvae.encoder_args",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "ccvae.encoder_condition:out->ccvae.encoder_args:operand[1]:operand_collection",
+      "src": "ccvae.encoder_condition",
+      "dst": "ccvae.encoder_args",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "ccvae.enc1:in->ccvae.enc1.conv:in:boundary",
+      "src": "ccvae.enc1",
+      "dst": "ccvae.enc1.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.enc1.conv:out->ccvae.enc1.activation:in:tensor",
+      "src": "ccvae.enc1.conv",
+      "dst": "ccvae.enc1.activation",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.enc1.activation:out->ccvae.enc1:out:boundary",
+      "src": "ccvae.enc1.activation",
+      "dst": "ccvae.enc1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.enc2:in->ccvae.enc2.conv:in:boundary",
+      "src": "ccvae.enc2",
+      "dst": "ccvae.enc2.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.enc2.conv:out->ccvae.enc2.activation:in:tensor",
+      "src": "ccvae.enc2.conv",
+      "dst": "ccvae.enc2.activation",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.enc2.activation:out->ccvae.enc2:out:boundary",
+      "src": "ccvae.enc2.activation",
+      "dst": "ccvae.enc2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.enc3:in->ccvae.enc3.conv:in:boundary",
+      "src": "ccvae.enc3",
+      "dst": "ccvae.enc3.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.enc3.conv:out->ccvae.enc3.activation:in:tensor",
+      "src": "ccvae.enc3.conv",
+      "dst": "ccvae.enc3.activation",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.enc3.activation:out->ccvae.enc3:out:boundary",
+      "src": "ccvae.enc3.activation",
+      "dst": "ccvae.enc3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.mean_head:in->ccvae.mean_view:in:boundary",
+      "src": "ccvae.mean_head",
+      "dst": "ccvae.mean_view",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.mean_view:out->ccvae.mu:in:tensor",
+      "src": "ccvae.mean_view",
+      "dst": "ccvae.mu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.mu:out->ccvae.mean_head:out:boundary",
+      "src": "ccvae.mu",
+      "dst": "ccvae.mean_head",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.logvar_head:in->ccvae.logvar_view:in:boundary",
+      "src": "ccvae.logvar_head",
+      "dst": "ccvae.logvar_view",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.logvar_view:out->ccvae.logvar:in:tensor",
+      "src": "ccvae.logvar_view",
+      "dst": "ccvae.logvar",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.logvar:out->ccvae.logvar_head:out:boundary",
+      "src": "ccvae.logvar",
+      "dst": "ccvae.logvar_head",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.enc3.activation:out->ccvae.mean_head:in:value_operand",
+      "src": "ccvae.enc3.activation",
+      "dst": "ccvae.mean_head",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "ccvae.mean_head:out->ccvae.posterior:operand[0]:operand_collection",
+      "src": "ccvae.mean_head",
+      "dst": "ccvae.posterior",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "ccvae.enc3.activation:out->ccvae.logvar_head:in:value_operand",
+      "src": "ccvae.enc3.activation",
+      "dst": "ccvae.logvar_head",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "ccvae.logvar_head:out->ccvae.posterior:operand[1]:operand_collection",
+      "src": "ccvae.logvar_head",
+      "dst": "ccvae.posterior",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "ccvae.scaled_noise:in->ccvae.half_logvar:in:boundary",
+      "src": "ccvae.scaled_noise",
+      "dst": "ccvae.half_logvar",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.half_logvar:out->ccvae.std:in:tensor",
+      "src": "ccvae.half_logvar",
+      "dst": "ccvae.std",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.std:out->ccvae.noise_product:in:tensor",
+      "src": "ccvae.std",
+      "dst": "ccvae.noise_product",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.noise_product:out->ccvae.scaled_noise:out:boundary",
+      "src": "ccvae.noise_product",
+      "dst": "ccvae.scaled_noise",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.mu:out->ccvae.retain_mu:in:value_operand",
+      "src": "ccvae.mu",
+      "dst": "ccvae.retain_mu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "ccvae.retain_mu:out->ccvae.sample_args:operand[0]:operand_collection",
+      "src": "ccvae.retain_mu",
+      "dst": "ccvae.sample_args",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "ccvae.logvar:out->ccvae.scaled_noise:in:value_operand",
+      "src": "ccvae.logvar",
+      "dst": "ccvae.scaled_noise",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "ccvae.scaled_noise:out->ccvae.sample_args:operand[1]:operand_collection",
+      "src": "ccvae.scaled_noise",
+      "dst": "ccvae.sample_args",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "ccvae.sampling:in->ccvae.sample_args:in:boundary",
+      "src": "ccvae.sampling",
+      "dst": "ccvae.sample_args",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.sample_args:out->ccvae.z:in:tensor",
+      "src": "ccvae.sample_args",
+      "dst": "ccvae.z",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.z:out->ccvae.sampling:out:boundary",
+      "src": "ccvae.z",
+      "dst": "ccvae.sampling",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.encoder:in->ccvae.encoder_args:in:boundary",
+      "src": "ccvae.encoder",
+      "dst": "ccvae.encoder_args",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.encoder_args:out->ccvae.encoder_concat:in:tensor",
+      "src": "ccvae.encoder_args",
+      "dst": "ccvae.encoder_concat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.encoder_concat:out->ccvae.enc1:in:tensor",
+      "src": "ccvae.encoder_concat",
+      "dst": "ccvae.enc1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.enc1:out->ccvae.enc2:in:tensor",
+      "src": "ccvae.enc1",
+      "dst": "ccvae.enc2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.enc2:out->ccvae.enc3:in:tensor",
+      "src": "ccvae.enc2",
+      "dst": "ccvae.enc3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.enc3:out->ccvae.posterior:in:tensor",
+      "src": "ccvae.enc3",
+      "dst": "ccvae.posterior",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.posterior:out->ccvae.sampling:in:tensor",
+      "src": "ccvae.posterior",
+      "dst": "ccvae.sampling",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.sampling:out->ccvae.encoder_return:in:tensor",
+      "src": "ccvae.sampling",
+      "dst": "ccvae.encoder_return",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.encoder_return:out->ccvae.encoder:out:boundary",
+      "src": "ccvae.encoder_return",
+      "dst": "ccvae.encoder",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.select_z:out->ccvae.retain_z:in:value_operand",
+      "src": "ccvae.select_z",
+      "dst": "ccvae.retain_z",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "ccvae.retain_z:out->ccvae.decoder_args:operand[0]:operand_collection",
+      "src": "ccvae.retain_z",
+      "dst": "ccvae.decoder_args",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "ccvae.decoder_onehot:out->ccvae.decoder_args:operand[1]:operand_collection",
+      "src": "ccvae.decoder_onehot",
+      "dst": "ccvae.decoder_args",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "ccvae.latent_projection:in->ccvae.decoder_linear:in:boundary",
+      "src": "ccvae.latent_projection",
+      "dst": "ccvae.decoder_linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.decoder_linear:out->ccvae.decoder_view:in:tensor",
+      "src": "ccvae.decoder_linear",
+      "dst": "ccvae.decoder_view",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.decoder_view:out->ccvae.latent_projection:out:boundary",
+      "src": "ccvae.decoder_view",
+      "dst": "ccvae.latent_projection",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.dec1:in->ccvae.dec1.conv:in:boundary",
+      "src": "ccvae.dec1",
+      "dst": "ccvae.dec1.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.dec1.conv:out->ccvae.dec1.activation:in:tensor",
+      "src": "ccvae.dec1.conv",
+      "dst": "ccvae.dec1.activation",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.dec1.activation:out->ccvae.dec1:out:boundary",
+      "src": "ccvae.dec1.activation",
+      "dst": "ccvae.dec1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.dec2:in->ccvae.dec2.conv:in:boundary",
+      "src": "ccvae.dec2",
+      "dst": "ccvae.dec2.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.dec2.conv:out->ccvae.dec2.activation:in:tensor",
+      "src": "ccvae.dec2.conv",
+      "dst": "ccvae.dec2.activation",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.dec2.activation:out->ccvae.dec2:out:boundary",
+      "src": "ccvae.dec2.activation",
+      "dst": "ccvae.dec2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.dec3:in->ccvae.dec3.conv:in:boundary",
+      "src": "ccvae.dec3",
+      "dst": "ccvae.dec3.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.dec3.conv:out->ccvae.dec3.activation:in:tensor",
+      "src": "ccvae.dec3.conv",
+      "dst": "ccvae.dec3.activation",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.dec3.activation:out->ccvae.dec3:out:boundary",
+      "src": "ccvae.dec3.activation",
+      "dst": "ccvae.dec3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.decoder:in->ccvae.decoder_args:in:boundary",
+      "src": "ccvae.decoder",
+      "dst": "ccvae.decoder_args",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.decoder_args:out->ccvae.decoder_concat:in:tensor",
+      "src": "ccvae.decoder_args",
+      "dst": "ccvae.decoder_concat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.decoder_concat:out->ccvae.latent_projection:in:tensor",
+      "src": "ccvae.decoder_concat",
+      "dst": "ccvae.latent_projection",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.latent_projection:out->ccvae.dec1:in:tensor",
+      "src": "ccvae.latent_projection",
+      "dst": "ccvae.dec1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.dec1:out->ccvae.dec2:in:tensor",
+      "src": "ccvae.dec1",
+      "dst": "ccvae.dec2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.dec2:out->ccvae.dec3:in:tensor",
+      "src": "ccvae.dec2",
+      "dst": "ccvae.dec3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.dec3:out->ccvae.sigmoid:in:tensor",
+      "src": "ccvae.dec3",
+      "dst": "ccvae.sigmoid",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.sigmoid:out->ccvae.decoder:out:boundary",
+      "src": "ccvae.sigmoid",
+      "dst": "ccvae.decoder",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.forward:in->ccvae.encoder:in:boundary",
+      "src": "ccvae.forward",
+      "dst": "ccvae.encoder",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.encoder:out->ccvae.select_z:in:tensor",
+      "src": "ccvae.encoder",
+      "dst": "ccvae.select_z",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.select_z:out->ccvae.decoder:in:tensor",
+      "src": "ccvae.select_z",
+      "dst": "ccvae.decoder",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.decoder:out->ccvae.return:in:tensor",
+      "src": "ccvae.decoder",
+      "dst": "ccvae.return",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.return:out->ccvae.forward:out:boundary",
+      "src": "ccvae.return",
+      "dst": "ccvae.forward",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.root:in->ccvae.input:in:boundary",
+      "src": "ccvae.root",
+      "dst": "ccvae.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.input:out->ccvae.forward:in:tensor",
+      "src": "ccvae.input",
+      "dst": "ccvae.forward",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "ccvae.forward:out->ccvae.root:out:boundary",
+      "src": "ccvae.forward",
+      "dst": "ccvae.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "ccvae.labels:out->ccvae.encoder_onehot:labels:condition",
+      "src": "ccvae.labels",
+      "dst": "ccvae.encoder_onehot",
+      "src_port": "out",
+      "dst_port": "labels",
+      "role": "condition"
+    },
+    {
+      "id": "ccvae.input:shape->ccvae.condition_maps:image_shape:shape_dependency",
+      "src": "ccvae.input",
+      "dst": "ccvae.condition_maps",
+      "src_port": "shape",
+      "dst_port": "image_shape",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "ccvae.labels:out->ccvae.decoder_onehot:labels:condition",
+      "src": "ccvae.labels",
+      "dst": "ccvae.decoder_onehot",
+      "src_port": "out",
+      "dst_port": "labels",
+      "role": "condition"
+    },
+    {
+      "id": "ccvae.epsilon:out->ccvae.noise_product:epsilon:random_sample",
+      "src": "ccvae.epsilon",
+      "dst": "ccvae.noise_product",
+      "src_port": "out",
+      "dst_port": "epsilon",
+      "role": "random_sample"
+    },
+    {
+      "id": "ccvae.mu:shape->ccvae.epsilon:shape:shape_dependency",
+      "src": "ccvae.mu",
+      "dst": "ccvae.epsilon",
+      "src_port": "shape",
+      "dst_port": "shape",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "ccvae.mu:out->ccvae.encoder_return:mu:retained_value",
+      "src": "ccvae.mu",
+      "dst": "ccvae.encoder_return",
+      "src_port": "out",
+      "dst_port": "mu",
+      "role": "retained_value"
+    },
+    {
+      "id": "ccvae.mu:out->ccvae.return:mu:retained_value",
+      "src": "ccvae.mu",
+      "dst": "ccvae.return",
+      "src_port": "out",
+      "dst_port": "mu",
+      "role": "retained_value"
+    },
+    {
+      "id": "ccvae.logvar:out->ccvae.encoder_return:logvar:retained_value",
+      "src": "ccvae.logvar",
+      "dst": "ccvae.encoder_return",
+      "src_port": "out",
+      "dst_port": "logvar",
+      "role": "retained_value"
+    },
+    {
+      "id": "ccvae.logvar:out->ccvae.return:logvar:retained_value",
+      "src": "ccvae.logvar",
+      "dst": "ccvae.return",
+      "src_port": "out",
+      "dst_port": "logvar",
+      "role": "retained_value"
+    },
+    {
+      "id": "ccvae.z:out->ccvae.return:encoded:retained_value",
+      "src": "ccvae.z",
+      "dst": "ccvae.return",
+      "src_port": "out",
+      "dst_port": "encoded",
+      "role": "retained_value"
+    }
+  ],
+  "facts": [
+    "Encoder convolutions use kernels 6/4/2, strides 2/2/2, zero padding, and channels 16/32/64; 28->12->5->2 spatial sizes.",
+    "Two independent Linear(256,latent) posterior heads each call x.view(-1,64*2*2); no intermediate hidden latent hierarchy exists.",
+    "Internal epsilon is randn(B,latent).to(module global device); z=mu+epsilon*exp(logvar/2) with no train/eval gate.",
+    "randn dimensions read z_mu.size(0/1); mu->epsilon is a shape dependency only, not a feature-value input.",
+    "encoder returns (mu,logvar,encoded), and forward returns (mu,logvar,encoded,decoded); decoder receives selected z.",
+    "Decoder Linear projects to 256 before reshape to 64x2x2; transposed convolutions use (k,s,p)=(2,2,0),(4,3,1),(6,3,4).",
+    "Decoder spatial sizes are 2->4->11->28; LeakyReLU follows all three transposed convolutions, then Sigmoid.",
+    "All six convolution calls use default bias=True; all six LeakyReLU calls use API default negative_slope=0.01; no BatchNorm or Dropout.",
+    "num_features constructor argument is unused; source fixes posterior/decoder base map at 64x2x2.",
+    "Losses, label-map reconstruction targets and standalone random decoder calls belong to notebook caller cells, outside forward.",
+    "Encoder one-hot labels broadcast to 10 constant spatial maps and concatenate with the image before Conv2d(11,16).",
+    "Decoder calls to_onehot again and concatenates 50 latent entries with 10 label entries before Linear(60,256).",
+    "Final decoder ConvTranspose2d outputs 11 hard-coded channels, not a one-channel image; training BCE reconstructs augmented image+label maps.",
+    "Only visualization slices decoded[:,0]; forward returns all 11 channels, with no label inference or Softmax head."
+  ],
+  "corrections": [
+    "No model-specific reference PNG is supplied; this graph follows the fixed notebook rather than a generic VAE illustration.",
+    "Retain asymmetric decoder strides 2/3/3 and padding 0/1/4, rather than inventing a mirror of encoder stride 2.",
+    "Draw one latent level and distinct mean/log-variance heads; logical operand bundles are not literal source tuples.",
+    "Do not replace final LeakyReLU+Sigmoid by Sigmoid directly after convolution or by Softmax.",
+    "Evaluation still samples epsilon; no deterministic z=mu path is present in this source.",
+    "Preserve encoder spatial condition injection and decoder latent-vector condition injection as two separate calls, not a single shared embedding.",
+    "The returned decoded tensor has 11 channels; do not silently fix it to one image channel merely because the visualization selects channel zero.",
+    "Changing num_classes changes encoder/Linear dimensions but does not change hard-coded decoder out_channels=11."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

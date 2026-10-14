@@ -1,0 +1,1020 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="7457" viewBox="0 0 1200 7457">
+<defs xmlns="http://www.w3.org/2000/svg"><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348" /></marker></defs>
+
+<rect xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" fill="white" />
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="source-binding">{"model": "mobilenetv2", "source_snapshot_sha256": "d72c614d79563c7756290b44770a5262b15bfc58e12c9844311724d2862bc09c", "repository": "rasbt/deeplearning-models", "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3", "semantic_ir_sha256": "c93f0a25af7820bec262141821d7fbe0aa40252964a26cfc4e684f380aeb1956", "view": 2, "source_projects": {"deeplearning-models-batch2": {"repository": "rasbt/deeplearning-models", "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3", "snapshot": "d72c614d79563c7756290b44770a5262b15bfc58e12c9844311724d2862bc09c"}, "torchvision-v0.9.0": {"repository": "pytorch/vision", "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020", "snapshot": "95ebc22631510d035d626f3e1b116d3c3b1df51f8c27ebcd838d6110eb3ad434"}}}</metadata>
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="diagram-style">{"name": "transformer-paper-model-zoo", "version": 1, "font": "DejaVu Sans, Arial, sans-serif", "text": "#172336", "line": "#263348", "palette": {"root": "#ffffff", "group": "#ffffff", "inner": "#fffaf6", "layer": "#ffffff", "encoder": "#e7f5fe", "decoder": "#fff0f5", "embedding": "#f8d4e1", "input": "#f8d4e1", "output": "#dfdff8", "attention": "#ffddb3", "ffn": "#c8ebfb", "mixing": "#c8ebfb", "conv": "#c8ebfb", "pool": "#d6f0df", "norm": "#fff6bd", "concat": "#fff6bd", "linear": "#dfdff8", "softmax": "#c9f1cd", "sampling": "#c9f1cd", "recurrent": "#ffddb3", "decomposition": "#d6f0df", "tensor": "#cdeaf8", "activation": "#f3f5f7", "control": "#f3f5f7"}, "typography": {"title": 30, "subtitle": 16, "module": 22, "inner": 20, "operator": 20, "shape": 16, "detail": 14, "evidence": 12, "footer": 14, "line_height": 1.18}, "fill_width_nodes": ["mobile.head", "mobile.last", "mobile.stage1", "mobile.stage1.first", "mobile.stage2", "mobile.stage2.first", "mobile.stage2.repeat", "mobile.stage3", "mobile.stage4", "mobile.stage5", "mobile.stage6", "mobile.stage7", "mobile.stem"], "visual_roles": {"mobile.dropout": "control", "mobile.fc": "linear", "mobile.head": "ffn", "mobile.input": "input", "mobile.last": "conv", "mobile.last.bn": "norm", "mobile.last.conv": "conv", "mobile.last.relu6": "activation", "mobile.model": "root", "mobile.output": "output", "mobile.pool": "pool", "mobile.reshape": "tensor", "mobile.stage1": "encoder", "mobile.stage1.first": "conv", "mobile.stage1.first.depthwise": "conv", "mobile.stage1.first.depthwise.bn": "norm", "mobile.stage1.first.depthwise.conv": "conv", "mobile.stage1.first.depthwise.relu6": "activation", "mobile.stage1.first.project": "linear", "mobile.stage1.first.project_bn": "norm", "mobile.stage2": "encoder", "mobile.stage2.first": "conv", "mobile.stage2.first.depthwise": "conv", "mobile.stage2.first.depthwise.bn": "norm", "mobile.stage2.first.depthwise.conv": "conv", "mobile.stage2.first.depthwise.relu6": "activation", "mobile.stage2.first.expand": "conv", "mobile.stage2.first.expand.bn": "norm", "mobile.stage2.first.expand.conv": "conv", "mobile.stage2.first.expand.relu6": "activation", "mobile.stage2.first.project": "linear", "mobile.stage2.first.project_bn": "norm", "mobile.stage2.repeat": "conv", "mobile.stage2.repeat.add": "norm", "mobile.stage2.repeat.depthwise": "conv", "mobile.stage2.repeat.depthwise.bn": "norm", "mobile.stage2.repeat.depthwise.conv": "conv", "mobile.stage2.repeat.depthwise.relu6": "activation", "mobile.stage2.repeat.expand": "conv", "mobile.stage2.repeat.expand.bn": "norm", "mobile.stage2.repeat.expand.conv": "conv", "mobile.stage2.repeat.expand.relu6": "activation", "mobile.stage2.repeat.project": "linear", "mobile.stage2.repeat.project_bn": "norm", "mobile.stage3": "encoder", "mobile.stage3.first": "conv", "mobile.stage3.repeat": "conv", "mobile.stage4": "encoder", "mobile.stage4.first": "conv", "mobile.stage4.repeat": "conv", "mobile.stage5": "encoder", "mobile.stage5.first": "conv", "mobile.stage5.repeat": "conv", "mobile.stage6": "encoder", "mobile.stage6.first": "conv", "mobile.stage6.repeat": "conv", "mobile.stage7": "encoder", "mobile.stage7.first": "conv", "mobile.stem": "conv", "mobile.stem.bn": "norm", "mobile.stem.conv": "conv", "mobile.stem.relu6": "activation"}, "semantics": "presentation aliases only; color does not imply mathematical equivalence or parameter sharing"}</metadata>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">MobileNetV2 (CIFAR-10)  |  Operators &amp; tensor flow</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">CIFAR-10 · Crop64 · torchvision v0.9.0 · width=1 · replaced 10-class head · eval  /  read bottom to top</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.model" data-visual-role="root"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:201 mobilenet_v2; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:102 MobileNetV2; parameter=not asserted; </title><rect x="307.0" y="98" width="586" height="7077" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="324.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="324.0" dy="0">MobileNetV2 ·</tspan>
+<tspan x="324.0" dy="25.959999999999997">CIFAR-10</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="876.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="876.0" dy="0">logits: [B,10]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="880.0" y="177" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="880.0" dy="0">E011,E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.input" data-visual-role="input" data-glyph-kind="tensor-grid"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:188 MobileNetV2._forward_impl; parameter=not asserted; caller Resize70 then Crop64; Normalize(mean=std=0.5)</title><rect x="564.0" y="7092.5" width="72" height="32" rx="0" fill="#f8d4e1" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="576.0" x2="576.0" y1="7092.5" y2="7124.5" stroke="#263348" stroke-width=".6" /><line x1="588.0" x2="588.0" y1="7092.5" y2="7124.5" stroke="#263348" stroke-width=".6" /><line x1="600.0" x2="600.0" y1="7092.5" y2="7124.5" stroke="#263348" stroke-width=".6" /><line x1="612.0" x2="612.0" y1="7092.5" y2="7124.5" stroke="#263348" stroke-width=".6" /><line x1="624.0" x2="624.0" y1="7092.5" y2="7124.5" stroke="#263348" stroke-width=".6" /><line x1="564.0" x2="636.0" y1="7103.166666666667" y2="7103.166666666667" stroke="#263348" stroke-width=".6" /><line x1="564.0" x2="636.0" y1="7113.833333333333" y2="7113.833333333333" stroke="#263348" stroke-width=".6" /><text x="554.0" y="7105.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="554.0" dy="0">CIFAR-10</tspan><tspan x="554.0" dy="16.52">image</tspan></text><text x="646.0" y="7113.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="646.0" dy="0">[B,3,64,64]</tspan></text><text x="646.0" y="7146" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="646.0" dy="0">E008</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stem" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; parameter=not asserted; </title><rect x="339.0" y="6636" width="522" height="408" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="356.0" y="6666" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Stem Conv / BN /</tspan>
+<tspan x="356.0" dy="25.959999999999997">ReLU6</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="844.0" y="6666" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">[B,32,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="848.0" y="6715" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E002,E007</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stem.conv" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; parameter=features.0.0; 3 -&gt; 32 channels; stride=2; groups=1 | padding=1; bias=False</title><rect x="435.0" y="6937" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="6964" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv2d 3x3</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="6988" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,32,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="7008" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E007</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stem.bn" data-visual-role="norm"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; parameter=features.0.1; selected eval: running statistics; affine=True</title><rect x="435.0" y="6832" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="6859" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="6883" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,32,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="6903" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stem.relu6" data-visual-role="activation"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; parameter=not asserted; inplace=True; clips at 6</title><rect x="435.0" y="6727" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="6754" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">ReLU6</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="6778" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,32,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="6798" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage1" data-visual-role="encoder"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; parameter=not asserted; t=1; first stride=1; later blocks use stride 1 | logical stage from the source settings table; features is one Sequential</title><rect x="339.0" y="5707" width="522" height="905" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="356.0" y="5737" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Stage 1 · c=16</tspan>
+<tspan x="356.0" dy="28.32">/ n=1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="844.0" y="5737" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">[B,16,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="848.0" y="5789" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E007 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage1.first" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; parameter=features.1.conv; t=1; hidden=32; input channels=32 | identity only when stride=1 and input channels=output channels | separate weights for each feature index</title><rect x="371.0" y="5801" width="458" height="785" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="388.0" y="5831" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="388.0" dy="0">IR block · no</tspan>
+<tspan x="388.0" dy="25.959999999999997">skip</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="812.0" y="5831" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="812.0" dy="0">[B,16,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="816.0" y="5880" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage1.first.depthwise" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; parameter=not asserted; </title><rect x="403.0" y="6126" width="394" height="434" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="420.0" y="6156" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="420.0" dy="0">Depthwise</tspan>
+<tspan x="420.0" dy="25.959999999999997">spatial</tspan>
+<tspan x="420.0" dy="25.959999999999997">convolution</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="780.0" y="6156" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="780.0" dy="0">[B,32,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="784.0" y="6231" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="784.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage1.first.depthwise.conv" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; parameter=features.1.conv.0.0; 32 -&gt; 32 channels; stride=1; groups=32 | padding=1; bias=False</title><rect x="435.0" y="6453" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="6480" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv2d 3x3</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="6504" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,32,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="6524" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage1.first.depthwise.bn" data-visual-role="norm"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; parameter=features.1.conv.0.1; selected eval: running statistics; affine=True</title><rect x="435.0" y="6348" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="6375" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="6399" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,32,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="6419" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage1.first.depthwise.relu6" data-visual-role="activation"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; parameter=not asserted; inplace=True; clips at 6</title><rect x="435.0" y="6243" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="6270" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">ReLU6</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="6294" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,32,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="6314" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage1.first.project" data-visual-role="linear"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; parameter=features.1.conv.1; 32 -&gt; 16 channels; stride=1; bias=False | linear means no following ReLU6, not nn.Linear</title><rect x="435.0" y="5997" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="6024" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Linear bottleneck</tspan>
+<tspan x="600.0" dy="23.599999999999998">Conv1x1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="6072" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,16,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="6092" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage1.first.project_bn" data-visual-role="norm"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; parameter=features.1.conv.2; no activation after this BN</title><rect x="435.0" y="5892" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="5919" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="5943" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,16,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="5963" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2" data-visual-role="encoder"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; parameter=not asserted; t=6; first stride=2; later blocks use stride 1 | logical stage from the source settings table; features is one Sequential</title><rect x="339.0" y="3000" width="522" height="2683" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="356.0" y="3030" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Stage 2 · c=24</tspan>
+<tspan x="356.0" dy="28.32">/ n=2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="844.0" y="3030" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">[B,24,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="848.0" y="3082" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E007 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.first" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; parameter=features.2.conv; t=6; hidden=96; input channels=16 | identity only when stride=1 and input channels=output channels | separate weights for each feature index</title><rect x="371.0" y="4440" width="458" height="1217" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="388.0" y="4470" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="388.0" dy="0">IR block · no</tspan>
+<tspan x="388.0" dy="25.959999999999997">skip</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="812.0" y="4470" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="812.0" dy="0">[B,24,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="816.0" y="4519" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.first.expand" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; parameter=not asserted; </title><rect x="403.0" y="5223" width="394" height="408" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="420.0" y="5253" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="420.0" dy="0">Pointwise</tspan>
+<tspan x="420.0" dy="25.959999999999997">expansion</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="780.0" y="5253" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="780.0" dy="0">[B,96,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="784.0" y="5302" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="784.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.first.expand.conv" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; parameter=features.2.conv.0.0; 16 -&gt; 96 channels; stride=1; groups=1 | padding=0; bias=False</title><rect x="435.0" y="5524" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="5551" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv2d 1x1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="5575" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,96,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="5595" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.first.expand.bn" data-visual-role="norm"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; parameter=features.2.conv.0.1; selected eval: running statistics; affine=True</title><rect x="435.0" y="5419" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="5446" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="5470" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,96,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="5490" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.first.expand.relu6" data-visual-role="activation"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; parameter=not asserted; inplace=True; clips at 6</title><rect x="435.0" y="5314" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="5341" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">ReLU6</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="5365" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,96,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="5385" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.first.depthwise" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; parameter=not asserted; </title><rect x="403.0" y="4765" width="394" height="434" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="420.0" y="4795" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="420.0" dy="0">Depthwise</tspan>
+<tspan x="420.0" dy="25.959999999999997">spatial</tspan>
+<tspan x="420.0" dy="25.959999999999997">convolution</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="780.0" y="4795" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="780.0" dy="0">[B,96,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="784.0" y="4870" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="784.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.first.depthwise.conv" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; parameter=features.2.conv.1.0; 96 -&gt; 96 channels; stride=2; groups=96 | padding=1; bias=False</title><rect x="435.0" y="5092" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="5119" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv2d 3x3</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="5143" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,96,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="5163" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.first.depthwise.bn" data-visual-role="norm"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; parameter=features.2.conv.1.1; selected eval: running statistics; affine=True</title><rect x="435.0" y="4987" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="5014" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="5038" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,96,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="5058" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.first.depthwise.relu6" data-visual-role="activation"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; parameter=not asserted; inplace=True; clips at 6</title><rect x="435.0" y="4882" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="4909" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">ReLU6</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="4933" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,96,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="4953" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.first.project" data-visual-role="linear"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; parameter=features.2.conv.2; 96 -&gt; 24 channels; stride=1; bias=False | linear means no following ReLU6, not nn.Linear</title><rect x="435.0" y="4636" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="4663" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Linear bottleneck</tspan>
+<tspan x="600.0" dy="23.599999999999998">Conv1x1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="4711" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,24,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="4731" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.first.project_bn" data-visual-role="norm"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; parameter=features.2.conv.3; no activation after this BN</title><rect x="435.0" y="4531" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="4558" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="4582" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,24,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="4602" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.repeat" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; parameter=features.3.conv; t=6; hidden=144; input channels=24 | identity only when stride=1 and input channels=output channels | separate weights for each feature index</title><rect x="371.0" y="3094" width="458" height="1322" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="388.0" y="3124" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="388.0" dy="0">Identity IR</tspan>
+<tspan x="388.0" dy="25.959999999999997">block</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="812.0" y="3124" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="812.0" dy="0">[B,24,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="816.0" y="3173" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.repeat.expand" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; parameter=not asserted; </title><rect x="403.0" y="3982" width="394" height="408" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="420.0" y="4012" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="420.0" dy="0">Pointwise</tspan>
+<tspan x="420.0" dy="25.959999999999997">expansion</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="780.0" y="4012" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="780.0" dy="0">[B,144,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="784.0" y="4061" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="784.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.repeat.expand.conv" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; parameter=features.3.conv.0.0; 24 -&gt; 144 channels; stride=1; groups=1 | padding=0; bias=False</title><rect x="435.0" y="4283" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="4310" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv2d 1x1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="4334" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,144,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="4354" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.repeat.expand.bn" data-visual-role="norm"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; parameter=features.3.conv.0.1; selected eval: running statistics; affine=True</title><rect x="435.0" y="4178" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="4205" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="4229" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,144,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="4249" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.repeat.expand.relu6" data-visual-role="activation"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; parameter=not asserted; inplace=True; clips at 6</title><rect x="435.0" y="4073" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="4100" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">ReLU6</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="4124" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,144,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="4144" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.repeat.depthwise" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; parameter=not asserted; </title><rect x="403.0" y="3524" width="394" height="434" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="420.0" y="3554" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="420.0" dy="0">Depthwise</tspan>
+<tspan x="420.0" dy="25.959999999999997">spatial</tspan>
+<tspan x="420.0" dy="25.959999999999997">convolution</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="780.0" y="3554" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="780.0" dy="0">[B,144,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="784.0" y="3629" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="784.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.repeat.depthwise.conv" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; parameter=features.3.conv.1.0; 144 -&gt; 144 channels; stride=1; groups=144 | padding=1; bias=False</title><rect x="435.0" y="3851" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="3878" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv2d 3x3</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="3902" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,144,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="3922" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.repeat.depthwise.bn" data-visual-role="norm"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; parameter=features.3.conv.1.1; selected eval: running statistics; affine=True</title><rect x="435.0" y="3746" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="3773" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="3797" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,144,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="3817" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.repeat.depthwise.relu6" data-visual-role="activation"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; parameter=not asserted; inplace=True; clips at 6</title><rect x="435.0" y="3641" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="3668" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">ReLU6</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="3692" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,144,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="3712" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.repeat.project" data-visual-role="linear"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; parameter=features.3.conv.2; 144 -&gt; 24 channels; stride=1; bias=False | linear means no following ReLU6, not nn.Linear</title><rect x="435.0" y="3395" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="3422" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Linear bottleneck</tspan>
+<tspan x="600.0" dy="23.599999999999998">Conv1x1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="3470" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,24,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="3490" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.repeat.project_bn" data-visual-role="norm"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; parameter=features.3.conv.3; no activation after this BN</title><rect x="435.0" y="3290" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="3317" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="3341" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,24,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="3361" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage2.repeat.add" data-visual-role="norm" data-glyph-kind="binary-circle"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; parameter=not asserted; return x + self.conv(x); no activation after Add</title><circle cx="600.0" cy="3225.5" r="16.0" fill="white" stroke="#263348" stroke-width="2" data-glyph-outline="circle" /><text x="600.0" y="3232.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="400" text-anchor="middle" fill="#172336" data-glyph-symbol="add"><tspan x="600.0" dy="0">+</tspan></text><text x="628.0" y="3194.98" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="628.0" dy="0">Add identity</tspan><tspan x="628.0" dy="16.52">shortcut</tspan></text><text x="628.0" y="3251.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="11" font-weight="400" text-anchor="start" fill="#172336"><tspan x="628.0" dy="0">[B,24,16,16]</tspan></text><text x="628.0" y="3267.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="628.0" dy="0">E005</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage3" data-visual-role="encoder"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; parameter=not asserted; t=6; first stride=2; later blocks use stride 1 | logical stage from the source settings table; features is one Sequential</title><rect x="339.0" y="2646" width="522" height="330" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="356.0" y="2676" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Stage 3 · c=32</tspan>
+<tspan x="356.0" dy="28.32">/ n=3</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="844.0" y="2676" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">[B,32,8,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="848.0" y="2728" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E007 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage3.first" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; parameter=features.4.conv; 24 -&gt; 32 channels; t=6; hidden=144; stride=2 | Expand1x1-BN-ReLU6 -&gt; depthwise3x3-BN-ReLU6 -&gt; project1x1-BN | no identity Add; shape/channel change | feature indices: 4; separate weights</title><rect x="435.0" y="2845" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="2872" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">First IR block · no</tspan>
+<tspan x="600.0" dy="23.599999999999998">skip</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="2920" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,32,8,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="2940" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage3.repeat" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; parameter=features.{j}.conv; 32 -&gt; 32 channels; t=6; hidden=192; stride=1 | Expand1x1-BN-ReLU6 -&gt; depthwise3x3-BN-ReLU6 -&gt; project1x1-BN | then Add input; no post-Add activation | feature indices: 5,6; separate weights</title><rect x="435.0" y="2740" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="2767" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Identity IR block x 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="2791" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,32,8,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="2811" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage4" data-visual-role="encoder"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; parameter=not asserted; t=6; first stride=2; later blocks use stride 1 | logical stage from the source settings table; features is one Sequential</title><rect x="339.0" y="2292" width="522" height="330" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="356.0" y="2322" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Stage 4 · c=64</tspan>
+<tspan x="356.0" dy="28.32">/ n=4</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="844.0" y="2322" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">[B,64,4,4]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="848.0" y="2374" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E007 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage4.first" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; parameter=features.7.conv; 32 -&gt; 64 channels; t=6; hidden=192; stride=2 | Expand1x1-BN-ReLU6 -&gt; depthwise3x3-BN-ReLU6 -&gt; project1x1-BN | no identity Add; shape/channel change | feature indices: 7; separate weights</title><rect x="435.0" y="2491" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="2518" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">First IR block · no</tspan>
+<tspan x="600.0" dy="23.599999999999998">skip</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="2566" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,64,4,4]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="2586" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage4.repeat" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; parameter=features.{j}.conv; 64 -&gt; 64 channels; t=6; hidden=384; stride=1 | Expand1x1-BN-ReLU6 -&gt; depthwise3x3-BN-ReLU6 -&gt; project1x1-BN | then Add input; no post-Add activation | feature indices: 8,9,10; separate weights</title><rect x="435.0" y="2386" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="2413" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Identity IR block x 3</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="2437" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,64,4,4]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="2457" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage5" data-visual-role="encoder"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; parameter=not asserted; t=6; first stride=1; later blocks use stride 1 | logical stage from the source settings table; features is one Sequential</title><rect x="339.0" y="1938" width="522" height="330" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="356.0" y="1968" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Stage 5 · c=96</tspan>
+<tspan x="356.0" dy="28.32">/ n=3</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="844.0" y="1968" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">[B,96,4,4]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="848.0" y="2020" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E007 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage5.first" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; parameter=features.11.conv; 64 -&gt; 96 channels; t=6; hidden=384; stride=1 | Expand1x1-BN-ReLU6 -&gt; depthwise3x3-BN-ReLU6 -&gt; project1x1-BN | no identity Add; shape/channel change | feature indices: 11; separate weights</title><rect x="435.0" y="2137" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="2164" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">First IR block · no</tspan>
+<tspan x="600.0" dy="23.599999999999998">skip</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="2212" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,96,4,4]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="2232" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage5.repeat" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; parameter=features.{j}.conv; 96 -&gt; 96 channels; t=6; hidden=576; stride=1 | Expand1x1-BN-ReLU6 -&gt; depthwise3x3-BN-ReLU6 -&gt; project1x1-BN | then Add input; no post-Add activation | feature indices: 12,13; separate weights</title><rect x="435.0" y="2032" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="2059" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Identity IR block x 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="2083" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,96,4,4]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="2103" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage6" data-visual-role="encoder"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; parameter=not asserted; t=6; first stride=2; later blocks use stride 1 | logical stage from the source settings table; features is one Sequential</title><rect x="339.0" y="1584" width="522" height="330" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="356.0" y="1614" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Stage 6 ·</tspan>
+<tspan x="356.0" dy="28.32">c=160 / n=3</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="844.0" y="1614" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">[B,160,2,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="848.0" y="1666" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E007 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage6.first" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; parameter=features.14.conv; 96 -&gt; 160 channels; t=6; hidden=576; stride=2 | Expand1x1-BN-ReLU6 -&gt; depthwise3x3-BN-ReLU6 -&gt; project1x1-BN | no identity Add; shape/channel change | feature indices: 14; separate weights</title><rect x="435.0" y="1783" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1810" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">First IR block · no</tspan>
+<tspan x="600.0" dy="23.599999999999998">skip</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1858" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,160,2,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="1878" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage6.repeat" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; parameter=features.{j}.conv; 160 -&gt; 160 channels; t=6; hidden=960; stride=1 | Expand1x1-BN-ReLU6 -&gt; depthwise3x3-BN-ReLU6 -&gt; project1x1-BN | then Add input; no post-Add activation | feature indices: 15,16; separate weights</title><rect x="435.0" y="1678" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1705" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Identity IR block x 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1729" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,160,2,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="1749" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage7" data-visual-role="encoder"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; parameter=not asserted; t=6; first stride=1; later blocks use stride 1 | logical stage from the source settings table; features is one Sequential</title><rect x="339.0" y="1335" width="522" height="225" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="356.0" y="1365" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Stage 7 ·</tspan>
+<tspan x="356.0" dy="28.32">c=320 / n=1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="844.0" y="1365" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">[B,320,2,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="848.0" y="1417" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E007 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.stage7.first" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:62 InvertedResidual.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:95 InvertedResidual.forward; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; parameter=features.17.conv; 160 -&gt; 320 channels; t=6; hidden=960; stride=1 | Expand1x1-BN-ReLU6 -&gt; depthwise3x3-BN-ReLU6 -&gt; project1x1-BN | no identity Add; shape/channel change | feature indices: 17; separate weights</title><rect x="435.0" y="1429" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1456" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">First IR block · no</tspan>
+<tspan x="600.0" dy="23.599999999999998">skip</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1504" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,320,2,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="1524" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.last" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; parameter=not asserted; </title><rect x="339.0" y="903" width="522" height="408" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="356.0" y="933" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Final pointwise</tspan>
+<tspan x="356.0" dy="25.959999999999997">features</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="844.0" y="933" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">[B,1280,2,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="848.0" y="982" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E002,E007</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.last.conv" data-visual-role="conv"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; parameter=features.18.0; 320 -&gt; 1280 channels; stride=1; groups=1 | padding=0; bias=False</title><rect x="435.0" y="1204" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1231" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv2d 1x1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1255" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,1280,2,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="1275" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E007</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.last.bn" data-visual-role="norm"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; parameter=features.18.1; selected eval: running statistics; affine=True</title><rect x="435.0" y="1099" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1126" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1150" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,1280,2,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="1170" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.last.relu6" data-visual-role="activation"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; parameter=not asserted; inplace=True; clips at 6</title><rect x="435.0" y="994" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1021" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">ReLU6</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1045" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,1280,2,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="1065" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.head" data-visual-role="ffn"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:188 MobileNetV2._forward_impl; parameter=not asserted; </title><rect x="339.0" y="294" width="522" height="585" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="356.0" y="324" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">CIFAR-10</tspan>
+<tspan x="356.0" dy="25.959999999999997">classifier</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="844.0" y="324" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">logits: [B,10]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="848.0" y="373" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E007,E008</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.pool" data-visual-role="pool"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:188 MobileNetV2._forward_impl; parameter=not asserted; nn.functional.adaptive_avg_pool2d(x,(1,1))</title><rect x="435.0" y="748" width="330" height="105" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="775" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Adaptive average pool</tspan>
+<tspan x="600.0" dy="23.599999999999998">1x1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="823" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,1280,1,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="843" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E008</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.reshape" data-visual-role="tensor"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:188 MobileNetV2._forward_impl; parameter=not asserted; reshape(x.shape[0],-1); safe when B=1; not all-axis squeeze</title><rect x="435.0" y="619" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="646" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Reshape preserving</tspan>
+<tspan x="600.0" dy="23.599999999999998">batch</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="694" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,1280]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="714" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E008</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.dropout" data-visual-role="control"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:188 MobileNetV2._forward_impl; parameter=not asserted; classifier.0; identity in selected eval mode</title><rect x="435.0" y="514" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="541" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Dropout 0.2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="565" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,1280]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="585" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E007,E008</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.fc" data-visual-role="linear"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:103 MobileNetV2.__init__; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:188 MobileNetV2._forward_impl; parameter=classifier.1; notebook replaces classifier[-1] after torch.hub.load | replacement weight initialization follows nn.Linear default</title><rect x="435.0" y="385" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="412" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Replaced Linear 1280</tspan>
+<tspan x="600.0" dy="23.599999999999998">-&gt; 10</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="460" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">logits: [B,10]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="480" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E007,E008</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="mobile.output" data-visual-role="output" data-glyph-kind="tensor-grid"><title>torchvision-v0.9.0/torchvision/models/mobilenetv2.py:188 MobileNetV2._forward_impl; torchvision-v0.9.0/torchvision/models/mobilenetv2.py:197 MobileNetV2.forward; parameter=not asserted; model forward has no Softmax</title><rect x="564.0" y="213.5" width="72" height="32" rx="0" fill="#dfdff8" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="576.0" x2="576.0" y1="213.5" y2="245.5" stroke="#263348" stroke-width=".6" /><line x1="588.0" x2="588.0" y1="213.5" y2="245.5" stroke="#263348" stroke-width=".6" /><line x1="600.0" x2="600.0" y1="213.5" y2="245.5" stroke="#263348" stroke-width=".6" /><line x1="612.0" x2="612.0" y1="213.5" y2="245.5" stroke="#263348" stroke-width=".6" /><line x1="624.0" x2="624.0" y1="213.5" y2="245.5" stroke="#263348" stroke-width=".6" /><line x1="564.0" x2="636.0" y1="224.16666666666666" y2="224.16666666666666" stroke="#263348" stroke-width=".6" /><line x1="564.0" x2="636.0" y1="234.83333333333334" y2="234.83333333333334" stroke="#263348" stroke-width=".6" /><text x="554.0" y="226.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="554.0" dy="0">Returned</tspan><tspan x="554.0" dy="16.52">logits</tspan></text><text x="646.0" y="234.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="646.0" dy="0">[B,10]</tspan></text><text x="646.0" y="267" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="646.0" dy="0">E008,E009</tspan></text></g>
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0001" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stem.bn&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stem.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stem.bn&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stem.conv:out-&gt;mobile.stem.bn:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stem.bn:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stem.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stem.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,6937 L 600.0,6913" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stem.conv:out -&gt; mobile.stem.bn:in; visible mobile.stem.conv:out -&gt; mobile.stem.bn:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0002" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stem.relu6&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stem.bn&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stem.relu6&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stem.bn:out-&gt;mobile.stem.relu6:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stem.relu6:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stem.bn:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stem.bn&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,6832 L 600.0,6808" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stem.bn:out -&gt; mobile.stem.relu6:in; visible mobile.stem.bn:out -&gt; mobile.stem.relu6:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0003" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage1.first.depthwise.bn&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage1.first.depthwise.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage1.first.depthwise.bn&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage1.first.depthwise.conv:out-&gt;mobile.stage1.first.depthwise.bn:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage1.first.depthwise.bn:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage1.first.depthwise.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage1.first.depthwise.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,6453 L 600.0,6429" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage1.first.depthwise.conv:out -&gt; mobile.stage1.first.depthwise.bn:in; visible mobile.stage1.first.depthwise.conv:out -&gt; mobile.stage1.first.depthwise.bn:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0004" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage1.first.depthwise.relu6&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage1.first.depthwise.bn&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage1.first.depthwise.relu6&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage1.first.depthwise.bn:out-&gt;mobile.stage1.first.depthwise.relu6:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage1.first.depthwise.relu6:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage1.first.depthwise.bn:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage1.first.depthwise.bn&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,6348 L 600.0,6324" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage1.first.depthwise.bn:out -&gt; mobile.stage1.first.depthwise.relu6:in; visible mobile.stage1.first.depthwise.bn:out -&gt; mobile.stage1.first.depthwise.relu6:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0005" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage1.first.project&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage1.first.depthwise&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage1.first.project&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage1.first.depthwise:out-&gt;mobile.stage1.first.project:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage1.first.project:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage1.first.depthwise.relu6:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage1.first.depthwise.relu6&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage1.first.depthwise&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 600.0,6243 L 600.0,6102" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage1.first.depthwise:out -&gt; mobile.stage1.first.project:in; visible mobile.stage1.first.depthwise.relu6:out -&gt; mobile.stage1.first.project:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0006" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage1.first.project_bn&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage1.first.project&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage1.first.project_bn&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage1.first.project:out-&gt;mobile.stage1.first.project_bn:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage1.first.project_bn:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage1.first.project:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage1.first.project&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,5997 L 600.0,5973" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage1.first.project:out -&gt; mobile.stage1.first.project_bn:in; visible mobile.stage1.first.project:out -&gt; mobile.stage1.first.project_bn:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0007" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2.first.expand.bn&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage2.first.expand.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.first.expand.bn&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage2.first.expand.conv:out-&gt;mobile.stage2.first.expand.bn:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.first.expand.bn:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.first.expand.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.first.expand.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,5524 L 600.0,5500" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2.first.expand.conv:out -&gt; mobile.stage2.first.expand.bn:in; visible mobile.stage2.first.expand.conv:out -&gt; mobile.stage2.first.expand.bn:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0008" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2.first.expand.relu6&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage2.first.expand.bn&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.first.expand.relu6&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage2.first.expand.bn:out-&gt;mobile.stage2.first.expand.relu6:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.first.expand.relu6:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.first.expand.bn:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.first.expand.bn&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,5419 L 600.0,5395" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2.first.expand.bn:out -&gt; mobile.stage2.first.expand.relu6:in; visible mobile.stage2.first.expand.bn:out -&gt; mobile.stage2.first.expand.relu6:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0009" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2.first.depthwise.bn&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage2.first.depthwise.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.first.depthwise.bn&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage2.first.depthwise.conv:out-&gt;mobile.stage2.first.depthwise.bn:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.first.depthwise.bn:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.first.depthwise.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.first.depthwise.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,5092 L 600.0,5068" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2.first.depthwise.conv:out -&gt; mobile.stage2.first.depthwise.bn:in; visible mobile.stage2.first.depthwise.conv:out -&gt; mobile.stage2.first.depthwise.bn:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0010" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2.first.depthwise.relu6&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage2.first.depthwise.bn&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.first.depthwise.relu6&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage2.first.depthwise.bn:out-&gt;mobile.stage2.first.depthwise.relu6:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.first.depthwise.relu6:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.first.depthwise.bn:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.first.depthwise.bn&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,4987 L 600.0,4963" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2.first.depthwise.bn:out -&gt; mobile.stage2.first.depthwise.relu6:in; visible mobile.stage2.first.depthwise.bn:out -&gt; mobile.stage2.first.depthwise.relu6:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0011" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2.first.depthwise&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage2.first.expand&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.first.depthwise.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage2.first.depthwise&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;mobile.stage2.first.expand:out-&gt;mobile.stage2.first.depthwise:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.first.depthwise.conv:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.first.expand.relu6:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.first.expand.relu6&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage2.first.expand&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 600.0,5314 L 600.0,5173" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2.first.expand:out -&gt; mobile.stage2.first.depthwise:in; visible mobile.stage2.first.expand.relu6:out -&gt; mobile.stage2.first.depthwise.conv:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0012" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2.first.project&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage2.first.depthwise&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.first.project&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage2.first.depthwise:out-&gt;mobile.stage2.first.project:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.first.project:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.first.depthwise.relu6:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.first.depthwise.relu6&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage2.first.depthwise&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 600.0,4882 L 600.0,4741" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2.first.depthwise:out -&gt; mobile.stage2.first.project:in; visible mobile.stage2.first.depthwise.relu6:out -&gt; mobile.stage2.first.project:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0013" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2.first.project_bn&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage2.first.project&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.first.project_bn&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage2.first.project:out-&gt;mobile.stage2.first.project_bn:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.first.project_bn:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.first.project:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.first.project&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,4636 L 600.0,4612" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2.first.project:out -&gt; mobile.stage2.first.project_bn:in; visible mobile.stage2.first.project:out -&gt; mobile.stage2.first.project_bn:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0014" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2.repeat.expand.bn&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage2.repeat.expand.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.expand.bn&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage2.repeat.expand.conv:out-&gt;mobile.stage2.repeat.expand.bn:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.repeat.expand.bn:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.repeat.expand.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.expand.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,4283 L 600.0,4259" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2.repeat.expand.conv:out -&gt; mobile.stage2.repeat.expand.bn:in; visible mobile.stage2.repeat.expand.conv:out -&gt; mobile.stage2.repeat.expand.bn:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0015" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2.repeat.expand.relu6&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage2.repeat.expand.bn&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.expand.relu6&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage2.repeat.expand.bn:out-&gt;mobile.stage2.repeat.expand.relu6:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.repeat.expand.relu6:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.repeat.expand.bn:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.expand.bn&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,4178 L 600.0,4154" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2.repeat.expand.bn:out -&gt; mobile.stage2.repeat.expand.relu6:in; visible mobile.stage2.repeat.expand.bn:out -&gt; mobile.stage2.repeat.expand.relu6:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0016" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2.repeat.depthwise.bn&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage2.repeat.depthwise.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.depthwise.bn&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage2.repeat.depthwise.conv:out-&gt;mobile.stage2.repeat.depthwise.bn:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.repeat.depthwise.bn:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.repeat.depthwise.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.depthwise.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,3851 L 600.0,3827" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2.repeat.depthwise.conv:out -&gt; mobile.stage2.repeat.depthwise.bn:in; visible mobile.stage2.repeat.depthwise.conv:out -&gt; mobile.stage2.repeat.depthwise.bn:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0017" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2.repeat.depthwise.relu6&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage2.repeat.depthwise.bn&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.depthwise.relu6&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage2.repeat.depthwise.bn:out-&gt;mobile.stage2.repeat.depthwise.relu6:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.repeat.depthwise.relu6:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.repeat.depthwise.bn:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.depthwise.bn&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,3746 L 600.0,3722" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2.repeat.depthwise.bn:out -&gt; mobile.stage2.repeat.depthwise.relu6:in; visible mobile.stage2.repeat.depthwise.bn:out -&gt; mobile.stage2.repeat.depthwise.relu6:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0018" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2.repeat.depthwise&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage2.repeat.expand&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.depthwise.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage2.repeat.depthwise&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;mobile.stage2.repeat.expand:out-&gt;mobile.stage2.repeat.depthwise:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.repeat.depthwise.conv:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.repeat.expand.relu6:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.expand.relu6&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage2.repeat.expand&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 600.0,4073 L 600.0,3932" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2.repeat.expand:out -&gt; mobile.stage2.repeat.depthwise:in; visible mobile.stage2.repeat.expand.relu6:out -&gt; mobile.stage2.repeat.depthwise.conv:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0019" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2.repeat.project&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage2.repeat.depthwise&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.project&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage2.repeat.depthwise:out-&gt;mobile.stage2.repeat.project:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.repeat.project:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.repeat.depthwise.relu6:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.depthwise.relu6&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage2.repeat.depthwise&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 600.0,3641 L 600.0,3500" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2.repeat.depthwise:out -&gt; mobile.stage2.repeat.project:in; visible mobile.stage2.repeat.depthwise.relu6:out -&gt; mobile.stage2.repeat.project:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0020" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2.repeat.project_bn&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage2.repeat.project&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.project_bn&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage2.repeat.project:out-&gt;mobile.stage2.repeat.project_bn:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.repeat.project_bn:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.repeat.project:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.project&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,3395 L 600.0,3371" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2.repeat.project:out -&gt; mobile.stage2.repeat.project_bn:in; visible mobile.stage2.repeat.project:out -&gt; mobile.stage2.repeat.project_bn:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0021" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2.repeat.add&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage2.repeat.project_bn&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.add&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage2.repeat.project_bn:out-&gt;mobile.stage2.repeat.add:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.repeat.add:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.repeat.project_bn:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.project_bn&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,3290 L 600.0,3241.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2.repeat.project_bn:out -&gt; mobile.stage2.repeat.add:in; visible mobile.stage2.repeat.project_bn:out -&gt; mobile.stage2.repeat.add:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0022" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2.repeat.add&quot;, &quot;dst_port&quot;: &quot;side&quot;, &quot;role&quot;: &quot;residual&quot;, &quot;src&quot;: &quot;mobile.stage2.repeat&quot;, &quot;src_port&quot;: &quot;in&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.add&quot;, &quot;port&quot;: &quot;side&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage2.repeat:in-&gt;mobile.stage2.repeat.add:side:residual&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.repeat.add:left&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.first.project_bn:left&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.first.project_bn&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage2.repeat&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;captured-input&quot;}, {&quot;node&quot;: &quot;mobile.stage2.first&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 435.0,4571.5 L 385.0,4571.5 L 385.0,3225.5 L 584.0,3225.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2.repeat:in -&gt; mobile.stage2.repeat.add:side; visible mobile.stage2.first.project_bn:out -&gt; mobile.stage2.repeat.add:side; residual</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0023" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2.repeat&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage2.first&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.expand.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage2.repeat&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}, {&quot;node&quot;: &quot;mobile.stage2.repeat.expand&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;mobile.stage2.first:out-&gt;mobile.stage2.repeat:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.repeat.expand.conv:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.first.project_bn:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.first.project_bn&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage2.first&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 600.0,4531 L 600.0,4364" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2.first:out -&gt; mobile.stage2.repeat:in; visible mobile.stage2.first.project_bn:out -&gt; mobile.stage2.repeat.expand.conv:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0024" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage3.repeat&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage3.first&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage3.repeat&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage3.first:out-&gt;mobile.stage3.repeat:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage3.repeat:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage3.first:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage3.first&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,2845 L 600.0,2821" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage3.first:out -&gt; mobile.stage3.repeat:in; visible mobile.stage3.first:out -&gt; mobile.stage3.repeat:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0025" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage4.repeat&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage4.first&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage4.repeat&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage4.first:out-&gt;mobile.stage4.repeat:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage4.repeat:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage4.first:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage4.first&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,2491 L 600.0,2467" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage4.first:out -&gt; mobile.stage4.repeat:in; visible mobile.stage4.first:out -&gt; mobile.stage4.repeat:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0026" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage5.repeat&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage5.first&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage5.repeat&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage5.first:out-&gt;mobile.stage5.repeat:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage5.repeat:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage5.first:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage5.first&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,2137 L 600.0,2113" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage5.first:out -&gt; mobile.stage5.repeat:in; visible mobile.stage5.first:out -&gt; mobile.stage5.repeat:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0027" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage6.repeat&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage6.first&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage6.repeat&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.stage6.first:out-&gt;mobile.stage6.repeat:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage6.repeat:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage6.first:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage6.first&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,1783 L 600.0,1759" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage6.first:out -&gt; mobile.stage6.repeat:in; visible mobile.stage6.first:out -&gt; mobile.stage6.repeat:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0028" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.last.bn&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.last.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.last.bn&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.last.conv:out-&gt;mobile.last.bn:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.last.bn:in&quot;, &quot;rendered_src&quot;: &quot;mobile.last.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.last.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,1204 L 600.0,1180" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.last.conv:out -&gt; mobile.last.bn:in; visible mobile.last.conv:out -&gt; mobile.last.bn:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0029" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.last.relu6&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.last.bn&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.last.relu6&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.last.bn:out-&gt;mobile.last.relu6:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.last.relu6:in&quot;, &quot;rendered_src&quot;: &quot;mobile.last.bn:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.last.bn&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,1099 L 600.0,1075" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.last.bn:out -&gt; mobile.last.relu6:in; visible mobile.last.bn:out -&gt; mobile.last.relu6:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0030" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.reshape&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.pool&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.reshape&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.pool:out-&gt;mobile.reshape:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.reshape:in&quot;, &quot;rendered_src&quot;: &quot;mobile.pool:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.pool&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,748 L 600.0,724" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.pool:out -&gt; mobile.reshape:in; visible mobile.pool:out -&gt; mobile.reshape:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0031" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.dropout&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.reshape&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.dropout&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.reshape:out-&gt;mobile.dropout:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.dropout:in&quot;, &quot;rendered_src&quot;: &quot;mobile.reshape:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.reshape&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,619 L 600.0,595" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.reshape:out -&gt; mobile.dropout:in; visible mobile.reshape:out -&gt; mobile.dropout:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0032" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.fc&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.dropout&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.fc&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.dropout:out-&gt;mobile.fc:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.fc:in&quot;, &quot;rendered_src&quot;: &quot;mobile.dropout:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.dropout&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,514 L 600.0,490" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.dropout:out -&gt; mobile.fc:in; visible mobile.dropout:out -&gt; mobile.fc:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0033" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stem&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.input&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stem.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stem&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;mobile.input:out-&gt;mobile.stem:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stem.conv:in&quot;, &quot;rendered_src&quot;: &quot;mobile.input:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.input&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,7092.5 L 600.0,7018" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.input:out -&gt; mobile.stem:in; visible mobile.input:out -&gt; mobile.stem.conv:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0034" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage1&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stem&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage1.first.depthwise.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}, {&quot;node&quot;: &quot;mobile.stage1.first&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}, {&quot;node&quot;: &quot;mobile.stage1.first.depthwise&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;mobile.stem:out-&gt;mobile.stage1:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage1.first.depthwise.conv:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stem.relu6:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stem.relu6&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stem&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 600.0,6727 L 600.0,6534" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stem:out -&gt; mobile.stage1:in; visible mobile.stem.relu6:out -&gt; mobile.stage1.first.depthwise.conv:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0035" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage2.first.expand.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}, {&quot;node&quot;: &quot;mobile.stage2.first&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}, {&quot;node&quot;: &quot;mobile.stage2.first.expand&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;mobile.stage1:out-&gt;mobile.stage2:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage2.first.expand.conv:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage1.first.project_bn:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage1.first.project_bn&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}, {&quot;node&quot;: &quot;mobile.stage1.first&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 600.0,5892 L 600.0,5605" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage1:out -&gt; mobile.stage2:in; visible mobile.stage1.first.project_bn:out -&gt; mobile.stage2.first.expand.conv:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0036" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage3&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage3.first&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage3&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;mobile.stage2:out-&gt;mobile.stage3:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage3.first:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage2.repeat.add:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage2.repeat.add&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}, {&quot;node&quot;: &quot;mobile.stage2.repeat&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 600.0,3209.5 L 600.0,2950" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage2:out -&gt; mobile.stage3:in; visible mobile.stage2.repeat.add:out -&gt; mobile.stage3.first:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0037" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage4&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage3&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage4.first&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage4&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;mobile.stage3:out-&gt;mobile.stage4:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage4.first:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage3.repeat:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage3.repeat&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage3&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 600.0,2740 L 600.0,2596" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage3:out -&gt; mobile.stage4:in; visible mobile.stage3.repeat:out -&gt; mobile.stage4.first:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0038" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage5&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage4&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage5.first&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage5&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;mobile.stage4:out-&gt;mobile.stage5:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage5.first:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage4.repeat:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage4.repeat&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage4&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 600.0,2386 L 600.0,2242" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage4:out -&gt; mobile.stage5:in; visible mobile.stage4.repeat:out -&gt; mobile.stage5.first:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0039" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage6&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage5&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage6.first&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage6&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;mobile.stage5:out-&gt;mobile.stage6:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage6.first:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage5.repeat:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage5.repeat&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage5&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 600.0,2032 L 600.0,1888" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage5:out -&gt; mobile.stage6:in; visible mobile.stage5.repeat:out -&gt; mobile.stage6.first:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0040" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.stage7&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage6&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.stage7.first&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage7&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;mobile.stage6:out-&gt;mobile.stage7:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.stage7.first:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage6.repeat:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage6.repeat&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage6&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 600.0,1678 L 600.0,1534" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage6:out -&gt; mobile.stage7:in; visible mobile.stage6.repeat:out -&gt; mobile.stage7.first:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0041" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.last&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.stage7&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.last.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.last&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;mobile.stage7:out-&gt;mobile.last:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.last.conv:in&quot;, &quot;rendered_src&quot;: &quot;mobile.stage7.first:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.stage7.first&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.stage7&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 600.0,1429 L 600.0,1285" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.stage7:out -&gt; mobile.last:in; visible mobile.stage7.first:out -&gt; mobile.last.conv:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0042" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.head&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.last&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.pool&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.head&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;mobile.last:out-&gt;mobile.head:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.pool:in&quot;, &quot;rendered_src&quot;: &quot;mobile.last.relu6:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.last.relu6&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.last&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 600.0,994 L 600.0,853" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.last:out -&gt; mobile.head:in; visible mobile.last.relu6:out -&gt; mobile.pool:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0043" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;mobile.output&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;mobile.head&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;mobile.output&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;mobile.head:out-&gt;mobile.output:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;mobile.output:in&quot;, &quot;rendered_src&quot;: &quot;mobile.fc:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;mobile.fc&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;mobile.head&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 600.0,385 L 600.0,245.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>mobile.head:out -&gt; mobile.output:in; visible mobile.fc:out -&gt; mobile.output:in; tensor</title></path>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="55.0" y="7212" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="78.0" y="7225" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="78.0" dy="0">Input / Embed</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="240.0" y="7212" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="263.0" y="7225" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="263.0" dy="0">Conv / MLP</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="425.0" y="7212" width="16" height="16" rx="3" fill="#d6f0df" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="448.0" y="7225" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="448.0" dy="0">Pool</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="610.0" y="7212" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="633.0" y="7225" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="633.0" dy="0">Norm / Add / Cat</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="795.0" y="7212" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="818.0" y="7225" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="818.0" dy="0">Linear / Output</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="980.0" y="7212" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1003.0" y="7225" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1003.0" dy="0">Activation</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="7253" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">B batch; image layout [B,C,H,W]; t expansion / c output channels / n repeats / s first stride</tspan>
+<tspan x="600.0" dy="16.52">IR block: InvertedResidual; no skip for channel-changing first blocks</tspan>
+<tspan x="600.0" dy="16.52">blue Conv / yellow BN or Add / purple linear bottleneck and head / gray ReLU6</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="7357" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="7387" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="7412" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+
+</svg>

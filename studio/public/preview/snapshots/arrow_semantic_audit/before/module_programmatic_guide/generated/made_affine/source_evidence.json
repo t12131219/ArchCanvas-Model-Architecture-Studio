@@ -1,0 +1,80 @@
+{
+  "source_project": "density-flow-modules",
+  "repository": "ikostrikov/pytorch-flows",
+  "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+  "source_snapshot_sha256": "c0ebb6c1af0b9d8f0b8140bbc16c5cf7122408fa79a5b25da427fac8d15d657a",
+  "entry": "density-flow-modules/flows.py::MADE.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "density-flow-modules/LICENSE": {
+      "sha256": "d541e764a331fbfb13f50107a3466d47cb2422f878160bdcaf433c259a5e121a",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ikostrikov/pytorch-flows/bf12ed91b86867b38d74982f5e2d44c248604df9/LICENSE",
+      "derived_from": null
+    },
+    "density-flow-modules/flows.py": {
+      "sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+      "lines": 504,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ikostrikov/pytorch-flows/bf12ed91b86867b38d74982f5e2d44c248604df9/flows.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "density-flow-modules/flows.py::get_mask": {
+      "path": "density-flow-modules/flows.py",
+      "symbol": "get_mask",
+      "start": 12,
+      "end": 29,
+      "snippet": "def get_mask(in_features, out_features, in_flow_features, mask_type=None):\n    \"\"\"\n    mask_type: input | None | output\n    \n    See Figure 1 for a better illustration:\n    https://arxiv.org/pdf/1502.03509.pdf\n    \"\"\"\n    if mask_type == 'input':\n        in_degrees = torch.arange(in_features) % in_flow_features\n    else:\n        in_degrees = torch.arange(in_features) % (in_flow_features - 1)\n\n    if mask_type == 'output':\n        out_degrees = torch.arange(out_features) % in_flow_features - 1\n    else:\n        out_degrees = torch.arange(out_features) % (in_flow_features - 1)\n\n    return (out_degrees.unsqueeze(-1) >= in_degrees.unsqueeze(0)).float()",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E005"
+    },
+    "density-flow-modules/flows.py::MaskedLinear.__init__": {
+      "path": "density-flow-modules/flows.py",
+      "symbol": "MaskedLinear.__init__",
+      "start": 33,
+      "end": 45,
+      "snippet": "    def __init__(self,\n                 in_features,\n                 out_features,\n                 mask,\n                 cond_in_features=None,\n                 bias=True):\n        super(MaskedLinear, self).__init__()\n        self.linear = nn.Linear(in_features, out_features)\n        if cond_in_features is not None:\n            self.cond_linear = nn.Linear(\n                cond_in_features, out_features, bias=False)\n\n        self.register_buffer('mask', mask)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "density-flow-modules/flows.py::MaskedLinear.forward": {
+      "path": "density-flow-modules/flows.py",
+      "symbol": "MaskedLinear.forward",
+      "start": 47,
+      "end": 52,
+      "snippet": "    def forward(self, inputs, cond_inputs=None):\n        output = F.linear(inputs, self.linear.weight * self.mask,\n                          self.linear.bias)\n        if cond_inputs is not None:\n            output += self.cond_linear(cond_inputs)\n        return output",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "density-flow-modules/flows.py::MADE.__init__": {
+      "path": "density-flow-modules/flows.py",
+      "symbol": "MADE.__init__",
+      "start": 137,
+      "end": 161,
+      "snippet": "    def __init__(self,\n                 num_inputs,\n                 num_hidden,\n                 num_cond_inputs=None,\n                 act='relu',\n                 pre_exp_tanh=False):\n        super(MADE, self).__init__()\n\n        activations = {'relu': nn.ReLU, 'sigmoid': nn.Sigmoid, 'tanh': nn.Tanh}\n        act_func = activations[act]\n\n        input_mask = get_mask(\n            num_inputs, num_hidden, num_inputs, mask_type='input')\n        hidden_mask = get_mask(num_hidden, num_hidden, num_inputs)\n        output_mask = get_mask(\n            num_hidden, num_inputs * 2, num_inputs, mask_type='output')\n\n        self.joiner = nn.MaskedLinear(num_inputs, num_hidden, input_mask,\n                                      num_cond_inputs)\n\n        self.trunk = nn.Sequential(act_func(),\n                                   nn.MaskedLinear(num_hidden, num_hidden,\n                                                   hidden_mask), act_func(),\n                                   nn.MaskedLinear(num_hidden, num_inputs * 2,\n                                                   output_mask))",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "density-flow-modules/flows.py::MADE.forward": {
+      "path": "density-flow-modules/flows.py",
+      "symbol": "MADE.forward",
+      "start": 163,
+      "end": 177,
+      "snippet": "    def forward(self, inputs, cond_inputs=None, mode='direct'):\n        if mode == 'direct':\n            h = self.joiner(inputs, cond_inputs)\n            m, a = self.trunk(h).chunk(2, 1)\n            u = (inputs - m) * torch.exp(-a)\n            return u, -a.sum(-1, keepdim=True)\n\n        else:\n            x = torch.zeros_like(inputs)\n            for i_col in range(inputs.shape[1]):\n                h = self.joiner(x, cond_inputs)\n                m, a = self.trunk(h).chunk(2, 1)\n                x[:, i_col] = inputs[:, i_col] * torch.exp(\n                    a[:, i_col]) + m[:, i_col]\n            return x, -a.sum(-1, keepdim=True)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "density-flow-modules/LICENSE"
+  ]
+}

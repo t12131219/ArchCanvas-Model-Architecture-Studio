@@ -1,0 +1,70 @@
+{
+  "source_project": "glow-modules",
+  "repository": "rosinality/glow-pytorch",
+  "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+  "source_snapshot_sha256": "1d5cf48ba47a5ecf7ea7059a37c9d1584a95871f52d5022f76b59cc51138d2ce",
+  "entry": "glow-modules/model.py::InvConv2dLU.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "glow-modules/LICENSE": {
+      "sha256": "225b2842279abe5023f2642f82ca1bdc6653b801b8a354b4cbf5229d846a2f3c",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/rosinality/glow-pytorch/97081ff115a694cf04aeedbd58447f33d242c879/LICENSE",
+      "derived_from": null
+    },
+    "glow-modules/model.py": {
+      "sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+      "lines": 372,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/rosinality/glow-pytorch/97081ff115a694cf04aeedbd58447f33d242c879/model.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "glow-modules/model.py::InvConv2dLU.__init__": {
+      "path": "glow-modules/model.py",
+      "symbol": "InvConv2dLU.__init__",
+      "start": 89,
+      "end": 112,
+      "snippet": "    def __init__(self, in_channel):\n        super().__init__()\n\n        weight = np.random.randn(in_channel, in_channel)\n        q, _ = la.qr(weight)\n        w_p, w_l, w_u = la.lu(q.astype(np.float32))\n        w_s = np.diag(w_u)\n        w_u = np.triu(w_u, 1)\n        u_mask = np.triu(np.ones_like(w_u), 1)\n        l_mask = u_mask.T\n\n        w_p = torch.from_numpy(w_p)\n        w_l = torch.from_numpy(w_l)\n        w_s = torch.from_numpy(w_s)\n        w_u = torch.from_numpy(w_u)\n\n        self.register_buffer(\"w_p\", w_p)\n        self.register_buffer(\"u_mask\", torch.from_numpy(u_mask))\n        self.register_buffer(\"l_mask\", torch.from_numpy(l_mask))\n        self.register_buffer(\"s_sign\", torch.sign(w_s))\n        self.register_buffer(\"l_eye\", torch.eye(l_mask.shape[0]))\n        self.w_l = nn.Parameter(w_l)\n        self.w_s = nn.Parameter(logabs(w_s))\n        self.w_u = nn.Parameter(w_u)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "glow-modules/model.py::InvConv2dLU.forward": {
+      "path": "glow-modules/model.py",
+      "symbol": "InvConv2dLU.forward",
+      "start": 114,
+      "end": 122,
+      "snippet": "    def forward(self, input):\n        _, _, height, width = input.shape\n\n        weight = self.calc_weight()\n\n        out = F.conv2d(input, weight)\n        logdet = height * width * torch.sum(self.w_s)\n\n        return out, logdet",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "glow-modules/model.py::InvConv2dLU.calc_weight": {
+      "path": "glow-modules/model.py",
+      "symbol": "InvConv2dLU.calc_weight",
+      "start": 124,
+      "end": 131,
+      "snippet": "    def calc_weight(self):\n        weight = (\n            self.w_p\n            @ (self.w_l * self.l_mask + self.l_eye)\n            @ ((self.w_u * self.u_mask) + torch.diag(self.s_sign * torch.exp(self.w_s)))\n        )\n\n        return weight.unsqueeze(2).unsqueeze(3)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "glow-modules/model.py::InvConv2dLU.reverse": {
+      "path": "glow-modules/model.py",
+      "symbol": "InvConv2dLU.reverse",
+      "start": 133,
+      "end": 136,
+      "snippet": "    def reverse(self, output):\n        weight = self.calc_weight()\n\n        return F.conv2d(output, weight.squeeze().inverse().unsqueeze(2).unsqueeze(3))",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "glow-modules/LICENSE"
+  ]
+}

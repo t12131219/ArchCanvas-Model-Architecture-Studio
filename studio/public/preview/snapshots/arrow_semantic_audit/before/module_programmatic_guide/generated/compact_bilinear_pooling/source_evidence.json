@@ -1,0 +1,90 @@
+{
+  "source_project": "compact-bilinear-modules",
+  "repository": "gdlg/pytorch_compact_bilinear_pooling",
+  "commit": "ecbb98bdccaf8987f2c2432ac0f1db5f370811e8",
+  "source_snapshot_sha256": "a6d156dcd117aba64b967cb13290eacd9db25034902767e6746cf0b23b7756d5",
+  "entry": "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CompactBilinearPoolingFn.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "compact-bilinear-modules/LICENSE": {
+      "sha256": "52a6b791dc19d2c8d9d7405f4d3f4ce31178bc3f9bf519a16edb8cb25fb6f8c7",
+      "lines": 28,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/gdlg/pytorch_compact_bilinear_pooling/ecbb98bdccaf8987f2c2432ac0f1db5f370811e8/LICENSE",
+      "derived_from": null
+    },
+    "compact-bilinear-modules/compact_bilinear_pooling/__init__.py": {
+      "sha256": "c26cf7567524f8d0d3054fa585500f88bbe312eedb54c23c19dfa6949b5f6d29",
+      "lines": 264,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/gdlg/pytorch_compact_bilinear_pooling/ecbb98bdccaf8987f2c2432ac0f1db5f370811e8/compact_bilinear_pooling/__init__.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CountSketchFn_forward": {
+      "path": "compact-bilinear-modules/compact_bilinear_pooling/__init__.py",
+      "symbol": "CountSketchFn_forward",
+      "start": 7,
+      "end": 27,
+      "snippet": "def CountSketchFn_forward(h, s, output_size, x, force_cpu_scatter_add=False):\n    x_size = tuple(x.size())\n\n    s_view = (1,) * (len(x_size)-1) + (x_size[-1],)\n\n    out_size = x_size[:-1] + (output_size,)\n\n    # Broadcast s and compute x * s\n    s = s.view(s_view)\n    xs = x * s\n\n    # Broadcast h then compute h:\n    # out[h_i] += x_i * s_i\n    h = h.view(s_view).expand(x_size)\n\n    if force_cpu_scatter_add:\n        out = x.new(*out_size).zero_().cpu()\n        return out.scatter_add_(-1, h.cpu(), xs.cpu()).cuda()\n    else:\n        out = x.new(*out_size).zero_()\n        return out.scatter_add_(-1, h, xs)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E006"
+    },
+    "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CountSketch.__init__": {
+      "path": "compact-bilinear-modules/compact_bilinear_pooling/__init__.py",
+      "symbol": "CountSketch.__init__",
+      "start": 85,
+      "end": 107,
+      "snippet": "    def __init__(self, input_size, output_size, h = None, s = None):\n        super(CountSketch, self).__init__()\n\n        self.input_size = input_size\n        self.output_size = output_size\n\n        if h is None:\n            h = torch.LongTensor(input_size).random_(0, output_size)\n        if s is None:\n            s = 2 * torch.Tensor(input_size).random_(0,2) - 1\n\n        # The Variable h being a list of indices,\n        # If the type of this module is changed (e.g. float to double),\n        # the variable h should remain a LongTensor\n        # therefore we force float() and double() to be no-ops on the variable h.\n        def identity(self):\n            return self\n\n        h.float = types.MethodType(identity,h)\n        h.double = types.MethodType(identity,h)\n\n        self.register_buffer('h',h)\n        self.register_buffer('s',s)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E005"
+    },
+    "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::ComplexMultiply_forward": {
+      "path": "compact-bilinear-modules/compact_bilinear_pooling/__init__.py",
+      "symbol": "ComplexMultiply_forward",
+      "start": 116,
+      "end": 119,
+      "snippet": "def ComplexMultiply_forward(X_re, X_im, Y_re, Y_im):\n    Z_re = torch.addcmul(X_re*Y_re, -1, X_im, Y_im)\n    Z_im = torch.addcmul(X_re*Y_im,  1, X_im, Y_re)\n    return Z_re,Z_im",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CompactBilinearPoolingFn.forward": {
+      "path": "compact-bilinear-modules/compact_bilinear_pooling/__init__.py",
+      "symbol": "CompactBilinearPoolingFn.forward",
+      "start": 143,
+      "end": 173,
+      "snippet": "    def forward(ctx, h1, s1, h2, s2, output_size, x, y, force_cpu_scatter_add=False):\n        ctx.save_for_backward(h1,s1,h2,s2,x,y)\n        ctx.x_size = tuple(x.size())\n        ctx.y_size = tuple(y.size())\n        ctx.force_cpu_scatter_add = force_cpu_scatter_add\n        ctx.output_size = output_size\n\n        # Compute the count sketch of each input\n        px = CountSketchFn_forward(h1, s1, output_size, x, force_cpu_scatter_add)\n        fx = torch.rfft(px,1)\n        re_fx = fx.select(-1, 0)\n        im_fx = fx.select(-1, 1)\n        del px\n        py = CountSketchFn_forward(h2, s2, output_size, y, force_cpu_scatter_add)\n        fy = torch.rfft(py,1)\n        re_fy = fy.select(-1,0)\n        im_fy = fy.select(-1,1)\n        del py\n\n        # Convolution of the two sketch using an FFT.\n        # Compute the FFT of each sketch\n\n\n        # Complex multiplication\n        re_prod, im_prod = ComplexMultiply_forward(re_fx,im_fx,re_fy,im_fy)\n\n        # Back to real domain\n        # The imaginary part should be zero's\n        re = torch.irfft(torch.stack((re_prod, im_prod), re_prod.dim()), 1, signal_sizes=(output_size,))\n\n        return re",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CompactBilinearPooling.__init__": {
+      "path": "compact-bilinear-modules/compact_bilinear_pooling/__init__.py",
+      "symbol": "CompactBilinearPooling.__init__",
+      "start": 252,
+      "end": 257,
+      "snippet": "    def __init__(self, input1_size, input2_size, output_size, h1 = None, s1 = None, h2 = None, s2 = None, force_cpu_scatter_add=False):\n        super(CompactBilinearPooling, self).__init__()\n        self.add_module('sketch1', CountSketch(input1_size, output_size, h1, s1))\n        self.add_module('sketch2', CountSketch(input2_size, output_size, h2, s2))\n        self.output_size = output_size\n        self.force_cpu_scatter_add = force_cpu_scatter_add",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "compact-bilinear-modules/compact_bilinear_pooling/__init__.py::CompactBilinearPooling.forward": {
+      "path": "compact-bilinear-modules/compact_bilinear_pooling/__init__.py",
+      "symbol": "CompactBilinearPooling.forward",
+      "start": 259,
+      "end": 263,
+      "snippet": "    def forward(self, x, y = None):\n        if y is None:\n            y = x\n\n        return CompactBilinearPoolingFn.apply(self.sketch1.h, self.sketch1.s, self.sketch2.h, self.sketch2.s, self.output_size, x, y, self.force_cpu_scatter_add)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "compact-bilinear-modules/LICENSE"
+  ]
+}

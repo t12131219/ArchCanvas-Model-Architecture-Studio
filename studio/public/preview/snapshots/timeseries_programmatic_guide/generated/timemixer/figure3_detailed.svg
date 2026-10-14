@@ -1,0 +1,1411 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2692" height="5234" viewBox="0 0 2692 5234">
+<defs xmlns="http://www.w3.org/2000/svg"><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348" /></marker></defs>
+
+<rect xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" fill="white" />
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="source-binding">{"model": "timemixer", "source_archive_sha256": "5350a1610249d592ee4c7211a538034f592821e57f322d3b2c9d360441a7fe3d", "semantic_ir_sha256": "8748e2f7952f6cbcdb0e568459fbf37e3f5b29c92b5e6e7279f335472f8b5407", "view": 2}</metadata>
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="diagram-style">{"name": "transformer-paper", "version": 1, "font": "DejaVu Sans, Arial, sans-serif", "text": "#172336", "line": "#263348", "palette": {"root": "#ffffff", "group": "#ffffff", "inner": "#fffaf6", "layer": "#ffffff", "encoder": "#e7f5fe", "decoder": "#fff0f5", "season": "#e7f5fe", "trend": "#fff0f5", "embedding": "#f8d4e1", "input": "#f8d4e1", "output": "#dfdff8", "attention": "#ffddb3", "ffn": "#c8ebfb", "mixing": "#c8ebfb", "norm": "#fff6bd", "linear": "#dfdff8", "softmax": "#c9f1cd", "decomposition": "#d6f0df", "tensor": "#cdeaf8", "activation": "#f3f5f7", "control": "#f3f5f7"}, "typography": {"title": 30, "subtitle": 16, "module": 22, "inner": 20, "operator": 20, "shape": 16, "detail": 14, "evidence": 12, "footer": 14, "line_height": 1.18}, "fill_width_nodes": ["af_dec_cross_residual", "af_dec_decomp1", "af_dec_decomp2", "af_dec_decomp3", "af_dec_ffn", "af_dec_self_residual", "af_enc_ac_residual", "af_enc_decomp1", "af_enc_decomp2", "af_enc_ffn", "it.enc1.attention", "it.enc1.attention_residual", "it.enc1.ffn", "it.enc1.ffn_residual", "it.enc1.norm1", "it.enc1.norm2", "it.enc2.attention", "it.enc2.attention_residual", "it.enc2.ffn", "it.enc2.ffn_residual", "it.enc2.norm1", "it.enc2.norm2", "patch_layer1_attention", "patch_layer1_attn_res", "patch_layer1_bn1", "patch_layer1_bn2", "patch_layer1_ffn", "patch_layer1_ffn_res", "patch_layer2_attention", "patch_layer2_attn_res", "patch_layer2_bn1", "patch_layer2_bn2", "patch_layer2_ffn", "patch_layer2_ffn_res", "tm.pdm1.add", "tm.pdm1.decomp", "tm.pdm1.out_cross", "tm.pdm1.sum", "tm.pdm2.add", "tm.pdm2.decomp", "tm.pdm2.out_cross", "tm.pdm2.sum"], "semantics": "presentation-only role aliases; IR kinds and parameter identities are unchanged"}</metadata>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1346.0" dy="0">TimeMixer  |  Operators &amp; tensor flow</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">Long-term forecasting  /  avg pyramid / channel-independent  /  read bottom to top</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.model" data-visual-role="root"><title>TimeMixer-main/models/TimeMixer.py:513 Model.forward; parameter=not asserted; </title><rect x="422.0" y="98" width="1848" height="4854" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="439.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="439.0" dy="0">TimeMixer</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2253.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2253.0" dy="0">[B,L,N] -&gt; [B,H,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2257.0" y="160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2257.0" dy="0">E014</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.input" data-visual-role="input" data-glyph-kind="tensor-grid"><title>TimeMixer-main/models/TimeMixer.py:331 Model.forecast; parameter=not asserted; </title><rect x="1310.0" y="4869.5" width="72" height="32" rx="0" fill="#f8d4e1" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="1322.0" x2="1322.0" y1="4869.5" y2="4901.5" stroke="#263348" stroke-width=".6" /><line x1="1334.0" x2="1334.0" y1="4869.5" y2="4901.5" stroke="#263348" stroke-width=".6" /><line x1="1346.0" x2="1346.0" y1="4869.5" y2="4901.5" stroke="#263348" stroke-width=".6" /><line x1="1358.0" x2="1358.0" y1="4869.5" y2="4901.5" stroke="#263348" stroke-width=".6" /><line x1="1370.0" x2="1370.0" y1="4869.5" y2="4901.5" stroke="#263348" stroke-width=".6" /><line x1="1310.0" x2="1382.0" y1="4880.166666666667" y2="4880.166666666667" stroke="#263348" stroke-width=".6" /><line x1="1310.0" x2="1382.0" y1="4890.833333333333" y2="4890.833333333333" stroke="#263348" stroke-width=".6" /><text x="1300.0" y="4882.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="1300.0" dy="0">Input time</tspan><tspan x="1300.0" dy="16.52">series</tspan></text><text x="1392.0" y="4890.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1392.0" dy="0">[B,96,7]</tspan></text><text x="1392.0" y="4923" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1392.0" dy="0">E013</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pyramid" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:288 Model.__multi_scale_process_inputs; parameter=not asserted; </title><rect x="1149.0" y="4153" width="394" height="668" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1166.0" y="4183" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1166.0" dy="0">Multi-scale</tspan>
+<tspan x="1166.0" dy="25.959999999999997">input</tspan>
+<tspan x="1166.0" dy="25.959999999999997">pyramid</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1526.0" y="4183" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1526.0" dy="0">list[B,L_i,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1530.0" y="4258" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1530.0" dy="0">E012</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.scale0" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:288 Model.__multi_scale_process_inputs; parameter=not asserted; </title><rect x="1181.0" y="4714" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="4741" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1346.0" dy="0">Retain original scale</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="4765" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">[B,96,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1498.0" y="4785" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1498.0" dy="0">E012</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pool1" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:288 Model.__multi_scale_process_inputs; parameter=not asserted; Permute -&gt; AvgPool1d(2) -&gt; back</title><rect x="1181.0" y="4609" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="4636" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1346.0" dy="0">AvgPool scale 1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="4660" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">[B,48,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1498.0" y="4680" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1498.0" dy="0">E012</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pool2" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:288 Model.__multi_scale_process_inputs; parameter=not asserted; Permute -&gt; AvgPool1d(2) -&gt; back</title><rect x="1181.0" y="4504" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="4531" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1346.0" dy="0">AvgPool scale 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="4555" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">[B,24,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1498.0" y="4575" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1498.0" dy="0">E012</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pool3" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:288 Model.__multi_scale_process_inputs; parameter=not asserted; Permute -&gt; AvgPool1d(2) -&gt; back</title><rect x="1181.0" y="4399" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="4426" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1346.0" dy="0">AvgPool scale 3</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="4450" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">[B,12,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1498.0" y="4470" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1498.0" dy="0">E012</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.collect" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:288 Model.__multi_scale_process_inputs; parameter=not asserted; L_i = 96 / 2^i; i=0..3</title><rect x="1181.0" y="4270" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="4297" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1346.0" dy="0">Collect all four</tspan>
+<tspan x="1346.0" dy="23.599999999999998">scales</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="4345" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">list x_i: [B,L_i,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1498.0" y="4365" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1498.0" dy="0">E012</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0001" data-semantic-trace="[&quot;tm.pyramid:in-&gt;tm.scale0:in:boundary&quot;]" data-representation="dependency" d="M 1346.0,4821 L 1346.0,4795" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0002" data-semantic-trace="[&quot;tm.scale0:out-&gt;tm.pool1:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,4714 L 1346.0,4690" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0003" data-semantic-trace="[&quot;tm.pool1:out-&gt;tm.pool2:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,4609 L 1346.0,4585" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0004" data-semantic-trace="[&quot;tm.pool2:out-&gt;tm.pool3:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,4504 L 1346.0,4480" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0005" data-semantic-trace="[&quot;tm.pool3:out-&gt;tm.collect:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,4399 L 1346.0,4375" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0006" data-semantic-trace="[&quot;tm.collect:out-&gt;tm.pyramid:out:boundary&quot;]" data-representation="dependency" d="M 1346.0,4270 L 1346.0,4153" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.embedding" data-visual-role="embedding"><title>TimeMixer-main/models/TimeMixer.py:331 Model.forecast; parameter=not asserted; </title><rect x="454.0" y="3549" width="1784" height="580" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="471.0" y="3579" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="471.0" dy="0">Per-scale normalize + embed</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2221.0" y="3579" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2221.0" dy="0">list[BN,L_i,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2225.0" y="3611" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2225.0" dy="0">E013</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.input_scale0" data-visual-role="group"><title>TimeMixer-main/models/TimeMixer.py:331 Model.forecast; TimeMixer-main/layers/Embed.py:40 TokenEmbedding.forward; parameter=not asserted; </title><rect x="486.0" y="3623" width="394" height="432" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="503.0" y="3653" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="503.0" dy="0">Scale 0:</tspan>
+<tspan x="503.0" dy="25.959999999999997">L=96</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="863.0" y="3653" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="863.0" dy="0">[BN,96,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="867.0" y="3702" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="867.0" dy="0">E013,E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.norm0" data-visual-role="norm"><title>TimeMixer-main/models/TimeMixer.py:331 Model.forecast; TimeMixer-main/layers/StandardNorm.py:20 Normalize.forward; TimeMixer-main/layers/StandardNorm.py:43 Normalize._normalize; parameter=normalize_layers.0; Separate normalization per scale; affine=True</title><rect x="518.0" y="3948" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="683.0" y="3975" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="683.0" dy="0">Normalize per variable</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="683.0" y="3999" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="683.0" dy="0">[B,96,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="835.0" y="4019" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="835.0" dy="0">E013,E009,E008</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.fold0" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:331 Model.forecast; parameter=not asserted; B*N independent univariate series</title><rect x="518.0" y="3819" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="683.0" y="3846" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="683.0" dy="0">Fold variables into</tspan>
+<tspan x="683.0" dy="23.599999999999998">batch</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="683.0" y="3894" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="683.0" dy="0">[BN,96,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="835.0" y="3914" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="835.0" dy="0">E013</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.embed0" data-visual-role="embedding"><title>TimeMixer-main/layers/Embed.py:187 DataEmbedding_wo_pos.forward; parameter=enc_embedding.value_embedding.tokenConv; Conv1d 1 -&gt; D, kernel=3; dropout | x_mark_enc=None; no position added</title><rect x="518.0" y="3714" width="330" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="683.0" y="3741" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="683.0" dy="0">Shared value embedding</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="683.0" y="3765" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="683.0" dy="0">[BN,96,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="835.0" y="3785" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="835.0" dy="0">E004</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0007" data-semantic-trace="[&quot;tm.input_scale0:in-&gt;tm.norm0:in:boundary&quot;]" data-representation="dependency" d="M 683.0,4055 L 683.0,4029" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0008" data-semantic-trace="[&quot;tm.norm0:out-&gt;tm.fold0:in:tensor&quot;]" data-representation="dependency" d="M 683.0,3948 L 683.0,3924" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0009" data-semantic-trace="[&quot;tm.fold0:out-&gt;tm.embed0:in:tensor&quot;]" data-representation="dependency" d="M 683.0,3819 L 683.0,3795" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0010" data-semantic-trace="[&quot;tm.embed0:out-&gt;tm.input_scale0:out:boundary&quot;]" data-representation="dependency" d="M 683.0,3714 L 683.0,3623" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.input_scale1" data-visual-role="group"><title>TimeMixer-main/models/TimeMixer.py:331 Model.forecast; TimeMixer-main/layers/Embed.py:40 TokenEmbedding.forward; parameter=not asserted; </title><rect x="928.0" y="3623" width="394" height="432" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="945.0" y="3653" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="945.0" dy="0">Scale 1:</tspan>
+<tspan x="945.0" dy="25.959999999999997">L=48</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1305.0" y="3653" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1305.0" dy="0">[BN,48,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1309.0" y="3702" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1309.0" dy="0">E013,E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.norm1" data-visual-role="norm"><title>TimeMixer-main/models/TimeMixer.py:331 Model.forecast; TimeMixer-main/layers/StandardNorm.py:20 Normalize.forward; TimeMixer-main/layers/StandardNorm.py:43 Normalize._normalize; parameter=normalize_layers.1; Separate normalization per scale; affine=True</title><rect x="960.0" y="3948" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1125.0" y="3975" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1125.0" dy="0">Normalize per variable</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1125.0" y="3999" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1125.0" dy="0">[B,48,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1277.0" y="4019" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1277.0" dy="0">E013,E009,E008</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.fold1" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:331 Model.forecast; parameter=not asserted; B*N independent univariate series</title><rect x="960.0" y="3819" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1125.0" y="3846" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1125.0" dy="0">Fold variables into</tspan>
+<tspan x="1125.0" dy="23.599999999999998">batch</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1125.0" y="3894" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1125.0" dy="0">[BN,48,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1277.0" y="3914" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1277.0" dy="0">E013</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.embed1" data-visual-role="embedding"><title>TimeMixer-main/layers/Embed.py:187 DataEmbedding_wo_pos.forward; parameter=enc_embedding.value_embedding.tokenConv; Conv1d 1 -&gt; D, kernel=3; dropout | x_mark_enc=None; no position added</title><rect x="960.0" y="3714" width="330" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1125.0" y="3741" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1125.0" dy="0">Shared value embedding</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1125.0" y="3765" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1125.0" dy="0">[BN,48,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1277.0" y="3785" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1277.0" dy="0">E004</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0011" data-semantic-trace="[&quot;tm.input_scale1:in-&gt;tm.norm1:in:boundary&quot;]" data-representation="dependency" d="M 1125.0,4055 L 1125.0,4029" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0012" data-semantic-trace="[&quot;tm.norm1:out-&gt;tm.fold1:in:tensor&quot;]" data-representation="dependency" d="M 1125.0,3948 L 1125.0,3924" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0013" data-semantic-trace="[&quot;tm.fold1:out-&gt;tm.embed1:in:tensor&quot;]" data-representation="dependency" d="M 1125.0,3819 L 1125.0,3795" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0014" data-semantic-trace="[&quot;tm.embed1:out-&gt;tm.input_scale1:out:boundary&quot;]" data-representation="dependency" d="M 1125.0,3714 L 1125.0,3623" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.input_scale2" data-visual-role="group"><title>TimeMixer-main/models/TimeMixer.py:331 Model.forecast; TimeMixer-main/layers/Embed.py:40 TokenEmbedding.forward; parameter=not asserted; </title><rect x="1370.0" y="3623" width="394" height="432" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1387.0" y="3653" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1387.0" dy="0">Scale 2:</tspan>
+<tspan x="1387.0" dy="25.959999999999997">L=24</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1747.0" y="3653" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1747.0" dy="0">[BN,24,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1751.0" y="3702" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1751.0" dy="0">E013,E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.norm2" data-visual-role="norm"><title>TimeMixer-main/models/TimeMixer.py:331 Model.forecast; TimeMixer-main/layers/StandardNorm.py:20 Normalize.forward; TimeMixer-main/layers/StandardNorm.py:43 Normalize._normalize; parameter=normalize_layers.2; Separate normalization per scale; affine=True</title><rect x="1402.0" y="3948" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1567.0" y="3975" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1567.0" dy="0">Normalize per variable</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1567.0" y="3999" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1567.0" dy="0">[B,24,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1719.0" y="4019" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1719.0" dy="0">E013,E009,E008</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.fold2" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:331 Model.forecast; parameter=not asserted; B*N independent univariate series</title><rect x="1402.0" y="3819" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1567.0" y="3846" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1567.0" dy="0">Fold variables into</tspan>
+<tspan x="1567.0" dy="23.599999999999998">batch</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1567.0" y="3894" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1567.0" dy="0">[BN,24,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1719.0" y="3914" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1719.0" dy="0">E013</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.embed2" data-visual-role="embedding"><title>TimeMixer-main/layers/Embed.py:187 DataEmbedding_wo_pos.forward; parameter=enc_embedding.value_embedding.tokenConv; Conv1d 1 -&gt; D, kernel=3; dropout | x_mark_enc=None; no position added</title><rect x="1402.0" y="3714" width="330" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1567.0" y="3741" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1567.0" dy="0">Shared value embedding</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1567.0" y="3765" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1567.0" dy="0">[BN,24,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1719.0" y="3785" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1719.0" dy="0">E004</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0015" data-semantic-trace="[&quot;tm.input_scale2:in-&gt;tm.norm2:in:boundary&quot;]" data-representation="dependency" d="M 1567.0,4055 L 1567.0,4029" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0016" data-semantic-trace="[&quot;tm.norm2:out-&gt;tm.fold2:in:tensor&quot;]" data-representation="dependency" d="M 1567.0,3948 L 1567.0,3924" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0017" data-semantic-trace="[&quot;tm.fold2:out-&gt;tm.embed2:in:tensor&quot;]" data-representation="dependency" d="M 1567.0,3819 L 1567.0,3795" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0018" data-semantic-trace="[&quot;tm.embed2:out-&gt;tm.input_scale2:out:boundary&quot;]" data-representation="dependency" d="M 1567.0,3714 L 1567.0,3623" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.input_scale3" data-visual-role="group"><title>TimeMixer-main/models/TimeMixer.py:331 Model.forecast; TimeMixer-main/layers/Embed.py:40 TokenEmbedding.forward; parameter=not asserted; </title><rect x="1812.0" y="3623" width="394" height="432" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1829.0" y="3653" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1829.0" dy="0">Scale 3:</tspan>
+<tspan x="1829.0" dy="25.959999999999997">L=12</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2189.0" y="3653" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2189.0" dy="0">[BN,12,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2193.0" y="3702" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2193.0" dy="0">E013,E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.norm3" data-visual-role="norm"><title>TimeMixer-main/models/TimeMixer.py:331 Model.forecast; TimeMixer-main/layers/StandardNorm.py:20 Normalize.forward; TimeMixer-main/layers/StandardNorm.py:43 Normalize._normalize; parameter=normalize_layers.3; Separate normalization per scale; affine=True</title><rect x="1844.0" y="3948" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2009.0" y="3975" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2009.0" dy="0">Normalize per variable</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2009.0" y="3999" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2009.0" dy="0">[B,12,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2161.0" y="4019" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2161.0" dy="0">E013,E009,E008</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.fold3" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:331 Model.forecast; parameter=not asserted; B*N independent univariate series</title><rect x="1844.0" y="3819" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2009.0" y="3846" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2009.0" dy="0">Fold variables into</tspan>
+<tspan x="2009.0" dy="23.599999999999998">batch</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2009.0" y="3894" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2009.0" dy="0">[BN,12,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2161.0" y="3914" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2161.0" dy="0">E013</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.embed3" data-visual-role="embedding"><title>TimeMixer-main/layers/Embed.py:187 DataEmbedding_wo_pos.forward; parameter=enc_embedding.value_embedding.tokenConv; Conv1d 1 -&gt; D, kernel=3; dropout | x_mark_enc=None; no position added</title><rect x="1844.0" y="3714" width="330" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2009.0" y="3741" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2009.0" dy="0">Shared value embedding</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2009.0" y="3765" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2009.0" dy="0">[BN,12,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2161.0" y="3785" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2161.0" dy="0">E004</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0019" data-semantic-trace="[&quot;tm.input_scale3:in-&gt;tm.norm3:in:boundary&quot;]" data-representation="dependency" d="M 2009.0,4055 L 2009.0,4029" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0020" data-semantic-trace="[&quot;tm.norm3:out-&gt;tm.fold3:in:tensor&quot;]" data-representation="dependency" d="M 2009.0,3948 L 2009.0,3924" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0021" data-semantic-trace="[&quot;tm.fold3:out-&gt;tm.embed3:in:tensor&quot;]" data-representation="dependency" d="M 2009.0,3819 L 2009.0,3795" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0022" data-semantic-trace="[&quot;tm.embed3:out-&gt;tm.input_scale3:out:boundary&quot;]" data-representation="dependency" d="M 2009.0,3714 L 2009.0,3623" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0023" data-semantic-trace="[&quot;tm.embedding:x[0]-&gt;tm.input_scale0:in:dispatch&quot;, &quot;tm.embedding:x[1]-&gt;tm.input_scale1:in:dispatch&quot;, &quot;tm.embedding:x[2]-&gt;tm.input_scale2:in:dispatch&quot;, &quot;tm.embedding:x[3]-&gt;tm.input_scale3:in:dispatch&quot;]" data-representation="fork_bus" d="M 1346.0,4129 L 1346.0,4085" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0024" data-semantic-trace="[&quot;tm.embedding:x[0]-&gt;tm.input_scale0:in:dispatch&quot;, &quot;tm.embedding:x[1]-&gt;tm.input_scale1:in:dispatch&quot;, &quot;tm.embedding:x[2]-&gt;tm.input_scale2:in:dispatch&quot;, &quot;tm.embedding:x[3]-&gt;tm.input_scale3:in:dispatch&quot;]" data-representation="fork_bus" d="M 683.0,4085 L 2009.0,4085" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0025" data-semantic-trace="[&quot;tm.embedding:x[0]-&gt;tm.input_scale0:in:dispatch&quot;]" data-representation="fork_branch" d="M 683.0,4085 L 683.0,4055" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0026" data-semantic-trace="[&quot;tm.input_scale0:out-&gt;tm.embedding:item[0]:tuple_collection&quot;]" data-representation="collection_branch" d="M 683.0,3623 L 683.0,3605" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0027" data-semantic-trace="[&quot;tm.embedding:x[1]-&gt;tm.input_scale1:in:dispatch&quot;]" data-representation="fork_branch" d="M 1125.0,4085 L 1125.0,4055" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0028" data-semantic-trace="[&quot;tm.input_scale1:out-&gt;tm.embedding:item[1]:tuple_collection&quot;]" data-representation="collection_branch" d="M 1125.0,3623 L 1125.0,3605" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0029" data-semantic-trace="[&quot;tm.embedding:x[2]-&gt;tm.input_scale2:in:dispatch&quot;]" data-representation="fork_branch" d="M 1567.0,4085 L 1567.0,4055" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0030" data-semantic-trace="[&quot;tm.input_scale2:out-&gt;tm.embedding:item[2]:tuple_collection&quot;]" data-representation="collection_branch" d="M 1567.0,3623 L 1567.0,3605" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0031" data-semantic-trace="[&quot;tm.embedding:x[3]-&gt;tm.input_scale3:in:dispatch&quot;]" data-representation="fork_branch" d="M 2009.0,4085 L 2009.0,4055" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0032" data-semantic-trace="[&quot;tm.input_scale3:out-&gt;tm.embedding:item[3]:tuple_collection&quot;]" data-representation="collection_branch" d="M 2009.0,3623 L 2009.0,3605" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0033" data-semantic-trace="[&quot;tm.input_scale0:out-&gt;tm.embedding:item[0]:tuple_collection&quot;, &quot;tm.input_scale1:out-&gt;tm.embedding:item[1]:tuple_collection&quot;, &quot;tm.input_scale2:out-&gt;tm.embedding:item[2]:tuple_collection&quot;, &quot;tm.input_scale3:out-&gt;tm.embedding:item[3]:tuple_collection&quot;]" data-representation="collection_bus" d="M 683.0,3605 L 2009.0,3605" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0034" data-semantic-trace="[&quot;tm.input_scale0:out-&gt;tm.embedding:item[0]:tuple_collection&quot;, &quot;tm.input_scale1:out-&gt;tm.embedding:item[1]:tuple_collection&quot;, &quot;tm.input_scale2:out-&gt;tm.embedding:item[2]:tuple_collection&quot;, &quot;tm.input_scale3:out-&gt;tm.embedding:item[3]:tuple_collection&quot;]" data-representation="collection_bus" d="M 1346.0,3605 L 1346.0,3549" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm" data-visual-role="encoder"><title>TimeMixer-main/models/TimeMixer.py:188 Model.__init__; TimeMixer-main/models/TimeMixer.py:331 Model.forecast; parameter=not asserted; </title><rect x="768.0" y="1139" width="1156" height="2386" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="785.0" y="1169" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="785.0" dy="0">Past Decomposable Mixing x 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1907.0" y="1169" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1907.0" dy="0">list[BN,L_i,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1911.0" y="1201" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1911.0" dy="0">E011,E013</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1" data-visual-role="layer"><title>TimeMixer-main/models/TimeMixer.py:118 PastDecomposableMixing.__init__; TimeMixer-main/models/TimeMixer.py:154 PastDecomposableMixing.forward; parameter=pdm_blocks.0; </title><rect x="800.0" y="1318" width="1092" height="2181" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="817.0" y="1348" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="817.0" dy="0">PDM block 1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1875.0" y="1348" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1875.0" dy="0">list[BN,L_i,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1879.0" y="1380" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1879.0" dy="0">E021,E022</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.decomp" data-visual-role="decomposition"><title>TimeMixer-main/models/TimeMixer.py:154 PastDecomposableMixing.forward; TimeMixer-main/layers/Autoformer_EncDec.py:50 series_decomp.forward; parameter=not asserted; Moving average 25; season=x-trend | No independent third residual component</title><rect x="832.0" y="3392" width="1028" height="81" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="3419" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1346.0" dy="0">Per-scale series decomposition</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="3443" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">(season_i, trend_i)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1847.0" y="3463" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1847.0" dy="0">E022,E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.mix" data-visual-role="group"><title>TimeMixer-main/models/TimeMixer.py:154 PastDecomposableMixing.forward; parameter=not asserted; </title><rect x="832.0" y="2017" width="1028" height="1351" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="849.0" y="2047" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="849.0" dy="0">Directional scale mixing</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1843.0" y="2047" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1843.0" dy="0">(season_list, trend_list)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1847.0" y="2079" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1847.0" dy="0">E022</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.season" data-visual-role="season"><title>TimeMixer-main/models/TimeMixer.py:33 MultiScaleSeasonMixing.__init__; TimeMixer-main/models/TimeMixer.py:54 MultiScaleSeasonMixing.forward; parameter=not asserted; </title><rect x="864.0" y="2119" width="458" height="1175" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="881.0" y="2149" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="881.0" dy="0">Season: fine</tspan>
+<tspan x="881.0" dy="28.32">-&gt; coarse</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1305.0" y="2149" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1305.0" dy="0">list[BN,L_i,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1309.0" y="2201" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1309.0" dy="0">E017,E018</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.season.initial" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:54 MultiScaleSeasonMixing.forward; parameter=not asserted; Retain this scale in output list</title><rect x="928.0" y="3187" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1093.0" y="3214" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1093.0" dy="0">Season scale 0</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1093.0" y="3238" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1093.0" dy="0">[BN,D,96]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1245.0" y="3258" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1245.0" dy="0">E018</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.season.step0" data-visual-role="ffn"><title>TimeMixer-main/models/TimeMixer.py:33 MultiScaleSeasonMixing.__init__; TimeMixer-main/models/TimeMixer.py:54 MultiScaleSeasonMixing.forward; parameter=not asserted; </title><rect x="896.0" y="2600" width="394" height="563" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="913.0" y="2630" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="913.0" dy="0">0 -&gt; 1:</tspan>
+<tspan x="913.0" dy="25.959999999999997">temporal</tspan>
+<tspan x="913.0" dy="25.959999999999997">mixing</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1273.0" y="2630" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1273.0" dy="0">[BN,D,48]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1277.0" y="2705" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1277.0" dy="0">E017,E018</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.season.step0.linear1" data-visual-role="linear"><title>TimeMixer-main/models/TimeMixer.py:33 MultiScaleSeasonMixing.__init__; parameter=pdm_blocks.0.mixing_multi_scale_season.down_sampling_layers.0.0; </title><rect x="928.0" y="3056" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1093.0" y="3083" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1093.0" dy="0">Linear 96 -&gt; 48</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1093.0" y="3107" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1093.0" dy="0">[BN,D,48]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1245.0" y="3127" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1245.0" dy="0">E017</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.season.step0.gelu" data-visual-role="activation"><title>TimeMixer-main/models/TimeMixer.py:33 MultiScaleSeasonMixing.__init__; parameter=not asserted; </title><rect x="928.0" y="2951" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1093.0" y="2978" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1093.0" dy="0">GELU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1093.0" y="3002" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1093.0" dy="0">[BN,D,48]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1245.0" y="3022" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1245.0" dy="0">E017</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.season.step0.linear2" data-visual-role="linear"><title>TimeMixer-main/models/TimeMixer.py:33 MultiScaleSeasonMixing.__init__; parameter=pdm_blocks.0.mixing_multi_scale_season.down_sampling_layers.0.2; </title><rect x="928.0" y="2846" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1093.0" y="2873" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1093.0" dy="0">Linear 48 -&gt; 48</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1093.0" y="2897" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1093.0" dy="0">[BN,D,48]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1245.0" y="2917" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1245.0" dy="0">E017</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.season.step0.add" data-visual-role="norm"><title>TimeMixer-main/models/TimeMixer.py:54 MultiScaleSeasonMixing.forward; parameter=not asserted; Original component is a separate operand</title><rect x="928.0" y="2717" width="330" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1093.0" y="2744" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1093.0" dy="0">Add original season</tspan>
+<tspan x="1093.0" dy="23.599999999999998">scale 1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1093.0" y="2792" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1093.0" dy="0">[BN,D,48]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1245.0" y="2812" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1245.0" dy="0">E018</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0035" data-semantic-trace="[&quot;tm.pdm1.season.step0:in-&gt;tm.pdm1.season.step0.linear1:in:boundary&quot;]" data-representation="dependency" d="M 1093.0,3163 L 1093.0,3137" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0036" data-semantic-trace="[&quot;tm.pdm1.season.step0.linear1:out-&gt;tm.pdm1.season.step0.gelu:in:tensor&quot;]" data-representation="dependency" d="M 1093.0,3056 L 1093.0,3032" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0037" data-semantic-trace="[&quot;tm.pdm1.season.step0.gelu:out-&gt;tm.pdm1.season.step0.linear2:in:tensor&quot;]" data-representation="dependency" d="M 1093.0,2951 L 1093.0,2927" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0038" data-semantic-trace="[&quot;tm.pdm1.season.step0.linear2:out-&gt;tm.pdm1.season.step0.add:in:tensor&quot;]" data-representation="dependency" d="M 1093.0,2846 L 1093.0,2822" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0039" data-semantic-trace="[&quot;tm.pdm1.season.step0.add:out-&gt;tm.pdm1.season.step0:out:boundary&quot;]" data-representation="dependency" d="M 1093.0,2717 L 1093.0,2600" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.season.step1" data-visual-role="ffn"><title>TimeMixer-main/models/TimeMixer.py:33 MultiScaleSeasonMixing.__init__; TimeMixer-main/models/TimeMixer.py:54 MultiScaleSeasonMixing.forward; parameter=not asserted; </title><rect x="928.0" y="2471" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1093.0" y="2498" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1093.0" dy="0">1 -&gt; 2: temporal</tspan>
+<tspan x="1093.0" dy="23.599999999999998">mixing</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1093.0" y="2546" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1093.0" dy="0">[BN,D,24]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1245.0" y="2566" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1245.0" dy="0">E017,E018</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.season.step2" data-visual-role="ffn"><title>TimeMixer-main/models/TimeMixer.py:33 MultiScaleSeasonMixing.__init__; TimeMixer-main/models/TimeMixer.py:54 MultiScaleSeasonMixing.forward; parameter=not asserted; </title><rect x="928.0" y="2342" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1093.0" y="2369" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1093.0" dy="0">2 -&gt; 3: temporal</tspan>
+<tspan x="1093.0" dy="23.599999999999998">mixing</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1093.0" y="2417" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1093.0" dy="0">[BN,D,12]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1245.0" y="2437" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1245.0" dy="0">E017,E018</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.season.list" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:54 MultiScaleSeasonMixing.forward; parameter=not asserted; Restore [time,feature]; retain four scales</title><rect x="928.0" y="2213" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1093.0" y="2240" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1093.0" dy="0">Return all mixed</tspan>
+<tspan x="1093.0" dy="23.599999999999998">scales</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1093.0" y="2288" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1093.0" dy="0">list[BN,L_i,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1245.0" y="2308" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1245.0" dy="0">E018</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0040" data-semantic-trace="[&quot;tm.pdm1.season:in-&gt;tm.pdm1.season.initial:in:boundary&quot;]" data-representation="dependency" d="M 1093.0,3294 L 1093.0,3268" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0041" data-semantic-trace="[&quot;tm.pdm1.season.initial:out-&gt;tm.pdm1.season.step0:in:tensor&quot;]" data-representation="dependency" d="M 1093.0,3187 L 1093.0,3163" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0042" data-semantic-trace="[&quot;tm.pdm1.season.step0:out-&gt;tm.pdm1.season.step1:in:tensor&quot;]" data-representation="dependency" d="M 1093.0,2600 L 1093.0,2576" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0043" data-semantic-trace="[&quot;tm.pdm1.season.step1:out-&gt;tm.pdm1.season.step2:in:tensor&quot;]" data-representation="dependency" d="M 1093.0,2471 L 1093.0,2447" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0044" data-semantic-trace="[&quot;tm.pdm1.season.step2:out-&gt;tm.pdm1.season.list:in:tensor&quot;]" data-representation="dependency" d="M 1093.0,2342 L 1093.0,2318" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0045" data-semantic-trace="[&quot;tm.pdm1.season.list:out-&gt;tm.pdm1.season:out:boundary&quot;]" data-representation="dependency" d="M 1093.0,2213 L 1093.0,2119" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.trend" data-visual-role="trend"><title>TimeMixer-main/models/TimeMixer.py:77 MultiScaleTrendMixing.__init__; TimeMixer-main/models/TimeMixer.py:96 MultiScaleTrendMixing.forward; parameter=not asserted; </title><rect x="1370.0" y="2091" width="458" height="1203" rx="18" fill="#fff0f5" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1387.0" y="2121" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1387.0" dy="0">Trend:</tspan>
+<tspan x="1387.0" dy="28.32">coarse -&gt;</tspan>
+<tspan x="1387.0" dy="28.32">fine</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1811.0" y="2121" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1811.0" dy="0">list[BN,L_i,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1815.0" y="2201" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1815.0" dy="0">E019,E020</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.trend.initial" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:96 MultiScaleTrendMixing.forward; parameter=not asserted; Retain this scale in output list</title><rect x="1434.0" y="3187" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1599.0" y="3214" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1599.0" dy="0">Trend scale 3</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1599.0" y="3238" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1599.0" dy="0">[BN,D,12]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1751.0" y="3258" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1751.0" dy="0">E020</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.trend.step0" data-visual-role="ffn"><title>TimeMixer-main/models/TimeMixer.py:77 MultiScaleTrendMixing.__init__; TimeMixer-main/models/TimeMixer.py:96 MultiScaleTrendMixing.forward; parameter=not asserted; </title><rect x="1402.0" y="2600" width="394" height="563" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1419.0" y="2630" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1419.0" dy="0">3 -&gt; 2:</tspan>
+<tspan x="1419.0" dy="25.959999999999997">temporal</tspan>
+<tspan x="1419.0" dy="25.959999999999997">mixing</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1779.0" y="2630" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1779.0" dy="0">[BN,D,24]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1783.0" y="2705" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1783.0" dy="0">E019,E020</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.trend.step0.linear1" data-visual-role="linear"><title>TimeMixer-main/models/TimeMixer.py:77 MultiScaleTrendMixing.__init__; parameter=pdm_blocks.0.mixing_multi_scale_trend.up_sampling_layers.0.0; </title><rect x="1434.0" y="3056" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1599.0" y="3083" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1599.0" dy="0">Linear 12 -&gt; 24</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1599.0" y="3107" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1599.0" dy="0">[BN,D,24]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1751.0" y="3127" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1751.0" dy="0">E019</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.trend.step0.gelu" data-visual-role="activation"><title>TimeMixer-main/models/TimeMixer.py:77 MultiScaleTrendMixing.__init__; parameter=not asserted; </title><rect x="1434.0" y="2951" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1599.0" y="2978" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1599.0" dy="0">GELU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1599.0" y="3002" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1599.0" dy="0">[BN,D,24]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1751.0" y="3022" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1751.0" dy="0">E019</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.trend.step0.linear2" data-visual-role="linear"><title>TimeMixer-main/models/TimeMixer.py:77 MultiScaleTrendMixing.__init__; parameter=pdm_blocks.0.mixing_multi_scale_trend.up_sampling_layers.0.2; </title><rect x="1434.0" y="2846" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1599.0" y="2873" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1599.0" dy="0">Linear 24 -&gt; 24</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1599.0" y="2897" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1599.0" dy="0">[BN,D,24]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1751.0" y="2917" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1751.0" dy="0">E019</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.trend.step0.add" data-visual-role="norm"><title>TimeMixer-main/models/TimeMixer.py:96 MultiScaleTrendMixing.forward; parameter=not asserted; Original component is a separate operand</title><rect x="1434.0" y="2717" width="330" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1599.0" y="2744" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1599.0" dy="0">Add original trend</tspan>
+<tspan x="1599.0" dy="23.599999999999998">scale 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1599.0" y="2792" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1599.0" dy="0">[BN,D,24]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1751.0" y="2812" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1751.0" dy="0">E020</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0046" data-semantic-trace="[&quot;tm.pdm1.trend.step0:in-&gt;tm.pdm1.trend.step0.linear1:in:boundary&quot;]" data-representation="dependency" d="M 1599.0,3163 L 1599.0,3137" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0047" data-semantic-trace="[&quot;tm.pdm1.trend.step0.linear1:out-&gt;tm.pdm1.trend.step0.gelu:in:tensor&quot;]" data-representation="dependency" d="M 1599.0,3056 L 1599.0,3032" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0048" data-semantic-trace="[&quot;tm.pdm1.trend.step0.gelu:out-&gt;tm.pdm1.trend.step0.linear2:in:tensor&quot;]" data-representation="dependency" d="M 1599.0,2951 L 1599.0,2927" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0049" data-semantic-trace="[&quot;tm.pdm1.trend.step0.linear2:out-&gt;tm.pdm1.trend.step0.add:in:tensor&quot;]" data-representation="dependency" d="M 1599.0,2846 L 1599.0,2822" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0050" data-semantic-trace="[&quot;tm.pdm1.trend.step0.add:out-&gt;tm.pdm1.trend.step0:out:boundary&quot;]" data-representation="dependency" d="M 1599.0,2717 L 1599.0,2600" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.trend.step1" data-visual-role="ffn"><title>TimeMixer-main/models/TimeMixer.py:77 MultiScaleTrendMixing.__init__; TimeMixer-main/models/TimeMixer.py:96 MultiScaleTrendMixing.forward; parameter=not asserted; </title><rect x="1434.0" y="2471" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1599.0" y="2498" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1599.0" dy="0">2 -&gt; 1: temporal</tspan>
+<tspan x="1599.0" dy="23.599999999999998">mixing</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1599.0" y="2546" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1599.0" dy="0">[BN,D,48]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1751.0" y="2566" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1751.0" dy="0">E019,E020</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.trend.step2" data-visual-role="ffn"><title>TimeMixer-main/models/TimeMixer.py:77 MultiScaleTrendMixing.__init__; TimeMixer-main/models/TimeMixer.py:96 MultiScaleTrendMixing.forward; parameter=not asserted; </title><rect x="1434.0" y="2342" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1599.0" y="2369" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1599.0" dy="0">1 -&gt; 0: temporal</tspan>
+<tspan x="1599.0" dy="23.599999999999998">mixing</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1599.0" y="2417" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1599.0" dy="0">[BN,D,96]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1751.0" y="2437" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1751.0" dy="0">E019,E020</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.trend.list" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:96 MultiScaleTrendMixing.forward; parameter=not asserted; Restore [time,feature]; retain four scales</title><rect x="1434.0" y="2213" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1599.0" y="2240" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1599.0" dy="0">Return all mixed</tspan>
+<tspan x="1599.0" dy="23.599999999999998">scales</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1599.0" y="2288" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1599.0" dy="0">list[BN,L_i,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1751.0" y="2308" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1751.0" dy="0">E020</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0051" data-semantic-trace="[&quot;tm.pdm1.trend:in-&gt;tm.pdm1.trend.initial:in:boundary&quot;]" data-representation="dependency" d="M 1599.0,3294 L 1599.0,3268" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0052" data-semantic-trace="[&quot;tm.pdm1.trend.initial:out-&gt;tm.pdm1.trend.step0:in:tensor&quot;]" data-representation="dependency" d="M 1599.0,3187 L 1599.0,3163" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0053" data-semantic-trace="[&quot;tm.pdm1.trend.step0:out-&gt;tm.pdm1.trend.step1:in:tensor&quot;]" data-representation="dependency" d="M 1599.0,2600 L 1599.0,2576" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0054" data-semantic-trace="[&quot;tm.pdm1.trend.step1:out-&gt;tm.pdm1.trend.step2:in:tensor&quot;]" data-representation="dependency" d="M 1599.0,2471 L 1599.0,2447" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0055" data-semantic-trace="[&quot;tm.pdm1.trend.step2:out-&gt;tm.pdm1.trend.list:in:tensor&quot;]" data-representation="dependency" d="M 1599.0,2342 L 1599.0,2318" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0056" data-semantic-trace="[&quot;tm.pdm1.trend.list:out-&gt;tm.pdm1.trend:out:boundary&quot;]" data-representation="dependency" d="M 1599.0,2213 L 1599.0,2091" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0057" data-semantic-trace="[&quot;tm.pdm1.mix:season-&gt;tm.pdm1.season:in:dispatch&quot;, &quot;tm.pdm1.mix:trend-&gt;tm.pdm1.trend:in:dispatch&quot;]" data-representation="fork_bus" d="M 1346.0,3368 L 1346.0,3324" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0058" data-semantic-trace="[&quot;tm.pdm1.mix:season-&gt;tm.pdm1.season:in:dispatch&quot;, &quot;tm.pdm1.mix:trend-&gt;tm.pdm1.trend:in:dispatch&quot;]" data-representation="fork_bus" d="M 1093.0,3324 L 1599.0,3324" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0059" data-semantic-trace="[&quot;tm.pdm1.mix:season-&gt;tm.pdm1.season:in:dispatch&quot;]" data-representation="fork_branch" d="M 1093.0,3324 L 1093.0,3294" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0060" data-semantic-trace="[&quot;tm.pdm1.season:out-&gt;tm.pdm1.mix:item[0]:tuple_collection&quot;]" data-representation="collection_branch" d="M 1093.0,2119 L 1093.0,2073" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0061" data-semantic-trace="[&quot;tm.pdm1.mix:trend-&gt;tm.pdm1.trend:in:dispatch&quot;]" data-representation="fork_branch" d="M 1599.0,3324 L 1599.0,3294" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0062" data-semantic-trace="[&quot;tm.pdm1.trend:out-&gt;tm.pdm1.mix:item[1]:tuple_collection&quot;]" data-representation="collection_branch" d="M 1599.0,2091 L 1599.0,2073" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0063" data-semantic-trace="[&quot;tm.pdm1.season:out-&gt;tm.pdm1.mix:item[0]:tuple_collection&quot;, &quot;tm.pdm1.trend:out-&gt;tm.pdm1.mix:item[1]:tuple_collection&quot;]" data-representation="collection_bus" d="M 1093.0,2073 L 1599.0,2073" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0064" data-semantic-trace="[&quot;tm.pdm1.season:out-&gt;tm.pdm1.mix:item[0]:tuple_collection&quot;, &quot;tm.pdm1.trend:out-&gt;tm.pdm1.mix:item[1]:tuple_collection&quot;]" data-representation="collection_bus" d="M 1346.0,2073 L 1346.0,2017" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.sum" data-visual-role="norm"><title>TimeMixer-main/models/TimeMixer.py:154 PastDecomposableMixing.forward; parameter=not asserted; </title><rect x="832.0" y="1912" width="1028" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="1939" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1346.0" dy="0">Per-scale season + trend</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="1963" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">list[BN,L_i,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1847.0" y="1983" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1847.0" dy="0">E022</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.out_cross" data-visual-role="ffn"><title>TimeMixer-main/models/TimeMixer.py:118 PastDecomposableMixing.__init__; parameter=not asserted; </title><rect x="832.0" y="1497" width="1028" height="391" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="849.0" y="1527" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="849.0" dy="0">Shared feature MLP</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1843.0" y="1527" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1843.0" dy="0">list[BN,L_i,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1847.0" y="1559" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1847.0" dy="0">E021</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.mlp1" data-visual-role="linear"><title>TimeMixer-main/models/TimeMixer.py:118 PastDecomposableMixing.__init__; parameter=pdm_blocks.0.out_cross_layer.0; </title><rect x="1181.0" y="1781" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="1808" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1346.0" dy="0">Linear D -&gt; F</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="1832" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">list[BN,L_i,F]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1498.0" y="1852" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1498.0" dy="0">E021</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.gelu" data-visual-role="activation"><title>TimeMixer-main/models/TimeMixer.py:118 PastDecomposableMixing.__init__; parameter=not asserted; </title><rect x="1181.0" y="1676" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="1703" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1346.0" dy="0">GELU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="1727" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">list[BN,L_i,F]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1498.0" y="1747" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1498.0" dy="0">E021</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.mlp2" data-visual-role="linear"><title>TimeMixer-main/models/TimeMixer.py:118 PastDecomposableMixing.__init__; parameter=pdm_blocks.0.out_cross_layer.2; </title><rect x="1181.0" y="1571" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="1598" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1346.0" dy="0">Linear F -&gt; D</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="1622" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">list[BN,L_i,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1498.0" y="1642" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1498.0" dy="0">E021</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0065" data-semantic-trace="[&quot;tm.pdm1.out_cross:in-&gt;tm.pdm1.mlp1:in:boundary&quot;]" data-representation="dependency" d="M 1346.0,1888 L 1346.0,1862" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0066" data-semantic-trace="[&quot;tm.pdm1.mlp1:out-&gt;tm.pdm1.gelu:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,1781 L 1346.0,1757" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0067" data-semantic-trace="[&quot;tm.pdm1.gelu:out-&gt;tm.pdm1.mlp2:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,1676 L 1346.0,1652" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0068" data-semantic-trace="[&quot;tm.pdm1.mlp2:out-&gt;tm.pdm1.out_cross:out:boundary&quot;]" data-representation="dependency" d="M 1346.0,1571 L 1346.0,1497" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm1.add" data-visual-role="norm" data-glyph-kind="binary-circle"><title>TimeMixer-main/models/TimeMixer.py:154 PastDecomposableMixing.forward; parameter=not asserted; ori + out_cross_layer(season + trend) | Trim to original scale lengths</title><circle cx="1346.0" cy="1432.5" r="16.0" fill="white" stroke="#263348" stroke-width="2" data-glyph-outline="circle" /><text x="1346.0" y="1439.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="400" text-anchor="middle" fill="#172336" data-glyph-symbol="add"><tspan x="1346.0" dy="0">+</tspan></text><text x="1374.0" y="1418.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1374.0" dy="0">Add original scale states</tspan></text><text x="1374.0" y="1458.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="11" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1374.0" dy="0">list[BN,L_i,D]</tspan></text><text x="1374.0" y="1474.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1374.0" dy="0">E022</tspan></text></g>
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0069" data-semantic-trace="[&quot;tm.pdm1:in-&gt;tm.pdm1.decomp:in:boundary&quot;]" data-representation="dependency" d="M 1346.0,3499 L 1346.0,3473" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0070" data-semantic-trace="[&quot;tm.pdm1.decomp:out-&gt;tm.pdm1.mix:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,3392 L 1346.0,3368" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0071" data-semantic-trace="[&quot;tm.pdm1.mix:out-&gt;tm.pdm1.sum:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,2017 L 1346.0,1993" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0072" data-semantic-trace="[&quot;tm.pdm1.sum:out-&gt;tm.pdm1.out_cross:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,1912 L 1346.0,1888" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0073" data-semantic-trace="[&quot;tm.pdm1.out_cross:out-&gt;tm.pdm1.add:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,1497 L 1346.0,1448.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0074" data-semantic-trace="[&quot;tm.pdm1.add:out-&gt;tm.pdm1:out:boundary&quot;]" data-representation="dependency" d="M 1346.0,1416.5 L 1346.0,1318" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0075" data-semantic-trace="[&quot;tm.pdm1:in-&gt;tm.pdm1.add:side:residual&quot;]" data-representation="dependency" d="M 1346.0,3499 L 1346.0,3483 L 808.0,3483 L 808.0,1432.5 L 1330.0,1432.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.pdm2" data-visual-role="layer"><title>TimeMixer-main/models/TimeMixer.py:118 PastDecomposableMixing.__init__; TimeMixer-main/models/TimeMixer.py:154 PastDecomposableMixing.forward; parameter=pdm_blocks.1; </title><rect x="1181.0" y="1213" width="330" height="81" rx="10" fill="#e7f5fe" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="1240" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1346.0" dy="0">PDM block 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="1264" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">list[BN,L_i,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1498.0" y="1284" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1498.0" dy="0">E021,E022</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0076" data-semantic-trace="[&quot;tm.pdm:in-&gt;tm.pdm1:in:boundary&quot;]" data-representation="dependency" d="M 1346.0,3525 L 1346.0,3499" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0077" data-semantic-trace="[&quot;tm.pdm1:out-&gt;tm.pdm2:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,1318 L 1346.0,1294" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0078" data-semantic-trace="[&quot;tm.pdm2:out-&gt;tm.pdm:out:boundary&quot;]" data-representation="dependency" d="M 1346.0,1213 L 1346.0,1139" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.fmm" data-visual-role="linear"><title>TimeMixer-main/models/TimeMixer.py:385 Model.future_multi_mixing; parameter=not asserted; </title><rect x="454.0" y="535" width="1784" height="580" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="471.0" y="565" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="471.0" dy="0">Future Multipredictor Mixing</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2221.0" y="565" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2221.0" dy="0">tuple of 4 forecasts</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2225.0" y="597" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2225.0" dy="0">E015</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.predict0" data-visual-role="group"><title>TimeMixer-main/models/TimeMixer.py:385 Model.future_multi_mixing; parameter=not asserted; </title><rect x="486.0" y="609" width="394" height="432" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="503.0" y="639" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="503.0" dy="0">Scale 0</tspan>
+<tspan x="503.0" dy="25.959999999999997">predictor</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="863.0" y="639" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="863.0" dy="0">[B,H,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="867.0" y="688" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="867.0" dy="0">E015</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.temporal0" data-visual-role="linear"><title>TimeMixer-main/models/TimeMixer.py:385 Model.future_multi_mixing; parameter=predict_layers.0; Permute -&gt; predict_layers[i] -&gt; back</title><rect x="518.0" y="910" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="683.0" y="937" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="683.0" dy="0">Temporal Linear 96 -&gt;</tspan>
+<tspan x="683.0" dy="23.599999999999998">H</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="683.0" y="985" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="683.0" dy="0">[BN,H,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="835.0" y="1005" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="835.0" dy="0">E015</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.project0" data-visual-role="linear"><title>TimeMixer-main/models/TimeMixer.py:188 Model.__init__; TimeMixer-main/models/TimeMixer.py:385 Model.future_multi_mixing; parameter=projection_layer; </title><rect x="518.0" y="805" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="683.0" y="832" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="683.0" dy="0">Shared Linear D -&gt; 1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="683.0" y="856" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="683.0" dy="0">[BN,H,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="835.0" y="876" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="835.0" dy="0">E011,E015</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.restore0" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:385 Model.future_multi_mixing; parameter=not asserted; reshape(B,N,H) -&gt; permute(0,2,1)</title><rect x="518.0" y="700" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="683.0" y="727" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="683.0" dy="0">Restore variables</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="683.0" y="751" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="683.0" dy="0">[B,H,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="835.0" y="771" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="835.0" dy="0">E015</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0079" data-semantic-trace="[&quot;tm.predict0:in-&gt;tm.temporal0:in:boundary&quot;]" data-representation="dependency" d="M 683.0,1041 L 683.0,1015" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0080" data-semantic-trace="[&quot;tm.temporal0:out-&gt;tm.project0:in:tensor&quot;]" data-representation="dependency" d="M 683.0,910 L 683.0,886" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0081" data-semantic-trace="[&quot;tm.project0:out-&gt;tm.restore0:in:tensor&quot;]" data-representation="dependency" d="M 683.0,805 L 683.0,781" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0082" data-semantic-trace="[&quot;tm.restore0:out-&gt;tm.predict0:out:boundary&quot;]" data-representation="dependency" d="M 683.0,700 L 683.0,609" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.predict1" data-visual-role="group"><title>TimeMixer-main/models/TimeMixer.py:385 Model.future_multi_mixing; parameter=not asserted; </title><rect x="928.0" y="609" width="394" height="432" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="945.0" y="639" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="945.0" dy="0">Scale 1</tspan>
+<tspan x="945.0" dy="25.959999999999997">predictor</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1305.0" y="639" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1305.0" dy="0">[B,H,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1309.0" y="688" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1309.0" dy="0">E015</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.temporal1" data-visual-role="linear"><title>TimeMixer-main/models/TimeMixer.py:385 Model.future_multi_mixing; parameter=predict_layers.1; Permute -&gt; predict_layers[i] -&gt; back</title><rect x="960.0" y="910" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1125.0" y="937" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1125.0" dy="0">Temporal Linear 48 -&gt;</tspan>
+<tspan x="1125.0" dy="23.599999999999998">H</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1125.0" y="985" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1125.0" dy="0">[BN,H,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1277.0" y="1005" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1277.0" dy="0">E015</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.project1" data-visual-role="linear"><title>TimeMixer-main/models/TimeMixer.py:188 Model.__init__; TimeMixer-main/models/TimeMixer.py:385 Model.future_multi_mixing; parameter=projection_layer; </title><rect x="960.0" y="805" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1125.0" y="832" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1125.0" dy="0">Shared Linear D -&gt; 1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1125.0" y="856" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1125.0" dy="0">[BN,H,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1277.0" y="876" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1277.0" dy="0">E011,E015</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.restore1" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:385 Model.future_multi_mixing; parameter=not asserted; reshape(B,N,H) -&gt; permute(0,2,1)</title><rect x="960.0" y="700" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1125.0" y="727" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1125.0" dy="0">Restore variables</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1125.0" y="751" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1125.0" dy="0">[B,H,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1277.0" y="771" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1277.0" dy="0">E015</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0083" data-semantic-trace="[&quot;tm.predict1:in-&gt;tm.temporal1:in:boundary&quot;]" data-representation="dependency" d="M 1125.0,1041 L 1125.0,1015" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0084" data-semantic-trace="[&quot;tm.temporal1:out-&gt;tm.project1:in:tensor&quot;]" data-representation="dependency" d="M 1125.0,910 L 1125.0,886" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0085" data-semantic-trace="[&quot;tm.project1:out-&gt;tm.restore1:in:tensor&quot;]" data-representation="dependency" d="M 1125.0,805 L 1125.0,781" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0086" data-semantic-trace="[&quot;tm.restore1:out-&gt;tm.predict1:out:boundary&quot;]" data-representation="dependency" d="M 1125.0,700 L 1125.0,609" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.predict2" data-visual-role="group"><title>TimeMixer-main/models/TimeMixer.py:385 Model.future_multi_mixing; parameter=not asserted; </title><rect x="1370.0" y="609" width="394" height="432" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1387.0" y="639" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1387.0" dy="0">Scale 2</tspan>
+<tspan x="1387.0" dy="25.959999999999997">predictor</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1747.0" y="639" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1747.0" dy="0">[B,H,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1751.0" y="688" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1751.0" dy="0">E015</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.temporal2" data-visual-role="linear"><title>TimeMixer-main/models/TimeMixer.py:385 Model.future_multi_mixing; parameter=predict_layers.2; Permute -&gt; predict_layers[i] -&gt; back</title><rect x="1402.0" y="910" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1567.0" y="937" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1567.0" dy="0">Temporal Linear 24 -&gt;</tspan>
+<tspan x="1567.0" dy="23.599999999999998">H</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1567.0" y="985" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1567.0" dy="0">[BN,H,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1719.0" y="1005" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1719.0" dy="0">E015</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.project2" data-visual-role="linear"><title>TimeMixer-main/models/TimeMixer.py:188 Model.__init__; TimeMixer-main/models/TimeMixer.py:385 Model.future_multi_mixing; parameter=projection_layer; </title><rect x="1402.0" y="805" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1567.0" y="832" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1567.0" dy="0">Shared Linear D -&gt; 1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1567.0" y="856" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1567.0" dy="0">[BN,H,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1719.0" y="876" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1719.0" dy="0">E011,E015</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.restore2" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:385 Model.future_multi_mixing; parameter=not asserted; reshape(B,N,H) -&gt; permute(0,2,1)</title><rect x="1402.0" y="700" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1567.0" y="727" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1567.0" dy="0">Restore variables</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1567.0" y="751" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1567.0" dy="0">[B,H,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1719.0" y="771" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1719.0" dy="0">E015</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0087" data-semantic-trace="[&quot;tm.predict2:in-&gt;tm.temporal2:in:boundary&quot;]" data-representation="dependency" d="M 1567.0,1041 L 1567.0,1015" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0088" data-semantic-trace="[&quot;tm.temporal2:out-&gt;tm.project2:in:tensor&quot;]" data-representation="dependency" d="M 1567.0,910 L 1567.0,886" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0089" data-semantic-trace="[&quot;tm.project2:out-&gt;tm.restore2:in:tensor&quot;]" data-representation="dependency" d="M 1567.0,805 L 1567.0,781" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0090" data-semantic-trace="[&quot;tm.restore2:out-&gt;tm.predict2:out:boundary&quot;]" data-representation="dependency" d="M 1567.0,700 L 1567.0,609" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.predict3" data-visual-role="group"><title>TimeMixer-main/models/TimeMixer.py:385 Model.future_multi_mixing; parameter=not asserted; </title><rect x="1812.0" y="609" width="394" height="432" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1829.0" y="639" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1829.0" dy="0">Scale 3</tspan>
+<tspan x="1829.0" dy="25.959999999999997">predictor</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2189.0" y="639" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2189.0" dy="0">[B,H,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2193.0" y="688" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2193.0" dy="0">E015</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.temporal3" data-visual-role="linear"><title>TimeMixer-main/models/TimeMixer.py:385 Model.future_multi_mixing; parameter=predict_layers.3; Permute -&gt; predict_layers[i] -&gt; back</title><rect x="1844.0" y="910" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2009.0" y="937" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2009.0" dy="0">Temporal Linear 12 -&gt;</tspan>
+<tspan x="2009.0" dy="23.599999999999998">H</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2009.0" y="985" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2009.0" dy="0">[BN,H,D]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2161.0" y="1005" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2161.0" dy="0">E015</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.project3" data-visual-role="linear"><title>TimeMixer-main/models/TimeMixer.py:188 Model.__init__; TimeMixer-main/models/TimeMixer.py:385 Model.future_multi_mixing; parameter=projection_layer; </title><rect x="1844.0" y="805" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2009.0" y="832" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2009.0" dy="0">Shared Linear D -&gt; 1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2009.0" y="856" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2009.0" dy="0">[BN,H,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2161.0" y="876" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2161.0" dy="0">E011,E015</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.restore3" data-visual-role="tensor"><title>TimeMixer-main/models/TimeMixer.py:385 Model.future_multi_mixing; parameter=not asserted; reshape(B,N,H) -&gt; permute(0,2,1)</title><rect x="1844.0" y="700" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2009.0" y="727" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2009.0" dy="0">Restore variables</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2009.0" y="751" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2009.0" dy="0">[B,H,N]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2161.0" y="771" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2161.0" dy="0">E015</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0091" data-semantic-trace="[&quot;tm.predict3:in-&gt;tm.temporal3:in:boundary&quot;]" data-representation="dependency" d="M 2009.0,1041 L 2009.0,1015" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0092" data-semantic-trace="[&quot;tm.temporal3:out-&gt;tm.project3:in:tensor&quot;]" data-representation="dependency" d="M 2009.0,910 L 2009.0,886" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0093" data-semantic-trace="[&quot;tm.project3:out-&gt;tm.restore3:in:tensor&quot;]" data-representation="dependency" d="M 2009.0,805 L 2009.0,781" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0094" data-semantic-trace="[&quot;tm.restore3:out-&gt;tm.predict3:out:boundary&quot;]" data-representation="dependency" d="M 2009.0,700 L 2009.0,609" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0095" data-semantic-trace="[&quot;tm.fmm:scale[0]-&gt;tm.predict0:in:dispatch&quot;, &quot;tm.fmm:scale[1]-&gt;tm.predict1:in:dispatch&quot;, &quot;tm.fmm:scale[2]-&gt;tm.predict2:in:dispatch&quot;, &quot;tm.fmm:scale[3]-&gt;tm.predict3:in:dispatch&quot;]" data-representation="fork_bus" d="M 1346.0,1115 L 1346.0,1071" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0096" data-semantic-trace="[&quot;tm.fmm:scale[0]-&gt;tm.predict0:in:dispatch&quot;, &quot;tm.fmm:scale[1]-&gt;tm.predict1:in:dispatch&quot;, &quot;tm.fmm:scale[2]-&gt;tm.predict2:in:dispatch&quot;, &quot;tm.fmm:scale[3]-&gt;tm.predict3:in:dispatch&quot;]" data-representation="fork_bus" d="M 683.0,1071 L 2009.0,1071" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0097" data-semantic-trace="[&quot;tm.fmm:scale[0]-&gt;tm.predict0:in:dispatch&quot;]" data-representation="fork_branch" d="M 683.0,1071 L 683.0,1041" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0098" data-semantic-trace="[&quot;tm.predict0:out-&gt;tm.fmm:item[0]:tuple_collection&quot;]" data-representation="collection_branch" d="M 683.0,609 L 683.0,591" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0099" data-semantic-trace="[&quot;tm.fmm:scale[1]-&gt;tm.predict1:in:dispatch&quot;]" data-representation="fork_branch" d="M 1125.0,1071 L 1125.0,1041" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0100" data-semantic-trace="[&quot;tm.predict1:out-&gt;tm.fmm:item[1]:tuple_collection&quot;]" data-representation="collection_branch" d="M 1125.0,609 L 1125.0,591" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0101" data-semantic-trace="[&quot;tm.fmm:scale[2]-&gt;tm.predict2:in:dispatch&quot;]" data-representation="fork_branch" d="M 1567.0,1071 L 1567.0,1041" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0102" data-semantic-trace="[&quot;tm.predict2:out-&gt;tm.fmm:item[2]:tuple_collection&quot;]" data-representation="collection_branch" d="M 1567.0,609 L 1567.0,591" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0103" data-semantic-trace="[&quot;tm.fmm:scale[3]-&gt;tm.predict3:in:dispatch&quot;]" data-representation="fork_branch" d="M 2009.0,1071 L 2009.0,1041" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0104" data-semantic-trace="[&quot;tm.predict3:out-&gt;tm.fmm:item[3]:tuple_collection&quot;]" data-representation="collection_branch" d="M 2009.0,609 L 2009.0,591" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0105" data-semantic-trace="[&quot;tm.predict0:out-&gt;tm.fmm:item[0]:tuple_collection&quot;, &quot;tm.predict1:out-&gt;tm.fmm:item[1]:tuple_collection&quot;, &quot;tm.predict2:out-&gt;tm.fmm:item[2]:tuple_collection&quot;, &quot;tm.predict3:out-&gt;tm.fmm:item[3]:tuple_collection&quot;]" data-representation="collection_bus" d="M 683.0,591 L 2009.0,591" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0106" data-semantic-trace="[&quot;tm.predict0:out-&gt;tm.fmm:item[0]:tuple_collection&quot;, &quot;tm.predict1:out-&gt;tm.fmm:item[1]:tuple_collection&quot;, &quot;tm.predict2:out-&gt;tm.fmm:item[2]:tuple_collection&quot;, &quot;tm.predict3:out-&gt;tm.fmm:item[3]:tuple_collection&quot;]" data-representation="collection_bus" d="M 1346.0,591 L 1346.0,535" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.forecast_sum" data-visual-role="norm"><title>TimeMixer-main/models/TimeMixer.py:331 Model.forecast; parameter=not asserted; stack(dim=-1).sum(-1); no concat head</title><rect x="1181.0" y="406" width="330" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="433" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1346.0" dy="0">Sum four scale</tspan>
+<tspan x="1346.0" dy="23.599999999999998">forecasts</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="481" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">[B,96,7]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1498.0" y="501" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1498.0" dy="0">E013</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.denorm" data-visual-role="norm"><title>TimeMixer-main/models/TimeMixer.py:331 Model.forecast; TimeMixer-main/layers/StandardNorm.py:56 Normalize._denormalize; parameter=not asserted; normalize_layers[0](forecast, denorm) | Inverse affine; multiply std, add mean</title><rect x="1181.0" y="277" width="330" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="304" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1346.0" dy="0">Restore original-scale</tspan>
+<tspan x="1346.0" dy="23.599999999999998">statistics</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="352" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">[B,96,7]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1498.0" y="372" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1498.0" dy="0">E013,E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="tm.output" data-visual-role="output" data-glyph-kind="tensor-grid"><title>TimeMixer-main/models/TimeMixer.py:513 Model.forward; parameter=not asserted; </title><rect x="1310.0" y="196.5" width="72" height="32" rx="0" fill="#dfdff8" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="1322.0" x2="1322.0" y1="196.5" y2="228.5" stroke="#263348" stroke-width=".6" /><line x1="1334.0" x2="1334.0" y1="196.5" y2="228.5" stroke="#263348" stroke-width=".6" /><line x1="1346.0" x2="1346.0" y1="196.5" y2="228.5" stroke="#263348" stroke-width=".6" /><line x1="1358.0" x2="1358.0" y1="196.5" y2="228.5" stroke="#263348" stroke-width=".6" /><line x1="1370.0" x2="1370.0" y1="196.5" y2="228.5" stroke="#263348" stroke-width=".6" /><line x1="1310.0" x2="1382.0" y1="207.16666666666666" y2="207.16666666666666" stroke="#263348" stroke-width=".6" /><line x1="1310.0" x2="1382.0" y1="217.83333333333334" y2="217.83333333333334" stroke="#263348" stroke-width=".6" /><text x="1300.0" y="217.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="1300.0" dy="0">Forecast</tspan></text><text x="1392.0" y="217.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1392.0" dy="0">[B,96,7]</tspan></text><text x="1392.0" y="250" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1392.0" dy="0">E014</tspan></text></g>
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0107" data-semantic-trace="[&quot;tm.model:in-&gt;tm.input:in:boundary&quot;]" data-representation="dependency" d="M 1346.0,4952 L 1346.0,4901.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0108" data-semantic-trace="[&quot;tm.input:out-&gt;tm.pyramid:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,4869.5 L 1346.0,4821" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0109" data-semantic-trace="[&quot;tm.pyramid:out-&gt;tm.embedding:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,4153 L 1346.0,4129" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0110" data-semantic-trace="[&quot;tm.embedding:out-&gt;tm.pdm:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,3549 L 1346.0,3525" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0111" data-semantic-trace="[&quot;tm.pdm:out-&gt;tm.fmm:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,1139 L 1346.0,1115" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0112" data-semantic-trace="[&quot;tm.fmm:out-&gt;tm.forecast_sum:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,535 L 1346.0,511" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0113" data-semantic-trace="[&quot;tm.forecast_sum:out-&gt;tm.denorm:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,406 L 1346.0,382" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0114" data-semantic-trace="[&quot;tm.denorm:out-&gt;tm.output:in:tensor&quot;]" data-representation="dependency" d="M 1346.0,277 L 1346.0,228.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0115" data-semantic-trace="[&quot;tm.output:out-&gt;tm.model:out:boundary&quot;]" data-representation="dependency" d="M 1346.0,196.5 L 1346.0,98" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0116" data-semantic-trace="[&quot;tm.scale0:out-&gt;tm.collect:side:scale&quot;]" data-representation="typed_auxiliary" d="M 1511.0,4754.5 L 1535.0,4754.5 L 1535.0,4322.5 L 1511.0,4322.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)" />
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-1" data-follow-edge="route-0116" x="1542.0" y="4538.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start" fill="#536477">
+<tspan x="1542.0" dy="0">x0</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0117" data-semantic-trace="[&quot;tm.pool1:out-&gt;tm.collect:side:scale&quot;]" data-representation="typed_auxiliary" d="M 1511.0,4649.5 L 1535.0,4649.5 L 1535.0,4322.5 L 1511.0,4322.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)" />
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-2" data-follow-edge="route-0117" x="1542.0" y="4486.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start" fill="#536477">
+<tspan x="1542.0" dy="0">x1</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0118" data-semantic-trace="[&quot;tm.pool2:out-&gt;tm.collect:side:scale&quot;]" data-representation="typed_auxiliary" d="M 1511.0,4544.5 L 1535.0,4544.5 L 1535.0,4322.5 L 1511.0,4322.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)" />
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-3" data-follow-edge="route-0118" x="1542.0" y="4433.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start" fill="#536477">
+<tspan x="1542.0" dy="0">x2</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0119" data-semantic-trace="[&quot;tm.pdm1.decomp:season[1]-&gt;tm.pdm1.season.step0.add:original_scale:component&quot;]" data-representation="typed_auxiliary" d="M 832.0,3432.5 L 808.0,3432.5 L 814.0,3432.5 L 814.0,2769.5 L 928.0,2769.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0120" data-semantic-trace="[&quot;tm.pdm1.decomp:season[2]-&gt;tm.pdm1.season.step1.add:original_scale:component&quot;]" data-representation="typed_auxiliary" d="M 832.0,3432.5 L 808.0,3432.5 L 814.0,3432.5 L 814.0,2523.5 L 928.0,2523.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0121" data-semantic-trace="[&quot;tm.pdm1.decomp:season[3]-&gt;tm.pdm1.season.step2.add:original_scale:component&quot;]" data-representation="typed_auxiliary" d="M 832.0,3432.5 L 808.0,3432.5 L 814.0,3432.5 L 814.0,2394.5 L 928.0,2394.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0122" data-semantic-trace="[&quot;tm.pdm1.decomp:trend[2]-&gt;tm.pdm1.trend.step0.add:original_scale:component&quot;]" data-representation="typed_auxiliary" d="M 1860.0,3432.5 L 1884.0,3432.5 L 1878.0,3432.5 L 1878.0,2769.5 L 1764.0,2769.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0123" data-semantic-trace="[&quot;tm.pdm1.decomp:trend[1]-&gt;tm.pdm1.trend.step1.add:original_scale:component&quot;]" data-representation="typed_auxiliary" d="M 1860.0,3432.5 L 1884.0,3432.5 L 1878.0,3432.5 L 1878.0,2523.5 L 1764.0,2523.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0124" data-semantic-trace="[&quot;tm.pdm1.decomp:trend[0]-&gt;tm.pdm1.trend.step2.add:original_scale:component&quot;]" data-representation="typed_auxiliary" d="M 1860.0,3432.5 L 1884.0,3432.5 L 1878.0,3432.5 L 1878.0,2394.5 L 1764.0,2394.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0125" data-semantic-trace="[&quot;tm.pdm1.season.initial:out-&gt;tm.pdm1.season.list:scale[0]:retained_scale&quot;]" data-representation="typed_auxiliary" d="M 928.0,3227.5 L 878.0,3227.5 L 878.0,2265.5 L 928.0,2265.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0126" data-semantic-trace="[&quot;tm.pdm1.season.step0:out-&gt;tm.pdm1.season.list:scale[1]:retained_scale&quot;]" data-representation="typed_auxiliary" d="M 928.0,2769.5 L 904.0,2769.5 L 904.0,2265.5 L 928.0,2265.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0127" data-semantic-trace="[&quot;tm.pdm1.season.step1:out-&gt;tm.pdm1.season.list:scale[2]:retained_scale&quot;]" data-representation="typed_auxiliary" d="M 928.0,2523.5 L 904.0,2523.5 L 904.0,2265.5 L 928.0,2265.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0128" data-semantic-trace="[&quot;tm.pdm1.trend.initial:out-&gt;tm.pdm1.trend.list:scale[3]:retained_scale&quot;]" data-representation="typed_auxiliary" d="M 1764.0,3227.5 L 1814.0,3227.5 L 1814.0,2265.5 L 1764.0,2265.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0129" data-semantic-trace="[&quot;tm.pdm1.trend.step0:out-&gt;tm.pdm1.trend.list:scale[2]:retained_scale&quot;]" data-representation="typed_auxiliary" d="M 1764.0,2769.5 L 1788.0,2769.5 L 1788.0,2265.5 L 1764.0,2265.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0130" data-semantic-trace="[&quot;tm.pdm1.trend.step1:out-&gt;tm.pdm1.trend.list:scale[1]:retained_scale&quot;]" data-representation="typed_auxiliary" d="M 1764.0,2523.5 L 1788.0,2523.5 L 1788.0,2265.5 L 1764.0,2265.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)" />
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0131" data-semantic-trace="[&quot;tm.norm0:statistics-&gt;tm.denorm:statistics:statistics&quot;]" data-representation="typed_auxiliary" d="M 518.0,3988.5 L 436.0,3988.5 L 436.0,329.5 L 1181.0,329.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)" />
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-4" data-follow-edge="route-0131" x="429.0" y="2159.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end" fill="#536477">
+<tspan x="429.0" dy="0">scale 0 stats</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="796.0" y="4989" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="819.0" y="5002" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="819.0" dy="0">Input / Embedding</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="981.0" y="4989" width="16" height="16" rx="3" fill="#ffddb3" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1004.0" y="5002" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1004.0" dy="0">Attention</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1166.0" y="4989" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1189.0" y="5002" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1189.0" dy="0">Mixing / FFN</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1351.0" y="4989" width="16" height="16" rx="3" fill="#d6f0df" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1374.0" y="5002" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1374.0" dy="0">Decomposition</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1536.0" y="4989" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1559.0" y="5002" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1559.0" dy="0">Norm / Add</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1721.0" y="4989" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1744.0" y="5002" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1744.0" dy="0">Projection / Output</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="5030" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">B batch; N=7 variables; BN=B*N</tspan>
+<tspan x="1346.0" dy="16.52">L_i=96/2^i; i=0..3; H=96</tspan>
+<tspan x="1346.0" dy="16.52">D=16; F=32; independent PDM blocks=2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="5134" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">Minor Dropout / FFN transpose steps are folded visually; all source operations remain in the semantic IR.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="5164" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">E### = source span (hover a module); dashed = named state / auxiliary input; fork-join = tuple/list, not sum.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1346.0" y="5189" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1346.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+
+</svg>

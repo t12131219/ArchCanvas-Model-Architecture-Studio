@@ -1,0 +1,1041 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "qanet_context_query_attention",
+  "profile": {
+    "d_model": 96,
+    "context_length": 8,
+    "query_length": 5,
+    "dropout": 0.1,
+    "training": false,
+    "mask_true_means": "padding",
+    "label": "Tri-linear pair scores / D96 / context8,query5 / two normalization axes",
+    "mode": "reviewed static selected module profile",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "hengruo/QANet-pytorch",
+    "commit": "04605e21172b3a5e8b0e2b7a869f2e55ef02e8fb",
+    "snapshot": "79d81102b7e6c62d55f716a9cc42851511040a7192e9d6d56e7c6e642d04b259"
+  },
+  "nodes": [
+    {
+      "id": "qanet_context_query_attention.root",
+      "label": "QANet context-query attention",
+      "kind": "group",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.__init__",
+        "qanet-attention-sequence/models.py::mask_logits",
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "cq.input_c",
+          "cq.input_q",
+          "cq.input_cm",
+          "cq.input_qm"
+        ],
+        [
+          "cq.body"
+        ],
+        [
+          "cq.output"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "cq.input_c",
+      "label": "Context C / channels-first",
+      "kind": "input",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,96,8]",
+      "detail": [],
+      "parent": "qanet_context_query_attention.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "cq.input_q",
+      "label": "Query Q / channels-first",
+      "kind": "input",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,96,5]",
+      "detail": [],
+      "parent": "qanet_context_query_attention.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "cq.input_cm",
+      "label": "Context padding mask / 0 or1",
+      "kind": "input",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parent": "qanet_context_query_attention.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "cq.input_qm",
+      "label": "Query padding mask / 0 or1",
+      "kind": "input",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,5]",
+      "detail": [],
+      "parent": "qanet_context_query_attention.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "cq.body",
+      "label": "Tri-linear bidirectional interaction",
+      "kind": "group",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.__init__",
+        "qanet-attention-sequence/models.py::CQAttention.forward",
+        "qanet-attention-sequence/models.py::mask_logits"
+      ],
+      "shape": "[B,384,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "cq.c",
+          "cq.q"
+        ],
+        [
+          "cq.ct",
+          "cq.qt"
+        ],
+        [
+          "cq.cq"
+        ],
+        [
+          "cq.features"
+        ],
+        [
+          "cq.score"
+        ],
+        [
+          "cq.s1",
+          "cq.s2"
+        ],
+        [
+          "cq.a",
+          "cq.cross"
+        ],
+        [
+          "cq.b"
+        ],
+        [
+          "cq.ca",
+          "cq.cb"
+        ],
+        [
+          "cq.fuse"
+        ],
+        [
+          "cq.tail"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": "qanet_context_query_attention.root",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "cq.c",
+      "label": "Transpose context to length,features",
+      "kind": "tensor",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,8,96]",
+      "detail": [],
+      "axes": [
+        1,
+        2
+      ],
+      "parent": "cq.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "cq.q",
+      "label": "Transpose query to length,features",
+      "kind": "tensor",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,5,96]",
+      "detail": [],
+      "axes": [
+        1,
+        2
+      ],
+      "parent": "cq.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "cq.ct",
+      "label": "Context expand over queries",
+      "kind": "tensor",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,8,5,96]",
+      "detail": [],
+      "unsqueeze_dim": 2,
+      "parent": "cq.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "cq.qt",
+      "label": "Query expand over context",
+      "kind": "tensor",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,8,5,96]",
+      "detail": [],
+      "unsqueeze_dim": 1,
+      "parent": "cq.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "cq.cq",
+      "label": "Ct * Qt / pairwise products",
+      "kind": "multiply",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,8,5,96]",
+      "detail": [],
+      "parent": "cq.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "context",
+        "query"
+      ]
+    },
+    {
+      "id": "cq.features",
+      "label": "Concat [Ct,Qt,Ct*Qt]",
+      "kind": "concat",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,8,5,288]",
+      "detail": [],
+      "dim": 3,
+      "ordered_operands": [
+        "Ct",
+        "Qt",
+        "CQ"
+      ],
+      "parent": "cq.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "context",
+        "query",
+        "product"
+      ]
+    },
+    {
+      "id": "cq.score",
+      "label": "Pair features @ learned w",
+      "kind": "matmul",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.__init__",
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,8,5]",
+      "detail": [],
+      "parameters": [
+        "w"
+      ],
+      "parameter_shape": [
+        288
+      ],
+      "bias": false,
+      "parent": "cq.body",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "features"
+      ]
+    },
+    {
+      "id": "cq.s1",
+      "label": "Query-normalized attention S1",
+      "kind": "group",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward",
+        "qanet-attention-sequence/models.py::mask_logits"
+      ],
+      "shape": "[B,8,5]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "cq.body",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "cq.qmask",
+      "label": "Apply query mask / -1e30",
+      "kind": "mask",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward",
+        "qanet-attention-sequence/models.py::mask_logits"
+      ],
+      "shape": "[B,8,5]",
+      "detail": [],
+      "expression": "target * (1-mask) + mask * (-1e30)",
+      "fill": -1e+30,
+      "expanded_mask_shape": [
+        "B",
+        1,
+        5
+      ],
+      "parent": "cq.s1",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "scores",
+        "mask"
+      ]
+    },
+    {
+      "id": "cq.softmax1",
+      "label": "Softmax along query positions",
+      "kind": "softmax",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,8,5]",
+      "detail": [],
+      "dim": 2,
+      "parent": "cq.s1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "cq.s2",
+      "label": "Context-normalized attention S2",
+      "kind": "group",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward",
+        "qanet-attention-sequence/models.py::mask_logits"
+      ],
+      "shape": "[B,8,5]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "cq.body",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "cq.cmask",
+      "label": "Apply context mask / -1e30",
+      "kind": "mask",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward",
+        "qanet-attention-sequence/models.py::mask_logits"
+      ],
+      "shape": "[B,8,5]",
+      "detail": [],
+      "expression": "target * (1-mask) + mask * (-1e30)",
+      "fill": -1e+30,
+      "expanded_mask_shape": [
+        "B",
+        8,
+        1
+      ],
+      "parent": "cq.s2",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "scores",
+        "mask"
+      ]
+    },
+    {
+      "id": "cq.softmax2",
+      "label": "Softmax along context positions",
+      "kind": "softmax",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,8,5]",
+      "detail": [],
+      "dim": 1,
+      "parent": "cq.s2",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "cq.a",
+      "label": "A = S1 @ Q",
+      "kind": "bmm",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,8,96]",
+      "detail": [],
+      "parent": "cq.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "weights",
+        "values"
+      ]
+    },
+    {
+      "id": "cq.cross",
+      "label": "S1 @ transpose(S2)",
+      "kind": "bmm",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,8,8]",
+      "detail": [],
+      "transpose_dims": [
+        1,
+        2
+      ],
+      "parent": "cq.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "left",
+        "right_transposed"
+      ]
+    },
+    {
+      "id": "cq.b",
+      "label": "B = cross-attention @ C",
+      "kind": "bmm",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,8,96]",
+      "detail": [],
+      "parent": "cq.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "weights",
+        "values"
+      ]
+    },
+    {
+      "id": "cq.ca",
+      "label": "C * A",
+      "kind": "multiply",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,8,96]",
+      "detail": [],
+      "parent": "cq.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "context",
+        "attended_query"
+      ]
+    },
+    {
+      "id": "cq.cb",
+      "label": "C * B",
+      "kind": "multiply",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,8,96]",
+      "detail": [],
+      "parent": "cq.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "context",
+        "attended_context"
+      ]
+    },
+    {
+      "id": "cq.fuse",
+      "label": "Concat [C,A,C*A,C*B]",
+      "kind": "concat",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,8,384]",
+      "detail": [],
+      "dim": 2,
+      "ordered_operands": [
+        "C",
+        "A",
+        "C*A",
+        "C*B"
+      ],
+      "parent": "cq.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "context",
+        "query_attention",
+        "product_a",
+        "product_b"
+      ]
+    },
+    {
+      "id": "cq.tail",
+      "label": "Dropout and restore channels-first",
+      "kind": "group",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,384,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "cq.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "cq.drop",
+      "label": "Dropout p=.1 / eval identity",
+      "kind": "dropout",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,8,384]",
+      "detail": [],
+      "p": 0.1,
+      "training": false,
+      "parent": "cq.tail",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "cq.transpose",
+      "label": "Transpose feature and context axes",
+      "kind": "tensor",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,384,8]",
+      "detail": [],
+      "axes": [
+        1,
+        2
+      ],
+      "parent": "cq.tail",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "cq.output",
+      "label": "Context-query interaction output",
+      "kind": "output",
+      "source": [
+        "qanet-attention-sequence/models.py::CQAttention.forward"
+      ],
+      "shape": "[B,384,8]",
+      "detail": [],
+      "return_fields": [
+        "out.transpose(1,2)"
+      ],
+      "parent": "qanet_context_query_attention.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "output"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "cq.s1:in->cq.qmask:in:boundary",
+      "src": "cq.s1",
+      "dst": "cq.qmask",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "cq.qmask:out->cq.softmax1:in:tensor",
+      "src": "cq.qmask",
+      "dst": "cq.softmax1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.softmax1:out->cq.s1:out:boundary",
+      "src": "cq.softmax1",
+      "dst": "cq.s1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "cq.s2:in->cq.cmask:in:boundary",
+      "src": "cq.s2",
+      "dst": "cq.cmask",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "cq.cmask:out->cq.softmax2:in:tensor",
+      "src": "cq.cmask",
+      "dst": "cq.softmax2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.softmax2:out->cq.s2:out:boundary",
+      "src": "cq.softmax2",
+      "dst": "cq.s2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "cq.tail:in->cq.drop:in:boundary",
+      "src": "cq.tail",
+      "dst": "cq.drop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "cq.drop:out->cq.transpose:in:tensor",
+      "src": "cq.drop",
+      "dst": "cq.transpose",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.transpose:out->cq.tail:out:boundary",
+      "src": "cq.transpose",
+      "dst": "cq.tail",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "cq.input_c:out->cq.c:input:tensor",
+      "src": "cq.input_c",
+      "dst": "cq.c",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.input_q:out->cq.q:input:tensor",
+      "src": "cq.input_q",
+      "dst": "cq.q",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.c:out->cq.ct:input:tensor",
+      "src": "cq.c",
+      "dst": "cq.ct",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.q:out->cq.qt:input:tensor",
+      "src": "cq.q",
+      "dst": "cq.qt",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.ct:out->cq.cq:context:tensor",
+      "src": "cq.ct",
+      "dst": "cq.cq",
+      "src_port": "out",
+      "dst_port": "context",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.qt:out->cq.cq:query:tensor",
+      "src": "cq.qt",
+      "dst": "cq.cq",
+      "src_port": "out",
+      "dst_port": "query",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.ct:out->cq.features:context:tensor",
+      "src": "cq.ct",
+      "dst": "cq.features",
+      "src_port": "out",
+      "dst_port": "context",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.qt:out->cq.features:query:tensor",
+      "src": "cq.qt",
+      "dst": "cq.features",
+      "src_port": "out",
+      "dst_port": "query",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.cq:out->cq.features:product:tensor",
+      "src": "cq.cq",
+      "dst": "cq.features",
+      "src_port": "out",
+      "dst_port": "product",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.features:out->cq.score:features:tensor",
+      "src": "cq.features",
+      "dst": "cq.score",
+      "src_port": "out",
+      "dst_port": "features",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.score:out->cq.qmask:scores:tensor",
+      "src": "cq.score",
+      "dst": "cq.qmask",
+      "src_port": "out",
+      "dst_port": "scores",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.score:out->cq.cmask:scores:tensor",
+      "src": "cq.score",
+      "dst": "cq.cmask",
+      "src_port": "out",
+      "dst_port": "scores",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.input_cm:out->cq.cmask:mask:mask",
+      "src": "cq.input_cm",
+      "dst": "cq.cmask",
+      "src_port": "out",
+      "dst_port": "mask",
+      "role": "mask"
+    },
+    {
+      "id": "cq.input_qm:out->cq.qmask:mask:mask",
+      "src": "cq.input_qm",
+      "dst": "cq.qmask",
+      "src_port": "out",
+      "dst_port": "mask",
+      "role": "mask"
+    },
+    {
+      "id": "cq.s1:out->cq.a:weights:tensor",
+      "src": "cq.s1",
+      "dst": "cq.a",
+      "src_port": "out",
+      "dst_port": "weights",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.q:out->cq.a:values:tensor",
+      "src": "cq.q",
+      "dst": "cq.a",
+      "src_port": "out",
+      "dst_port": "values",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.s1:out->cq.cross:left:tensor",
+      "src": "cq.s1",
+      "dst": "cq.cross",
+      "src_port": "out",
+      "dst_port": "left",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.s2:out->cq.cross:right_transposed:tensor",
+      "src": "cq.s2",
+      "dst": "cq.cross",
+      "src_port": "out",
+      "dst_port": "right_transposed",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.cross:out->cq.b:weights:tensor",
+      "src": "cq.cross",
+      "dst": "cq.b",
+      "src_port": "out",
+      "dst_port": "weights",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.c:out->cq.b:values:tensor",
+      "src": "cq.c",
+      "dst": "cq.b",
+      "src_port": "out",
+      "dst_port": "values",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.c:out->cq.ca:context:tensor",
+      "src": "cq.c",
+      "dst": "cq.ca",
+      "src_port": "out",
+      "dst_port": "context",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.a:out->cq.ca:attended_query:tensor",
+      "src": "cq.a",
+      "dst": "cq.ca",
+      "src_port": "out",
+      "dst_port": "attended_query",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.c:out->cq.cb:context:tensor",
+      "src": "cq.c",
+      "dst": "cq.cb",
+      "src_port": "out",
+      "dst_port": "context",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.b:out->cq.cb:attended_context:tensor",
+      "src": "cq.b",
+      "dst": "cq.cb",
+      "src_port": "out",
+      "dst_port": "attended_context",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.c:out->cq.fuse:context:tensor",
+      "src": "cq.c",
+      "dst": "cq.fuse",
+      "src_port": "out",
+      "dst_port": "context",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.a:out->cq.fuse:query_attention:tensor",
+      "src": "cq.a",
+      "dst": "cq.fuse",
+      "src_port": "out",
+      "dst_port": "query_attention",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.ca:out->cq.fuse:product_a:tensor",
+      "src": "cq.ca",
+      "dst": "cq.fuse",
+      "src_port": "out",
+      "dst_port": "product_a",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.cb:out->cq.fuse:product_b:tensor",
+      "src": "cq.cb",
+      "dst": "cq.fuse",
+      "src_port": "out",
+      "dst_port": "product_b",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.fuse:out->cq.tail:in:tensor",
+      "src": "cq.fuse",
+      "dst": "cq.tail",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "cq.tail:out->cq.output:output:tensor",
+      "src": "cq.tail",
+      "dst": "cq.output",
+      "src_port": "out",
+      "dst_port": "output",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Frozen config.py supplies d_model96 and dropout.1; context8/query5 are explicit module example lengths, not claimed full-model limits.",
+    "One learned vector w has3D entries and no bias; pair features concatenate C,Q,C*Q before the dot with w.",
+    "The same raw S scores take different masks and normalize over query axis2(S1) versus context axis1(S2).",
+    "A=S1@Q; B=(S1@S2.T)@C; the final four-part feature concat is C,A,C*A,C*B.",
+    "Mask helper uses arithmetic with finite-1e30, not masked_fill(-inf). Only out is returned; attention matrices are internal."
+  ],
+  "corrections": [
+    "Do not replace S2 with a max-reduced query-to-context attention from another BiDAF implementation.",
+    "Do not use the same mask or same normalization axis twice; do not insert QKV projections."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

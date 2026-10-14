@@ -1,0 +1,50 @@
+{
+  "source_project": "tucker-modules",
+  "repository": "ibalazevic/TuckER",
+  "commit": "23aff592115ee91e099ce490cdbea28ef026fc54",
+  "source_snapshot_sha256": "d51776e896c18a8df5e25986a2a612f3876737ee474a464cbf2415a652c92bf2",
+  "entry": "tucker-modules/model.py::TuckER.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "tucker-modules/LICENSE": {
+      "sha256": "3c1ede9d6ed4988250eb9de20cb8440f97fe27754b9c3e18d58ed75a0341eb0a",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ibalazevic/TuckER/23aff592115ee91e099ce490cdbea28ef026fc54/LICENSE",
+      "derived_from": null
+    },
+    "tucker-modules/model.py": {
+      "sha256": "423ac87a9d08904b898b7a33b9c1649fe624bd3bc3400a4eb0851b5a08ed80b6",
+      "lines": 46,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ibalazevic/TuckER/23aff592115ee91e099ce490cdbea28ef026fc54/model.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "tucker-modules/model.py::TuckER.__init__": {
+      "path": "tucker-modules/model.py",
+      "symbol": "TuckER.__init__",
+      "start": 7,
+      "end": 21,
+      "snippet": "    def __init__(self, d, d1, d2, **kwargs):\n        super(TuckER, self).__init__()\n\n        self.E = torch.nn.Embedding(len(d.entities), d1)\n        self.R = torch.nn.Embedding(len(d.relations), d2)\n        self.W = torch.nn.Parameter(torch.tensor(np.random.uniform(-1, 1, (d2, d1, d1)), \n                                    dtype=torch.float, device=\"cuda\", requires_grad=True))\n\n        self.input_dropout = torch.nn.Dropout(kwargs[\"input_dropout\"])\n        self.hidden_dropout1 = torch.nn.Dropout(kwargs[\"hidden_dropout1\"])\n        self.hidden_dropout2 = torch.nn.Dropout(kwargs[\"hidden_dropout2\"])\n        self.loss = torch.nn.BCELoss()\n\n        self.bn0 = torch.nn.BatchNorm1d(d1)\n        self.bn1 = torch.nn.BatchNorm1d(d1)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "tucker-modules/model.py::TuckER.forward": {
+      "path": "tucker-modules/model.py",
+      "symbol": "TuckER.forward",
+      "start": 28,
+      "end": 45,
+      "snippet": "    def forward(self, e1_idx, r_idx):\n        e1 = self.E(e1_idx)\n        x = self.bn0(e1)\n        x = self.input_dropout(x)\n        x = x.view(-1, 1, e1.size(1))\n\n        r = self.R(r_idx)\n        W_mat = torch.mm(r, self.W.view(r.size(1), -1))\n        W_mat = W_mat.view(-1, e1.size(1), e1.size(1))\n        W_mat = self.hidden_dropout1(W_mat)\n\n        x = torch.bmm(x, W_mat) \n        x = x.view(-1, e1.size(1))      \n        x = self.bn1(x)\n        x = self.hidden_dropout2(x)\n        x = torch.mm(x, self.E.weight.transpose(1,0))\n        pred = torch.sigmoid(x)\n        return pred",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "tucker-modules/LICENSE"
+  ]
+}

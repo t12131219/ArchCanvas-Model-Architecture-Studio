@@ -5,8 +5,15 @@ import { api } from './api';
 import type { Capabilities, ExportArtifact } from './api';
 import { Icon } from './icons';
 import { readExportCache, writeExportCache } from './exportCache';
+import { PreviewExportDialog } from './PreviewExportDialog.tsx';
+import type { PreviewExportSource } from './previewPublication.ts';
 
-export function ExportDialog({ document, selectedId, capabilities, onClose }: { document: CanvasDocument; selectedId?: string; capabilities: Capabilities | null; onClose: () => void }) {
+export function ExportDialog(props: { document: CanvasDocument; selectedId?: string; capabilities: Capabilities | null; onClose: () => void; previewExport?: PreviewExportSource }) {
+  if (props.previewExport) return <PreviewExportDialog {...props} previewExport={props.previewExport} />;
+  return <CanvasExportDialog {...props} />;
+}
+
+function CanvasExportDialog({ document, selectedId, capabilities, onClose }: { document: CanvasDocument; selectedId?: string; capabilities: Capabilities | null; onClose: () => void }) {
   const storageKey = `archcanvas.export.v2:${document.id}`;
   const [dpi, setDpi] = useState(300);
   const [scope, setScope] = useState<'document' | 'detail'>('document');

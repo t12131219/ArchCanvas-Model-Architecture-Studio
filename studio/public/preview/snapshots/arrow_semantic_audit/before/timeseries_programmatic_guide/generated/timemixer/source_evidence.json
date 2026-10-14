@@ -1,0 +1,216 @@
+{
+  "archive": "TimeMixer-main.zip",
+  "archive_sha256": "5350a1610249d592ee4c7211a538034f592821e57f322d3b2c9d360441a7fe3d",
+  "entry": "TimeMixer-main/models/TimeMixer.py::Model",
+  "mode": "static AST + reviewed handwritten adapter; model code never imported or executed",
+  "files": {
+    "TimeMixer-main/layers/Autoformer_EncDec.py": {
+      "sha256": "48745b4bb647355e9845792a855df9c59fd7df7fcc664c765351fec390c4073e",
+      "lines": 203,
+      "configuration_reference": false
+    },
+    "TimeMixer-main/layers/Embed.py": {
+      "sha256": "ab492ea2f68459bbcf3cbffdd1beb75b24d0d70248d017a313a3b470316aaa2b",
+      "lines": 250,
+      "configuration_reference": false
+    },
+    "TimeMixer-main/layers/StandardNorm.py": {
+      "sha256": "cc1c0bc65b7b094bbe83f988fb05b86272a59638c030c3781aa52ce8880379df",
+      "lines": 67,
+      "configuration_reference": false
+    },
+    "TimeMixer-main/models/TimeMixer.py": {
+      "sha256": "817d62f4aac54c8566e560f6d3785856e31c8ee51460279ee3d0a4823f11d4be",
+      "lines": 527,
+      "configuration_reference": false
+    },
+    "TimeMixer-main/run.py": {
+      "sha256": "2d945cae47154e08e2a0aa8f794e2a25fb1bd5ce8ff3e070d2692326fe197024",
+      "lines": 187,
+      "configuration_reference": true
+    },
+    "TimeMixer-main/scripts/long_term_forecast/ETT_script/TimeMixer_ETTh1_unify.sh": {
+      "sha256": "13086d899b992b67cdd4409d26f686c1ac7e15e9ad4fd03dd53a2e0728554fc4",
+      "lines": 125,
+      "configuration_reference": true
+    }
+  },
+  "symbols": {
+    "TimeMixer-main/layers/Autoformer_EncDec.py::moving_avg.forward": {
+      "path": "TimeMixer-main/layers/Autoformer_EncDec.py",
+      "symbol": "moving_avg.forward",
+      "start": 31,
+      "end": 38,
+      "snippet": "    def forward(self, x):\n        # padding on the both ends of time series\n        front = x[:, 0:1, :].repeat(1, (self.kernel_size - 1) // 2, 1)\n        end = x[:, -1:, :].repeat(1, (self.kernel_size - 1) // 2, 1)\n        x = torch.cat([front, x, end], dim=1)\n        x = self.avg(x.permute(0, 2, 1))\n        x = x.permute(0, 2, 1)\n        return x",
+      "evidence_id": "E001"
+    },
+    "TimeMixer-main/layers/Autoformer_EncDec.py::series_decomp.forward": {
+      "path": "TimeMixer-main/layers/Autoformer_EncDec.py",
+      "symbol": "series_decomp.forward",
+      "start": 50,
+      "end": 53,
+      "snippet": "    def forward(self, x):\n        moving_mean = self.moving_avg(x)\n        res = x - moving_mean\n        return res, moving_mean",
+      "evidence_id": "E002"
+    },
+    "TimeMixer-main/layers/Embed.py::TokenEmbedding.forward": {
+      "path": "TimeMixer-main/layers/Embed.py",
+      "symbol": "TokenEmbedding.forward",
+      "start": 40,
+      "end": 42,
+      "snippet": "    def forward(self, x):\n        x = self.tokenConv(x.permute(0, 2, 1)).transpose(1, 2)\n        return x",
+      "evidence_id": "E005"
+    },
+    "TimeMixer-main/layers/Embed.py::DataEmbedding_wo_pos.__init__": {
+      "path": "TimeMixer-main/layers/Embed.py",
+      "symbol": "DataEmbedding_wo_pos.__init__",
+      "start": 177,
+      "end": 185,
+      "snippet": "    def __init__(self, c_in, d_model, embed_type='fixed', freq='h', dropout=0.1):\n        super(DataEmbedding_wo_pos, self).__init__()\n\n        self.value_embedding = TokenEmbedding(c_in=c_in, d_model=d_model)\n        self.position_embedding = PositionalEmbedding(d_model=d_model)\n        self.temporal_embedding = TemporalEmbedding(d_model=d_model, embed_type=embed_type,\n                                                    freq=freq) if embed_type != 'timeF' else TimeFeatureEmbedding(\n            d_model=d_model, embed_type=embed_type, freq=freq)\n        self.dropout = nn.Dropout(p=dropout)",
+      "evidence_id": "E003"
+    },
+    "TimeMixer-main/layers/Embed.py::DataEmbedding_wo_pos.forward": {
+      "path": "TimeMixer-main/layers/Embed.py",
+      "symbol": "DataEmbedding_wo_pos.forward",
+      "start": 187,
+      "end": 194,
+      "snippet": "    def forward(self, x, x_mark):\n        if x is None and x_mark is not None:\n            return self.temporal_embedding(x_mark)\n        if x_mark is None:\n            x = self.value_embedding(x)\n        else:\n            x = self.value_embedding(x) + self.temporal_embedding(x_mark)\n        return self.dropout(x)",
+      "evidence_id": "E004"
+    },
+    "TimeMixer-main/layers/StandardNorm.py::Normalize.forward": {
+      "path": "TimeMixer-main/layers/StandardNorm.py",
+      "symbol": "Normalize.forward",
+      "start": 20,
+      "end": 28,
+      "snippet": "    def forward(self, x, mode: str):\n        if mode == 'norm':\n            self._get_statistics(x)\n            x = self._normalize(x)\n        elif mode == 'denorm':\n            x = self._denormalize(x)\n        else:\n            raise NotImplementedError\n        return x",
+      "evidence_id": "E009"
+    },
+    "TimeMixer-main/layers/StandardNorm.py::Normalize._get_statistics": {
+      "path": "TimeMixer-main/layers/StandardNorm.py",
+      "symbol": "Normalize._get_statistics",
+      "start": 35,
+      "end": 41,
+      "snippet": "    def _get_statistics(self, x):\n        dim2reduce = tuple(range(1, x.ndim - 1))\n        if self.subtract_last:\n            self.last = x[:, -1, :].unsqueeze(1)\n        else:\n            self.mean = torch.mean(x, dim=dim2reduce, keepdim=True).detach()\n        self.stdev = torch.sqrt(torch.var(x, dim=dim2reduce, keepdim=True, unbiased=False) + self.eps).detach()",
+      "evidence_id": "E007"
+    },
+    "TimeMixer-main/layers/StandardNorm.py::Normalize._normalize": {
+      "path": "TimeMixer-main/layers/StandardNorm.py",
+      "symbol": "Normalize._normalize",
+      "start": 43,
+      "end": 54,
+      "snippet": "    def _normalize(self, x):\n        if self.non_norm:\n            return x\n        if self.subtract_last:\n            x = x - self.last\n        else:\n            x = x - self.mean\n        x = x / self.stdev\n        if self.affine:\n            x = x * self.affine_weight\n            x = x + self.affine_bias\n        return x",
+      "evidence_id": "E008"
+    },
+    "TimeMixer-main/layers/StandardNorm.py::Normalize._denormalize": {
+      "path": "TimeMixer-main/layers/StandardNorm.py",
+      "symbol": "Normalize._denormalize",
+      "start": 56,
+      "end": 67,
+      "snippet": "    def _denormalize(self, x):\n        if self.non_norm:\n            return x\n        if self.affine:\n            x = x - self.affine_bias\n            x = x / (self.affine_weight + self.eps * self.eps)\n        x = x * self.stdev\n        if self.subtract_last:\n            x = x + self.last\n        else:\n            x = x + self.mean\n        return x",
+      "evidence_id": "E006"
+    },
+    "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.__init__": {
+      "path": "TimeMixer-main/models/TimeMixer.py",
+      "symbol": "MultiScaleSeasonMixing.__init__",
+      "start": 33,
+      "end": 52,
+      "snippet": "    def __init__(self, configs):\n        super(MultiScaleSeasonMixing, self).__init__()\n\n        self.down_sampling_layers = torch.nn.ModuleList(\n            [\n                nn.Sequential(\n                    torch.nn.Linear(\n                        configs.seq_len // (configs.down_sampling_window ** i),\n                        configs.seq_len // (configs.down_sampling_window ** (i + 1)),\n                    ),\n                    nn.GELU(),\n                    torch.nn.Linear(\n                        configs.seq_len // (configs.down_sampling_window ** (i + 1)),\n                        configs.seq_len // (configs.down_sampling_window ** (i + 1)),\n                    ),\n\n                )\n                for i in range(configs.down_sampling_layers)\n            ]\n        )",
+      "evidence_id": "E017"
+    },
+    "TimeMixer-main/models/TimeMixer.py::MultiScaleSeasonMixing.forward": {
+      "path": "TimeMixer-main/models/TimeMixer.py",
+      "symbol": "MultiScaleSeasonMixing.forward",
+      "start": 54,
+      "end": 69,
+      "snippet": "    def forward(self, season_list):\n\n        # mixing high->low\n        out_high = season_list[0]\n        out_low = season_list[1]\n        out_season_list = [out_high.permute(0, 2, 1)]\n\n        for i in range(len(season_list) - 1):\n            out_low_res = self.down_sampling_layers[i](out_high)\n            out_low = out_low + out_low_res\n            out_high = out_low\n            if i + 2 <= len(season_list) - 1:\n                out_low = season_list[i + 2]\n            out_season_list.append(out_high.permute(0, 2, 1))\n\n        return out_season_list",
+      "evidence_id": "E018"
+    },
+    "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.__init__": {
+      "path": "TimeMixer-main/models/TimeMixer.py",
+      "symbol": "MultiScaleTrendMixing.__init__",
+      "start": 77,
+      "end": 94,
+      "snippet": "    def __init__(self, configs):\n        super(MultiScaleTrendMixing, self).__init__()\n\n        self.up_sampling_layers = torch.nn.ModuleList(\n            [\n                nn.Sequential(\n                    torch.nn.Linear(\n                        configs.seq_len // (configs.down_sampling_window ** (i + 1)),\n                        configs.seq_len // (configs.down_sampling_window ** i),\n                    ),\n                    nn.GELU(),\n                    torch.nn.Linear(\n                        configs.seq_len // (configs.down_sampling_window ** i),\n                        configs.seq_len // (configs.down_sampling_window ** i),\n                    ),\n                )\n                for i in reversed(range(configs.down_sampling_layers))\n            ])",
+      "evidence_id": "E019"
+    },
+    "TimeMixer-main/models/TimeMixer.py::MultiScaleTrendMixing.forward": {
+      "path": "TimeMixer-main/models/TimeMixer.py",
+      "symbol": "MultiScaleTrendMixing.forward",
+      "start": 96,
+      "end": 114,
+      "snippet": "    def forward(self, trend_list):\n\n        # mixing low->high\n        trend_list_reverse = trend_list.copy()\n        trend_list_reverse.reverse()\n        out_low = trend_list_reverse[0]\n        out_high = trend_list_reverse[1]\n        out_trend_list = [out_low.permute(0, 2, 1)]\n\n        for i in range(len(trend_list_reverse) - 1):\n            out_high_res = self.up_sampling_layers[i](out_low)\n            out_high = out_high + out_high_res\n            out_low = out_high\n            if i + 2 <= len(trend_list_reverse) - 1:\n                out_high = trend_list_reverse[i + 2]\n            out_trend_list.append(out_low.permute(0, 2, 1))\n\n        out_trend_list.reverse()\n        return out_trend_list",
+      "evidence_id": "E020"
+    },
+    "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.__init__": {
+      "path": "TimeMixer-main/models/TimeMixer.py",
+      "symbol": "PastDecomposableMixing.__init__",
+      "start": 118,
+      "end": 152,
+      "snippet": "    def __init__(self, configs):\n        super(PastDecomposableMixing, self).__init__()\n        self.seq_len = configs.seq_len\n        self.pred_len = configs.pred_len\n        self.down_sampling_window = configs.down_sampling_window\n\n        self.layer_norm = nn.LayerNorm(configs.d_model)\n        self.dropout = nn.Dropout(configs.dropout)\n        self.channel_independence = configs.channel_independence\n\n        if configs.decomp_method == 'moving_avg':\n            self.decompsition = series_decomp(configs.moving_avg)\n        elif configs.decomp_method == \"dft_decomp\":\n            self.decompsition = DFT_series_decomp(configs.top_k)\n        else:\n            raise ValueError('decompsition is error')\n\n        if configs.channel_independence == 0:\n            self.cross_layer = nn.Sequential(\n                nn.Linear(in_features=configs.d_model, out_features=configs.d_ff),\n                nn.GELU(),\n                nn.Linear(in_features=configs.d_ff, out_features=configs.d_model),\n            )\n\n        # Mixing season\n        self.mixing_multi_scale_season = MultiScaleSeasonMixing(configs)\n\n        # Mxing trend\n        self.mixing_multi_scale_trend = MultiScaleTrendMixing(configs)\n\n        self.out_cross_layer = nn.Sequential(\n            nn.Linear(in_features=configs.d_model, out_features=configs.d_ff),\n            nn.GELU(),\n            nn.Linear(in_features=configs.d_ff, out_features=configs.d_model),\n        )",
+      "evidence_id": "E021"
+    },
+    "TimeMixer-main/models/TimeMixer.py::PastDecomposableMixing.forward": {
+      "path": "TimeMixer-main/models/TimeMixer.py",
+      "symbol": "PastDecomposableMixing.forward",
+      "start": 154,
+      "end": 183,
+      "snippet": "    def forward(self, x_list):\n        length_list = []\n        for x in x_list:\n            _, T, _ = x.size()\n            length_list.append(T)\n\n        # Decompose to obtain the season and trend\n        season_list = []\n        trend_list = []\n        for x in x_list:\n            season, trend = self.decompsition(x)\n            if self.channel_independence == 0:\n                season = self.cross_layer(season)\n                trend = self.cross_layer(trend)\n            season_list.append(season.permute(0, 2, 1))\n            trend_list.append(trend.permute(0, 2, 1))\n\n        # bottom-up season mixing\n        out_season_list = self.mixing_multi_scale_season(season_list)\n        # top-down trend mixing\n        out_trend_list = self.mixing_multi_scale_trend(trend_list)\n\n        out_list = []\n        for ori, out_season, out_trend, length in zip(x_list, out_season_list, out_trend_list,\n                                                      length_list):\n            out = out_season + out_trend\n            if self.channel_independence:\n                out = ori + self.out_cross_layer(out)\n            out_list.append(out[:, :length, :])\n        return out_list",
+      "evidence_id": "E022"
+    },
+    "TimeMixer-main/models/TimeMixer.py::Model": {
+      "path": "TimeMixer-main/models/TimeMixer.py",
+      "symbol": "Model",
+      "start": 186,
+      "end": 527,
+      "snippet": "class Model(nn.Module):\n\n    def __init__(self, configs):\n        super(Model, self).__init__()\n        self.configs = configs\n        self.task_name = configs.task_name\n        self.seq_len = configs.seq_len\n        self.label_len = configs.label_len\n        self.pred_len = configs.pred_len\n        self.down_sampling_window = configs.down_sampling_window\n        self.channel_independence = configs.channel_independence\n        self.pdm_blocks = nn.ModuleList([PastDecomposableMixing(configs)\n                                         for _ in range(configs.e_layers)])\n\n        self.preprocess = series_decomp(configs.moving_avg)\n        self.enc_in = configs.enc_in\n        self.use_future_temporal_feature = configs.use_future_temporal_feature\n\n        if self.channel_independence == 1:\n            self.enc_embedding = DataEmbedding_wo_pos(1, configs.d_model, configs.embed, configs.freq,\n                                                      configs.dropout)\n        else:\n            self.enc_embedding = DataEmbedding_wo_pos(configs.enc_in, configs.d_model, configs.embed, configs.freq,\n                                                      configs.dropout)\n\n        self.layer = configs.e_layers\n\n        self.normalize_layers = torch.nn.ModuleList(\n            [\n                Normalize(self.configs.enc_in, affine=True, non_norm=True if configs.use_norm == 0 else False)\n                for i in range(configs.down_sampling_layers + 1)\n            ]\n        )\n\n        if self.task_name == 'long_term_forecast' or self.task_name == 'short_term_forecast':\n            self.predict_layers = torch.nn.ModuleList(\n                [\n                    torch.nn.Linear(\n                        configs.seq_len // (configs.down_sampling_window ** i),\n                        configs.pred_len,\n                    )\n                    for i in range(configs.down_sampling_layers + 1)\n                ]\n            )\n\n            if self.channel_independence == 1:\n                self.projection_layer = nn.Linear(\n                    configs.d_model, 1, bias=True)\n            else:\n                self.projection_layer = nn.Linear(\n                    configs.d_model, configs.c_out, bias=True)\n\n                self.out_res_layers = torch.nn.ModuleList([\n                    torch.nn.Linear(\n                        configs.seq_len // (configs.down_sampling_window ** i),\n                        configs.seq_len // (configs.down_sampling_window ** i),\n                    )\n                    for i in range(configs.down_sampling_layers + 1)\n                ])\n\n                self.regression_layers = torch.nn.ModuleList(\n                    [\n                        torch.nn.Linear(\n                            configs.seq_len // (configs.down_sampling_window ** i),\n                            configs.pred_len,\n                        )\n                        for i in range(configs.down_sampling_layers + 1)\n                    ]\n                )\n        if self.task_name == 'imputation' or self.task_name == 'anomaly_detection':\n            if self.channel_independence == 1:\n                self.projection_layer = nn.Linear(\n                    configs.d_model, 1, bias=True)\n            else:\n                self.projection_layer = nn.Linear(\n                    configs.d_model, configs.c_out, bias=True)\n        if self.task_name == 'classification':\n            self.act = F.gelu\n            self.dropout = nn.Dropout(configs.dropout)\n            self.projection = nn.Linear(\n                configs.d_model * configs.seq_len, configs.num_class)\n\n    def out_projection(self, dec_out, i, out_res):\n        dec_out = self.projection_layer(dec_out)\n        out_res = out_res.permute(0, 2, 1)\n        out_res = self.out_res_layers[i](out_res)\n        out_res = self.regression_layers[i](out_res).permute(0, 2, 1)\n        dec_out = dec_out + out_res\n        return dec_out\n\n    def pre_enc(self, x_list):\n        if self.channel_independence == 1:\n            return (x_list, None)\n        else:\n            out1_list = []\n            out2_list = []\n            for x in x_list:\n                x_1, x_2 = self.preprocess(x)\n                out1_list.append(x_1)\n                out2_list.append(x_2)\n            return (out1_list, out2_list)\n\n    def __multi_scale_process_inputs(self, x_enc, x_mark_enc):\n        if self.configs.down_sampling_method == 'max':\n            down_pool = torch.nn.MaxPool1d(self.configs.down_sampling_window, return_indices=False)\n        elif self.configs.down_sampling_method == 'avg':\n            down_pool = torch.nn.AvgPool1d(self.configs.down_sampling_window)\n        elif self.configs.down_sampling_method == 'conv':\n            padding = 1 if torch.__version__ >= '1.5.0' else 2\n            down_pool = nn.Conv1d(in_channels=self.configs.enc_in, out_channels=self.configs.enc_in,\n                                  kernel_size=3, padding=padding,\n                                  stride=self.configs.down_sampling_window,\n                                  padding_mode='circular',\n                                  bias=False)\n        else:\n            return x_enc, x_mark_enc\n        # B,T,C -> B,C,T\n        x_enc = x_enc.permute(0, 2, 1)\n\n        x_enc_ori = x_enc\n        x_mark_enc_mark_ori = x_mark_enc\n\n        x_enc_sampling_list = []\n        x_mark_sampling_list = []\n        x_enc_sampling_list.append(x_enc.permute(0, 2, 1))\n        x_mark_sampling_list.append(x_mark_enc)\n\n        for i in range(self.configs.down_sampling_layers):\n            x_enc_sampling = down_pool(x_enc_ori)\n\n            x_enc_sampling_list.append(x_enc_sampling.permute(0, 2, 1))\n            x_enc_ori = x_enc_sampling\n\n            if x_mark_enc_mark_ori is not None:\n                x_mark_sampling_list.append(x_mark_enc_mark_ori[:, ::self.configs.down_sampling_window, :])\n                x_mark_enc_mark_ori = x_mark_enc_mark_ori[:, ::self.configs.down_sampling_window, :]\n\n        x_enc = x_enc_sampling_list\n        if x_mark_enc_mark_ori is not None:\n            x_mark_enc = x_mark_sampling_list\n        else:\n            x_mark_enc = x_mark_enc\n\n        return x_enc, x_mark_enc\n\n    def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):\n\n        if self.use_future_temporal_feature:\n            if self.channel_independence == 1:\n                B, T, N = x_enc.size()\n                x_mark_dec = x_mark_dec.repeat(N, 1, 1)\n                self.x_mark_dec = self.enc_embedding(None, x_mark_dec)\n            else:\n                self.x_mark_dec = self.enc_embedding(None, x_mark_dec)\n\n        x_enc, x_mark_enc = self.__multi_scale_process_inputs(x_enc, x_mark_enc)\n\n        x_list = []\n        x_mark_list = []\n        if x_mark_enc is not None:\n            for i, x, x_mark in zip(range(len(x_enc)), x_enc, x_mark_enc):\n                B, T, N = x.size()\n                x = self.normalize_layers[i](x, 'norm')\n                if self.channel_independence == 1:\n                    x = x.permute(0, 2, 1).contiguous().reshape(B * N, T, 1)\n                    x_mark = x_mark.repeat(N, 1, 1)\n                x_list.append(x)\n                x_mark_list.append(x_mark)\n        else:\n            for i, x in zip(range(len(x_enc)), x_enc, ):\n                B, T, N = x.size()\n                x = self.normalize_layers[i](x, 'norm')\n                if self.channel_independence == 1:\n                    x = x.permute(0, 2, 1).contiguous().reshape(B * N, T, 1)\n                x_list.append(x)\n\n        # embedding\n        enc_out_list = []\n        x_list = self.pre_enc(x_list)\n        if x_mark_enc is not None:\n            for i, x, x_mark in zip(range(len(x_list[0])), x_list[0], x_mark_list):\n                enc_out = self.enc_embedding(x, x_mark)  # [B,T,C]\n                enc_out_list.append(enc_out)\n        else:\n            for i, x in zip(range(len(x_list[0])), x_list[0]):\n                enc_out = self.enc_embedding(x, None)  # [B,T,C]\n                enc_out_list.append(enc_out)\n\n        # Past Decomposable Mixing as encoder for past\n        for i in range(self.layer):\n            enc_out_list = self.pdm_blocks[i](enc_out_list)\n\n        # Future Multipredictor Mixing as decoder for future\n        dec_out_list = self.future_multi_mixing(B, enc_out_list, x_list)\n\n        dec_out = torch.stack(dec_out_list, dim=-1).sum(-1)\n        dec_out = self.normalize_layers[0](dec_out, 'denorm')\n        return dec_out\n\n    def future_multi_mixing(self, B, enc_out_list, x_list):\n        dec_out_list = []\n        if self.channel_independence == 1:\n            x_list = x_list[0]\n            for i, enc_out in zip(range(len(x_list)), enc_out_list):\n                dec_out = self.predict_layers[i](enc_out.permute(0, 2, 1)).permute(\n                    0, 2, 1)  # align temporal dimension\n                if self.use_future_temporal_feature:\n                    dec_out = dec_out + self.x_mark_dec\n                    dec_out = self.projection_layer(dec_out)\n                else:\n                    dec_out = self.projection_layer(dec_out)\n                dec_out = dec_out.reshape(B, self.configs.c_out, self.pred_len).permute(0, 2, 1).contiguous()\n                dec_out_list.append(dec_out)\n\n        else:\n            for i, enc_out, out_res in zip(range(len(x_list[0])), enc_out_list, x_list[1]):\n                dec_out = self.predict_layers[i](enc_out.permute(0, 2, 1)).permute(\n                    0, 2, 1)  # align temporal dimension\n                dec_out = self.out_projection(dec_out, i, out_res)\n                dec_out_list.append(dec_out)\n\n        return dec_out_list\n\n    def classification(self, x_enc, x_mark_enc):\n        x_enc, _ = self.__multi_scale_process_inputs(x_enc, None)\n        x_list = x_enc\n\n        # embedding\n        enc_out_list = []\n        for x in x_list:\n            enc_out = self.enc_embedding(x, None)  # [B,T,C]\n            enc_out_list.append(enc_out)\n\n        # MultiScale-CrissCrossAttention  as encoder for past\n        for i in range(self.layer):\n            enc_out_list = self.pdm_blocks[i](enc_out_list)\n\n        enc_out = enc_out_list[0]\n        # Output\n        # the output transformer encoder/decoder embeddings don't include non-linearity\n        output = self.act(enc_out)\n        output = self.dropout(output)\n        # zero-out padding embeddings\n        output = output * x_mark_enc.unsqueeze(-1)\n        # (batch_size, seq_length * d_model)\n        output = output.reshape(output.shape[0], -1)\n        output = self.projection(output)  # (batch_size, num_classes)\n        return output\n\n    def anomaly_detection(self, x_enc):\n        B, T, N = x_enc.size()\n        x_enc, _ = self.__multi_scale_process_inputs(x_enc, None)\n\n        x_list = []\n\n        for i, x in zip(range(len(x_enc)), x_enc, ):\n            B, T, N = x.size()\n            x = self.normalize_layers[i](x, 'norm')\n            if self.channel_independence == 1:\n                x = x.permute(0, 2, 1).contiguous().reshape(B * N, T, 1)\n            x_list.append(x)\n\n        # embedding\n        enc_out_list = []\n        for x in x_list:\n            enc_out = self.enc_embedding(x, None)  # [B,T,C]\n            enc_out_list.append(enc_out)\n\n        # MultiScale-CrissCrossAttention  as encoder for past\n        for i in range(self.layer):\n            enc_out_list = self.pdm_blocks[i](enc_out_list)\n\n        dec_out = self.projection_layer(enc_out_list[0])\n        dec_out = dec_out.reshape(B, self.configs.c_out, -1).permute(0, 2, 1).contiguous()\n\n        dec_out = self.normalize_layers[0](dec_out, 'denorm')\n        return dec_out\n\n    def imputation(self, x_enc, x_mark_enc, mask):\n        means = torch.sum(x_enc, dim=1) / torch.sum(mask == 1, dim=1)\n        means = means.unsqueeze(1).detach()\n        x_enc = x_enc - means\n        x_enc = x_enc.masked_fill(mask == 0, 0)\n        stdev = torch.sqrt(torch.sum(x_enc * x_enc, dim=1) /\n                           torch.sum(mask == 1, dim=1) + 1e-5)\n        stdev = stdev.unsqueeze(1).detach()\n        x_enc /= stdev\n\n        B, T, N = x_enc.size()\n        x_enc, x_mark_enc = self.__multi_scale_process_inputs(x_enc, x_mark_enc)\n\n        x_list = []\n        x_mark_list = []\n        if x_mark_enc is not None:\n            for i, x, x_mark in zip(range(len(x_enc)), x_enc, x_mark_enc):\n                B, T, N = x.size()\n                if self.channel_independence == 1:\n                    x = x.permute(0, 2, 1).contiguous().reshape(B * N, T, 1)\n                x_list.append(x)\n                x_mark = x_mark.repeat(N, 1, 1)\n                x_mark_list.append(x_mark)\n        else:\n            for i, x in zip(range(len(x_enc)), x_enc, ):\n                B, T, N = x.size()\n                if self.channel_independence == 1:\n                    x = x.permute(0, 2, 1).contiguous().reshape(B * N, T, 1)\n                x_list.append(x)\n\n        # embedding\n        enc_out_list = []\n        for x in x_list:\n            enc_out = self.enc_embedding(x, None)  # [B,T,C]\n            enc_out_list.append(enc_out)\n\n        # MultiScale-CrissCrossAttention  as encoder for past\n        for i in range(self.layer):\n            enc_out_list = self.pdm_blocks[i](enc_out_list)\n\n        dec_out = self.projection_layer(enc_out_list[0])\n        dec_out = dec_out.reshape(B, self.configs.c_out, -1).permute(0, 2, 1).contiguous()\n\n        dec_out = dec_out * \\\n                  (stdev[:, 0, :].unsqueeze(1).repeat(1, self.seq_len, 1))\n        dec_out = dec_out + \\\n                  (means[:, 0, :].unsqueeze(1).repeat(1, self.seq_len, 1))\n        return dec_out\n\n    def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):\n        if self.task_name == 'long_term_forecast' or self.task_name == 'short_term_forecast':\n            dec_out = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec)\n            return dec_out\n        if self.task_name == 'imputation':\n            dec_out = self.imputation(x_enc, x_mark_enc, mask)\n            return dec_out  # [B, L, D]\n        if self.task_name == 'anomaly_detection':\n            dec_out = self.anomaly_detection(x_enc)\n            return dec_out  # [B, L, D]\n        if self.task_name == 'classification':\n            dec_out = self.classification(x_enc, x_mark_enc)\n            return dec_out  # [B, N]\n        else:\n            raise ValueError('Other tasks implemented yet')",
+      "evidence_id": "E010"
+    },
+    "TimeMixer-main/models/TimeMixer.py::Model.__init__": {
+      "path": "TimeMixer-main/models/TimeMixer.py",
+      "symbol": "Model.__init__",
+      "start": 188,
+      "end": 266,
+      "snippet": "    def __init__(self, configs):\n        super(Model, self).__init__()\n        self.configs = configs\n        self.task_name = configs.task_name\n        self.seq_len = configs.seq_len\n        self.label_len = configs.label_len\n        self.pred_len = configs.pred_len\n        self.down_sampling_window = configs.down_sampling_window\n        self.channel_independence = configs.channel_independence\n        self.pdm_blocks = nn.ModuleList([PastDecomposableMixing(configs)\n                                         for _ in range(configs.e_layers)])\n\n        self.preprocess = series_decomp(configs.moving_avg)\n        self.enc_in = configs.enc_in\n        self.use_future_temporal_feature = configs.use_future_temporal_feature\n\n        if self.channel_independence == 1:\n            self.enc_embedding = DataEmbedding_wo_pos(1, configs.d_model, configs.embed, configs.freq,\n                                                      configs.dropout)\n        else:\n            self.enc_embedding = DataEmbedding_wo_pos(configs.enc_in, configs.d_model, configs.embed, configs.freq,\n                                                      configs.dropout)\n\n        self.layer = configs.e_layers\n\n        self.normalize_layers = torch.nn.ModuleList(\n            [\n                Normalize(self.configs.enc_in, affine=True, non_norm=True if configs.use_norm == 0 else False)\n                for i in range(configs.down_sampling_layers + 1)\n            ]\n        )\n\n        if self.task_name == 'long_term_forecast' or self.task_name == 'short_term_forecast':\n            self.predict_layers = torch.nn.ModuleList(\n                [\n                    torch.nn.Linear(\n                        configs.seq_len // (configs.down_sampling_window ** i),\n                        configs.pred_len,\n                    )\n                    for i in range(configs.down_sampling_layers + 1)\n                ]\n            )\n\n            if self.channel_independence == 1:\n                self.projection_layer = nn.Linear(\n                    configs.d_model, 1, bias=True)\n            else:\n                self.projection_layer = nn.Linear(\n                    configs.d_model, configs.c_out, bias=True)\n\n                self.out_res_layers = torch.nn.ModuleList([\n                    torch.nn.Linear(\n                        configs.seq_len // (configs.down_sampling_window ** i),\n                        configs.seq_len // (configs.down_sampling_window ** i),\n                    )\n                    for i in range(configs.down_sampling_layers + 1)\n                ])\n\n                self.regression_layers = torch.nn.ModuleList(\n                    [\n                        torch.nn.Linear(\n                            configs.seq_len // (configs.down_sampling_window ** i),\n                            configs.pred_len,\n                        )\n                        for i in range(configs.down_sampling_layers + 1)\n                    ]\n                )\n        if self.task_name == 'imputation' or self.task_name == 'anomaly_detection':\n            if self.channel_independence == 1:\n                self.projection_layer = nn.Linear(\n                    configs.d_model, 1, bias=True)\n            else:\n                self.projection_layer = nn.Linear(\n                    configs.d_model, configs.c_out, bias=True)\n        if self.task_name == 'classification':\n            self.act = F.gelu\n            self.dropout = nn.Dropout(configs.dropout)\n            self.projection = nn.Linear(\n                configs.d_model * configs.seq_len, configs.num_class)",
+      "evidence_id": "E011"
+    },
+    "TimeMixer-main/models/TimeMixer.py::Model.pre_enc": {
+      "path": "TimeMixer-main/models/TimeMixer.py",
+      "symbol": "Model.pre_enc",
+      "start": 276,
+      "end": 286,
+      "snippet": "    def pre_enc(self, x_list):\n        if self.channel_independence == 1:\n            return (x_list, None)\n        else:\n            out1_list = []\n            out2_list = []\n            for x in x_list:\n                x_1, x_2 = self.preprocess(x)\n                out1_list.append(x_1)\n                out2_list.append(x_2)\n            return (out1_list, out2_list)",
+      "evidence_id": "E016"
+    },
+    "TimeMixer-main/models/TimeMixer.py::Model.__multi_scale_process_inputs": {
+      "path": "TimeMixer-main/models/TimeMixer.py",
+      "symbol": "Model.__multi_scale_process_inputs",
+      "start": 288,
+      "end": 329,
+      "snippet": "    def __multi_scale_process_inputs(self, x_enc, x_mark_enc):\n        if self.configs.down_sampling_method == 'max':\n            down_pool = torch.nn.MaxPool1d(self.configs.down_sampling_window, return_indices=False)\n        elif self.configs.down_sampling_method == 'avg':\n            down_pool = torch.nn.AvgPool1d(self.configs.down_sampling_window)\n        elif self.configs.down_sampling_method == 'conv':\n            padding = 1 if torch.__version__ >= '1.5.0' else 2\n            down_pool = nn.Conv1d(in_channels=self.configs.enc_in, out_channels=self.configs.enc_in,\n                                  kernel_size=3, padding=padding,\n                                  stride=self.configs.down_sampling_window,\n                                  padding_mode='circular',\n                                  bias=False)\n        else:\n            return x_enc, x_mark_enc\n        # B,T,C -> B,C,T\n        x_enc = x_enc.permute(0, 2, 1)\n\n        x_enc_ori = x_enc\n        x_mark_enc_mark_ori = x_mark_enc\n\n        x_enc_sampling_list = []\n        x_mark_sampling_list = []\n        x_enc_sampling_list.append(x_enc.permute(0, 2, 1))\n        x_mark_sampling_list.append(x_mark_enc)\n\n        for i in range(self.configs.down_sampling_layers):\n            x_enc_sampling = down_pool(x_enc_ori)\n\n            x_enc_sampling_list.append(x_enc_sampling.permute(0, 2, 1))\n            x_enc_ori = x_enc_sampling\n\n            if x_mark_enc_mark_ori is not None:\n                x_mark_sampling_list.append(x_mark_enc_mark_ori[:, ::self.configs.down_sampling_window, :])\n                x_mark_enc_mark_ori = x_mark_enc_mark_ori[:, ::self.configs.down_sampling_window, :]\n\n        x_enc = x_enc_sampling_list\n        if x_mark_enc_mark_ori is not None:\n            x_mark_enc = x_mark_sampling_list\n        else:\n            x_mark_enc = x_mark_enc\n\n        return x_enc, x_mark_enc",
+      "evidence_id": "E012"
+    },
+    "TimeMixer-main/models/TimeMixer.py::Model.forecast": {
+      "path": "TimeMixer-main/models/TimeMixer.py",
+      "symbol": "Model.forecast",
+      "start": 331,
+      "end": 383,
+      "snippet": "    def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):\n\n        if self.use_future_temporal_feature:\n            if self.channel_independence == 1:\n                B, T, N = x_enc.size()\n                x_mark_dec = x_mark_dec.repeat(N, 1, 1)\n                self.x_mark_dec = self.enc_embedding(None, x_mark_dec)\n            else:\n                self.x_mark_dec = self.enc_embedding(None, x_mark_dec)\n\n        x_enc, x_mark_enc = self.__multi_scale_process_inputs(x_enc, x_mark_enc)\n\n        x_list = []\n        x_mark_list = []\n        if x_mark_enc is not None:\n            for i, x, x_mark in zip(range(len(x_enc)), x_enc, x_mark_enc):\n                B, T, N = x.size()\n                x = self.normalize_layers[i](x, 'norm')\n                if self.channel_independence == 1:\n                    x = x.permute(0, 2, 1).contiguous().reshape(B * N, T, 1)\n                    x_mark = x_mark.repeat(N, 1, 1)\n                x_list.append(x)\n                x_mark_list.append(x_mark)\n        else:\n            for i, x in zip(range(len(x_enc)), x_enc, ):\n                B, T, N = x.size()\n                x = self.normalize_layers[i](x, 'norm')\n                if self.channel_independence == 1:\n                    x = x.permute(0, 2, 1).contiguous().reshape(B * N, T, 1)\n                x_list.append(x)\n\n        # embedding\n        enc_out_list = []\n        x_list = self.pre_enc(x_list)\n        if x_mark_enc is not None:\n            for i, x, x_mark in zip(range(len(x_list[0])), x_list[0], x_mark_list):\n                enc_out = self.enc_embedding(x, x_mark)  # [B,T,C]\n                enc_out_list.append(enc_out)\n        else:\n            for i, x in zip(range(len(x_list[0])), x_list[0]):\n                enc_out = self.enc_embedding(x, None)  # [B,T,C]\n                enc_out_list.append(enc_out)\n\n        # Past Decomposable Mixing as encoder for past\n        for i in range(self.layer):\n            enc_out_list = self.pdm_blocks[i](enc_out_list)\n\n        # Future Multipredictor Mixing as decoder for future\n        dec_out_list = self.future_multi_mixing(B, enc_out_list, x_list)\n\n        dec_out = torch.stack(dec_out_list, dim=-1).sum(-1)\n        dec_out = self.normalize_layers[0](dec_out, 'denorm')\n        return dec_out",
+      "evidence_id": "E013"
+    },
+    "TimeMixer-main/models/TimeMixer.py::Model.future_multi_mixing": {
+      "path": "TimeMixer-main/models/TimeMixer.py",
+      "symbol": "Model.future_multi_mixing",
+      "start": 385,
+      "end": 407,
+      "snippet": "    def future_multi_mixing(self, B, enc_out_list, x_list):\n        dec_out_list = []\n        if self.channel_independence == 1:\n            x_list = x_list[0]\n            for i, enc_out in zip(range(len(x_list)), enc_out_list):\n                dec_out = self.predict_layers[i](enc_out.permute(0, 2, 1)).permute(\n                    0, 2, 1)  # align temporal dimension\n                if self.use_future_temporal_feature:\n                    dec_out = dec_out + self.x_mark_dec\n                    dec_out = self.projection_layer(dec_out)\n                else:\n                    dec_out = self.projection_layer(dec_out)\n                dec_out = dec_out.reshape(B, self.configs.c_out, self.pred_len).permute(0, 2, 1).contiguous()\n                dec_out_list.append(dec_out)\n\n        else:\n            for i, enc_out, out_res in zip(range(len(x_list[0])), enc_out_list, x_list[1]):\n                dec_out = self.predict_layers[i](enc_out.permute(0, 2, 1)).permute(\n                    0, 2, 1)  # align temporal dimension\n                dec_out = self.out_projection(dec_out, i, out_res)\n                dec_out_list.append(dec_out)\n\n        return dec_out_list",
+      "evidence_id": "E015"
+    },
+    "TimeMixer-main/models/TimeMixer.py::Model.forward": {
+      "path": "TimeMixer-main/models/TimeMixer.py",
+      "symbol": "Model.forward",
+      "start": 513,
+      "end": 527,
+      "snippet": "    def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):\n        if self.task_name == 'long_term_forecast' or self.task_name == 'short_term_forecast':\n            dec_out = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec)\n            return dec_out\n        if self.task_name == 'imputation':\n            dec_out = self.imputation(x_enc, x_mark_enc, mask)\n            return dec_out  # [B, L, D]\n        if self.task_name == 'anomaly_detection':\n            dec_out = self.anomaly_detection(x_enc)\n            return dec_out  # [B, L, D]\n        if self.task_name == 'classification':\n            dec_out = self.classification(x_enc, x_mark_enc)\n            return dec_out  # [B, N]\n        else:\n            raise ValueError('Other tasks implemented yet')",
+      "evidence_id": "E014"
+    }
+  }
+}

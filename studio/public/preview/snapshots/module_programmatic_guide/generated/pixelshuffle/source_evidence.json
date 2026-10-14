@@ -1,0 +1,60 @@
+{
+  "source_project": "pytorch-examples-superres",
+  "repository": "pytorch/examples",
+  "commit": "acc295dc7b90714f1bf47f06004fc19a7fe235c4",
+  "source_snapshot_sha256": "41c071f0632a5bfca6c2948969429e95fd10db4effce5341e006d772f20c4f44",
+  "entry": "pytorch-examples-superres/super_resolution/model.py::Net.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "pytorch-examples-superres/LICENSE": {
+      "sha256": "7e5dc9b5cf276166c4a0678d33e53b14e3d7ef47eee9356ab786c4ba45414efd",
+      "lines": 29,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/examples/acc295dc7b90714f1bf47f06004fc19a7fe235c4/LICENSE",
+      "derived_from": null
+    },
+    "pytorch-examples-superres/super_resolution/model.py": {
+      "sha256": "02edbd87555c4a99136572cc03e27a3b73ecef09127fb00c8ac2e3ac1f6c289c",
+      "lines": 30,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/examples/acc295dc7b90714f1bf47f06004fc19a7fe235c4/super_resolution/model.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "pytorch-examples-superres/super_resolution/model.py::Net.__init__": {
+      "path": "pytorch-examples-superres/super_resolution/model.py",
+      "symbol": "Net.__init__",
+      "start": 7,
+      "end": 17,
+      "snippet": "    def __init__(self, upscale_factor):\n        super(Net, self).__init__()\n\n        self.relu = nn.ReLU()\n        self.conv1 = nn.Conv2d(1, 64, (5, 5), (1, 1), (2, 2))\n        self.conv2 = nn.Conv2d(64, 64, (3, 3), (1, 1), (1, 1))\n        self.conv3 = nn.Conv2d(64, 32, (3, 3), (1, 1), (1, 1))\n        self.conv4 = nn.Conv2d(32, upscale_factor ** 2, (3, 3), (1, 1), (1, 1))\n        self.pixel_shuffle = nn.PixelShuffle(upscale_factor)\n\n        self._initialize_weights()",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "pytorch-examples-superres/super_resolution/model.py::Net.forward": {
+      "path": "pytorch-examples-superres/super_resolution/model.py",
+      "symbol": "Net.forward",
+      "start": 19,
+      "end": 24,
+      "snippet": "    def forward(self, x):\n        x = self.relu(self.conv1(x))\n        x = self.relu(self.conv2(x))\n        x = self.relu(self.conv3(x))\n        x = self.pixel_shuffle(self.conv4(x))\n        return x",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "pytorch-examples-superres/super_resolution/model.py::Net._initialize_weights": {
+      "path": "pytorch-examples-superres/super_resolution/model.py",
+      "symbol": "Net._initialize_weights",
+      "start": 26,
+      "end": 30,
+      "snippet": "    def _initialize_weights(self):\n        init.orthogonal_(self.conv1.weight, init.calculate_gain('relu'))\n        init.orthogonal_(self.conv2.weight, init.calculate_gain('relu'))\n        init.orthogonal_(self.conv3.weight, init.calculate_gain('relu'))\n        init.orthogonal_(self.conv4.weight)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "pytorch-examples-superres/LICENSE"
+  ]
+}

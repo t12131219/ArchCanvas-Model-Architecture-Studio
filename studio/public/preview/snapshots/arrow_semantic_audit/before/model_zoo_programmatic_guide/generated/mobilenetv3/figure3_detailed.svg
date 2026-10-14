@@ -1,0 +1,1109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="10326" viewBox="0 0 1200 10326">
+<defs><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<metadata id="source-binding">{&quot;model&quot;: &quot;mobilenetv3&quot;, &quot;source_snapshot_sha256&quot;: &quot;d99aabf41ee783fdb7b603dc53fc09c290e223223a1576e510b40206f438e950&quot;, &quot;repository&quot;: &quot;https://github.com/rasbt/deeplearning-models&quot;, &quot;commit&quot;: &quot;59beda3aa25337e576564f1c18c6edd26f9f30e3&quot;, &quot;semantic_ir_sha256&quot;: &quot;6876911cb0cf2494b871cb27273d0d441404e754ae0d0328ef84fc016ebc47ab&quot;, &quot;view&quot;: 2, &quot;source_projects&quot;: {&quot;deeplearning-models-batch4&quot;: {&quot;repository&quot;: &quot;https://github.com/rasbt/deeplearning-models&quot;, &quot;commit&quot;: &quot;59beda3aa25337e576564f1c18c6edd26f9f30e3&quot;, &quot;snapshot&quot;: &quot;d99aabf41ee783fdb7b603dc53fc09c290e223223a1576e510b40206f438e950&quot;}, &quot;torchvision-v0.9.0-mobilev3&quot;: {&quot;repository&quot;: &quot;pytorch/vision&quot;, &quot;commit&quot;: &quot;01dfa8ea81972bb74b52dc01e6a1b43b26b62020&quot;, &quot;snapshot&quot;: &quot;f3ab89879e79e5b8d12880bbf186513af2fa92e34d35071cb994daa46bf12f19&quot;}}}</metadata>
+<metadata id="diagram-style">{&quot;name&quot;: &quot;transformer-paper-model-zoo&quot;, &quot;version&quot;: 1, &quot;font&quot;: &quot;DejaVu Sans, Arial, sans-serif&quot;, &quot;text&quot;: &quot;#172336&quot;, &quot;line&quot;: &quot;#263348&quot;, &quot;palette&quot;: {&quot;root&quot;: &quot;#ffffff&quot;, &quot;group&quot;: &quot;#ffffff&quot;, &quot;inner&quot;: &quot;#fffaf6&quot;, &quot;layer&quot;: &quot;#ffffff&quot;, &quot;encoder&quot;: &quot;#e7f5fe&quot;, &quot;decoder&quot;: &quot;#fff0f5&quot;, &quot;embedding&quot;: &quot;#f8d4e1&quot;, &quot;input&quot;: &quot;#f8d4e1&quot;, &quot;output&quot;: &quot;#dfdff8&quot;, &quot;attention&quot;: &quot;#ffddb3&quot;, &quot;ffn&quot;: &quot;#c8ebfb&quot;, &quot;mixing&quot;: &quot;#c8ebfb&quot;, &quot;conv&quot;: &quot;#c8ebfb&quot;, &quot;pool&quot;: &quot;#d6f0df&quot;, &quot;norm&quot;: &quot;#fff6bd&quot;, &quot;concat&quot;: &quot;#fff6bd&quot;, &quot;linear&quot;: &quot;#dfdff8&quot;, &quot;softmax&quot;: &quot;#c9f1cd&quot;, &quot;sampling&quot;: &quot;#c9f1cd&quot;, &quot;recurrent&quot;: &quot;#ffddb3&quot;, &quot;decomposition&quot;: &quot;#d6f0df&quot;, &quot;tensor&quot;: &quot;#cdeaf8&quot;, &quot;activation&quot;: &quot;#f3f5f7&quot;, &quot;control&quot;: &quot;#f3f5f7&quot;}, &quot;typography&quot;: {&quot;title&quot;: 30, &quot;subtitle&quot;: 16, &quot;module&quot;: 22, &quot;inner&quot;: 20, &quot;operator&quot;: 20, &quot;shape&quot;: 16, &quot;detail&quot;: 14, &quot;evidence&quot;: 12, &quot;footer&quot;: 14, &quot;line_height&quot;: 1.18}, &quot;fill_width_nodes&quot;: [&quot;m3.block1&quot;, &quot;m3.block10&quot;, &quot;m3.block11&quot;, &quot;m3.block11.se&quot;, &quot;m3.block12&quot;, &quot;m3.block12.se&quot;, &quot;m3.block13&quot;, &quot;m3.block13.se&quot;, &quot;m3.block14&quot;, &quot;m3.block14.se&quot;, &quot;m3.block15&quot;, &quot;m3.block15.se&quot;, &quot;m3.block2&quot;, &quot;m3.block3&quot;, &quot;m3.block4&quot;, &quot;m3.block4.se&quot;, &quot;m3.block5&quot;, &quot;m3.block5.se&quot;, &quot;m3.block6&quot;, &quot;m3.block6.se&quot;, &quot;m3.block7&quot;, &quot;m3.block8&quot;, &quot;m3.block9&quot;, &quot;m3.head&quot;, &quot;m3.last&quot;, &quot;m3.stage1&quot;, &quot;m3.stage2&quot;, &quot;m3.stage3&quot;, &quot;m3.stage4&quot;, &quot;m3.stage5&quot;, &quot;m3.stage6&quot;, &quot;m3.stem&quot;], &quot;visual_roles&quot;: {&quot;m3.block1&quot;: &quot;conv&quot;, &quot;m3.block1.add&quot;: &quot;norm&quot;, &quot;m3.block1.depthwise&quot;: &quot;conv&quot;, &quot;m3.block1.depthwise.act&quot;: &quot;activation&quot;, &quot;m3.block1.depthwise.bn&quot;: &quot;norm&quot;, &quot;m3.block1.depthwise.conv&quot;: &quot;conv&quot;, &quot;m3.block1.project&quot;: &quot;conv&quot;, &quot;m3.block1.project.act&quot;: &quot;activation&quot;, &quot;m3.block1.project.bn&quot;: &quot;norm&quot;, &quot;m3.block1.project.conv&quot;: &quot;conv&quot;, &quot;m3.block10&quot;: &quot;conv&quot;, &quot;m3.block10.add&quot;: &quot;norm&quot;, &quot;m3.block10.depthwise&quot;: &quot;conv&quot;, &quot;m3.block10.depthwise.act&quot;: &quot;activation&quot;, &quot;m3.block10.depthwise.bn&quot;: &quot;norm&quot;, &quot;m3.block10.depthwise.conv&quot;: &quot;conv&quot;, &quot;m3.block10.expand&quot;: &quot;conv&quot;, &quot;m3.block10.expand.act&quot;: &quot;activation&quot;, &quot;m3.block10.expand.bn&quot;: &quot;norm&quot;, &quot;m3.block10.expand.conv&quot;: &quot;conv&quot;, &quot;m3.block10.project&quot;: &quot;conv&quot;, &quot;m3.block10.project.act&quot;: &quot;activation&quot;, &quot;m3.block10.project.bn&quot;: &quot;norm&quot;, &quot;m3.block10.project.conv&quot;: &quot;conv&quot;, &quot;m3.block11&quot;: &quot;conv&quot;, &quot;m3.block11.depthwise&quot;: &quot;conv&quot;, &quot;m3.block11.depthwise.act&quot;: &quot;activation&quot;, &quot;m3.block11.depthwise.bn&quot;: &quot;norm&quot;, &quot;m3.block11.depthwise.conv&quot;: &quot;conv&quot;, &quot;m3.block11.expand&quot;: &quot;conv&quot;, &quot;m3.block11.expand.act&quot;: &quot;activation&quot;, &quot;m3.block11.expand.bn&quot;: &quot;norm&quot;, &quot;m3.block11.expand.conv&quot;: &quot;conv&quot;, &quot;m3.block11.project&quot;: &quot;conv&quot;, &quot;m3.block11.project.act&quot;: &quot;activation&quot;, &quot;m3.block11.project.bn&quot;: &quot;norm&quot;, &quot;m3.block11.project.conv&quot;: &quot;conv&quot;, &quot;m3.block11.se&quot;: &quot;attention&quot;, &quot;m3.block11.se.fc1&quot;: &quot;linear&quot;, &quot;m3.block11.se.fc2&quot;: &quot;linear&quot;, &quot;m3.block11.se.gate&quot;: &quot;softmax&quot;, &quot;m3.block11.se.multiply&quot;: &quot;tensor&quot;, &quot;m3.block11.se.pool&quot;: &quot;pool&quot;, &quot;m3.block11.se.relu&quot;: &quot;activation&quot;, &quot;m3.block12&quot;: &quot;conv&quot;, &quot;m3.block12.add&quot;: &quot;norm&quot;, &quot;m3.block12.depthwise&quot;: &quot;conv&quot;, &quot;m3.block12.depthwise.act&quot;: &quot;activation&quot;, &quot;m3.block12.depthwise.bn&quot;: &quot;norm&quot;, &quot;m3.block12.depthwise.conv&quot;: &quot;conv&quot;, &quot;m3.block12.expand&quot;: &quot;conv&quot;, &quot;m3.block12.expand.act&quot;: &quot;activation&quot;, &quot;m3.block12.expand.bn&quot;: &quot;norm&quot;, &quot;m3.block12.expand.conv&quot;: &quot;conv&quot;, &quot;m3.block12.project&quot;: &quot;conv&quot;, &quot;m3.block12.project.act&quot;: &quot;activation&quot;, &quot;m3.block12.project.bn&quot;: &quot;norm&quot;, &quot;m3.block12.project.conv&quot;: &quot;conv&quot;, &quot;m3.block12.se&quot;: &quot;attention&quot;, &quot;m3.block12.se.fc1&quot;: &quot;linear&quot;, &quot;m3.block12.se.fc2&quot;: &quot;linear&quot;, &quot;m3.block12.se.gate&quot;: &quot;softmax&quot;, &quot;m3.block12.se.multiply&quot;: &quot;tensor&quot;, &quot;m3.block12.se.pool&quot;: &quot;pool&quot;, &quot;m3.block12.se.relu&quot;: &quot;activation&quot;, &quot;m3.block13&quot;: &quot;conv&quot;, &quot;m3.block13.depthwise&quot;: &quot;conv&quot;, &quot;m3.block13.depthwise.act&quot;: &quot;activation&quot;, &quot;m3.block13.depthwise.bn&quot;: &quot;norm&quot;, &quot;m3.block13.depthwise.conv&quot;: &quot;conv&quot;, &quot;m3.block13.expand&quot;: &quot;conv&quot;, &quot;m3.block13.expand.act&quot;: &quot;activation&quot;, &quot;m3.block13.expand.bn&quot;: &quot;norm&quot;, &quot;m3.block13.expand.conv&quot;: &quot;conv&quot;, &quot;m3.block13.project&quot;: &quot;conv&quot;, &quot;m3.block13.project.act&quot;: &quot;activation&quot;, &quot;m3.block13.project.bn&quot;: &quot;norm&quot;, &quot;m3.block13.project.conv&quot;: &quot;conv&quot;, &quot;m3.block13.se&quot;: &quot;attention&quot;, &quot;m3.block13.se.fc1&quot;: &quot;linear&quot;, &quot;m3.block13.se.fc2&quot;: &quot;linear&quot;, &quot;m3.block13.se.gate&quot;: &quot;softmax&quot;, &quot;m3.block13.se.multiply&quot;: &quot;tensor&quot;, &quot;m3.block13.se.pool&quot;: &quot;pool&quot;, &quot;m3.block13.se.relu&quot;: &quot;activation&quot;, &quot;m3.block14&quot;: &quot;conv&quot;, &quot;m3.block14.add&quot;: &quot;norm&quot;, &quot;m3.block14.depthwise&quot;: &quot;conv&quot;, &quot;m3.block14.depthwise.act&quot;: &quot;activation&quot;, &quot;m3.block14.depthwise.bn&quot;: &quot;norm&quot;, &quot;m3.block14.depthwise.conv&quot;: &quot;conv&quot;, &quot;m3.block14.expand&quot;: &quot;conv&quot;, &quot;m3.block14.expand.act&quot;: &quot;activation&quot;, &quot;m3.block14.expand.bn&quot;: &quot;norm&quot;, &quot;m3.block14.expand.conv&quot;: &quot;conv&quot;, &quot;m3.block14.project&quot;: &quot;conv&quot;, &quot;m3.block14.project.act&quot;: &quot;activation&quot;, &quot;m3.block14.project.bn&quot;: &quot;norm&quot;, &quot;m3.block14.project.conv&quot;: &quot;conv&quot;, &quot;m3.block14.se&quot;: &quot;attention&quot;, &quot;m3.block14.se.fc1&quot;: &quot;linear&quot;, &quot;m3.block14.se.fc2&quot;: &quot;linear&quot;, &quot;m3.block14.se.gate&quot;: &quot;softmax&quot;, &quot;m3.block14.se.multiply&quot;: &quot;tensor&quot;, &quot;m3.block14.se.pool&quot;: &quot;pool&quot;, &quot;m3.block14.se.relu&quot;: &quot;activation&quot;, &quot;m3.block15&quot;: &quot;conv&quot;, &quot;m3.block15.add&quot;: &quot;norm&quot;, &quot;m3.block15.depthwise&quot;: &quot;conv&quot;, &quot;m3.block15.depthwise.act&quot;: &quot;activation&quot;, &quot;m3.block15.depthwise.bn&quot;: &quot;norm&quot;, &quot;m3.block15.depthwise.conv&quot;: &quot;conv&quot;, &quot;m3.block15.expand&quot;: &quot;conv&quot;, &quot;m3.block15.expand.act&quot;: &quot;activation&quot;, &quot;m3.block15.expand.bn&quot;: &quot;norm&quot;, &quot;m3.block15.expand.conv&quot;: &quot;conv&quot;, &quot;m3.block15.project&quot;: &quot;conv&quot;, &quot;m3.block15.project.act&quot;: &quot;activation&quot;, &quot;m3.block15.project.bn&quot;: &quot;norm&quot;, &quot;m3.block15.project.conv&quot;: &quot;conv&quot;, &quot;m3.block15.se&quot;: &quot;attention&quot;, &quot;m3.block15.se.fc1&quot;: &quot;linear&quot;, &quot;m3.block15.se.fc2&quot;: &quot;linear&quot;, &quot;m3.block15.se.gate&quot;: &quot;softmax&quot;, &quot;m3.block15.se.multiply&quot;: &quot;tensor&quot;, &quot;m3.block15.se.pool&quot;: &quot;pool&quot;, &quot;m3.block15.se.relu&quot;: &quot;activation&quot;, &quot;m3.block2&quot;: &quot;conv&quot;, &quot;m3.block2.depthwise&quot;: &quot;conv&quot;, &quot;m3.block2.depthwise.act&quot;: &quot;activation&quot;, &quot;m3.block2.depthwise.bn&quot;: &quot;norm&quot;, &quot;m3.block2.depthwise.conv&quot;: &quot;conv&quot;, &quot;m3.block2.expand&quot;: &quot;conv&quot;, &quot;m3.block2.expand.act&quot;: &quot;activation&quot;, &quot;m3.block2.expand.bn&quot;: &quot;norm&quot;, &quot;m3.block2.expand.conv&quot;: &quot;conv&quot;, &quot;m3.block2.project&quot;: &quot;conv&quot;, &quot;m3.block2.project.act&quot;: &quot;activation&quot;, &quot;m3.block2.project.bn&quot;: &quot;norm&quot;, &quot;m3.block2.project.conv&quot;: &quot;conv&quot;, &quot;m3.block3&quot;: &quot;conv&quot;, &quot;m3.block3.add&quot;: &quot;norm&quot;, &quot;m3.block3.depthwise&quot;: &quot;conv&quot;, &quot;m3.block3.depthwise.act&quot;: &quot;activation&quot;, &quot;m3.block3.depthwise.bn&quot;: &quot;norm&quot;, &quot;m3.block3.depthwise.conv&quot;: &quot;conv&quot;, &quot;m3.block3.expand&quot;: &quot;conv&quot;, &quot;m3.block3.expand.act&quot;: &quot;activation&quot;, &quot;m3.block3.expand.bn&quot;: &quot;norm&quot;, &quot;m3.block3.expand.conv&quot;: &quot;conv&quot;, &quot;m3.block3.project&quot;: &quot;conv&quot;, &quot;m3.block3.project.act&quot;: &quot;activation&quot;, &quot;m3.block3.project.bn&quot;: &quot;norm&quot;, &quot;m3.block3.project.conv&quot;: &quot;conv&quot;, &quot;m3.block4&quot;: &quot;conv&quot;, &quot;m3.block4.depthwise&quot;: &quot;conv&quot;, &quot;m3.block4.depthwise.act&quot;: &quot;activation&quot;, &quot;m3.block4.depthwise.bn&quot;: &quot;norm&quot;, &quot;m3.block4.depthwise.conv&quot;: &quot;conv&quot;, &quot;m3.block4.expand&quot;: &quot;conv&quot;, &quot;m3.block4.expand.act&quot;: &quot;activation&quot;, &quot;m3.block4.expand.bn&quot;: &quot;norm&quot;, &quot;m3.block4.expand.conv&quot;: &quot;conv&quot;, &quot;m3.block4.project&quot;: &quot;conv&quot;, &quot;m3.block4.project.act&quot;: &quot;activation&quot;, &quot;m3.block4.project.bn&quot;: &quot;norm&quot;, &quot;m3.block4.project.conv&quot;: &quot;conv&quot;, &quot;m3.block4.se&quot;: &quot;attention&quot;, &quot;m3.block4.se.fc1&quot;: &quot;linear&quot;, &quot;m3.block4.se.fc2&quot;: &quot;linear&quot;, &quot;m3.block4.se.gate&quot;: &quot;softmax&quot;, &quot;m3.block4.se.multiply&quot;: &quot;tensor&quot;, &quot;m3.block4.se.pool&quot;: &quot;pool&quot;, &quot;m3.block4.se.relu&quot;: &quot;activation&quot;, &quot;m3.block5&quot;: &quot;conv&quot;, &quot;m3.block5.add&quot;: &quot;norm&quot;, &quot;m3.block5.depthwise&quot;: &quot;conv&quot;, &quot;m3.block5.depthwise.act&quot;: &quot;activation&quot;, &quot;m3.block5.depthwise.bn&quot;: &quot;norm&quot;, &quot;m3.block5.depthwise.conv&quot;: &quot;conv&quot;, &quot;m3.block5.expand&quot;: &quot;conv&quot;, &quot;m3.block5.expand.act&quot;: &quot;activation&quot;, &quot;m3.block5.expand.bn&quot;: &quot;norm&quot;, &quot;m3.block5.expand.conv&quot;: &quot;conv&quot;, &quot;m3.block5.project&quot;: &quot;conv&quot;, &quot;m3.block5.project.act&quot;: &quot;activation&quot;, &quot;m3.block5.project.bn&quot;: &quot;norm&quot;, &quot;m3.block5.project.conv&quot;: &quot;conv&quot;, &quot;m3.block5.se&quot;: &quot;attention&quot;, &quot;m3.block5.se.fc1&quot;: &quot;linear&quot;, &quot;m3.block5.se.fc2&quot;: &quot;linear&quot;, &quot;m3.block5.se.gate&quot;: &quot;softmax&quot;, &quot;m3.block5.se.multiply&quot;: &quot;tensor&quot;, &quot;m3.block5.se.pool&quot;: &quot;pool&quot;, &quot;m3.block5.se.relu&quot;: &quot;activation&quot;, &quot;m3.block6&quot;: &quot;conv&quot;, &quot;m3.block6.add&quot;: &quot;norm&quot;, &quot;m3.block6.depthwise&quot;: &quot;conv&quot;, &quot;m3.block6.depthwise.act&quot;: &quot;activation&quot;, &quot;m3.block6.depthwise.bn&quot;: &quot;norm&quot;, &quot;m3.block6.depthwise.conv&quot;: &quot;conv&quot;, &quot;m3.block6.expand&quot;: &quot;conv&quot;, &quot;m3.block6.expand.act&quot;: &quot;activation&quot;, &quot;m3.block6.expand.bn&quot;: &quot;norm&quot;, &quot;m3.block6.expand.conv&quot;: &quot;conv&quot;, &quot;m3.block6.project&quot;: &quot;conv&quot;, &quot;m3.block6.project.act&quot;: &quot;activation&quot;, &quot;m3.block6.project.bn&quot;: &quot;norm&quot;, &quot;m3.block6.project.conv&quot;: &quot;conv&quot;, &quot;m3.block6.se&quot;: &quot;attention&quot;, &quot;m3.block6.se.fc1&quot;: &quot;linear&quot;, &quot;m3.block6.se.fc2&quot;: &quot;linear&quot;, &quot;m3.block6.se.gate&quot;: &quot;softmax&quot;, &quot;m3.block6.se.multiply&quot;: &quot;tensor&quot;, &quot;m3.block6.se.pool&quot;: &quot;pool&quot;, &quot;m3.block6.se.relu&quot;: &quot;activation&quot;, &quot;m3.block7&quot;: &quot;conv&quot;, &quot;m3.block7.depthwise&quot;: &quot;conv&quot;, &quot;m3.block7.depthwise.act&quot;: &quot;activation&quot;, &quot;m3.block7.depthwise.bn&quot;: &quot;norm&quot;, &quot;m3.block7.depthwise.conv&quot;: &quot;conv&quot;, &quot;m3.block7.expand&quot;: &quot;conv&quot;, &quot;m3.block7.expand.act&quot;: &quot;activation&quot;, &quot;m3.block7.expand.bn&quot;: &quot;norm&quot;, &quot;m3.block7.expand.conv&quot;: &quot;conv&quot;, &quot;m3.block7.project&quot;: &quot;conv&quot;, &quot;m3.block7.project.act&quot;: &quot;activation&quot;, &quot;m3.block7.project.bn&quot;: &quot;norm&quot;, &quot;m3.block7.project.conv&quot;: &quot;conv&quot;, &quot;m3.block8&quot;: &quot;conv&quot;, &quot;m3.block8.add&quot;: &quot;norm&quot;, &quot;m3.block8.depthwise&quot;: &quot;conv&quot;, &quot;m3.block8.depthwise.act&quot;: &quot;activation&quot;, &quot;m3.block8.depthwise.bn&quot;: &quot;norm&quot;, &quot;m3.block8.depthwise.conv&quot;: &quot;conv&quot;, &quot;m3.block8.expand&quot;: &quot;conv&quot;, &quot;m3.block8.expand.act&quot;: &quot;activation&quot;, &quot;m3.block8.expand.bn&quot;: &quot;norm&quot;, &quot;m3.block8.expand.conv&quot;: &quot;conv&quot;, &quot;m3.block8.project&quot;: &quot;conv&quot;, &quot;m3.block8.project.act&quot;: &quot;activation&quot;, &quot;m3.block8.project.bn&quot;: &quot;norm&quot;, &quot;m3.block8.project.conv&quot;: &quot;conv&quot;, &quot;m3.block9&quot;: &quot;conv&quot;, &quot;m3.block9.add&quot;: &quot;norm&quot;, &quot;m3.block9.depthwise&quot;: &quot;conv&quot;, &quot;m3.block9.depthwise.act&quot;: &quot;activation&quot;, &quot;m3.block9.depthwise.bn&quot;: &quot;norm&quot;, &quot;m3.block9.depthwise.conv&quot;: &quot;conv&quot;, &quot;m3.block9.expand&quot;: &quot;conv&quot;, &quot;m3.block9.expand.act&quot;: &quot;activation&quot;, &quot;m3.block9.expand.bn&quot;: &quot;norm&quot;, &quot;m3.block9.expand.conv&quot;: &quot;conv&quot;, &quot;m3.block9.project&quot;: &quot;conv&quot;, &quot;m3.block9.project.act&quot;: &quot;activation&quot;, &quot;m3.block9.project.bn&quot;: &quot;norm&quot;, &quot;m3.block9.project.conv&quot;: &quot;conv&quot;, &quot;m3.dropout&quot;: &quot;control&quot;, &quot;m3.fc1&quot;: &quot;linear&quot;, &quot;m3.fc2&quot;: &quot;linear&quot;, &quot;m3.flatten&quot;: &quot;tensor&quot;, &quot;m3.head&quot;: &quot;ffn&quot;, &quot;m3.head_act&quot;: &quot;activation&quot;, &quot;m3.input&quot;: &quot;input&quot;, &quot;m3.last&quot;: &quot;conv&quot;, &quot;m3.last.act&quot;: &quot;activation&quot;, &quot;m3.last.bn&quot;: &quot;norm&quot;, &quot;m3.last.conv&quot;: &quot;conv&quot;, &quot;m3.model&quot;: &quot;root&quot;, &quot;m3.output&quot;: &quot;output&quot;, &quot;m3.pool&quot;: &quot;pool&quot;, &quot;m3.stage1&quot;: &quot;encoder&quot;, &quot;m3.stage2&quot;: &quot;encoder&quot;, &quot;m3.stage3&quot;: &quot;encoder&quot;, &quot;m3.stage4&quot;: &quot;encoder&quot;, &quot;m3.stage5&quot;: &quot;encoder&quot;, &quot;m3.stage6&quot;: &quot;encoder&quot;, &quot;m3.stem&quot;: &quot;conv&quot;, &quot;m3.stem.act&quot;: &quot;activation&quot;, &quot;m3.stem.bn&quot;: &quot;norm&quot;, &quot;m3.stem.conv&quot;: &quot;conv&quot;}, &quot;semantics&quot;: &quot;presentation aliases only; color does not imply mathematical equivalence or parameter sharing&quot;}</metadata>
+<text x="600.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">MobileNetV3-Large (CIFAR-10)  |  Operators &amp; tensor flow</tspan>
+</text>
+<text x="600.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">CIFAR-10 / Crop64 / Large v0.9.0 / width1 / replaced head / eval  /  read bottom to top</tspan>
+</text>
+<g data-node-id="m3.model" data-visual-role="root"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-mobilenet-v3-large-cifar10.py:1 __module__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:253 mobilenet_v3_large; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; parameter=not asserted; </title><rect x="307.0" y="98" width="586" height="9946" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5"/></g>
+<text x="324.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="324.0" dy="0">MobileNetV3-Large</tspan>
+<tspan x="324.0" dy="25.959999999999997">/ CIFAR-10</tspan>
+</text>
+<text x="876.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="876.0" dy="0">[B,10]</tspan>
+</text>
+<text x="880.0" y="177" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="880.0" dy="0">E001,E017,E009</tspan>
+</text>
+<g data-node-id="m3.input" data-visual-role="input"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-mobilenet-v3-large-cifar10.py:1 __module__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:173 MobileNetV3._forward_impl; parameter=not asserted; test: Resize70 -&gt; CenterCrop64 -&gt; tensor -&gt; Normalize(mean=std=.5)</title><rect x="435.0" y="9937" width="330" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="9964" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">CIFAR-10 image</tspan>
+</text>
+<text x="600.0" y="9988" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,3,64,64]</tspan>
+</text>
+<text x="752.0" y="10008" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E001,E010</tspan>
+</text>
+<g data-node-id="m3.stem" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; parameter=not asserted; </title><rect x="339.0" y="9522" width="522" height="391" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="356.0" y="9552" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Stem / Hardswish</tspan>
+</text>
+<text x="844.0" y="9552" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">[B,16,32,32]</tspan>
+</text>
+<text x="848.0" y="9584" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E002,E009</tspan>
+</text>
+<g data-node-id="m3.stem.conv" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; parameter=features.0.0; stride=2; groups=1; bias=False; padding=1</title><rect x="435.0" y="9806" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="9833" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv3x3 3 -&gt; 16</tspan>
+</text>
+<text x="600.0" y="9857" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,16,32,32]</tspan>
+</text>
+<text x="752.0" y="9877" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E009</tspan>
+</text>
+<g data-node-id="m3.stem.bn" data-visual-role="norm"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; parameter=features.0.1; eval: running statistics; eps=0.001; momentum=0.01</title><rect x="435.0" y="9701" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="9728" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="600.0" y="9752" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,16,32,32]</tspan>
+</text>
+<text x="752.0" y="9772" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E009</tspan>
+</text>
+<g data-node-id="m3.stem.act" data-visual-role="activation"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; parameter=not asserted; inplace=True</title><rect x="435.0" y="9596" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="9623" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Hardswish</tspan>
+</text>
+<text x="600.0" y="9647" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,16,32,32]</tspan>
+</text>
+<text x="752.0" y="9667" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E009</tspan>
+</text>
+<path data-route-id="route-0001" d="M 600.0,9913 L 600.0,9887" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0002" d="M 600.0,9806 L 600.0,9782" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0003" d="M 600.0,9701 L 600.0,9677" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0004" d="M 600.0,9596 L 600.0,9522" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.stage1" data-visual-role="encoder"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; parameter=not asserted; logical grouping by output channels; actual features is one Sequential</title><rect x="339.0" y="8284" width="522" height="1214" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="356.0" y="8314" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Stage 1 / IR 1</tspan>
+</text>
+<text x="844.0" y="8314" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">[B,16,32,32]</tspan>
+</text>
+<text x="848.0" y="8346" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E009,E015</tspan>
+</text>
+<g data-node-id="m3.block1" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:94 InvertedResidual.forward; parameter=features.1.block; 16-&gt;16-&gt;16; k3; s1; expansion omitted | Depthwise -&gt; project-BN-Identity</title><rect x="371.0" y="8358" width="458" height="1114" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="388.0" y="8388" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="388.0" dy="0">IR 1 / ReLU /</tspan>
+<tspan x="388.0" dy="25.959999999999997">skip</tspan>
+</text>
+<text x="812.0" y="8388" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="812.0" dy="0">[B,16,32,32]</tspan>
+</text>
+<text x="816.0" y="8437" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E015,E004,E005</tspan>
+</text>
+<g data-node-id="m3.block1.depthwise" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=not asserted; </title><rect x="403.0" y="9012" width="394" height="434" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="420.0" y="9042" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="420.0" dy="0">Depthwise</tspan>
+<tspan x="420.0" dy="25.959999999999997">spatial</tspan>
+<tspan x="420.0" dy="25.959999999999997">convolution</tspan>
+</text>
+<text x="780.0" y="9042" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="780.0" dy="0">[B,16,32,32]</tspan>
+</text>
+<text x="784.0" y="9117" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="784.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="m3.block1.depthwise.conv" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=features.1.block.0.0; stride=1; groups=16; bias=False; padding=1</title><rect x="435.0" y="9339" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="9366" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv3x3 16 -&gt; 16</tspan>
+</text>
+<text x="600.0" y="9390" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,16,32,32]</tspan>
+</text>
+<text x="752.0" y="9410" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="m3.block1.depthwise.bn" data-visual-role="norm"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; parameter=features.1.block.0.1; eval: running statistics; eps=0.001; momentum=0.01</title><rect x="435.0" y="9234" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="9261" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="600.0" y="9285" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,16,32,32]</tspan>
+</text>
+<text x="752.0" y="9305" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E009</tspan>
+</text>
+<g data-node-id="m3.block1.depthwise.act" data-visual-role="activation"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=not asserted; inplace=True</title><rect x="435.0" y="9129" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="9156" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">ReLU</tspan>
+</text>
+<text x="600.0" y="9180" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,16,32,32]</tspan>
+</text>
+<text x="752.0" y="9200" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+<path data-route-id="route-0005" d="M 600.0,9446 L 600.0,9420" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0006" d="M 600.0,9339 L 600.0,9315" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0007" d="M 600.0,9234 L 600.0,9210" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0008" d="M 600.0,9129 L 600.0,9012" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.block1.project" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=not asserted; </title><rect x="403.0" y="8554" width="394" height="434" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="420.0" y="8584" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="420.0" dy="0">Linear</tspan>
+<tspan x="420.0" dy="25.959999999999997">pointwise</tspan>
+<tspan x="420.0" dy="25.959999999999997">projection</tspan>
+</text>
+<text x="780.0" y="8584" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="780.0" dy="0">[B,16,32,32]</tspan>
+</text>
+<text x="784.0" y="8659" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="784.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="m3.block1.project.conv" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=features.1.block.1.0; stride=1; groups=1; bias=False; padding=0</title><rect x="435.0" y="8881" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="8908" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv1x1 16 -&gt; 16</tspan>
+</text>
+<text x="600.0" y="8932" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,16,32,32]</tspan>
+</text>
+<text x="752.0" y="8952" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="m3.block1.project.bn" data-visual-role="norm"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; parameter=features.1.block.1.1; eval: running statistics; eps=0.001; momentum=0.01</title><rect x="435.0" y="8776" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="8803" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="600.0" y="8827" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,16,32,32]</tspan>
+</text>
+<text x="752.0" y="8847" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E009</tspan>
+</text>
+<g data-node-id="m3.block1.project.act" data-visual-role="activation"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=not asserted; Identity: no nonlinear activation</title><rect x="435.0" y="8671" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="8698" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Identity</tspan>
+</text>
+<text x="600.0" y="8722" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,16,32,32]</tspan>
+</text>
+<text x="752.0" y="8742" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+<path data-route-id="route-0009" d="M 600.0,8988 L 600.0,8962" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0010" d="M 600.0,8881 L 600.0,8857" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0011" d="M 600.0,8776 L 600.0,8752" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0012" d="M 600.0,8671 L 600.0,8554" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.block1.add" data-visual-role="norm"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:94 InvertedResidual.forward; parameter=not asserted; result += input; no activation after Add</title><rect x="435.0" y="8449" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="8476" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Add identity input</tspan>
+</text>
+<text x="600.0" y="8500" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,16,32,32]</tspan>
+</text>
+<text x="752.0" y="8520" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E005</tspan>
+</text>
+<path data-route-id="route-0013" d="M 600.0,9472 L 600.0,9446" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0014" d="M 600.0,9012 L 600.0,8988" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0015" d="M 600.0,8554 L 600.0,8530" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0016" d="M 600.0,8449 L 600.0,8358" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0017" d="M 600.0,9472 L 600.0,9454 L 385.0,9454 L 385.0,8489.5 L 435.0,8489.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0018" d="M 600.0,9498 L 600.0,9472" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0019" d="M 600.0,8358 L 600.0,8284" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.stage2" data-visual-role="encoder"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; parameter=not asserted; logical grouping by output channels; actual features is one Sequential</title><rect x="339.0" y="7920" width="522" height="340" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="356.0" y="7950" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Stage 2 / IR</tspan>
+<tspan x="356.0" dy="28.32">2,3</tspan>
+</text>
+<text x="844.0" y="7950" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">[B,24,16,16]</tspan>
+</text>
+<text x="848.0" y="8002" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E009,E015</tspan>
+</text>
+<g data-node-id="m3.block2" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:94 InvertedResidual.forward; parameter=features.2.block; 16-&gt;64-&gt;24; k3; s2; expand1x1 | Depthwise -&gt; project-BN-Identity</title><rect x="371.0" y="8136" width="458" height="98" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="8163" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">IR 2 / ReLU / no skip</tspan>
+</text>
+<text x="600.0" y="8187" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,24,16,16]</tspan>
+</text>
+<text x="600.0" y="8206" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">16-&gt;64-&gt;24; k3; s2; expand1x1</tspan>
+</text>
+<text x="816.0" y="8224" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E015,E004,E005</tspan>
+</text>
+<g data-node-id="m3.block3" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:94 InvertedResidual.forward; parameter=features.3.block; 24-&gt;72-&gt;24; k3; s1; expand1x1 | Depthwise -&gt; project-BN-Identity</title><rect x="371.0" y="8014" width="458" height="98" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="8041" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">IR 3 / ReLU / skip</tspan>
+</text>
+<text x="600.0" y="8065" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,24,16,16]</tspan>
+</text>
+<text x="600.0" y="8084" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">24-&gt;72-&gt;24; k3; s1; expand1x1</tspan>
+</text>
+<text x="816.0" y="8102" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E015,E004,E005</tspan>
+</text>
+<path data-route-id="route-0020" d="M 600.0,8260 L 600.0,8234" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0021" d="M 600.0,8136 L 600.0,8112" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0022" d="M 600.0,8014 L 600.0,7920" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.stage3" data-visual-role="encoder"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; parameter=not asserted; logical grouping by output channels; actual features is one Sequential</title><rect x="339.0" y="5296" width="522" height="2600" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="356.0" y="5326" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Stage 3 / IR</tspan>
+<tspan x="356.0" dy="28.32">4,5,6</tspan>
+</text>
+<text x="844.0" y="5326" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">[B,40,8,8]</tspan>
+</text>
+<text x="848.0" y="5378" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E009,E015</tspan>
+</text>
+<g data-node-id="m3.block4" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:94 InvertedResidual.forward; parameter=features.4.block; 24-&gt;72-&gt;40; k5; s2; expand1x1 | Depthwise -&gt; SE -&gt; project-BN-Identity</title><rect x="371.0" y="5634" width="458" height="2236" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="388.0" y="5664" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="388.0" dy="0">IR 4 / SE /</tspan>
+<tspan x="388.0" dy="25.959999999999997">ReLU / no skip</tspan>
+</text>
+<text x="812.0" y="5664" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="812.0" dy="0">[B,40,8,8]</tspan>
+</text>
+<text x="816.0" y="5713" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E015,E004,E005</tspan>
+</text>
+<g data-node-id="m3.block4.expand" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=not asserted; </title><rect x="403.0" y="7436" width="394" height="408" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="420.0" y="7466" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="420.0" dy="0">Pointwise</tspan>
+<tspan x="420.0" dy="25.959999999999997">expansion</tspan>
+</text>
+<text x="780.0" y="7466" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="780.0" dy="0">[B,72,16,16]</tspan>
+</text>
+<text x="784.0" y="7515" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="784.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="m3.block4.expand.conv" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=features.4.block.0.0; stride=1; groups=1; bias=False; padding=0</title><rect x="435.0" y="7737" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="7764" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv1x1 24 -&gt; 72</tspan>
+</text>
+<text x="600.0" y="7788" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,72,16,16]</tspan>
+</text>
+<text x="752.0" y="7808" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="m3.block4.expand.bn" data-visual-role="norm"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; parameter=features.4.block.0.1; eval: running statistics; eps=0.001; momentum=0.01</title><rect x="435.0" y="7632" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="7659" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="600.0" y="7683" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,72,16,16]</tspan>
+</text>
+<text x="752.0" y="7703" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E009</tspan>
+</text>
+<g data-node-id="m3.block4.expand.act" data-visual-role="activation"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=not asserted; inplace=True</title><rect x="435.0" y="7527" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="7554" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">ReLU</tspan>
+</text>
+<text x="600.0" y="7578" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,72,16,16]</tspan>
+</text>
+<text x="752.0" y="7598" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+<path data-route-id="route-0023" d="M 600.0,7844 L 600.0,7818" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0024" d="M 600.0,7737 L 600.0,7713" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0025" d="M 600.0,7632 L 600.0,7608" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0026" d="M 600.0,7527 L 600.0,7436" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.block4.depthwise" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=not asserted; </title><rect x="403.0" y="6978" width="394" height="434" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="420.0" y="7008" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="420.0" dy="0">Depthwise</tspan>
+<tspan x="420.0" dy="25.959999999999997">spatial</tspan>
+<tspan x="420.0" dy="25.959999999999997">convolution</tspan>
+</text>
+<text x="780.0" y="7008" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="780.0" dy="0">[B,72,8,8]</tspan>
+</text>
+<text x="784.0" y="7083" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="784.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="m3.block4.depthwise.conv" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=features.4.block.1.0; stride=2; groups=72; bias=False; padding=2</title><rect x="435.0" y="7305" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="7332" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv5x5 72 -&gt; 72</tspan>
+</text>
+<text x="600.0" y="7356" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,72,8,8]</tspan>
+</text>
+<text x="752.0" y="7376" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="m3.block4.depthwise.bn" data-visual-role="norm"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; parameter=features.4.block.1.1; eval: running statistics; eps=0.001; momentum=0.01</title><rect x="435.0" y="7200" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="7227" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="600.0" y="7251" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,72,8,8]</tspan>
+</text>
+<text x="752.0" y="7271" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E009</tspan>
+</text>
+<g data-node-id="m3.block4.depthwise.act" data-visual-role="activation"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=not asserted; inplace=True</title><rect x="435.0" y="7095" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="7122" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">ReLU</tspan>
+</text>
+<text x="600.0" y="7146" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,72,8,8]</tspan>
+</text>
+<text x="752.0" y="7166" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+<path data-route-id="route-0027" d="M 600.0,7412 L 600.0,7386" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0028" d="M 600.0,7305 L 600.0,7281" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0029" d="M 600.0,7200 L 600.0,7176" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0030" d="M 600.0,7095 L 600.0,6978" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.block4.se" data-visual-role="attention"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:23 SqueezeExcitation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:30 SqueezeExcitation._scale; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:37 SqueezeExcitation.forward; parameter=features.4.block.2; </title><rect x="403.0" y="6183" width="394" height="771" rx="10" fill="#ffddb3" stroke="#263348" stroke-width="2"/></g>
+<text x="420.0" y="6213" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="420.0" dy="0">Squeeze /</tspan>
+<tspan x="420.0" dy="25.959999999999997">excitation</tspan>
+</text>
+<text x="780.0" y="6213" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="780.0" dy="0">[B,72,8,8]</tspan>
+</text>
+<text x="784.0" y="6262" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="784.0" dy="0">E012,E013,E014</tspan>
+</text>
+<g data-node-id="m3.block4.se.pool" data-visual-role="pool"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:30 SqueezeExcitation._scale; parameter=not asserted; </title><rect x="435.0" y="6823" width="330" height="105" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="6850" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Adaptive average pool</tspan>
+<tspan x="600.0" dy="23.599999999999998">1x1</tspan>
+</text>
+<text x="600.0" y="6898" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,72,1,1]</tspan>
+</text>
+<text x="752.0" y="6918" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E013</tspan>
+</text>
+<g data-node-id="m3.block4.se.fc1" data-visual-role="linear"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:23 SqueezeExcitation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:30 SqueezeExcitation._scale; parameter=features.4.block.2.fc1; squeeze = _make_divisible(expanded//4,8); bias=True</title><rect x="435.0" y="6718" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="6745" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv1x1 72 -&gt; 24</tspan>
+</text>
+<text x="600.0" y="6769" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,24,1,1]</tspan>
+</text>
+<text x="752.0" y="6789" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E012,E013</tspan>
+</text>
+<g data-node-id="m3.block4.se.relu" data-visual-role="activation"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:23 SqueezeExcitation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:30 SqueezeExcitation._scale; parameter=not asserted; </title><rect x="435.0" y="6613" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="6640" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">ReLU</tspan>
+</text>
+<text x="600.0" y="6664" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,24,1,1]</tspan>
+</text>
+<text x="752.0" y="6684" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E012,E013</tspan>
+</text>
+<g data-node-id="m3.block4.se.fc2" data-visual-role="linear"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:23 SqueezeExcitation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:30 SqueezeExcitation._scale; parameter=features.4.block.2.fc2; bias=True; restores expanded channel count</title><rect x="435.0" y="6508" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="6535" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv1x1 24 -&gt; 72</tspan>
+</text>
+<text x="600.0" y="6559" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,72,1,1]</tspan>
+</text>
+<text x="752.0" y="6579" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E012,E013</tspan>
+</text>
+<g data-node-id="m3.block4.se.gate" data-visual-role="softmax"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:30 SqueezeExcitation._scale; parameter=not asserted; </title><rect x="435.0" y="6379" width="330" height="105" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="6406" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Hardsigmoid channel</tspan>
+<tspan x="600.0" dy="23.599999999999998">gate</tspan>
+</text>
+<text x="600.0" y="6454" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,72,1,1]</tspan>
+</text>
+<text x="752.0" y="6474" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E013</tspan>
+</text>
+<g data-node-id="m3.block4.se.multiply" data-visual-role="tensor"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:37 SqueezeExcitation.forward; parameter=not asserted; [B,C,1,1] gate broadcasts across H,W; original depthwise features retained</title><rect x="435.0" y="6274" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="6301" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Scale * retained input</tspan>
+</text>
+<text x="600.0" y="6325" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,72,8,8]</tspan>
+</text>
+<text x="752.0" y="6345" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E014</tspan>
+</text>
+<path data-route-id="route-0031" d="M 600.0,6954 L 600.0,6928" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0032" d="M 600.0,6823 L 600.0,6799" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0033" d="M 600.0,6718 L 600.0,6694" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0034" d="M 600.0,6613 L 600.0,6589" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0035" d="M 600.0,6508 L 600.0,6484" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0036" d="M 600.0,6379 L 600.0,6355" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0037" d="M 600.0,6274 L 600.0,6183" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0038" d="M 600.0,6954 L 600.0,6936 L 417.0,6936 L 417.0,6314.5 L 435.0,6314.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.block4.project" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=not asserted; </title><rect x="403.0" y="5725" width="394" height="434" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="420.0" y="5755" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="420.0" dy="0">Linear</tspan>
+<tspan x="420.0" dy="25.959999999999997">pointwise</tspan>
+<tspan x="420.0" dy="25.959999999999997">projection</tspan>
+</text>
+<text x="780.0" y="5755" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="780.0" dy="0">[B,40,8,8]</tspan>
+</text>
+<text x="784.0" y="5830" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="784.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="m3.block4.project.conv" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=features.4.block.3.0; stride=1; groups=1; bias=False; padding=0</title><rect x="435.0" y="6052" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="6079" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv1x1 72 -&gt; 40</tspan>
+</text>
+<text x="600.0" y="6103" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,40,8,8]</tspan>
+</text>
+<text x="752.0" y="6123" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="m3.block4.project.bn" data-visual-role="norm"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; parameter=features.4.block.3.1; eval: running statistics; eps=0.001; momentum=0.01</title><rect x="435.0" y="5947" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="5974" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="600.0" y="5998" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,40,8,8]</tspan>
+</text>
+<text x="752.0" y="6018" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E009</tspan>
+</text>
+<g data-node-id="m3.block4.project.act" data-visual-role="activation"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=not asserted; Identity: no nonlinear activation</title><rect x="435.0" y="5842" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="5869" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Identity</tspan>
+</text>
+<text x="600.0" y="5893" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,40,8,8]</tspan>
+</text>
+<text x="752.0" y="5913" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+<path data-route-id="route-0039" d="M 600.0,6159 L 600.0,6133" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0040" d="M 600.0,6052 L 600.0,6028" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0041" d="M 600.0,5947 L 600.0,5923" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0042" d="M 600.0,5842 L 600.0,5725" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0043" d="M 600.0,7870 L 600.0,7844" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0044" d="M 600.0,7436 L 600.0,7412" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0045" d="M 600.0,6978 L 600.0,6954" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0046" d="M 600.0,6183 L 600.0,6159" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0047" d="M 600.0,5725 L 600.0,5634" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.block5" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:94 InvertedResidual.forward; parameter=features.5.block; 40-&gt;120-&gt;40; k5; s1; expand1x1 | Depthwise -&gt; SE -&gt; project-BN-Identity</title><rect x="371.0" y="5512" width="458" height="98" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="5539" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">IR 5 / SE / ReLU / skip</tspan>
+</text>
+<text x="600.0" y="5563" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,40,8,8]</tspan>
+</text>
+<text x="600.0" y="5582" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">40-&gt;120-&gt;40; k5; s1; expand1x1</tspan>
+</text>
+<text x="816.0" y="5600" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E015,E004,E005</tspan>
+</text>
+<g data-node-id="m3.block6" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:94 InvertedResidual.forward; parameter=features.6.block; 40-&gt;120-&gt;40; k5; s1; expand1x1 | Depthwise -&gt; SE -&gt; project-BN-Identity</title><rect x="371.0" y="5390" width="458" height="98" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="5417" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">IR 6 / SE / ReLU / skip</tspan>
+</text>
+<text x="600.0" y="5441" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,40,8,8]</tspan>
+</text>
+<text x="600.0" y="5460" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">40-&gt;120-&gt;40; k5; s1; expand1x1</tspan>
+</text>
+<text x="816.0" y="5478" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E015,E004,E005</tspan>
+</text>
+<path data-route-id="route-0048" d="M 600.0,7896 L 600.0,7870" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0049" d="M 600.0,5634 L 600.0,5610" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0050" d="M 600.0,5512 L 600.0,5488" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0051" d="M 600.0,5390 L 600.0,5296" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.stage4" data-visual-role="encoder"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; parameter=not asserted; logical grouping by output channels; actual features is one Sequential</title><rect x="339.0" y="4688" width="522" height="584" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="356.0" y="4718" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Stage 4 / IR</tspan>
+<tspan x="356.0" dy="28.32">7,8,9,10</tspan>
+</text>
+<text x="844.0" y="4718" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">[B,80,4,4]</tspan>
+</text>
+<text x="848.0" y="4770" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E009,E015</tspan>
+</text>
+<g data-node-id="m3.block7" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:94 InvertedResidual.forward; parameter=features.7.block; 40-&gt;240-&gt;80; k3; s2; expand1x1 | Depthwise -&gt; project-BN-Identity</title><rect x="371.0" y="5148" width="458" height="98" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="5175" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">IR 7 / Hardswish / no skip</tspan>
+</text>
+<text x="600.0" y="5199" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,80,4,4]</tspan>
+</text>
+<text x="600.0" y="5218" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">40-&gt;240-&gt;80; k3; s2; expand1x1</tspan>
+</text>
+<text x="816.0" y="5236" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E015,E004,E005</tspan>
+</text>
+<g data-node-id="m3.block8" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:94 InvertedResidual.forward; parameter=features.8.block; 80-&gt;200-&gt;80; k3; s1; expand1x1 | Depthwise -&gt; project-BN-Identity</title><rect x="371.0" y="5026" width="458" height="98" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="5053" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">IR 8 / Hardswish / skip</tspan>
+</text>
+<text x="600.0" y="5077" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,80,4,4]</tspan>
+</text>
+<text x="600.0" y="5096" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">80-&gt;200-&gt;80; k3; s1; expand1x1</tspan>
+</text>
+<text x="816.0" y="5114" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E015,E004,E005</tspan>
+</text>
+<g data-node-id="m3.block9" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:94 InvertedResidual.forward; parameter=features.9.block; 80-&gt;184-&gt;80; k3; s1; expand1x1 | Depthwise -&gt; project-BN-Identity</title><rect x="371.0" y="4904" width="458" height="98" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="4931" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">IR 9 / Hardswish / skip</tspan>
+</text>
+<text x="600.0" y="4955" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,80,4,4]</tspan>
+</text>
+<text x="600.0" y="4974" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">80-&gt;184-&gt;80; k3; s1; expand1x1</tspan>
+</text>
+<text x="816.0" y="4992" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E015,E004,E005</tspan>
+</text>
+<g data-node-id="m3.block10" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:94 InvertedResidual.forward; parameter=features.10.block; 80-&gt;184-&gt;80; k3; s1; expand1x1 | Depthwise -&gt; project-BN-Identity</title><rect x="371.0" y="4782" width="458" height="98" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="4809" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">IR 10 / Hardswish / skip</tspan>
+</text>
+<text x="600.0" y="4833" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,80,4,4]</tspan>
+</text>
+<text x="600.0" y="4852" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">80-&gt;184-&gt;80; k3; s1; expand1x1</tspan>
+</text>
+<text x="816.0" y="4870" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E015,E004,E005</tspan>
+</text>
+<path data-route-id="route-0052" d="M 600.0,5272 L 600.0,5246" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0053" d="M 600.0,5148 L 600.0,5124" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0054" d="M 600.0,5026 L 600.0,5002" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0055" d="M 600.0,4904 L 600.0,4880" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0056" d="M 600.0,4782 L 600.0,4688" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.stage5" data-visual-role="encoder"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; parameter=not asserted; logical grouping by output channels; actual features is one Sequential</title><rect x="339.0" y="2055" width="522" height="2609" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="356.0" y="2085" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Stage 5 / IR</tspan>
+<tspan x="356.0" dy="28.32">11,12</tspan>
+</text>
+<text x="844.0" y="2085" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">[B,112,4,4]</tspan>
+</text>
+<text x="848.0" y="2137" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E009,E015</tspan>
+</text>
+<g data-node-id="m3.block11" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:94 InvertedResidual.forward; parameter=features.11.block; 80-&gt;480-&gt;112; k3; s1; expand1x1 | Depthwise -&gt; SE -&gt; project-BN-Identity</title><rect x="371.0" y="4540" width="458" height="98" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="4567" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">IR 11 / SE / Hardswish / no skip</tspan>
+</text>
+<text x="600.0" y="4591" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,112,4,4]</tspan>
+</text>
+<text x="600.0" y="4610" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">80-&gt;480-&gt;112; k3; s1; expand1x1</tspan>
+</text>
+<text x="816.0" y="4628" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E015,E004,E005</tspan>
+</text>
+<g data-node-id="m3.block12" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:94 InvertedResidual.forward; parameter=features.12.block; 112-&gt;672-&gt;112; k3; s1; expand1x1 | Depthwise -&gt; SE -&gt; project-BN-Identity</title><rect x="371.0" y="2149" width="458" height="2367" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="388.0" y="2179" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="388.0" dy="0">IR 12 / SE /</tspan>
+<tspan x="388.0" dy="25.959999999999997">Hardswish /</tspan>
+<tspan x="388.0" dy="25.959999999999997">skip</tspan>
+</text>
+<text x="812.0" y="2179" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="812.0" dy="0">[B,112,4,4]</tspan>
+</text>
+<text x="816.0" y="2254" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E015,E004,E005</tspan>
+</text>
+<g data-node-id="m3.block12.expand" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=not asserted; </title><rect x="403.0" y="4082" width="394" height="408" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="420.0" y="4112" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="420.0" dy="0">Pointwise</tspan>
+<tspan x="420.0" dy="25.959999999999997">expansion</tspan>
+</text>
+<text x="780.0" y="4112" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="780.0" dy="0">[B,672,4,4]</tspan>
+</text>
+<text x="784.0" y="4161" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="784.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="m3.block12.expand.conv" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=features.12.block.0.0; stride=1; groups=1; bias=False; padding=0</title><rect x="435.0" y="4383" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="4410" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv1x1 112 -&gt; 672</tspan>
+</text>
+<text x="600.0" y="4434" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,672,4,4]</tspan>
+</text>
+<text x="752.0" y="4454" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="m3.block12.expand.bn" data-visual-role="norm"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; parameter=features.12.block.0.1; eval: running statistics; eps=0.001; momentum=0.01</title><rect x="435.0" y="4278" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="4305" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="600.0" y="4329" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,672,4,4]</tspan>
+</text>
+<text x="752.0" y="4349" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E009</tspan>
+</text>
+<g data-node-id="m3.block12.expand.act" data-visual-role="activation"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=not asserted; inplace=True</title><rect x="435.0" y="4173" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="4200" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Hardswish</tspan>
+</text>
+<text x="600.0" y="4224" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,672,4,4]</tspan>
+</text>
+<text x="752.0" y="4244" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+<path data-route-id="route-0057" d="M 600.0,4490 L 600.0,4464" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0058" d="M 600.0,4383 L 600.0,4359" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0059" d="M 600.0,4278 L 600.0,4254" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0060" d="M 600.0,4173 L 600.0,4082" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.block12.depthwise" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=not asserted; </title><rect x="403.0" y="3624" width="394" height="434" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="420.0" y="3654" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="420.0" dy="0">Depthwise</tspan>
+<tspan x="420.0" dy="25.959999999999997">spatial</tspan>
+<tspan x="420.0" dy="25.959999999999997">convolution</tspan>
+</text>
+<text x="780.0" y="3654" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="780.0" dy="0">[B,672,4,4]</tspan>
+</text>
+<text x="784.0" y="3729" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="784.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="m3.block12.depthwise.conv" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=features.12.block.1.0; stride=1; groups=672; bias=False; padding=1</title><rect x="435.0" y="3951" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="3978" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv3x3 672 -&gt; 672</tspan>
+</text>
+<text x="600.0" y="4002" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,672,4,4]</tspan>
+</text>
+<text x="752.0" y="4022" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="m3.block12.depthwise.bn" data-visual-role="norm"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; parameter=features.12.block.1.1; eval: running statistics; eps=0.001; momentum=0.01</title><rect x="435.0" y="3846" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="3873" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="600.0" y="3897" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,672,4,4]</tspan>
+</text>
+<text x="752.0" y="3917" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E009</tspan>
+</text>
+<g data-node-id="m3.block12.depthwise.act" data-visual-role="activation"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=not asserted; inplace=True</title><rect x="435.0" y="3741" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="3768" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Hardswish</tspan>
+</text>
+<text x="600.0" y="3792" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,672,4,4]</tspan>
+</text>
+<text x="752.0" y="3812" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+<path data-route-id="route-0061" d="M 600.0,4058 L 600.0,4032" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0062" d="M 600.0,3951 L 600.0,3927" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0063" d="M 600.0,3846 L 600.0,3822" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0064" d="M 600.0,3741 L 600.0,3624" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.block12.se" data-visual-role="attention"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:23 SqueezeExcitation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:30 SqueezeExcitation._scale; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:37 SqueezeExcitation.forward; parameter=features.12.block.2; </title><rect x="403.0" y="2829" width="394" height="771" rx="10" fill="#ffddb3" stroke="#263348" stroke-width="2"/></g>
+<text x="420.0" y="2859" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="420.0" dy="0">Squeeze /</tspan>
+<tspan x="420.0" dy="25.959999999999997">excitation</tspan>
+</text>
+<text x="780.0" y="2859" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="780.0" dy="0">[B,672,4,4]</tspan>
+</text>
+<text x="784.0" y="2908" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="784.0" dy="0">E012,E013,E014</tspan>
+</text>
+<g data-node-id="m3.block12.se.pool" data-visual-role="pool"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:30 SqueezeExcitation._scale; parameter=not asserted; </title><rect x="435.0" y="3469" width="330" height="105" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="3496" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Adaptive average pool</tspan>
+<tspan x="600.0" dy="23.599999999999998">1x1</tspan>
+</text>
+<text x="600.0" y="3544" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,672,1,1]</tspan>
+</text>
+<text x="752.0" y="3564" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E013</tspan>
+</text>
+<g data-node-id="m3.block12.se.fc1" data-visual-role="linear"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:23 SqueezeExcitation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:30 SqueezeExcitation._scale; parameter=features.12.block.2.fc1; squeeze = _make_divisible(expanded//4,8); bias=True</title><rect x="435.0" y="3364" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="3391" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv1x1 672 -&gt; 168</tspan>
+</text>
+<text x="600.0" y="3415" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,168,1,1]</tspan>
+</text>
+<text x="752.0" y="3435" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E012,E013</tspan>
+</text>
+<g data-node-id="m3.block12.se.relu" data-visual-role="activation"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:23 SqueezeExcitation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:30 SqueezeExcitation._scale; parameter=not asserted; </title><rect x="435.0" y="3259" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="3286" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">ReLU</tspan>
+</text>
+<text x="600.0" y="3310" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,168,1,1]</tspan>
+</text>
+<text x="752.0" y="3330" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E012,E013</tspan>
+</text>
+<g data-node-id="m3.block12.se.fc2" data-visual-role="linear"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:23 SqueezeExcitation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:30 SqueezeExcitation._scale; parameter=features.12.block.2.fc2; bias=True; restores expanded channel count</title><rect x="435.0" y="3154" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="3181" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv1x1 168 -&gt; 672</tspan>
+</text>
+<text x="600.0" y="3205" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,672,1,1]</tspan>
+</text>
+<text x="752.0" y="3225" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E012,E013</tspan>
+</text>
+<g data-node-id="m3.block12.se.gate" data-visual-role="softmax"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:30 SqueezeExcitation._scale; parameter=not asserted; </title><rect x="435.0" y="3025" width="330" height="105" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="3052" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Hardsigmoid channel</tspan>
+<tspan x="600.0" dy="23.599999999999998">gate</tspan>
+</text>
+<text x="600.0" y="3100" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,672,1,1]</tspan>
+</text>
+<text x="752.0" y="3120" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E013</tspan>
+</text>
+<g data-node-id="m3.block12.se.multiply" data-visual-role="tensor"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:37 SqueezeExcitation.forward; parameter=not asserted; [B,C,1,1] gate broadcasts across H,W; original depthwise features retained</title><rect x="435.0" y="2920" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="2947" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Scale * retained input</tspan>
+</text>
+<text x="600.0" y="2971" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,672,4,4]</tspan>
+</text>
+<text x="752.0" y="2991" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E014</tspan>
+</text>
+<path data-route-id="route-0065" d="M 600.0,3600 L 600.0,3574" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0066" d="M 600.0,3469 L 600.0,3445" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0067" d="M 600.0,3364 L 600.0,3340" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0068" d="M 600.0,3259 L 600.0,3235" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0069" d="M 600.0,3154 L 600.0,3130" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0070" d="M 600.0,3025 L 600.0,3001" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0071" d="M 600.0,2920 L 600.0,2829" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0072" d="M 600.0,3600 L 600.0,3582 L 417.0,3582 L 417.0,2960.5 L 435.0,2960.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.block12.project" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=not asserted; </title><rect x="403.0" y="2371" width="394" height="434" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="420.0" y="2401" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="420.0" dy="0">Linear</tspan>
+<tspan x="420.0" dy="25.959999999999997">pointwise</tspan>
+<tspan x="420.0" dy="25.959999999999997">projection</tspan>
+</text>
+<text x="780.0" y="2401" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="780.0" dy="0">[B,112,4,4]</tspan>
+</text>
+<text x="784.0" y="2476" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="784.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="m3.block12.project.conv" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=features.12.block.3.0; stride=1; groups=1; bias=False; padding=0</title><rect x="435.0" y="2698" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="2725" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv1x1 672 -&gt; 112</tspan>
+</text>
+<text x="600.0" y="2749" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,112,4,4]</tspan>
+</text>
+<text x="752.0" y="2769" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="m3.block12.project.bn" data-visual-role="norm"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; parameter=features.12.block.3.1; eval: running statistics; eps=0.001; momentum=0.01</title><rect x="435.0" y="2593" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="2620" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="600.0" y="2644" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,112,4,4]</tspan>
+</text>
+<text x="752.0" y="2664" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E009</tspan>
+</text>
+<g data-node-id="m3.block12.project.act" data-visual-role="activation"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; parameter=not asserted; Identity: no nonlinear activation</title><rect x="435.0" y="2488" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="2515" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Identity</tspan>
+</text>
+<text x="600.0" y="2539" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,112,4,4]</tspan>
+</text>
+<text x="752.0" y="2559" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E004</tspan>
+</text>
+<path data-route-id="route-0073" d="M 600.0,2805 L 600.0,2779" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0074" d="M 600.0,2698 L 600.0,2674" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0075" d="M 600.0,2593 L 600.0,2569" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0076" d="M 600.0,2488 L 600.0,2371" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.block12.add" data-visual-role="norm"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:94 InvertedResidual.forward; parameter=not asserted; result += input; no activation after Add</title><rect x="435.0" y="2266" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="2293" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Add identity input</tspan>
+</text>
+<text x="600.0" y="2317" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,112,4,4]</tspan>
+</text>
+<text x="752.0" y="2337" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E005</tspan>
+</text>
+<path data-route-id="route-0077" d="M 600.0,4516 L 600.0,4490" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0078" d="M 600.0,4082 L 600.0,4058" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0079" d="M 600.0,3624 L 600.0,3600" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0080" d="M 600.0,2829 L 600.0,2805" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0081" d="M 600.0,2371 L 600.0,2347" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0082" d="M 600.0,2266 L 600.0,2149" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0083" d="M 600.0,4516 L 600.0,4498 L 385.0,4498 L 385.0,2306.5 L 435.0,2306.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0084" d="M 600.0,4664 L 600.0,4638" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0085" d="M 600.0,4540 L 600.0,4516" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0086" d="M 600.0,2149 L 600.0,2055" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.stage6" data-visual-role="encoder"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; parameter=not asserted; logical grouping by output channels; actual features is one Sequential</title><rect x="339.0" y="1569" width="522" height="462" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="356.0" y="1599" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Stage 6 / IR</tspan>
+<tspan x="356.0" dy="28.32">13,14,15</tspan>
+</text>
+<text x="844.0" y="1599" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">[B,160,2,2]</tspan>
+</text>
+<text x="848.0" y="1651" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E009,E015</tspan>
+</text>
+<g data-node-id="m3.block13" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:94 InvertedResidual.forward; parameter=features.13.block; 112-&gt;672-&gt;160; k5; s2; expand1x1 | Depthwise -&gt; SE -&gt; project-BN-Identity</title><rect x="371.0" y="1907" width="458" height="98" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="1934" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">IR 13 / SE / Hardswish / no skip</tspan>
+</text>
+<text x="600.0" y="1958" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,160,2,2]</tspan>
+</text>
+<text x="600.0" y="1977" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">112-&gt;672-&gt;160; k5; s2; expand1x1</tspan>
+</text>
+<text x="816.0" y="1995" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E015,E004,E005</tspan>
+</text>
+<g data-node-id="m3.block14" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:94 InvertedResidual.forward; parameter=features.14.block; 160-&gt;960-&gt;160; k5; s1; expand1x1 | Depthwise -&gt; SE -&gt; project-BN-Identity</title><rect x="371.0" y="1785" width="458" height="98" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="1812" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">IR 14 / SE / Hardswish / skip</tspan>
+</text>
+<text x="600.0" y="1836" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,160,2,2]</tspan>
+</text>
+<text x="600.0" y="1855" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">160-&gt;960-&gt;160; k5; s1; expand1x1</tspan>
+</text>
+<text x="816.0" y="1873" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E015,E004,E005</tspan>
+</text>
+<g data-node-id="m3.block15" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:187 _mobilenet_v3_conf; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:62 InvertedResidual.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:94 InvertedResidual.forward; parameter=features.15.block; 160-&gt;960-&gt;160; k5; s1; expand1x1 | Depthwise -&gt; SE -&gt; project-BN-Identity</title><rect x="371.0" y="1663" width="458" height="98" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="1690" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">IR 15 / SE / Hardswish / skip</tspan>
+</text>
+<text x="600.0" y="1714" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,160,2,2]</tspan>
+</text>
+<text x="600.0" y="1733" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">160-&gt;960-&gt;160; k5; s1; expand1x1</tspan>
+</text>
+<text x="816.0" y="1751" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="816.0" dy="0">E015,E004,E005</tspan>
+</text>
+<path data-route-id="route-0087" d="M 600.0,2031 L 600.0,2005" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0088" d="M 600.0,1907 L 600.0,1883" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0089" d="M 600.0,1785 L 600.0,1761" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0090" d="M 600.0,1663 L 600.0,1569" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.last" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; parameter=not asserted; </title><rect x="339.0" y="1137" width="522" height="408" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="356.0" y="1167" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Final pointwise</tspan>
+<tspan x="356.0" dy="25.959999999999997">/ Hardswish</tspan>
+</text>
+<text x="844.0" y="1167" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">[B,960,2,2]</tspan>
+</text>
+<text x="848.0" y="1216" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E002,E009</tspan>
+</text>
+<g data-node-id="m3.last.conv" data-visual-role="conv"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; parameter=features.16.0; stride=1; groups=1; bias=False; padding=0</title><rect x="435.0" y="1438" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="1465" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Conv1x1 160 -&gt; 960</tspan>
+</text>
+<text x="600.0" y="1489" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,960,2,2]</tspan>
+</text>
+<text x="752.0" y="1509" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E009</tspan>
+</text>
+<g data-node-id="m3.last.bn" data-visual-role="norm"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; parameter=features.16.1; eval: running statistics; eps=0.001; momentum=0.01</title><rect x="435.0" y="1333" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="1360" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="600.0" y="1384" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,960,2,2]</tspan>
+</text>
+<text x="752.0" y="1404" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E009</tspan>
+</text>
+<g data-node-id="m3.last.act" data-visual-role="activation"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv2.py:32 ConvBNActivation.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; parameter=not asserted; inplace=True</title><rect x="435.0" y="1228" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="1255" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Hardswish</tspan>
+</text>
+<text x="600.0" y="1279" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,960,2,2]</tspan>
+</text>
+<text x="752.0" y="1299" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E002,E009</tspan>
+</text>
+<path data-route-id="route-0091" d="M 600.0,1545 L 600.0,1519" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0092" d="M 600.0,1438 L 600.0,1414" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0093" d="M 600.0,1333 L 600.0,1309" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0094" d="M 600.0,1228 L 600.0,1137" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.head" data-visual-role="ffn"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:173 MobileNetV3._forward_impl; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-mobilenet-v3-large-cifar10.py:1 __module__; parameter=not asserted; </title><rect x="339.0" y="294" width="522" height="819" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="356.0" y="324" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">CIFAR-10</tspan>
+<tspan x="356.0" dy="25.959999999999997">classifier</tspan>
+</text>
+<text x="844.0" y="324" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="844.0" dy="0">logits: [B,10]</tspan>
+</text>
+<text x="848.0" y="373" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="848.0" dy="0">E009,E010,E001</tspan>
+</text>
+<g data-node-id="m3.pool" data-visual-role="pool"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:173 MobileNetV3._forward_impl; parameter=not asserted; </title><rect x="435.0" y="982" width="330" height="105" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="1009" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Adaptive average pool</tspan>
+<tspan x="600.0" dy="23.599999999999998">1x1</tspan>
+</text>
+<text x="600.0" y="1057" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,960,1,1]</tspan>
+</text>
+<text x="752.0" y="1077" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E009,E010</tspan>
+</text>
+<g data-node-id="m3.flatten" data-visual-role="tensor"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:173 MobileNetV3._forward_impl; parameter=not asserted; torch.flatten(x,1); preserves B=1 batch axis</title><rect x="435.0" y="853" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="880" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Flatten from dimension</tspan>
+<tspan x="600.0" dy="23.599999999999998">1</tspan>
+</text>
+<text x="600.0" y="928" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,960]</tspan>
+</text>
+<text x="752.0" y="948" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E010</tspan>
+</text>
+<g data-node-id="m3.fc1" data-visual-role="linear"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:173 MobileNetV3._forward_impl; parameter=classifier.0; </title><rect x="435.0" y="748" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="775" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Linear 960 -&gt; 1280</tspan>
+</text>
+<text x="600.0" y="799" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,1280]</tspan>
+</text>
+<text x="752.0" y="819" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E009,E010</tspan>
+</text>
+<g data-node-id="m3.head_act" data-visual-role="activation"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:173 MobileNetV3._forward_impl; parameter=not asserted; </title><rect x="435.0" y="643" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="670" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Hardswish</tspan>
+</text>
+<text x="600.0" y="694" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,1280]</tspan>
+</text>
+<text x="752.0" y="714" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E009,E010</tspan>
+</text>
+<g data-node-id="m3.dropout" data-visual-role="control"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:173 MobileNetV3._forward_impl; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-mobilenet-v3-large-cifar10.py:1 __module__; parameter=not asserted; inplace=True; inactive in selected eval profile</title><rect x="435.0" y="514" width="330" height="105" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="541" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Dropout 0.2 / eval</tspan>
+<tspan x="600.0" dy="23.599999999999998">identity</tspan>
+</text>
+<text x="600.0" y="589" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,1280]</tspan>
+</text>
+<text x="752.0" y="609" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E009,E010,E001</tspan>
+</text>
+<g data-node-id="m3.fc2" data-visual-role="linear"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:103 MobileNetV3.__init__; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:173 MobileNetV3._forward_impl; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-mobilenet-v3-large-cifar10.py:1 __module__; parameter=classifier.3; caller replaces classifier[-1]; new nn.Linear default initialization</title><rect x="435.0" y="385" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="412" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Replaced Linear 1280</tspan>
+<tspan x="600.0" dy="23.599999999999998">-&gt; 10</tspan>
+</text>
+<text x="600.0" y="460" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">logits: [B,10]</tspan>
+</text>
+<text x="752.0" y="480" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E009,E010,E001</tspan>
+</text>
+<path data-route-id="route-0095" d="M 600.0,1113 L 600.0,1087" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0096" d="M 600.0,982 L 600.0,958" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0097" d="M 600.0,853 L 600.0,829" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0098" d="M 600.0,748 L 600.0,724" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0099" d="M 600.0,643 L 600.0,619" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0100" d="M 600.0,514 L 600.0,490" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0101" d="M 600.0,385 L 600.0,294" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="m3.output" data-visual-role="output"><title>torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:173 MobileNetV3._forward_impl; torchvision-v0.9.0-mobilev3/torchvision/models/mobilenetv3.py:183 MobileNetV3.forward; parameter=not asserted; no model-forward Softmax</title><rect x="435.0" y="189" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="600.0" y="216" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Returned logits</tspan>
+</text>
+<text x="600.0" y="240" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,10]</tspan>
+</text>
+<text x="752.0" y="260" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E010,E011</tspan>
+</text>
+<path data-route-id="route-0102" d="M 600.0,10044 L 600.0,10018" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0103" d="M 600.0,9937 L 600.0,9913" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0104" d="M 600.0,9522 L 600.0,9498" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0105" d="M 600.0,8284 L 600.0,8260" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0106" d="M 600.0,7920 L 600.0,7896" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0107" d="M 600.0,5296 L 600.0,5272" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0108" d="M 600.0,4688 L 600.0,4664" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0109" d="M 600.0,2055 L 600.0,2031" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0110" d="M 600.0,1569 L 600.0,1545" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0111" d="M 600.0,1137 L 600.0,1113" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0112" d="M 600.0,294 L 600.0,270" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0113" d="M 600.0,189 L 600.0,98" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="55.0" y="10081" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348"/>
+<text x="78.0" y="10094" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="78.0" dy="0">Input / Embed</tspan>
+</text>
+<rect x="240.0" y="10081" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348"/>
+<text x="263.0" y="10094" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="263.0" dy="0">Conv / MLP</tspan>
+</text>
+<rect x="425.0" y="10081" width="16" height="16" rx="3" fill="#d6f0df" stroke="#263348"/>
+<text x="448.0" y="10094" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="448.0" dy="0">Pool</tspan>
+</text>
+<rect x="610.0" y="10081" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348"/>
+<text x="633.0" y="10094" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="633.0" dy="0">Norm / Add / Cat</tspan>
+</text>
+<rect x="795.0" y="10081" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348"/>
+<text x="818.0" y="10094" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="818.0" dy="0">Linear / Output</tspan>
+</text>
+<rect x="980.0" y="10081" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348"/>
+<text x="1003.0" y="10094" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1003.0" dy="0">Activation</tspan>
+</text>
+<rect x="517.5" y="10111" width="16" height="16" rx="3" fill="#c9f1cd" stroke="#263348"/>
+<text x="540.5" y="10124" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="540.5" dy="0">Prob. / Sample</tspan>
+</text>
+<text x="600.0" y="10152" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">B=batch; [B,C,H,W]; all module internals follow bottom-to-top flow.</tspan>
+<tspan x="600.0" dy="16.52">Blue Conv / orange SE / yellow BN or Add / purple Linear / green Hardsigmoid gate.</tspan>
+<tspan x="600.0" dy="16.52">SE retained-feature route and block identity shortcut have different source endpoints; color never implies shared weights.</tspan>
+</text>
+<text x="600.0" y="10226" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+<text x="600.0" y="10256" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+<text x="600.0" y="10281" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+</svg>

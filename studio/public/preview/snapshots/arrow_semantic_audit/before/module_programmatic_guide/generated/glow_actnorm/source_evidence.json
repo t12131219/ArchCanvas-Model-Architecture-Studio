@@ -1,0 +1,70 @@
+{
+  "source_project": "glow-modules",
+  "repository": "rosinality/glow-pytorch",
+  "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+  "source_snapshot_sha256": "1d5cf48ba47a5ecf7ea7059a37c9d1584a95871f52d5022f76b59cc51138d2ce",
+  "entry": "glow-modules/model.py::ActNorm.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "glow-modules/LICENSE": {
+      "sha256": "225b2842279abe5023f2642f82ca1bdc6653b801b8a354b4cbf5229d846a2f3c",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/rosinality/glow-pytorch/97081ff115a694cf04aeedbd58447f33d242c879/LICENSE",
+      "derived_from": null
+    },
+    "glow-modules/model.py": {
+      "sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+      "lines": 372,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/rosinality/glow-pytorch/97081ff115a694cf04aeedbd58447f33d242c879/model.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "glow-modules/model.py::ActNorm.__init__": {
+      "path": "glow-modules/model.py",
+      "symbol": "ActNorm.__init__",
+      "start": 12,
+      "end": 19,
+      "snippet": "    def __init__(self, in_channel, logdet=True):\n        super().__init__()\n\n        self.loc = nn.Parameter(torch.zeros(1, in_channel, 1, 1))\n        self.scale = nn.Parameter(torch.ones(1, in_channel, 1, 1))\n\n        self.register_buffer(\"initialized\", torch.tensor(0, dtype=torch.uint8))\n        self.logdet = logdet",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "glow-modules/model.py::ActNorm.initialize": {
+      "path": "glow-modules/model.py",
+      "symbol": "ActNorm.initialize",
+      "start": 21,
+      "end": 40,
+      "snippet": "    def initialize(self, input):\n        with torch.no_grad():\n            flatten = input.permute(1, 0, 2, 3).contiguous().view(input.shape[1], -1)\n            mean = (\n                flatten.mean(1)\n                .unsqueeze(1)\n                .unsqueeze(2)\n                .unsqueeze(3)\n                .permute(1, 0, 2, 3)\n            )\n            std = (\n                flatten.std(1)\n                .unsqueeze(1)\n                .unsqueeze(2)\n                .unsqueeze(3)\n                .permute(1, 0, 2, 3)\n            )\n\n            self.loc.data.copy_(-mean)\n            self.scale.data.copy_(1 / (std + 1e-6))",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "glow-modules/model.py::ActNorm.forward": {
+      "path": "glow-modules/model.py",
+      "symbol": "ActNorm.forward",
+      "start": 42,
+      "end": 57,
+      "snippet": "    def forward(self, input):\n        _, _, height, width = input.shape\n\n        if self.initialized.item() == 0:\n            self.initialize(input)\n            self.initialized.fill_(1)\n\n        log_abs = logabs(self.scale)\n\n        logdet = height * width * torch.sum(log_abs)\n\n        if self.logdet:\n            return self.scale * (input + self.loc), logdet\n\n        else:\n            return self.scale * (input + self.loc)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "glow-modules/model.py::ActNorm.reverse": {
+      "path": "glow-modules/model.py",
+      "symbol": "ActNorm.reverse",
+      "start": 59,
+      "end": 60,
+      "snippet": "    def reverse(self, output):\n        return output / self.scale - self.loc",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "glow-modules/LICENSE"
+  ]
+}

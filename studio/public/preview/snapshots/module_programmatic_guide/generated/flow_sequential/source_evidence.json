@@ -1,0 +1,70 @@
+{
+  "source_project": "density-flow-modules",
+  "repository": "ikostrikov/pytorch-flows",
+  "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+  "source_snapshot_sha256": "c0ebb6c1af0b9d8f0b8140bbc16c5cf7122408fa79a5b25da427fac8d15d657a",
+  "entry": "density-flow-modules/flows.py::FlowSequential.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "density-flow-modules/LICENSE": {
+      "sha256": "d541e764a331fbfb13f50107a3466d47cb2422f878160bdcaf433c259a5e121a",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ikostrikov/pytorch-flows/bf12ed91b86867b38d74982f5e2d44c248604df9/LICENSE",
+      "derived_from": null
+    },
+    "density-flow-modules/flows.py": {
+      "sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+      "lines": 504,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ikostrikov/pytorch-flows/bf12ed91b86867b38d74982f5e2d44c248604df9/flows.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "density-flow-modules/flows.py::Sigmoid.forward": {
+      "path": "density-flow-modules/flows.py",
+      "symbol": "Sigmoid.forward",
+      "start": 184,
+      "end": 192,
+      "snippet": "    def forward(self, inputs, cond_inputs=None, mode='direct'):\n        if mode == 'direct':\n            s = torch.sigmoid\n            return s(inputs), torch.log(s(inputs) * (1 - s(inputs))).sum(\n                -1, keepdim=True)\n        else:\n            return torch.log(inputs /\n                             (1 - inputs)), -torch.log(inputs - inputs**2).sum(\n                                 -1, keepdim=True)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "density-flow-modules/flows.py::Reverse.__init__": {
+      "path": "density-flow-modules/flows.py",
+      "symbol": "Reverse.__init__",
+      "start": 388,
+      "end": 391,
+      "snippet": "    def __init__(self, num_inputs):\n        super(Reverse, self).__init__()\n        self.perm = np.array(np.arange(0, num_inputs)[::-1])\n        self.inv_perm = np.argsort(self.perm)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "density-flow-modules/flows.py::Reverse.forward": {
+      "path": "density-flow-modules/flows.py",
+      "symbol": "Reverse.forward",
+      "start": 393,
+      "end": 399,
+      "snippet": "    def forward(self, inputs, cond_inputs=None, mode='direct'):\n        if mode == 'direct':\n            return inputs[:, self.perm], torch.zeros(\n                inputs.size(0), 1, device=inputs.device)\n        else:\n            return inputs[:, self.inv_perm], torch.zeros(\n                inputs.size(0), 1, device=inputs.device)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "density-flow-modules/flows.py::FlowSequential.forward": {
+      "path": "density-flow-modules/flows.py",
+      "symbol": "FlowSequential.forward",
+      "start": 467,
+      "end": 488,
+      "snippet": "    def forward(self, inputs, cond_inputs=None, mode='direct', logdets=None):\n        \"\"\" Performs a forward or backward pass for flow modules.\n        Args:\n            inputs: a tuple of inputs and logdets\n            mode: to run direct computation or inverse\n        \"\"\"\n        self.num_inputs = inputs.size(-1)\n\n        if logdets is None:\n            logdets = torch.zeros(inputs.size(0), 1, device=inputs.device)\n\n        assert mode in ['direct', 'inverse']\n        if mode == 'direct':\n            for module in self._modules.values():\n                inputs, logdet = module(inputs, cond_inputs, mode)\n                logdets += logdet\n        else:\n            for module in reversed(self._modules.values()):\n                inputs, logdet = module(inputs, cond_inputs, mode)\n                logdets += logdet\n\n        return inputs, logdets",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "density-flow-modules/LICENSE"
+  ]
+}

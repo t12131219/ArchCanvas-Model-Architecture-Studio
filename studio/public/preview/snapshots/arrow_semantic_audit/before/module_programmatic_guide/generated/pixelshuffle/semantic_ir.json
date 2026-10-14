@@ -1,0 +1,342 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "pixelshuffle",
+  "profile": {
+    "task": "super-resolution tail module",
+    "mode": "static explicit example",
+    "upscale_factor": 3,
+    "input_shape": [
+      "B",
+      32,
+      8,
+      8
+    ],
+    "conv4_shape": [
+      "B",
+      9,
+      8,
+      8
+    ],
+    "output_shape": [
+      "B",
+      1,
+      24,
+      24
+    ],
+    "input_boundary": "output of self.relu(self.conv3(x)); conv1-3 omitted",
+    "excluded_modules": [
+      "conv1",
+      "conv2",
+      "conv3",
+      "relu"
+    ],
+    "drawing_scope": "only self.pixel_shuffle(self.conv4(x))",
+    "kernel_implementation_frozen": false,
+    "mapping_provenance": "standard API contract",
+    "example_configuration": "upscale_factor=3 chosen explicitly; constructor supports other r",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "pytorch/examples",
+    "commit": "acc295dc7b90714f1bf47f06004fc19a7fe235c4",
+    "snapshot": "41c071f0632a5bfca6c2948969429e95fd10db4effce5341e006d772f20c4f44"
+  },
+  "nodes": [
+    {
+      "id": "pixelshuffle.root",
+      "label": "PixelShuffle tail / r=3",
+      "kind": "group",
+      "source": [
+        "pytorch-examples-superres/super_resolution/model.py::Net.forward"
+      ],
+      "shape": "[B,1,24,24]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pixelshuffle.input",
+      "label": "Input after omitted Conv1-3 + ReLU",
+      "kind": "input",
+      "source": [
+        "pytorch-examples-superres/super_resolution/model.py::Net.forward"
+      ],
+      "shape": "[B,32,8,8]",
+      "detail": [
+        "scope boundary: previous feature extractor is not drawn"
+      ],
+      "scope_boundary": "after self.relu(self.conv3(x))",
+      "tensor_shape": [
+        "B",
+        32,
+        8,
+        8
+      ],
+      "parent": "pixelshuffle.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pixelshuffle.head",
+      "label": "Conv4 + PixelShuffle head",
+      "kind": "group",
+      "source": [
+        "pytorch-examples-superres/super_resolution/model.py::Net.__init__",
+        "pytorch-examples-superres/super_resolution/model.py::Net.forward"
+      ],
+      "shape": "[B,32,8,8] -> [B,1,24,24]",
+      "detail": [
+        "tail submodule of Net.forward; explicit example upscale_factor=3"
+      ],
+      "mode": "chain",
+      "parent": "pixelshuffle.root",
+      "source_evidence": [
+        "E001",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pixelshuffle.projection",
+      "label": "Channel projection",
+      "kind": "group",
+      "source": [
+        "pytorch-examples-superres/super_resolution/model.py::Net.__init__",
+        "pytorch-examples-superres/super_resolution/model.py::Net.forward"
+      ],
+      "shape": "[B,9,8,8]",
+      "detail": [
+        "learned low-resolution channels for r=3 spatial offsets"
+      ],
+      "parameter_scope": "conv4",
+      "mode": "chain",
+      "parent": "pixelshuffle.head",
+      "source_evidence": [
+        "E001",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pixelshuffle.conv4",
+      "label": "Conv3x3: 32 -> 9",
+      "kind": "conv2d",
+      "source": [
+        "pytorch-examples-superres/super_resolution/model.py::Net.__init__",
+        "pytorch-examples-superres/super_resolution/model.py::Net.forward",
+        "pytorch-examples-superres/super_resolution/model.py::Net._initialize_weights"
+      ],
+      "shape": "[B,9,8,8]",
+      "detail": [
+        "out_channels=r^2=9; stride1; padding1; bias=True",
+        "conv4 weight: orthogonal initialization; no following ReLU"
+      ],
+      "module_identity": "conv4",
+      "parameters": [
+        "conv4.weight",
+        "conv4.bias"
+      ],
+      "in_channels": 32,
+      "out_channels": 9,
+      "kernel_size": [
+        3,
+        3
+      ],
+      "stride": [
+        1,
+        1
+      ],
+      "padding": [
+        1,
+        1
+      ],
+      "bias": true,
+      "weight_initialization": "orthogonal",
+      "activation_after": false,
+      "parent": "pixelshuffle.projection",
+      "source_evidence": [
+        "E001",
+        "E003",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pixelshuffle.shuffle",
+      "label": "PixelShuffle r=3 / library",
+      "kind": "tensor",
+      "source": [
+        "pytorch-examples-superres/super_resolution/model.py::Net.__init__",
+        "pytorch-examples-superres/super_resolution/model.py::Net.forward"
+      ],
+      "shape": "[B,1,24,24]",
+      "detail": [
+        "channel-to-space rearrangement; no learned parameters",
+        "library implementation is not expanded; formula is standard API context"
+      ],
+      "module_identity": "pixel_shuffle",
+      "runtime_dependency": "torch.nn.PixelShuffle",
+      "opaque_runtime_boundary": true,
+      "learnable": false,
+      "parameters": [],
+      "upscale_factor": 3,
+      "input_shape": [
+        "B",
+        9,
+        8,
+        8
+      ],
+      "output_shape": [
+        "B",
+        1,
+        24,
+        24
+      ],
+      "operation": "channel_to_spatial_rearrangement",
+      "standard_api_mapping": "Y[b,c,3*h+i,3*w+j] = X[b,9*c+3*i+j,h,w]; 0<=i,j<3",
+      "mapping_provenance": "standard PixelShuffle mathematical/API contract; not source AST operators",
+      "parent": "pixelshuffle.head",
+      "source_evidence": [
+        "E001",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "pixelshuffle.output",
+      "label": "Upscaled single-channel output",
+      "kind": "output",
+      "source": [
+        "pytorch-examples-superres/super_resolution/model.py::Net.forward"
+      ],
+      "shape": "[B,1,24,24]",
+      "detail": [],
+      "return_value": "tail output of Net.forward",
+      "parent": "pixelshuffle.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "pixelshuffle.projection:in->pixelshuffle.conv4:in:boundary",
+      "src": "pixelshuffle.projection",
+      "dst": "pixelshuffle.conv4",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "pixelshuffle.conv4:out->pixelshuffle.projection:out:boundary",
+      "src": "pixelshuffle.conv4",
+      "dst": "pixelshuffle.projection",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "pixelshuffle.head:in->pixelshuffle.projection:in:boundary",
+      "src": "pixelshuffle.head",
+      "dst": "pixelshuffle.projection",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "pixelshuffle.projection:out->pixelshuffle.shuffle:in:tensor",
+      "src": "pixelshuffle.projection",
+      "dst": "pixelshuffle.shuffle",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "pixelshuffle.shuffle:out->pixelshuffle.head:out:boundary",
+      "src": "pixelshuffle.shuffle",
+      "dst": "pixelshuffle.head",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "pixelshuffle.root:in->pixelshuffle.input:in:boundary",
+      "src": "pixelshuffle.root",
+      "dst": "pixelshuffle.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "pixelshuffle.input:out->pixelshuffle.head:in:tensor",
+      "src": "pixelshuffle.input",
+      "dst": "pixelshuffle.head",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "pixelshuffle.head:out->pixelshuffle.output:in:tensor",
+      "src": "pixelshuffle.head",
+      "dst": "pixelshuffle.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "pixelshuffle.output:out->pixelshuffle.root:out:boundary",
+      "src": "pixelshuffle.output",
+      "dst": "pixelshuffle.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    }
+  ],
+  "facts": [
+    "The frozen Net supports a constructor argument upscale_factor. This module example explicitly chooses r=3 and input features[B,32,8,8].",
+    "Only conv4 and pixel_shuffle are drawn. conv1, conv2, conv3 and their ReLU calls produce the omitted upstream feature boundary.",
+    "conv4 is Conv2d32->r^2 with kernel3, stride1, padding1 and default bias=True, so r=3 produces[B,9,8,8].",
+    "Net.forward calls pixel_shuffle(conv4(x)) directly; no ReLU, normalization or interpolation is inserted after conv4.",
+    "PixelShuffle is a real nn.PixelShuffle(r) instance with no learned parameters. It rearranges[B,C*r^2,H,W] into[B,C,H*r,W*r].",
+    "For r=3, nine channel offsets map to a3x3 spatial neighborhood and yield[B,1,24,24]. The formula is a standard API/mathematical explanation, not four AST-derived reshape operators.",
+    "The PixelShuffle library implementation is not frozen or expanded. Its single source-bound glyph is explicitly marked opaque_runtime_boundary.",
+    "The example initializes conv4.weight orthogonally but does not explicitly reinitialize conv4.bias; initialization is constructor context, not an extra forward layer.",
+    "All shapes are statically inferred under the explicit example profile. No source model, initializer, pixel rearrangement, training or image data was executed."
+  ],
+  "corrections": [
+    "Do not label the entire super-resolution Net as this module; keep the omitted Conv1-3 feature boundary visible.",
+    "Do not replace PixelShuffle with interpolation or ConvTranspose, and do not give it learned weights.",
+    "Do not present reshape/permute/reshape or a3x3 offset diagram as implementation nodes extracted from this file; the source contains one nn.PixelShuffle call."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

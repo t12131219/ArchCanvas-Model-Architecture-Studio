@@ -1,0 +1,516 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "graphwavelet_sparse",
+  "profile": {
+    "in_channels": 8,
+    "out_channels": 4,
+    "ncount": "N",
+    "input_sparse": true,
+    "theta_learned": true,
+    "diagonal_indices_buffer": false,
+    "dropout": 0.5,
+    "activation": "relu",
+    "phi_preprocessing": "external",
+    "library_kernels": "opaque torch_sparse spmm/spspmm",
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "benedekrozemberczki/GraphWaveletNeuralNetwork",
+    "commit": "fbd93c8db066e03224f1bc66167985a56f1fe7aa",
+    "snapshot": "6da3b6260173a093be1e3330fa936dfac79c5d87cf1fe037ebaef51002f3ff4c"
+  },
+  "nodes": [
+    {
+      "id": "graphwavelet_sparse.root",
+      "label": "Graph wavelet sparse layer / module only",
+      "kind": "group",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::SparseGraphWaveletLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "graphwavelet_sparse.x",
+          "graphwavelet_sparse.phi",
+          "graphwavelet_sparse.inverse",
+          "graphwavelet_sparse.diagindices",
+          "graphwavelet_sparse.theta",
+          "graphwavelet_sparse.weight"
+        ],
+        [
+          "graphwavelet_sparse.module"
+        ],
+        [
+          "graphwavelet_sparse.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_sparse.x",
+      "label": "Sparse X indices / values",
+      "kind": "input",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::SparseGraphWaveletLayer.forward"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "parent": "graphwavelet_sparse.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_sparse.phi",
+      "label": "Supplied sparse wavelet Phi",
+      "kind": "control",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::SparseGraphWaveletLayer.forward"
+      ],
+      "shape": "indices / values; [N,N]",
+      "detail": [],
+      "parent": "graphwavelet_sparse.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_sparse.inverse",
+      "label": "Supplied sparse inverse Phi",
+      "kind": "control",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::SparseGraphWaveletLayer.forward"
+      ],
+      "shape": "indices / values; [N,N]",
+      "detail": [],
+      "parent": "graphwavelet_sparse.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_sparse.diagindices",
+      "label": "Fixed diagonal index Tensor",
+      "kind": "control",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::GraphWaveletLayer.define_parameters"
+      ],
+      "shape": "[2,N]",
+      "detail": [],
+      "storage_kind": "ordinary Tensor attribute",
+      "registered_buffer": false,
+      "parameter": false,
+      "parent": "graphwavelet_sparse.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_sparse.theta",
+      "label": "Owned diagonal filter theta",
+      "kind": "parameter",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::GraphWaveletLayer.define_parameters"
+      ],
+      "shape": "[N,1]",
+      "detail": [],
+      "parameter": "diagonal_weight_filter",
+      "parent": "graphwavelet_sparse.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_sparse.weight",
+      "label": "Owned feature projection W",
+      "kind": "parameter",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::GraphWaveletLayer.define_parameters"
+      ],
+      "shape": "[8,4]",
+      "detail": [],
+      "parameter": "weight_matrix",
+      "parent": "graphwavelet_sparse.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_sparse.module",
+      "label": "Graph wavelet sparse layer / operators",
+      "kind": "group",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::SparseGraphWaveletLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "graphwavelet_sparse.rescale",
+          "graphwavelet_sparse.project"
+        ],
+        [
+          "graphwavelet_sparse.kernel"
+        ],
+        [
+          "graphwavelet_sparse.localize"
+        ],
+        [
+          "graphwavelet_sparse.tail"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "graphwavelet_sparse.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_sparse.rescale",
+      "label": "Sparse Phi @ diag(theta)",
+      "kind": "mixing",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::SparseGraphWaveletLayer.forward"
+      ],
+      "shape": "sparse pair [N,N]",
+      "detail": [],
+      "ordered_operands": [
+        "phi",
+        "diag(theta)"
+      ],
+      "operation": "spspmm",
+      "opaque_runtime_boundary": true,
+      "theta_view": "view(-1)",
+      "parent": "graphwavelet_sparse.module",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "phi",
+        "theta_indices",
+        "theta_values"
+      ]
+    },
+    {
+      "id": "graphwavelet_sparse.project",
+      "label": "Sparse X @ W",
+      "kind": "spmm",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::SparseGraphWaveletLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "operation": "spmm",
+      "opaque_runtime_boundary": true,
+      "parent": "graphwavelet_sparse.module",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "X",
+        "W"
+      ]
+    },
+    {
+      "id": "graphwavelet_sparse.kernel",
+      "label": "Rescaled Phi @ Phi inverse",
+      "kind": "mixing",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::SparseGraphWaveletLayer.forward"
+      ],
+      "shape": "sparse pair [N,N]",
+      "detail": [],
+      "ordered_operands": [
+        "phi@diag(theta)",
+        "phi_inverse"
+      ],
+      "operation": "spspmm",
+      "opaque_runtime_boundary": true,
+      "parent": "graphwavelet_sparse.module",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "rescaled_phi",
+        "phi_inverse"
+      ]
+    },
+    {
+      "id": "graphwavelet_sparse.localize",
+      "label": "Learned wavelet kernel @ XW",
+      "kind": "spmm",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::SparseGraphWaveletLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "ordered_operands": [
+        "phi@diag(theta)@phi_inverse",
+        "X@W"
+      ],
+      "operation": "spmm",
+      "opaque_runtime_boundary": true,
+      "parent": "graphwavelet_sparse.module",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "kernel",
+        "features"
+      ]
+    },
+    {
+      "id": "graphwavelet_sparse.tail",
+      "label": "ReLU THEN Dropout .5",
+      "kind": "group",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::SparseGraphWaveletLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "graphwavelet_sparse.module",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_sparse.tail.relu",
+      "label": "ReLU localized features",
+      "kind": "relu",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::SparseGraphWaveletLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "parent": "graphwavelet_sparse.tail",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_sparse.tail.drop",
+      "label": "Dropout .5 / caller mode",
+      "kind": "dropout",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::SparseGraphWaveletLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "p": 0.5,
+      "training": "self.training",
+      "parent": "graphwavelet_sparse.tail",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_sparse.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::SparseGraphWaveletLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "parent": "graphwavelet_sparse.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "graphwavelet_sparse.tail:in->graphwavelet_sparse.tail.relu:in:boundary",
+      "src": "graphwavelet_sparse.tail",
+      "dst": "graphwavelet_sparse.tail.relu",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "graphwavelet_sparse.tail.relu:out->graphwavelet_sparse.tail.drop:in:tensor",
+      "src": "graphwavelet_sparse.tail.relu",
+      "dst": "graphwavelet_sparse.tail.drop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphwavelet_sparse.tail.drop:out->graphwavelet_sparse.tail:out:boundary",
+      "src": "graphwavelet_sparse.tail.drop",
+      "dst": "graphwavelet_sparse.tail",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "graphwavelet_sparse.phi:out->graphwavelet_sparse.rescale:phi:topology",
+      "src": "graphwavelet_sparse.phi",
+      "dst": "graphwavelet_sparse.rescale",
+      "src_port": "out",
+      "dst_port": "phi",
+      "role": "topology"
+    },
+    {
+      "id": "graphwavelet_sparse.diagindices:out->graphwavelet_sparse.rescale:theta_indices:fixed_state",
+      "src": "graphwavelet_sparse.diagindices",
+      "dst": "graphwavelet_sparse.rescale",
+      "src_port": "out",
+      "dst_port": "theta_indices",
+      "role": "fixed_state"
+    },
+    {
+      "id": "graphwavelet_sparse.theta:out->graphwavelet_sparse.rescale:theta_values:parameter_operand",
+      "src": "graphwavelet_sparse.theta",
+      "dst": "graphwavelet_sparse.rescale",
+      "src_port": "out",
+      "dst_port": "theta_values",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "graphwavelet_sparse.rescale:out->graphwavelet_sparse.kernel:rescaled_phi:tensor",
+      "src": "graphwavelet_sparse.rescale",
+      "dst": "graphwavelet_sparse.kernel",
+      "src_port": "out",
+      "dst_port": "rescaled_phi",
+      "role": "tensor"
+    },
+    {
+      "id": "graphwavelet_sparse.inverse:out->graphwavelet_sparse.kernel:phi_inverse:topology",
+      "src": "graphwavelet_sparse.inverse",
+      "dst": "graphwavelet_sparse.kernel",
+      "src_port": "out",
+      "dst_port": "phi_inverse",
+      "role": "topology"
+    },
+    {
+      "id": "graphwavelet_sparse.x:out->graphwavelet_sparse.project:X:tensor",
+      "src": "graphwavelet_sparse.x",
+      "dst": "graphwavelet_sparse.project",
+      "src_port": "out",
+      "dst_port": "X",
+      "role": "tensor"
+    },
+    {
+      "id": "graphwavelet_sparse.weight:out->graphwavelet_sparse.project:W:parameter_operand",
+      "src": "graphwavelet_sparse.weight",
+      "dst": "graphwavelet_sparse.project",
+      "src_port": "out",
+      "dst_port": "W",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "graphwavelet_sparse.kernel:out->graphwavelet_sparse.localize:kernel:tensor",
+      "src": "graphwavelet_sparse.kernel",
+      "dst": "graphwavelet_sparse.localize",
+      "src_port": "out",
+      "dst_port": "kernel",
+      "role": "tensor"
+    },
+    {
+      "id": "graphwavelet_sparse.project:out->graphwavelet_sparse.localize:features:tensor",
+      "src": "graphwavelet_sparse.project",
+      "dst": "graphwavelet_sparse.localize",
+      "src_port": "out",
+      "dst_port": "features",
+      "role": "tensor"
+    },
+    {
+      "id": "graphwavelet_sparse.localize:out->graphwavelet_sparse.tail.relu:in:tensor",
+      "src": "graphwavelet_sparse.localize",
+      "dst": "graphwavelet_sparse.tail.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graphwavelet_sparse.tail.drop:out->graphwavelet_sparse.output:in:tensor",
+      "src": "graphwavelet_sparse.tail.drop",
+      "dst": "graphwavelet_sparse.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Source constructs Phi @ diag(theta) first, multiplies by supplied Phi_inverse second, then applies resulting sparse kernel to X@W. Parentheses, sparse representation and multiplication order remain explicit.",
+    "theta[N,1] and W[8,4] are learned Parameters. Diagonal_weight_indices is an ordinary Tensor attribute moved to device, NOT registered_buffer and NOT Parameter.",
+    "Supplied Phi/inverse preprocessing and torch_sparse kernels stay opaque. The diagram does not assert an orthogonal transform, compute a wavelet spectrum or run sparse products.",
+    "Sparse forward applies ReLU then caller-mode Dropout after localization; Dense forward returns localization directly with no activation or Dropout.",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not equate this learned diagonal graph-wavelet filter with the existing eigenspace elementwise SpectralFilter.",
+    "Do not register the fixed indices as a buffer absent in source or copy Sparse tail into Dense version."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

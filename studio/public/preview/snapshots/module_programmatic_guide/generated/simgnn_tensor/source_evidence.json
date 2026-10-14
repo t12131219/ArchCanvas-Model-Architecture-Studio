@@ -1,0 +1,50 @@
+{
+  "source_project": "simgnn-modules",
+  "repository": "benedekrozemberczki/SimGNN",
+  "commit": "be3ee6193a7c286336260f6479a6aee8bdc56f8c",
+  "source_snapshot_sha256": "d3666eba597ebe6c5de1c3de3cbc2225d3aeeae9e82be33497c1ed0a9418e63a",
+  "entry": "simgnn-modules/src/layers.py::TenorNetworkModule.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "simgnn-modules/LICENSE": {
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "lines": 674,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/benedekrozemberczki/SimGNN/be3ee6193a7c286336260f6479a6aee8bdc56f8c/LICENSE",
+      "derived_from": null
+    },
+    "simgnn-modules/src/layers.py": {
+      "sha256": "5fefa74f43527f6897a8232753dcf35e5e748d46c99477306c824573f091720c",
+      "lines": 89,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/benedekrozemberczki/SimGNN/be3ee6193a7c286336260f6479a6aee8bdc56f8c/src/layers.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "simgnn-modules/src/layers.py::TenorNetworkModule.setup_weights": {
+      "path": "simgnn-modules/src/layers.py",
+      "symbol": "TenorNetworkModule.setup_weights",
+      "start": 56,
+      "end": 66,
+      "snippet": "    def setup_weights(self):\n        \"\"\"\n        Defining weights.\n        \"\"\"\n        self.weight_matrix = torch.nn.Parameter(torch.Tensor(self.args.filters_3,\n                                                             self.args.filters_3,\n                                                             self.args.tensor_neurons))\n\n        self.weight_matrix_block = torch.nn.Parameter(torch.Tensor(self.args.tensor_neurons,\n                                                                   2*self.args.filters_3))\n        self.bias = torch.nn.Parameter(torch.Tensor(self.args.tensor_neurons, 1))",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "simgnn-modules/src/layers.py::TenorNetworkModule.forward": {
+      "path": "simgnn-modules/src/layers.py",
+      "symbol": "TenorNetworkModule.forward",
+      "start": 76,
+      "end": 89,
+      "snippet": "    def forward(self, embedding_1, embedding_2):\n        \"\"\"\n        Making a forward propagation pass to create a similarity vector.\n        :param embedding_1: Result of the 1st embedding after attention.\n        :param embedding_2: Result of the 2nd embedding after attention.\n        :return scores: A similarity score vector.\n        \"\"\"\n        scoring = torch.mm(torch.t(embedding_1), self.weight_matrix.view(self.args.filters_3, -1))\n        scoring = scoring.view(self.args.filters_3, self.args.tensor_neurons)\n        scoring = torch.mm(torch.t(scoring), embedding_2)\n        combined_representation = torch.cat((embedding_1, embedding_2))\n        block_scoring = torch.mm(self.weight_matrix_block, combined_representation)\n        scores = torch.nn.functional.relu(scoring + block_scoring + self.bias)\n        return scores",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "simgnn-modules/LICENSE"
+  ]
+}

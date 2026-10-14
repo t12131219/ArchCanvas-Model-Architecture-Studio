@@ -1,0 +1,1279 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "nin",
+  "profile": {
+    "task": "CIFAR10 classification",
+    "input_channels": 3,
+    "image_size": 32,
+    "num_classes": 10,
+    "batch_size_setting": 256,
+    "mlpconv_channels": [
+      [
+        3,
+        192,
+        160,
+        96
+      ],
+      [
+        96,
+        192,
+        192,
+        192
+      ],
+      [
+        192,
+        192,
+        192,
+        10
+      ]
+    ],
+    "kernels": [
+      [
+        5,
+        1,
+        1
+      ],
+      [
+        5,
+        1,
+        1
+      ],
+      [
+        3,
+        1,
+        1
+      ]
+    ],
+    "spatial_sizes": [
+      32,
+      16,
+      8,
+      1
+    ],
+    "dropout": 0.5,
+    "mode": "forward structure; Dropout follows caller train/eval state",
+    "final_pool": "fixed AvgPool2d(8,stride=1)",
+    "output_tuple": [
+      "logits",
+      "probas"
+    ],
+    "symbolic_shapes": true,
+    "model_executed": false
+  },
+  "source": {
+    "repository": "rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "d72c614d79563c7756290b44770a5262b15bfc58e12c9844311724d2862bc09c"
+  },
+  "nodes": [
+    {
+      "id": "nin.root",
+      "label": "NiN / CIFAR-10",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN"
+      ],
+      "shape": "[B,3,32,32] -> (logits,probas)",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.input",
+      "label": "CIFAR-10 image",
+      "kind": "input",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,3,32,32]",
+      "detail": [
+        "Dataset ToTensor converts pixels to [0,1] outside forward"
+      ],
+      "parent": "nin.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.stage1",
+      "label": "Feature stage 1",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,96,16,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "nin.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv1",
+      "label": "mlpconv 1 / spatial + 1x1 stack",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,96,32,32]",
+      "detail": [
+        "Logical diagram group within one nn.Sequential",
+        "Three independent Conv-ReLU pairs"
+      ],
+      "mode": "chain",
+      "parent": "nin.stage1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv1.conv1",
+      "label": "Conv 5x5: 3 -> 192",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,192,32,32]",
+      "detail": [
+        "stride=1; padding=2; default bias=True",
+        "One kernel is shared over spatial locations, not over different layers"
+      ],
+      "parameter": "classifier.0",
+      "parent": "nin.mlpconv1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv1.relu1",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,192,32,32]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "nin.mlpconv1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv1.conv2",
+      "label": "Conv 1x1: 192 -> 160",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,160,32,32]",
+      "detail": [
+        "stride=1; padding=0; default bias=True",
+        "One kernel is shared over spatial locations, not over different layers"
+      ],
+      "parameter": "classifier.2",
+      "parent": "nin.mlpconv1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv1.relu2",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,160,32,32]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "nin.mlpconv1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv1.conv3",
+      "label": "Conv 1x1: 160 -> 96",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,96,32,32]",
+      "detail": [
+        "stride=1; padding=0; default bias=True",
+        "One kernel is shared over spatial locations, not over different layers"
+      ],
+      "parameter": "classifier.4",
+      "parent": "nin.mlpconv1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv1.relu3",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,96,32,32]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "nin.mlpconv1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.pool1",
+      "label": "MaxPool 3x3 / 2",
+      "kind": "pool",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,96,16,16]",
+      "detail": [
+        "padding=1; classifier.6"
+      ],
+      "parent": "nin.stage1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.dropout1",
+      "label": "Dropout p=0.5",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,96,16,16]",
+      "detail": [
+        "classifier.7; inactive only when caller selects eval"
+      ],
+      "parameter_scope": "classifier.7",
+      "dropout": 0.5,
+      "parent": "nin.stage1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.stage2",
+      "label": "Feature stage 2",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,192,8,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "nin.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv2",
+      "label": "mlpconv 2 / spatial + 1x1 stack",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,192,16,16]",
+      "detail": [
+        "Logical diagram group within one nn.Sequential",
+        "Three independent Conv-ReLU pairs"
+      ],
+      "mode": "chain",
+      "parent": "nin.stage2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv2.conv1",
+      "label": "Conv 5x5: 96 -> 192",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,192,16,16]",
+      "detail": [
+        "stride=1; padding=2; default bias=True",
+        "One kernel is shared over spatial locations, not over different layers"
+      ],
+      "parameter": "classifier.8",
+      "parent": "nin.mlpconv2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv2.relu1",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,192,16,16]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "nin.mlpconv2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv2.conv2",
+      "label": "Conv 1x1: 192 -> 192",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,192,16,16]",
+      "detail": [
+        "stride=1; padding=0; default bias=True",
+        "One kernel is shared over spatial locations, not over different layers"
+      ],
+      "parameter": "classifier.10",
+      "parent": "nin.mlpconv2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv2.relu2",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,192,16,16]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "nin.mlpconv2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv2.conv3",
+      "label": "Conv 1x1: 192 -> 192",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,192,16,16]",
+      "detail": [
+        "stride=1; padding=0; default bias=True",
+        "One kernel is shared over spatial locations, not over different layers"
+      ],
+      "parameter": "classifier.12",
+      "parent": "nin.mlpconv2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv2.relu3",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,192,16,16]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "nin.mlpconv2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.pool2",
+      "label": "Average pool 3x3 / 2",
+      "kind": "pool",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,192,8,8]",
+      "detail": [
+        "padding=1; classifier.14; default count_include_pad=True"
+      ],
+      "parent": "nin.stage2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.dropout2",
+      "label": "Dropout p=0.5",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,192,8,8]",
+      "detail": [
+        "classifier.15; follows caller train/eval state"
+      ],
+      "parameter_scope": "classifier.15",
+      "dropout": 0.5,
+      "parent": "nin.stage2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.stage3",
+      "label": "Class feature maps + global pool",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,10,1,1]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "nin.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv3",
+      "label": "mlpconv 3 / spatial + 1x1 stack",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,10,8,8]",
+      "detail": [
+        "Logical diagram group within one nn.Sequential",
+        "Three independent Conv-ReLU pairs"
+      ],
+      "mode": "chain",
+      "parent": "nin.stage3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv3.conv1",
+      "label": "Conv 3x3: 192 -> 192",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,192,8,8]",
+      "detail": [
+        "stride=1; padding=1; default bias=True",
+        "One kernel is shared over spatial locations, not over different layers"
+      ],
+      "parameter": "classifier.16",
+      "parent": "nin.mlpconv3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv3.relu1",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,192,8,8]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "nin.mlpconv3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv3.conv2",
+      "label": "Conv 1x1: 192 -> 192",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,192,8,8]",
+      "detail": [
+        "stride=1; padding=0; default bias=True",
+        "One kernel is shared over spatial locations, not over different layers"
+      ],
+      "parameter": "classifier.18",
+      "parent": "nin.mlpconv3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv3.relu2",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,192,8,8]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "nin.mlpconv3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv3.conv3",
+      "label": "Conv 1x1: 192 -> 10",
+      "kind": "conv",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,10,8,8]",
+      "detail": [
+        "stride=1; padding=0; default bias=True",
+        "One kernel is shared over spatial locations, not over different layers"
+      ],
+      "parameter": "classifier.20",
+      "parent": "nin.mlpconv3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.mlpconv3.relu3",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,10,8,8]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "nin.mlpconv3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.pool3",
+      "label": "Average pool 8x8 / 1",
+      "kind": "pool",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,10,1,1]",
+      "detail": [
+        "classifier.22; fixed kernel=8, padding=0",
+        "Global on the selected 8x8 feature maps; not AdaptiveAvgPool"
+      ],
+      "parent": "nin.stage3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.view",
+      "label": "View pooled maps as logits",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,10]",
+      "detail": [
+        "x.view(x.size(0),self.num_classes); batch axis preserved"
+      ],
+      "parent": "nin.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.returns",
+      "label": "Return logits / probabilities",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "(logits, probas)",
+      "detail": [
+        "Same logits fan out; tuple collection, not summation"
+      ],
+      "mode": "parallel",
+      "port_bindings": {
+        "out": [
+          {
+            "node": "nin.logits",
+            "port": "out"
+          },
+          {
+            "node": "nin.softmax",
+            "port": "out"
+          }
+        ],
+        "item[0]": {
+          "node": "nin.logits",
+          "port": "out"
+        },
+        "item[1]": {
+          "node": "nin.softmax",
+          "port": "out"
+        },
+        "logits": {
+          "node": "nin.logits",
+          "port": "out"
+        },
+        "probas": {
+          "node": "nin.softmax",
+          "port": "out"
+        }
+      },
+      "parent": "nin.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "logits",
+        "probas"
+      ]
+    },
+    {
+      "id": "nin.logits",
+      "label": "Retain logits",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,10]",
+      "detail": [
+        "Mean of nonnegative class feature maps; no learned Linear head"
+      ],
+      "parent": "nin.returns",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.softmax",
+      "label": "Softmax over classes",
+      "kind": "softmax",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "[B,10]",
+      "detail": [
+        "torch.softmax(logits,dim=1)"
+      ],
+      "parent": "nin.returns",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nin.output",
+      "label": "Forward return tuple",
+      "kind": "output",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/cnn/nin-cifar10.py::NiN.forward"
+      ],
+      "shape": "2 x [B,10]",
+      "detail": [
+        "return logits,probas; cross_entropy uses logits"
+      ],
+      "parent": "nin.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "nin.mlpconv1:in->nin.mlpconv1.conv1:in:boundary",
+      "src": "nin.mlpconv1",
+      "dst": "nin.mlpconv1.conv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "nin.mlpconv1.conv1:out->nin.mlpconv1.relu1:in:tensor",
+      "src": "nin.mlpconv1.conv1",
+      "dst": "nin.mlpconv1.relu1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.mlpconv1.relu1:out->nin.mlpconv1.conv2:in:tensor",
+      "src": "nin.mlpconv1.relu1",
+      "dst": "nin.mlpconv1.conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.mlpconv1.conv2:out->nin.mlpconv1.relu2:in:tensor",
+      "src": "nin.mlpconv1.conv2",
+      "dst": "nin.mlpconv1.relu2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.mlpconv1.relu2:out->nin.mlpconv1.conv3:in:tensor",
+      "src": "nin.mlpconv1.relu2",
+      "dst": "nin.mlpconv1.conv3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.mlpconv1.conv3:out->nin.mlpconv1.relu3:in:tensor",
+      "src": "nin.mlpconv1.conv3",
+      "dst": "nin.mlpconv1.relu3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.mlpconv1.relu3:out->nin.mlpconv1:out:boundary",
+      "src": "nin.mlpconv1.relu3",
+      "dst": "nin.mlpconv1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "nin.stage1:in->nin.mlpconv1:in:boundary",
+      "src": "nin.stage1",
+      "dst": "nin.mlpconv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "nin.mlpconv1:out->nin.pool1:in:tensor",
+      "src": "nin.mlpconv1",
+      "dst": "nin.pool1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.pool1:out->nin.dropout1:in:tensor",
+      "src": "nin.pool1",
+      "dst": "nin.dropout1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.dropout1:out->nin.stage1:out:boundary",
+      "src": "nin.dropout1",
+      "dst": "nin.stage1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "nin.mlpconv2:in->nin.mlpconv2.conv1:in:boundary",
+      "src": "nin.mlpconv2",
+      "dst": "nin.mlpconv2.conv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "nin.mlpconv2.conv1:out->nin.mlpconv2.relu1:in:tensor",
+      "src": "nin.mlpconv2.conv1",
+      "dst": "nin.mlpconv2.relu1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.mlpconv2.relu1:out->nin.mlpconv2.conv2:in:tensor",
+      "src": "nin.mlpconv2.relu1",
+      "dst": "nin.mlpconv2.conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.mlpconv2.conv2:out->nin.mlpconv2.relu2:in:tensor",
+      "src": "nin.mlpconv2.conv2",
+      "dst": "nin.mlpconv2.relu2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.mlpconv2.relu2:out->nin.mlpconv2.conv3:in:tensor",
+      "src": "nin.mlpconv2.relu2",
+      "dst": "nin.mlpconv2.conv3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.mlpconv2.conv3:out->nin.mlpconv2.relu3:in:tensor",
+      "src": "nin.mlpconv2.conv3",
+      "dst": "nin.mlpconv2.relu3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.mlpconv2.relu3:out->nin.mlpconv2:out:boundary",
+      "src": "nin.mlpconv2.relu3",
+      "dst": "nin.mlpconv2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "nin.stage2:in->nin.mlpconv2:in:boundary",
+      "src": "nin.stage2",
+      "dst": "nin.mlpconv2",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "nin.mlpconv2:out->nin.pool2:in:tensor",
+      "src": "nin.mlpconv2",
+      "dst": "nin.pool2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.pool2:out->nin.dropout2:in:tensor",
+      "src": "nin.pool2",
+      "dst": "nin.dropout2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.dropout2:out->nin.stage2:out:boundary",
+      "src": "nin.dropout2",
+      "dst": "nin.stage2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "nin.mlpconv3:in->nin.mlpconv3.conv1:in:boundary",
+      "src": "nin.mlpconv3",
+      "dst": "nin.mlpconv3.conv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "nin.mlpconv3.conv1:out->nin.mlpconv3.relu1:in:tensor",
+      "src": "nin.mlpconv3.conv1",
+      "dst": "nin.mlpconv3.relu1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.mlpconv3.relu1:out->nin.mlpconv3.conv2:in:tensor",
+      "src": "nin.mlpconv3.relu1",
+      "dst": "nin.mlpconv3.conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.mlpconv3.conv2:out->nin.mlpconv3.relu2:in:tensor",
+      "src": "nin.mlpconv3.conv2",
+      "dst": "nin.mlpconv3.relu2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.mlpconv3.relu2:out->nin.mlpconv3.conv3:in:tensor",
+      "src": "nin.mlpconv3.relu2",
+      "dst": "nin.mlpconv3.conv3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.mlpconv3.conv3:out->nin.mlpconv3.relu3:in:tensor",
+      "src": "nin.mlpconv3.conv3",
+      "dst": "nin.mlpconv3.relu3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.mlpconv3.relu3:out->nin.mlpconv3:out:boundary",
+      "src": "nin.mlpconv3.relu3",
+      "dst": "nin.mlpconv3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "nin.stage3:in->nin.mlpconv3:in:boundary",
+      "src": "nin.stage3",
+      "dst": "nin.mlpconv3",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "nin.mlpconv3:out->nin.pool3:in:tensor",
+      "src": "nin.mlpconv3",
+      "dst": "nin.pool3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.pool3:out->nin.stage3:out:boundary",
+      "src": "nin.pool3",
+      "dst": "nin.stage3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "nin.returns:in->nin.logits:in:fork",
+      "src": "nin.returns",
+      "dst": "nin.logits",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "nin.logits:out->nin.returns:item[0]:tuple_collection",
+      "src": "nin.logits",
+      "dst": "nin.returns",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "nin.returns:in->nin.softmax:in:fork",
+      "src": "nin.returns",
+      "dst": "nin.softmax",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "nin.softmax:out->nin.returns:item[1]:tuple_collection",
+      "src": "nin.softmax",
+      "dst": "nin.returns",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "nin.root:in->nin.input:in:boundary",
+      "src": "nin.root",
+      "dst": "nin.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "nin.input:out->nin.stage1:in:tensor",
+      "src": "nin.input",
+      "dst": "nin.stage1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.stage1:out->nin.stage2:in:tensor",
+      "src": "nin.stage1",
+      "dst": "nin.stage2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.stage2:out->nin.stage3:in:tensor",
+      "src": "nin.stage2",
+      "dst": "nin.stage3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.stage3:out->nin.view:in:tensor",
+      "src": "nin.stage3",
+      "dst": "nin.view",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.view:out->nin.returns:in:tensor",
+      "src": "nin.view",
+      "dst": "nin.returns",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.returns:out->nin.output:in:tensor",
+      "src": "nin.returns",
+      "dst": "nin.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nin.output:out->nin.root:out:boundary",
+      "src": "nin.output",
+      "dst": "nin.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    }
+  ],
+  "facts": [
+    "NiN.classifier is one nn.Sequential; three mlpconv/stage containers are logical source-grounded drawing groups.",
+    "The nine independent Conv2d channel changes are 3->192->160->96->192->192->192->192->192->10.",
+    "Each stage uses one spatial Conv followed by two 1x1 Conv; ReLU follows all nine convolutions, including the final class convolution.",
+    "The first reduction uses MaxPool2d(3,2,1); the second uses AvgPool2d(3,2,1); each is followed by Dropout(0.5).",
+    "Final class maps have 10 hard-coded channels; fixed AvgPool2d(8,1,0) globally averages selected 8x8 maps.",
+    "forward preserves batch while viewing pooled maps, computes Softmax(dim=1), and returns both logits and probabilities.",
+    "The num_classes argument controls only the final view; the last Conv2d is hard-coded to 10 channels.",
+    "compute_accuracy does not call model.eval in this notebook; graph records Dropout and does not imply validation disables it.",
+    "Convolution weights are shared across spatial positions, while all nine classifier layer instances own separate parameters."
+  ],
+  "corrections": [
+    "No supplied NiN reference PNG exists; this is a new layout grounded in the selected notebook rather than a generic paper diagram.",
+    "Do not replace the second AvgPool by MaxPool, or the fixed final pool by AdaptiveAvgPool.",
+    "Retain the final ReLU after Conv1x1(192,10); the logits are not produced by a separate Linear layer.",
+    "Draw two return fields: raw logits and the forward Softmax result.",
+    "Do not silently treat num_classes as controlling final Conv channels, or infer eval mode from the accuracy-function name."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

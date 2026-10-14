@@ -1,0 +1,5137 @@
+{
+  "nodes": [
+    {
+      "id": "probabilities",
+      "label": "probabilities",
+      "x": 998.0,
+      "y": 110,
+      "w": 480,
+      "h": 58,
+      "base": [
+        998.0,
+        110
+      ],
+      "parent": null,
+      "expanded": false,
+      "routingObstacle": true,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"998.0\" y=\"110\" width=\"480\" height=\"58\" rx=\"10\" fill=\"#c9f1cd\" stroke=\"#263348\" stroke-width=\"2\"><title>probabilities | source:  | parameter: None</title></rect>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1238.0\" y=\"134.92\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"17\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1238.0\" dy=\"0\">Softmax → probabilities [B,T,V]</tspan>\n<tspan x=\"1238.0\" dy=\"20.06\">Explanation only; outside Transformer.forward</tspan>\n</text>\n",
+      "semantic": {
+        "id": "probabilities",
+        "kind": "explanatory_softmax",
+        "parent": "model",
+        "rank": 0,
+        "children": [],
+        "ports": [
+          "in",
+          "out"
+        ],
+        "source_evidence": [],
+        "param_identity": null,
+        "executed_in_forward": false
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "generator",
+      "label": "generator",
+      "x": 1048.0,
+      "y": 188,
+      "w": 380,
+      "h": 48,
+      "base": [
+        1048.0,
+        188
+      ],
+      "parent": null,
+      "expanded": false,
+      "routingObstacle": true,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"1048.0\" y=\"188\" width=\"380\" height=\"48\" rx=\"10\" fill=\"#dfdff8\" stroke=\"#263348\" stroke-width=\"2\"><title>generator | source: Transformer.__init__, Transformer.forward | parameter: model.generator.weight</title></rect>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1238.0\" y=\"218.3\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"18\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1238.0\" dy=\"0\">Generator Linear D → vocabulary V</tspan>\n</text>\n",
+      "semantic": {
+        "id": "generator",
+        "kind": "linear",
+        "parent": "model",
+        "rank": 0,
+        "children": [],
+        "ports": [
+          "in",
+          "out"
+        ],
+        "source_evidence": [
+          "Transformer.__init__",
+          "Transformer.forward"
+        ],
+        "param_identity": "model.generator.weight",
+        "optional_alias": "model.tgt_embedding.embedding.weight when tie flag is true"
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "enc.layer_i",
+      "label": "enc.layer_i",
+      "x": 42,
+      "y": 286,
+      "w": 660,
+      "h": 394,
+      "base": [
+        42,
+        286
+      ],
+      "parent": null,
+      "expanded": true,
+      "routingObstacle": false,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"42\" y=\"286\" width=\"660\" height=\"394\" rx=\"19\" fill=\"#e7f5fe\" stroke=\"#263348\" stroke-width=\"2.5\"><title>enc.layer_i | source: EncoderLayer.forward | parameter: model.encoder.layers[i]</title></rect>\n",
+      "semantic": {
+        "id": "enc.layer_i",
+        "kind": "layer",
+        "parent": "enc",
+        "rank": 0,
+        "children": [
+          "enc.self",
+          "enc.norm1",
+          "enc.ffn",
+          "enc.norm2"
+        ],
+        "ports": [
+          "in",
+          "out"
+        ],
+        "source_evidence": [
+          "EncoderLayer.forward"
+        ],
+        "param_identity": "model.encoder.layers[i]"
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "enc.norm2",
+      "label": "enc.norm2",
+      "x": 80,
+      "y": 308,
+      "w": 604,
+      "h": 50,
+      "base": [
+        80,
+        308
+      ],
+      "parent": "enc.layer_i",
+      "expanded": false,
+      "routingObstacle": true,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"80\" y=\"308\" width=\"604\" height=\"50\" rx=\"10\" fill=\"#fff6bd\" stroke=\"#263348\" stroke-width=\"2\"><title>enc.norm2 | source: EncoderLayer.forward | parameter: model.encoder.layers[i].norm2</title></rect>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"382.0\" y=\"340.0\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"19\" font-weight=\"bold\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"382.0\" dy=\"0\">Add &amp; Norm  (residual → LayerNorm)</tspan>\n</text>\n",
+      "semantic": {
+        "id": "enc.norm2",
+        "kind": "postnorm",
+        "parent": "enc.layer_i",
+        "rank": 3,
+        "children": [
+          "enc.norm2.branch_dropout",
+          "enc.norm2.add",
+          "enc.norm2.layernorm"
+        ],
+        "ports": [
+          "in",
+          "skip",
+          "out"
+        ],
+        "source_evidence": [
+          "EncoderLayer.forward"
+        ],
+        "param_identity": "model.encoder.layers[i].norm2",
+        "formula": "LayerNorm(x + Dropout(sublayer(x)))"
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "enc.ffn",
+      "label": "enc.ffn",
+      "x": 80,
+      "y": 382,
+      "w": 604,
+      "h": 76,
+      "base": [
+        80,
+        382
+      ],
+      "parent": "enc.layer_i",
+      "expanded": false,
+      "routingObstacle": true,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"80\" y=\"382\" width=\"604\" height=\"76\" rx=\"10\" fill=\"#c8ebfb\" stroke=\"#263348\" stroke-width=\"2\"><title>enc.ffn | source: PositionwiseFeedForward.forward, EncoderLayer.forward | parameter: model.encoder.layers[i].ffn</title></rect>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"382.0\" y=\"410\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"20\" font-weight=\"bold\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"382.0\" dy=\"0\">Position-wise feed-forward network</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"382.0\" y=\"436\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"17\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"382.0\" dy=\"0\">same shared transform at each token</tspan>\n</text>\n<circle xmlns=\"http://www.w3.org/2000/svg\" cx=\"382.0\" cy=\"470.0\" r=\"2.5\" fill=\"#263348\" />\n",
+      "semantic": {
+        "id": "enc.ffn",
+        "kind": "ffn",
+        "parent": "enc.layer_i",
+        "rank": 2,
+        "children": [
+          "enc.ffn.linear1",
+          "enc.ffn.relu",
+          "enc.ffn.dropout",
+          "enc.ffn.linear2"
+        ],
+        "ports": [
+          "in",
+          "out"
+        ],
+        "source_evidence": [
+          "PositionwiseFeedForward.forward",
+          "EncoderLayer.forward"
+        ],
+        "param_identity": "model.encoder.layers[i].ffn",
+        "attention_role": null
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "enc.norm1",
+      "label": "enc.norm1",
+      "x": 80,
+      "y": 482,
+      "w": 604,
+      "h": 50,
+      "base": [
+        80,
+        482
+      ],
+      "parent": "enc.layer_i",
+      "expanded": false,
+      "routingObstacle": true,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"80\" y=\"482\" width=\"604\" height=\"50\" rx=\"10\" fill=\"#fff6bd\" stroke=\"#263348\" stroke-width=\"2\"><title>enc.norm1 | source: EncoderLayer.forward | parameter: model.encoder.layers[i].norm1</title></rect>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"382.0\" y=\"514.0\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"19\" font-weight=\"bold\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"382.0\" dy=\"0\">Add &amp; Norm  (residual → LayerNorm)</tspan>\n</text>\n",
+      "semantic": {
+        "id": "enc.norm1",
+        "kind": "postnorm",
+        "parent": "enc.layer_i",
+        "rank": 1,
+        "children": [
+          "enc.norm1.branch_dropout",
+          "enc.norm1.add",
+          "enc.norm1.layernorm"
+        ],
+        "ports": [
+          "in",
+          "skip",
+          "out"
+        ],
+        "source_evidence": [
+          "EncoderLayer.forward"
+        ],
+        "param_identity": "model.encoder.layers[i].norm1",
+        "formula": "LayerNorm(x + Dropout(sublayer(x)))"
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "enc.self",
+      "label": "enc.self",
+      "x": 80,
+      "y": 556,
+      "w": 604,
+      "h": 102,
+      "base": [
+        80,
+        556
+      ],
+      "parent": "enc.layer_i",
+      "expanded": false,
+      "routingObstacle": true,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"80\" y=\"556\" width=\"604\" height=\"102\" rx=\"10\" fill=\"#ffddb3\" stroke=\"#263348\" stroke-width=\"2\"><title>enc.self | source: MultiHeadAttention.forward, EncoderLayer.forward | parameter: model.encoder.layers[i].self_attn</title></rect>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"382.0\" y=\"584\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"20\" font-weight=\"bold\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"382.0\" dy=\"0\">Encoder self-attention</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"382.0\" y=\"610\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"18\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"382.0\" dy=\"0\">Q,K,V ← X [B,S,D]</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"382.0\" y=\"639\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"16\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"382.0\" dy=\"0\">padding mask optional</tspan>\n</text>\n<circle xmlns=\"http://www.w3.org/2000/svg\" cx=\"382.0\" cy=\"670.0\" r=\"2.5\" fill=\"#263348\" />\n",
+      "semantic": {
+        "id": "enc.self",
+        "kind": "attention",
+        "parent": "enc.layer_i",
+        "rank": 0,
+        "children": [
+          "enc.self.q",
+          "enc.self.k",
+          "enc.self.v",
+          "enc.self.split",
+          "enc.self.sdpa",
+          "enc.self.merge",
+          "enc.self.wo"
+        ],
+        "ports": [
+          "in",
+          "out"
+        ],
+        "source_evidence": [
+          "MultiHeadAttention.forward",
+          "EncoderLayer.forward"
+        ],
+        "param_identity": "model.encoder.layers[i].self_attn",
+        "attention_role": "self"
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "src_embed",
+      "label": "src_embed",
+      "x": 135,
+      "y": 968,
+      "w": 494,
+      "h": 62,
+      "base": [
+        135,
+        968
+      ],
+      "parent": null,
+      "expanded": false,
+      "routingObstacle": true,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"135\" y=\"968\" width=\"494\" height=\"62\" rx=\"10\" fill=\"#f8d4e1\" stroke=\"#263348\" stroke-width=\"2\"><title>src_embed | source: TokenEmbedding.forward | parameter: model.src_embedding.embedding.weight</title></rect>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"382.0\" y=\"1005.65\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"19\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"382.0\" dy=\"0\">Source token embedding × √D</tspan>\n</text>\n<circle xmlns=\"http://www.w3.org/2000/svg\" cx=\"382.0\" cy=\"926\" r=\"15\" fill=\"white\" stroke=\"#263348\" stroke-width=\"2\" />\n",
+      "semantic": {
+        "id": "src_embed",
+        "kind": "embedding",
+        "parent": "model",
+        "rank": 0,
+        "children": [],
+        "ports": [
+          "in",
+          "out"
+        ],
+        "source_evidence": [
+          "TokenEmbedding.forward"
+        ],
+        "param_identity": "model.src_embedding.embedding.weight",
+        "scale": "sqrt(D)"
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "src_pe",
+      "label": "src_pe",
+      "x": 80.0,
+      "y": 903,
+      "w": 210,
+      "h": 46,
+      "base": [
+        80.0,
+        903
+      ],
+      "parent": null,
+      "expanded": false,
+      "routingObstacle": true,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"80.0\" y=\"903\" width=\"210\" height=\"46\" rx=\"10\" fill=\"#f3f5f7\" stroke=\"#263348\" stroke-width=\"2\"><title>src_pe | source: PositionalEncoding.forward | parameter: None</title></rect>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"185.0\" y=\"931.95\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"17\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"185.0\" dy=\"0\">Fixed sinusoidal PE</tspan>\n</text>\n",
+      "semantic": {
+        "id": "src_pe",
+        "kind": "sinusoidal_pe",
+        "parent": "model",
+        "rank": 0,
+        "children": [],
+        "ports": [
+          "in",
+          "out"
+        ],
+        "source_evidence": [
+          "PositionalEncoding.forward"
+        ],
+        "param_identity": null,
+        "buffer_identity": "model.position.pe",
+        "dropout": "folded"
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "dec.layer_i",
+      "label": "dec.layer_i",
+      "x": 898,
+      "y": 286,
+      "w": 660,
+      "h": 594,
+      "base": [
+        898,
+        286
+      ],
+      "parent": null,
+      "expanded": true,
+      "routingObstacle": false,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"898\" y=\"286\" width=\"660\" height=\"594\" rx=\"19\" fill=\"#fff0f5\" stroke=\"#263348\" stroke-width=\"2.5\"><title>dec.layer_i | source: DecoderLayer.forward | parameter: model.decoder.layers[i]</title></rect>\n",
+      "semantic": {
+        "id": "dec.layer_i",
+        "kind": "layer",
+        "parent": "dec",
+        "rank": 0,
+        "children": [
+          "dec.self",
+          "dec.norm1",
+          "dec.cross",
+          "dec.norm2",
+          "dec.ffn",
+          "dec.norm3"
+        ],
+        "ports": [
+          "in",
+          "out"
+        ],
+        "source_evidence": [
+          "DecoderLayer.forward"
+        ],
+        "param_identity": "model.decoder.layers[i]"
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "dec.norm3",
+      "label": "dec.norm3",
+      "x": 936,
+      "y": 308,
+      "w": 604,
+      "h": 50,
+      "base": [
+        936,
+        308
+      ],
+      "parent": "dec.layer_i",
+      "expanded": false,
+      "routingObstacle": true,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"936\" y=\"308\" width=\"604\" height=\"50\" rx=\"10\" fill=\"#fff6bd\" stroke=\"#263348\" stroke-width=\"2\"><title>dec.norm3 | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm3</title></rect>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1238.0\" y=\"340.0\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"19\" font-weight=\"bold\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1238.0\" dy=\"0\">Add &amp; Norm  (residual → LayerNorm)</tspan>\n</text>\n",
+      "semantic": {
+        "id": "dec.norm3",
+        "kind": "postnorm",
+        "parent": "dec.layer_i",
+        "rank": 5,
+        "children": [
+          "dec.norm3.branch_dropout",
+          "dec.norm3.add",
+          "dec.norm3.layernorm"
+        ],
+        "ports": [
+          "in",
+          "skip",
+          "out"
+        ],
+        "source_evidence": [
+          "DecoderLayer.forward"
+        ],
+        "param_identity": "model.decoder.layers[i].norm3",
+        "formula": "LayerNorm(x + Dropout(sublayer(x)))"
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "dec.ffn",
+      "label": "dec.ffn",
+      "x": 936,
+      "y": 382,
+      "w": 604,
+      "h": 76,
+      "base": [
+        936,
+        382
+      ],
+      "parent": "dec.layer_i",
+      "expanded": false,
+      "routingObstacle": true,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"936\" y=\"382\" width=\"604\" height=\"76\" rx=\"10\" fill=\"#c8ebfb\" stroke=\"#263348\" stroke-width=\"2\"><title>dec.ffn | source: PositionwiseFeedForward.forward, DecoderLayer.forward | parameter: model.decoder.layers[i].ffn</title></rect>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1238.0\" y=\"410\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"20\" font-weight=\"bold\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1238.0\" dy=\"0\">Position-wise feed-forward network</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1238.0\" y=\"436\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"17\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1238.0\" dy=\"0\">same shared transform at each token</tspan>\n</text>\n<circle xmlns=\"http://www.w3.org/2000/svg\" cx=\"1238.0\" cy=\"470.0\" r=\"2.5\" fill=\"#263348\" />\n",
+      "semantic": {
+        "id": "dec.ffn",
+        "kind": "ffn",
+        "parent": "dec.layer_i",
+        "rank": 4,
+        "children": [
+          "dec.ffn.linear1",
+          "dec.ffn.relu",
+          "dec.ffn.dropout",
+          "dec.ffn.linear2"
+        ],
+        "ports": [
+          "in",
+          "out"
+        ],
+        "source_evidence": [
+          "PositionwiseFeedForward.forward",
+          "DecoderLayer.forward"
+        ],
+        "param_identity": "model.decoder.layers[i].ffn",
+        "attention_role": null
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "dec.norm2",
+      "label": "dec.norm2",
+      "x": 936,
+      "y": 482,
+      "w": 604,
+      "h": 50,
+      "base": [
+        936,
+        482
+      ],
+      "parent": "dec.layer_i",
+      "expanded": false,
+      "routingObstacle": true,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"936\" y=\"482\" width=\"604\" height=\"50\" rx=\"10\" fill=\"#fff6bd\" stroke=\"#263348\" stroke-width=\"2\"><title>dec.norm2 | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm2</title></rect>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1238.0\" y=\"514.0\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"19\" font-weight=\"bold\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1238.0\" dy=\"0\">Add &amp; Norm  (residual → LayerNorm)</tspan>\n</text>\n",
+      "semantic": {
+        "id": "dec.norm2",
+        "kind": "postnorm",
+        "parent": "dec.layer_i",
+        "rank": 3,
+        "children": [
+          "dec.norm2.branch_dropout",
+          "dec.norm2.add",
+          "dec.norm2.layernorm"
+        ],
+        "ports": [
+          "in",
+          "skip",
+          "out"
+        ],
+        "source_evidence": [
+          "DecoderLayer.forward"
+        ],
+        "param_identity": "model.decoder.layers[i].norm2",
+        "formula": "LayerNorm(x + Dropout(sublayer(x)))"
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "dec.cross",
+      "label": "dec.cross",
+      "x": 936,
+      "y": 556,
+      "w": 604,
+      "h": 102,
+      "base": [
+        936,
+        556
+      ],
+      "parent": "dec.layer_i",
+      "expanded": false,
+      "routingObstacle": true,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"936\" y=\"556\" width=\"604\" height=\"102\" rx=\"10\" fill=\"#ffddb3\" stroke=\"#263348\" stroke-width=\"2\"><title>dec.cross | source: MultiHeadAttention.forward, DecoderLayer.forward | parameter: model.decoder.layers[i].cross_attn</title></rect>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1238.0\" y=\"584\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"20\" font-weight=\"bold\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1238.0\" dy=\"0\">Encoder–decoder cross-attention</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1238.0\" y=\"610\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"18\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1238.0\" dy=\"0\">Q ← H [B,T,D]; K,V ← M [B,S,D]</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1238.0\" y=\"639\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"16\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1238.0\" dy=\"0\">padding mask optional</tspan>\n</text>\n<circle xmlns=\"http://www.w3.org/2000/svg\" cx=\"1238.0\" cy=\"670.0\" r=\"2.5\" fill=\"#263348\" />\n",
+      "semantic": {
+        "id": "dec.cross",
+        "kind": "attention",
+        "parent": "dec.layer_i",
+        "rank": 2,
+        "children": [
+          "dec.cross.q",
+          "dec.cross.k",
+          "dec.cross.v",
+          "dec.cross.split",
+          "dec.cross.sdpa",
+          "dec.cross.merge",
+          "dec.cross.wo"
+        ],
+        "ports": [
+          "in",
+          "out",
+          "memory"
+        ],
+        "source_evidence": [
+          "MultiHeadAttention.forward",
+          "DecoderLayer.forward"
+        ],
+        "param_identity": "model.decoder.layers[i].cross_attn",
+        "attention_role": "cross"
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "dec.norm1",
+      "label": "dec.norm1",
+      "x": 936,
+      "y": 682,
+      "w": 604,
+      "h": 50,
+      "base": [
+        936,
+        682
+      ],
+      "parent": "dec.layer_i",
+      "expanded": false,
+      "routingObstacle": true,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"936\" y=\"682\" width=\"604\" height=\"50\" rx=\"10\" fill=\"#fff6bd\" stroke=\"#263348\" stroke-width=\"2\"><title>dec.norm1 | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm1</title></rect>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1238.0\" y=\"714.0\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"19\" font-weight=\"bold\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1238.0\" dy=\"0\">Add &amp; Norm  (residual → LayerNorm)</tspan>\n</text>\n",
+      "semantic": {
+        "id": "dec.norm1",
+        "kind": "postnorm",
+        "parent": "dec.layer_i",
+        "rank": 1,
+        "children": [
+          "dec.norm1.branch_dropout",
+          "dec.norm1.add",
+          "dec.norm1.layernorm"
+        ],
+        "ports": [
+          "in",
+          "skip",
+          "out"
+        ],
+        "source_evidence": [
+          "DecoderLayer.forward"
+        ],
+        "param_identity": "model.decoder.layers[i].norm1",
+        "formula": "LayerNorm(x + Dropout(sublayer(x)))"
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "dec.self",
+      "label": "dec.self",
+      "x": 936,
+      "y": 756,
+      "w": 604,
+      "h": 102,
+      "base": [
+        936,
+        756
+      ],
+      "parent": "dec.layer_i",
+      "expanded": false,
+      "routingObstacle": true,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"936\" y=\"756\" width=\"604\" height=\"102\" rx=\"10\" fill=\"#ffddb3\" stroke=\"#263348\" stroke-width=\"2\"><title>dec.self | source: MultiHeadAttention.forward, DecoderLayer.forward | parameter: model.decoder.layers[i].self_attn</title></rect>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1238.0\" y=\"784\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"20\" font-weight=\"bold\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1238.0\" dy=\"0\">Decoder masked self-attention</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1238.0\" y=\"810\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"18\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1238.0\" dy=\"0\">Q,K,V ← X [B,T,D]</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1238.0\" y=\"839\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"16\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1238.0\" dy=\"0\">causal + padding mask supplied by caller</tspan>\n</text>\n<circle xmlns=\"http://www.w3.org/2000/svg\" cx=\"1238.0\" cy=\"870.0\" r=\"2.5\" fill=\"#263348\" />\n",
+      "semantic": {
+        "id": "dec.self",
+        "kind": "attention",
+        "parent": "dec.layer_i",
+        "rank": 0,
+        "children": [
+          "dec.self.q",
+          "dec.self.k",
+          "dec.self.v",
+          "dec.self.split",
+          "dec.self.sdpa",
+          "dec.self.merge",
+          "dec.self.wo"
+        ],
+        "ports": [
+          "in",
+          "out"
+        ],
+        "source_evidence": [
+          "MultiHeadAttention.forward",
+          "DecoderLayer.forward"
+        ],
+        "param_identity": "model.decoder.layers[i].self_attn",
+        "attention_role": "self"
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "tgt_embed",
+      "label": "tgt_embed",
+      "x": 991,
+      "y": 968,
+      "w": 494,
+      "h": 62,
+      "base": [
+        991,
+        968
+      ],
+      "parent": null,
+      "expanded": false,
+      "routingObstacle": true,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"991\" y=\"968\" width=\"494\" height=\"62\" rx=\"10\" fill=\"#f8d4e1\" stroke=\"#263348\" stroke-width=\"2\"><title>tgt_embed | source: TokenEmbedding.forward | parameter: model.tgt_embedding.embedding.weight</title></rect>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1238.0\" y=\"1005.65\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"19\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1238.0\" dy=\"0\">Target token embedding × √D</tspan>\n</text>\n<circle xmlns=\"http://www.w3.org/2000/svg\" cx=\"1238.0\" cy=\"926\" r=\"15\" fill=\"white\" stroke=\"#263348\" stroke-width=\"2\" />\n",
+      "semantic": {
+        "id": "tgt_embed",
+        "kind": "embedding",
+        "parent": "model",
+        "rank": 0,
+        "children": [],
+        "ports": [
+          "in",
+          "out"
+        ],
+        "source_evidence": [
+          "TokenEmbedding.forward"
+        ],
+        "param_identity": "model.tgt_embedding.embedding.weight",
+        "scale": "sqrt(D)"
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "tgt_pe",
+      "label": "tgt_pe",
+      "x": 936.0,
+      "y": 903,
+      "w": 210,
+      "h": 46,
+      "base": [
+        936.0,
+        903
+      ],
+      "parent": null,
+      "expanded": false,
+      "routingObstacle": true,
+      "html": "<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"936.0\" y=\"903\" width=\"210\" height=\"46\" rx=\"10\" fill=\"#f3f5f7\" stroke=\"#263348\" stroke-width=\"2\"><title>tgt_pe | source: PositionalEncoding.forward | parameter: None</title></rect>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1041.0\" y=\"931.95\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"17\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1041.0\" dy=\"0\">Fixed sinusoidal PE</tspan>\n</text>\n",
+      "semantic": {
+        "id": "tgt_pe",
+        "kind": "sinusoidal_pe",
+        "parent": "model",
+        "rank": 0,
+        "children": [],
+        "ports": [
+          "in",
+          "out"
+        ],
+        "source_evidence": [
+          "PositionalEncoding.forward"
+        ],
+        "param_identity": null,
+        "buffer_identity": "model.position.pe",
+        "dropout": "folded"
+      },
+      "fill": "#e7f5fe",
+      "labelObstacles": []
+    },
+    {
+      "id": "junction-1",
+      "label": "分支连接点",
+      "x": 382.0,
+      "y": 968,
+      "w": 0,
+      "h": 0,
+      "base": [
+        382.0,
+        968
+      ],
+      "expanded": false,
+      "junction": true,
+      "routingObstacle": false,
+      "parent": null,
+      "html": "",
+      "semantic": {
+        "kind": "recorded visual junction",
+        "original_ref": null
+      },
+      "labelObstacles": []
+    },
+    {
+      "id": "junction-2",
+      "label": "分支连接点",
+      "x": 382.0,
+      "y": 941,
+      "w": 0,
+      "h": 0,
+      "base": [
+        382.0,
+        941
+      ],
+      "expanded": false,
+      "junction": true,
+      "routingObstacle": false,
+      "parent": null,
+      "html": "",
+      "semantic": {
+        "kind": "recorded visual junction",
+        "original_ref": null
+      },
+      "labelObstacles": []
+    },
+    {
+      "id": "junction-3",
+      "label": "分支连接点",
+      "x": 290.0,
+      "y": 926,
+      "w": 0,
+      "h": 0,
+      "base": [
+        290.0,
+        926
+      ],
+      "expanded": false,
+      "junction": true,
+      "routingObstacle": false,
+      "parent": null,
+      "html": "",
+      "semantic": {
+        "kind": "recorded visual junction",
+        "original_ref": null
+      },
+      "labelObstacles": []
+    },
+    {
+      "id": "junction-4",
+      "label": "分支连接点",
+      "x": 367.0,
+      "y": 926,
+      "w": 0,
+      "h": 0,
+      "base": [
+        367.0,
+        926
+      ],
+      "expanded": false,
+      "junction": true,
+      "routingObstacle": false,
+      "parent": null,
+      "html": "",
+      "semantic": {
+        "kind": "recorded visual junction",
+        "original_ref": null
+      },
+      "labelObstacles": []
+    },
+    {
+      "id": "junction-5",
+      "label": "分支连接点",
+      "x": 382.0,
+      "y": 1049,
+      "w": 0,
+      "h": 0,
+      "base": [
+        382.0,
+        1049
+      ],
+      "expanded": false,
+      "junction": true,
+      "routingObstacle": false,
+      "parent": null,
+      "html": "",
+      "semantic": {
+        "kind": "recorded visual junction",
+        "original_ref": null
+      },
+      "labelObstacles": []
+    },
+    {
+      "id": "junction-6",
+      "label": "分支连接点",
+      "x": 382.0,
+      "y": 1030,
+      "w": 0,
+      "h": 0,
+      "base": [
+        382.0,
+        1030
+      ],
+      "expanded": false,
+      "junction": true,
+      "routingObstacle": false,
+      "parent": null,
+      "html": "",
+      "semantic": {
+        "kind": "recorded visual junction",
+        "original_ref": null
+      },
+      "labelObstacles": []
+    },
+    {
+      "id": "junction-7",
+      "label": "分支连接点",
+      "x": 1238.0,
+      "y": 968,
+      "w": 0,
+      "h": 0,
+      "base": [
+        1238.0,
+        968
+      ],
+      "expanded": false,
+      "junction": true,
+      "routingObstacle": false,
+      "parent": null,
+      "html": "",
+      "semantic": {
+        "kind": "recorded visual junction",
+        "original_ref": null
+      },
+      "labelObstacles": []
+    },
+    {
+      "id": "junction-8",
+      "label": "分支连接点",
+      "x": 1238.0,
+      "y": 941,
+      "w": 0,
+      "h": 0,
+      "base": [
+        1238.0,
+        941
+      ],
+      "expanded": false,
+      "junction": true,
+      "routingObstacle": false,
+      "parent": null,
+      "html": "",
+      "semantic": {
+        "kind": "recorded visual junction",
+        "original_ref": null
+      },
+      "labelObstacles": []
+    },
+    {
+      "id": "junction-9",
+      "label": "分支连接点",
+      "x": 1146.0,
+      "y": 926,
+      "w": 0,
+      "h": 0,
+      "base": [
+        1146.0,
+        926
+      ],
+      "expanded": false,
+      "junction": true,
+      "routingObstacle": false,
+      "parent": null,
+      "html": "",
+      "semantic": {
+        "kind": "recorded visual junction",
+        "original_ref": null
+      },
+      "labelObstacles": []
+    },
+    {
+      "id": "junction-10",
+      "label": "分支连接点",
+      "x": 1223.0,
+      "y": 926,
+      "w": 0,
+      "h": 0,
+      "base": [
+        1223.0,
+        926
+      ],
+      "expanded": false,
+      "junction": true,
+      "routingObstacle": false,
+      "parent": null,
+      "html": "",
+      "semantic": {
+        "kind": "recorded visual junction",
+        "original_ref": null
+      },
+      "labelObstacles": []
+    },
+    {
+      "id": "junction-11",
+      "label": "分支连接点",
+      "x": 1238.0,
+      "y": 1049,
+      "w": 0,
+      "h": 0,
+      "base": [
+        1238.0,
+        1049
+      ],
+      "expanded": false,
+      "junction": true,
+      "routingObstacle": false,
+      "parent": null,
+      "html": "",
+      "semantic": {
+        "kind": "recorded visual junction",
+        "original_ref": null
+      },
+      "labelObstacles": []
+    },
+    {
+      "id": "junction-12",
+      "label": "分支连接点",
+      "x": 1238.0,
+      "y": 1030,
+      "w": 0,
+      "h": 0,
+      "base": [
+        1238.0,
+        1030
+      ],
+      "expanded": false,
+      "junction": true,
+      "routingObstacle": false,
+      "parent": null,
+      "html": "",
+      "semantic": {
+        "kind": "recorded visual junction",
+        "original_ref": null
+      },
+      "labelObstacles": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "logits-to-probabilities-0",
+      "source": "generator",
+      "target": "probabilities",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 1238.0,
+          "y": 188
+        },
+        {
+          "x": 1238.0,
+          "y": 168
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "top",
+        "fraction": 0.5,
+        "offset": {
+          "x": 190.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 240.0,
+          "y": 58
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": true,
+      "binding": {
+        "id": "logits-to-probabilities",
+        "points": [
+          [
+            1238.0,
+            188
+          ],
+          [
+            1238.0,
+            168
+          ]
+        ],
+        "src": "logits",
+        "dst": "probabilities",
+        "dashed": true,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        },
+        "target": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        }
+      }
+    },
+    {
+      "id": "enc.ffn-to-norm-1",
+      "source": "enc.ffn",
+      "target": "enc.norm2",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 382.0,
+          "y": 382
+        },
+        {
+          "x": 382.0,
+          "y": 358
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "top",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 50
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "enc.ffn-to-norm",
+        "points": [
+          [
+            382.0,
+            382
+          ],
+          [
+            382.0,
+            358
+          ]
+        ],
+        "src": "enc.ffn",
+        "dst": "enc.norm2",
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "perimeter",
+          "shape": "circle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        },
+        "target": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        }
+      }
+    },
+    {
+      "id": "enc.ffn-residual-2",
+      "source": "enc.ffn",
+      "target": "enc.norm2",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 382.0,
+          "y": 470.0
+        },
+        {
+          "x": 56,
+          "y": 470.0
+        },
+        {
+          "x": 56,
+          "y": 333.0
+        },
+        {
+          "x": 80,
+          "y": 333.0
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 88.0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "left",
+        "fraction": 0.5,
+        "offset": {
+          "x": 0,
+          "y": 25.0
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "enc.ffn-residual",
+        "points": [
+          [
+            382.0,
+            470.0
+          ],
+          [
+            56,
+            470.0
+          ],
+          [
+            56,
+            333.0
+          ],
+          [
+            80,
+            333.0
+          ]
+        ],
+        "src": "enc.ffn:input_tap",
+        "dst": "enc.norm2:skip",
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "fixed",
+          "shape": "circle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        },
+        "target": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        }
+      }
+    },
+    {
+      "id": "enc.self-to-norm-3",
+      "source": "enc.self",
+      "target": "enc.norm1",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 382.0,
+          "y": 556
+        },
+        {
+          "x": 382.0,
+          "y": 532
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "top",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 50
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "enc.self-to-norm",
+        "points": [
+          [
+            382.0,
+            556
+          ],
+          [
+            382.0,
+            532
+          ]
+        ],
+        "src": "enc.self",
+        "dst": "enc.norm1",
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "perimeter",
+          "shape": "circle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        },
+        "target": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        }
+      }
+    },
+    {
+      "id": "enc.self-residual-4",
+      "source": "enc.self",
+      "target": "enc.norm1",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 382.0,
+          "y": 670.0
+        },
+        {
+          "x": 56,
+          "y": 670.0
+        },
+        {
+          "x": 56,
+          "y": 507.0
+        },
+        {
+          "x": 80,
+          "y": 507.0
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 114.0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "left",
+        "fraction": 0.5,
+        "offset": {
+          "x": 0,
+          "y": 25.0
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "enc.self-residual",
+        "points": [
+          [
+            382.0,
+            670.0
+          ],
+          [
+            56,
+            670.0
+          ],
+          [
+            56,
+            507.0
+          ],
+          [
+            80,
+            507.0
+          ]
+        ],
+        "src": "enc.self:input_tap",
+        "dst": "enc.norm1:skip",
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "fixed",
+          "shape": "circle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        },
+        "target": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        }
+      }
+    },
+    {
+      "id": "enc.norm1-to-next-5",
+      "source": "enc.norm1",
+      "target": "enc.ffn",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 382.0,
+          "y": 482
+        },
+        {
+          "x": 382.0,
+          "y": 458
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "top",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 76
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "enc.norm1-to-next",
+        "points": [
+          [
+            382.0,
+            482
+          ],
+          [
+            382.0,
+            458
+          ]
+        ],
+        "src": "enc.norm1",
+        "dst": "enc.ffn",
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        },
+        "target": {
+          "mode": "fixed",
+          "shape": "circle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        }
+      }
+    },
+    {
+      "id": "local-route-007-6",
+      "source": "junction-1",
+      "target": "junction-2",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 382.0,
+          "y": 968
+        },
+        {
+          "x": 382.0,
+          "y": 941
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "top",
+        "fraction": 0.5,
+        "offset": {
+          "x": 0.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 0.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "local-route-007",
+        "points": [
+          [
+            382.0,
+            968
+          ],
+          [
+            382.0,
+            941
+          ]
+        ],
+        "src": null,
+        "dst": null,
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "fixed",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        },
+        "target": {
+          "mode": "fixed",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        }
+      }
+    },
+    {
+      "id": "local-route-008-7",
+      "source": "junction-3",
+      "target": "junction-4",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 290.0,
+          "y": 926
+        },
+        {
+          "x": 367.0,
+          "y": 926
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "right",
+        "fraction": 0.5,
+        "offset": {
+          "x": 0.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "left",
+        "fraction": 0.5,
+        "offset": {
+          "x": 0.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "local-route-008",
+        "points": [
+          [
+            290.0,
+            926
+          ],
+          [
+            367.0,
+            926
+          ]
+        ],
+        "src": null,
+        "dst": null,
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "fixed",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        },
+        "target": {
+          "mode": "fixed",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        }
+      }
+    },
+    {
+      "id": "enc-input-8",
+      "source": "src_pe",
+      "target": "enc.self",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 382.0,
+          "y": 911
+        },
+        {
+          "x": 382.0,
+          "y": 658
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "top",
+        "fraction": 1.0,
+        "offset": {
+          "x": 302.0,
+          "y": 8
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 102
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "enc-input",
+        "points": [
+          [
+            382.0,
+            911
+          ],
+          [
+            382.0,
+            658
+          ]
+        ],
+        "src": "src_pe",
+        "dst": "enc.self",
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "fixed",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [
+            {
+              "frame": "enc.layer_i",
+              "side": "bottom",
+              "anchor": "source",
+              "fraction": 0.5151515151515151,
+              "direction": "enter",
+              "authority": "recorded straight terminal crosses source ancestor"
+            }
+          ],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        },
+        "target": {
+          "mode": "fixed",
+          "shape": "circle",
+          "spacing": 12,
+          "gates": [
+            {
+              "frame": "enc.layer_i",
+              "side": "bottom",
+              "anchor": "target",
+              "fraction": 0.5151515151515151,
+              "direction": "enter",
+              "authority": "recorded straight terminal crosses source ancestor"
+            }
+          ],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        }
+      }
+    },
+    {
+      "id": "local-route-010-9",
+      "source": "junction-5",
+      "target": "junction-6",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 382.0,
+          "y": 1049
+        },
+        {
+          "x": 382.0,
+          "y": 1030
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "top",
+        "fraction": 0.5,
+        "offset": {
+          "x": 0.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 0.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "local-route-010",
+        "points": [
+          [
+            382.0,
+            1049
+          ],
+          [
+            382.0,
+            1030
+          ]
+        ],
+        "src": null,
+        "dst": null,
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "fixed",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        },
+        "target": {
+          "mode": "fixed",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        }
+      }
+    },
+    {
+      "id": "dec.ffn-to-norm-10",
+      "source": "dec.ffn",
+      "target": "dec.norm3",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 1238.0,
+          "y": 382
+        },
+        {
+          "x": 1238.0,
+          "y": 358
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "top",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 50
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "dec.ffn-to-norm",
+        "points": [
+          [
+            1238.0,
+            382
+          ],
+          [
+            1238.0,
+            358
+          ]
+        ],
+        "src": "dec.ffn",
+        "dst": "dec.norm3",
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "perimeter",
+          "shape": "circle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        },
+        "target": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        }
+      }
+    },
+    {
+      "id": "dec.ffn-residual-11",
+      "source": "dec.ffn",
+      "target": "dec.norm3",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 1238.0,
+          "y": 470.0
+        },
+        {
+          "x": 912,
+          "y": 470.0
+        },
+        {
+          "x": 912,
+          "y": 333.0
+        },
+        {
+          "x": 936,
+          "y": 333.0
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 88.0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "left",
+        "fraction": 0.5,
+        "offset": {
+          "x": 0,
+          "y": 25.0
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "dec.ffn-residual",
+        "points": [
+          [
+            1238.0,
+            470.0
+          ],
+          [
+            912,
+            470.0
+          ],
+          [
+            912,
+            333.0
+          ],
+          [
+            936,
+            333.0
+          ]
+        ],
+        "src": "dec.ffn:input_tap",
+        "dst": "dec.norm3:skip",
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "fixed",
+          "shape": "circle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        },
+        "target": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        }
+      }
+    },
+    {
+      "id": "dec.cross-to-norm-12",
+      "source": "dec.cross",
+      "target": "dec.norm2",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 1238.0,
+          "y": 556
+        },
+        {
+          "x": 1238.0,
+          "y": 532
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "top",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 50
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "dec.cross-to-norm",
+        "points": [
+          [
+            1238.0,
+            556
+          ],
+          [
+            1238.0,
+            532
+          ]
+        ],
+        "src": "dec.cross",
+        "dst": "dec.norm2",
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "perimeter",
+          "shape": "circle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        },
+        "target": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        }
+      }
+    },
+    {
+      "id": "dec.cross-residual-13",
+      "source": "dec.cross",
+      "target": "dec.norm2",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 1238.0,
+          "y": 670.0
+        },
+        {
+          "x": 912,
+          "y": 670.0
+        },
+        {
+          "x": 912,
+          "y": 507.0
+        },
+        {
+          "x": 936,
+          "y": 507.0
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 114.0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "left",
+        "fraction": 0.5,
+        "offset": {
+          "x": 0,
+          "y": 25.0
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "dec.cross-residual",
+        "points": [
+          [
+            1238.0,
+            670.0
+          ],
+          [
+            912,
+            670.0
+          ],
+          [
+            912,
+            507.0
+          ],
+          [
+            936,
+            507.0
+          ]
+        ],
+        "src": "dec.cross:input_tap",
+        "dst": "dec.norm2:skip",
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "fixed",
+          "shape": "circle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        },
+        "target": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        }
+      }
+    },
+    {
+      "id": "dec.norm2-to-next-14",
+      "source": "dec.norm2",
+      "target": "dec.ffn",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 1238.0,
+          "y": 482
+        },
+        {
+          "x": 1238.0,
+          "y": 458
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "top",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 76
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "dec.norm2-to-next",
+        "points": [
+          [
+            1238.0,
+            482
+          ],
+          [
+            1238.0,
+            458
+          ]
+        ],
+        "src": "dec.norm2",
+        "dst": "dec.ffn",
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        },
+        "target": {
+          "mode": "fixed",
+          "shape": "circle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        }
+      }
+    },
+    {
+      "id": "dec.self-to-norm-15",
+      "source": "dec.self",
+      "target": "dec.norm1",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 1238.0,
+          "y": 756
+        },
+        {
+          "x": 1238.0,
+          "y": 732
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "top",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 50
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "dec.self-to-norm",
+        "points": [
+          [
+            1238.0,
+            756
+          ],
+          [
+            1238.0,
+            732
+          ]
+        ],
+        "src": "dec.self",
+        "dst": "dec.norm1",
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "perimeter",
+          "shape": "circle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        },
+        "target": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        }
+      }
+    },
+    {
+      "id": "dec.self-residual-16",
+      "source": "dec.self",
+      "target": "dec.norm1",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 1238.0,
+          "y": 870.0
+        },
+        {
+          "x": 912,
+          "y": 870.0
+        },
+        {
+          "x": 912,
+          "y": 707.0
+        },
+        {
+          "x": 936,
+          "y": 707.0
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 114.0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "left",
+        "fraction": 0.5,
+        "offset": {
+          "x": 0,
+          "y": 25.0
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "dec.self-residual",
+        "points": [
+          [
+            1238.0,
+            870.0
+          ],
+          [
+            912,
+            870.0
+          ],
+          [
+            912,
+            707.0
+          ],
+          [
+            936,
+            707.0
+          ]
+        ],
+        "src": "dec.self:input_tap",
+        "dst": "dec.norm1:skip",
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "fixed",
+          "shape": "circle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        },
+        "target": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        }
+      }
+    },
+    {
+      "id": "dec.norm1-to-next-17",
+      "source": "dec.norm1",
+      "target": "dec.cross",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 1238.0,
+          "y": 682
+        },
+        {
+          "x": 1238.0,
+          "y": 658
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "top",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 102
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "dec.norm1-to-next",
+        "points": [
+          [
+            1238.0,
+            682
+          ],
+          [
+            1238.0,
+            658
+          ]
+        ],
+        "src": "dec.norm1",
+        "dst": "dec.cross",
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        },
+        "target": {
+          "mode": "fixed",
+          "shape": "circle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        }
+      }
+    },
+    {
+      "id": "local-route-019-18",
+      "source": "junction-7",
+      "target": "junction-8",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 1238.0,
+          "y": 968
+        },
+        {
+          "x": 1238.0,
+          "y": 941
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "top",
+        "fraction": 0.5,
+        "offset": {
+          "x": 0.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 0.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "local-route-019",
+        "points": [
+          [
+            1238.0,
+            968
+          ],
+          [
+            1238.0,
+            941
+          ]
+        ],
+        "src": null,
+        "dst": null,
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "fixed",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        },
+        "target": {
+          "mode": "fixed",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        }
+      }
+    },
+    {
+      "id": "local-route-020-19",
+      "source": "junction-9",
+      "target": "junction-10",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 1146.0,
+          "y": 926
+        },
+        {
+          "x": 1223.0,
+          "y": 926
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "right",
+        "fraction": 0.5,
+        "offset": {
+          "x": 0.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "left",
+        "fraction": 0.5,
+        "offset": {
+          "x": 0.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "local-route-020",
+        "points": [
+          [
+            1146.0,
+            926
+          ],
+          [
+            1223.0,
+            926
+          ]
+        ],
+        "src": null,
+        "dst": null,
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "fixed",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        },
+        "target": {
+          "mode": "fixed",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        }
+      }
+    },
+    {
+      "id": "dec-input-20",
+      "source": "tgt_pe",
+      "target": "dec.self",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 1238.0,
+          "y": 911
+        },
+        {
+          "x": 1238.0,
+          "y": 858
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "top",
+        "fraction": 1.0,
+        "offset": {
+          "x": 302.0,
+          "y": 8
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 102
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "dec-input",
+        "points": [
+          [
+            1238.0,
+            911
+          ],
+          [
+            1238.0,
+            858
+          ]
+        ],
+        "src": "tgt_pe",
+        "dst": "dec.self",
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "fixed",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [
+            {
+              "frame": "dec.layer_i",
+              "side": "bottom",
+              "anchor": "source",
+              "fraction": 0.5151515151515151,
+              "direction": "enter",
+              "authority": "recorded straight terminal crosses source ancestor"
+            }
+          ],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        },
+        "target": {
+          "mode": "fixed",
+          "shape": "circle",
+          "spacing": 12,
+          "gates": [
+            {
+              "frame": "dec.layer_i",
+              "side": "bottom",
+              "anchor": "target",
+              "fraction": 0.5151515151515151,
+              "direction": "enter",
+              "authority": "recorded straight terminal crosses source ancestor"
+            }
+          ],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        }
+      }
+    },
+    {
+      "id": "local-route-022-21",
+      "source": "junction-11",
+      "target": "junction-12",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 1238.0,
+          "y": 1049
+        },
+        {
+          "x": 1238.0,
+          "y": 1030
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "top",
+        "fraction": 0.5,
+        "offset": {
+          "x": 0.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 0.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "local-route-022",
+        "points": [
+          [
+            1238.0,
+            1049
+          ],
+          [
+            1238.0,
+            1030
+          ]
+        ],
+        "src": null,
+        "dst": null,
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "fixed",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        },
+        "target": {
+          "mode": "fixed",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "alias, shared stem, branch or reserved slot"
+        }
+      }
+    },
+    {
+      "id": "encoder-memory-to-cross-22",
+      "source": "enc.norm2",
+      "target": "dec.cross",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 382.0,
+          "y": 308
+        },
+        {
+          "x": 382.0,
+          "y": 219
+        },
+        {
+          "x": 800.0,
+          "y": 219
+        },
+        {
+          "x": 800.0,
+          "y": 628
+        },
+        {
+          "x": 936,
+          "y": 628
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "top",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "left",
+        "fraction": 0.7058823529411765,
+        "offset": {
+          "x": 0,
+          "y": 72
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.8,
+      "dashed": false,
+      "binding": {
+        "id": "encoder-memory-to-cross",
+        "points": [
+          [
+            382.0,
+            308
+          ],
+          [
+            382.0,
+            219
+          ],
+          [
+            800.0,
+            219
+          ],
+          [
+            800.0,
+            628
+          ],
+          [
+            936,
+            628
+          ]
+        ],
+        "src": "enc.output:out",
+        "dst": "dec.cross:memory",
+        "dashed": false,
+        "arrow": true,
+        "width": 2.8
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [
+            {
+              "frame": "enc.layer_i",
+              "side": "top",
+              "anchor": "source",
+              "fraction": 0.5151515151515151,
+              "direction": "exit",
+              "authority": "recorded straight terminal crosses source ancestor"
+            }
+          ],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        },
+        "target": {
+          "mode": "perimeter",
+          "shape": "circle",
+          "spacing": 12,
+          "gates": [
+            {
+              "frame": "dec.layer_i",
+              "side": "left",
+              "anchor": "target",
+              "fraction": 0.5757575757575758,
+              "direction": "enter",
+              "authority": "recorded straight terminal crosses source ancestor"
+            }
+          ],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        }
+      }
+    },
+    {
+      "id": "decoder-to-generator-23",
+      "source": "dec.norm3",
+      "target": "generator",
+      "arrow": "target",
+      "style": "orthogonal",
+      "route": [
+        {
+          "x": 1238.0,
+          "y": 308
+        },
+        {
+          "x": 1238.0,
+          "y": 236
+        }
+      ],
+      "waypoints": [],
+      "fixedSource": {
+        "side": "top",
+        "fraction": 0.5,
+        "offset": {
+          "x": 302.0,
+          "y": 0
+        },
+        "inward": false
+      },
+      "fixedTarget": {
+        "side": "bottom",
+        "fraction": 0.5,
+        "offset": {
+          "x": 190.0,
+          "y": 48
+        },
+        "inward": false
+      },
+      "role": "tensor",
+      "width": 2.2,
+      "dashed": false,
+      "binding": {
+        "id": "decoder-to-generator",
+        "points": [
+          [
+            1238.0,
+            308
+          ],
+          [
+            1238.0,
+            236
+          ]
+        ],
+        "src": "dec.output:out",
+        "dst": "generator:in",
+        "dashed": false,
+        "arrow": true,
+        "width": 2.2
+      },
+      "draft": false,
+      "portPolicy": {
+        "source": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [
+            {
+              "frame": "dec.layer_i",
+              "side": "top",
+              "anchor": "source",
+              "fraction": 0.5151515151515151,
+              "direction": "exit",
+              "authority": "recorded straight terminal crosses source ancestor"
+            }
+          ],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        },
+        "target": {
+          "mode": "perimeter",
+          "shape": "rectangle",
+          "spacing": 12,
+          "gates": [
+            {
+              "frame": "dec.layer_i",
+              "side": "top",
+              "anchor": "target",
+              "fraction": 0.5151515151515151,
+              "direction": "exit",
+              "authority": "recorded straight terminal crosses source ancestor"
+            }
+          ],
+          "sharedStem": null,
+          "authority": "canonical binding retained; SVG port is presentation evidence",
+          "reason": "free glyph perimeter"
+        }
+      }
+    }
+  ],
+  "canvas": [
+    1600,
+    1218
+  ],
+  "definitions": "<defs xmlns=\"http://www.w3.org/2000/svg\"><marker id=\"arrow\" markerUnits=\"userSpaceOnUse\" markerWidth=\"10\" markerHeight=\"8\" refX=\"9\" refY=\"4\" orient=\"auto\"><path d=\"M0,0 L9,4 L0,8 Z\" fill=\"#263348\" /></marker></defs>\n",
+  "extras": "<text xmlns=\"http://www.w3.org/2000/svg\" x=\"800.0\" y=\"38\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"26\" font-weight=\"bold\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"800.0\" dy=\"0\">1 · Architecture overview</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"800.0\" y=\"69\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"19\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"800.0\" dy=\"0\">Same semantic IR · Post-LayerNorm · independent layer parameters</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"800.0\" y=\"94\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"17\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"800.0\" dy=\"0\">Solid: model forward · dashed: explanation · cross-attention SDPA is folded</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1456.0\" y=\"216\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"18\" font-weight=\"normal\" text-anchor=\"start\" fill=\"#172336\">\n<tspan x=\"1456.0\" dy=\"0\">logits</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"62\" y=\"266\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"23\" font-weight=\"bold\" text-anchor=\"start\" fill=\"#172336\">\n<tspan x=\"62\" dy=\"0\">Encoder × N_encoder</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"382.0\" y=\"933\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"25\" font-weight=\"bold\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"382.0\" dy=\"0\">+</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"382.0\" y=\"1059\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"19\" font-weight=\"bold\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"382.0\" dy=\"0\">src [B,S]</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"382.0\" y=\"1086\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"17\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"382.0\" dy=\"0\">Embedding output [B,L,D] · PE dropout folded</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"918\" y=\"266\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"23\" font-weight=\"bold\" text-anchor=\"start\" fill=\"#172336\">\n<tspan x=\"918\" dy=\"0\">Decoder × N_decoder</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1238.0\" y=\"933\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"25\" font-weight=\"bold\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1238.0\" dy=\"0\">+</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1238.0\" y=\"1059\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"19\" font-weight=\"bold\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1238.0\" dy=\"0\">tgt [B,T] · shifted-right by caller</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"1238.0\" y=\"1086\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"17\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"1238.0\" dy=\"0\">Embedding output [B,L,D] · PE dropout folded</tspan>\n</text>\n<rect xmlns=\"http://www.w3.org/2000/svg\" x=\"720.0\" y=\"318\" width=\"160\" height=\"104\" rx=\"10\" fill=\"#f3f5f7\" stroke=\"#263348\" stroke-width=\"2\"><title> | source:  | parameter: None</title></rect>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"800.0\" y=\"347.28000000000003\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"16\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"800.0\" dy=\"0\">Memory M</tspan>\n<tspan x=\"800.0\" dy=\"18.88\">[B,S,D]</tspan>\n<tspan x=\"800.0\" dy=\"18.88\">final Encoder</tspan>\n<tspan x=\"800.0\" dy=\"18.88\">output</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"800.0\" y=\"1120\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"17\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"800.0\" dy=\"0\">Tensor glyphs: Q blue · K green · V pink. Same type ≠ shared parameters. Macro flow ↑; attention detail ↓.</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"800.0\" y=\"1147\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"17\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"800.0\" dy=\"0\">Masks act before Softmax; causal mask is supplied by caller. ReLU · fixed sinusoidal PE · no generation loop shown.</tspan>\n</text>\n<text xmlns=\"http://www.w3.org/2000/svg\" x=\"800.0\" y=\"1174\" font-family=\"DejaVu Sans, Arial, sans-serif\" font-size=\"17\" font-weight=\"normal\" text-anchor=\"middle\" fill=\"#172336\">\n<tspan x=\"800.0\" dy=\"0\">Dropout / NaN guard are folded in the view and retained in semantic_ir.json. Matrix grids are symbolic.</tspan>\n</text>\n",
+  "attachments": [],
+  "source": "snapshots/arrow_semantic_audit/before/transformer_programmatic_guide/variants/compact_mixed_flow/generated/figure1_overview.svg",
+  "layoutSource": "snapshots/arrow_semantic_audit/before/transformer_programmatic_guide/variants/compact_mixed_flow/generated/layout_overview.json",
+  "irSource": "snapshots/arrow_semantic_audit/before/transformer_programmatic_guide/variants/compact_mixed_flow/generated/semantic_ir.json",
+  "irSha256": "372063f6531c3501143fac1064752ab760aa9e07c99b1cb7ef8a027ed5a54513",
+  "view": "overview",
+  "sourceProfile": {},
+  "sourceFacts": [],
+  "portAllocations": [],
+  "sourceInterfaces": {},
+  "sourceDocs": {
+    "source_evidence.json": "snapshots/arrow_semantic_audit/before/transformer_programmatic_guide/variants/compact_mixed_flow/generated/source_evidence.json"
+  },
+  "sourceSemantics": "recorded graph projection; imported SVG glyphs; source model not executed",
+  "caseId": "2f8e1e51b7fb194c",
+  "viewKey": "overview",
+  "semanticBaseline": {
+    "schema": "imported-source-baseline/1",
+    "irSha256": "372063f6531c3501143fac1064752ab760aa9e07c99b1cb7ef8a027ed5a54513",
+    "nodes": {
+      "probabilities": {
+        "parent": null,
+        "semantic": {
+          "id": "probabilities",
+          "kind": "explanatory_softmax",
+          "parent": "model",
+          "rank": 0,
+          "children": [],
+          "ports": [
+            "in",
+            "out"
+          ],
+          "source_evidence": [],
+          "param_identity": null,
+          "executed_in_forward": false
+        },
+        "visualBinding": null
+      },
+      "generator": {
+        "parent": null,
+        "semantic": {
+          "id": "generator",
+          "kind": "linear",
+          "parent": "model",
+          "rank": 0,
+          "children": [],
+          "ports": [
+            "in",
+            "out"
+          ],
+          "source_evidence": [
+            "Transformer.__init__",
+            "Transformer.forward"
+          ],
+          "param_identity": "model.generator.weight",
+          "optional_alias": "model.tgt_embedding.embedding.weight when tie flag is true"
+        },
+        "visualBinding": null
+      },
+      "enc.layer_i": {
+        "parent": null,
+        "semantic": {
+          "id": "enc.layer_i",
+          "kind": "layer",
+          "parent": "enc",
+          "rank": 0,
+          "children": [
+            "enc.self",
+            "enc.norm1",
+            "enc.ffn",
+            "enc.norm2"
+          ],
+          "ports": [
+            "in",
+            "out"
+          ],
+          "source_evidence": [
+            "EncoderLayer.forward"
+          ],
+          "param_identity": "model.encoder.layers[i]"
+        },
+        "visualBinding": null
+      },
+      "enc.norm2": {
+        "parent": "enc.layer_i",
+        "semantic": {
+          "id": "enc.norm2",
+          "kind": "postnorm",
+          "parent": "enc.layer_i",
+          "rank": 3,
+          "children": [
+            "enc.norm2.branch_dropout",
+            "enc.norm2.add",
+            "enc.norm2.layernorm"
+          ],
+          "ports": [
+            "in",
+            "skip",
+            "out"
+          ],
+          "source_evidence": [
+            "EncoderLayer.forward"
+          ],
+          "param_identity": "model.encoder.layers[i].norm2",
+          "formula": "LayerNorm(x + Dropout(sublayer(x)))"
+        },
+        "visualBinding": null
+      },
+      "enc.ffn": {
+        "parent": "enc.layer_i",
+        "semantic": {
+          "id": "enc.ffn",
+          "kind": "ffn",
+          "parent": "enc.layer_i",
+          "rank": 2,
+          "children": [
+            "enc.ffn.linear1",
+            "enc.ffn.relu",
+            "enc.ffn.dropout",
+            "enc.ffn.linear2"
+          ],
+          "ports": [
+            "in",
+            "out"
+          ],
+          "source_evidence": [
+            "PositionwiseFeedForward.forward",
+            "EncoderLayer.forward"
+          ],
+          "param_identity": "model.encoder.layers[i].ffn",
+          "attention_role": null
+        },
+        "visualBinding": null
+      },
+      "enc.norm1": {
+        "parent": "enc.layer_i",
+        "semantic": {
+          "id": "enc.norm1",
+          "kind": "postnorm",
+          "parent": "enc.layer_i",
+          "rank": 1,
+          "children": [
+            "enc.norm1.branch_dropout",
+            "enc.norm1.add",
+            "enc.norm1.layernorm"
+          ],
+          "ports": [
+            "in",
+            "skip",
+            "out"
+          ],
+          "source_evidence": [
+            "EncoderLayer.forward"
+          ],
+          "param_identity": "model.encoder.layers[i].norm1",
+          "formula": "LayerNorm(x + Dropout(sublayer(x)))"
+        },
+        "visualBinding": null
+      },
+      "enc.self": {
+        "parent": "enc.layer_i",
+        "semantic": {
+          "id": "enc.self",
+          "kind": "attention",
+          "parent": "enc.layer_i",
+          "rank": 0,
+          "children": [
+            "enc.self.q",
+            "enc.self.k",
+            "enc.self.v",
+            "enc.self.split",
+            "enc.self.sdpa",
+            "enc.self.merge",
+            "enc.self.wo"
+          ],
+          "ports": [
+            "in",
+            "out"
+          ],
+          "source_evidence": [
+            "MultiHeadAttention.forward",
+            "EncoderLayer.forward"
+          ],
+          "param_identity": "model.encoder.layers[i].self_attn",
+          "attention_role": "self"
+        },
+        "visualBinding": null
+      },
+      "src_embed": {
+        "parent": null,
+        "semantic": {
+          "id": "src_embed",
+          "kind": "embedding",
+          "parent": "model",
+          "rank": 0,
+          "children": [],
+          "ports": [
+            "in",
+            "out"
+          ],
+          "source_evidence": [
+            "TokenEmbedding.forward"
+          ],
+          "param_identity": "model.src_embedding.embedding.weight",
+          "scale": "sqrt(D)"
+        },
+        "visualBinding": null
+      },
+      "src_pe": {
+        "parent": null,
+        "semantic": {
+          "id": "src_pe",
+          "kind": "sinusoidal_pe",
+          "parent": "model",
+          "rank": 0,
+          "children": [],
+          "ports": [
+            "in",
+            "out"
+          ],
+          "source_evidence": [
+            "PositionalEncoding.forward"
+          ],
+          "param_identity": null,
+          "buffer_identity": "model.position.pe",
+          "dropout": "folded"
+        },
+        "visualBinding": null
+      },
+      "dec.layer_i": {
+        "parent": null,
+        "semantic": {
+          "id": "dec.layer_i",
+          "kind": "layer",
+          "parent": "dec",
+          "rank": 0,
+          "children": [
+            "dec.self",
+            "dec.norm1",
+            "dec.cross",
+            "dec.norm2",
+            "dec.ffn",
+            "dec.norm3"
+          ],
+          "ports": [
+            "in",
+            "out"
+          ],
+          "source_evidence": [
+            "DecoderLayer.forward"
+          ],
+          "param_identity": "model.decoder.layers[i]"
+        },
+        "visualBinding": null
+      },
+      "dec.norm3": {
+        "parent": "dec.layer_i",
+        "semantic": {
+          "id": "dec.norm3",
+          "kind": "postnorm",
+          "parent": "dec.layer_i",
+          "rank": 5,
+          "children": [
+            "dec.norm3.branch_dropout",
+            "dec.norm3.add",
+            "dec.norm3.layernorm"
+          ],
+          "ports": [
+            "in",
+            "skip",
+            "out"
+          ],
+          "source_evidence": [
+            "DecoderLayer.forward"
+          ],
+          "param_identity": "model.decoder.layers[i].norm3",
+          "formula": "LayerNorm(x + Dropout(sublayer(x)))"
+        },
+        "visualBinding": null
+      },
+      "dec.ffn": {
+        "parent": "dec.layer_i",
+        "semantic": {
+          "id": "dec.ffn",
+          "kind": "ffn",
+          "parent": "dec.layer_i",
+          "rank": 4,
+          "children": [
+            "dec.ffn.linear1",
+            "dec.ffn.relu",
+            "dec.ffn.dropout",
+            "dec.ffn.linear2"
+          ],
+          "ports": [
+            "in",
+            "out"
+          ],
+          "source_evidence": [
+            "PositionwiseFeedForward.forward",
+            "DecoderLayer.forward"
+          ],
+          "param_identity": "model.decoder.layers[i].ffn",
+          "attention_role": null
+        },
+        "visualBinding": null
+      },
+      "dec.norm2": {
+        "parent": "dec.layer_i",
+        "semantic": {
+          "id": "dec.norm2",
+          "kind": "postnorm",
+          "parent": "dec.layer_i",
+          "rank": 3,
+          "children": [
+            "dec.norm2.branch_dropout",
+            "dec.norm2.add",
+            "dec.norm2.layernorm"
+          ],
+          "ports": [
+            "in",
+            "skip",
+            "out"
+          ],
+          "source_evidence": [
+            "DecoderLayer.forward"
+          ],
+          "param_identity": "model.decoder.layers[i].norm2",
+          "formula": "LayerNorm(x + Dropout(sublayer(x)))"
+        },
+        "visualBinding": null
+      },
+      "dec.cross": {
+        "parent": "dec.layer_i",
+        "semantic": {
+          "id": "dec.cross",
+          "kind": "attention",
+          "parent": "dec.layer_i",
+          "rank": 2,
+          "children": [
+            "dec.cross.q",
+            "dec.cross.k",
+            "dec.cross.v",
+            "dec.cross.split",
+            "dec.cross.sdpa",
+            "dec.cross.merge",
+            "dec.cross.wo"
+          ],
+          "ports": [
+            "in",
+            "out",
+            "memory"
+          ],
+          "source_evidence": [
+            "MultiHeadAttention.forward",
+            "DecoderLayer.forward"
+          ],
+          "param_identity": "model.decoder.layers[i].cross_attn",
+          "attention_role": "cross"
+        },
+        "visualBinding": null
+      },
+      "dec.norm1": {
+        "parent": "dec.layer_i",
+        "semantic": {
+          "id": "dec.norm1",
+          "kind": "postnorm",
+          "parent": "dec.layer_i",
+          "rank": 1,
+          "children": [
+            "dec.norm1.branch_dropout",
+            "dec.norm1.add",
+            "dec.norm1.layernorm"
+          ],
+          "ports": [
+            "in",
+            "skip",
+            "out"
+          ],
+          "source_evidence": [
+            "DecoderLayer.forward"
+          ],
+          "param_identity": "model.decoder.layers[i].norm1",
+          "formula": "LayerNorm(x + Dropout(sublayer(x)))"
+        },
+        "visualBinding": null
+      },
+      "dec.self": {
+        "parent": "dec.layer_i",
+        "semantic": {
+          "id": "dec.self",
+          "kind": "attention",
+          "parent": "dec.layer_i",
+          "rank": 0,
+          "children": [
+            "dec.self.q",
+            "dec.self.k",
+            "dec.self.v",
+            "dec.self.split",
+            "dec.self.sdpa",
+            "dec.self.merge",
+            "dec.self.wo"
+          ],
+          "ports": [
+            "in",
+            "out"
+          ],
+          "source_evidence": [
+            "MultiHeadAttention.forward",
+            "DecoderLayer.forward"
+          ],
+          "param_identity": "model.decoder.layers[i].self_attn",
+          "attention_role": "self"
+        },
+        "visualBinding": null
+      },
+      "tgt_embed": {
+        "parent": null,
+        "semantic": {
+          "id": "tgt_embed",
+          "kind": "embedding",
+          "parent": "model",
+          "rank": 0,
+          "children": [],
+          "ports": [
+            "in",
+            "out"
+          ],
+          "source_evidence": [
+            "TokenEmbedding.forward"
+          ],
+          "param_identity": "model.tgt_embedding.embedding.weight",
+          "scale": "sqrt(D)"
+        },
+        "visualBinding": null
+      },
+      "tgt_pe": {
+        "parent": null,
+        "semantic": {
+          "id": "tgt_pe",
+          "kind": "sinusoidal_pe",
+          "parent": "model",
+          "rank": 0,
+          "children": [],
+          "ports": [
+            "in",
+            "out"
+          ],
+          "source_evidence": [
+            "PositionalEncoding.forward"
+          ],
+          "param_identity": null,
+          "buffer_identity": "model.position.pe",
+          "dropout": "folded"
+        },
+        "visualBinding": null
+      },
+      "junction-1": {
+        "parent": null,
+        "semantic": {
+          "kind": "recorded visual junction",
+          "original_ref": null
+        },
+        "visualBinding": null
+      },
+      "junction-2": {
+        "parent": null,
+        "semantic": {
+          "kind": "recorded visual junction",
+          "original_ref": null
+        },
+        "visualBinding": null
+      },
+      "junction-3": {
+        "parent": null,
+        "semantic": {
+          "kind": "recorded visual junction",
+          "original_ref": null
+        },
+        "visualBinding": null
+      },
+      "junction-4": {
+        "parent": null,
+        "semantic": {
+          "kind": "recorded visual junction",
+          "original_ref": null
+        },
+        "visualBinding": null
+      },
+      "junction-5": {
+        "parent": null,
+        "semantic": {
+          "kind": "recorded visual junction",
+          "original_ref": null
+        },
+        "visualBinding": null
+      },
+      "junction-6": {
+        "parent": null,
+        "semantic": {
+          "kind": "recorded visual junction",
+          "original_ref": null
+        },
+        "visualBinding": null
+      },
+      "junction-7": {
+        "parent": null,
+        "semantic": {
+          "kind": "recorded visual junction",
+          "original_ref": null
+        },
+        "visualBinding": null
+      },
+      "junction-8": {
+        "parent": null,
+        "semantic": {
+          "kind": "recorded visual junction",
+          "original_ref": null
+        },
+        "visualBinding": null
+      },
+      "junction-9": {
+        "parent": null,
+        "semantic": {
+          "kind": "recorded visual junction",
+          "original_ref": null
+        },
+        "visualBinding": null
+      },
+      "junction-10": {
+        "parent": null,
+        "semantic": {
+          "kind": "recorded visual junction",
+          "original_ref": null
+        },
+        "visualBinding": null
+      },
+      "junction-11": {
+        "parent": null,
+        "semantic": {
+          "kind": "recorded visual junction",
+          "original_ref": null
+        },
+        "visualBinding": null
+      },
+      "junction-12": {
+        "parent": null,
+        "semantic": {
+          "kind": "recorded visual junction",
+          "original_ref": null
+        },
+        "visualBinding": null
+      }
+    },
+    "attachments": {},
+    "routeLabels": {},
+    "junctionMarkers": [],
+    "edges": {
+      "logits-to-probabilities-0": {
+        "source": "generator",
+        "target": "probabilities",
+        "binding": {
+          "id": "logits-to-probabilities",
+          "points": [
+            [
+              1238.0,
+              188
+            ],
+            [
+              1238.0,
+              168
+            ]
+          ],
+          "src": "logits",
+          "dst": "probabilities",
+          "dashed": true,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "top",
+          "fraction": 0.5,
+          "offset": {
+            "x": 190.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 240.0,
+            "y": 58
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          },
+          "target": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          }
+        }
+      },
+      "enc.ffn-to-norm-1": {
+        "source": "enc.ffn",
+        "target": "enc.norm2",
+        "binding": {
+          "id": "enc.ffn-to-norm",
+          "points": [
+            [
+              382.0,
+              382
+            ],
+            [
+              382.0,
+              358
+            ]
+          ],
+          "src": "enc.ffn",
+          "dst": "enc.norm2",
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "top",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 50
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "perimeter",
+            "shape": "circle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          },
+          "target": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          }
+        }
+      },
+      "enc.ffn-residual-2": {
+        "source": "enc.ffn",
+        "target": "enc.norm2",
+        "binding": {
+          "id": "enc.ffn-residual",
+          "points": [
+            [
+              382.0,
+              470.0
+            ],
+            [
+              56,
+              470.0
+            ],
+            [
+              56,
+              333.0
+            ],
+            [
+              80,
+              333.0
+            ]
+          ],
+          "src": "enc.ffn:input_tap",
+          "dst": "enc.norm2:skip",
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 88.0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "left",
+          "fraction": 0.5,
+          "offset": {
+            "x": 0,
+            "y": 25.0
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "fixed",
+            "shape": "circle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          },
+          "target": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          }
+        }
+      },
+      "enc.self-to-norm-3": {
+        "source": "enc.self",
+        "target": "enc.norm1",
+        "binding": {
+          "id": "enc.self-to-norm",
+          "points": [
+            [
+              382.0,
+              556
+            ],
+            [
+              382.0,
+              532
+            ]
+          ],
+          "src": "enc.self",
+          "dst": "enc.norm1",
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "top",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 50
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "perimeter",
+            "shape": "circle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          },
+          "target": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          }
+        }
+      },
+      "enc.self-residual-4": {
+        "source": "enc.self",
+        "target": "enc.norm1",
+        "binding": {
+          "id": "enc.self-residual",
+          "points": [
+            [
+              382.0,
+              670.0
+            ],
+            [
+              56,
+              670.0
+            ],
+            [
+              56,
+              507.0
+            ],
+            [
+              80,
+              507.0
+            ]
+          ],
+          "src": "enc.self:input_tap",
+          "dst": "enc.norm1:skip",
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 114.0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "left",
+          "fraction": 0.5,
+          "offset": {
+            "x": 0,
+            "y": 25.0
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "fixed",
+            "shape": "circle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          },
+          "target": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          }
+        }
+      },
+      "enc.norm1-to-next-5": {
+        "source": "enc.norm1",
+        "target": "enc.ffn",
+        "binding": {
+          "id": "enc.norm1-to-next",
+          "points": [
+            [
+              382.0,
+              482
+            ],
+            [
+              382.0,
+              458
+            ]
+          ],
+          "src": "enc.norm1",
+          "dst": "enc.ffn",
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "top",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 76
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          },
+          "target": {
+            "mode": "fixed",
+            "shape": "circle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          }
+        }
+      },
+      "local-route-007-6": {
+        "source": "junction-1",
+        "target": "junction-2",
+        "binding": {
+          "id": "local-route-007",
+          "points": [
+            [
+              382.0,
+              968
+            ],
+            [
+              382.0,
+              941
+            ]
+          ],
+          "src": null,
+          "dst": null,
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "top",
+          "fraction": 0.5,
+          "offset": {
+            "x": 0.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 0.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "fixed",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          },
+          "target": {
+            "mode": "fixed",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          }
+        }
+      },
+      "local-route-008-7": {
+        "source": "junction-3",
+        "target": "junction-4",
+        "binding": {
+          "id": "local-route-008",
+          "points": [
+            [
+              290.0,
+              926
+            ],
+            [
+              367.0,
+              926
+            ]
+          ],
+          "src": null,
+          "dst": null,
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "right",
+          "fraction": 0.5,
+          "offset": {
+            "x": 0.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "left",
+          "fraction": 0.5,
+          "offset": {
+            "x": 0.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "fixed",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          },
+          "target": {
+            "mode": "fixed",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          }
+        }
+      },
+      "enc-input-8": {
+        "source": "src_pe",
+        "target": "enc.self",
+        "binding": {
+          "id": "enc-input",
+          "points": [
+            [
+              382.0,
+              911
+            ],
+            [
+              382.0,
+              658
+            ]
+          ],
+          "src": "src_pe",
+          "dst": "enc.self",
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "top",
+          "fraction": 1.0,
+          "offset": {
+            "x": 302.0,
+            "y": 8
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 102
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "fixed",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [
+              {
+                "frame": "enc.layer_i",
+                "side": "bottom",
+                "anchor": "source",
+                "fraction": 0.5151515151515151,
+                "direction": "enter",
+                "authority": "recorded straight terminal crosses source ancestor"
+              }
+            ],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          },
+          "target": {
+            "mode": "fixed",
+            "shape": "circle",
+            "spacing": 12,
+            "gates": [
+              {
+                "frame": "enc.layer_i",
+                "side": "bottom",
+                "anchor": "target",
+                "fraction": 0.5151515151515151,
+                "direction": "enter",
+                "authority": "recorded straight terminal crosses source ancestor"
+              }
+            ],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          }
+        }
+      },
+      "local-route-010-9": {
+        "source": "junction-5",
+        "target": "junction-6",
+        "binding": {
+          "id": "local-route-010",
+          "points": [
+            [
+              382.0,
+              1049
+            ],
+            [
+              382.0,
+              1030
+            ]
+          ],
+          "src": null,
+          "dst": null,
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "top",
+          "fraction": 0.5,
+          "offset": {
+            "x": 0.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 0.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "fixed",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          },
+          "target": {
+            "mode": "fixed",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          }
+        }
+      },
+      "dec.ffn-to-norm-10": {
+        "source": "dec.ffn",
+        "target": "dec.norm3",
+        "binding": {
+          "id": "dec.ffn-to-norm",
+          "points": [
+            [
+              1238.0,
+              382
+            ],
+            [
+              1238.0,
+              358
+            ]
+          ],
+          "src": "dec.ffn",
+          "dst": "dec.norm3",
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "top",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 50
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "perimeter",
+            "shape": "circle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          },
+          "target": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          }
+        }
+      },
+      "dec.ffn-residual-11": {
+        "source": "dec.ffn",
+        "target": "dec.norm3",
+        "binding": {
+          "id": "dec.ffn-residual",
+          "points": [
+            [
+              1238.0,
+              470.0
+            ],
+            [
+              912,
+              470.0
+            ],
+            [
+              912,
+              333.0
+            ],
+            [
+              936,
+              333.0
+            ]
+          ],
+          "src": "dec.ffn:input_tap",
+          "dst": "dec.norm3:skip",
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 88.0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "left",
+          "fraction": 0.5,
+          "offset": {
+            "x": 0,
+            "y": 25.0
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "fixed",
+            "shape": "circle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          },
+          "target": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          }
+        }
+      },
+      "dec.cross-to-norm-12": {
+        "source": "dec.cross",
+        "target": "dec.norm2",
+        "binding": {
+          "id": "dec.cross-to-norm",
+          "points": [
+            [
+              1238.0,
+              556
+            ],
+            [
+              1238.0,
+              532
+            ]
+          ],
+          "src": "dec.cross",
+          "dst": "dec.norm2",
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "top",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 50
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "perimeter",
+            "shape": "circle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          },
+          "target": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          }
+        }
+      },
+      "dec.cross-residual-13": {
+        "source": "dec.cross",
+        "target": "dec.norm2",
+        "binding": {
+          "id": "dec.cross-residual",
+          "points": [
+            [
+              1238.0,
+              670.0
+            ],
+            [
+              912,
+              670.0
+            ],
+            [
+              912,
+              507.0
+            ],
+            [
+              936,
+              507.0
+            ]
+          ],
+          "src": "dec.cross:input_tap",
+          "dst": "dec.norm2:skip",
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 114.0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "left",
+          "fraction": 0.5,
+          "offset": {
+            "x": 0,
+            "y": 25.0
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "fixed",
+            "shape": "circle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          },
+          "target": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          }
+        }
+      },
+      "dec.norm2-to-next-14": {
+        "source": "dec.norm2",
+        "target": "dec.ffn",
+        "binding": {
+          "id": "dec.norm2-to-next",
+          "points": [
+            [
+              1238.0,
+              482
+            ],
+            [
+              1238.0,
+              458
+            ]
+          ],
+          "src": "dec.norm2",
+          "dst": "dec.ffn",
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "top",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 76
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          },
+          "target": {
+            "mode": "fixed",
+            "shape": "circle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          }
+        }
+      },
+      "dec.self-to-norm-15": {
+        "source": "dec.self",
+        "target": "dec.norm1",
+        "binding": {
+          "id": "dec.self-to-norm",
+          "points": [
+            [
+              1238.0,
+              756
+            ],
+            [
+              1238.0,
+              732
+            ]
+          ],
+          "src": "dec.self",
+          "dst": "dec.norm1",
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "top",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 50
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "perimeter",
+            "shape": "circle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          },
+          "target": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          }
+        }
+      },
+      "dec.self-residual-16": {
+        "source": "dec.self",
+        "target": "dec.norm1",
+        "binding": {
+          "id": "dec.self-residual",
+          "points": [
+            [
+              1238.0,
+              870.0
+            ],
+            [
+              912,
+              870.0
+            ],
+            [
+              912,
+              707.0
+            ],
+            [
+              936,
+              707.0
+            ]
+          ],
+          "src": "dec.self:input_tap",
+          "dst": "dec.norm1:skip",
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 114.0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "left",
+          "fraction": 0.5,
+          "offset": {
+            "x": 0,
+            "y": 25.0
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "fixed",
+            "shape": "circle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          },
+          "target": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          }
+        }
+      },
+      "dec.norm1-to-next-17": {
+        "source": "dec.norm1",
+        "target": "dec.cross",
+        "binding": {
+          "id": "dec.norm1-to-next",
+          "points": [
+            [
+              1238.0,
+              682
+            ],
+            [
+              1238.0,
+              658
+            ]
+          ],
+          "src": "dec.norm1",
+          "dst": "dec.cross",
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "top",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 102
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          },
+          "target": {
+            "mode": "fixed",
+            "shape": "circle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          }
+        }
+      },
+      "local-route-019-18": {
+        "source": "junction-7",
+        "target": "junction-8",
+        "binding": {
+          "id": "local-route-019",
+          "points": [
+            [
+              1238.0,
+              968
+            ],
+            [
+              1238.0,
+              941
+            ]
+          ],
+          "src": null,
+          "dst": null,
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "top",
+          "fraction": 0.5,
+          "offset": {
+            "x": 0.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 0.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "fixed",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          },
+          "target": {
+            "mode": "fixed",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          }
+        }
+      },
+      "local-route-020-19": {
+        "source": "junction-9",
+        "target": "junction-10",
+        "binding": {
+          "id": "local-route-020",
+          "points": [
+            [
+              1146.0,
+              926
+            ],
+            [
+              1223.0,
+              926
+            ]
+          ],
+          "src": null,
+          "dst": null,
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "right",
+          "fraction": 0.5,
+          "offset": {
+            "x": 0.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "left",
+          "fraction": 0.5,
+          "offset": {
+            "x": 0.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "fixed",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          },
+          "target": {
+            "mode": "fixed",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          }
+        }
+      },
+      "dec-input-20": {
+        "source": "tgt_pe",
+        "target": "dec.self",
+        "binding": {
+          "id": "dec-input",
+          "points": [
+            [
+              1238.0,
+              911
+            ],
+            [
+              1238.0,
+              858
+            ]
+          ],
+          "src": "tgt_pe",
+          "dst": "dec.self",
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "top",
+          "fraction": 1.0,
+          "offset": {
+            "x": 302.0,
+            "y": 8
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 102
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "fixed",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [
+              {
+                "frame": "dec.layer_i",
+                "side": "bottom",
+                "anchor": "source",
+                "fraction": 0.5151515151515151,
+                "direction": "enter",
+                "authority": "recorded straight terminal crosses source ancestor"
+              }
+            ],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          },
+          "target": {
+            "mode": "fixed",
+            "shape": "circle",
+            "spacing": 12,
+            "gates": [
+              {
+                "frame": "dec.layer_i",
+                "side": "bottom",
+                "anchor": "target",
+                "fraction": 0.5151515151515151,
+                "direction": "enter",
+                "authority": "recorded straight terminal crosses source ancestor"
+              }
+            ],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          }
+        }
+      },
+      "local-route-022-21": {
+        "source": "junction-11",
+        "target": "junction-12",
+        "binding": {
+          "id": "local-route-022",
+          "points": [
+            [
+              1238.0,
+              1049
+            ],
+            [
+              1238.0,
+              1030
+            ]
+          ],
+          "src": null,
+          "dst": null,
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "top",
+          "fraction": 0.5,
+          "offset": {
+            "x": 0.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 0.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "fixed",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          },
+          "target": {
+            "mode": "fixed",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "alias, shared stem, branch or reserved slot"
+          }
+        }
+      },
+      "encoder-memory-to-cross-22": {
+        "source": "enc.norm2",
+        "target": "dec.cross",
+        "binding": {
+          "id": "encoder-memory-to-cross",
+          "points": [
+            [
+              382.0,
+              308
+            ],
+            [
+              382.0,
+              219
+            ],
+            [
+              800.0,
+              219
+            ],
+            [
+              800.0,
+              628
+            ],
+            [
+              936,
+              628
+            ]
+          ],
+          "src": "enc.output:out",
+          "dst": "dec.cross:memory",
+          "dashed": false,
+          "arrow": true,
+          "width": 2.8
+        },
+        "fixedSource": {
+          "side": "top",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "left",
+          "fraction": 0.7058823529411765,
+          "offset": {
+            "x": 0,
+            "y": 72
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [
+              {
+                "frame": "enc.layer_i",
+                "side": "top",
+                "anchor": "source",
+                "fraction": 0.5151515151515151,
+                "direction": "exit",
+                "authority": "recorded straight terminal crosses source ancestor"
+              }
+            ],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          },
+          "target": {
+            "mode": "perimeter",
+            "shape": "circle",
+            "spacing": 12,
+            "gates": [
+              {
+                "frame": "dec.layer_i",
+                "side": "left",
+                "anchor": "target",
+                "fraction": 0.5757575757575758,
+                "direction": "enter",
+                "authority": "recorded straight terminal crosses source ancestor"
+              }
+            ],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          }
+        }
+      },
+      "decoder-to-generator-23": {
+        "source": "dec.norm3",
+        "target": "generator",
+        "binding": {
+          "id": "decoder-to-generator",
+          "points": [
+            [
+              1238.0,
+              308
+            ],
+            [
+              1238.0,
+              236
+            ]
+          ],
+          "src": "dec.output:out",
+          "dst": "generator:in",
+          "dashed": false,
+          "arrow": true,
+          "width": 2.2
+        },
+        "fixedSource": {
+          "side": "top",
+          "fraction": 0.5,
+          "offset": {
+            "x": 302.0,
+            "y": 0
+          },
+          "inward": false
+        },
+        "fixedTarget": {
+          "side": "bottom",
+          "fraction": 0.5,
+          "offset": {
+            "x": 190.0,
+            "y": 48
+          },
+          "inward": false
+        },
+        "portPolicy": {
+          "source": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [
+              {
+                "frame": "dec.layer_i",
+                "side": "top",
+                "anchor": "source",
+                "fraction": 0.5151515151515151,
+                "direction": "exit",
+                "authority": "recorded straight terminal crosses source ancestor"
+              }
+            ],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          },
+          "target": {
+            "mode": "perimeter",
+            "shape": "rectangle",
+            "spacing": 12,
+            "gates": [
+              {
+                "frame": "dec.layer_i",
+                "side": "top",
+                "anchor": "target",
+                "fraction": 0.5151515151515151,
+                "direction": "exit",
+                "authority": "recorded straight terminal crosses source ancestor"
+              }
+            ],
+            "sharedStem": null,
+            "authority": "canonical binding retained; SVG port is presentation evidence",
+            "reason": "free glyph perimeter"
+          }
+        }
+      }
+    }
+  },
+  "junctionMarkers": [],
+  "routeLabels": []
+}

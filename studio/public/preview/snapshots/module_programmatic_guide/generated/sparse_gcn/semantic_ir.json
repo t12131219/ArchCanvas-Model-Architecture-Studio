@@ -1,0 +1,380 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "sparse_gcn",
+  "profile": {
+    "in_features": 8,
+    "out_features": 4,
+    "bias": true,
+    "adjacency_normalized_inside": false,
+    "activation": null,
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "tkipf/pygcn",
+    "commit": "1600b5b748b3976413d1e307540ccc62605b4d6d",
+    "snapshot": "7bd4964ddcd5307bf07c2f8e5c6937f751472b5f84577faca8c6dee6b067e0eb"
+  },
+  "nodes": [
+    {
+      "id": "sparse_gcn.root",
+      "label": "Sparse GCN layer / module only",
+      "kind": "group",
+      "source": [
+        "pygcn-modules/pygcn/layers.py::GraphConvolution.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "sparse_gcn.x",
+          "sparse_gcn.adj",
+          "sparse_gcn.weight",
+          "sparse_gcn.bias"
+        ],
+        [
+          "sparse_gcn.module"
+        ],
+        [
+          "sparse_gcn.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "sparse_gcn.x",
+      "label": "Node features X",
+      "kind": "input",
+      "source": [
+        "pygcn-modules/pygcn/layers.py::GraphConvolution.forward"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "parent": "sparse_gcn.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "sparse_gcn.adj",
+      "label": "Supplied sparse adjacency",
+      "kind": "control",
+      "source": [
+        "pygcn-modules/pygcn/layers.py::GraphConvolution.forward"
+      ],
+      "shape": "[N,N]",
+      "detail": [],
+      "normalization": "external",
+      "learnable": false,
+      "parent": "sparse_gcn.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "sparse_gcn.weight",
+      "label": "Owned weight W",
+      "kind": "parameter",
+      "source": [
+        "pygcn-modules/pygcn/layers.py::GraphConvolution.__init__"
+      ],
+      "shape": "[8,4]",
+      "detail": [],
+      "parameter": "weight",
+      "parent": "sparse_gcn.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "sparse_gcn.bias",
+      "label": "Owned bias b",
+      "kind": "parameter",
+      "source": [
+        "pygcn-modules/pygcn/layers.py::GraphConvolution.__init__"
+      ],
+      "shape": "[4]",
+      "detail": [],
+      "parameter": "bias",
+      "parent": "sparse_gcn.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "sparse_gcn.module",
+      "label": "Sparse GCN layer / operators",
+      "kind": "group",
+      "source": [
+        "pygcn-modules/pygcn/layers.py::GraphConvolution.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "sparse_gcn.project"
+        ],
+        [
+          "sparse_gcn.aggregate"
+        ],
+        [
+          "sparse_gcn.add"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "sparse_gcn.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "sparse_gcn.project",
+      "label": "Feature projection",
+      "kind": "group",
+      "source": [
+        "pygcn-modules/pygcn/layers.py::GraphConvolution.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "mode": "chain",
+      "parent": "sparse_gcn.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "sparse_gcn.project.mm",
+      "label": "X @ W",
+      "kind": "matmul",
+      "source": [
+        "pygcn-modules/pygcn/layers.py::GraphConvolution.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "expression": "torch.mm(input, self.weight)",
+      "ordered_operands": [
+        "x",
+        "weight"
+      ],
+      "parent": "sparse_gcn.project",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "X",
+        "W"
+      ]
+    },
+    {
+      "id": "sparse_gcn.aggregate",
+      "label": "Sparse neighbor sum",
+      "kind": "group",
+      "source": [
+        "pygcn-modules/pygcn/layers.py::GraphConvolution.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "mode": "chain",
+      "parent": "sparse_gcn.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "sparse_gcn.aggregate.spmm",
+      "label": "A @ support",
+      "kind": "spmm",
+      "source": [
+        "pygcn-modules/pygcn/layers.py::GraphConvolution.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "expression": "torch.spmm(adj, support)",
+      "ordered_operands": [
+        "adj",
+        "project.mm"
+      ],
+      "opaque_runtime_boundary": true,
+      "parent": "sparse_gcn.aggregate",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "A",
+        "support"
+      ]
+    },
+    {
+      "id": "sparse_gcn.add",
+      "label": "Broadcast bias add",
+      "kind": "add",
+      "source": [
+        "pygcn-modules/pygcn/layers.py::GraphConvolution.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "expression": "output + self.bias",
+      "parent": "sparse_gcn.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "value",
+        "bias"
+      ]
+    },
+    {
+      "id": "sparse_gcn.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "pygcn-modules/pygcn/layers.py::GraphConvolution.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "parent": "sparse_gcn.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "sparse_gcn.project.mm:out->sparse_gcn.project:out:boundary",
+      "src": "sparse_gcn.project.mm",
+      "dst": "sparse_gcn.project",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "sparse_gcn.aggregate.spmm:out->sparse_gcn.aggregate:out:boundary",
+      "src": "sparse_gcn.aggregate.spmm",
+      "dst": "sparse_gcn.aggregate",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "sparse_gcn.x:out->sparse_gcn.project.mm:X:tensor",
+      "src": "sparse_gcn.x",
+      "dst": "sparse_gcn.project.mm",
+      "src_port": "out",
+      "dst_port": "X",
+      "role": "tensor"
+    },
+    {
+      "id": "sparse_gcn.weight:out->sparse_gcn.project.mm:W:parameter_operand",
+      "src": "sparse_gcn.weight",
+      "dst": "sparse_gcn.project.mm",
+      "src_port": "out",
+      "dst_port": "W",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "sparse_gcn.adj:out->sparse_gcn.aggregate.spmm:A:topology",
+      "src": "sparse_gcn.adj",
+      "dst": "sparse_gcn.aggregate.spmm",
+      "src_port": "out",
+      "dst_port": "A",
+      "role": "topology"
+    },
+    {
+      "id": "sparse_gcn.project.mm:out->sparse_gcn.aggregate.spmm:support:tensor",
+      "src": "sparse_gcn.project.mm",
+      "dst": "sparse_gcn.aggregate.spmm",
+      "src_port": "out",
+      "dst_port": "support",
+      "role": "tensor"
+    },
+    {
+      "id": "sparse_gcn.aggregate.spmm:out->sparse_gcn.add:value:tensor",
+      "src": "sparse_gcn.aggregate.spmm",
+      "dst": "sparse_gcn.add",
+      "src_port": "out",
+      "dst_port": "value",
+      "role": "tensor"
+    },
+    {
+      "id": "sparse_gcn.bias:out->sparse_gcn.add:bias:parameter_operand",
+      "src": "sparse_gcn.bias",
+      "dst": "sparse_gcn.add",
+      "src_port": "out",
+      "dst_port": "bias",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "sparse_gcn.add:out->sparse_gcn.output:in:tensor",
+      "src": "sparse_gcn.add",
+      "dst": "sparse_gcn.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Source projects node features before sparse adjacency multiplication.",
+    "Adjacency is supplied by caller; this layer does not add self-loops, compute degree normalization or apply ReLU.",
+    "Weight[Nin,Nout] and bias[Nout] are owned Parameters; same weight is used for every node.",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not substitute the existing fixed GraphNet A@pixels: this layer has an actual learned node-feature projection.",
+    "Do not add preprocessing or classifier layers from a textbook GCN."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

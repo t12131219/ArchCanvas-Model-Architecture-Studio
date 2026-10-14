@@ -1,0 +1,192 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1610" height="1664" viewBox="0 0 1610 1664">
+<defs><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<metadata id="source-binding">{&quot;model&quot;: &quot;childsum_treelstm&quot;, &quot;source_snapshot_sha256&quot;: &quot;a5f94bc44a6f44e55a0405ce24b4b259432db7db9b4195e25bca7aa7f609a697&quot;, &quot;repository&quot;: &quot;dasguptar/treelstm.pytorch&quot;, &quot;commit&quot;: &quot;228a314add09fc7f39ea752aa7b1fcf756cfe277&quot;, &quot;semantic_ir_sha256&quot;: &quot;b40b7d69ddd547e3928226868853d33bc7bb22ab74612aa553f388e68548cd1f&quot;, &quot;view&quot;: 1}</metadata>
+<metadata id="diagram-style">{&quot;name&quot;: &quot;transformer-paper-model-zoo&quot;, &quot;version&quot;: 1, &quot;font&quot;: &quot;DejaVu Sans, Arial, sans-serif&quot;, &quot;text&quot;: &quot;#172336&quot;, &quot;line&quot;: &quot;#263348&quot;, &quot;palette&quot;: {&quot;root&quot;: &quot;#ffffff&quot;, &quot;group&quot;: &quot;#ffffff&quot;, &quot;inner&quot;: &quot;#fffaf6&quot;, &quot;layer&quot;: &quot;#ffffff&quot;, &quot;encoder&quot;: &quot;#e7f5fe&quot;, &quot;decoder&quot;: &quot;#fff0f5&quot;, &quot;embedding&quot;: &quot;#f8d4e1&quot;, &quot;input&quot;: &quot;#f8d4e1&quot;, &quot;output&quot;: &quot;#dfdff8&quot;, &quot;attention&quot;: &quot;#ffddb3&quot;, &quot;ffn&quot;: &quot;#c8ebfb&quot;, &quot;mixing&quot;: &quot;#c8ebfb&quot;, &quot;conv&quot;: &quot;#c8ebfb&quot;, &quot;pool&quot;: &quot;#d6f0df&quot;, &quot;norm&quot;: &quot;#fff6bd&quot;, &quot;concat&quot;: &quot;#fff6bd&quot;, &quot;linear&quot;: &quot;#dfdff8&quot;, &quot;softmax&quot;: &quot;#c9f1cd&quot;, &quot;sampling&quot;: &quot;#c9f1cd&quot;, &quot;recurrent&quot;: &quot;#ffddb3&quot;, &quot;decomposition&quot;: &quot;#d6f0df&quot;, &quot;tensor&quot;: &quot;#cdeaf8&quot;, &quot;activation&quot;: &quot;#f3f5f7&quot;, &quot;control&quot;: &quot;#f3f5f7&quot;}, &quot;typography&quot;: {&quot;title&quot;: 30, &quot;subtitle&quot;: 16, &quot;module&quot;: 22, &quot;inner&quot;: 20, &quot;operator&quot;: 20, &quot;shape&quot;: 16, &quot;detail&quot;: 14, &quot;evidence&quot;: 12, &quot;footer&quot;: 14, &quot;line_height&quot;: 1.18}, &quot;fill_width_nodes&quot;: [], &quot;visual_roles&quot;: {&quot;childsum_treelstm.root&quot;: &quot;root&quot;, &quot;tree.body&quot;: &quot;encoder&quot;, &quot;tree.cell&quot;: &quot;norm&quot;, &quot;tree.child_c&quot;: &quot;input&quot;, &quot;tree.child_h&quot;: &quot;input&quot;, &quot;tree.ctanh&quot;: &quot;softmax&quot;, &quot;tree.f&quot;: &quot;softmax&quot;, &quot;tree.f_add&quot;: &quot;norm&quot;, &quot;tree.fc&quot;: &quot;tensor&quot;, &quot;tree.fh&quot;: &quot;linear&quot;, &quot;tree.forget&quot;: &quot;attention&quot;, &quot;tree.fsum&quot;: &quot;tensor&quot;, &quot;tree.fx&quot;: &quot;linear&quot;, &quot;tree.hidden&quot;: &quot;tensor&quot;, &quot;tree.hsum&quot;: &quot;tensor&quot;, &quot;tree.i&quot;: &quot;softmax&quot;, &quot;tree.iou&quot;: &quot;ffn&quot;, &quot;tree.iou_add&quot;: &quot;norm&quot;, &quot;tree.iouh&quot;: &quot;linear&quot;, &quot;tree.ioux&quot;: &quot;linear&quot;, &quot;tree.new&quot;: &quot;tensor&quot;, &quot;tree.o&quot;: &quot;softmax&quot;, &quot;tree.output&quot;: &quot;output&quot;, &quot;tree.repeat&quot;: &quot;tensor&quot;, &quot;tree.split&quot;: &quot;tensor&quot;, &quot;tree.u&quot;: &quot;softmax&quot;, &quot;tree.x&quot;: &quot;input&quot;}, &quot;semantics&quot;: &quot;presentation aliases only; color does not imply mathematical equivalence or parameter sharing&quot;}</metadata>
+<text x="805.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="805.0" dy="0">Child-Sum TreeLSTM / per-child forgetting  |  Module decomposition</tspan>
+</text>
+<text x="805.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">One nonleaf node / I12,H16,K3 / child-sum gates + per-child forget  /  read bottom to top</tspan>
+</text>
+<g data-node-id="childsum_treelstm.root" data-visual-role="root"><title>childsum-treelstm-sequence/treelstm/model.py:10 ChildSumTreeLSTM.__init__; childsum-treelstm-sequence/treelstm/model.py:36 ChildSumTreeLSTM.forward; childsum-treelstm-sequence/treelstm/model.py:19 ChildSumTreeLSTM.node_forward; parameter=not asserted; </title><rect x="230.0" y="98" width="1150" height="1284" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5"/></g>
+<text x="247.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="247.0" dy="0">Child-Sum TreeLSTM / per-child</tspan>
+<tspan x="247.0" dy="25.959999999999997">forgetting</tspan>
+</text>
+<text x="1367.0" y="177" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1367.0" dy="0">E001,E002,E003</tspan>
+</text>
+<g data-node-id="tree.x" data-visual-role="input"><title>childsum-treelstm-sequence/treelstm/model.py:19 ChildSumTreeLSTM.node_forward; childsum-treelstm-sequence/treelstm/model.py:36 ChildSumTreeLSTM.forward; parameter=not asserted; </title><rect x="262.0" y="1263.0" width="330" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="427.0" y="1290.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="427.0" dy="0">One node input vector</tspan>
+</text>
+<text x="427.0" y="1314.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="427.0" dy="0">[12]</tspan>
+</text>
+<text x="579.0" y="1334.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="579.0" dy="0">E003,E002</tspan>
+</text>
+<g data-node-id="tree.child_c" data-visual-role="input"><title>childsum-treelstm-sequence/treelstm/model.py:19 ChildSumTreeLSTM.node_forward; parameter=not asserted; </title><rect x="640.0" y="1251.0" width="330" height="105" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="805.0" y="1278.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="805.0" dy="0">Three child cell</tspan>
+<tspan x="805.0" dy="23.599999999999998">states</tspan>
+</text>
+<text x="805.0" y="1326.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">[3,16]</tspan>
+</text>
+<text x="957.0" y="1346.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="957.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="tree.child_h" data-visual-role="input"><title>childsum-treelstm-sequence/treelstm/model.py:19 ChildSumTreeLSTM.node_forward; parameter=not asserted; </title><rect x="1018.0" y="1251.0" width="330" height="105" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="1183.0" y="1278.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">Three child hidden</tspan>
+<tspan x="1183.0" dy="23.599999999999998">states</tspan>
+</text>
+<text x="1183.0" y="1326.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[3,16]</tspan>
+</text>
+<text x="1335.0" y="1346.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="tree.body" data-visual-role="encoder"><title>childsum-treelstm-sequence/treelstm/model.py:10 ChildSumTreeLSTM.__init__; childsum-treelstm-sequence/treelstm/model.py:19 ChildSumTreeLSTM.node_forward; parameter=not asserted; </title><rect x="419.0" y="358.0" width="772" height="829" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="436.0" y="388.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="436.0" dy="0">Child-Sum TreeLSTM /</tspan>
+<tspan x="436.0" dy="28.32">one node</tspan>
+</text>
+<text x="1174.0" y="388.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1174.0" dy="0">c,h:[1,16]</tspan>
+</text>
+<text x="1178.0" y="440.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1178.0" dy="0">E001,E003</tspan>
+</text>
+<g data-node-id="tree.iou" data-visual-role="ffn"><title>childsum-treelstm-sequence/treelstm/model.py:10 ChildSumTreeLSTM.__init__; childsum-treelstm-sequence/treelstm/model.py:19 ChildSumTreeLSTM.node_forward; parameter=not asserted; </title><rect x="451.0" y="1056.0" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="616.0" y="1083.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="616.0" dy="0">Node gates from summed</tspan>
+<tspan x="616.0" dy="23.599999999999998">children</tspan>
+</text>
+<text x="616.0" y="1131.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="616.0" dy="0">i,o,u:[1,16]</tspan>
+</text>
+<text x="768.0" y="1151.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="768.0" dy="0">E001,E003</tspan>
+</text>
+<g data-node-id="tree.forget" data-visual-role="attention"><title>childsum-treelstm-sequence/treelstm/model.py:10 ChildSumTreeLSTM.__init__; childsum-treelstm-sequence/treelstm/model.py:19 ChildSumTreeLSTM.node_forward; parameter=not asserted; </title><rect x="829.0" y="1068.0" width="330" height="81" rx="10" fill="#ffddb3" stroke="#263348" stroke-width="2"/></g>
+<text x="994.0" y="1095.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="994.0" dy="0">Per-child forgetting</tspan>
+</text>
+<text x="994.0" y="1119.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="994.0" dy="0">retained:[1,16]</tspan>
+</text>
+<text x="1146.0" y="1139.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1146.0" dy="0">E001,E003</tspan>
+</text>
+<g data-node-id="tree.new" data-visual-role="tensor"><title>childsum-treelstm-sequence/treelstm/model.py:19 ChildSumTreeLSTM.node_forward; parameter=not asserted; </title><rect x="640.0" y="911.0" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="805.0" y="938.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="805.0" dy="0">Input gate * candidate</tspan>
+</text>
+<text x="805.0" y="962.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">[1,16]</tspan>
+</text>
+<text x="957.0" y="982.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="957.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="tree.cell" data-visual-role="norm"><title>childsum-treelstm-sequence/treelstm/model.py:19 ChildSumTreeLSTM.node_forward; parameter=not asserted; </title><rect x="640.0" y="742.0" width="330" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="805.0" y="769.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="805.0" dy="0">New cell + retained</tspan>
+<tspan x="805.0" dy="23.599999999999998">children</tspan>
+</text>
+<text x="805.0" y="817.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">[1,16]</tspan>
+</text>
+<text x="957.0" y="837.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="957.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="tree.ctanh" data-visual-role="softmax"><title>childsum-treelstm-sequence/treelstm/model.py:19 ChildSumTreeLSTM.node_forward; parameter=not asserted; </title><rect x="640.0" y="597.0" width="330" height="81" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2"/></g>
+<text x="805.0" y="624.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="805.0" dy="0">Tanh new cell c</tspan>
+</text>
+<text x="805.0" y="648.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">[1,16]</tspan>
+</text>
+<text x="957.0" y="668.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="957.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="tree.hidden" data-visual-role="tensor"><title>childsum-treelstm-sequence/treelstm/model.py:19 ChildSumTreeLSTM.node_forward; parameter=not asserted; </title><rect x="640.0" y="452.0" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="805.0" y="479.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="805.0" dy="0">Output gate * Tanh(c)</tspan>
+</text>
+<text x="805.0" y="503.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">[1,16]</tspan>
+</text>
+<text x="957.0" y="523.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="957.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="tree.output" data-visual-role="output"><title>childsum-treelstm-sequence/treelstm/model.py:19 ChildSumTreeLSTM.node_forward; parameter=not asserted; </title><rect x="640.0" y="189.0" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="805.0" y="216.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="805.0" dy="0">Return c, h / cell</tspan>
+<tspan x="805.0" dy="23.599999999999998">first</tspan>
+</text>
+<text x="805.0" y="264.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">c,h:[1,16]</tspan>
+</text>
+<text x="957.0" y="284.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="957.0" dy="0">E003</tspan>
+</text>
+<path data-route-id="route-0001" d="M 415.0,1263.0 L 415.0,1205.0 L 604.0,1205.0 L 604.0,1161.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>tree.x:out -&gt; tree.ioux:input; </title></path>
+<path data-route-id="route-0002" d="M 1171.0,1251.0 L 1171.0,1205.0 L 628.0,1205.0 L 628.0,1161.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>tree.child_h:out -&gt; tree.hsum:child_h; </title></path>
+<path data-route-id="route-0003" d="M 439.0,1263.0 L 439.0,1173.0 L 970.0,1173.0 L 970.0,1149.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>tree.x:out -&gt; tree.fx:input; </title></path>
+<path data-route-id="route-0004" d="M 1195.0,1251.0 L 1195.0,1173.0 L 994.0,1173.0 L 994.0,1149.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>tree.child_h:out -&gt; tree.fh:per_child_hidden; </title></path>
+<path data-route-id="route-0005" d="M 805.0,1251.0 L 805.0,1179.0 L 1018.0,1179.0 L 1018.0,1149.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>tree.child_c:out -&gt; tree.fc:child_cell; </title></path>
+<path data-route-id="route-0006" d="M 592.0,1056.0 L 592.0,1016.0 L 793.0,1016.0 L 793.0,992.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>tree.i:out -&gt; tree.new:input_gate; </title></path>
+<path data-route-id="route-0007" d="M 616.0,1056.0 L 616.0,1028.0 L 817.0,1028.0 L 817.0,992.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>tree.u:out -&gt; tree.new:candidate; </title></path>
+<path data-route-id="route-0008" d="M 805.0,911.0 L 805.0,871.0 L 793.0,871.0 L 793.0,847.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>tree.new:out -&gt; tree.cell:new_cell; </title></path>
+<path data-route-id="route-0009" d="M 994.0,1068.0 L 994.0,871.0 L 817.0,871.0 L 817.0,847.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>tree.fsum:out -&gt; tree.cell:retained_children; </title></path>
+<path data-route-id="route-0010" d="M 793.0,742.0 L 793.0,702.0 L 805.0,702.0 L 805.0,678.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>tree.cell:out -&gt; tree.ctanh:in; </title></path>
+<path data-route-id="route-0011" d="M 640.0,1056.0 L 640.0,1004.0 L 628.0,1004.0 L 628.0,557.0 L 793.0,557.0 L 793.0,533.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>tree.o:out -&gt; tree.hidden:output_gate; </title></path>
+<path data-route-id="route-0012" d="M 805.0,597.0 L 805.0,557.0 L 817.0,557.0 L 817.0,533.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>tree.ctanh:out -&gt; tree.hidden:cell_tanh; </title></path>
+<path data-route-id="route-0013" d="M 817.0,742.0 L 817.0,696.0 L 982.0,696.0 L 982.0,318.0 L 793.0,318.0 L 793.0,294.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>tree.cell:out -&gt; tree.output:cell; </title></path>
+<path data-route-id="route-0014" d="M 805.0,452.0 L 805.0,330.0 L 817.0,330.0 L 817.0,294.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>tree.hidden:out -&gt; tree.output:hidden; </title></path>
+<rect x="260.0" y="1419" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348"/>
+<text x="283.0" y="1432" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="283.0" dy="0">Inputs</tspan>
+</text>
+<rect x="445.0" y="1419" width="16" height="16" rx="3" fill="#ffddb3" stroke="#263348"/>
+<text x="468.0" y="1432" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="468.0" dy="0">Gate / attention</tspan>
+</text>
+<rect x="630.0" y="1419" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348"/>
+<text x="653.0" y="1432" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="653.0" dy="0">Conv / transforms</tspan>
+</text>
+<rect x="815.0" y="1419" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348"/>
+<text x="838.0" y="1432" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="838.0" dy="0">Add / norm / concat</tspan>
+</text>
+<rect x="1000.0" y="1419" width="16" height="16" rx="3" fill="#c9f1cd" stroke="#263348"/>
+<text x="1023.0" y="1432" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1023.0" dy="0">Gates / Softmax</tspan>
+</text>
+<rect x="1185.0" y="1419" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348"/>
+<text x="1208.0" y="1432" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1208.0" dy="0">Linear / outputs</tspan>
+</text>
+<rect x="722.5" y="1449" width="16" height="16" rx="3" fill="#cdeaf8" stroke="#263348"/>
+<text x="745.5" y="1462" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="745.5" dy="0">Tensor operations</tspan>
+</text>
+<text x="805.0" y="1490" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">K=3 children; child_h/child_c:[3,16]; shared node gates and c,h:[1,16].</tspan>
+<tspan x="805.0" dy="16.52">Summation uses dim0,keepdim=True; all child rows reuse the same learned four Linear families.</tspan>
+<tspan x="805.0" dy="16.52">The selected actual method returns(c,h); recursive traversal is outside the diagram boundary.</tspan>
+</text>
+<text x="805.0" y="1564" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+<text x="805.0" y="1594" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+<text x="805.0" y="1619" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+</svg>

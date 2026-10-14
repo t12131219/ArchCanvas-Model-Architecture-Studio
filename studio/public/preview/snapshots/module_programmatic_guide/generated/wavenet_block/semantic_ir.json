@@ -1,0 +1,765 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "wavenet_block",
+  "profile": {
+    "iteration": 1,
+    "dilation": 2,
+    "init_dilation": 1,
+    "kernel_size": 2,
+    "bias": false,
+    "previous_skip_is_tensor": true,
+    "loop_boundary_outputs": [
+      "x",
+      "skip"
+    ],
+    "actual_function_return": false,
+    "label": "Loop i1 / phase dilation2 / gated Conv2 / residual + skip states",
+    "mode": "reviewed static selected module profile",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "vincentherrmann/pytorch-wavenet",
+    "commit": "26ba28989edcf8688f6216057aafda07601ff07e",
+    "snapshot": "2982d3a983045e452afd537d7b59d84765b12bbe7e5bf15224df2f9a6e08c690"
+  },
+  "nodes": [
+    {
+      "id": "wavenet_block.root",
+      "label": "WaveNet / gated residual and skip iteration",
+      "kind": "group",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.__init__",
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet_dilate",
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "wave.x",
+          "wave.previous_skip"
+        ],
+        [
+          "wave.body"
+        ],
+        [
+          "wave.output_x",
+          "wave.output_skip"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E003",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "wave.x",
+      "label": "Previous loop residual x",
+      "kind": "input",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet"
+      ],
+      "shape": "[1,32,18]",
+      "detail": [],
+      "parent": "wavenet_block.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "wave.previous_skip",
+      "label": "Previous tensor skip",
+      "kind": "input",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet"
+      ],
+      "shape": "[1,256,18]",
+      "detail": [],
+      "zero_initial_skip_selected": false,
+      "parent": "wavenet_block.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "wave.body",
+      "label": "WaveNet loop iteration i=1",
+      "kind": "group",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.__init__",
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet",
+        "pytorch-wavenet-sequence/wavenet_modules.py::dilate"
+      ],
+      "shape": "x_next:[2,32,8]; skip_next:[1,256,16]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "wave.dilate"
+        ],
+        [
+          "wave.filter",
+          "wave.gate"
+        ],
+        [
+          "wave.product"
+        ],
+        [
+          "wave.skip",
+          "wave.res_conv",
+          "wave.res_crop",
+          "wave.skip_crop"
+        ],
+        [
+          "wave.skip_add",
+          "wave.res_add"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": "wavenet_block.root",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "wave.dilate",
+      "label": "Dilate2 / fold phases into N",
+      "kind": "tensor",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet",
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet_dilate",
+        "pytorch-wavenet-sequence/wavenet_modules.py::dilate"
+      ],
+      "shape": "[2,32,9]",
+      "detail": [
+        "selected inputN1,L18 divisible by2; permute/view/permute helper"
+      ],
+      "dilation": 2,
+      "init_dilation": 1,
+      "padding_applied": false,
+      "expression": "dilate(input, dilation, init_dilation)",
+      "parent": "wave.body",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "wave.filter",
+      "label": "Filter branch",
+      "kind": "group",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.__init__",
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet"
+      ],
+      "shape": "[2,32,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "wave.body",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "wave.filter_conv",
+      "label": "Conv2 / 32 -> 32",
+      "kind": "conv1d",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.__init__"
+      ],
+      "shape": "[2,32,8]",
+      "detail": [],
+      "parameter": "filter_convs.1",
+      "parameters": [
+        "filter_convs.1.weight"
+      ],
+      "kernel_size": 2,
+      "dilation": 1,
+      "bias": false,
+      "parent": "wave.filter",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "wave.filter_act",
+      "label": "Tanh",
+      "kind": "tanh",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet"
+      ],
+      "shape": "[2,32,8]",
+      "detail": [],
+      "parent": "wave.filter",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "wave.gate",
+      "label": "Gate branch",
+      "kind": "group",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.__init__",
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet"
+      ],
+      "shape": "[2,32,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "wave.body",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "wave.gate_conv",
+      "label": "Conv2 / 32 -> 32",
+      "kind": "conv1d",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.__init__"
+      ],
+      "shape": "[2,32,8]",
+      "detail": [],
+      "parameter": "gate_convs.1",
+      "parameters": [
+        "gate_convs.1.weight"
+      ],
+      "kernel_size": 2,
+      "dilation": 1,
+      "bias": false,
+      "parent": "wave.gate",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "wave.gate_act",
+      "label": "Sigmoid",
+      "kind": "sigmoid",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet"
+      ],
+      "shape": "[2,32,8]",
+      "detail": [],
+      "parent": "wave.gate",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "wave.product",
+      "label": "Filter * gate",
+      "kind": "multiply",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet"
+      ],
+      "shape": "[2,32,8]",
+      "detail": [],
+      "parent": "wave.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "filter",
+        "gate"
+      ]
+    },
+    {
+      "id": "wave.skip",
+      "label": "Skip path / undo phase folding",
+      "kind": "group",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.__init__",
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet",
+        "pytorch-wavenet-sequence/wavenet_modules.py::dilate"
+      ],
+      "shape": "[1,256,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "wave.body",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "wave.undilate",
+      "label": "Restore phases / dilation1",
+      "kind": "tensor",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet",
+        "pytorch-wavenet-sequence/wavenet_modules.py::dilate"
+      ],
+      "shape": "[1,32,16]",
+      "detail": [],
+      "dilation": 1,
+      "init_dilation": 2,
+      "expression": "dilate(x, 1, init_dilation=dilation)",
+      "parent": "wave.skip",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "wave.skip_conv",
+      "label": "Skip Conv1 / 32 -> 256",
+      "kind": "conv1d",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.__init__",
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet"
+      ],
+      "shape": "[1,256,16]",
+      "detail": [],
+      "parameter": "skip_convs.1",
+      "parameters": [
+        "skip_convs.1.weight"
+      ],
+      "kernel_size": 1,
+      "bias": false,
+      "parent": "wave.skip",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "wave.res_conv",
+      "label": "Residual Conv1 / 32 -> 32",
+      "kind": "conv1d",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.__init__",
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet"
+      ],
+      "shape": "[2,32,8]",
+      "detail": [],
+      "parameter": "residual_convs.1",
+      "parameters": [
+        "residual_convs.1.weight"
+      ],
+      "kernel_size": 1,
+      "bias": false,
+      "parent": "wave.body",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "wave.res_crop",
+      "label": "Crop residual left1",
+      "kind": "tensor",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet"
+      ],
+      "shape": "[2,32,8]",
+      "detail": [],
+      "expression": "residual[:, :, (self.kernel_size - 1):]",
+      "crop_side": "left",
+      "crop_size": 1,
+      "parent": "wave.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "residual"
+      ]
+    },
+    {
+      "id": "wave.skip_crop",
+      "label": "Keep last16 previous skip positions",
+      "kind": "tensor",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet"
+      ],
+      "shape": "[1,256,16]",
+      "detail": [],
+      "expression": "skip[:, :, -s.size(2):]",
+      "exception_path_selected": false,
+      "parent": "wave.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "previous_skip",
+        "shape"
+      ]
+    },
+    {
+      "id": "wave.skip_add",
+      "label": "s + cropped previous skip",
+      "kind": "add",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet"
+      ],
+      "shape": "[1,256,16]",
+      "detail": [],
+      "parent": "wave.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "new_skip",
+        "previous_skip"
+      ]
+    },
+    {
+      "id": "wave.res_add",
+      "label": "Projected x + cropped residual",
+      "kind": "add",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet"
+      ],
+      "shape": "[2,32,8]",
+      "detail": [],
+      "parent": "wave.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "projected",
+        "retained"
+      ]
+    },
+    {
+      "id": "wave.output_x",
+      "label": "Updated loop x / phase-folded",
+      "kind": "output",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet"
+      ],
+      "shape": "[2,32,8]",
+      "detail": [],
+      "actual_return": false,
+      "parent": "wavenet_block.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "x"
+      ]
+    },
+    {
+      "id": "wave.output_skip",
+      "label": "Updated loop skip",
+      "kind": "output",
+      "source": [
+        "pytorch-wavenet-sequence/wavenet_model.py::WaveNetModel.wavenet"
+      ],
+      "shape": "[1,256,16]",
+      "detail": [],
+      "actual_return": false,
+      "parent": "wavenet_block.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "skip"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "wave.filter:in->wave.filter_conv:in:boundary",
+      "src": "wave.filter",
+      "dst": "wave.filter_conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "wave.filter_conv:out->wave.filter_act:in:tensor",
+      "src": "wave.filter_conv",
+      "dst": "wave.filter_act",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "wave.filter_act:out->wave.filter:out:boundary",
+      "src": "wave.filter_act",
+      "dst": "wave.filter",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "wave.gate:in->wave.gate_conv:in:boundary",
+      "src": "wave.gate",
+      "dst": "wave.gate_conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "wave.gate_conv:out->wave.gate_act:in:tensor",
+      "src": "wave.gate_conv",
+      "dst": "wave.gate_act",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "wave.gate_act:out->wave.gate:out:boundary",
+      "src": "wave.gate_act",
+      "dst": "wave.gate",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "wave.skip:in->wave.undilate:in:boundary",
+      "src": "wave.skip",
+      "dst": "wave.undilate",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "wave.undilate:out->wave.skip_conv:in:tensor",
+      "src": "wave.undilate",
+      "dst": "wave.skip_conv",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "wave.skip_conv:out->wave.skip:out:boundary",
+      "src": "wave.skip_conv",
+      "dst": "wave.skip",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "wave.x:out->wave.dilate:input:tensor",
+      "src": "wave.x",
+      "dst": "wave.dilate",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "wave.dilate:out->wave.filter:in:tensor",
+      "src": "wave.dilate",
+      "dst": "wave.filter",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "wave.dilate:out->wave.gate:in:tensor",
+      "src": "wave.dilate",
+      "dst": "wave.gate",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "wave.filter_act:out->wave.product:filter:tensor",
+      "src": "wave.filter_act",
+      "dst": "wave.product",
+      "src_port": "out",
+      "dst_port": "filter",
+      "role": "tensor"
+    },
+    {
+      "id": "wave.gate_act:out->wave.product:gate:tensor",
+      "src": "wave.gate_act",
+      "dst": "wave.product",
+      "src_port": "out",
+      "dst_port": "gate",
+      "role": "tensor"
+    },
+    {
+      "id": "wave.product:out->wave.skip:in:tensor",
+      "src": "wave.product",
+      "dst": "wave.skip",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "wave.product:out->wave.res_conv:input:tensor",
+      "src": "wave.product",
+      "dst": "wave.res_conv",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "wave.dilate:out->wave.res_crop:residual:tensor",
+      "src": "wave.dilate",
+      "dst": "wave.res_crop",
+      "src_port": "out",
+      "dst_port": "residual",
+      "role": "tensor"
+    },
+    {
+      "id": "wave.previous_skip:out->wave.skip_crop:previous_skip:tensor",
+      "src": "wave.previous_skip",
+      "dst": "wave.skip_crop",
+      "src_port": "out",
+      "dst_port": "previous_skip",
+      "role": "tensor"
+    },
+    {
+      "id": "wave.skip_conv:out->wave.skip_crop:shape:shape_dependency",
+      "src": "wave.skip_conv",
+      "dst": "wave.skip_crop",
+      "src_port": "out",
+      "dst_port": "shape",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "wave.skip:out->wave.skip_add:new_skip:tensor",
+      "src": "wave.skip",
+      "dst": "wave.skip_add",
+      "src_port": "out",
+      "dst_port": "new_skip",
+      "role": "tensor"
+    },
+    {
+      "id": "wave.skip_crop:out->wave.skip_add:previous_skip:tensor",
+      "src": "wave.skip_crop",
+      "dst": "wave.skip_add",
+      "src_port": "out",
+      "dst_port": "previous_skip",
+      "role": "tensor"
+    },
+    {
+      "id": "wave.res_conv:out->wave.res_add:projected:tensor",
+      "src": "wave.res_conv",
+      "dst": "wave.res_add",
+      "src_port": "out",
+      "dst_port": "projected",
+      "role": "tensor"
+    },
+    {
+      "id": "wave.res_crop:out->wave.res_add:retained:tensor",
+      "src": "wave.res_crop",
+      "dst": "wave.res_add",
+      "src_port": "out",
+      "dst_port": "retained",
+      "role": "tensor"
+    },
+    {
+      "id": "wave.res_add:out->wave.output_x:x:tensor",
+      "src": "wave.res_add",
+      "dst": "wave.output_x",
+      "src_port": "out",
+      "dst_port": "x",
+      "role": "tensor"
+    },
+    {
+      "id": "wave.skip_add:out->wave.output_skip:skip:tensor",
+      "src": "wave.skip_add",
+      "dst": "wave.output_skip",
+      "src_port": "out",
+      "dst_port": "skip",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "The actual implementation obtains dilation through permute/view phase folding, not Conv1d(dilation=2); filter/gate Conv1d have ordinary dilation1.",
+    "For selected N1,L18, dilation2 gives N2,L9, valid Conv2 gives L8; the skip helper restores N1,L16 before its1x1 Conv.",
+    "The residual uses left-cropped phase-folded residual after(kernel_size-1); skip keeps the trailing new-skip length.",
+    "Selected i1 has an existing tensor skip; the except zero initializer path is not selected.",
+    "Two glyph outputs are loop-boundary variables, not a tuple returned by WaveNetModel.wavenet; its final waveform logits head is outside scope."
+  ],
+  "corrections": [
+    "Do not replace phase folding with a falsely claimed source dilation kwarg; do not swap skip and residual convolution outputs.",
+    "Do not crop the residual right side as in TCN; do not call the selected loop states a source return tuple."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

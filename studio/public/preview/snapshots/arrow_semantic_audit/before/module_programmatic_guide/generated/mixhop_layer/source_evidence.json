@@ -1,0 +1,77 @@
+{
+  "source_project": "mixhop-modules",
+  "repository": "benedekrozemberczki/MixHop-and-N-GCN",
+  "commit": "e9df5eb988f0dbe5192ac87902c55cbe6d8191fe",
+  "source_snapshot_sha256": "43f8f04f0fc217b8933576df0ba44ca6d5747e92c12346fb5cf5f73b90e1b25d",
+  "entry": "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "mixhop-modules/LICENSE": {
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "lines": 674,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/benedekrozemberczki/MixHop-and-N-GCN/e9df5eb988f0dbe5192ac87902c55cbe6d8191fe/LICENSE",
+      "derived_from": null
+    },
+    "mixhop-modules/src/layers.py": {
+      "sha256": "b2ec5c4532879d8e7fc1ff9dae99acf34185e878106c0cd9b3ab8a8064d91ac3",
+      "lines": 161,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/benedekrozemberczki/MixHop-and-N-GCN/e9df5eb988f0dbe5192ac87902c55cbe6d8191fe/src/layers.py",
+      "derived_from": null
+    },
+    "mixhop-modules/src/trainer_and_networks.py": {
+      "sha256": "e4c886473e9bd7e3d4ebf35971660c5397f9ec4b038cc4a44ae2a2e42760321b",
+      "lines": 238,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/benedekrozemberczki/MixHop-and-N-GCN/e9df5eb988f0dbe5192ac87902c55cbe6d8191fe/src/trainer_and_networks.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "mixhop-modules/src/layers.py::SparseNGCNLayer.define_parameters": {
+      "path": "mixhop-modules/src/layers.py",
+      "symbol": "SparseNGCNLayer.define_parameters",
+      "start": 34,
+      "end": 39,
+      "snippet": "    def define_parameters(self):\n        \"\"\"\n        Defining the weight matrices.\n        \"\"\"\n        self.weight_matrix = torch.nn.Parameter(torch.Tensor(self.in_channels, self.out_channels))\n        self.bias = torch.nn.Parameter(torch.Tensor(1, self.out_channels))",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "mixhop-modules/src/layers.py::SparseNGCNLayer.forward": {
+      "path": "mixhop-modules/src/layers.py",
+      "symbol": "SparseNGCNLayer.forward",
+      "start": 48,
+      "end": 73,
+      "snippet": "    def forward(self, normalized_adjacency_matrix, features):\n        \"\"\"\n        Doing a forward pass.\n        :param normalized_adjacency_matrix: Normalized adjacency matrix.\n        :param features: Feature matrix.\n        :return base_features: Convolved features.\n        \"\"\"\n        feature_count, _ = torch.max(features[\"indices\"],dim=1)\n        feature_count = feature_count + 1\n        base_features = spmm(features[\"indices\"], features[\"values\"], feature_count[0],\n                             feature_count[1], self.weight_matrix)\n\n        base_features = base_features + self.bias\n\n        base_features = torch.nn.functional.dropout(base_features,\n                                                    p=self.dropout_rate,\n                                                    training=self.training)\n\n        base_features = torch.nn.functional.relu(base_features)\n        for _ in range(self.iterations-1):\n            base_features = spmm(normalized_adjacency_matrix[\"indices\"],\n                                 normalized_adjacency_matrix[\"values\"],\n                                 base_features.shape[0],\n                                 base_features.shape[0],\n                                 base_features)\n        return base_features",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.setup_layer_structure": {
+      "path": "mixhop-modules/src/trainer_and_networks.py",
+      "symbol": "MixHopNetwork.setup_layer_structure",
+      "start": 63,
+      "end": 71,
+      "snippet": "    def setup_layer_structure(self):\n        \"\"\"\n        Creating the layer structure (3 convolutional upper layers, 3 bottom layers) and dense final.\n        \"\"\"\n        self.upper_layers = [SparseNGCNLayer(self.feature_number, self.args.layers_1[i-1], i, self.args.dropout) for i in range(1, self.order_1+1)]\n        self.upper_layers = ListModule(*self.upper_layers)\n        self.bottom_layers = [DenseNGCNLayer(self.abstract_feature_number_1, self.args.layers_2[i-1], i, self.args.dropout) for i in range(1, self.order_2+1)]\n        self.bottom_layers = ListModule(*self.bottom_layers)\n        self.fully_connected = torch.nn.Linear(self.abstract_feature_number_2, self.class_number)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "mixhop-modules/src/trainer_and_networks.py::MixHopNetwork.forward": {
+      "path": "mixhop-modules/src/trainer_and_networks.py",
+      "symbol": "MixHopNetwork.forward",
+      "start": 101,
+      "end": 111,
+      "snippet": "    def forward(self, normalized_adjacency_matrix, features):\n        \"\"\"\n        Forward pass.\n        :param normalized adjacency_matrix: Target matrix as a dict with indices and values.\n        :param features: Feature matrix.\n        :return predictions: Label predictions.\n        \"\"\"\n        abstract_features_1 = torch.cat([self.upper_layers[i](normalized_adjacency_matrix, features) for i in range(self.order_1)], dim=1)\n        abstract_features_2 = torch.cat([self.bottom_layers[i](normalized_adjacency_matrix, abstract_features_1) for i in range(self.order_2)], dim=1)\n        predictions = torch.nn.functional.log_softmax(self.fully_connected(abstract_features_2), dim=1)\n        return predictions",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "mixhop-modules/LICENSE"
+  ]
+}

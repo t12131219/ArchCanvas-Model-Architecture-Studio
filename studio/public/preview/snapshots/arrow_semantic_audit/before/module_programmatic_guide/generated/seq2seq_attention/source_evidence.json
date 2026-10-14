@@ -1,0 +1,60 @@
+{
+  "source_project": "ibm-seq2seq-attention",
+  "repository": "IBM/pytorch-seq2seq",
+  "commit": "f146087a9a271e9b50f46561e090324764b081fb",
+  "source_snapshot_sha256": "70a55845acd6db1afb3fa0c7b4a027b64773c11ebdf799a65bb0fa014c0dfe46",
+  "entry": "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "ibm-seq2seq-attention/LICENSE": {
+      "sha256": "c58b2150f745642183e4b651c845daef317630fc86f170de59a81da099d51c4b",
+      "lines": 190,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/IBM/pytorch-seq2seq/f146087a9a271e9b50f46561e090324764b081fb/LICENSE",
+      "derived_from": null
+    },
+    "ibm-seq2seq-attention/seq2seq/models/attention.py": {
+      "sha256": "83521f6a965c8f3943aa15322725fbdf97c43de1012c732256196f1a348e3bdf",
+      "lines": 72,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/IBM/pytorch-seq2seq/f146087a9a271e9b50f46561e090324764b081fb/seq2seq/models/attention.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.__init__": {
+      "path": "ibm-seq2seq-attention/seq2seq/models/attention.py",
+      "symbol": "Attention.__init__",
+      "start": 40,
+      "end": 43,
+      "snippet": "    def __init__(self, dim):\n        super(Attention, self).__init__()\n        self.linear_out = nn.Linear(dim*2, dim)\n        self.mask = None",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.set_mask": {
+      "path": "ibm-seq2seq-attention/seq2seq/models/attention.py",
+      "symbol": "Attention.set_mask",
+      "start": 45,
+      "end": 52,
+      "snippet": "    def set_mask(self, mask):\n        \"\"\"\n        Sets indices to be masked\n\n        Args:\n            mask (torch.Tensor): tensor containing indices to be masked\n        \"\"\"\n        self.mask = mask",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "ibm-seq2seq-attention/seq2seq/models/attention.py::Attention.forward": {
+      "path": "ibm-seq2seq-attention/seq2seq/models/attention.py",
+      "symbol": "Attention.forward",
+      "start": 54,
+      "end": 72,
+      "snippet": "    def forward(self, output, context):\n        batch_size = output.size(0)\n        hidden_size = output.size(2)\n        input_size = context.size(1)\n        # (batch, out_len, dim) * (batch, in_len, dim) -> (batch, out_len, in_len)\n        attn = torch.bmm(output, context.transpose(1, 2))\n        if self.mask is not None:\n            attn.data.masked_fill_(self.mask, -float('inf'))\n        attn = F.softmax(attn.view(-1, input_size), dim=1).view(batch_size, -1, input_size)\n\n        # (batch, out_len, in_len) * (batch, in_len, dim) -> (batch, out_len, dim)\n        mix = torch.bmm(attn, context)\n\n        # concat -> (batch, out_len, 2*dim)\n        combined = torch.cat((mix, output), dim=2)\n        # output -> (batch, out_len, dim)\n        output = F.tanh(self.linear_out(combined.view(-1, 2 * hidden_size))).view(batch_size, -1, hidden_size)\n\n        return output, attn",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "ibm-seq2seq-attention/LICENSE"
+  ]
+}

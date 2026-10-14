@@ -1,0 +1,1303 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "transformer_xl_relative",
+  "profile": {
+    "n_head": 2,
+    "d_model": 16,
+    "d_head": 8,
+    "current_length": 3,
+    "memory_length": 4,
+    "relative_length": 7,
+    "mems_selected": true,
+    "pre_lnorm": false,
+    "mask_rank": 3,
+    "dropout": 0.1,
+    "dropatt": 0.1,
+    "training": false,
+    "zero_triu": false,
+    "label": "Relative AC+shift(BD) / memory4,current3 / heads2x8 / post-norm / eval",
+    "mode": "reviewed static selected module profile",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "kimiyoung/transformer-xl",
+    "commit": "44781ed21dbaec88b280f74d9ae2877f52b492a5",
+    "snapshot": "7636308c1d47cacc643fe001e71f31da745c7a23e46b83c12eb12e4c44313381"
+  },
+  "nodes": [
+    {
+      "id": "transformer_xl_relative.root",
+      "label": "Transformer-XL relative attention",
+      "kind": "group",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn.__init__",
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.__init__",
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn._rel_shift",
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "txl.w",
+          "txl.memory",
+          "txl.position",
+          "txl.biases",
+          "txl.external_mask"
+        ],
+        [
+          "txl.body"
+        ],
+        [
+          "txl.output"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E003",
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.w",
+      "label": "Current sequence w",
+      "kind": "input",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,B,16]",
+      "detail": [],
+      "parent": "transformer_xl_relative.root",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.memory",
+      "label": "Caller memory / fixed branch",
+      "kind": "input",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[4,B,16]",
+      "detail": [],
+      "parent": "transformer_xl_relative.root",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.position",
+      "label": "Supplied relative encoding r",
+      "kind": "input",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[7,16]",
+      "detail": [],
+      "parent": "transformer_xl_relative.root",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.biases",
+      "label": "Caller content / relative biases",
+      "kind": "input",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "r_w_bias,r_r_bias:[2,8]",
+      "detail": [],
+      "registered_in_module": false,
+      "parent": "transformer_xl_relative.root",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "r_w_bias",
+        "r_r_bias"
+      ]
+    },
+    {
+      "id": "txl.external_mask",
+      "label": "Caller 3D attention mask",
+      "kind": "input",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,7,B]",
+      "detail": [],
+      "True_means": "blocked",
+      "contains_true_selected": true,
+      "parent": "transformer_xl_relative.root",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.body",
+      "label": "Relative attention / memory branch",
+      "kind": "group",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn.__init__",
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.__init__",
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward",
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn._rel_shift"
+      ],
+      "shape": "[3,B,16]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "txl.cat",
+          "txl.r"
+        ],
+        [
+          "txl.qkv"
+        ],
+        [
+          "txl.split"
+        ],
+        [
+          "txl.q",
+          "txl.k",
+          "txl.v"
+        ],
+        [
+          "txl.rw",
+          "txl.rr"
+        ],
+        [
+          "txl.ac",
+          "txl.bd"
+        ],
+        [
+          "txl.shift"
+        ],
+        [
+          "txl.score"
+        ],
+        [
+          "txl.scale"
+        ],
+        [
+          "txl.mask"
+        ],
+        [
+          "txl.softmax"
+        ],
+        [
+          "txl.dropatt"
+        ],
+        [
+          "txl.aggregate"
+        ],
+        [
+          "txl.tail"
+        ],
+        [
+          "txl.residual"
+        ],
+        [
+          "txl.norm"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": "transformer_xl_relative.root",
+      "source_evidence": [
+        "E001",
+        "E003",
+        "E004",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.cat",
+      "label": "Concat [memory, current w] / time",
+      "kind": "concat",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[7,B,16]",
+      "detail": [],
+      "dim": 0,
+      "ordered_operands": [
+        "mems",
+        "w"
+      ],
+      "parent": "txl.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "memory",
+        "current"
+      ]
+    },
+    {
+      "id": "txl.qkv",
+      "label": "Joint QKV Linear16 -> 48",
+      "kind": "linear",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn.__init__",
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[7,B,48]",
+      "detail": [],
+      "parameter": "qkv_net",
+      "bias": false,
+      "parent": "txl.body",
+      "source_evidence": [
+        "E001",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "txl.split",
+      "label": "Chunk Q_all,K,V / last axis",
+      "kind": "tensor",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "each:[7,B,16]",
+      "detail": [],
+      "fields": [
+        "w_head_q",
+        "w_head_k",
+        "w_head_v"
+      ],
+      "dim": -1,
+      "parent": "txl.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "w_head_q",
+        "w_head_k",
+        "w_head_v"
+      ]
+    },
+    {
+      "id": "txl.q",
+      "label": "Keep last3 Q + view heads",
+      "kind": "tensor",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,B,2,8]",
+      "detail": [],
+      "query_slice": "[-qlen:]",
+      "source_length": 7,
+      "output_length": 3,
+      "parent": "txl.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.k",
+      "label": "View memory + current K heads",
+      "kind": "tensor",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[7,B,2,8]",
+      "detail": [],
+      "includes_memory": true,
+      "parent": "txl.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.v",
+      "label": "View memory + current V heads",
+      "kind": "tensor",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[7,B,2,8]",
+      "detail": [],
+      "includes_memory": true,
+      "parent": "txl.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.r",
+      "label": "Relative-position projection",
+      "kind": "group",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.__init__",
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[7,2,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "txl.body",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.rlinear",
+      "label": "Position Linear16 -> 16",
+      "kind": "linear",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.__init__",
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[7,16]",
+      "detail": [],
+      "parameter": "r_net",
+      "bias": false,
+      "parent": "txl.r",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.rview",
+      "label": "View relative heads / no batch",
+      "kind": "tensor",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[7,2,8]",
+      "detail": [],
+      "parent": "txl.r",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.rw",
+      "label": "Q + external content bias",
+      "kind": "add",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,B,2,8]",
+      "detail": [],
+      "bias_argument": "r_w_bias",
+      "parent": "txl.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "query",
+        "bias"
+      ]
+    },
+    {
+      "id": "txl.rr",
+      "label": "Q + external relative bias",
+      "kind": "add",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,B,2,8]",
+      "detail": [],
+      "bias_argument": "r_r_bias",
+      "parent": "txl.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "query",
+        "bias"
+      ]
+    },
+    {
+      "id": "txl.ac",
+      "label": "Content score AC / einsum",
+      "kind": "einsum",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,7,B,2]",
+      "detail": [],
+      "equation": "ibnd,jbnd->ijbn",
+      "parent": "txl.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "query",
+        "key"
+      ]
+    },
+    {
+      "id": "txl.bd",
+      "label": "Relative score BD / einsum",
+      "kind": "einsum",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,7,B,2]",
+      "detail": [],
+      "equation": "ibnd,jnd->ijbn",
+      "parent": "txl.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "query",
+        "position_key",
+        "shape"
+      ]
+    },
+    {
+      "id": "txl.shift",
+      "label": "Relative shift / source helper",
+      "kind": "group",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn._rel_shift"
+      ],
+      "shape": "[3,7,B,2]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "txl.zero"
+        ],
+        [
+          "txl.pad"
+        ],
+        [
+          "txl.shift_view"
+        ],
+        [
+          "txl.shift_slice"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "port_bindings": {
+        "out": {
+          "node": "txl.shift_slice",
+          "port": "out"
+        }
+      },
+      "port_binding_evidence": {
+        "out": {
+          "source": [
+            "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn._rel_shift"
+          ],
+          "reason": "RelMultiHeadAttn._rel_shift returns x_padded[1:].view_as(x) in the selected zero_triu=False profile."
+        }
+      },
+      "parent": "txl.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.zero",
+      "label": "Zeros from BD shape/device/dtype",
+      "kind": "tensor",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn._rel_shift"
+      ],
+      "shape": "[3,1,B,2]",
+      "detail": [],
+      "origin": "internal_zero_tensor",
+      "parent": "txl.shift",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "txl.pad",
+      "label": "Prepend zero column / dim1",
+      "kind": "concat",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn._rel_shift"
+      ],
+      "shape": "[3,8,B,2]",
+      "detail": [],
+      "dim": 1,
+      "ordered_operands": [
+        "zero_pad",
+        "x"
+      ],
+      "parent": "txl.shift",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "relative_scores",
+        "zeros"
+      ]
+    },
+    {
+      "id": "txl.shift_view",
+      "label": "View [K+1,T,B,heads]",
+      "kind": "tensor",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn._rel_shift"
+      ],
+      "shape": "[8,3,B,2]",
+      "detail": [],
+      "parent": "txl.shift",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.shift_slice",
+      "label": "Drop first row + view_as(BD)",
+      "kind": "tensor",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn._rel_shift"
+      ],
+      "shape": "[3,7,B,2]",
+      "detail": [],
+      "expression": "x_padded[1:].view_as(x)",
+      "zero_triu": false,
+      "parent": "txl.shift",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.score",
+      "label": "AC + shifted BD",
+      "kind": "add",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,7,B,2]",
+      "detail": [],
+      "parent": "txl.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "content",
+        "relative"
+      ]
+    },
+    {
+      "id": "txl.scale",
+      "label": "Multiply by 1 / sqrt(d_head8)",
+      "kind": "tensor",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn.__init__",
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,7,B,2]",
+      "detail": [],
+      "scale": "1/sqrt(8)",
+      "parent": "txl.body",
+      "source_evidence": [
+        "E001",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.mask",
+      "label": "3D mask / True -> -inf",
+      "kind": "mask",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,7,B,2]",
+      "detail": [],
+      "mask_rank": 3,
+      "fill": "-inf",
+      "dtype_roundtrip": "float().masked_fill(...).type_as(attn_score)",
+      "parent": "txl.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "scores",
+        "mask"
+      ]
+    },
+    {
+      "id": "txl.softmax",
+      "label": "Softmax on key-time axis1",
+      "kind": "softmax",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,7,B,2]",
+      "detail": [],
+      "dim": 1,
+      "parent": "txl.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.dropatt",
+      "label": "Attention Dropout .1 / eval",
+      "kind": "dropout",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn.__init__",
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,7,B,2]",
+      "detail": [],
+      "p": 0.1,
+      "training": false,
+      "parent": "txl.body",
+      "source_evidence": [
+        "E001",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.aggregate",
+      "label": "einsum(prob, memory+current V)",
+      "kind": "einsum",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,B,2,8]",
+      "detail": [],
+      "equation": "ijbn,jbnd->ibnd",
+      "parent": "txl.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "probability",
+        "values"
+      ]
+    },
+    {
+      "id": "txl.tail",
+      "label": "Head merge and output projection",
+      "kind": "group",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn.__init__",
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,B,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "txl.body",
+      "source_evidence": [
+        "E001",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.merge",
+      "label": "Contiguous + merge heads",
+      "kind": "tensor",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,B,16]",
+      "detail": [],
+      "parent": "txl.tail",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.olinear",
+      "label": "Output Linear16 -> 16",
+      "kind": "linear",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn.__init__",
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,B,16]",
+      "detail": [],
+      "parameter": "o_net",
+      "bias": false,
+      "parent": "txl.tail",
+      "source_evidence": [
+        "E001",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.odrop",
+      "label": "Output Dropout .1 / eval",
+      "kind": "dropout",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn.__init__",
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,B,16]",
+      "detail": [],
+      "p": 0.1,
+      "training": false,
+      "parent": "txl.tail",
+      "source_evidence": [
+        "E001",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.residual",
+      "label": "Original current w + attention out",
+      "kind": "add",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,B,16]",
+      "detail": [],
+      "memory_not_residual": true,
+      "parent": "txl.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "attention_out",
+        "current"
+      ]
+    },
+    {
+      "id": "txl.norm",
+      "label": "Post LayerNorm16 / library",
+      "kind": "layer_norm",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelMultiHeadAttn.__init__",
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,B,16]",
+      "detail": [],
+      "parameter": "layer_norm",
+      "parameters": [
+        "layer_norm.weight",
+        "layer_norm.bias"
+      ],
+      "opaque_runtime_boundary": true,
+      "eps_argument": "omitted",
+      "pre_lnorm": false,
+      "parent": "txl.body",
+      "source_evidence": [
+        "E001",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "txl.output",
+      "label": "Return normalized current output",
+      "kind": "output",
+      "source": [
+        "transformer-xl-relative/pytorch/mem_transformer.py::RelPartialLearnableMultiHeadAttn.forward"
+      ],
+      "shape": "[3,B,16]",
+      "detail": [],
+      "return_fields": [
+        "output"
+      ],
+      "parent": "transformer_xl_relative.root",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "output"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "txl.r:in->txl.rlinear:in:boundary",
+      "src": "txl.r",
+      "dst": "txl.rlinear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "txl.rlinear:out->txl.rview:in:tensor",
+      "src": "txl.rlinear",
+      "dst": "txl.rview",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.rview:out->txl.r:out:boundary",
+      "src": "txl.rview",
+      "dst": "txl.r",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "txl.tail:in->txl.merge:in:boundary",
+      "src": "txl.tail",
+      "dst": "txl.merge",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "txl.merge:out->txl.olinear:in:tensor",
+      "src": "txl.merge",
+      "dst": "txl.olinear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.olinear:out->txl.odrop:in:tensor",
+      "src": "txl.olinear",
+      "dst": "txl.odrop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.odrop:out->txl.tail:out:boundary",
+      "src": "txl.odrop",
+      "dst": "txl.tail",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "txl.memory:out->txl.cat:memory:tensor",
+      "src": "txl.memory",
+      "dst": "txl.cat",
+      "src_port": "out",
+      "dst_port": "memory",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.w:out->txl.cat:current:tensor",
+      "src": "txl.w",
+      "dst": "txl.cat",
+      "src_port": "out",
+      "dst_port": "current",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.cat:out->txl.qkv:input:tensor",
+      "src": "txl.cat",
+      "dst": "txl.qkv",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.qkv:out->txl.split:in:tensor",
+      "src": "txl.qkv",
+      "dst": "txl.split",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.position:out->txl.r:in:tensor",
+      "src": "txl.position",
+      "dst": "txl.r",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.q:out->txl.rw:query:tensor",
+      "src": "txl.q",
+      "dst": "txl.rw",
+      "src_port": "out",
+      "dst_port": "query",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.q:out->txl.rr:query:tensor",
+      "src": "txl.q",
+      "dst": "txl.rr",
+      "src_port": "out",
+      "dst_port": "query",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.rw:out->txl.ac:query:tensor",
+      "src": "txl.rw",
+      "dst": "txl.ac",
+      "src_port": "out",
+      "dst_port": "query",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.k:out->txl.ac:key:tensor",
+      "src": "txl.k",
+      "dst": "txl.ac",
+      "src_port": "out",
+      "dst_port": "key",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.rr:out->txl.bd:query:tensor",
+      "src": "txl.rr",
+      "dst": "txl.bd",
+      "src_port": "out",
+      "dst_port": "query",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.r:out->txl.bd:position_key:tensor",
+      "src": "txl.r",
+      "dst": "txl.bd",
+      "src_port": "out",
+      "dst_port": "position_key",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.bd:out->txl.pad:relative_scores:tensor",
+      "src": "txl.bd",
+      "dst": "txl.pad",
+      "src_port": "out",
+      "dst_port": "relative_scores",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.zero:out->txl.pad:zeros:tensor",
+      "src": "txl.zero",
+      "dst": "txl.pad",
+      "src_port": "out",
+      "dst_port": "zeros",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.pad:out->txl.shift_view:in:tensor",
+      "src": "txl.pad",
+      "dst": "txl.shift_view",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.shift_view:out->txl.shift_slice:in:tensor",
+      "src": "txl.shift_view",
+      "dst": "txl.shift_slice",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.ac:out->txl.score:content:tensor",
+      "src": "txl.ac",
+      "dst": "txl.score",
+      "src_port": "out",
+      "dst_port": "content",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.shift:out->txl.score:relative:tensor",
+      "src": "txl.shift",
+      "dst": "txl.score",
+      "src_port": "out",
+      "dst_port": "relative",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.score:out->txl.scale:in:tensor",
+      "src": "txl.score",
+      "dst": "txl.scale",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.scale:out->txl.mask:scores:tensor",
+      "src": "txl.scale",
+      "dst": "txl.mask",
+      "src_port": "out",
+      "dst_port": "scores",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.external_mask:out->txl.mask:mask:mask",
+      "src": "txl.external_mask",
+      "dst": "txl.mask",
+      "src_port": "out",
+      "dst_port": "mask",
+      "role": "mask"
+    },
+    {
+      "id": "txl.mask:out->txl.softmax:in:tensor",
+      "src": "txl.mask",
+      "dst": "txl.softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.softmax:out->txl.dropatt:in:tensor",
+      "src": "txl.softmax",
+      "dst": "txl.dropatt",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.dropatt:out->txl.aggregate:probability:tensor",
+      "src": "txl.dropatt",
+      "dst": "txl.aggregate",
+      "src_port": "out",
+      "dst_port": "probability",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.v:out->txl.aggregate:values:tensor",
+      "src": "txl.v",
+      "dst": "txl.aggregate",
+      "src_port": "out",
+      "dst_port": "values",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.aggregate:out->txl.tail:in:tensor",
+      "src": "txl.aggregate",
+      "dst": "txl.tail",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.tail:out->txl.residual:attention_out:tensor",
+      "src": "txl.tail",
+      "dst": "txl.residual",
+      "src_port": "out",
+      "dst_port": "attention_out",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.w:out->txl.residual:current:tensor",
+      "src": "txl.w",
+      "dst": "txl.residual",
+      "src_port": "out",
+      "dst_port": "current",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.residual:out->txl.norm:in:tensor",
+      "src": "txl.residual",
+      "dst": "txl.norm",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.norm:out->txl.output:output:tensor",
+      "src": "txl.norm",
+      "dst": "txl.output",
+      "src_port": "out",
+      "dst_port": "output",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.bd:shape->txl.zero:shape:shape_dependency",
+      "src": "txl.bd",
+      "dst": "txl.zero",
+      "src_port": "shape",
+      "dst_port": "shape",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "txl.shift_slice:out->txl.shift:out:boundary",
+      "src": "txl.shift_slice",
+      "dst": "txl.shift",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "txl.split:w_head_q->txl.q:in:tensor",
+      "src": "txl.split",
+      "dst": "txl.q",
+      "src_port": "w_head_q",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.split:w_head_k->txl.k:in:tensor",
+      "src": "txl.split",
+      "dst": "txl.k",
+      "src_port": "w_head_k",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.split:w_head_v->txl.v:in:tensor",
+      "src": "txl.split",
+      "dst": "txl.v",
+      "src_port": "w_head_v",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.biases:r_w_bias->txl.rw:bias:tensor",
+      "src": "txl.biases",
+      "dst": "txl.rw",
+      "src_port": "r_w_bias",
+      "dst_port": "bias",
+      "role": "tensor"
+    },
+    {
+      "id": "txl.biases:r_r_bias->txl.rr:bias:tensor",
+      "src": "txl.biases",
+      "dst": "txl.rr",
+      "src_port": "r_r_bias",
+      "dst_port": "bias",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Memory and current sequence concatenate before joint QKV projection; only Q keeps the trailing current positions, while K/V retain all7.",
+    "r_net projects caller-provided relative encodings, without a batch dimension; content and relative biases are separate caller arguments.",
+    "AC uses Q+r_w_bias against K; BD uses Q+r_r_bias against r_net(r), then the actual _rel_shift helper changes relative alignment.",
+    "Selected relative shift uses prepend zeros, view, slice and view_as; zero_triu defaultFalse is retained.",
+    "Scores add AC+shiftedBD, scale by1/sqrt(d_head), optionally mask and normalize key-time dim1 before attention Dropout.",
+    "The residual adds original current w only; post LayerNorm is selected. Memory creation/update/detach in the enclosing model is outside this module.",
+    "The module returns output only, not attention probability or newly generated memory."
+  ],
+  "corrections": [
+    "Do not add sinusoidal encodings to token embeddings in place of the relative score term.",
+    "Do not use memory positions as queries or residual state; do not treat zero padding as a learned parameter.",
+    "Do not claim this isolated attention module updates or detaches its memory input."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

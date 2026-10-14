@@ -1,0 +1,5 @@
+from module_adapters._graphwavelet_support import SOURCE,definitions,build_wavelet,validate_wavelet
+KEY='graphwavelet_sparse';LINKS,REQUIRED=definitions(True)
+CONTRACTS=[('GraphWaveletLayer.define_parameters','torch.nn.Parameter(torch.Tensor(self.ncount, 1))'),('GraphWaveletLayer.define_parameters','self.diagonal_weight_indices.to(self.device)'),('SparseGraphWaveletLayer.forward','spspmm(phi_indices, phi_values, self.diagonal_weight_indices, self.diagonal_weight_filter.view(-1), self.ncount, self.ncount, self.ncount)'),('SparseGraphWaveletLayer.forward','spspmm(rescaled_phi_indices, rescaled_phi_values, phi_inverse_indices, phi_inverse_values, self.ncount, self.ncount, self.ncount)'),('SparseGraphWaveletLayer.forward','spmm(feature_indices, feature_values, self.ncount, self.in_channels, self.weight_matrix)'),('SparseGraphWaveletLayer.forward','torch.nn.functional.dropout(torch.nn.functional.relu(localized_features), training=self.training, p=dropout)')]
+def build():return build_wavelet(KEY,True)
+def validate_ir(ir):return validate_wavelet(ir,KEY,True)

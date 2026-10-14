@@ -1,0 +1,60 @@
+{
+  "source_project": "torchvision-v0.9.0-vision-extended",
+  "repository": "pytorch/vision",
+  "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+  "source_snapshot_sha256": "88b7578cd40309142e6f3aa152438e3ee450fcfd4e242f61cb3919c3efab888f",
+  "entry": "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "torchvision-v0.9.0-vision-extended/LICENSE": {
+      "sha256": "6502f676851cfe25f8af75531dfb32375b7325b73c37e7b43741fa422893e71d",
+      "lines": 29,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/LICENSE",
+      "derived_from": null
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py": {
+      "sha256": "90eadfe6e1146e23dc57f6e2d160dcae4dc436499abfef2478c6c398a6131ae3",
+      "lines": 204,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/torchvision/ops/feature_pyramid_network.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py",
+      "symbol": "LastLevelP6P7",
+      "start": 179,
+      "end": 204,
+      "snippet": "class LastLevelP6P7(ExtraFPNBlock):\n    \"\"\"\n    This module is used in RetinaNet to generate extra layers, P6 and P7.\n    \"\"\"\n    def __init__(self, in_channels: int, out_channels: int):\n        super(LastLevelP6P7, self).__init__()\n        self.p6 = nn.Conv2d(in_channels, out_channels, 3, 2, 1)\n        self.p7 = nn.Conv2d(out_channels, out_channels, 3, 2, 1)\n        for module in [self.p6, self.p7]:\n            nn.init.kaiming_uniform_(module.weight, a=1)\n            nn.init.constant_(module.bias, 0)\n        self.use_P5 = in_channels == out_channels\n\n    def forward(\n        self,\n        p: List[Tensor],\n        c: List[Tensor],\n        names: List[str],\n    ) -> Tuple[List[Tensor], List[str]]:\n        p5, c5 = p[-1], c[-1]\n        x = p5 if self.use_P5 else c5\n        p6 = self.p6(x)\n        p7 = self.p7(F.relu(p6))\n        p.extend([p6, p7])\n        names.extend([\"p6\", \"p7\"])\n        return p, names",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.__init__": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py",
+      "symbol": "LastLevelP6P7.__init__",
+      "start": 183,
+      "end": 190,
+      "snippet": "    def __init__(self, in_channels: int, out_channels: int):\n        super(LastLevelP6P7, self).__init__()\n        self.p6 = nn.Conv2d(in_channels, out_channels, 3, 2, 1)\n        self.p7 = nn.Conv2d(out_channels, out_channels, 3, 2, 1)\n        for module in [self.p6, self.p7]:\n            nn.init.kaiming_uniform_(module.weight, a=1)\n            nn.init.constant_(module.bias, 0)\n        self.use_P5 = in_channels == out_channels",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.forward": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py",
+      "symbol": "LastLevelP6P7.forward",
+      "start": 192,
+      "end": 204,
+      "snippet": "    def forward(\n        self,\n        p: List[Tensor],\n        c: List[Tensor],\n        names: List[str],\n    ) -> Tuple[List[Tensor], List[str]]:\n        p5, c5 = p[-1], c[-1]\n        x = p5 if self.use_P5 else c5\n        p6 = self.p6(x)\n        p7 = self.p7(F.relu(p6))\n        p.extend([p6, p7])\n        names.extend([\"p6\", \"p7\"])\n        return p, names",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "torchvision-v0.9.0-vision-extended/LICENSE"
+  ]
+}

@@ -1,0 +1,698 @@
+{
+  "scope": "Read-only review of8 module docs: relative links, selected constructor/profile and source boundaries; README reviewed separately",
+  "documents": [
+    {
+      "file": "docs/FRN_TLU.md",
+      "module": "frn_tlu",
+      "sha256": "beb7db0dc37959e67a45ab813b429c051b111d0e1485aa9a5c8621f14d88217c",
+      "links": [
+        {
+          "target": "../source_manifest.json",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../generated/frn_tlu/figure1_overview.svg",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../generated/frn_tlu/figure2_modules.svg",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../generated/frn_tlu/figure3_detailed.svg",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../generated/frn_tlu/source_map.md",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../module_adapters/frn_tlu.py",
+          "exists": true,
+          "pending_artifact": false
+        }
+      ],
+      "constructor_configuration_review": "num_features=192,eps=1e-6; source actual gamma/beta/tau normal_; eps plain Tensor; duplicate NiN is excluded",
+      "profile": {
+        "num_features": 192,
+        "input_shape": "[B,192,32,32]",
+        "eps": 1e-06,
+        "mode": "train/eval same formula",
+        "selected_configuration": "192-channel32x32 example; FRN class direct module scope",
+        "statistic": "mean(x^2) over H,W only",
+        "mean_centered": false,
+        "running_statistics": false,
+        "learnable_parameters": [
+          "gamma",
+          "beta",
+          "tau"
+        ],
+        "parameter_shape": [
+          1,
+          192,
+          1,
+          1
+        ],
+        "initialization": "normal_ for all3",
+        "eps_registered_buffer": false,
+        "threshold": "maximum(gamma*x_hat+beta,tau)",
+        "notebook_redefinition_boundary": "NiN is redefined later as BN; selected module is the unique FRN class, not final NiN binding",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "constructor_and_scope_passed": true,
+      "adapter_sha256": "09f2c1c7cb69d6109bfb7716d11a352acc36f984b95fb3e00dc0c0f1b8ed4dcb"
+    },
+    {
+      "file": "docs/Highway.md",
+      "module": "highway",
+      "sha256": "f7ff89af5eb1a3dea13742c6cc9a339446eedd1e6447a480bd272f9be099896f",
+      "links": [
+        {
+          "target": "../source_manifest.json",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../generated/highway/figure1_overview.svg",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../generated/highway/figure2_modules.svg",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../generated/highway/figure3_detailed.svg",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../generated/highway/source_map.md",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../module_adapters/highway.py",
+          "exists": true,
+          "pending_artifact": false
+        }
+      ],
+      "constructor_configuration_review": "Highway(size=16,num_layers=2,f=F.relu) explicit example; callable f is not source-fixed; learned linear carry;6 distinct Linear owners",
+      "profile": {
+        "size": 16,
+        "num_layers": 2,
+        "f": "F.relu",
+        "configuration_origin": "explicit module example; f and size are constructor arguments",
+        "input_shape": "[B,16]",
+        "output_shape": "[B,16]",
+        "carry_is_identity": false,
+        "formula": "sigmoid(gate_i(x))*relu(nonlinear_i(x)) + (1-sigmoid(gate_i(x)))*linear_i(x)",
+        "learned_linears": 6,
+        "independent_parameters": true,
+        "shared_across_depth": false,
+        "mode": "same train/eval formula",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "constructor_and_scope_passed": true,
+      "adapter_sha256": "6d4d477d1290bcc1250619a6bd6927f4d6ffff6db7e37cb56bc0197d62344bce"
+    },
+    {
+      "file": "docs/InceptionA.md",
+      "module": "inception_a",
+      "sha256": "927bb519bcf5c4c607d43a7dcf64d13e1067a223d5add6ffad084d37e60881ec",
+      "links": [
+        {
+          "target": "../sources/torchvision-v0.9.0-modules/torchvision/models/inception.py",
+          "exists": true,
+          "pending_artifact": false
+        }
+      ],
+      "constructor_configuration_review": "InceptionA(192,pool_features=32,conv_block=None); representative35x35 input; actual four list fields widths64/64/96/32; default BasicConv2d",
+      "profile": {
+        "task": "module feature transformation",
+        "input_shape": [
+          "B",
+          192,
+          35,
+          35
+        ],
+        "output_shape": [
+          "B",
+          256,
+          35,
+          35
+        ],
+        "in_channels": 192,
+        "pool_features": 32,
+        "conv_block": "BasicConv2d (default)",
+        "conv_block_argument": null,
+        "branch_channels": [
+          64,
+          64,
+          96,
+          32
+        ],
+        "concat_dim": 1,
+        "basic_conv_count": 7,
+        "batch_norm_eps": 0.001,
+        "mode": "caller train/eval; not executed",
+        "shape_origin": "declared representative module input, not runtime observation",
+        "constructor": "InceptionA(192,pool_features=32)",
+        "constructor_matches": "Inception3.Mixed_5b; surrounding model is excluded",
+        "symbolic_shapes": true,
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "constructor_and_scope_passed": true,
+      "adapter_sha256": "29c7d7eb4b32847280e6dde0011854c13c252f2039b3aeafe55c134ebbd94e20"
+    },
+    {
+      "file": "docs/ChannelShuffle.md",
+      "module": "channel_shuffle",
+      "sha256": "7b81e32a8f9f42c76816aa138887cfcf073ab05d027855052a1386ec30009675",
+      "links": [
+        {
+          "target": "../sources/torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py",
+          "exists": true,
+          "pending_artifact": false
+        }
+      ],
+      "constructor_configuration_review": "channel_shuffle(groups=2), declared contiguous B24x8x8; no source constructor; parameter-free and bijective output index map",
+      "profile": {
+        "task": "module channel permutation",
+        "groups": 2,
+        "num_channels": 24,
+        "channels_per_group": 12,
+        "input_shape": [
+          "B",
+          24,
+          8,
+          8
+        ],
+        "output_shape": [
+          "B",
+          24,
+          8,
+          8
+        ],
+        "grouped_shape": [
+          "B",
+          2,
+          12,
+          8,
+          8
+        ],
+        "transposed_shape": [
+          "B",
+          12,
+          2,
+          8,
+          8
+        ],
+        "input_contiguity": "contiguous declared input; first view must be compatible",
+        "mode": "mode-independent function; not executed",
+        "learned_parameter_count": 0,
+        "permutation_output_to_input": [
+          0,
+          12,
+          1,
+          13,
+          2,
+          14,
+          3,
+          15,
+          4,
+          16,
+          5,
+          17,
+          6,
+          18,
+          7,
+          19,
+          8,
+          20,
+          9,
+          21,
+          10,
+          22,
+          11,
+          23
+        ],
+        "permutation_origin": "static derivation from view/transpose/view; not an additional source operator",
+        "shape_origin": "declared representative module input, not runtime observation",
+        "symbolic_shapes": true,
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "constructor_and_scope_passed": true,
+      "adapter_sha256": "01c45c76581306e8bd5350f8d33bcb6594546d9de4ffe7e308dee79216bf0a4f"
+    },
+    {
+      "file": "docs/STN.md",
+      "module": "stn",
+      "sha256": "1cf0564901cae814f57efd4b9d2ea97d4eeb689adba664dc1d72c338bec1f00a",
+      "links": [
+        {
+          "target": "../upstream/Awesome-pytorch-list/README.md",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../sources/pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../sources/pytorch-tutorials-stn/LICENSE",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../module_adapters/stn.py",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../source_manifest.json",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../checks/spatial_modules.py",
+          "exists": true,
+          "pending_artifact": false
+        }
+      ],
+      "constructor_configuration_review": "Net.stn only; Net no-arg constructor supplies localization/fc_loc; declared B1x28x28; align_corners omitted; classifier excluded",
+      "profile": {
+        "task": "learned affine image resampling submodule",
+        "mode": "static selected path",
+        "input_shape": [
+          "B",
+          1,
+          28,
+          28
+        ],
+        "output_shape": [
+          "B",
+          1,
+          28,
+          28
+        ],
+        "localization_shapes": [
+          [
+            8,
+            22,
+            22
+          ],
+          [
+            8,
+            11,
+            11
+          ],
+          [
+            10,
+            7,
+            7
+          ],
+          [
+            10,
+            3,
+            3
+          ]
+        ],
+        "affine_coefficients": 6,
+        "theta_shape": [
+          "B",
+          2,
+          3
+        ],
+        "grid_shape": [
+          "B",
+          28,
+          28,
+          2
+        ],
+        "align_corners_argument": "omitted",
+        "classifier_excluded": true,
+        "drawing_scope": "Net.stn and its __init__ localization/fc_loc definitions only",
+        "initialization": "fc_loc.2 weight zero; bias identity affine",
+        "kernel_implementation_frozen": false,
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "constructor_and_scope_passed": true,
+      "adapter_sha256": "6e2302ba7b21ae5d8a4176eecefe24c6949ed5a5f38f5f3d2ceffba142ff7a2f"
+    },
+    {
+      "file": "docs/PixelShuffle.md",
+      "module": "pixelshuffle",
+      "sha256": "daa69f950cf216f0df2c02241f6d868d12d00e481b98e2ec29c332393a50e408",
+      "links": [
+        {
+          "target": "../upstream/Awesome-pytorch-list/README.md",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../sources/pytorch-examples-superres/super_resolution/model.py",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../sources/pytorch-examples-superres/LICENSE",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../module_adapters/pixelshuffle.py",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../source_manifest.json",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../checks/spatial_modules.py",
+          "exists": true,
+          "pending_artifact": false
+        }
+      ],
+      "constructor_configuration_review": "Net.conv4/pixel_shuffle tail only; explicit constructor r=3 rather than source-fixed value; B32x8x8 -> B1x24x24; source kernel not frozen",
+      "profile": {
+        "task": "super-resolution tail module",
+        "mode": "static explicit example",
+        "upscale_factor": 3,
+        "input_shape": [
+          "B",
+          32,
+          8,
+          8
+        ],
+        "conv4_shape": [
+          "B",
+          9,
+          8,
+          8
+        ],
+        "output_shape": [
+          "B",
+          1,
+          24,
+          24
+        ],
+        "input_boundary": "output of self.relu(self.conv3(x)); conv1-3 omitted",
+        "excluded_modules": [
+          "conv1",
+          "conv2",
+          "conv3",
+          "relu"
+        ],
+        "drawing_scope": "only self.pixel_shuffle(self.conv4(x))",
+        "kernel_implementation_frozen": false,
+        "mapping_provenance": "standard API contract",
+        "example_configuration": "upscale_factor=3 chosen explicitly; constructor supports other r",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "constructor_and_scope_passed": true,
+      "adapter_sha256": "65b88157767cab9b52d0290c2aa065a1342feda87b09e1229ed07bb9d2ab8ba6"
+    },
+    {
+      "file": "docs/EdgePredictor.md",
+      "module": "edge_predictor",
+      "sha256": "efca2cd35e5eea6c9a0cfbb1ec69416fabe885aa4abdba4b3beae5c19e0b31fa",
+      "links": [
+        {
+          "target": "https://github.com/rasbt/deeplearning-models",
+          "external": true,
+          "network_checked": false
+        },
+        {
+          "target": "../sources/rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.ipynb",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../sources/rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../module_adapters/edge_predictor.py",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../generated/edge_predictor/figure3_detailed.svg",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../generated/edge_predictor/source_map.md",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../generated/edge_predictor/semantic_ir.json",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../generated/edge_predictor/layout_detailed.json",
+          "exists": true,
+          "pending_artifact": false
+        }
+      ],
+      "constructor_configuration_review": "GraphNet img_size28/coord_features4 defaults; selected fixed coord->A local expression; N784; MLP4->32->1 with Tanh; no independent EdgePredictor class",
+      "profile": {
+        "img_size": 28,
+        "nodes": 784,
+        "coord_features": 4,
+        "hidden_features": 32,
+        "output_features": 1,
+        "input_shape": [
+          784,
+          784,
+          4
+        ],
+        "output_shape": [
+          784,
+          784
+        ],
+        "pair_order": [
+          "j.col",
+          "j.row",
+          "i.col",
+          "i.row"
+        ],
+        "fixed_input_buffer": "coord",
+        "weight_sharing": "one pred_edge_fc instance for all ordered pairs",
+        "learnable_parameter_families": [
+          "pred_edge_fc.0",
+          "pred_edge_fc.2"
+        ],
+        "parameter_count": 193,
+        "activation": "Tanh",
+        "adjacency_image_conditioned": false,
+        "adjacency_batch_axis": false,
+        "adjacency_storage": "ordinary tensor attribute self.A",
+        "symmetric_guaranteed": false,
+        "degree_normalization": false,
+        "threshold": false,
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "constructor_and_scope_passed": true,
+      "adapter_sha256": "801f26a4cee288711570991a352e197b114c78200a4e9de5139c9039f35d92eb"
+    },
+    {
+      "file": "docs/SpectralFilter.md",
+      "module": "spectral_filter",
+      "sha256": "b5d54429bb2bffb41da6368d3edf7268b2187b6dbdbc852470539f5c353e5deb",
+      "links": [
+        {
+          "target": "https://github.com/rasbt/deeplearning-models",
+          "external": true,
+          "network_checked": false
+        },
+        {
+          "target": "../sources/rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.ipynb",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../sources/rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../module_adapters/spectral_filter.py",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../generated/spectral_filter/figure3_detailed.svg",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../generated/spectral_filter/source_map.md",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../generated/spectral_filter/semantic_ir.json",
+          "exists": true,
+          "pending_artifact": false
+        },
+        {
+          "target": "../generated/spectral_filter/layout_detailed.json",
+          "exists": true,
+          "pending_artifact": false
+        }
+      ],
+      "constructor_configuration_review": "GraphNet img_size28/num_filters2 defaults and source-fixed k20/SM; active Y dependency scope; W registered buffer not optimizer parameter; no independent SpectralFilter class",
+      "profile": {
+        "img_size": 28,
+        "nodes": 784,
+        "input_channels": 1,
+        "num_filters": 2,
+        "k": 20,
+        "which": "SM",
+        "input_shape": [
+          "B",
+          1,
+          28,
+          28
+        ],
+        "basis_shape": [
+          784,
+          20
+        ],
+        "filter_shape": [
+          784,
+          2
+        ],
+        "output_shape": [
+          "B",
+          784,
+          2
+        ],
+        "registered_buffers": [
+          "A",
+          "L",
+          "V",
+          "W_spectral"
+        ],
+        "module_parameter_families": [],
+        "W_spectral_storage": "buffer",
+        "W_spectral_optimizer_parameter": false,
+        "W_spectral_requires_grad": "runtime-dependent: Parameter created requires_grad=True; float/to identity not executed",
+        "V_dtype": "torch.from_numpy preserves eigsh array dtype; compatibility not executed",
+        "spectral_coefficients": "V_T @ node-domain W at each forward; not a stored20xF coefficient parameter",
+        "reconstruction": "V @ ((V_T @ X) * (V_T @ W))",
+        "eigenvalues_used_in_forward": false,
+        "dead_assignments": [
+          "V_tensor = self.V.unsqueeze(0)",
+          "V_tensor_T = self.V.T.unsqueeze(0)",
+          "W_spectral_tensor = self.W_spectral.unsqueeze(0)"
+        ],
+        "dead_assignment_reason": "Each temporary is immediately overwritten by direct buffer.expand, not used by returned filtering values",
+        "source_activation": null,
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "constructor_and_scope_passed": true,
+      "adapter_sha256": "dff122b40369f85249b9cfdc5f0d32edacc3bb332a5362850732020335e0a38b"
+    }
+  ],
+  "readme": {
+    "file": "README.md",
+    "sha256": "d52bc5ae2b7c8971a525554d12f37d91a4a10e8ff2f03d0bf02b4a3b267345ba",
+    "links": [
+      {
+        "target": "generated/index.html",
+        "exists": true,
+        "pending_artifact": false
+      },
+      {
+        "target": "coverage.md",
+        "exists": true,
+        "pending_artifact": false
+      },
+      {
+        "target": "module_catalog.json",
+        "exists": true,
+        "pending_artifact": false
+      },
+      {
+        "target": "docs/FRN_TLU.md",
+        "exists": true,
+        "pending_artifact": false
+      },
+      {
+        "target": "docs/Highway.md",
+        "exists": true,
+        "pending_artifact": false
+      },
+      {
+        "target": "docs/InceptionA.md",
+        "exists": true,
+        "pending_artifact": false
+      },
+      {
+        "target": "docs/ChannelShuffle.md",
+        "exists": true,
+        "pending_artifact": false
+      },
+      {
+        "target": "docs/STN.md",
+        "exists": true,
+        "pending_artifact": false
+      },
+      {
+        "target": "docs/PixelShuffle.md",
+        "exists": true,
+        "pending_artifact": false
+      },
+      {
+        "target": "docs/EdgePredictor.md",
+        "exists": true,
+        "pending_artifact": false
+      },
+      {
+        "target": "docs/SpectralFilter.md",
+        "exists": true,
+        "pending_artifact": false
+      }
+    ],
+    "command_review": [
+      "fetch_sources.py --offline: only local verification, no network or rewrite",
+      "generate.py --png / --module / --out / --source-root: actual supported options",
+      "verify.py [generated] --module / --png: positional generated directory is optional",
+      "checks/verify_semantics.py: parent currently assembling aggregate runner"
+    ],
+    "configuration_description_passed": true,
+    "svg_count_current": 24,
+    "png_count_current": 24,
+    "claims_expected_final_count": 24
+  },
+  "findings": [],
+  "status": "passed",
+  "review_notes": [
+    "All8 selected module constructor/configuration descriptions match actual adapters and inspected source defaults/explicit call profiles.",
+    "Inline/fenced source snippets were excluded from Markdown link parsing.",
+    "Pending targets must be rechecked once the parent completes final generation and catalog/coverage export."
+  ]
+}

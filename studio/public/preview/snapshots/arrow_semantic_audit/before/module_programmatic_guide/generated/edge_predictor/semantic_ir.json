@@ -1,0 +1,565 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "edge_predictor",
+  "profile": {
+    "img_size": 28,
+    "nodes": 784,
+    "coord_features": 4,
+    "hidden_features": 32,
+    "output_features": 1,
+    "input_shape": [
+      784,
+      784,
+      4
+    ],
+    "output_shape": [
+      784,
+      784
+    ],
+    "pair_order": [
+      "j.col",
+      "j.row",
+      "i.col",
+      "i.row"
+    ],
+    "fixed_input_buffer": "coord",
+    "weight_sharing": "one pred_edge_fc instance for all ordered pairs",
+    "learnable_parameter_families": [
+      "pred_edge_fc.0",
+      "pred_edge_fc.2"
+    ],
+    "parameter_count": 193,
+    "activation": "Tanh",
+    "adjacency_image_conditioned": false,
+    "adjacency_batch_axis": false,
+    "adjacency_storage": "ordinary tensor attribute self.A",
+    "symmetric_guaranteed": false,
+    "degree_normalization": false,
+    "threshold": false,
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "7b66bbdafc476b135d919c11ba3b432b974b334e59e93ff1dc255dda7bf9a4f6"
+  },
+  "nodes": [
+    {
+      "id": "edge.root",
+      "label": "EdgePredictor / selected subgraph",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.__init__",
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.forward"
+      ],
+      "shape": "coord -> A",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "edge.coord",
+      "label": "Read registered coord buffer",
+      "kind": "input",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.__init__",
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.forward"
+      ],
+      "shape": "[784,784,4]",
+      "detail": [],
+      "expression": "self.coord",
+      "buffer_identity": "coord",
+      "storage_kind": "buffer",
+      "learnable": false,
+      "parent": "edge.root",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "coord"
+      ]
+    },
+    {
+      "id": "edge.forward",
+      "label": "Coordinate-to-adjacency module",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.forward"
+      ],
+      "shape": "A: [N,N]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "edge.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "edge.mlp",
+      "label": "Shared edge MLP / 4 -> 32 -> 1",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.__init__",
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.forward"
+      ],
+      "shape": "[N,N,1]",
+      "detail": [
+        "One Sequential instance is applied to every pair; not N*N separate MLPs"
+      ],
+      "instance_identity": "self.pred_edge_fc",
+      "shared_across": "all ordered coordinate pairs",
+      "mode": "chain",
+      "parent": "edge.forward",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "edge.linear1",
+      "label": "Linear 4 -> 32",
+      "kind": "linear",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.__init__",
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.forward"
+      ],
+      "shape": "[784,784,32]",
+      "detail": [],
+      "parameter": "pred_edge_fc.0",
+      "parameter_tensors": [
+        "pred_edge_fc.0.weight",
+        "pred_edge_fc.0.bias"
+      ],
+      "parameter_shape": [
+        32,
+        4
+      ],
+      "bias_shape": [
+        32
+      ],
+      "in_features": 4,
+      "out_features": 32,
+      "bias": true,
+      "instance_identity": "self.pred_edge_fc.0",
+      "shared_across": "all ordered coordinate pairs",
+      "parent": "edge.mlp",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "edge.relu",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.__init__",
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.forward"
+      ],
+      "shape": "[784,784,32]",
+      "detail": [],
+      "inplace": false,
+      "parent": "edge.mlp",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "edge.linear2",
+      "label": "Linear 32 -> 1",
+      "kind": "linear",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.__init__",
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.forward"
+      ],
+      "shape": "[784,784,1]",
+      "detail": [],
+      "parameter": "pred_edge_fc.2",
+      "parameter_tensors": [
+        "pred_edge_fc.2.weight",
+        "pred_edge_fc.2.bias"
+      ],
+      "parameter_shape": [
+        1,
+        32
+      ],
+      "bias_shape": [
+        1
+      ],
+      "in_features": 32,
+      "out_features": 1,
+      "bias": true,
+      "instance_identity": "self.pred_edge_fc.2",
+      "shared_across": "all ordered coordinate pairs",
+      "parent": "edge.mlp",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "edge.tanh",
+      "label": "Tanh / signed edge weights",
+      "kind": "tanh",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.__init__",
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.forward"
+      ],
+      "shape": "[784,784,1]",
+      "detail": [],
+      "activation": "tanh",
+      "normalized_over_neighbors": false,
+      "range": "(-1,1)",
+      "parent": "edge.mlp",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "edge.squeeze",
+      "label": "squeeze() + assign self.A",
+      "kind": "tensor",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.forward"
+      ],
+      "shape": "A: [784,784]",
+      "detail": [],
+      "expression": "self.A = self.pred_edge_fc(self.coord).squeeze()",
+      "squeeze_dim": null,
+      "storage_kind": "ordinary_tensor_attribute",
+      "registered_parameter": false,
+      "registered_buffer": false,
+      "recomputed_each_forward": true,
+      "image_conditioned": false,
+      "parent": "edge.forward",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "edge.output",
+      "label": "Module result / adjacency A",
+      "kind": "output",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.forward"
+      ],
+      "shape": "[784,784]",
+      "detail": [],
+      "value": "self.A",
+      "image_conditioned": false,
+      "requires_batch_axis": false,
+      "parent": "edge.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "edge.init",
+      "label": "Coordinate buffer / constructor",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::make_coordinate_array",
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.__init__"
+      ],
+      "shape": "coord: [N,N,4]",
+      "detail": [
+        "Fixed grid coordinates; no image pixels or batch values"
+      ],
+      "execution_scope": "construction",
+      "buffer_identity": "coord",
+      "storage_kind": "buffer",
+      "learnable": false,
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E003",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "edge.grid",
+      "label": "Grid coordinates / standardize",
+      "kind": "tensor",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::make_coordinate_array"
+      ],
+      "shape": "[784,2]",
+      "detail": [
+        "stack(col,row); mean/std independently per coordinate axis"
+      ],
+      "expression": "(coord - np.mean(coord, axis=0)) / (np.std(coord, axis=0) + 1e-5)",
+      "epsilon": 1e-05,
+      "coordinate_order": [
+        "col",
+        "row"
+      ],
+      "learnable": false,
+      "parent": "edge.init",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "edge.pairs",
+      "label": "Ordered coordinate pairs",
+      "kind": "concat",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::make_coordinate_array"
+      ],
+      "shape": "[784,784,4]",
+      "detail": [
+        "coord[i,j] = [col_j,row_j,col_i,row_i]; float tensor; concat dim=2"
+      ],
+      "expression": "torch.cat((coord.unsqueeze(0).repeat(n_rows,1,int(out_size/2-1)),coord.unsqueeze(1).repeat(1,n_rows,1)),dim=2)",
+      "pair_order": [
+        "j.col",
+        "j.row",
+        "i.col",
+        "i.row"
+      ],
+      "dim": 2,
+      "dtype": "float32",
+      "parent": "edge.init",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "edge.buffer",
+      "label": "Register coord buffer",
+      "kind": "control",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-edge-1.py::GraphNet.__init__"
+      ],
+      "shape": "coord: [784,784,4]",
+      "detail": [],
+      "expression": "self.register_buffer('coord', coord)",
+      "buffer_identity": "coord",
+      "storage_kind": "buffer",
+      "learnable": false,
+      "persistent": true,
+      "parent": "edge.init",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge.mlp:in->edge.linear1:in:boundary",
+      "src": "edge.mlp",
+      "dst": "edge.linear1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "edge.linear1:out->edge.relu:in:tensor",
+      "src": "edge.linear1",
+      "dst": "edge.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "edge.relu:out->edge.linear2:in:tensor",
+      "src": "edge.relu",
+      "dst": "edge.linear2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "edge.linear2:out->edge.tanh:in:tensor",
+      "src": "edge.linear2",
+      "dst": "edge.tanh",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "edge.tanh:out->edge.mlp:out:boundary",
+      "src": "edge.tanh",
+      "dst": "edge.mlp",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "edge.forward:in->edge.mlp:in:boundary",
+      "src": "edge.forward",
+      "dst": "edge.mlp",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "edge.mlp:out->edge.squeeze:in:tensor",
+      "src": "edge.mlp",
+      "dst": "edge.squeeze",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "edge.squeeze:out->edge.forward:out:boundary",
+      "src": "edge.squeeze",
+      "dst": "edge.forward",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "edge.root:in->edge.coord:in:boundary",
+      "src": "edge.root",
+      "dst": "edge.coord",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "edge.coord:out->edge.forward:in:tensor",
+      "src": "edge.coord",
+      "dst": "edge.forward",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "edge.forward:out->edge.output:in:tensor",
+      "src": "edge.forward",
+      "dst": "edge.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "edge.output:out->edge.root:out:boundary",
+      "src": "edge.output",
+      "dst": "edge.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "edge.init:in->edge.grid:in:boundary",
+      "src": "edge.init",
+      "dst": "edge.grid",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "edge.grid:out->edge.pairs:in:tensor",
+      "src": "edge.grid",
+      "dst": "edge.pairs",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "edge.pairs:out->edge.buffer:in:tensor",
+      "src": "edge.pairs",
+      "dst": "edge.buffer",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "edge.buffer:out->edge.init:out:boundary",
+      "src": "edge.buffer",
+      "dst": "edge.init",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "edge.init:out->edge.coord:coord:fixed_buffer",
+      "src": "edge.init",
+      "dst": "edge.coord",
+      "src_port": "out",
+      "dst_port": "coord",
+      "role": "fixed_buffer"
+    }
+  ],
+  "facts": [
+    "This module boundary selects only self.pred_edge_fc(self.coord).squeeze(); pixel reshape/bmm, fc and Softmax are outside the artifact.",
+    "make_coordinate_array standardizes each coordinate axis with epsilon1e-5, converts to float and concatenates ordered pairs.",
+    "coord[i,j] is [col_j,row_j,col_i,row_i]; the helper does not encode undirected pair symmetry.",
+    "coord is a fixed persistent buffer; one shared Sequential instance applies Linear4->32,ReLU,Linear32->1,Tanh to every pair.",
+    "Linear defaults retain both biases; only the two Linear families contribute193 learned scalar parameters within this boundary.",
+    "The resulting signed A depends on learned MLP weights and fixed coordinates, not image intensities or batch size.",
+    "self.A is recomputed and assigned to an ordinary tensor attribute each forward; it is not registered as a parameter or buffer.",
+    "No threshold, Softmax, symmetric constraint or degree normalization is present in this edge predictor.",
+    "squeeze has no dim argument; with selected N784 it removes the final singleton. Other degenerate sizes need a separately reviewed shape profile."
+  ],
+  "corrections": [
+    "Do not draw image pixels or batch B as edge-predictor inputs.",
+    "Do not draw N*N independent MLPs, learned coordinate embeddings, normalized attention or guaranteed symmetric edges.",
+    "Do not include the enclosing GraphNet classifier in this module-only example."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

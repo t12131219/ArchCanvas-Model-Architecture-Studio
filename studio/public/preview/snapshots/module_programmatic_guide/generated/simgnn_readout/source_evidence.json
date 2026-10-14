@@ -1,0 +1,50 @@
+{
+  "source_project": "simgnn-modules",
+  "repository": "benedekrozemberczki/SimGNN",
+  "commit": "be3ee6193a7c286336260f6479a6aee8bdc56f8c",
+  "source_snapshot_sha256": "d3666eba597ebe6c5de1c3de3cbc2225d3aeeae9e82be33497c1ed0a9418e63a",
+  "entry": "simgnn-modules/src/layers.py::AttentionModule.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "simgnn-modules/LICENSE": {
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "lines": 674,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/benedekrozemberczki/SimGNN/be3ee6193a7c286336260f6479a6aee8bdc56f8c/LICENSE",
+      "derived_from": null
+    },
+    "simgnn-modules/src/layers.py": {
+      "sha256": "5fefa74f43527f6897a8232753dcf35e5e748d46c99477306c824573f091720c",
+      "lines": 89,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/benedekrozemberczki/SimGNN/be3ee6193a7c286336260f6479a6aee8bdc56f8c/src/layers.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "simgnn-modules/src/layers.py::AttentionModule.setup_weights": {
+      "path": "simgnn-modules/src/layers.py",
+      "symbol": "AttentionModule.setup_weights",
+      "start": 18,
+      "end": 23,
+      "snippet": "    def setup_weights(self):\n        \"\"\"\n        Defining weights.\n        \"\"\"\n        self.weight_matrix = torch.nn.Parameter(torch.Tensor(self.args.filters_3,\n                                                             self.args.filters_3))",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "simgnn-modules/src/layers.py::AttentionModule.forward": {
+      "path": "simgnn-modules/src/layers.py",
+      "symbol": "AttentionModule.forward",
+      "start": 31,
+      "end": 41,
+      "snippet": "    def forward(self, embedding):\n        \"\"\"\n        Making a forward propagation pass to create a graph level representation.\n        :param embedding: Result of the GCN.\n        :return representation: A graph level representation vector.\n        \"\"\"\n        global_context = torch.mean(torch.matmul(embedding, self.weight_matrix), dim=0)\n        transformed_global = torch.tanh(global_context)\n        sigmoid_scores = torch.sigmoid(torch.mm(embedding, transformed_global.view(-1, 1)))\n        representation = torch.mm(torch.t(embedding), sigmoid_scores)\n        return representation",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "simgnn-modules/LICENSE"
+  ]
+}

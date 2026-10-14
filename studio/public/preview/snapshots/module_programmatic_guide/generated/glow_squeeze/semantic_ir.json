@@ -1,0 +1,381 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "glow_squeeze",
+  "profile": {
+    "input_shape": [
+      "B",
+      2,
+      8,
+      8
+    ],
+    "output_shape": [
+      "B",
+      8,
+      4,
+      4
+    ],
+    "factor": 2,
+    "parameters": [],
+    "require_even_spatial": true,
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "Only the first three squeeze assignments in Block.forward; flow loop and prior are excluded.",
+    "source_contracts": [
+      [
+        "Block.forward",
+        "squeezed.permute(0, 1, 3, 5, 2, 4)"
+      ],
+      [
+        "Block.forward",
+        "squeezed.contiguous().view(b_size, n_channel * 4, height // 2, width // 2)"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "rosinality/glow-pytorch",
+    "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+    "snapshot": "1d5cf48ba47a5ecf7ea7059a37c9d1584a95871f52d5022f76b59cc51138d2ce"
+  },
+  "nodes": [
+    {
+      "id": "glow_squeeze.root",
+      "label": "Squeeze / space-to-channel",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "glow_squeeze.x"
+        ],
+        [
+          "glow_squeeze.body"
+        ],
+        [
+          "glow_squeeze.y"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_squeeze.x",
+      "label": "Input x",
+      "kind": "input",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "[B,2,8,8]",
+      "detail": [],
+      "parent": "glow_squeeze.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_squeeze.body",
+      "label": "Squeeze module",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "[B,8,4,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "glow_squeeze.factor"
+        ],
+        [
+          "glow_squeeze.permute"
+        ],
+        [
+          "glow_squeeze.merge"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "glow_squeeze.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_squeeze.factor",
+      "label": "Factor spatial offsets",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "glow_squeeze.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_squeeze.view1",
+      "label": "view B,C,H/2,2,W/2,2",
+      "kind": "tensor",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "[B,2,4,2,4,2]",
+      "detail": [],
+      "expression": "input.view(b_size, n_channel, height // 2, 2, width // 2, 2)",
+      "parent": "glow_squeeze.factor",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_squeeze.permute",
+      "label": "Move 2x2 offsets to channels",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "glow_squeeze.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_squeeze.perm",
+      "label": "permute(0,1,3,5,2,4)",
+      "kind": "tensor",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "[B,2,2,2,4,4]",
+      "detail": [],
+      "axes": [
+        0,
+        1,
+        3,
+        5,
+        2,
+        4
+      ],
+      "expression": "squeezed.permute(0, 1, 3, 5, 2, 4)",
+      "parent": "glow_squeeze.permute",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_squeeze.merge",
+      "label": "Materialize and merge",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "glow_squeeze.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_squeeze.contig",
+      "label": "contiguous()",
+      "kind": "tensor",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "[B,2,2,2,4,4]",
+      "detail": [],
+      "parent": "glow_squeeze.merge",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_squeeze.view2",
+      "label": "view B,4C,H/2,W/2",
+      "kind": "tensor",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "[B,8,4,4]",
+      "detail": [],
+      "expression": "squeezed.contiguous().view(b_size, n_channel * 4, height // 2, width // 2)",
+      "parent": "glow_squeeze.merge",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_squeeze.y",
+      "label": "Squeezed features",
+      "kind": "output",
+      "source": [
+        "glow-modules/model.py::Block.forward"
+      ],
+      "shape": "[B,8,4,4]",
+      "detail": [],
+      "parent": "glow_squeeze.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "glow_squeeze.factor:in->glow_squeeze.view1:in:boundary",
+      "src": "glow_squeeze.factor",
+      "dst": "glow_squeeze.view1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_squeeze.view1:out->glow_squeeze.factor:out:boundary",
+      "src": "glow_squeeze.view1",
+      "dst": "glow_squeeze.factor",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_squeeze.permute:in->glow_squeeze.perm:in:boundary",
+      "src": "glow_squeeze.permute",
+      "dst": "glow_squeeze.perm",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_squeeze.perm:out->glow_squeeze.permute:out:boundary",
+      "src": "glow_squeeze.perm",
+      "dst": "glow_squeeze.permute",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_squeeze.merge:in->glow_squeeze.contig:in:boundary",
+      "src": "glow_squeeze.merge",
+      "dst": "glow_squeeze.contig",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_squeeze.contig:out->glow_squeeze.view2:in:tensor",
+      "src": "glow_squeeze.contig",
+      "dst": "glow_squeeze.view2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_squeeze.view2:out->glow_squeeze.merge:out:boundary",
+      "src": "glow_squeeze.view2",
+      "dst": "glow_squeeze.merge",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_squeeze.x:out->glow_squeeze.factor:in:tensor",
+      "src": "glow_squeeze.x",
+      "dst": "glow_squeeze.factor",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_squeeze.factor:out->glow_squeeze.permute:in:tensor",
+      "src": "glow_squeeze.factor",
+      "dst": "glow_squeeze.permute",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_squeeze.permute:out->glow_squeeze.merge:in:tensor",
+      "src": "glow_squeeze.permute",
+      "dst": "glow_squeeze.merge",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_squeeze.merge:out->glow_squeeze.y:in:tensor",
+      "src": "glow_squeeze.merge",
+      "dst": "glow_squeeze.y",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "This is a parameter-free bijective rearrangement of 2x2 offsets into channels.",
+    "H and W must be even for this selected profile. It is the space-to-channel direction, opposite to PixelShuffle."
+  ],
+  "corrections": [
+    "Do not add pooling, learned convolution or drop spatial entries."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

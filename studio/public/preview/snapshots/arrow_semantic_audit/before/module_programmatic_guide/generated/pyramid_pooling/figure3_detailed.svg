@@ -1,0 +1,368 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2600" height="1709" viewBox="0 0 2600 1709">
+<defs><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<metadata id="source-binding">{&quot;model&quot;: &quot;pyramid_pooling&quot;, &quot;source_snapshot_sha256&quot;: &quot;ec03decbad220846c78d3b5fdba46c4a42932c5c1bf6011acff18db0ac46caa5&quot;, &quot;repository&quot;: &quot;Lextal/pspnet-pytorch&quot;, &quot;commit&quot;: &quot;4eb6ab61287e837f5e2d8c1ae09fadeaa0e31e37&quot;, &quot;semantic_ir_sha256&quot;: &quot;d5bbaeb5a680c88b00e1ea4d51d74a18d902f468f7303e7b12fdf6c84fbb3ca1&quot;, &quot;view&quot;: 2}</metadata>
+<metadata id="diagram-style">{&quot;name&quot;: &quot;transformer-paper-model-zoo&quot;, &quot;version&quot;: 1, &quot;font&quot;: &quot;DejaVu Sans, Arial, sans-serif&quot;, &quot;text&quot;: &quot;#172336&quot;, &quot;line&quot;: &quot;#263348&quot;, &quot;palette&quot;: {&quot;root&quot;: &quot;#ffffff&quot;, &quot;group&quot;: &quot;#ffffff&quot;, &quot;inner&quot;: &quot;#fffaf6&quot;, &quot;layer&quot;: &quot;#ffffff&quot;, &quot;encoder&quot;: &quot;#e7f5fe&quot;, &quot;decoder&quot;: &quot;#fff0f5&quot;, &quot;embedding&quot;: &quot;#f8d4e1&quot;, &quot;input&quot;: &quot;#f8d4e1&quot;, &quot;output&quot;: &quot;#dfdff8&quot;, &quot;attention&quot;: &quot;#ffddb3&quot;, &quot;ffn&quot;: &quot;#c8ebfb&quot;, &quot;mixing&quot;: &quot;#c8ebfb&quot;, &quot;conv&quot;: &quot;#c8ebfb&quot;, &quot;pool&quot;: &quot;#d6f0df&quot;, &quot;norm&quot;: &quot;#fff6bd&quot;, &quot;concat&quot;: &quot;#fff6bd&quot;, &quot;linear&quot;: &quot;#dfdff8&quot;, &quot;softmax&quot;: &quot;#c9f1cd&quot;, &quot;sampling&quot;: &quot;#c9f1cd&quot;, &quot;recurrent&quot;: &quot;#ffddb3&quot;, &quot;decomposition&quot;: &quot;#d6f0df&quot;, &quot;tensor&quot;: &quot;#cdeaf8&quot;, &quot;activation&quot;: &quot;#f3f5f7&quot;, &quot;control&quot;: &quot;#f3f5f7&quot;}, &quot;typography&quot;: {&quot;title&quot;: 30, &quot;subtitle&quot;: 16, &quot;module&quot;: 22, &quot;inner&quot;: 20, &quot;operator&quot;: 20, &quot;shape&quot;: 16, &quot;detail&quot;: 14, &quot;evidence&quot;: 12, &quot;footer&quot;: 14, &quot;line_height&quot;: 1.18}, &quot;fill_width_nodes&quot;: [], &quot;visual_roles&quot;: {&quot;pyramid_pooling.bin1&quot;: &quot;pool&quot;, &quot;pyramid_pooling.bin2&quot;: &quot;pool&quot;, &quot;pyramid_pooling.bin3&quot;: &quot;pool&quot;, &quot;pyramid_pooling.bin6&quot;: &quot;pool&quot;, &quot;pyramid_pooling.bottleneck&quot;: &quot;conv&quot;, &quot;pyramid_pooling.branches&quot;: &quot;inner&quot;, &quot;pyramid_pooling.concat&quot;: &quot;concat&quot;, &quot;pyramid_pooling.conv0&quot;: &quot;conv&quot;, &quot;pyramid_pooling.conv1&quot;: &quot;conv&quot;, &quot;pyramid_pooling.conv2&quot;: &quot;conv&quot;, &quot;pyramid_pooling.conv3&quot;: &quot;conv&quot;, &quot;pyramid_pooling.input&quot;: &quot;input&quot;, &quot;pyramid_pooling.module&quot;: &quot;encoder&quot;, &quot;pyramid_pooling.output&quot;: &quot;output&quot;, &quot;pyramid_pooling.pool0&quot;: &quot;pool&quot;, &quot;pyramid_pooling.pool1&quot;: &quot;pool&quot;, &quot;pyramid_pooling.pool2&quot;: &quot;pool&quot;, &quot;pyramid_pooling.pool3&quot;: &quot;pool&quot;, &quot;pyramid_pooling.relu&quot;: &quot;activation&quot;, &quot;pyramid_pooling.resize0&quot;: &quot;tensor&quot;, &quot;pyramid_pooling.resize1&quot;: &quot;tensor&quot;, &quot;pyramid_pooling.resize2&quot;: &quot;tensor&quot;, &quot;pyramid_pooling.resize3&quot;: &quot;tensor&quot;, &quot;pyramid_pooling.retained&quot;: &quot;tensor&quot;, &quot;pyramid_pooling.root&quot;: &quot;root&quot;}, &quot;semantics&quot;: &quot;presentation aliases only; color does not imply mathematical equivalence or parameter sharing&quot;}</metadata>
+<text x="1300.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1300.0" dy="0">Pyramid pooling / PSPModule  |  Operators &amp; tensor flow</tspan>
+</text>
+<text x="1300.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1300.0" dy="0">PSPModule(features=64,out_features=128,sizes=(1,2,3,6))  /  read bottom to top</tspan>
+</text>
+<g data-node-id="pyramid_pooling.root" data-visual-role="root"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; parameter=not asserted; </title><rect x="230.0" y="98" width="2140" height="1329" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5"/></g>
+<text x="247.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="247.0" dy="0">Pyramid pooling / PSPModule / module</tspan>
+</text>
+<text x="2353.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2353.0" dy="0">[B,128,24,24]</tspan>
+</text>
+<text x="2357.0" y="160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2357.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="pyramid_pooling.input" data-visual-role="input"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; parameter=not asserted; </title><rect x="1150.0" y="1320" width="300" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="1300.0" y="1347" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1300.0" dy="0">Module input</tspan>
+</text>
+<text x="1300.0" y="1371" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1300.0" dy="0">[B,64,24,24]</tspan>
+</text>
+<text x="1437.0" y="1391" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1437.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="pyramid_pooling.module" data-visual-role="encoder"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; parameter=not asserted; </title><rect x="262.0" y="277" width="2076" height="1019" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="279.0" y="307" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="279.0" dy="0">PSPModule</tspan>
+</text>
+<text x="2321.0" y="307" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2321.0" dy="0">[B,128,24,24]</tspan>
+</text>
+<text x="2325.0" y="339" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2325.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="pyramid_pooling.branches" data-visual-role="inner"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; parameter=not asserted; </title><rect x="294.0" y="690" width="2012" height="580" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="311.0" y="720" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="311.0" dy="0">Four pyramid bins + original feats</tspan>
+</text>
+<text x="2289.0" y="720" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2289.0" dy="0">5 x 64 channels</tspan>
+</text>
+<text x="2293.0" y="752" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2293.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="pyramid_pooling.bin1" data-visual-role="pool"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; pspnet-vision-extended/pspnet.py:16 PSPModule._make_stage; parameter=not asserted; </title><rect x="326.0" y="764" width="364" height="432" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2"/></g>
+<text x="343.0" y="794" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="343.0" dy="0">Pool bins</tspan>
+<tspan x="343.0" dy="25.959999999999997">1x1</tspan>
+</text>
+<text x="673.0" y="794" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="673.0" dy="0">[B,64,24,24]</tspan>
+</text>
+<text x="677.0" y="843" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="677.0" dy="0">E002,E004,E003</tspan>
+</text>
+<g data-node-id="pyramid_pooling.pool0" data-visual-role="pool"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; pspnet-vision-extended/pspnet.py:16 PSPModule._make_stage; parameter=not asserted; </title><rect x="358.0" y="1089" width="300" height="81" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2"/></g>
+<text x="508.0" y="1116" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="508.0" dy="0">AdaptiveAvgPool 1x1</tspan>
+</text>
+<text x="508.0" y="1140" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="508.0" dy="0">[B,64,1,1]</tspan>
+</text>
+<text x="645.0" y="1160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="645.0" dy="0">E002,E004,E003</tspan>
+</text>
+<g data-node-id="pyramid_pooling.conv0" data-visual-role="conv"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; pspnet-vision-extended/pspnet.py:16 PSPModule._make_stage; parameter=stages.0.1; </title><rect x="358.0" y="984" width="300" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="508.0" y="1011" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="508.0" dy="0">Conv 1 / 64→64</tspan>
+</text>
+<text x="508.0" y="1035" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="508.0" dy="0">[B,64,1,1]</tspan>
+</text>
+<text x="645.0" y="1055" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="645.0" dy="0">E002,E004,E003</tspan>
+</text>
+<g data-node-id="pyramid_pooling.resize0" data-visual-role="tensor"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; parameter=not asserted; </title><rect x="358.0" y="855" width="300" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="508.0" y="882" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="508.0" dy="0">Bilinear upsample to</tspan>
+<tspan x="508.0" dy="23.599999999999998">H,W</tspan>
+</text>
+<text x="508.0" y="930" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="508.0" dy="0">[B,64,24,24]</tspan>
+</text>
+<text x="645.0" y="950" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="645.0" dy="0">E002,E004</tspan>
+</text>
+<path data-route-id="route-0001" d="M 508.0,1196 L 508.0,1170" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0002" d="M 508.0,1089 L 508.0,1065" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0003" d="M 508.0,984 L 508.0,960" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0004" d="M 508.0,855 L 508.0,764" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="pyramid_pooling.bin2" data-visual-role="pool"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; pspnet-vision-extended/pspnet.py:16 PSPModule._make_stage; parameter=not asserted; </title><rect x="738.0" y="764" width="364" height="432" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2"/></g>
+<text x="755.0" y="794" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="755.0" dy="0">Pool bins</tspan>
+<tspan x="755.0" dy="25.959999999999997">2x2</tspan>
+</text>
+<text x="1085.0" y="794" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1085.0" dy="0">[B,64,24,24]</tspan>
+</text>
+<text x="1089.0" y="843" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1089.0" dy="0">E002,E004,E003</tspan>
+</text>
+<g data-node-id="pyramid_pooling.pool1" data-visual-role="pool"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; pspnet-vision-extended/pspnet.py:16 PSPModule._make_stage; parameter=not asserted; </title><rect x="770.0" y="1089" width="300" height="81" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2"/></g>
+<text x="920.0" y="1116" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="920.0" dy="0">AdaptiveAvgPool 2x2</tspan>
+</text>
+<text x="920.0" y="1140" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="920.0" dy="0">[B,64,2,2]</tspan>
+</text>
+<text x="1057.0" y="1160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1057.0" dy="0">E002,E004,E003</tspan>
+</text>
+<g data-node-id="pyramid_pooling.conv1" data-visual-role="conv"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; pspnet-vision-extended/pspnet.py:16 PSPModule._make_stage; parameter=stages.1.1; </title><rect x="770.0" y="984" width="300" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="920.0" y="1011" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="920.0" dy="0">Conv 1 / 64→64</tspan>
+</text>
+<text x="920.0" y="1035" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="920.0" dy="0">[B,64,2,2]</tspan>
+</text>
+<text x="1057.0" y="1055" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1057.0" dy="0">E002,E004,E003</tspan>
+</text>
+<g data-node-id="pyramid_pooling.resize1" data-visual-role="tensor"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; parameter=not asserted; </title><rect x="770.0" y="855" width="300" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="920.0" y="882" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="920.0" dy="0">Bilinear upsample to</tspan>
+<tspan x="920.0" dy="23.599999999999998">H,W</tspan>
+</text>
+<text x="920.0" y="930" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="920.0" dy="0">[B,64,24,24]</tspan>
+</text>
+<text x="1057.0" y="950" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1057.0" dy="0">E002,E004</tspan>
+</text>
+<path data-route-id="route-0005" d="M 920.0,1196 L 920.0,1170" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0006" d="M 920.0,1089 L 920.0,1065" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0007" d="M 920.0,984 L 920.0,960" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0008" d="M 920.0,855 L 920.0,764" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="pyramid_pooling.bin3" data-visual-role="pool"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; pspnet-vision-extended/pspnet.py:16 PSPModule._make_stage; parameter=not asserted; </title><rect x="1150.0" y="764" width="364" height="432" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2"/></g>
+<text x="1167.0" y="794" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1167.0" dy="0">Pool bins</tspan>
+<tspan x="1167.0" dy="25.959999999999997">3x3</tspan>
+</text>
+<text x="1497.0" y="794" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1497.0" dy="0">[B,64,24,24]</tspan>
+</text>
+<text x="1501.0" y="843" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1501.0" dy="0">E002,E004,E003</tspan>
+</text>
+<g data-node-id="pyramid_pooling.pool2" data-visual-role="pool"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; pspnet-vision-extended/pspnet.py:16 PSPModule._make_stage; parameter=not asserted; </title><rect x="1182.0" y="1089" width="300" height="81" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2"/></g>
+<text x="1332.0" y="1116" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1332.0" dy="0">AdaptiveAvgPool 3x3</tspan>
+</text>
+<text x="1332.0" y="1140" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1332.0" dy="0">[B,64,3,3]</tspan>
+</text>
+<text x="1469.0" y="1160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1469.0" dy="0">E002,E004,E003</tspan>
+</text>
+<g data-node-id="pyramid_pooling.conv2" data-visual-role="conv"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; pspnet-vision-extended/pspnet.py:16 PSPModule._make_stage; parameter=stages.2.1; </title><rect x="1182.0" y="984" width="300" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1332.0" y="1011" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1332.0" dy="0">Conv 1 / 64→64</tspan>
+</text>
+<text x="1332.0" y="1035" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1332.0" dy="0">[B,64,3,3]</tspan>
+</text>
+<text x="1469.0" y="1055" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1469.0" dy="0">E002,E004,E003</tspan>
+</text>
+<g data-node-id="pyramid_pooling.resize2" data-visual-role="tensor"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; parameter=not asserted; </title><rect x="1182.0" y="855" width="300" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="1332.0" y="882" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1332.0" dy="0">Bilinear upsample to</tspan>
+<tspan x="1332.0" dy="23.599999999999998">H,W</tspan>
+</text>
+<text x="1332.0" y="930" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1332.0" dy="0">[B,64,24,24]</tspan>
+</text>
+<text x="1469.0" y="950" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1469.0" dy="0">E002,E004</tspan>
+</text>
+<path data-route-id="route-0009" d="M 1332.0,1196 L 1332.0,1170" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0010" d="M 1332.0,1089 L 1332.0,1065" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0011" d="M 1332.0,984 L 1332.0,960" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0012" d="M 1332.0,855 L 1332.0,764" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="pyramid_pooling.bin6" data-visual-role="pool"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; pspnet-vision-extended/pspnet.py:16 PSPModule._make_stage; parameter=not asserted; </title><rect x="1562.0" y="764" width="364" height="432" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2"/></g>
+<text x="1579.0" y="794" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1579.0" dy="0">Pool bins</tspan>
+<tspan x="1579.0" dy="25.959999999999997">6x6</tspan>
+</text>
+<text x="1909.0" y="794" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1909.0" dy="0">[B,64,24,24]</tspan>
+</text>
+<text x="1913.0" y="843" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1913.0" dy="0">E002,E004,E003</tspan>
+</text>
+<g data-node-id="pyramid_pooling.pool3" data-visual-role="pool"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; pspnet-vision-extended/pspnet.py:16 PSPModule._make_stage; parameter=not asserted; </title><rect x="1594.0" y="1089" width="300" height="81" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2"/></g>
+<text x="1744.0" y="1116" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1744.0" dy="0">AdaptiveAvgPool 6x6</tspan>
+</text>
+<text x="1744.0" y="1140" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1744.0" dy="0">[B,64,6,6]</tspan>
+</text>
+<text x="1881.0" y="1160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1881.0" dy="0">E002,E004,E003</tspan>
+</text>
+<g data-node-id="pyramid_pooling.conv3" data-visual-role="conv"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; pspnet-vision-extended/pspnet.py:16 PSPModule._make_stage; parameter=stages.3.1; </title><rect x="1594.0" y="984" width="300" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1744.0" y="1011" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1744.0" dy="0">Conv 1 / 64→64</tspan>
+</text>
+<text x="1744.0" y="1035" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1744.0" dy="0">[B,64,6,6]</tspan>
+</text>
+<text x="1881.0" y="1055" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1881.0" dy="0">E002,E004,E003</tspan>
+</text>
+<g data-node-id="pyramid_pooling.resize3" data-visual-role="tensor"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; parameter=not asserted; </title><rect x="1594.0" y="855" width="300" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="1744.0" y="882" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1744.0" dy="0">Bilinear upsample to</tspan>
+<tspan x="1744.0" dy="23.599999999999998">H,W</tspan>
+</text>
+<text x="1744.0" y="930" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1744.0" dy="0">[B,64,24,24]</tspan>
+</text>
+<text x="1881.0" y="950" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1881.0" dy="0">E002,E004</tspan>
+</text>
+<path data-route-id="route-0013" d="M 1744.0,1196 L 1744.0,1170" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0014" d="M 1744.0,1089 L 1744.0,1065" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0015" d="M 1744.0,984 L 1744.0,960" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0016" d="M 1744.0,855 L 1744.0,764" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="pyramid_pooling.retained" data-visual-role="tensor"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; parameter=not asserted; </title><rect x="1974.0" y="1091" width="300" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="2124.0" y="1118" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2124.0" dy="0">Retain original</tspan>
+<tspan x="2124.0" dy="23.599999999999998">feats</tspan>
+</text>
+<text x="2124.0" y="1166" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2124.0" dy="0">[B,64,24,24]</tspan>
+</text>
+<text x="2261.0" y="1186" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2261.0" dy="0">E002,E004</tspan>
+</text>
+<path data-route-id="route-0017" d="M 1300.0,1270 L 1300.0,1226" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0018" d="M 508.0,1226 L 2124.0,1226" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0019" d="M 508.0,1226 L 508.0,1196" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0020" d="M 508.0,764 L 508.0,746" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0021" d="M 920.0,1226 L 920.0,1196" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0022" d="M 920.0,764 L 920.0,746" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0023" d="M 1332.0,1226 L 1332.0,1196" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0024" d="M 1332.0,764 L 1332.0,746" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0025" d="M 1744.0,1226 L 1744.0,1196" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0026" d="M 1744.0,764 L 1744.0,746" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0027" d="M 2124.0,1226 L 2124.0,1196" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0028" d="M 2124.0,1091 L 2124.0,746" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0029" d="M 508.0,746 L 2124.0,746" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0030" d="M 1300.0,746 L 1300.0,690" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="pyramid_pooling.concat" data-visual-role="concat"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; parameter=not asserted; </title><rect x="1150.0" y="561" width="300" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="1300.0" y="588" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1300.0" dy="0">Concat priors then</tspan>
+<tspan x="1300.0" dy="23.599999999999998">original</tspan>
+</text>
+<text x="1300.0" y="636" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1300.0" dy="0">[B,320,24,24]</tspan>
+</text>
+<text x="1437.0" y="656" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1437.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="pyramid_pooling.bottleneck" data-visual-role="conv"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; parameter=bottleneck; </title><rect x="1150.0" y="456" width="300" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1300.0" y="483" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1300.0" dy="0">Conv 1 / 320→128</tspan>
+</text>
+<text x="1300.0" y="507" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1300.0" dy="0">[B,128,24,24]</tspan>
+</text>
+<text x="1437.0" y="527" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1437.0" dy="0">E002,E004</tspan>
+</text>
+<g data-node-id="pyramid_pooling.relu" data-visual-role="activation"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; parameter=not asserted; </title><rect x="1150.0" y="351" width="300" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="1300.0" y="378" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1300.0" dy="0">ReLU</tspan>
+</text>
+<text x="1300.0" y="402" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1300.0" dy="0">[B,128,24,24]</tspan>
+</text>
+<text x="1437.0" y="422" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1437.0" dy="0">E002,E004</tspan>
+</text>
+<path data-route-id="route-0031" d="M 1300.0,1296 L 1300.0,1270" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0032" d="M 1300.0,690 L 1300.0,666" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0033" d="M 1300.0,561 L 1300.0,537" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0034" d="M 1300.0,456 L 1300.0,432" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0035" d="M 1300.0,351 L 1300.0,277" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="pyramid_pooling.output" data-visual-role="output"><title>pspnet-vision-extended/pspnet.py:9 PSPModule.__init__; pspnet-vision-extended/pspnet.py:21 PSPModule.forward; parameter=not asserted; </title><rect x="1150.0" y="172" width="300" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="1300.0" y="199" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1300.0" dy="0">Module output</tspan>
+</text>
+<text x="1300.0" y="223" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1300.0" dy="0">[B,128,24,24]</tspan>
+</text>
+<text x="1437.0" y="243" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1437.0" dy="0">E002,E004</tspan>
+</text>
+<path data-route-id="route-0036" d="M 1300.0,1427 L 1300.0,1401" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0037" d="M 1300.0,1320 L 1300.0,1296" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0038" d="M 1300.0,277 L 1300.0,253" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0039" d="M 1300.0,172 L 1300.0,98" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0040" d="M 1150.0,1348.5 L 334.0,1348.5 L 334.0,907.5 L 358.0,907.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>pyramid_pooling.input:shape -&gt; pyramid_pooling.resize0:size; input H,W</title></path>
+<path data-route-id="route-0041" d="M 1150.0,1372.5 L 746.0,1372.5 L 746.0,907.5 L 770.0,907.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>pyramid_pooling.input:shape -&gt; pyramid_pooling.resize1:size; input H,W</title></path>
+<path data-route-id="route-0042" d="M 1450.0,1348.5 L 1506.0,1348.5 L 1506.0,907.5 L 1482.0,907.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>pyramid_pooling.input:shape -&gt; pyramid_pooling.resize2:size; input H,W</title></path>
+<path data-route-id="route-0043" d="M 1450.0,1372.5 L 1918.0,1372.5 L 1918.0,907.5 L 1894.0,907.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>pyramid_pooling.input:shape -&gt; pyramid_pooling.resize3:size; input H,W</title></path>
+<text x="326.0" y="1128.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end" fill="#536477">
+<tspan x="326.0" dy="0">input H,W</tspan>
+</text>
+<text x="738.0" y="1140.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end" fill="#536477">
+<tspan x="738.0" dy="0">input H,W</tspan>
+</text>
+<text x="1514.0" y="1128.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start" fill="#536477">
+<tspan x="1514.0" dy="0">input H,W</tspan>
+</text>
+<text x="1684.0" y="1364.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle" fill="#536477">
+<tspan x="1684.0" dy="0">input H,W</tspan>
+</text>
+<rect x="755.0" y="1464" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348"/>
+<text x="778.0" y="1477" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="778.0" dy="0">Input</tspan>
+</text>
+<rect x="940.0" y="1464" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348"/>
+<text x="963.0" y="1477" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="963.0" dy="0">Conv</tspan>
+</text>
+<rect x="1125.0" y="1464" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348"/>
+<text x="1148.0" y="1477" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1148.0" dy="0">Concat</tspan>
+</text>
+<rect x="1310.0" y="1464" width="16" height="16" rx="3" fill="#d6f0df" stroke="#263348"/>
+<text x="1333.0" y="1477" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1333.0" dy="0">Pool</tspan>
+</text>
+<rect x="1495.0" y="1464" width="16" height="16" rx="3" fill="#cdeaf8" stroke="#263348"/>
+<text x="1518.0" y="1477" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1518.0" dy="0">Tensor</tspan>
+</text>
+<rect x="1680.0" y="1464" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348"/>
+<text x="1703.0" y="1477" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1703.0" dy="0">Activation</tspan>
+</text>
+<rect x="1217.5" y="1494" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348"/>
+<text x="1240.5" y="1507" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1240.5" dy="0">Output</tspan>
+</text>
+<text x="1300.0" y="1535" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1300.0" dy="0">Declared module scope; source code and kernels are not executed.</tspan>
+<tspan x="1300.0" dy="16.52">Different parameter paths own independent weights; colors express operation roles.</tspan>
+</text>
+<text x="1300.0" y="1609" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1300.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+<text x="1300.0" y="1639" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1300.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+<text x="1300.0" y="1664" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1300.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+</svg>

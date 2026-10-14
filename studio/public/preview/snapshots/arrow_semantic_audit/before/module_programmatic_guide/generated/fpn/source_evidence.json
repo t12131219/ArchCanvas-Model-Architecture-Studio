@@ -1,0 +1,80 @@
+{
+  "source_project": "torchvision-v0.9.0-vision-extended",
+  "repository": "pytorch/vision",
+  "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+  "source_snapshot_sha256": "88b7578cd40309142e6f3aa152438e3ee450fcfd4e242f61cb3919c3efab888f",
+  "entry": "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "torchvision-v0.9.0-vision-extended/LICENSE": {
+      "sha256": "6502f676851cfe25f8af75531dfb32375b7325b73c37e7b43741fa422893e71d",
+      "lines": 29,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/LICENSE",
+      "derived_from": null
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py": {
+      "sha256": "90eadfe6e1146e23dc57f6e2d160dcae4dc436499abfef2478c6c398a6131ae3",
+      "lines": 204,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/torchvision/ops/feature_pyramid_network.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py",
+      "symbol": "FeaturePyramidNetwork",
+      "start": 33,
+      "end": 161,
+      "snippet": "class FeaturePyramidNetwork(nn.Module):\n    \"\"\"\n    Module that adds a FPN from on top of a set of feature maps. This is based on\n    `\"Feature Pyramid Network for Object Detection\" <https://arxiv.org/abs/1612.03144>`_.\n\n    The feature maps are currently supposed to be in increasing depth\n    order.\n\n    The input to the model is expected to be an OrderedDict[Tensor], containing\n    the feature maps on top of which the FPN will be added.\n\n    Args:\n        in_channels_list (list[int]): number of channels for each feature map that\n            is passed to the module\n        out_channels (int): number of channels of the FPN representation\n        extra_blocks (ExtraFPNBlock or None): if provided, extra operations will\n            be performed. It is expected to take the fpn features, the original\n            features and the names of the original features as input, and returns\n            a new list of feature maps and their corresponding names\n\n    Examples::\n\n        >>> m = torchvision.ops.FeaturePyramidNetwork([10, 20, 30], 5)\n        >>> # get some dummy data\n        >>> x = OrderedDict()\n        >>> x['feat0'] = torch.rand(1, 10, 64, 64)\n        >>> x['feat2'] = torch.rand(1, 20, 16, 16)\n        >>> x['feat3'] = torch.rand(1, 30, 8, 8)\n        >>> # compute the FPN on top of x\n        >>> output = m(x)\n        >>> print([(k, v.shape) for k, v in output.items()])\n        >>> # returns\n        >>>   [('feat0', torch.Size([1, 5, 64, 64])),\n        >>>    ('feat2', torch.Size([1, 5, 16, 16])),\n        >>>    ('feat3', torch.Size([1, 5, 8, 8]))]\n\n    \"\"\"\n    def __init__(\n        self,\n        in_channels_list: List[int],\n        out_channels: int,\n        extra_blocks: Optional[ExtraFPNBlock] = None,\n    ):\n        super(FeaturePyramidNetwork, self).__init__()\n        self.inner_blocks = nn.ModuleList()\n        self.layer_blocks = nn.ModuleList()\n        for in_channels in in_channels_list:\n            if in_channels == 0:\n                raise ValueError(\"in_channels=0 is currently not supported\")\n            inner_block_module = nn.Conv2d(in_channels, out_channels, 1)\n            layer_block_module = nn.Conv2d(out_channels, out_channels, 3, padding=1)\n            self.inner_blocks.append(inner_block_module)\n            self.layer_blocks.append(layer_block_module)\n\n        # initialize parameters now to avoid modifying the initialization of top_blocks\n        for m in self.modules():\n            if isinstance(m, nn.Conv2d):\n                nn.init.kaiming_uniform_(m.weight, a=1)\n                nn.init.constant_(m.bias, 0)\n\n        if extra_blocks is not None:\n            assert isinstance(extra_blocks, ExtraFPNBlock)\n        self.extra_blocks = extra_blocks\n\n    def get_result_from_inner_blocks(self, x: Tensor, idx: int) -> Tensor:\n        \"\"\"\n        This is equivalent to self.inner_blocks[idx](x),\n        but torchscript doesn't support this yet\n        \"\"\"\n        num_blocks = len(self.inner_blocks)\n        if idx < 0:\n            idx += num_blocks\n        i = 0\n        out = x\n        for module in self.inner_blocks:\n            if i == idx:\n                out = module(x)\n            i += 1\n        return out\n\n    def get_result_from_layer_blocks(self, x: Tensor, idx: int) -> Tensor:\n        \"\"\"\n        This is equivalent to self.layer_blocks[idx](x),\n        but torchscript doesn't support this yet\n        \"\"\"\n        num_blocks = len(self.layer_blocks)\n        if idx < 0:\n            idx += num_blocks\n        i = 0\n        out = x\n        for module in self.layer_blocks:\n            if i == idx:\n                out = module(x)\n            i += 1\n        return out\n\n    def forward(self, x: Dict[str, Tensor]) -> Dict[str, Tensor]:\n        \"\"\"\n        Computes the FPN for a set of feature maps.\n\n        Args:\n            x (OrderedDict[Tensor]): feature maps for each feature level.\n\n        Returns:\n            results (OrderedDict[Tensor]): feature maps after FPN layers.\n                They are ordered from highest resolution first.\n        \"\"\"\n        # unpack OrderedDict into two lists for easier handling\n        names = list(x.keys())\n        x = list(x.values())\n\n        last_inner = self.get_result_from_inner_blocks(x[-1], -1)\n        results = []\n        results.append(self.get_result_from_layer_blocks(last_inner, -1))\n\n        for idx in range(len(x) - 2, -1, -1):\n            inner_lateral = self.get_result_from_inner_blocks(x[idx], idx)\n            feat_shape = inner_lateral.shape[-2:]\n            inner_top_down = F.interpolate(last_inner, size=feat_shape, mode=\"nearest\")\n            last_inner = inner_lateral + inner_top_down\n            results.insert(0, self.get_result_from_layer_blocks(last_inner, idx))\n\n        if self.extra_blocks is not None:\n            results, names = self.extra_blocks(results, x, names)\n\n        # make it back an OrderedDict\n        out = OrderedDict([(k, v) for k, v in zip(names, results)])\n\n        return out",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.__init__": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py",
+      "symbol": "FeaturePyramidNetwork.__init__",
+      "start": 70,
+      "end": 95,
+      "snippet": "    def __init__(\n        self,\n        in_channels_list: List[int],\n        out_channels: int,\n        extra_blocks: Optional[ExtraFPNBlock] = None,\n    ):\n        super(FeaturePyramidNetwork, self).__init__()\n        self.inner_blocks = nn.ModuleList()\n        self.layer_blocks = nn.ModuleList()\n        for in_channels in in_channels_list:\n            if in_channels == 0:\n                raise ValueError(\"in_channels=0 is currently not supported\")\n            inner_block_module = nn.Conv2d(in_channels, out_channels, 1)\n            layer_block_module = nn.Conv2d(out_channels, out_channels, 3, padding=1)\n            self.inner_blocks.append(inner_block_module)\n            self.layer_blocks.append(layer_block_module)\n\n        # initialize parameters now to avoid modifying the initialization of top_blocks\n        for m in self.modules():\n            if isinstance(m, nn.Conv2d):\n                nn.init.kaiming_uniform_(m.weight, a=1)\n                nn.init.constant_(m.bias, 0)\n\n        if extra_blocks is not None:\n            assert isinstance(extra_blocks, ExtraFPNBlock)\n        self.extra_blocks = extra_blocks",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_inner_blocks": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py",
+      "symbol": "FeaturePyramidNetwork.get_result_from_inner_blocks",
+      "start": 97,
+      "end": 111,
+      "snippet": "    def get_result_from_inner_blocks(self, x: Tensor, idx: int) -> Tensor:\n        \"\"\"\n        This is equivalent to self.inner_blocks[idx](x),\n        but torchscript doesn't support this yet\n        \"\"\"\n        num_blocks = len(self.inner_blocks)\n        if idx < 0:\n            idx += num_blocks\n        i = 0\n        out = x\n        for module in self.inner_blocks:\n            if i == idx:\n                out = module(x)\n            i += 1\n        return out",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.get_result_from_layer_blocks": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py",
+      "symbol": "FeaturePyramidNetwork.get_result_from_layer_blocks",
+      "start": 113,
+      "end": 127,
+      "snippet": "    def get_result_from_layer_blocks(self, x: Tensor, idx: int) -> Tensor:\n        \"\"\"\n        This is equivalent to self.layer_blocks[idx](x),\n        but torchscript doesn't support this yet\n        \"\"\"\n        num_blocks = len(self.layer_blocks)\n        if idx < 0:\n            idx += num_blocks\n        i = 0\n        out = x\n        for module in self.layer_blocks:\n            if i == idx:\n                out = module(x)\n            i += 1\n        return out",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E005"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork.forward": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py",
+      "symbol": "FeaturePyramidNetwork.forward",
+      "start": 129,
+      "end": 161,
+      "snippet": "    def forward(self, x: Dict[str, Tensor]) -> Dict[str, Tensor]:\n        \"\"\"\n        Computes the FPN for a set of feature maps.\n\n        Args:\n            x (OrderedDict[Tensor]): feature maps for each feature level.\n\n        Returns:\n            results (OrderedDict[Tensor]): feature maps after FPN layers.\n                They are ordered from highest resolution first.\n        \"\"\"\n        # unpack OrderedDict into two lists for easier handling\n        names = list(x.keys())\n        x = list(x.values())\n\n        last_inner = self.get_result_from_inner_blocks(x[-1], -1)\n        results = []\n        results.append(self.get_result_from_layer_blocks(last_inner, -1))\n\n        for idx in range(len(x) - 2, -1, -1):\n            inner_lateral = self.get_result_from_inner_blocks(x[idx], idx)\n            feat_shape = inner_lateral.shape[-2:]\n            inner_top_down = F.interpolate(last_inner, size=feat_shape, mode=\"nearest\")\n            last_inner = inner_lateral + inner_top_down\n            results.insert(0, self.get_result_from_layer_blocks(last_inner, idx))\n\n        if self.extra_blocks is not None:\n            results, names = self.extra_blocks(results, x, names)\n\n        # make it back an OrderedDict\n        out = OrderedDict([(k, v) for k, v in zip(names, results)])\n\n        return out",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "torchvision-v0.9.0-vision-extended/LICENSE"
+  ]
+}

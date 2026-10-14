@@ -1,0 +1,845 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "made_split",
+  "profile": {
+    "num_inputs": 4,
+    "num_hidden": 8,
+    "num_cond_inputs": null,
+    "mode": "direct",
+    "pre_exp_tanh": false,
+    "independent_networks": true,
+    "head_order": [
+      "m",
+      "a"
+    ],
+    "inverse": "sequential coordinate loop; same parameters",
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "MADESplit forward direct branch only; inverse loop is documented rather than falsely parallelized.",
+    "source_contracts": [
+      [
+        "MADESplit.forward",
+        "(inputs - m) * torch.exp(-a)"
+      ],
+      [
+        "MADESplit.forward",
+        "-a.sum(-1, keepdim=True)"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "ikostrikov/pytorch-flows",
+    "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+    "snapshot": "c0ebb6c1af0b9d8f0b8140bbc16c5cf7122408fa79a5b25da427fac8d15d657a"
+  },
+  "nodes": [
+    {
+      "id": "made_split.root",
+      "label": "MADESplit / autoregressive affine",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.__init__",
+        "density-flow-modules/flows.py::MADESplit.forward",
+        "density-flow-modules/flows.py::MaskedLinear.__init__",
+        "density-flow-modules/flows.py::MaskedLinear.forward",
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "made_split.x"
+        ],
+        [
+          "made_split.body"
+        ],
+        [
+          "made_split.u",
+          "made_split.ld"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.x",
+      "label": "Input x",
+      "kind": "input",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parent": "made_split.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.body",
+      "label": "MADESplit module",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.__init__",
+        "density-flow-modules/flows.py::MADESplit.forward",
+        "density-flow-modules/flows.py::MaskedLinear.__init__",
+        "density-flow-modules/flows.py::MaskedLinear.forward",
+        "density-flow-modules/flows.py::get_mask"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "made_split.mnet",
+          "made_split.anet"
+        ],
+        [
+          "made_split.shift",
+          "made_split.scale",
+          "made_split.det"
+        ],
+        [
+          "made_split.affine"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "made_split.root",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.mnet",
+      "label": "s_* network -> m",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "made_split.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.mnetjoin",
+      "label": "MaskedLinear 4 -> 8",
+      "kind": "masked_linear",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.__init__",
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parameters": [
+        "s_joiner.linear.weight",
+        "s_joiner.linear.bias"
+      ],
+      "mask": "input",
+      "parent": "made_split.mnet",
+      "source_evidence": [
+        "E001",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.mnetact1",
+      "label": "Tanh",
+      "kind": "tanh",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.__init__"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parent": "made_split.mnet",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.mnethidden",
+      "label": "MaskedLinear 8 -> 8",
+      "kind": "masked_linear",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.__init__",
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parameters": [
+        "s_trunk.1.linear.weight",
+        "s_trunk.1.linear.bias"
+      ],
+      "mask": "hidden",
+      "parent": "made_split.mnet",
+      "source_evidence": [
+        "E001",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.mnetact2",
+      "label": "Tanh",
+      "kind": "tanh",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.__init__"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parent": "made_split.mnet",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.mnetout",
+      "label": "MaskedLinear 8 -> 4",
+      "kind": "masked_linear",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.__init__",
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parameters": [
+        "s_trunk.3.linear.weight",
+        "s_trunk.3.linear.bias"
+      ],
+      "mask": "output",
+      "parent": "made_split.mnet",
+      "source_evidence": [
+        "E001",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.anet",
+      "label": "t_* network -> a",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "made_split.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.anetjoin",
+      "label": "MaskedLinear 4 -> 8",
+      "kind": "masked_linear",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.__init__",
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parameters": [
+        "t_joiner.linear.weight",
+        "t_joiner.linear.bias"
+      ],
+      "mask": "input",
+      "parent": "made_split.anet",
+      "source_evidence": [
+        "E001",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.anetact1",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.__init__"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parent": "made_split.anet",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.anethidden",
+      "label": "MaskedLinear 8 -> 8",
+      "kind": "masked_linear",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.__init__",
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parameters": [
+        "t_trunk.1.linear.weight",
+        "t_trunk.1.linear.bias"
+      ],
+      "mask": "hidden",
+      "parent": "made_split.anet",
+      "source_evidence": [
+        "E001",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.anetact2",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.__init__"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parent": "made_split.anet",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.anetout",
+      "label": "MaskedLinear 8 -> 4",
+      "kind": "masked_linear",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.__init__",
+        "density-flow-modules/flows.py::MaskedLinear.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parameters": [
+        "t_trunk.3.linear.weight",
+        "t_trunk.3.linear.bias"
+      ],
+      "mask": "output",
+      "parent": "made_split.anet",
+      "source_evidence": [
+        "E001",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.shift",
+      "label": "Subtract conditional mean",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "made_split.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "m"
+      ]
+    },
+    {
+      "id": "made_split.sub",
+      "label": "inputs - m",
+      "kind": "subtract",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "inputs - m",
+      "parent": "made_split.shift",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.scale",
+      "label": "Inverse scale",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "made_split.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.exp",
+      "label": "exp(-a)",
+      "kind": "tensor",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "torch.exp(-a)",
+      "parent": "made_split.scale",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.affine",
+      "label": "Affine output",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "made_split.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "scale"
+      ]
+    },
+    {
+      "id": "made_split.mul",
+      "label": "(inputs-m) * exp(-a)",
+      "kind": "multiply",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "(inputs - m) * torch.exp(-a)",
+      "parent": "made_split.affine",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.det",
+      "label": "Log determinant",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "made_split.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.sum",
+      "label": "-a.sum(-1,keepdim=True)",
+      "kind": "density",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "expression": "-a.sum(-1, keepdim=True)",
+      "dim": -1,
+      "keepdim": true,
+      "parent": "made_split.det",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.u",
+      "label": "Transformed u",
+      "kind": "output",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parent": "made_split.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "made_split.ld",
+      "label": "Logdet per example",
+      "kind": "output",
+      "source": [
+        "density-flow-modules/flows.py::MADESplit.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "parent": "made_split.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "made_split.mnet:in->made_split.mnetjoin:in:boundary",
+      "src": "made_split.mnet",
+      "dst": "made_split.mnetjoin",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "made_split.mnetjoin:out->made_split.mnetact1:in:tensor",
+      "src": "made_split.mnetjoin",
+      "dst": "made_split.mnetact1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_split.mnetact1:out->made_split.mnethidden:in:tensor",
+      "src": "made_split.mnetact1",
+      "dst": "made_split.mnethidden",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_split.mnethidden:out->made_split.mnetact2:in:tensor",
+      "src": "made_split.mnethidden",
+      "dst": "made_split.mnetact2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_split.mnetact2:out->made_split.mnetout:in:tensor",
+      "src": "made_split.mnetact2",
+      "dst": "made_split.mnetout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_split.mnetout:out->made_split.mnet:out:boundary",
+      "src": "made_split.mnetout",
+      "dst": "made_split.mnet",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "made_split.anet:in->made_split.anetjoin:in:boundary",
+      "src": "made_split.anet",
+      "dst": "made_split.anetjoin",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "made_split.anetjoin:out->made_split.anetact1:in:tensor",
+      "src": "made_split.anetjoin",
+      "dst": "made_split.anetact1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_split.anetact1:out->made_split.anethidden:in:tensor",
+      "src": "made_split.anetact1",
+      "dst": "made_split.anethidden",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_split.anethidden:out->made_split.anetact2:in:tensor",
+      "src": "made_split.anethidden",
+      "dst": "made_split.anetact2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_split.anetact2:out->made_split.anetout:in:tensor",
+      "src": "made_split.anetact2",
+      "dst": "made_split.anetout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_split.anetout:out->made_split.anet:out:boundary",
+      "src": "made_split.anetout",
+      "dst": "made_split.anet",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "made_split.shift:in->made_split.sub:in:boundary",
+      "src": "made_split.shift",
+      "dst": "made_split.sub",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "made_split.sub:out->made_split.shift:out:boundary",
+      "src": "made_split.sub",
+      "dst": "made_split.shift",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "made_split.scale:in->made_split.exp:in:boundary",
+      "src": "made_split.scale",
+      "dst": "made_split.exp",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "made_split.exp:out->made_split.scale:out:boundary",
+      "src": "made_split.exp",
+      "dst": "made_split.scale",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "made_split.affine:in->made_split.mul:in:boundary",
+      "src": "made_split.affine",
+      "dst": "made_split.mul",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "made_split.mul:out->made_split.affine:out:boundary",
+      "src": "made_split.mul",
+      "dst": "made_split.affine",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "made_split.det:in->made_split.sum:in:boundary",
+      "src": "made_split.det",
+      "dst": "made_split.sum",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "made_split.sum:out->made_split.det:out:boundary",
+      "src": "made_split.sum",
+      "dst": "made_split.det",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "made_split.x:out->made_split.mnet:in:tensor",
+      "src": "made_split.x",
+      "dst": "made_split.mnet",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_split.x:out->made_split.anet:in:tensor",
+      "src": "made_split.x",
+      "dst": "made_split.anet",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_split.mnet:out->made_split.shift:m:tensor",
+      "src": "made_split.mnet",
+      "dst": "made_split.shift",
+      "src_port": "out",
+      "dst_port": "m",
+      "role": "tensor"
+    },
+    {
+      "id": "made_split.anet:out->made_split.scale:in:tensor",
+      "src": "made_split.anet",
+      "dst": "made_split.scale",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_split.anet:out->made_split.det:in:tensor",
+      "src": "made_split.anet",
+      "dst": "made_split.det",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_split.x:out->made_split.shift:in:retained_value",
+      "src": "made_split.x",
+      "dst": "made_split.shift",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "retained_value"
+    },
+    {
+      "id": "made_split.shift:out->made_split.affine:in:tensor",
+      "src": "made_split.shift",
+      "dst": "made_split.affine",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_split.scale:out->made_split.affine:scale:tensor",
+      "src": "made_split.scale",
+      "dst": "made_split.affine",
+      "src_port": "out",
+      "dst_port": "scale",
+      "role": "tensor"
+    },
+    {
+      "id": "made_split.affine:out->made_split.u:in:tensor",
+      "src": "made_split.affine",
+      "dst": "made_split.u",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "made_split.det:out->made_split.ld:in:tensor",
+      "src": "made_split.det",
+      "dst": "made_split.ld",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Degree masks enforce strict autoregressive dependence through the output degree offset; masks are registered buffers.",
+    "MADESplit uses independent s_* and t_* networks. Despite their names, s_* predicts m with Tanh and t_* predicts a with ReLU.",
+    "Inverse builds coordinates one at a time with the same learned networks; the direct view is a DAG, not that inverse execution.",
+    "The returned logdet follows the exact source expression. It is not a third sequential layer applied to u."
+  ],
+  "corrections": [
+    "Do not swap m/a, use dense unmasked hidden layers, or claim pre_exp_tanh acts in MADE."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

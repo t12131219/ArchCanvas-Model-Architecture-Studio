@@ -1,0 +1,658 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3460" height="2692" viewBox="0 0 3460 2692">
+<defs><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<metadata id="source-binding">{&quot;model&quot;: &quot;inception_split&quot;, &quot;source_snapshot_sha256&quot;: &quot;66209ff0a5fcaf22d0c55fcc2b008aa29f50dec4f265cbd902de8482ed44f5bd&quot;, &quot;repository&quot;: &quot;pytorch/vision&quot;, &quot;commit&quot;: &quot;01dfa8ea81972bb74b52dc01e6a1b43b26b62020&quot;, &quot;semantic_ir_sha256&quot;: &quot;17fab4f822f8c6edec9ca6632aa0c837bee1874c1d8e9c478878732fd637a013&quot;, &quot;view&quot;: 2}</metadata>
+<metadata id="diagram-style">{&quot;name&quot;: &quot;transformer-paper-model-zoo&quot;, &quot;version&quot;: 1, &quot;font&quot;: &quot;DejaVu Sans, Arial, sans-serif&quot;, &quot;text&quot;: &quot;#172336&quot;, &quot;line&quot;: &quot;#263348&quot;, &quot;palette&quot;: {&quot;root&quot;: &quot;#ffffff&quot;, &quot;group&quot;: &quot;#ffffff&quot;, &quot;inner&quot;: &quot;#fffaf6&quot;, &quot;layer&quot;: &quot;#ffffff&quot;, &quot;encoder&quot;: &quot;#e7f5fe&quot;, &quot;decoder&quot;: &quot;#fff0f5&quot;, &quot;embedding&quot;: &quot;#f8d4e1&quot;, &quot;input&quot;: &quot;#f8d4e1&quot;, &quot;output&quot;: &quot;#dfdff8&quot;, &quot;attention&quot;: &quot;#ffddb3&quot;, &quot;ffn&quot;: &quot;#c8ebfb&quot;, &quot;mixing&quot;: &quot;#c8ebfb&quot;, &quot;conv&quot;: &quot;#c8ebfb&quot;, &quot;pool&quot;: &quot;#d6f0df&quot;, &quot;norm&quot;: &quot;#fff6bd&quot;, &quot;concat&quot;: &quot;#fff6bd&quot;, &quot;linear&quot;: &quot;#dfdff8&quot;, &quot;softmax&quot;: &quot;#c9f1cd&quot;, &quot;sampling&quot;: &quot;#c9f1cd&quot;, &quot;recurrent&quot;: &quot;#ffddb3&quot;, &quot;decomposition&quot;: &quot;#d6f0df&quot;, &quot;tensor&quot;: &quot;#cdeaf8&quot;, &quot;activation&quot;: &quot;#f3f5f7&quot;, &quot;control&quot;: &quot;#f3f5f7&quot;}, &quot;typography&quot;: {&quot;title&quot;: 30, &quot;subtitle&quot;: 16, &quot;module&quot;: 22, &quot;inner&quot;: 20, &quot;operator&quot;: 20, &quot;shape&quot;: 16, &quot;detail&quot;: 14, &quot;evidence&quot;: 12, &quot;footer&quot;: 14, &quot;line_height&quot;: 1.18}, &quot;fill_width_nodes&quot;: [], &quot;visual_roles&quot;: {&quot;inception_split.branch1x1&quot;: &quot;conv&quot;, &quot;inception_split.branch1x1.bn&quot;: &quot;norm&quot;, &quot;inception_split.branch1x1.conv&quot;: &quot;conv&quot;, &quot;inception_split.branch1x1.relu&quot;: &quot;activation&quot;, &quot;inception_split.branch3x3.concat&quot;: &quot;concat&quot;, &quot;inception_split.branch3x3.split&quot;: &quot;inner&quot;, &quot;inception_split.branch3x3_1&quot;: &quot;conv&quot;, &quot;inception_split.branch3x3_1.bn&quot;: &quot;norm&quot;, &quot;inception_split.branch3x3_1.conv&quot;: &quot;conv&quot;, &quot;inception_split.branch3x3_1.relu&quot;: &quot;activation&quot;, &quot;inception_split.branch3x3_2a&quot;: &quot;conv&quot;, &quot;inception_split.branch3x3_2a.bn&quot;: &quot;norm&quot;, &quot;inception_split.branch3x3_2a.conv&quot;: &quot;conv&quot;, &quot;inception_split.branch3x3_2a.relu&quot;: &quot;activation&quot;, &quot;inception_split.branch3x3_2b&quot;: &quot;conv&quot;, &quot;inception_split.branch3x3_2b.bn&quot;: &quot;norm&quot;, &quot;inception_split.branch3x3_2b.conv&quot;: &quot;conv&quot;, &quot;inception_split.branch3x3_2b.relu&quot;: &quot;activation&quot;, &quot;inception_split.branch3x3dbl.concat&quot;: &quot;concat&quot;, &quot;inception_split.branch3x3dbl.split&quot;: &quot;inner&quot;, &quot;inception_split.branch3x3dbl_1&quot;: &quot;conv&quot;, &quot;inception_split.branch3x3dbl_1.bn&quot;: &quot;norm&quot;, &quot;inception_split.branch3x3dbl_1.conv&quot;: &quot;conv&quot;, &quot;inception_split.branch3x3dbl_1.relu&quot;: &quot;activation&quot;, &quot;inception_split.branch3x3dbl_2&quot;: &quot;conv&quot;, &quot;inception_split.branch3x3dbl_2.bn&quot;: &quot;norm&quot;, &quot;inception_split.branch3x3dbl_2.conv&quot;: &quot;conv&quot;, &quot;inception_split.branch3x3dbl_2.relu&quot;: &quot;activation&quot;, &quot;inception_split.branch3x3dbl_3a&quot;: &quot;conv&quot;, &quot;inception_split.branch3x3dbl_3a.bn&quot;: &quot;norm&quot;, &quot;inception_split.branch3x3dbl_3a.conv&quot;: &quot;conv&quot;, &quot;inception_split.branch3x3dbl_3a.relu&quot;: &quot;activation&quot;, &quot;inception_split.branch3x3dbl_3b&quot;: &quot;conv&quot;, &quot;inception_split.branch3x3dbl_3b.bn&quot;: &quot;norm&quot;, &quot;inception_split.branch3x3dbl_3b.conv&quot;: &quot;conv&quot;, &quot;inception_split.branch3x3dbl_3b.relu&quot;: &quot;activation&quot;, &quot;inception_split.branch_pool&quot;: &quot;conv&quot;, &quot;inception_split.branch_pool.bn&quot;: &quot;norm&quot;, &quot;inception_split.branch_pool.conv&quot;: &quot;conv&quot;, &quot;inception_split.branch_pool.pool&quot;: &quot;pool&quot;, &quot;inception_split.branch_pool.relu&quot;: &quot;activation&quot;, &quot;inception_split.branches&quot;: &quot;inner&quot;, &quot;inception_split.concat&quot;: &quot;concat&quot;, &quot;inception_split.input&quot;: &quot;input&quot;, &quot;inception_split.module&quot;: &quot;encoder&quot;, &quot;inception_split.output&quot;: &quot;output&quot;, &quot;inception_split.path.branch1x1&quot;: &quot;group&quot;, &quot;inception_split.path.branch3x3&quot;: &quot;group&quot;, &quot;inception_split.path.branch3x3dbl&quot;: &quot;group&quot;, &quot;inception_split.path.branch_pool&quot;: &quot;group&quot;, &quot;inception_split.root&quot;: &quot;root&quot;}, &quot;semantics&quot;: &quot;presentation aliases only; color does not imply mathematical equivalence or parameter sharing&quot;}</metadata>
+<text x="1730.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1730.0" dy="0">InceptionE / independent module  |  Operators &amp; tensor flow</tspan>
+</text>
+<text x="1730.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1730.0" dy="0">InceptionE(1280)  /  read bottom to top</tspan>
+</text>
+<g data-node-id="inception_split.root" data-visual-role="root"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; parameter=not asserted; </title><rect x="230.0" y="98" width="3000" height="2312" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5"/></g>
+<text x="247.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="247.0" dy="0">InceptionE / independent module / module</tspan>
+</text>
+<text x="3213.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="3213.0" dy="0">[B,2048,8,8]</tspan>
+</text>
+<text x="3217.0" y="160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="3217.0" dy="0">E004,E006</tspan>
+</text>
+<g data-node-id="inception_split.input" data-visual-role="input"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; parameter=not asserted; </title><rect x="1580.0" y="2303" width="300" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="1730.0" y="2330" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1730.0" dy="0">Module input</tspan>
+</text>
+<text x="1730.0" y="2354" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1730.0" dy="0">[B,1280,8,8]</tspan>
+</text>
+<text x="1867.0" y="2374" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1867.0" dy="0">E004,E006</tspan>
+</text>
+<g data-node-id="inception_split.module" data-visual-role="encoder"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=not asserted; </title><rect x="262.0" y="277" width="2936" height="2002" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="279.0" y="307" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="279.0" dy="0">InceptionE</tspan>
+</text>
+<text x="3181.0" y="307" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="3181.0" dy="0">[B,2048,8,8]</tspan>
+</text>
+<text x="3185.0" y="339" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="3185.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branches" data-visual-role="inner"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=not asserted; </title><rect x="294.0" y="456" width="2872" height="1797" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="311.0" y="486" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="311.0" dy="0">Source-ordered independent paths</tspan>
+</text>
+<text x="3149.0" y="486" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="3149.0" dy="0">ordered branch list</tspan>
+</text>
+<text x="3153.0" y="518" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="3153.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.path.branch1x1" data-visual-role="group"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=not asserted; </title><rect x="326.0" y="1688" width="428" height="491" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2"/></g>
+<text x="343.0" y="1718" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="343.0" dy="0">branch1x1</tspan>
+</text>
+<text x="737.0" y="1718" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="737.0" dy="0">[B,320,8,8]</tspan>
+</text>
+<text x="741.0" y="1750" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="741.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch1x1" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch1x1; </title><rect x="358.0" y="1762" width="364" height="391" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="375.0" y="1792" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="375.0" dy="0">branch1x1</tspan>
+</text>
+<text x="705.0" y="1792" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="705.0" dy="0">[B,320,8,8]</tspan>
+</text>
+<text x="709.0" y="1824" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="709.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch1x1.conv" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch1x1.conv; </title><rect x="390.0" y="2046" width="300" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="540.0" y="2073" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="540.0" dy="0">Conv 1 / 1280→320</tspan>
+</text>
+<text x="540.0" y="2097" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="540.0" dy="0">[B,320,8,8]</tspan>
+</text>
+<text x="677.0" y="2117" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="677.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch1x1.bn" data-visual-role="norm"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch1x1.bn; </title><rect x="390.0" y="1941" width="300" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="540.0" y="1968" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="540.0" dy="0">BatchNorm</tspan>
+</text>
+<text x="540.0" y="1992" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="540.0" dy="0">[B,320,8,8]</tspan>
+</text>
+<text x="677.0" y="2012" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="677.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch1x1.relu" data-visual-role="activation"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=not asserted; </title><rect x="390.0" y="1836" width="300" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="540.0" y="1863" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="540.0" dy="0">ReLU</tspan>
+</text>
+<text x="540.0" y="1887" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="540.0" dy="0">[B,320,8,8]</tspan>
+</text>
+<text x="677.0" y="1907" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="677.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<path data-route-id="route-0001" d="M 540.0,2153 L 540.0,2127" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0002" d="M 540.0,2046 L 540.0,2022" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0003" d="M 540.0,1941 L 540.0,1917" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0004" d="M 540.0,1836 L 540.0,1762" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0005" d="M 540.0,2179 L 540.0,2153" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0006" d="M 540.0,1762 L 540.0,1688" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="inception_split.path.branch3x3" data-visual-role="group"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=not asserted; </title><rect x="802.0" y="979" width="904" height="1200" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2"/></g>
+<text x="819.0" y="1009" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="819.0" dy="0">branch3x3</tspan>
+</text>
+<text x="1689.0" y="1009" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1689.0" dy="0">[B,768,8,8]</tspan>
+</text>
+<text x="1693.0" y="1041" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1693.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3_1" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3_1; </title><rect x="1072.0" y="1762" width="364" height="391" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1089.0" y="1792" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1089.0" dy="0">branch3x3_1</tspan>
+</text>
+<text x="1419.0" y="1792" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1419.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="1423.0" y="1824" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1423.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3_1.conv" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3_1.conv; </title><rect x="1104.0" y="2046" width="300" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1254.0" y="2073" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1254.0" dy="0">Conv 1 / 1280→384</tspan>
+</text>
+<text x="1254.0" y="2097" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1254.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="1391.0" y="2117" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1391.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3_1.bn" data-visual-role="norm"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3_1.bn; </title><rect x="1104.0" y="1941" width="300" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="1254.0" y="1968" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1254.0" dy="0">BatchNorm</tspan>
+</text>
+<text x="1254.0" y="1992" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1254.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="1391.0" y="2012" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1391.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3_1.relu" data-visual-role="activation"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=not asserted; </title><rect x="1104.0" y="1836" width="300" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="1254.0" y="1863" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1254.0" dy="0">ReLU</tspan>
+</text>
+<text x="1254.0" y="1887" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1254.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="1391.0" y="1907" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1391.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<path data-route-id="route-0007" d="M 1254.0,2153 L 1254.0,2127" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0008" d="M 1254.0,2046 L 1254.0,2022" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0009" d="M 1254.0,1941 L 1254.0,1917" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0010" d="M 1254.0,1836 L 1254.0,1762" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="inception_split.branch3x3.split" data-visual-role="inner"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=not asserted; </title><rect x="834.0" y="1158" width="840" height="580" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="851.0" y="1188" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="851.0" dy="0">Factorized split kernels</tspan>
+</text>
+<text x="1657.0" y="1188" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1657.0" dy="0">2 independent tensors</tspan>
+</text>
+<text x="1661.0" y="1220" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1661.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3_2a" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3_2a; </title><rect x="866.0" y="1232" width="364" height="432" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="883.0" y="1262" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="883.0" dy="0">branch3x3_2</tspan>
+<tspan x="883.0" dy="25.959999999999997">a</tspan>
+</text>
+<text x="1213.0" y="1262" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1213.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="1217.0" y="1311" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1217.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3_2a.conv" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3_2a.conv; </title><rect x="898.0" y="1533" width="300" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1048.0" y="1560" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1048.0" dy="0">Conv (1, 3) /</tspan>
+<tspan x="1048.0" dy="23.599999999999998">384→384</tspan>
+</text>
+<text x="1048.0" y="1608" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1048.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="1185.0" y="1628" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1185.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3_2a.bn" data-visual-role="norm"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3_2a.bn; </title><rect x="898.0" y="1428" width="300" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="1048.0" y="1455" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1048.0" dy="0">BatchNorm</tspan>
+</text>
+<text x="1048.0" y="1479" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1048.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="1185.0" y="1499" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1185.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3_2a.relu" data-visual-role="activation"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=not asserted; </title><rect x="898.0" y="1323" width="300" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="1048.0" y="1350" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1048.0" dy="0">ReLU</tspan>
+</text>
+<text x="1048.0" y="1374" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1048.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="1185.0" y="1394" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1185.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<path data-route-id="route-0011" d="M 1048.0,1664 L 1048.0,1638" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0012" d="M 1048.0,1533 L 1048.0,1509" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0013" d="M 1048.0,1428 L 1048.0,1404" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0014" d="M 1048.0,1323 L 1048.0,1232" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="inception_split.branch3x3_2b" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3_2b; </title><rect x="1278.0" y="1232" width="364" height="432" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1295.0" y="1262" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1295.0" dy="0">branch3x3_2</tspan>
+<tspan x="1295.0" dy="25.959999999999997">b</tspan>
+</text>
+<text x="1625.0" y="1262" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1625.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="1629.0" y="1311" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1629.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3_2b.conv" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3_2b.conv; </title><rect x="1310.0" y="1533" width="300" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1460.0" y="1560" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1460.0" dy="0">Conv (3, 1) /</tspan>
+<tspan x="1460.0" dy="23.599999999999998">384→384</tspan>
+</text>
+<text x="1460.0" y="1608" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1460.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="1597.0" y="1628" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1597.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3_2b.bn" data-visual-role="norm"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3_2b.bn; </title><rect x="1310.0" y="1428" width="300" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="1460.0" y="1455" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1460.0" dy="0">BatchNorm</tspan>
+</text>
+<text x="1460.0" y="1479" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1460.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="1597.0" y="1499" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1597.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3_2b.relu" data-visual-role="activation"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=not asserted; </title><rect x="1310.0" y="1323" width="300" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="1460.0" y="1350" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1460.0" dy="0">ReLU</tspan>
+</text>
+<text x="1460.0" y="1374" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1460.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="1597.0" y="1394" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1597.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<path data-route-id="route-0015" d="M 1460.0,1664 L 1460.0,1638" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0016" d="M 1460.0,1533 L 1460.0,1509" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0017" d="M 1460.0,1428 L 1460.0,1404" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0018" d="M 1460.0,1323 L 1460.0,1232" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0019" d="M 1254.0,1738 L 1254.0,1694" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0020" d="M 1048.0,1694 L 1460.0,1694" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0021" d="M 1048.0,1694 L 1048.0,1664" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0022" d="M 1048.0,1232 L 1048.0,1214" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0023" d="M 1460.0,1694 L 1460.0,1664" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0024" d="M 1460.0,1232 L 1460.0,1214" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0025" d="M 1048.0,1214 L 1460.0,1214" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0026" d="M 1254.0,1214 L 1254.0,1158" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="inception_split.branch3x3.concat" data-visual-role="concat"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; parameter=not asserted; </title><rect x="1104.0" y="1053" width="300" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="1254.0" y="1080" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1254.0" dy="0">Concat split outputs</tspan>
+</text>
+<text x="1254.0" y="1104" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1254.0" dy="0">[B,768,8,8]</tspan>
+</text>
+<text x="1391.0" y="1124" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1391.0" dy="0">E005</tspan>
+</text>
+<path data-route-id="route-0027" d="M 1254.0,2179 L 1254.0,2153" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0028" d="M 1254.0,1762 L 1254.0,1738" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0029" d="M 1254.0,1158 L 1254.0,1134" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0030" d="M 1254.0,1053 L 1254.0,979" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="inception_split.path.branch3x3dbl" data-visual-role="group"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=not asserted; </title><rect x="1754.0" y="530" width="904" height="1649" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2"/></g>
+<text x="1771.0" y="560" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1771.0" dy="0">branch3x3dbl</tspan>
+</text>
+<text x="2641.0" y="560" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2641.0" dy="0">[B,768,8,8]</tspan>
+</text>
+<text x="2645.0" y="592" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2645.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3dbl_1" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3dbl_1; </title><rect x="2024.0" y="1745" width="364" height="408" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="2041.0" y="1775" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="2041.0" dy="0">branch3x3db</tspan>
+<tspan x="2041.0" dy="25.959999999999997">l_1</tspan>
+</text>
+<text x="2371.0" y="1775" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2371.0" dy="0">[B,448,8,8]</tspan>
+</text>
+<text x="2375.0" y="1824" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2375.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3dbl_1.conv" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3dbl_1.conv; </title><rect x="2056.0" y="2046" width="300" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="2206.0" y="2073" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2206.0" dy="0">Conv 1 / 1280→448</tspan>
+</text>
+<text x="2206.0" y="2097" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2206.0" dy="0">[B,448,8,8]</tspan>
+</text>
+<text x="2343.0" y="2117" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2343.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3dbl_1.bn" data-visual-role="norm"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3dbl_1.bn; </title><rect x="2056.0" y="1941" width="300" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="2206.0" y="1968" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2206.0" dy="0">BatchNorm</tspan>
+</text>
+<text x="2206.0" y="1992" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2206.0" dy="0">[B,448,8,8]</tspan>
+</text>
+<text x="2343.0" y="2012" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2343.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3dbl_1.relu" data-visual-role="activation"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=not asserted; </title><rect x="2056.0" y="1836" width="300" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="2206.0" y="1863" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2206.0" dy="0">ReLU</tspan>
+</text>
+<text x="2206.0" y="1887" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2206.0" dy="0">[B,448,8,8]</tspan>
+</text>
+<text x="2343.0" y="1907" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2343.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<path data-route-id="route-0031" d="M 2206.0,2153 L 2206.0,2127" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0032" d="M 2206.0,2046 L 2206.0,2022" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0033" d="M 2206.0,1941 L 2206.0,1917" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0034" d="M 2206.0,1836 L 2206.0,1745" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="inception_split.branch3x3dbl_2" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3dbl_2; </title><rect x="2024.0" y="1313" width="364" height="408" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="2041.0" y="1343" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="2041.0" dy="0">branch3x3db</tspan>
+<tspan x="2041.0" dy="25.959999999999997">l_2</tspan>
+</text>
+<text x="2371.0" y="1343" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2371.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="2375.0" y="1392" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2375.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3dbl_2.conv" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3dbl_2.conv; </title><rect x="2056.0" y="1614" width="300" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="2206.0" y="1641" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2206.0" dy="0">Conv 3 / 448→384</tspan>
+</text>
+<text x="2206.0" y="1665" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2206.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="2343.0" y="1685" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2343.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3dbl_2.bn" data-visual-role="norm"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3dbl_2.bn; </title><rect x="2056.0" y="1509" width="300" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="2206.0" y="1536" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2206.0" dy="0">BatchNorm</tspan>
+</text>
+<text x="2206.0" y="1560" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2206.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="2343.0" y="1580" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2343.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3dbl_2.relu" data-visual-role="activation"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=not asserted; </title><rect x="2056.0" y="1404" width="300" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="2206.0" y="1431" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2206.0" dy="0">ReLU</tspan>
+</text>
+<text x="2206.0" y="1455" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2206.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="2343.0" y="1475" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2343.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<path data-route-id="route-0035" d="M 2206.0,1721 L 2206.0,1695" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0036" d="M 2206.0,1614 L 2206.0,1590" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0037" d="M 2206.0,1509 L 2206.0,1485" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0038" d="M 2206.0,1404 L 2206.0,1313" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="inception_split.branch3x3dbl.split" data-visual-role="inner"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=not asserted; </title><rect x="1786.0" y="709" width="840" height="580" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="1803.0" y="739" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1803.0" dy="0">Factorized split kernels</tspan>
+</text>
+<text x="2609.0" y="739" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2609.0" dy="0">2 independent tensors</tspan>
+</text>
+<text x="2613.0" y="771" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2613.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3dbl_3a" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3dbl_3a; </title><rect x="1818.0" y="783" width="364" height="432" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1835.0" y="813" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1835.0" dy="0">branch3x3db</tspan>
+<tspan x="1835.0" dy="25.959999999999997">l_3a</tspan>
+</text>
+<text x="2165.0" y="813" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2165.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="2169.0" y="862" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2169.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3dbl_3a.conv" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3dbl_3a.conv; </title><rect x="1850.0" y="1084" width="300" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="2000.0" y="1111" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2000.0" dy="0">Conv (1, 3) /</tspan>
+<tspan x="2000.0" dy="23.599999999999998">384→384</tspan>
+</text>
+<text x="2000.0" y="1159" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2000.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="2137.0" y="1179" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2137.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3dbl_3a.bn" data-visual-role="norm"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3dbl_3a.bn; </title><rect x="1850.0" y="979" width="300" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="2000.0" y="1006" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2000.0" dy="0">BatchNorm</tspan>
+</text>
+<text x="2000.0" y="1030" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2000.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="2137.0" y="1050" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2137.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3dbl_3a.relu" data-visual-role="activation"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=not asserted; </title><rect x="1850.0" y="874" width="300" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="2000.0" y="901" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2000.0" dy="0">ReLU</tspan>
+</text>
+<text x="2000.0" y="925" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2000.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="2137.0" y="945" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2137.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<path data-route-id="route-0039" d="M 2000.0,1215 L 2000.0,1189" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0040" d="M 2000.0,1084 L 2000.0,1060" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0041" d="M 2000.0,979 L 2000.0,955" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0042" d="M 2000.0,874 L 2000.0,783" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="inception_split.branch3x3dbl_3b" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3dbl_3b; </title><rect x="2230.0" y="783" width="364" height="432" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="2247.0" y="813" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="2247.0" dy="0">branch3x3db</tspan>
+<tspan x="2247.0" dy="25.959999999999997">l_3b</tspan>
+</text>
+<text x="2577.0" y="813" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2577.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="2581.0" y="862" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2581.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3dbl_3b.conv" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3dbl_3b.conv; </title><rect x="2262.0" y="1084" width="300" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="2412.0" y="1111" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2412.0" dy="0">Conv (3, 1) /</tspan>
+<tspan x="2412.0" dy="23.599999999999998">384→384</tspan>
+</text>
+<text x="2412.0" y="1159" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2412.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="2549.0" y="1179" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2549.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3dbl_3b.bn" data-visual-role="norm"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch3x3dbl_3b.bn; </title><rect x="2262.0" y="979" width="300" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="2412.0" y="1006" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2412.0" dy="0">BatchNorm</tspan>
+</text>
+<text x="2412.0" y="1030" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2412.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="2549.0" y="1050" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2549.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch3x3dbl_3b.relu" data-visual-role="activation"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=not asserted; </title><rect x="2262.0" y="874" width="300" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="2412.0" y="901" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2412.0" dy="0">ReLU</tspan>
+</text>
+<text x="2412.0" y="925" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2412.0" dy="0">[B,384,8,8]</tspan>
+</text>
+<text x="2549.0" y="945" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2549.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<path data-route-id="route-0043" d="M 2412.0,1215 L 2412.0,1189" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0044" d="M 2412.0,1084 L 2412.0,1060" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0045" d="M 2412.0,979 L 2412.0,955" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0046" d="M 2412.0,874 L 2412.0,783" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0047" d="M 2206.0,1289 L 2206.0,1245" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0048" d="M 2000.0,1245 L 2412.0,1245" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0049" d="M 2000.0,1245 L 2000.0,1215" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0050" d="M 2000.0,783 L 2000.0,765" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0051" d="M 2412.0,1245 L 2412.0,1215" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0052" d="M 2412.0,783 L 2412.0,765" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0053" d="M 2000.0,765 L 2412.0,765" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0054" d="M 2206.0,765 L 2206.0,709" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="inception_split.branch3x3dbl.concat" data-visual-role="concat"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; parameter=not asserted; </title><rect x="2056.0" y="604" width="300" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="2206.0" y="631" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2206.0" dy="0">Concat split outputs</tspan>
+</text>
+<text x="2206.0" y="655" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2206.0" dy="0">[B,768,8,8]</tspan>
+</text>
+<text x="2343.0" y="675" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2343.0" dy="0">E005</tspan>
+</text>
+<path data-route-id="route-0055" d="M 2206.0,2179 L 2206.0,2153" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0056" d="M 2206.0,1745 L 2206.0,1721" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0057" d="M 2206.0,1313 L 2206.0,1289" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0058" d="M 2206.0,709 L 2206.0,685" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0059" d="M 2206.0,604 L 2206.0,530" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="inception_split.path.branch_pool" data-visual-role="group"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=not asserted; </title><rect x="2706.0" y="1583" width="428" height="596" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2"/></g>
+<text x="2723.0" y="1613" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="2723.0" dy="0">branch_pool</tspan>
+</text>
+<text x="3117.0" y="1613" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="3117.0" dy="0">[B,192,8,8]</tspan>
+</text>
+<text x="3121.0" y="1645" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="3121.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch_pool.pool" data-visual-role="pool"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; parameter=not asserted; </title><rect x="2770.0" y="2072" width="300" height="81" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2"/></g>
+<text x="2920.0" y="2099" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2920.0" dy="0">averagePool 3 / 1</tspan>
+</text>
+<text x="2920.0" y="2123" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2920.0" dy="0">[B,1280,8,8]</tspan>
+</text>
+<text x="3057.0" y="2143" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="3057.0" dy="0">E005</tspan>
+</text>
+<g data-node-id="inception_split.branch_pool" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch_pool; </title><rect x="2738.0" y="1657" width="364" height="391" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="2755.0" y="1687" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="2755.0" dy="0">branch_pool</tspan>
+</text>
+<text x="3085.0" y="1687" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="3085.0" dy="0">[B,192,8,8]</tspan>
+</text>
+<text x="3089.0" y="1719" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="3089.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch_pool.conv" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch_pool.conv; </title><rect x="2770.0" y="1941" width="300" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="2920.0" y="1968" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2920.0" dy="0">Conv 1 / 1280→192</tspan>
+</text>
+<text x="2920.0" y="1992" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2920.0" dy="0">[B,192,8,8]</tspan>
+</text>
+<text x="3057.0" y="2012" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="3057.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch_pool.bn" data-visual-role="norm"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=branch_pool.bn; </title><rect x="2770.0" y="1836" width="300" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="2920.0" y="1863" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2920.0" dy="0">BatchNorm</tspan>
+</text>
+<text x="2920.0" y="1887" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2920.0" dy="0">[B,192,8,8]</tspan>
+</text>
+<text x="3057.0" y="1907" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="3057.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<g data-node-id="inception_split.branch_pool.relu" data-visual-role="activation"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:399 InceptionE._forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; torchvision-v0.9.0-modules/torchvision/models/inception.py:465 BasicConv2d.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:475 BasicConv2d.forward; parameter=not asserted; </title><rect x="2770.0" y="1731" width="300" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="2920.0" y="1758" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="2920.0" dy="0">ReLU</tspan>
+</text>
+<text x="2920.0" y="1782" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2920.0" dy="0">[B,192,8,8]</tspan>
+</text>
+<text x="3057.0" y="1802" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="3057.0" dy="0">E004,E005,E006,E001,E002</tspan>
+</text>
+<path data-route-id="route-0060" d="M 2920.0,2048 L 2920.0,2022" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0061" d="M 2920.0,1941 L 2920.0,1917" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0062" d="M 2920.0,1836 L 2920.0,1812" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0063" d="M 2920.0,1731 L 2920.0,1657" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0064" d="M 2920.0,2179 L 2920.0,2153" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0065" d="M 2920.0,2072 L 2920.0,2048" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0066" d="M 2920.0,1657 L 2920.0,1583" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0067" d="M 1730.0,2253 L 1730.0,2209" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0068" d="M 540.0,2209 L 2920.0,2209" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0069" d="M 540.0,2209 L 540.0,2179" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0070" d="M 540.0,1688 L 540.0,512" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0071" d="M 1254.0,2209 L 1254.0,2179" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0072" d="M 1254.0,979 L 1254.0,512" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0073" d="M 2206.0,2209 L 2206.0,2179" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0074" d="M 2206.0,530 L 2206.0,512" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0075" d="M 2920.0,2209 L 2920.0,2179" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0076" d="M 2920.0,1583 L 2920.0,512" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0077" d="M 540.0,512 L 2920.0,512" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0078" d="M 1730.0,512 L 1730.0,456" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="inception_split.concat" data-visual-role="concat"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; parameter=not asserted; </title><rect x="1580.0" y="351" width="300" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="1730.0" y="378" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1730.0" dy="0">Concat channel dim=1</tspan>
+</text>
+<text x="1730.0" y="402" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1730.0" dy="0">[B,2048,8,8]</tspan>
+</text>
+<text x="1867.0" y="422" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1867.0" dy="0">E004,E006</tspan>
+</text>
+<path data-route-id="route-0079" d="M 1730.0,2279 L 1730.0,2253" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0080" d="M 1730.0,456 L 1730.0,432" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0081" d="M 1730.0,351 L 1730.0,277" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="inception_split.output" data-visual-role="output"><title>torchvision-v0.9.0-modules/torchvision/models/inception.py:378 InceptionE.__init__; torchvision-v0.9.0-modules/torchvision/models/inception.py:423 InceptionE.forward; parameter=not asserted; </title><rect x="1580.0" y="172" width="300" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="1730.0" y="199" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1730.0" dy="0">Module output</tspan>
+</text>
+<text x="1730.0" y="223" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1730.0" dy="0">[B,2048,8,8]</tspan>
+</text>
+<text x="1867.0" y="243" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1867.0" dy="0">E004,E006</tspan>
+</text>
+<path data-route-id="route-0082" d="M 1730.0,2410 L 1730.0,2384" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0083" d="M 1730.0,2303 L 1730.0,2279" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0084" d="M 1730.0,277 L 1730.0,253" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0085" d="M 1730.0,172 L 1730.0,98" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="1185.0" y="2447" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348"/>
+<text x="1208.0" y="2460" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1208.0" dy="0">Input</tspan>
+</text>
+<rect x="1370.0" y="2447" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348"/>
+<text x="1393.0" y="2460" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1393.0" dy="0">Conv</tspan>
+</text>
+<rect x="1555.0" y="2447" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348"/>
+<text x="1578.0" y="2460" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1578.0" dy="0">BN</tspan>
+</text>
+<rect x="1740.0" y="2447" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348"/>
+<text x="1763.0" y="2460" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1763.0" dy="0">Concat</tspan>
+</text>
+<rect x="1925.0" y="2447" width="16" height="16" rx="3" fill="#d6f0df" stroke="#263348"/>
+<text x="1948.0" y="2460" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1948.0" dy="0">Pool</tspan>
+</text>
+<rect x="2110.0" y="2447" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348"/>
+<text x="2133.0" y="2460" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="2133.0" dy="0">Activation</tspan>
+</text>
+<rect x="1647.5" y="2477" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348"/>
+<text x="1670.5" y="2490" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1670.5" dy="0">Output</tspan>
+</text>
+<text x="1730.0" y="2518" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1730.0" dy="0">Declared module scope; source code and kernels are not executed.</tspan>
+<tspan x="1730.0" dy="16.52">Different parameter paths own independent weights; colors express operation roles.</tspan>
+</text>
+<text x="1730.0" y="2592" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1730.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+<text x="1730.0" y="2622" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1730.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+<text x="1730.0" y="2647" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1730.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+</svg>

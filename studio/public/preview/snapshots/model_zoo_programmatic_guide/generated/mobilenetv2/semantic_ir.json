@@ -1,0 +1,2498 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "mobilenetv2",
+  "profile": {
+    "task": "CIFAR-10 classification",
+    "mode": "eval",
+    "input_channels": 3,
+    "input_size": [
+      64,
+      64
+    ],
+    "constructor": "torch.hub.load('pytorch/vision:v0.9.0','mobilenet_v2',pretrained=False)",
+    "pretrained": false,
+    "torchvision_ref": "v0.9.0",
+    "width_mult": 1.0,
+    "round_nearest": 8,
+    "inverted_residual_setting": [
+      [
+        1,
+        16,
+        1,
+        1
+      ],
+      [
+        6,
+        24,
+        2,
+        2
+      ],
+      [
+        6,
+        32,
+        3,
+        2
+      ],
+      [
+        6,
+        64,
+        4,
+        2
+      ],
+      [
+        6,
+        96,
+        3,
+        1
+      ],
+      [
+        6,
+        160,
+        3,
+        2
+      ],
+      [
+        6,
+        320,
+        1,
+        1
+      ]
+    ],
+    "stage_channels": [
+      16,
+      24,
+      32,
+      64,
+      96,
+      160,
+      320
+    ],
+    "stage_spatial": [
+      32,
+      16,
+      8,
+      4,
+      4,
+      2,
+      2
+    ],
+    "total_inverted_residual_blocks": 17,
+    "last_channel": 1280,
+    "num_classes_after_replacement": 10,
+    "dropout": 0.2,
+    "output": "logits",
+    "symbolic_shapes": true,
+    "model_executed": false,
+    "config_source": "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-mobilenet-v2-cifar10.py notebook cells 9, 12, 14"
+  },
+  "source": {
+    "repository": "rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "d72c614d79563c7756290b44770a5262b15bfc58e12c9844311724d2862bc09c",
+    "projects": {
+      "deeplearning-models-batch2": {
+        "repository": "rasbt/deeplearning-models",
+        "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+        "snapshot": "d72c614d79563c7756290b44770a5262b15bfc58e12c9844311724d2862bc09c"
+      },
+      "torchvision-v0.9.0": {
+        "repository": "pytorch/vision",
+        "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+        "snapshot": "95ebc22631510d035d626f3e1b116d3c3b1df51f8c27ebcd838d6110eb3ad434"
+      }
+    }
+  },
+  "nodes": [
+    {
+      "id": "mobile.model",
+      "label": "MobileNetV2 · CIFAR-10",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::mobilenet_v2",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2"
+      ],
+      "shape": "logits: [B,10]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E011",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.input",
+      "label": "CIFAR-10 image",
+      "kind": "input",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2._forward_impl"
+      ],
+      "shape": "[B,3,64,64]",
+      "detail": [
+        "caller Resize70 then Crop64; Normalize(mean=std=0.5)"
+      ],
+      "parent": "mobile.model",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stem",
+      "label": "Stem Conv / BN / ReLU6",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__"
+      ],
+      "shape": "[B,32,32,32]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "mobile.model",
+      "source_evidence": [
+        "E002",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stem.conv",
+      "label": "Conv2d 3x3",
+      "kind": "conv2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__"
+      ],
+      "shape": "[B,32,32,32]",
+      "detail": [
+        "3 -> 32 channels; stride=2; groups=1",
+        "padding=1; bias=False"
+      ],
+      "parameter": "features.0.0",
+      "groups": 1,
+      "parent": "mobile.stem",
+      "source_evidence": [
+        "E002",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stem.bn",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__"
+      ],
+      "shape": "[B,32,32,32]",
+      "detail": [
+        "selected eval: running statistics; affine=True"
+      ],
+      "parameter": "features.0.1",
+      "parent": "mobile.stem",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stem.relu6",
+      "label": "ReLU6",
+      "kind": "relu6",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__"
+      ],
+      "shape": "[B,32,32,32]",
+      "detail": [
+        "inplace=True; clips at 6"
+      ],
+      "parent": "mobile.stem",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage1",
+      "label": "Stage 1 · c=16 / n=1",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,16,32,32]",
+      "detail": [
+        "t=1; first stride=1; later blocks use stride 1",
+        "logical stage from the source settings table; features is one Sequential"
+      ],
+      "feature_indices": [
+        1
+      ],
+      "mode": "chain",
+      "parent": "mobile.model",
+      "source_evidence": [
+        "E007",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage1.first",
+      "label": "IR block · no skip",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__"
+      ],
+      "shape": "[B,16,32,32]",
+      "detail": [
+        "t=1; hidden=32; input channels=32",
+        "identity only when stride=1 and input channels=output channels",
+        "separate weights for each feature index"
+      ],
+      "residual": false,
+      "parameter_scope": "features.1.conv",
+      "expand_ratio": 1,
+      "hidden_channels": 32,
+      "stride": 1,
+      "use_res_connect": false,
+      "feature_indices": [
+        1
+      ],
+      "mode": "chain",
+      "parent": "mobile.stage1",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage1.first.depthwise",
+      "label": "Depthwise spatial convolution",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__"
+      ],
+      "shape": "[B,32,32,32]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "mobile.stage1.first",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage1.first.depthwise.conv",
+      "label": "Conv2d 3x3",
+      "kind": "conv2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__"
+      ],
+      "shape": "[B,32,32,32]",
+      "detail": [
+        "32 -> 32 channels; stride=1; groups=32",
+        "padding=1; bias=False"
+      ],
+      "parameter": "features.1.conv.0.0",
+      "groups": 32,
+      "parent": "mobile.stage1.first.depthwise",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage1.first.depthwise.bn",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__"
+      ],
+      "shape": "[B,32,32,32]",
+      "detail": [
+        "selected eval: running statistics; affine=True"
+      ],
+      "parameter": "features.1.conv.0.1",
+      "parent": "mobile.stage1.first.depthwise",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage1.first.depthwise.relu6",
+      "label": "ReLU6",
+      "kind": "relu6",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__"
+      ],
+      "shape": "[B,32,32,32]",
+      "detail": [
+        "inplace=True; clips at 6"
+      ],
+      "parent": "mobile.stage1.first.depthwise",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage1.first.project",
+      "label": "Linear bottleneck Conv1x1",
+      "kind": "conv2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__"
+      ],
+      "shape": "[B,16,32,32]",
+      "detail": [
+        "32 -> 16 channels; stride=1; bias=False",
+        "linear means no following ReLU6, not nn.Linear"
+      ],
+      "parameter": "features.1.conv.1",
+      "parent": "mobile.stage1.first",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage1.first.project_bn",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__"
+      ],
+      "shape": "[B,16,32,32]",
+      "detail": [
+        "no activation after this BN"
+      ],
+      "parameter": "features.1.conv.2",
+      "parent": "mobile.stage1.first",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2",
+      "label": "Stage 2 · c=24 / n=2",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,24,16,16]",
+      "detail": [
+        "t=6; first stride=2; later blocks use stride 1",
+        "logical stage from the source settings table; features is one Sequential"
+      ],
+      "feature_indices": [
+        2,
+        3
+      ],
+      "mode": "chain",
+      "parent": "mobile.model",
+      "source_evidence": [
+        "E007",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.first",
+      "label": "IR block · no skip",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__"
+      ],
+      "shape": "[B,24,16,16]",
+      "detail": [
+        "t=6; hidden=96; input channels=16",
+        "identity only when stride=1 and input channels=output channels",
+        "separate weights for each feature index"
+      ],
+      "residual": false,
+      "parameter_scope": "features.2.conv",
+      "expand_ratio": 6,
+      "hidden_channels": 96,
+      "stride": 2,
+      "use_res_connect": false,
+      "feature_indices": [
+        2
+      ],
+      "mode": "chain",
+      "parent": "mobile.stage2",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.first.expand",
+      "label": "Pointwise expansion",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__"
+      ],
+      "shape": "[B,96,32,32]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "mobile.stage2.first",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.first.expand.conv",
+      "label": "Conv2d 1x1",
+      "kind": "conv2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__"
+      ],
+      "shape": "[B,96,32,32]",
+      "detail": [
+        "16 -> 96 channels; stride=1; groups=1",
+        "padding=0; bias=False"
+      ],
+      "parameter": "features.2.conv.0.0",
+      "groups": 1,
+      "parent": "mobile.stage2.first.expand",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.first.expand.bn",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__"
+      ],
+      "shape": "[B,96,32,32]",
+      "detail": [
+        "selected eval: running statistics; affine=True"
+      ],
+      "parameter": "features.2.conv.0.1",
+      "parent": "mobile.stage2.first.expand",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.first.expand.relu6",
+      "label": "ReLU6",
+      "kind": "relu6",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__"
+      ],
+      "shape": "[B,96,32,32]",
+      "detail": [
+        "inplace=True; clips at 6"
+      ],
+      "parent": "mobile.stage2.first.expand",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.first.depthwise",
+      "label": "Depthwise spatial convolution",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__"
+      ],
+      "shape": "[B,96,16,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "mobile.stage2.first",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.first.depthwise.conv",
+      "label": "Conv2d 3x3",
+      "kind": "conv2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__"
+      ],
+      "shape": "[B,96,16,16]",
+      "detail": [
+        "96 -> 96 channels; stride=2; groups=96",
+        "padding=1; bias=False"
+      ],
+      "parameter": "features.2.conv.1.0",
+      "groups": 96,
+      "parent": "mobile.stage2.first.depthwise",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.first.depthwise.bn",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__"
+      ],
+      "shape": "[B,96,16,16]",
+      "detail": [
+        "selected eval: running statistics; affine=True"
+      ],
+      "parameter": "features.2.conv.1.1",
+      "parent": "mobile.stage2.first.depthwise",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.first.depthwise.relu6",
+      "label": "ReLU6",
+      "kind": "relu6",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__"
+      ],
+      "shape": "[B,96,16,16]",
+      "detail": [
+        "inplace=True; clips at 6"
+      ],
+      "parent": "mobile.stage2.first.depthwise",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.first.project",
+      "label": "Linear bottleneck Conv1x1",
+      "kind": "conv2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__"
+      ],
+      "shape": "[B,24,16,16]",
+      "detail": [
+        "96 -> 24 channels; stride=1; bias=False",
+        "linear means no following ReLU6, not nn.Linear"
+      ],
+      "parameter": "features.2.conv.2",
+      "parent": "mobile.stage2.first",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.first.project_bn",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__"
+      ],
+      "shape": "[B,24,16,16]",
+      "detail": [
+        "no activation after this BN"
+      ],
+      "parameter": "features.2.conv.3",
+      "parent": "mobile.stage2.first",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.repeat",
+      "label": "Identity IR block",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__"
+      ],
+      "shape": "[B,24,16,16]",
+      "detail": [
+        "t=6; hidden=144; input channels=24",
+        "identity only when stride=1 and input channels=output channels",
+        "separate weights for each feature index"
+      ],
+      "residual": true,
+      "parameter_scope": "features.3.conv",
+      "expand_ratio": 6,
+      "hidden_channels": 144,
+      "stride": 1,
+      "use_res_connect": true,
+      "feature_indices": [
+        3
+      ],
+      "mode": "chain",
+      "parent": "mobile.stage2",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.repeat.expand",
+      "label": "Pointwise expansion",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__"
+      ],
+      "shape": "[B,144,16,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "mobile.stage2.repeat",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.repeat.expand.conv",
+      "label": "Conv2d 1x1",
+      "kind": "conv2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__"
+      ],
+      "shape": "[B,144,16,16]",
+      "detail": [
+        "24 -> 144 channels; stride=1; groups=1",
+        "padding=0; bias=False"
+      ],
+      "parameter": "features.3.conv.0.0",
+      "groups": 1,
+      "parent": "mobile.stage2.repeat.expand",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.repeat.expand.bn",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__"
+      ],
+      "shape": "[B,144,16,16]",
+      "detail": [
+        "selected eval: running statistics; affine=True"
+      ],
+      "parameter": "features.3.conv.0.1",
+      "parent": "mobile.stage2.repeat.expand",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.repeat.expand.relu6",
+      "label": "ReLU6",
+      "kind": "relu6",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__"
+      ],
+      "shape": "[B,144,16,16]",
+      "detail": [
+        "inplace=True; clips at 6"
+      ],
+      "parent": "mobile.stage2.repeat.expand",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.repeat.depthwise",
+      "label": "Depthwise spatial convolution",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__"
+      ],
+      "shape": "[B,144,16,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "mobile.stage2.repeat",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.repeat.depthwise.conv",
+      "label": "Conv2d 3x3",
+      "kind": "conv2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__"
+      ],
+      "shape": "[B,144,16,16]",
+      "detail": [
+        "144 -> 144 channels; stride=1; groups=144",
+        "padding=1; bias=False"
+      ],
+      "parameter": "features.3.conv.1.0",
+      "groups": 144,
+      "parent": "mobile.stage2.repeat.depthwise",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.repeat.depthwise.bn",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__"
+      ],
+      "shape": "[B,144,16,16]",
+      "detail": [
+        "selected eval: running statistics; affine=True"
+      ],
+      "parameter": "features.3.conv.1.1",
+      "parent": "mobile.stage2.repeat.depthwise",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.repeat.depthwise.relu6",
+      "label": "ReLU6",
+      "kind": "relu6",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__"
+      ],
+      "shape": "[B,144,16,16]",
+      "detail": [
+        "inplace=True; clips at 6"
+      ],
+      "parent": "mobile.stage2.repeat.depthwise",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.repeat.project",
+      "label": "Linear bottleneck Conv1x1",
+      "kind": "conv2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__"
+      ],
+      "shape": "[B,24,16,16]",
+      "detail": [
+        "144 -> 24 channels; stride=1; bias=False",
+        "linear means no following ReLU6, not nn.Linear"
+      ],
+      "parameter": "features.3.conv.2",
+      "parent": "mobile.stage2.repeat",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.repeat.project_bn",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__"
+      ],
+      "shape": "[B,24,16,16]",
+      "detail": [
+        "no activation after this BN"
+      ],
+      "parameter": "features.3.conv.3",
+      "parent": "mobile.stage2.repeat",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage2.repeat.add",
+      "label": "Add identity shortcut",
+      "kind": "add",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,24,16,16]",
+      "detail": [
+        "return x + self.conv(x); no activation after Add"
+      ],
+      "parent": "mobile.stage2.repeat",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "mobile.stage3",
+      "label": "Stage 3 · c=32 / n=3",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,32,8,8]",
+      "detail": [
+        "t=6; first stride=2; later blocks use stride 1",
+        "logical stage from the source settings table; features is one Sequential"
+      ],
+      "feature_indices": [
+        4,
+        5,
+        6
+      ],
+      "mode": "chain",
+      "parent": "mobile.model",
+      "source_evidence": [
+        "E007",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage3.first",
+      "label": "First IR block · no skip",
+      "kind": "inverted_residual",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__"
+      ],
+      "shape": "[B,32,8,8]",
+      "detail": [
+        "24 -> 32 channels; t=6; hidden=144; stride=2",
+        "Expand1x1-BN-ReLU6 -> depthwise3x3-BN-ReLU6 -> project1x1-BN",
+        "no identity Add; shape/channel change",
+        "feature indices: 4; separate weights"
+      ],
+      "parameter_scope": "features.4.conv",
+      "parameter_members": [
+        "features.4.conv.0.0",
+        "features.4.conv.0.1",
+        "features.4.conv.1.0",
+        "features.4.conv.1.1",
+        "features.4.conv.2",
+        "features.4.conv.3"
+      ],
+      "feature_indices": [
+        4
+      ],
+      "expand_ratio": 6,
+      "hidden_channels": 144,
+      "stride": 2,
+      "use_res_connect": false,
+      "repeat": {
+        "count": 1,
+        "index": "j",
+        "independent_parameters": true,
+        "instance_indices": [
+          4
+        ]
+      },
+      "parent": "mobile.stage3",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage3.repeat",
+      "label": "Identity IR block x 2",
+      "kind": "inverted_residual",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__"
+      ],
+      "shape": "[B,32,8,8]",
+      "detail": [
+        "32 -> 32 channels; t=6; hidden=192; stride=1",
+        "Expand1x1-BN-ReLU6 -> depthwise3x3-BN-ReLU6 -> project1x1-BN",
+        "then Add input; no post-Add activation",
+        "feature indices: 5,6; separate weights"
+      ],
+      "parameter_scope": "features.{j}.conv",
+      "parameter_members": [
+        "features.{j}.conv.0.0",
+        "features.{j}.conv.0.1",
+        "features.{j}.conv.1.0",
+        "features.{j}.conv.1.1",
+        "features.{j}.conv.2",
+        "features.{j}.conv.3"
+      ],
+      "feature_indices": [
+        5,
+        6
+      ],
+      "expand_ratio": 6,
+      "hidden_channels": 192,
+      "stride": 1,
+      "use_res_connect": true,
+      "repeat": {
+        "count": 2,
+        "index": "j",
+        "independent_parameters": true,
+        "instance_indices": [
+          5,
+          6
+        ]
+      },
+      "parent": "mobile.stage3",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage4",
+      "label": "Stage 4 · c=64 / n=4",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,64,4,4]",
+      "detail": [
+        "t=6; first stride=2; later blocks use stride 1",
+        "logical stage from the source settings table; features is one Sequential"
+      ],
+      "feature_indices": [
+        7,
+        8,
+        9,
+        10
+      ],
+      "mode": "chain",
+      "parent": "mobile.model",
+      "source_evidence": [
+        "E007",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage4.first",
+      "label": "First IR block · no skip",
+      "kind": "inverted_residual",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__"
+      ],
+      "shape": "[B,64,4,4]",
+      "detail": [
+        "32 -> 64 channels; t=6; hidden=192; stride=2",
+        "Expand1x1-BN-ReLU6 -> depthwise3x3-BN-ReLU6 -> project1x1-BN",
+        "no identity Add; shape/channel change",
+        "feature indices: 7; separate weights"
+      ],
+      "parameter_scope": "features.7.conv",
+      "parameter_members": [
+        "features.7.conv.0.0",
+        "features.7.conv.0.1",
+        "features.7.conv.1.0",
+        "features.7.conv.1.1",
+        "features.7.conv.2",
+        "features.7.conv.3"
+      ],
+      "feature_indices": [
+        7
+      ],
+      "expand_ratio": 6,
+      "hidden_channels": 192,
+      "stride": 2,
+      "use_res_connect": false,
+      "repeat": {
+        "count": 1,
+        "index": "j",
+        "independent_parameters": true,
+        "instance_indices": [
+          7
+        ]
+      },
+      "parent": "mobile.stage4",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage4.repeat",
+      "label": "Identity IR block x 3",
+      "kind": "inverted_residual",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__"
+      ],
+      "shape": "[B,64,4,4]",
+      "detail": [
+        "64 -> 64 channels; t=6; hidden=384; stride=1",
+        "Expand1x1-BN-ReLU6 -> depthwise3x3-BN-ReLU6 -> project1x1-BN",
+        "then Add input; no post-Add activation",
+        "feature indices: 8,9,10; separate weights"
+      ],
+      "parameter_scope": "features.{j}.conv",
+      "parameter_members": [
+        "features.{j}.conv.0.0",
+        "features.{j}.conv.0.1",
+        "features.{j}.conv.1.0",
+        "features.{j}.conv.1.1",
+        "features.{j}.conv.2",
+        "features.{j}.conv.3"
+      ],
+      "feature_indices": [
+        8,
+        9,
+        10
+      ],
+      "expand_ratio": 6,
+      "hidden_channels": 384,
+      "stride": 1,
+      "use_res_connect": true,
+      "repeat": {
+        "count": 3,
+        "index": "j",
+        "independent_parameters": true,
+        "instance_indices": [
+          8,
+          9,
+          10
+        ]
+      },
+      "parent": "mobile.stage4",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage5",
+      "label": "Stage 5 · c=96 / n=3",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,96,4,4]",
+      "detail": [
+        "t=6; first stride=1; later blocks use stride 1",
+        "logical stage from the source settings table; features is one Sequential"
+      ],
+      "feature_indices": [
+        11,
+        12,
+        13
+      ],
+      "mode": "chain",
+      "parent": "mobile.model",
+      "source_evidence": [
+        "E007",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage5.first",
+      "label": "First IR block · no skip",
+      "kind": "inverted_residual",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__"
+      ],
+      "shape": "[B,96,4,4]",
+      "detail": [
+        "64 -> 96 channels; t=6; hidden=384; stride=1",
+        "Expand1x1-BN-ReLU6 -> depthwise3x3-BN-ReLU6 -> project1x1-BN",
+        "no identity Add; shape/channel change",
+        "feature indices: 11; separate weights"
+      ],
+      "parameter_scope": "features.11.conv",
+      "parameter_members": [
+        "features.11.conv.0.0",
+        "features.11.conv.0.1",
+        "features.11.conv.1.0",
+        "features.11.conv.1.1",
+        "features.11.conv.2",
+        "features.11.conv.3"
+      ],
+      "feature_indices": [
+        11
+      ],
+      "expand_ratio": 6,
+      "hidden_channels": 384,
+      "stride": 1,
+      "use_res_connect": false,
+      "repeat": {
+        "count": 1,
+        "index": "j",
+        "independent_parameters": true,
+        "instance_indices": [
+          11
+        ]
+      },
+      "parent": "mobile.stage5",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage5.repeat",
+      "label": "Identity IR block x 2",
+      "kind": "inverted_residual",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__"
+      ],
+      "shape": "[B,96,4,4]",
+      "detail": [
+        "96 -> 96 channels; t=6; hidden=576; stride=1",
+        "Expand1x1-BN-ReLU6 -> depthwise3x3-BN-ReLU6 -> project1x1-BN",
+        "then Add input; no post-Add activation",
+        "feature indices: 12,13; separate weights"
+      ],
+      "parameter_scope": "features.{j}.conv",
+      "parameter_members": [
+        "features.{j}.conv.0.0",
+        "features.{j}.conv.0.1",
+        "features.{j}.conv.1.0",
+        "features.{j}.conv.1.1",
+        "features.{j}.conv.2",
+        "features.{j}.conv.3"
+      ],
+      "feature_indices": [
+        12,
+        13
+      ],
+      "expand_ratio": 6,
+      "hidden_channels": 576,
+      "stride": 1,
+      "use_res_connect": true,
+      "repeat": {
+        "count": 2,
+        "index": "j",
+        "independent_parameters": true,
+        "instance_indices": [
+          12,
+          13
+        ]
+      },
+      "parent": "mobile.stage5",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage6",
+      "label": "Stage 6 · c=160 / n=3",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,160,2,2]",
+      "detail": [
+        "t=6; first stride=2; later blocks use stride 1",
+        "logical stage from the source settings table; features is one Sequential"
+      ],
+      "feature_indices": [
+        14,
+        15,
+        16
+      ],
+      "mode": "chain",
+      "parent": "mobile.model",
+      "source_evidence": [
+        "E007",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage6.first",
+      "label": "First IR block · no skip",
+      "kind": "inverted_residual",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__"
+      ],
+      "shape": "[B,160,2,2]",
+      "detail": [
+        "96 -> 160 channels; t=6; hidden=576; stride=2",
+        "Expand1x1-BN-ReLU6 -> depthwise3x3-BN-ReLU6 -> project1x1-BN",
+        "no identity Add; shape/channel change",
+        "feature indices: 14; separate weights"
+      ],
+      "parameter_scope": "features.14.conv",
+      "parameter_members": [
+        "features.14.conv.0.0",
+        "features.14.conv.0.1",
+        "features.14.conv.1.0",
+        "features.14.conv.1.1",
+        "features.14.conv.2",
+        "features.14.conv.3"
+      ],
+      "feature_indices": [
+        14
+      ],
+      "expand_ratio": 6,
+      "hidden_channels": 576,
+      "stride": 2,
+      "use_res_connect": false,
+      "repeat": {
+        "count": 1,
+        "index": "j",
+        "independent_parameters": true,
+        "instance_indices": [
+          14
+        ]
+      },
+      "parent": "mobile.stage6",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage6.repeat",
+      "label": "Identity IR block x 2",
+      "kind": "inverted_residual",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__"
+      ],
+      "shape": "[B,160,2,2]",
+      "detail": [
+        "160 -> 160 channels; t=6; hidden=960; stride=1",
+        "Expand1x1-BN-ReLU6 -> depthwise3x3-BN-ReLU6 -> project1x1-BN",
+        "then Add input; no post-Add activation",
+        "feature indices: 15,16; separate weights"
+      ],
+      "parameter_scope": "features.{j}.conv",
+      "parameter_members": [
+        "features.{j}.conv.0.0",
+        "features.{j}.conv.0.1",
+        "features.{j}.conv.1.0",
+        "features.{j}.conv.1.1",
+        "features.{j}.conv.2",
+        "features.{j}.conv.3"
+      ],
+      "feature_indices": [
+        15,
+        16
+      ],
+      "expand_ratio": 6,
+      "hidden_channels": 960,
+      "stride": 1,
+      "use_res_connect": true,
+      "repeat": {
+        "count": 2,
+        "index": "j",
+        "independent_parameters": true,
+        "instance_indices": [
+          15,
+          16
+        ]
+      },
+      "parent": "mobile.stage6",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage7",
+      "label": "Stage 7 · c=320 / n=1",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,320,2,2]",
+      "detail": [
+        "t=6; first stride=1; later blocks use stride 1",
+        "logical stage from the source settings table; features is one Sequential"
+      ],
+      "feature_indices": [
+        17
+      ],
+      "mode": "chain",
+      "parent": "mobile.model",
+      "source_evidence": [
+        "E007",
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.stage7.first",
+      "label": "First IR block · no skip",
+      "kind": "inverted_residual",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__"
+      ],
+      "shape": "[B,320,2,2]",
+      "detail": [
+        "160 -> 320 channels; t=6; hidden=960; stride=1",
+        "Expand1x1-BN-ReLU6 -> depthwise3x3-BN-ReLU6 -> project1x1-BN",
+        "no identity Add; shape/channel change",
+        "feature indices: 17; separate weights"
+      ],
+      "parameter_scope": "features.17.conv",
+      "parameter_members": [
+        "features.17.conv.0.0",
+        "features.17.conv.0.1",
+        "features.17.conv.1.0",
+        "features.17.conv.1.1",
+        "features.17.conv.2",
+        "features.17.conv.3"
+      ],
+      "feature_indices": [
+        17
+      ],
+      "expand_ratio": 6,
+      "hidden_channels": 960,
+      "stride": 1,
+      "use_res_connect": false,
+      "repeat": {
+        "count": 1,
+        "index": "j",
+        "independent_parameters": true,
+        "instance_indices": [
+          17
+        ]
+      },
+      "parent": "mobile.stage7",
+      "source_evidence": [
+        "E004",
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.last",
+      "label": "Final pointwise features",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__"
+      ],
+      "shape": "[B,1280,2,2]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "mobile.model",
+      "source_evidence": [
+        "E002",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.last.conv",
+      "label": "Conv2d 1x1",
+      "kind": "conv2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__"
+      ],
+      "shape": "[B,1280,2,2]",
+      "detail": [
+        "320 -> 1280 channels; stride=1; groups=1",
+        "padding=0; bias=False"
+      ],
+      "parameter": "features.18.0",
+      "groups": 1,
+      "parent": "mobile.last",
+      "source_evidence": [
+        "E002",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.last.bn",
+      "label": "BatchNorm2d",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__"
+      ],
+      "shape": "[B,1280,2,2]",
+      "detail": [
+        "selected eval: running statistics; affine=True"
+      ],
+      "parameter": "features.18.1",
+      "parent": "mobile.last",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.last.relu6",
+      "label": "ReLU6",
+      "kind": "relu6",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::ConvBNActivation.__init__"
+      ],
+      "shape": "[B,1280,2,2]",
+      "detail": [
+        "inplace=True; clips at 6"
+      ],
+      "parent": "mobile.last",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.head",
+      "label": "CIFAR-10 classifier",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2._forward_impl"
+      ],
+      "shape": "logits: [B,10]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "mobile.model",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.pool",
+      "label": "Adaptive average pool 1x1",
+      "kind": "adaptive_avg_pool2d",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2._forward_impl"
+      ],
+      "shape": "[B,1280,1,1]",
+      "detail": [
+        "nn.functional.adaptive_avg_pool2d(x,(1,1))"
+      ],
+      "parent": "mobile.head",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.reshape",
+      "label": "Reshape preserving batch",
+      "kind": "tensor",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2._forward_impl"
+      ],
+      "shape": "[B,1280]",
+      "detail": [
+        "reshape(x.shape[0],-1); safe when B=1; not all-axis squeeze"
+      ],
+      "parent": "mobile.head",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.dropout",
+      "label": "Dropout 0.2",
+      "kind": "dropout",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2._forward_impl"
+      ],
+      "shape": "[B,1280]",
+      "detail": [
+        "classifier.0; identity in selected eval mode"
+      ],
+      "parent": "mobile.head",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.fc",
+      "label": "Replaced Linear 1280 -> 10",
+      "kind": "linear",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.__init__",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2._forward_impl"
+      ],
+      "shape": "logits: [B,10]",
+      "detail": [
+        "notebook replaces classifier[-1] after torch.hub.load",
+        "replacement weight initialization follows nn.Linear default"
+      ],
+      "parameter": "classifier.1",
+      "configuration_source": "deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-mobilenet-v2-cifar10.py",
+      "parent": "mobile.head",
+      "source_evidence": [
+        "E007",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mobile.output",
+      "label": "Returned logits",
+      "kind": "output",
+      "source": [
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2._forward_impl",
+        "torchvision-v0.9.0/torchvision/models/mobilenetv2.py::MobileNetV2.forward"
+      ],
+      "shape": "[B,10]",
+      "detail": [
+        "model forward has no Softmax"
+      ],
+      "parent": "mobile.model",
+      "source_evidence": [
+        "E008",
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "mobile.stem:in->mobile.stem.conv:in:boundary",
+      "src": "mobile.stem",
+      "dst": "mobile.stem.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stem.conv:out->mobile.stem.bn:in:tensor",
+      "src": "mobile.stem.conv",
+      "dst": "mobile.stem.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stem.bn:out->mobile.stem.relu6:in:tensor",
+      "src": "mobile.stem.bn",
+      "dst": "mobile.stem.relu6",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stem.relu6:out->mobile.stem:out:boundary",
+      "src": "mobile.stem.relu6",
+      "dst": "mobile.stem",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage1.first.depthwise:in->mobile.stage1.first.depthwise.conv:in:boundary",
+      "src": "mobile.stage1.first.depthwise",
+      "dst": "mobile.stage1.first.depthwise.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage1.first.depthwise.conv:out->mobile.stage1.first.depthwise.bn:in:tensor",
+      "src": "mobile.stage1.first.depthwise.conv",
+      "dst": "mobile.stage1.first.depthwise.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage1.first.depthwise.bn:out->mobile.stage1.first.depthwise.relu6:in:tensor",
+      "src": "mobile.stage1.first.depthwise.bn",
+      "dst": "mobile.stage1.first.depthwise.relu6",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage1.first.depthwise.relu6:out->mobile.stage1.first.depthwise:out:boundary",
+      "src": "mobile.stage1.first.depthwise.relu6",
+      "dst": "mobile.stage1.first.depthwise",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage1.first:in->mobile.stage1.first.depthwise:in:boundary",
+      "src": "mobile.stage1.first",
+      "dst": "mobile.stage1.first.depthwise",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage1.first.depthwise:out->mobile.stage1.first.project:in:tensor",
+      "src": "mobile.stage1.first.depthwise",
+      "dst": "mobile.stage1.first.project",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage1.first.project:out->mobile.stage1.first.project_bn:in:tensor",
+      "src": "mobile.stage1.first.project",
+      "dst": "mobile.stage1.first.project_bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage1.first.project_bn:out->mobile.stage1.first:out:boundary",
+      "src": "mobile.stage1.first.project_bn",
+      "dst": "mobile.stage1.first",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage1:in->mobile.stage1.first:in:boundary",
+      "src": "mobile.stage1",
+      "dst": "mobile.stage1.first",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage1.first:out->mobile.stage1:out:boundary",
+      "src": "mobile.stage1.first",
+      "dst": "mobile.stage1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage2.first.expand:in->mobile.stage2.first.expand.conv:in:boundary",
+      "src": "mobile.stage2.first.expand",
+      "dst": "mobile.stage2.first.expand.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage2.first.expand.conv:out->mobile.stage2.first.expand.bn:in:tensor",
+      "src": "mobile.stage2.first.expand.conv",
+      "dst": "mobile.stage2.first.expand.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage2.first.expand.bn:out->mobile.stage2.first.expand.relu6:in:tensor",
+      "src": "mobile.stage2.first.expand.bn",
+      "dst": "mobile.stage2.first.expand.relu6",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage2.first.expand.relu6:out->mobile.stage2.first.expand:out:boundary",
+      "src": "mobile.stage2.first.expand.relu6",
+      "dst": "mobile.stage2.first.expand",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage2.first.depthwise:in->mobile.stage2.first.depthwise.conv:in:boundary",
+      "src": "mobile.stage2.first.depthwise",
+      "dst": "mobile.stage2.first.depthwise.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage2.first.depthwise.conv:out->mobile.stage2.first.depthwise.bn:in:tensor",
+      "src": "mobile.stage2.first.depthwise.conv",
+      "dst": "mobile.stage2.first.depthwise.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage2.first.depthwise.bn:out->mobile.stage2.first.depthwise.relu6:in:tensor",
+      "src": "mobile.stage2.first.depthwise.bn",
+      "dst": "mobile.stage2.first.depthwise.relu6",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage2.first.depthwise.relu6:out->mobile.stage2.first.depthwise:out:boundary",
+      "src": "mobile.stage2.first.depthwise.relu6",
+      "dst": "mobile.stage2.first.depthwise",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage2.first:in->mobile.stage2.first.expand:in:boundary",
+      "src": "mobile.stage2.first",
+      "dst": "mobile.stage2.first.expand",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage2.first.expand:out->mobile.stage2.first.depthwise:in:tensor",
+      "src": "mobile.stage2.first.expand",
+      "dst": "mobile.stage2.first.depthwise",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage2.first.depthwise:out->mobile.stage2.first.project:in:tensor",
+      "src": "mobile.stage2.first.depthwise",
+      "dst": "mobile.stage2.first.project",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage2.first.project:out->mobile.stage2.first.project_bn:in:tensor",
+      "src": "mobile.stage2.first.project",
+      "dst": "mobile.stage2.first.project_bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage2.first.project_bn:out->mobile.stage2.first:out:boundary",
+      "src": "mobile.stage2.first.project_bn",
+      "dst": "mobile.stage2.first",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage2.repeat.expand:in->mobile.stage2.repeat.expand.conv:in:boundary",
+      "src": "mobile.stage2.repeat.expand",
+      "dst": "mobile.stage2.repeat.expand.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage2.repeat.expand.conv:out->mobile.stage2.repeat.expand.bn:in:tensor",
+      "src": "mobile.stage2.repeat.expand.conv",
+      "dst": "mobile.stage2.repeat.expand.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage2.repeat.expand.bn:out->mobile.stage2.repeat.expand.relu6:in:tensor",
+      "src": "mobile.stage2.repeat.expand.bn",
+      "dst": "mobile.stage2.repeat.expand.relu6",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage2.repeat.expand.relu6:out->mobile.stage2.repeat.expand:out:boundary",
+      "src": "mobile.stage2.repeat.expand.relu6",
+      "dst": "mobile.stage2.repeat.expand",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage2.repeat.depthwise:in->mobile.stage2.repeat.depthwise.conv:in:boundary",
+      "src": "mobile.stage2.repeat.depthwise",
+      "dst": "mobile.stage2.repeat.depthwise.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage2.repeat.depthwise.conv:out->mobile.stage2.repeat.depthwise.bn:in:tensor",
+      "src": "mobile.stage2.repeat.depthwise.conv",
+      "dst": "mobile.stage2.repeat.depthwise.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage2.repeat.depthwise.bn:out->mobile.stage2.repeat.depthwise.relu6:in:tensor",
+      "src": "mobile.stage2.repeat.depthwise.bn",
+      "dst": "mobile.stage2.repeat.depthwise.relu6",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage2.repeat.depthwise.relu6:out->mobile.stage2.repeat.depthwise:out:boundary",
+      "src": "mobile.stage2.repeat.depthwise.relu6",
+      "dst": "mobile.stage2.repeat.depthwise",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage2.repeat:in->mobile.stage2.repeat.expand:in:boundary",
+      "src": "mobile.stage2.repeat",
+      "dst": "mobile.stage2.repeat.expand",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage2.repeat.expand:out->mobile.stage2.repeat.depthwise:in:tensor",
+      "src": "mobile.stage2.repeat.expand",
+      "dst": "mobile.stage2.repeat.depthwise",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage2.repeat.depthwise:out->mobile.stage2.repeat.project:in:tensor",
+      "src": "mobile.stage2.repeat.depthwise",
+      "dst": "mobile.stage2.repeat.project",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage2.repeat.project:out->mobile.stage2.repeat.project_bn:in:tensor",
+      "src": "mobile.stage2.repeat.project",
+      "dst": "mobile.stage2.repeat.project_bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage2.repeat.project_bn:out->mobile.stage2.repeat.add:in:tensor",
+      "src": "mobile.stage2.repeat.project_bn",
+      "dst": "mobile.stage2.repeat.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage2.repeat.add:out->mobile.stage2.repeat:out:boundary",
+      "src": "mobile.stage2.repeat.add",
+      "dst": "mobile.stage2.repeat",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage2.repeat:in->mobile.stage2.repeat.add:side:residual",
+      "src": "mobile.stage2.repeat",
+      "dst": "mobile.stage2.repeat.add",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "residual"
+    },
+    {
+      "id": "mobile.stage2:in->mobile.stage2.first:in:boundary",
+      "src": "mobile.stage2",
+      "dst": "mobile.stage2.first",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage2.first:out->mobile.stage2.repeat:in:tensor",
+      "src": "mobile.stage2.first",
+      "dst": "mobile.stage2.repeat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage2.repeat:out->mobile.stage2:out:boundary",
+      "src": "mobile.stage2.repeat",
+      "dst": "mobile.stage2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage3:in->mobile.stage3.first:in:boundary",
+      "src": "mobile.stage3",
+      "dst": "mobile.stage3.first",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage3.first:out->mobile.stage3.repeat:in:tensor",
+      "src": "mobile.stage3.first",
+      "dst": "mobile.stage3.repeat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage3.repeat:out->mobile.stage3:out:boundary",
+      "src": "mobile.stage3.repeat",
+      "dst": "mobile.stage3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage4:in->mobile.stage4.first:in:boundary",
+      "src": "mobile.stage4",
+      "dst": "mobile.stage4.first",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage4.first:out->mobile.stage4.repeat:in:tensor",
+      "src": "mobile.stage4.first",
+      "dst": "mobile.stage4.repeat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage4.repeat:out->mobile.stage4:out:boundary",
+      "src": "mobile.stage4.repeat",
+      "dst": "mobile.stage4",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage5:in->mobile.stage5.first:in:boundary",
+      "src": "mobile.stage5",
+      "dst": "mobile.stage5.first",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage5.first:out->mobile.stage5.repeat:in:tensor",
+      "src": "mobile.stage5.first",
+      "dst": "mobile.stage5.repeat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage5.repeat:out->mobile.stage5:out:boundary",
+      "src": "mobile.stage5.repeat",
+      "dst": "mobile.stage5",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage6:in->mobile.stage6.first:in:boundary",
+      "src": "mobile.stage6",
+      "dst": "mobile.stage6.first",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage6.first:out->mobile.stage6.repeat:in:tensor",
+      "src": "mobile.stage6.first",
+      "dst": "mobile.stage6.repeat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage6.repeat:out->mobile.stage6:out:boundary",
+      "src": "mobile.stage6.repeat",
+      "dst": "mobile.stage6",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage7:in->mobile.stage7.first:in:boundary",
+      "src": "mobile.stage7",
+      "dst": "mobile.stage7.first",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.stage7.first:out->mobile.stage7:out:boundary",
+      "src": "mobile.stage7.first",
+      "dst": "mobile.stage7",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.last:in->mobile.last.conv:in:boundary",
+      "src": "mobile.last",
+      "dst": "mobile.last.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.last.conv:out->mobile.last.bn:in:tensor",
+      "src": "mobile.last.conv",
+      "dst": "mobile.last.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.last.bn:out->mobile.last.relu6:in:tensor",
+      "src": "mobile.last.bn",
+      "dst": "mobile.last.relu6",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.last.relu6:out->mobile.last:out:boundary",
+      "src": "mobile.last.relu6",
+      "dst": "mobile.last",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.head:in->mobile.pool:in:boundary",
+      "src": "mobile.head",
+      "dst": "mobile.pool",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.pool:out->mobile.reshape:in:tensor",
+      "src": "mobile.pool",
+      "dst": "mobile.reshape",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.reshape:out->mobile.dropout:in:tensor",
+      "src": "mobile.reshape",
+      "dst": "mobile.dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.dropout:out->mobile.fc:in:tensor",
+      "src": "mobile.dropout",
+      "dst": "mobile.fc",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.fc:out->mobile.head:out:boundary",
+      "src": "mobile.fc",
+      "dst": "mobile.head",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.model:in->mobile.input:in:boundary",
+      "src": "mobile.model",
+      "dst": "mobile.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "mobile.input:out->mobile.stem:in:tensor",
+      "src": "mobile.input",
+      "dst": "mobile.stem",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stem:out->mobile.stage1:in:tensor",
+      "src": "mobile.stem",
+      "dst": "mobile.stage1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage1:out->mobile.stage2:in:tensor",
+      "src": "mobile.stage1",
+      "dst": "mobile.stage2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage2:out->mobile.stage3:in:tensor",
+      "src": "mobile.stage2",
+      "dst": "mobile.stage3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage3:out->mobile.stage4:in:tensor",
+      "src": "mobile.stage3",
+      "dst": "mobile.stage4",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage4:out->mobile.stage5:in:tensor",
+      "src": "mobile.stage4",
+      "dst": "mobile.stage5",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage5:out->mobile.stage6:in:tensor",
+      "src": "mobile.stage5",
+      "dst": "mobile.stage6",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage6:out->mobile.stage7:in:tensor",
+      "src": "mobile.stage6",
+      "dst": "mobile.stage7",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.stage7:out->mobile.last:in:tensor",
+      "src": "mobile.stage7",
+      "dst": "mobile.last",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.last:out->mobile.head:in:tensor",
+      "src": "mobile.last",
+      "dst": "mobile.head",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.head:out->mobile.output:in:tensor",
+      "src": "mobile.head",
+      "dst": "mobile.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mobile.output:out->mobile.model:out:boundary",
+      "src": "mobile.output",
+      "dst": "mobile.model",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    }
+  ],
+  "facts": [
+    "The notebook pins torch.hub to pytorch/vision:v0.9.0, pretrained=False; its actual implementation is independently frozen as source.",
+    "The caller crops resized CIFAR-10 to 64x64 and replaces classifier[-1] with Linear(1280,10).",
+    "Default width_mult=1 and round_nearest=8 preserve the seven [t,c,n,s] settings and 17 independently constructed InvertedResidual blocks.",
+    "The stem maps 3->32 with stride2; stage channels are 16,24,32,64,96,160,320 and spatial sizes are 32,16,8,4,4,2,2.",
+    "Expansion uses hidden_dim=round(inp*t); t=1 stage1 omits expansion completely and depthwise-convolves 32 channels before projecting to16.",
+    "Depthwise Conv2d uses groups=hidden_dim; the subsequent pointwise bottleneck is Conv2d+BN without ReLU6.",
+    "Identity Add executes only when stride=1 and inp==oup. There are 10 identity additions, no learned projection shortcuts and no post-Add activation.",
+    "Final Conv1x1 maps320->1280, then adaptive average pooling and batch-preserving reshape feed Dropout0.2 and the replaced Linear1280->10.",
+    "Dropout is an eval identity; BatchNorm still uses running statistics; forward returns logits without Softmax.",
+    "Later blocks are folded operator summaries with real feature indices and parameter members; representative t1, t6/no-skip and t6/identity blocks expand."
+  ],
+  "corrections": [
+    "Do not infer architecture solely from the notebook's torch.hub call; bind the exact torchvision v0.9.0 source implementation.",
+    "Do not copy the original ImageNet 1000-class head or 224x224 shapes into this 64x64 CIFAR-10 replacement-head profile.",
+    "Depthwise grouping is an attribute of a single Conv2d, not hundreds of separately instantiated branches.",
+    "Do not add a projection shortcut to changed-channel or stride2 blocks; this implementation simply omits the identity Add.",
+    "The linear bottleneck is a pointwise Conv2d without activation, not an nn.Linear layer or a ReLU6 block.",
+    "Do not insert Softmax in model.forward or use squeeze that removes the B=1 batch dimension."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

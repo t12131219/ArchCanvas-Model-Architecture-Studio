@@ -1,0 +1,868 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1552" height="6842" viewBox="0 0 1552 6842">
+<defs><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<metadata id="source-binding">{&quot;model&quot;: &quot;resnet&quot;, &quot;source_snapshot_sha256&quot;: &quot;591a881d04226e9e2e62669938cda2c197e2cf38e37f65e52864fa5070e08200&quot;, &quot;repository&quot;: &quot;rasbt/deeplearning-models&quot;, &quot;commit&quot;: &quot;59beda3aa25337e576564f1c18c6edd26f9f30e3&quot;, &quot;semantic_ir_sha256&quot;: &quot;b6e017af19c093ac8ff7587993cbaef16e6fe0b155cd79d31d72d9417f5be1be&quot;, &quot;view&quot;: 2}</metadata>
+<metadata id="diagram-style">{&quot;name&quot;: &quot;transformer-paper-model-zoo&quot;, &quot;version&quot;: 1, &quot;font&quot;: &quot;DejaVu Sans, Arial, sans-serif&quot;, &quot;text&quot;: &quot;#172336&quot;, &quot;line&quot;: &quot;#263348&quot;, &quot;palette&quot;: {&quot;root&quot;: &quot;#ffffff&quot;, &quot;group&quot;: &quot;#ffffff&quot;, &quot;inner&quot;: &quot;#fffaf6&quot;, &quot;layer&quot;: &quot;#ffffff&quot;, &quot;encoder&quot;: &quot;#e7f5fe&quot;, &quot;decoder&quot;: &quot;#fff0f5&quot;, &quot;embedding&quot;: &quot;#f8d4e1&quot;, &quot;input&quot;: &quot;#f8d4e1&quot;, &quot;output&quot;: &quot;#dfdff8&quot;, &quot;attention&quot;: &quot;#ffddb3&quot;, &quot;ffn&quot;: &quot;#c8ebfb&quot;, &quot;mixing&quot;: &quot;#c8ebfb&quot;, &quot;conv&quot;: &quot;#c8ebfb&quot;, &quot;pool&quot;: &quot;#d6f0df&quot;, &quot;norm&quot;: &quot;#fff6bd&quot;, &quot;concat&quot;: &quot;#fff6bd&quot;, &quot;linear&quot;: &quot;#dfdff8&quot;, &quot;softmax&quot;: &quot;#c9f1cd&quot;, &quot;sampling&quot;: &quot;#c9f1cd&quot;, &quot;recurrent&quot;: &quot;#ffddb3&quot;, &quot;decomposition&quot;: &quot;#d6f0df&quot;, &quot;tensor&quot;: &quot;#cdeaf8&quot;, &quot;activation&quot;: &quot;#f3f5f7&quot;, &quot;control&quot;: &quot;#f3f5f7&quot;}, &quot;typography&quot;: {&quot;title&quot;: 30, &quot;subtitle&quot;: 16, &quot;module&quot;: 22, &quot;inner&quot;: 20, &quot;operator&quot;: 20, &quot;shape&quot;: 16, &quot;detail&quot;: 14, &quot;evidence&quot;: 12, &quot;footer&quot;: 14, &quot;line_height&quot;: 1.18}, &quot;fill_width_nodes&quot;: [&quot;resnet.head&quot;, &quot;resnet.stage1&quot;, &quot;resnet.stage2&quot;, &quot;resnet.stage3&quot;, &quot;resnet.stage4&quot;, &quot;resnet.stem&quot;], &quot;visual_roles&quot;: {&quot;resnet.fc&quot;: &quot;linear&quot;, &quot;resnet.flatten&quot;: &quot;tensor&quot;, &quot;resnet.head&quot;: &quot;ffn&quot;, &quot;resnet.input&quot;: &quot;input&quot;, &quot;resnet.logits&quot;: &quot;tensor&quot;, &quot;resnet.model&quot;: &quot;root&quot;, &quot;resnet.output&quot;: &quot;output&quot;, &quot;resnet.returns&quot;: &quot;group&quot;, &quot;resnet.softmax&quot;: &quot;softmax&quot;, &quot;resnet.stage1&quot;: &quot;encoder&quot;, &quot;resnet.stage1.identity&quot;: &quot;group&quot;, &quot;resnet.stage1.identity.add&quot;: &quot;norm&quot;, &quot;resnet.stage1.identity.bn1&quot;: &quot;norm&quot;, &quot;resnet.stage1.identity.bn2&quot;: &quot;norm&quot;, &quot;resnet.stage1.identity.conv1&quot;: &quot;conv&quot;, &quot;resnet.stage1.identity.conv2&quot;: &quot;conv&quot;, &quot;resnet.stage1.identity.relu1&quot;: &quot;activation&quot;, &quot;resnet.stage1.identity.relu2&quot;: &quot;activation&quot;, &quot;resnet.stage1.identity.residual&quot;: &quot;group&quot;, &quot;resnet.stage2&quot;: &quot;encoder&quot;, &quot;resnet.stage2.downsample&quot;: &quot;conv&quot;, &quot;resnet.stage2.downsample.add&quot;: &quot;norm&quot;, &quot;resnet.stage2.downsample.bn1&quot;: &quot;norm&quot;, &quot;resnet.stage2.downsample.bn2&quot;: &quot;norm&quot;, &quot;resnet.stage2.downsample.conv1&quot;: &quot;conv&quot;, &quot;resnet.stage2.downsample.conv2&quot;: &quot;conv&quot;, &quot;resnet.stage2.downsample.main&quot;: &quot;inner&quot;, &quot;resnet.stage2.downsample.paths&quot;: &quot;group&quot;, &quot;resnet.stage2.downsample.proj_bn&quot;: &quot;norm&quot;, &quot;resnet.stage2.downsample.proj_conv&quot;: &quot;conv&quot;, &quot;resnet.stage2.downsample.relu1&quot;: &quot;activation&quot;, &quot;resnet.stage2.downsample.relu2&quot;: &quot;activation&quot;, &quot;resnet.stage2.downsample.shortcut&quot;: &quot;inner&quot;, &quot;resnet.stage2.identity&quot;: &quot;conv&quot;, &quot;resnet.stage3&quot;: &quot;encoder&quot;, &quot;resnet.stage3.downsample&quot;: &quot;conv&quot;, &quot;resnet.stage3.downsample.add&quot;: &quot;norm&quot;, &quot;resnet.stage3.downsample.bn1&quot;: &quot;norm&quot;, &quot;resnet.stage3.downsample.bn2&quot;: &quot;norm&quot;, &quot;resnet.stage3.downsample.conv1&quot;: &quot;conv&quot;, &quot;resnet.stage3.downsample.conv2&quot;: &quot;conv&quot;, &quot;resnet.stage3.downsample.main&quot;: &quot;inner&quot;, &quot;resnet.stage3.downsample.paths&quot;: &quot;group&quot;, &quot;resnet.stage3.downsample.proj_bn&quot;: &quot;norm&quot;, &quot;resnet.stage3.downsample.proj_conv&quot;: &quot;conv&quot;, &quot;resnet.stage3.downsample.relu1&quot;: &quot;activation&quot;, &quot;resnet.stage3.downsample.relu2&quot;: &quot;activation&quot;, &quot;resnet.stage3.downsample.shortcut&quot;: &quot;inner&quot;, &quot;resnet.stage3.identity&quot;: &quot;conv&quot;, &quot;resnet.stage4&quot;: &quot;encoder&quot;, &quot;resnet.stage4.downsample&quot;: &quot;conv&quot;, &quot;resnet.stage4.downsample.add&quot;: &quot;norm&quot;, &quot;resnet.stage4.downsample.bn1&quot;: &quot;norm&quot;, &quot;resnet.stage4.downsample.bn2&quot;: &quot;norm&quot;, &quot;resnet.stage4.downsample.conv1&quot;: &quot;conv&quot;, &quot;resnet.stage4.downsample.conv2&quot;: &quot;conv&quot;, &quot;resnet.stage4.downsample.main&quot;: &quot;inner&quot;, &quot;resnet.stage4.downsample.paths&quot;: &quot;group&quot;, &quot;resnet.stage4.downsample.proj_bn&quot;: &quot;norm&quot;, &quot;resnet.stage4.downsample.proj_conv&quot;: &quot;conv&quot;, &quot;resnet.stage4.downsample.relu1&quot;: &quot;activation&quot;, &quot;resnet.stage4.downsample.relu2&quot;: &quot;activation&quot;, &quot;resnet.stage4.downsample.shortcut&quot;: &quot;inner&quot;, &quot;resnet.stage4.identity&quot;: &quot;conv&quot;, &quot;resnet.stem&quot;: &quot;conv&quot;, &quot;resnet.stem.bn&quot;: &quot;norm&quot;, &quot;resnet.stem.conv&quot;: &quot;conv&quot;, &quot;resnet.stem.pool&quot;: &quot;pool&quot;, &quot;resnet.stem.relu&quot;: &quot;activation&quot;}, &quot;semantics&quot;: &quot;presentation aliases only; color does not imply mathematical equivalence or parameter sharing&quot;}</metadata>
+<text x="776.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">ResNet18  |  Operators &amp; tensor flow</tspan>
+</text>
+<text x="776.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">MNIST · 28x28 grayscale · [2,2,2,2] BasicBlocks · eval  /  read bottom to top</tspan>
+</text>
+<g data-node-id="resnet.model" data-visual-role="root"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:206 resnet18; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:139 ResNet; parameter=not asserted; </title><rect x="230.0" y="98" width="1092" height="6462" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5"/></g>
+<text x="247.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="247.0" dy="0">ResNet18 · MNIST</tspan>
+</text>
+<text x="1305.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1305.0" dy="0">2 x [B,10]</tspan>
+</text>
+<text x="1309.0" y="160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1309.0" dy="0">E010,E004</tspan>
+</text>
+<g data-node-id="resnet.input" data-visual-role="input"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:185 ResNet.forward; parameter=not asserted; grayscale=True; native MNIST resolution</title><rect x="611.0" y="6453" width="330" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="6480" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">MNIST image</tspan>
+</text>
+<text x="776.0" y="6504" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,1,28,28]</tspan>
+</text>
+<text x="928.0" y="6524" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E007</tspan>
+</text>
+<g data-node-id="resnet.stem" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:141 ResNet.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:185 ResNet.forward; parameter=not asserted; </title><rect x="262.0" y="5933" width="1028" height="496" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="279.0" y="5963" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="279.0" dy="0">Convolutional stem</tspan>
+</text>
+<text x="1273.0" y="5963" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1273.0" dy="0">[B,64,7,7]</tspan>
+</text>
+<text x="1277.0" y="5995" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1277.0" dy="0">E005,E007</tspan>
+</text>
+<g data-node-id="resnet.stem.conv" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:141 ResNet.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:185 ResNet.forward; parameter=conv1; kernel=7; stride=2; padding=3; bias=False</title><rect x="611.0" y="6322" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="6349" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">Conv2d 1 -&gt; 64</tspan>
+</text>
+<text x="776.0" y="6373" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,64,14,14]</tspan>
+</text>
+<text x="928.0" y="6393" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E005,E007</tspan>
+</text>
+<g data-node-id="resnet.stem.bn" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:141 ResNet.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:185 ResNet.forward; parameter=bn1; eval: running statistics</title><rect x="611.0" y="6217" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="6244" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="776.0" y="6268" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,64,14,14]</tspan>
+</text>
+<text x="928.0" y="6288" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E005,E007</tspan>
+</text>
+<g data-node-id="resnet.stem.relu" data-visual-role="activation"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:185 ResNet.forward; parameter=not asserted; </title><rect x="611.0" y="6112" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="6139" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">ReLU</tspan>
+</text>
+<text x="776.0" y="6163" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,64,14,14]</tspan>
+</text>
+<text x="928.0" y="6183" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E007</tspan>
+</text>
+<g data-node-id="resnet.stem.pool" data-visual-role="pool"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:141 ResNet.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:185 ResNet.forward; parameter=not asserted; kernel=3; stride=2; padding=1</title><rect x="611.0" y="6007" width="330" height="81" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="6034" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">MaxPool2d</tspan>
+</text>
+<text x="776.0" y="6058" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,64,7,7]</tspan>
+</text>
+<text x="928.0" y="6078" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E005,E007</tspan>
+</text>
+<path data-route-id="route-0001" d="M 776.0,6429 L 776.0,6403" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0002" d="M 776.0,6322 L 776.0,6298" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0003" d="M 776.0,6217 L 776.0,6193" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0004" d="M 776.0,6112 L 776.0,6088" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0005" d="M 776.0,6007 L 776.0,5933" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="resnet.stage1" data-visual-role="encoder"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:141 ResNet.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:185 ResNet.forward; parameter=not asserted; 2 independent BasicBlock instances: layer1.0 / layer1.1</title><rect x="262.0" y="4838" width="1028" height="1071" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="279.0" y="4868" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="279.0" dy="0">Stage 1 · 64 channels</tspan>
+</text>
+<text x="1273.0" y="4868" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1273.0" dy="0">[B,64,7,7]</tspan>
+</text>
+<text x="1277.0" y="4900" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1277.0" dy="0">E005,E006,E007</tspan>
+</text>
+<g data-node-id="resnet.stage1.identity" data-visual-role="group"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer1.{i}; two Conv / BN pairs; Add before final ReLU | representative template; each instance owns separate Conv / BN weights</title><rect x="547.0" y="4912" width="458" height="971" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2"/></g>
+<text x="564.0" y="4942" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="564.0" dy="0">Identity block</tspan>
+<tspan x="564.0" dy="25.959999999999997">x 2</tspan>
+</text>
+<text x="988.0" y="4942" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="988.0" dy="0">[B,64,7,7]</tspan>
+</text>
+<text x="992.0" y="4991" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="992.0" dy="0">E006,E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage1.identity.residual" data-visual-role="group"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; </title><rect x="579.0" y="5108" width="394" height="749" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2"/></g>
+<text x="596.0" y="5138" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="596.0" dy="0">Two</tspan>
+<tspan x="596.0" dy="25.959999999999997">convolutions</tspan>
+<tspan x="596.0" dy="25.959999999999997">+ identity</tspan>
+</text>
+<text x="956.0" y="5138" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="956.0" dy="0">[B,64,7,7]</tspan>
+</text>
+<text x="960.0" y="5213" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="960.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="resnet.stage1.identity.conv1" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:99 conv3x3; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer1.{i}.conv1; stride=1; padding=1; bias=False</title><rect x="611.0" y="5750" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="5777" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">Conv2d 3x3</tspan>
+</text>
+<text x="776.0" y="5801" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,64,7,7]</tspan>
+</text>
+<text x="928.0" y="5821" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E009,E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage1.identity.bn1" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer1.{i}.bn1; eval: saved running statistics; affine=True</title><rect x="611.0" y="5645" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="5672" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="776.0" y="5696" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,64,7,7]</tspan>
+</text>
+<text x="928.0" y="5716" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage1.identity.relu1" data-visual-role="activation"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; inplace=True</title><rect x="611.0" y="5540" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="5567" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">ReLU</tspan>
+</text>
+<text x="776.0" y="5591" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,64,7,7]</tspan>
+</text>
+<text x="928.0" y="5611" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="resnet.stage1.identity.conv2" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:99 conv3x3; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer1.{i}.conv2; stride=1; padding=1; bias=False</title><rect x="611.0" y="5435" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="5462" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">Conv2d 3x3</tspan>
+</text>
+<text x="776.0" y="5486" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,64,7,7]</tspan>
+</text>
+<text x="928.0" y="5506" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E009,E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage1.identity.bn2" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer1.{i}.bn2; </title><rect x="611.0" y="5330" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="5357" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="776.0" y="5381" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,64,7,7]</tspan>
+</text>
+<text x="928.0" y="5401" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage1.identity.add" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; out += original block input; identity has no parameters</title><rect x="611.0" y="5225" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="5252" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">Add identity</tspan>
+</text>
+<text x="776.0" y="5276" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,64,7,7]</tspan>
+</text>
+<text x="928.0" y="5296" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E003</tspan>
+</text>
+<path data-route-id="route-0006" d="M 776.0,5857 L 776.0,5831" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0007" d="M 776.0,5750 L 776.0,5726" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0008" d="M 776.0,5645 L 776.0,5621" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0009" d="M 776.0,5540 L 776.0,5516" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0010" d="M 776.0,5435 L 776.0,5411" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0011" d="M 776.0,5330 L 776.0,5306" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0012" d="M 776.0,5225 L 776.0,5108" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0013" d="M 776.0,5857 L 776.0,5839 L 593.0,5839 L 593.0,5265.5 L 611.0,5265.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="resnet.stage1.identity.relu2" data-visual-role="activation"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; same self.relu module; no trainable parameters</title><rect x="611.0" y="5003" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="5030" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">ReLU after Add</tspan>
+</text>
+<text x="776.0" y="5054" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,64,7,7]</tspan>
+</text>
+<text x="928.0" y="5074" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E003</tspan>
+</text>
+<path data-route-id="route-0014" d="M 776.0,5883 L 776.0,5857" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0015" d="M 776.0,5108 L 776.0,5084" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0016" d="M 776.0,5003 L 776.0,4912" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0017" d="M 776.0,5909 L 776.0,5883" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0018" d="M 776.0,4912 L 776.0,4838" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="resnet.stage2" data-visual-role="encoder"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:141 ResNet.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:185 ResNet.forward; parameter=not asserted; first block: stride 2 and projected shortcut | second block: stride 1 with identity shortcut</title><rect x="262.0" y="3511" width="1028" height="1303" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="279.0" y="3541" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="279.0" dy="0">Stage 2 · 128 channels</tspan>
+</text>
+<text x="1273.0" y="3541" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1273.0" dy="0">[B,128,4,4]</tspan>
+</text>
+<text x="1277.0" y="3573" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1277.0" dy="0">E005,E006,E007</tspan>
+</text>
+<g data-node-id="resnet.stage2.downsample" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer2.0; input [B,64,7,7] | first block only; both paths reduce resolution with stride 2</title><rect x="294.0" y="3690" width="964" height="1098" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="311.0" y="3720" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="311.0" dy="0">Downsampling block</tspan>
+</text>
+<text x="1241.0" y="3720" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1241.0" dy="0">[B,128,4,4]</tspan>
+</text>
+<text x="1245.0" y="3752" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1245.0" dy="0">E006,E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage2.downsample.paths" data-visual-role="group"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; both paths consume the same block input | matching output shapes before arithmetic Add</title><rect x="326.0" y="3974" width="900" height="788" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2"/></g>
+<text x="343.0" y="4004" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="343.0" dy="0">Main / projected shortcut</tspan>
+</text>
+<text x="1209.0" y="4004" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1209.0" dy="0">(main, shortcut)</tspan>
+</text>
+<text x="1213.0" y="4036" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1213.0" dy="0">E006,E003</tspan>
+</text>
+<g data-node-id="resnet.stage2.downsample.main" data-visual-role="inner"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; </title><rect x="358.0" y="4048" width="394" height="640" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="375.0" y="4078" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="375.0" dy="0">Main</tspan>
+<tspan x="375.0" dy="23.599999999999998">convolution</tspan>
+<tspan x="375.0" dy="23.599999999999998">path</tspan>
+</text>
+<text x="735.0" y="4078" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="735.0" dy="0">[B,128,4,4]</tspan>
+</text>
+<text x="739.0" y="4149" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="739.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage2.downsample.conv1" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:99 conv3x3; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer2.0.conv1; 64 -&gt; 128 channels; padding=1; bias=False</title><rect x="390.0" y="4581" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="555.0" y="4608" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="555.0" dy="0">Conv2d 3x3 / stride 2</tspan>
+</text>
+<text x="555.0" y="4632" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="555.0" dy="0">[B,128,4,4]</tspan>
+</text>
+<text x="707.0" y="4652" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E009,E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage2.downsample.bn1" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer2.0.bn1; eval: running statistics</title><rect x="390.0" y="4476" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="555.0" y="4503" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="555.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="555.0" y="4527" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="555.0" dy="0">[B,128,4,4]</tspan>
+</text>
+<text x="707.0" y="4547" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage2.downsample.relu1" data-visual-role="activation"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; </title><rect x="390.0" y="4371" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="555.0" y="4398" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="555.0" dy="0">ReLU</tspan>
+</text>
+<text x="555.0" y="4422" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="555.0" dy="0">[B,128,4,4]</tspan>
+</text>
+<text x="707.0" y="4442" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="resnet.stage2.downsample.conv2" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:99 conv3x3; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer2.0.conv2; padding=1; bias=False</title><rect x="390.0" y="4266" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="555.0" y="4293" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="555.0" dy="0">Conv2d 3x3 / stride 1</tspan>
+</text>
+<text x="555.0" y="4317" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="555.0" dy="0">[B,128,4,4]</tspan>
+</text>
+<text x="707.0" y="4337" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E009,E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage2.downsample.bn2" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer2.0.bn2; </title><rect x="390.0" y="4161" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="555.0" y="4188" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="555.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="555.0" y="4212" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="555.0" dy="0">[B,128,4,4]</tspan>
+</text>
+<text x="707.0" y="4232" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E002,E003</tspan>
+</text>
+<path data-route-id="route-0019" d="M 555.0,4688 L 555.0,4662" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0020" d="M 555.0,4581 L 555.0,4557" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0021" d="M 555.0,4476 L 555.0,4452" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0022" d="M 555.0,4371 L 555.0,4347" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0023" d="M 555.0,4266 L 555.0,4242" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0024" d="M 555.0,4161 L 555.0,4048" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="resnet.stage2.downsample.shortcut" data-visual-role="inner"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; </title><rect x="800.0" y="4387" width="394" height="301" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="817.0" y="4417" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="817.0" dy="0">Projection</tspan>
+<tspan x="817.0" dy="23.599999999999998">shortcut</tspan>
+</text>
+<text x="1177.0" y="4417" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1177.0" dy="0">[B,128,4,4]</tspan>
+</text>
+<text x="1181.0" y="4464" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1181.0" dy="0">E006,E003</tspan>
+</text>
+<g data-node-id="resnet.stage2.downsample.proj_conv" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer2.0.downsample.0; 64 -&gt; 128 channels; padding=0; bias=False</title><rect x="832.0" y="4581" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="997.0" y="4608" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="997.0" dy="0">Conv2d 1x1 / stride 2</tspan>
+</text>
+<text x="997.0" y="4632" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="997.0" dy="0">[B,128,4,4]</tspan>
+</text>
+<text x="1149.0" y="4652" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1149.0" dy="0">E006,E003</tspan>
+</text>
+<g data-node-id="resnet.stage2.downsample.proj_bn" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer2.0.downsample.1; </title><rect x="832.0" y="4476" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="997.0" y="4503" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="997.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="997.0" y="4527" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="997.0" dy="0">[B,128,4,4]</tspan>
+</text>
+<text x="1149.0" y="4547" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1149.0" dy="0">E006,E003</tspan>
+</text>
+<path data-route-id="route-0025" d="M 997.0,4688 L 997.0,4662" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0026" d="M 997.0,4581 L 997.0,4557" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0027" d="M 997.0,4476 L 997.0,4387" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0028" d="M 776.0,4762 L 776.0,4718" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0029" d="M 555.0,4718 L 997.0,4718" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0030" d="M 555.0,4718 L 555.0,4688" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0031" d="M 555.0,4048 L 555.0,4030" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0032" d="M 997.0,4718 L 997.0,4688" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0033" d="M 997.0,4387 L 997.0,4030" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0034" d="M 555.0,4030 L 997.0,4030" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0035" d="M 776.0,4030 L 776.0,3974" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="resnet.stage2.downsample.add" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; main + downsample(x); fork/join above is not the arithmetic sum</title><rect x="611.0" y="3869" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="3896" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">Add two paths</tspan>
+</text>
+<text x="776.0" y="3920" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,128,4,4]</tspan>
+</text>
+<text x="928.0" y="3940" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="resnet.stage2.downsample.relu2" data-visual-role="activation"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; </title><rect x="611.0" y="3764" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="3791" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">ReLU after Add</tspan>
+</text>
+<text x="776.0" y="3815" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,128,4,4]</tspan>
+</text>
+<text x="928.0" y="3835" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E003</tspan>
+</text>
+<path data-route-id="route-0036" d="M 776.0,4788 L 776.0,4762" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0037" d="M 776.0,3974 L 776.0,3950" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0038" d="M 776.0,3869 L 776.0,3845" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0039" d="M 776.0,3764 L 776.0,3690" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="resnet.stage2.identity" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer2.1; Conv3x3 -&gt; BN -&gt; ReLU -&gt; Conv3x3 -&gt; BN -&gt; Add identity -&gt; ReLU | stride=1; no projection; same structure as expanded identity template | separate conv1 / bn1 / conv2 / bn2 parameters at layer2.1</title><rect x="611.0" y="3585" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="3612" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">Identity block x 1</tspan>
+</text>
+<text x="776.0" y="3636" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,128,4,4]</tspan>
+</text>
+<text x="928.0" y="3656" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E006,E002,E003</tspan>
+</text>
+<path data-route-id="route-0040" d="M 776.0,4814 L 776.0,4788" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0041" d="M 776.0,3690 L 776.0,3666" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0042" d="M 776.0,3585 L 776.0,3511" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="resnet.stage3" data-visual-role="encoder"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:141 ResNet.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:185 ResNet.forward; parameter=not asserted; first block: stride 2 and projected shortcut | second block: stride 1 with identity shortcut</title><rect x="262.0" y="2184" width="1028" height="1303" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="279.0" y="2214" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="279.0" dy="0">Stage 3 · 256 channels</tspan>
+</text>
+<text x="1273.0" y="2214" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1273.0" dy="0">[B,256,2,2]</tspan>
+</text>
+<text x="1277.0" y="2246" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1277.0" dy="0">E005,E006,E007</tspan>
+</text>
+<g data-node-id="resnet.stage3.downsample" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer3.0; input [B,128,4,4] | first block only; both paths reduce resolution with stride 2</title><rect x="294.0" y="2363" width="964" height="1098" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="311.0" y="2393" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="311.0" dy="0">Downsampling block</tspan>
+</text>
+<text x="1241.0" y="2393" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1241.0" dy="0">[B,256,2,2]</tspan>
+</text>
+<text x="1245.0" y="2425" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1245.0" dy="0">E006,E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage3.downsample.paths" data-visual-role="group"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; both paths consume the same block input | matching output shapes before arithmetic Add</title><rect x="326.0" y="2647" width="900" height="788" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2"/></g>
+<text x="343.0" y="2677" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="343.0" dy="0">Main / projected shortcut</tspan>
+</text>
+<text x="1209.0" y="2677" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1209.0" dy="0">(main, shortcut)</tspan>
+</text>
+<text x="1213.0" y="2709" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1213.0" dy="0">E006,E003</tspan>
+</text>
+<g data-node-id="resnet.stage3.downsample.main" data-visual-role="inner"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; </title><rect x="358.0" y="2721" width="394" height="640" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="375.0" y="2751" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="375.0" dy="0">Main</tspan>
+<tspan x="375.0" dy="23.599999999999998">convolution</tspan>
+<tspan x="375.0" dy="23.599999999999998">path</tspan>
+</text>
+<text x="735.0" y="2751" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="735.0" dy="0">[B,256,2,2]</tspan>
+</text>
+<text x="739.0" y="2822" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="739.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage3.downsample.conv1" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:99 conv3x3; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer3.0.conv1; 128 -&gt; 256 channels; padding=1; bias=False</title><rect x="390.0" y="3254" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="555.0" y="3281" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="555.0" dy="0">Conv2d 3x3 / stride 2</tspan>
+</text>
+<text x="555.0" y="3305" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="555.0" dy="0">[B,256,2,2]</tspan>
+</text>
+<text x="707.0" y="3325" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E009,E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage3.downsample.bn1" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer3.0.bn1; eval: running statistics</title><rect x="390.0" y="3149" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="555.0" y="3176" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="555.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="555.0" y="3200" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="555.0" dy="0">[B,256,2,2]</tspan>
+</text>
+<text x="707.0" y="3220" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage3.downsample.relu1" data-visual-role="activation"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; </title><rect x="390.0" y="3044" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="555.0" y="3071" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="555.0" dy="0">ReLU</tspan>
+</text>
+<text x="555.0" y="3095" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="555.0" dy="0">[B,256,2,2]</tspan>
+</text>
+<text x="707.0" y="3115" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="resnet.stage3.downsample.conv2" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:99 conv3x3; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer3.0.conv2; padding=1; bias=False</title><rect x="390.0" y="2939" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="555.0" y="2966" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="555.0" dy="0">Conv2d 3x3 / stride 1</tspan>
+</text>
+<text x="555.0" y="2990" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="555.0" dy="0">[B,256,2,2]</tspan>
+</text>
+<text x="707.0" y="3010" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E009,E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage3.downsample.bn2" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer3.0.bn2; </title><rect x="390.0" y="2834" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="555.0" y="2861" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="555.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="555.0" y="2885" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="555.0" dy="0">[B,256,2,2]</tspan>
+</text>
+<text x="707.0" y="2905" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E002,E003</tspan>
+</text>
+<path data-route-id="route-0043" d="M 555.0,3361 L 555.0,3335" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0044" d="M 555.0,3254 L 555.0,3230" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0045" d="M 555.0,3149 L 555.0,3125" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0046" d="M 555.0,3044 L 555.0,3020" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0047" d="M 555.0,2939 L 555.0,2915" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0048" d="M 555.0,2834 L 555.0,2721" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="resnet.stage3.downsample.shortcut" data-visual-role="inner"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; </title><rect x="800.0" y="3060" width="394" height="301" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="817.0" y="3090" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="817.0" dy="0">Projection</tspan>
+<tspan x="817.0" dy="23.599999999999998">shortcut</tspan>
+</text>
+<text x="1177.0" y="3090" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1177.0" dy="0">[B,256,2,2]</tspan>
+</text>
+<text x="1181.0" y="3137" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1181.0" dy="0">E006,E003</tspan>
+</text>
+<g data-node-id="resnet.stage3.downsample.proj_conv" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer3.0.downsample.0; 128 -&gt; 256 channels; padding=0; bias=False</title><rect x="832.0" y="3254" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="997.0" y="3281" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="997.0" dy="0">Conv2d 1x1 / stride 2</tspan>
+</text>
+<text x="997.0" y="3305" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="997.0" dy="0">[B,256,2,2]</tspan>
+</text>
+<text x="1149.0" y="3325" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1149.0" dy="0">E006,E003</tspan>
+</text>
+<g data-node-id="resnet.stage3.downsample.proj_bn" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer3.0.downsample.1; </title><rect x="832.0" y="3149" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="997.0" y="3176" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="997.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="997.0" y="3200" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="997.0" dy="0">[B,256,2,2]</tspan>
+</text>
+<text x="1149.0" y="3220" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1149.0" dy="0">E006,E003</tspan>
+</text>
+<path data-route-id="route-0049" d="M 997.0,3361 L 997.0,3335" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0050" d="M 997.0,3254 L 997.0,3230" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0051" d="M 997.0,3149 L 997.0,3060" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0052" d="M 776.0,3435 L 776.0,3391" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0053" d="M 555.0,3391 L 997.0,3391" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0054" d="M 555.0,3391 L 555.0,3361" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0055" d="M 555.0,2721 L 555.0,2703" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0056" d="M 997.0,3391 L 997.0,3361" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0057" d="M 997.0,3060 L 997.0,2703" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0058" d="M 555.0,2703 L 997.0,2703" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0059" d="M 776.0,2703 L 776.0,2647" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="resnet.stage3.downsample.add" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; main + downsample(x); fork/join above is not the arithmetic sum</title><rect x="611.0" y="2542" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="2569" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">Add two paths</tspan>
+</text>
+<text x="776.0" y="2593" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,256,2,2]</tspan>
+</text>
+<text x="928.0" y="2613" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="resnet.stage3.downsample.relu2" data-visual-role="activation"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; </title><rect x="611.0" y="2437" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="2464" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">ReLU after Add</tspan>
+</text>
+<text x="776.0" y="2488" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,256,2,2]</tspan>
+</text>
+<text x="928.0" y="2508" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E003</tspan>
+</text>
+<path data-route-id="route-0060" d="M 776.0,3461 L 776.0,3435" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0061" d="M 776.0,2647 L 776.0,2623" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0062" d="M 776.0,2542 L 776.0,2518" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0063" d="M 776.0,2437 L 776.0,2363" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="resnet.stage3.identity" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer3.1; Conv3x3 -&gt; BN -&gt; ReLU -&gt; Conv3x3 -&gt; BN -&gt; Add identity -&gt; ReLU | stride=1; no projection; same structure as expanded identity template | separate conv1 / bn1 / conv2 / bn2 parameters at layer3.1</title><rect x="611.0" y="2258" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="2285" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">Identity block x 1</tspan>
+</text>
+<text x="776.0" y="2309" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,256,2,2]</tspan>
+</text>
+<text x="928.0" y="2329" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E006,E002,E003</tspan>
+</text>
+<path data-route-id="route-0064" d="M 776.0,3487 L 776.0,3461" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0065" d="M 776.0,2363 L 776.0,2339" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0066" d="M 776.0,2258 L 776.0,2184" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="resnet.stage4" data-visual-role="encoder"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:141 ResNet.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:185 ResNet.forward; parameter=not asserted; first block: stride 2 and projected shortcut | second block: stride 1 with identity shortcut</title><rect x="262.0" y="857" width="1028" height="1303" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="279.0" y="887" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="279.0" dy="0">Stage 4 · 512 channels</tspan>
+</text>
+<text x="1273.0" y="887" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1273.0" dy="0">[B,512,1,1]</tspan>
+</text>
+<text x="1277.0" y="919" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1277.0" dy="0">E005,E006,E007</tspan>
+</text>
+<g data-node-id="resnet.stage4.downsample" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer4.0; input [B,256,2,2] | first block only; both paths reduce resolution with stride 2</title><rect x="294.0" y="1036" width="964" height="1098" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="311.0" y="1066" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="311.0" dy="0">Downsampling block</tspan>
+</text>
+<text x="1241.0" y="1066" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1241.0" dy="0">[B,512,1,1]</tspan>
+</text>
+<text x="1245.0" y="1098" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1245.0" dy="0">E006,E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage4.downsample.paths" data-visual-role="group"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; both paths consume the same block input | matching output shapes before arithmetic Add</title><rect x="326.0" y="1320" width="900" height="788" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2"/></g>
+<text x="343.0" y="1350" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="343.0" dy="0">Main / projected shortcut</tspan>
+</text>
+<text x="1209.0" y="1350" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1209.0" dy="0">(main, shortcut)</tspan>
+</text>
+<text x="1213.0" y="1382" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1213.0" dy="0">E006,E003</tspan>
+</text>
+<g data-node-id="resnet.stage4.downsample.main" data-visual-role="inner"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; </title><rect x="358.0" y="1394" width="394" height="640" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="375.0" y="1424" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="375.0" dy="0">Main</tspan>
+<tspan x="375.0" dy="23.599999999999998">convolution</tspan>
+<tspan x="375.0" dy="23.599999999999998">path</tspan>
+</text>
+<text x="735.0" y="1424" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="735.0" dy="0">[B,512,1,1]</tspan>
+</text>
+<text x="739.0" y="1495" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="739.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage4.downsample.conv1" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:99 conv3x3; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer4.0.conv1; 256 -&gt; 512 channels; padding=1; bias=False</title><rect x="390.0" y="1927" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="555.0" y="1954" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="555.0" dy="0">Conv2d 3x3 / stride 2</tspan>
+</text>
+<text x="555.0" y="1978" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="555.0" dy="0">[B,512,1,1]</tspan>
+</text>
+<text x="707.0" y="1998" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E009,E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage4.downsample.bn1" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer4.0.bn1; eval: running statistics</title><rect x="390.0" y="1822" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="555.0" y="1849" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="555.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="555.0" y="1873" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="555.0" dy="0">[B,512,1,1]</tspan>
+</text>
+<text x="707.0" y="1893" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage4.downsample.relu1" data-visual-role="activation"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; </title><rect x="390.0" y="1717" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="555.0" y="1744" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="555.0" dy="0">ReLU</tspan>
+</text>
+<text x="555.0" y="1768" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="555.0" dy="0">[B,512,1,1]</tspan>
+</text>
+<text x="707.0" y="1788" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="resnet.stage4.downsample.conv2" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:99 conv3x3; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer4.0.conv2; padding=1; bias=False</title><rect x="390.0" y="1612" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="555.0" y="1639" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="555.0" dy="0">Conv2d 3x3 / stride 1</tspan>
+</text>
+<text x="555.0" y="1663" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="555.0" dy="0">[B,512,1,1]</tspan>
+</text>
+<text x="707.0" y="1683" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E009,E002,E003</tspan>
+</text>
+<g data-node-id="resnet.stage4.downsample.bn2" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer4.0.bn2; </title><rect x="390.0" y="1507" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="555.0" y="1534" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="555.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="555.0" y="1558" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="555.0" dy="0">[B,512,1,1]</tspan>
+</text>
+<text x="707.0" y="1578" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="707.0" dy="0">E002,E003</tspan>
+</text>
+<path data-route-id="route-0067" d="M 555.0,2034 L 555.0,2008" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0068" d="M 555.0,1927 L 555.0,1903" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0069" d="M 555.0,1822 L 555.0,1798" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0070" d="M 555.0,1717 L 555.0,1693" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0071" d="M 555.0,1612 L 555.0,1588" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0072" d="M 555.0,1507 L 555.0,1394" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="resnet.stage4.downsample.shortcut" data-visual-role="inner"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; </title><rect x="800.0" y="1733" width="394" height="301" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="817.0" y="1763" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="817.0" dy="0">Projection</tspan>
+<tspan x="817.0" dy="23.599999999999998">shortcut</tspan>
+</text>
+<text x="1177.0" y="1763" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1177.0" dy="0">[B,512,1,1]</tspan>
+</text>
+<text x="1181.0" y="1810" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1181.0" dy="0">E006,E003</tspan>
+</text>
+<g data-node-id="resnet.stage4.downsample.proj_conv" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer4.0.downsample.0; 256 -&gt; 512 channels; padding=0; bias=False</title><rect x="832.0" y="1927" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="997.0" y="1954" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="997.0" dy="0">Conv2d 1x1 / stride 2</tspan>
+</text>
+<text x="997.0" y="1978" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="997.0" dy="0">[B,512,1,1]</tspan>
+</text>
+<text x="1149.0" y="1998" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1149.0" dy="0">E006,E003</tspan>
+</text>
+<g data-node-id="resnet.stage4.downsample.proj_bn" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer4.0.downsample.1; </title><rect x="832.0" y="1822" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="997.0" y="1849" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="997.0" dy="0">BatchNorm2d</tspan>
+</text>
+<text x="997.0" y="1873" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="997.0" dy="0">[B,512,1,1]</tspan>
+</text>
+<text x="1149.0" y="1893" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1149.0" dy="0">E006,E003</tspan>
+</text>
+<path data-route-id="route-0073" d="M 997.0,2034 L 997.0,2008" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0074" d="M 997.0,1927 L 997.0,1903" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0075" d="M 997.0,1822 L 997.0,1733" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0076" d="M 776.0,2108 L 776.0,2064" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0077" d="M 555.0,2064 L 997.0,2064" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0078" d="M 555.0,2064 L 555.0,2034" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0079" d="M 555.0,1394 L 555.0,1376" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0080" d="M 997.0,2064 L 997.0,2034" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0081" d="M 997.0,1733 L 997.0,1376" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0082" d="M 555.0,1376 L 997.0,1376" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0083" d="M 776.0,1376 L 776.0,1320" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="resnet.stage4.downsample.add" data-visual-role="norm"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; main + downsample(x); fork/join above is not the arithmetic sum</title><rect x="611.0" y="1215" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="1242" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">Add two paths</tspan>
+</text>
+<text x="776.0" y="1266" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,512,1,1]</tspan>
+</text>
+<text x="928.0" y="1286" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="resnet.stage4.downsample.relu2" data-visual-role="activation"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=not asserted; </title><rect x="611.0" y="1110" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="1137" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">ReLU after Add</tspan>
+</text>
+<text x="776.0" y="1161" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,512,1,1]</tspan>
+</text>
+<text x="928.0" y="1181" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E003</tspan>
+</text>
+<path data-route-id="route-0084" d="M 776.0,2134 L 776.0,2108" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0085" d="M 776.0,1320 L 776.0,1296" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0086" d="M 776.0,1215 L 776.0,1191" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0087" d="M 776.0,1110 L 776.0,1036" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="resnet.stage4.identity" data-visual-role="conv"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:168 ResNet._make_layer; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:108 BasicBlock.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:118 BasicBlock.forward; parameter=layer4.1; Conv3x3 -&gt; BN -&gt; ReLU -&gt; Conv3x3 -&gt; BN -&gt; Add identity -&gt; ReLU | stride=1; no projection; same structure as expanded identity template | separate conv1 / bn1 / conv2 / bn2 parameters at layer4.1</title><rect x="611.0" y="931" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="958" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">Identity block x 1</tspan>
+</text>
+<text x="776.0" y="982" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,512,1,1]</tspan>
+</text>
+<text x="928.0" y="1002" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E006,E002,E003</tspan>
+</text>
+<path data-route-id="route-0088" d="M 776.0,2160 L 776.0,2134" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0089" d="M 776.0,1036 L 776.0,1012" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0090" d="M 776.0,931 L 776.0,857" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="resnet.head" data-visual-role="ffn"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:141 ResNet.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:185 ResNet.forward; parameter=not asserted; </title><rect x="262.0" y="277" width="1028" height="556" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="279.0" y="307" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="279.0" dy="0">Classification head</tspan>
+</text>
+<text x="1273.0" y="307" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1273.0" dy="0">2 x [B,10]</tspan>
+</text>
+<text x="1277.0" y="339" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1277.0" dy="0">E005,E007</tspan>
+</text>
+<g data-node-id="resnet.flatten" data-visual-role="tensor"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:185 ResNet.forward; parameter=not asserted; x.view(x.size(0), -1); final MNIST spatial size is 1x1 | AvgPool2d exists in __init__, but its forward call is commented out</title><rect x="611.0" y="726" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="753" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">Flatten</tspan>
+</text>
+<text x="776.0" y="777" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,512]</tspan>
+</text>
+<text x="928.0" y="797" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E007</tspan>
+</text>
+<g data-node-id="resnet.fc" data-visual-role="linear"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:141 ResNet.__init__; deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:185 ResNet.forward; parameter=fc; </title><rect x="611.0" y="621" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="648" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">Linear 512 -&gt; 10</tspan>
+</text>
+<text x="776.0" y="672" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">[B,10]</tspan>
+</text>
+<text x="928.0" y="692" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E005,E007</tspan>
+</text>
+<g data-node-id="resnet.returns" data-visual-role="group"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:185 ResNet.forward; parameter=not asserted; same logits tensor to both branches</title><rect x="390.0" y="351" width="772" height="246" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2"/></g>
+<text x="407.0" y="381" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="407.0" dy="0">Return logits /</tspan>
+<tspan x="407.0" dy="25.959999999999997">probabilities</tspan>
+</text>
+<text x="1145.0" y="381" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1145.0" dy="0">(logits, probas)</tspan>
+</text>
+<text x="1149.0" y="430" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1149.0" dy="0">E007</tspan>
+</text>
+<g data-node-id="resnet.logits" data-visual-role="tensor"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:185 ResNet.forward; parameter=not asserted; raw fc output; consumed by cross_entropy</title><rect x="422.0" y="442" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="587.0" y="469" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="587.0" dy="0">Logits</tspan>
+</text>
+<text x="587.0" y="493" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="587.0" dy="0">[B,10]</tspan>
+</text>
+<text x="739.0" y="513" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="739.0" dy="0">E007</tspan>
+</text>
+<g data-node-id="resnet.softmax" data-visual-role="softmax"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:185 ResNet.forward; parameter=not asserted; F.softmax(logits, dim=1); returned as probas</title><rect x="800.0" y="442" width="330" height="81" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2"/></g>
+<text x="965.0" y="469" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="965.0" dy="0">Softmax</tspan>
+</text>
+<text x="965.0" y="493" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="965.0" dy="0">[B,10]</tspan>
+</text>
+<text x="1117.0" y="513" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1117.0" dy="0">E007</tspan>
+</text>
+<path data-route-id="route-0091" d="M 776.0,597 L 776.0,553" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0092" d="M 587.0,553 L 965.0,553" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0093" d="M 587.0,553 L 587.0,523" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0094" d="M 587.0,442 L 587.0,424" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0095" d="M 965.0,553 L 965.0,523" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0096" d="M 965.0,442 L 965.0,424" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0097" d="M 587.0,424 L 965.0,424" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0098" d="M 776.0,424 L 776.0,351" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0099" d="M 776.0,833 L 776.0,807" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0100" d="M 776.0,726 L 776.0,702" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0101" d="M 776.0,621 L 776.0,597" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0102" d="M 776.0,351 L 776.0,277" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="resnet.output" data-visual-role="output"><title>deeplearning-models/pytorch_ipynb/cnn/cnn-resnet18-mnist.py:185 ResNet.forward; parameter=not asserted; return logits, probas</title><rect x="611.0" y="172" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="776.0" y="199" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="776.0" dy="0">Forward return tuple</tspan>
+</text>
+<text x="776.0" y="223" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">2 x [B,10]</tspan>
+</text>
+<text x="928.0" y="243" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="928.0" dy="0">E007</tspan>
+</text>
+<path data-route-id="route-0103" d="M 776.0,6560 L 776.0,6534" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0104" d="M 776.0,6453 L 776.0,6429" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0105" d="M 776.0,5933 L 776.0,5909" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0106" d="M 776.0,4838 L 776.0,4814" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0107" d="M 776.0,3511 L 776.0,3487" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0108" d="M 776.0,2184 L 776.0,2160" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0109" d="M 776.0,857 L 776.0,833" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0110" d="M 776.0,277 L 776.0,253" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0111" d="M 776.0,172 L 776.0,98" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="231.0" y="6597" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348"/>
+<text x="254.0" y="6610" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="254.0" dy="0">Input / Embed</tspan>
+</text>
+<rect x="416.0" y="6597" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348"/>
+<text x="439.0" y="6610" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="439.0" dy="0">Conv / MLP</tspan>
+</text>
+<rect x="601.0" y="6597" width="16" height="16" rx="3" fill="#d6f0df" stroke="#263348"/>
+<text x="624.0" y="6610" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="624.0" dy="0">Pool</tspan>
+</text>
+<rect x="786.0" y="6597" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348"/>
+<text x="809.0" y="6610" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="809.0" dy="0">Norm / Add / Cat</tspan>
+</text>
+<rect x="971.0" y="6597" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348"/>
+<text x="994.0" y="6610" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="994.0" dy="0">Linear / Output</tspan>
+</text>
+<rect x="1156.0" y="6597" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348"/>
+<text x="1179.0" y="6610" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1179.0" dy="0">Activation</tspan>
+</text>
+<rect x="693.5" y="6627" width="16" height="16" rx="3" fill="#c9f1cd" stroke="#263348"/>
+<text x="716.5" y="6640" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="716.5" dy="0">Prob. / Sample</tspan>
+</text>
+<text x="776.0" y="6668" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">B: batch; image tensors use [B,C,H,W]</tspan>
+<tspan x="776.0" dy="16.52">blue Conv / yellow BN or Add / purple Linear / green Softmax</tspan>
+<tspan x="776.0" dy="16.52">input pink / return purple / ReLU gray</tspan>
+</text>
+<text x="776.0" y="6742" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+<text x="776.0" y="6772" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">E### = source span (hover a module); dashed = named state / auxiliary input; fork-join = tuple/list, not sum.</tspan>
+</text>
+<text x="776.0" y="6797" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="776.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+</svg>

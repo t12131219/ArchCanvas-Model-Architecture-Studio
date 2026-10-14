@@ -1,0 +1,581 @@
+{
+  "canvas": [
+    1378,
+    733
+  ],
+  "view": 0,
+  "boxes": [
+    {
+      "id": "vae.root",
+      "parent": null,
+      "bbox": [
+        492.0,
+        98,
+        394,
+        353
+      ],
+      "radius": 18,
+      "expanded": true,
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.forward"
+      ],
+      "style": {
+        "role": "root",
+        "fill_role": "root",
+        "fill": "#ffffff",
+        "stroke": "#263348",
+        "stroke_width": 2.5,
+        "radius": 18,
+        "title_size": 22
+      }
+    },
+    {
+      "id": "vae.input",
+      "parent": "vae.root",
+      "bbox": [
+        524.0,
+        320,
+        330,
+        105
+      ],
+      "radius": 10,
+      "expanded": false,
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.forward"
+      ],
+      "style": {
+        "role": "input",
+        "fill_role": "input",
+        "fill": "#f8d4e1",
+        "stroke": "#263348",
+        "stroke_width": 2,
+        "radius": 10,
+        "title_size": 22
+      }
+    },
+    {
+      "id": "vae.forward",
+      "parent": "vae.root",
+      "bbox": [
+        524.0,
+        215,
+        330,
+        81
+      ],
+      "radius": 10,
+      "expanded": false,
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.forward"
+      ],
+      "style": {
+        "role": "group",
+        "fill_role": "group",
+        "fill": "#ffffff",
+        "stroke": "#263348",
+        "stroke_width": 2,
+        "radius": 10,
+        "title_size": 22
+      }
+    },
+    {
+      "id": "vae.epsilon",
+      "parent": null,
+      "bbox": [
+        25,
+        305.5,
+        330,
+        105
+      ],
+      "radius": 10,
+      "expanded": false,
+      "source": [
+        "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py::VariationalAutoencoder.reparameterize"
+      ],
+      "style": {
+        "role": "sampling",
+        "fill_role": "sampling",
+        "fill": "#c9f1cd",
+        "stroke": "#263348",
+        "stroke_width": 2,
+        "radius": 10,
+        "title_size": 22
+      }
+    }
+  ],
+  "ports": {
+    "vae.root": {
+      "in": [
+        689.0,
+        451
+      ],
+      "out": [
+        689.0,
+        98
+      ],
+      "left": [
+        492.0,
+        274.5
+      ],
+      "right": [
+        886.0,
+        274.5
+      ]
+    },
+    "vae.input": {
+      "in": [
+        689.0,
+        425
+      ],
+      "out": [
+        689.0,
+        320
+      ],
+      "left": [
+        524.0,
+        372.5
+      ],
+      "right": [
+        854.0,
+        372.5
+      ]
+    },
+    "vae.forward": {
+      "in": [
+        689.0,
+        296
+      ],
+      "out": [
+        689.0,
+        215
+      ],
+      "left": [
+        524.0,
+        255.5
+      ],
+      "right": [
+        854.0,
+        255.5
+      ]
+    },
+    "vae.epsilon": {
+      "in": [
+        190.0,
+        410.5
+      ],
+      "out": [
+        190.0,
+        305.5
+      ],
+      "left": [
+        25,
+        358.0
+      ],
+      "right": [
+        355,
+        358.0
+      ]
+    }
+  },
+  "routes": [
+    {
+      "id": "route-0001",
+      "points": [
+        [
+          689.0,
+          451
+        ],
+        [
+          689.0,
+          425
+        ]
+      ],
+      "src": "vae.root:in",
+      "dst": "vae.input:in",
+      "role": "boundary",
+      "arrow": true
+    },
+    {
+      "id": "route-0002",
+      "points": [
+        [
+          689.0,
+          320
+        ],
+        [
+          689.0,
+          296
+        ]
+      ],
+      "src": "vae.input:out",
+      "dst": "vae.forward:in",
+      "role": "tensor",
+      "arrow": true
+    },
+    {
+      "id": "route-0003",
+      "points": [
+        [
+          689.0,
+          215
+        ],
+        [
+          689.0,
+          98
+        ]
+      ],
+      "src": "vae.forward:out",
+      "dst": "vae.root:out",
+      "role": "boundary",
+      "arrow": true
+    },
+    {
+      "id": "route-0004",
+      "points": [
+        [
+          355,
+          358.0
+        ],
+        [
+          500.0,
+          358.0
+        ],
+        [
+          500.0,
+          255.5
+        ],
+        [
+          524.0,
+          255.5
+        ]
+      ],
+      "src": "vae.epsilon:right",
+      "dst": "vae.forward:left",
+      "role": "random_sample",
+      "arrow": true,
+      "semantic_src": "vae.epsilon",
+      "semantic_dst": "vae.noise_product",
+      "semantic_src_port": "out",
+      "semantic_dst_port": "epsilon",
+      "projected_src": "vae.epsilon",
+      "projected_dst": "vae.forward"
+    }
+  ],
+  "texts": [
+    {
+      "text": "VAE (MNIST fully connected)  |  Architecture overview",
+      "bbox": [
+        196.10000000000002,
+        7,
+        985.8,
+        35.4
+      ]
+    },
+    {
+      "text": "MNIST 784 / hidden 500 / latent 15 / independent posterior heads  /  read bottom to top",
+      "bbox": [
+        257.48,
+        49,
+        863.04,
+        18.88
+      ]
+    },
+    {
+      "text": "MNIST fully | connected | VAE",
+      "bbox": [
+        509.0,
+        106,
+        150.04,
+        77.88
+      ]
+    },
+    {
+      "text": "(mu, logvar, | z, decoded)",
+      "bbox": [
+        749.96,
+        112,
+        119.03999999999999,
+        37.76
+      ]
+    },
+    {
+      "text": "E005",
+      "bbox": [
+        843.24,
+        191,
+        29.759999999999998,
+        14.16
+      ]
+    },
+    {
+      "text": "Flattened MNIST | features",
+      "bbox": [
+        596.0,
+        327,
+        186.0,
+        47.199999999999996
+      ]
+    },
+    {
+      "text": "[B,784]",
+      "bbox": [
+        654.28,
+        379,
+        69.44,
+        18.88
+      ]
+    },
+    {
+      "text": "E005",
+      "bbox": [
+        811.24,
+        403,
+        29.759999999999998,
+        14.16
+      ]
+    },
+    {
+      "text": "Model forward",
+      "bbox": [
+        608.4,
+        222,
+        161.2,
+        23.599999999999998
+      ]
+    },
+    {
+      "text": "four-tensor tuple",
+      "bbox": [
+        604.6800000000001,
+        250,
+        168.64,
+        18.88
+      ]
+    },
+    {
+      "text": "E005",
+      "bbox": [
+        811.24,
+        274,
+        29.759999999999998,
+        14.16
+      ]
+    },
+    {
+      "text": "Internal Gaussian | sample",
+      "bbox": [
+        84.6,
+        312.5,
+        210.8,
+        47.199999999999996
+      ]
+    },
+    {
+      "text": "epsilon: [B,15]",
+      "bbox": [
+        115.6,
+        364.5,
+        148.8,
+        18.88
+      ]
+    },
+    {
+      "text": "E006",
+      "bbox": [
+        312.24,
+        388.5,
+        29.759999999999998,
+        14.16
+      ]
+    },
+    {
+      "text": "epsilon",
+      "bbox": [
+        436.58,
+        293.75,
+        56.42,
+        15.34
+      ]
+    },
+    {
+      "text": "Input / Embed",
+      "bbox": [
+        167.0,
+        487,
+        112.84,
+        16.52
+      ]
+    },
+    {
+      "text": "Conv / MLP",
+      "bbox": [
+        352.0,
+        487,
+        86.8,
+        16.52
+      ]
+    },
+    {
+      "text": "Pool",
+      "bbox": [
+        537.0,
+        487,
+        34.72,
+        16.52
+      ]
+    },
+    {
+      "text": "Norm / Add / Cat",
+      "bbox": [
+        722.0,
+        487,
+        138.88,
+        16.52
+      ]
+    },
+    {
+      "text": "Linear / Output",
+      "bbox": [
+        907.0,
+        487,
+        130.2,
+        16.52
+      ]
+    },
+    {
+      "text": "Activation",
+      "bbox": [
+        1092.0,
+        487,
+        86.8,
+        16.52
+      ]
+    },
+    {
+      "text": "Prob. / Sample",
+      "bbox": [
+        629.5,
+        517,
+        121.52,
+        16.52
+      ]
+    },
+    {
+      "text": "B: batch; image 1x28x28 -> caller flatten 784; latent width 15 | input pink / forward return purple / LeakyReLU and exponential gray / Sigmoid green | side routes retain tuple fields; epsilon side route is an internal random source",
+      "bbox": [
+        328.78000000000003,
+        545,
+        720.4399999999999,
+        49.56
+      ]
+    },
+    {
+      "text": "Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.",
+      "bbox": [
+        211.60000000000002,
+        619,
+        954.8,
+        16.52
+      ]
+    },
+    {
+      "text": "E### = source span (hover a module); dashed = named state / auxiliary input; fork-join = tuple/list, not sum.",
+      "bbox": [
+        215.94,
+        649,
+        946.12,
+        16.52
+      ]
+    },
+    {
+      "text": "Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.",
+      "bbox": [
+        194.24,
+        674,
+        989.52,
+        16.52
+      ]
+    }
+  ],
+  "minimum_terminal": 18,
+  "visual_style": {
+    "name": "transformer-paper-model-zoo",
+    "version": 1,
+    "font": "DejaVu Sans, Arial, sans-serif",
+    "text": "#172336",
+    "line": "#263348",
+    "palette": {
+      "root": "#ffffff",
+      "group": "#ffffff",
+      "inner": "#fffaf6",
+      "layer": "#ffffff",
+      "encoder": "#e7f5fe",
+      "decoder": "#fff0f5",
+      "embedding": "#f8d4e1",
+      "input": "#f8d4e1",
+      "output": "#dfdff8",
+      "attention": "#ffddb3",
+      "ffn": "#c8ebfb",
+      "mixing": "#c8ebfb",
+      "conv": "#c8ebfb",
+      "pool": "#d6f0df",
+      "norm": "#fff6bd",
+      "concat": "#fff6bd",
+      "linear": "#dfdff8",
+      "softmax": "#c9f1cd",
+      "sampling": "#c9f1cd",
+      "recurrent": "#ffddb3",
+      "decomposition": "#d6f0df",
+      "tensor": "#cdeaf8",
+      "activation": "#f3f5f7",
+      "control": "#f3f5f7"
+    },
+    "typography": {
+      "title": 30,
+      "subtitle": 16,
+      "module": 22,
+      "inner": 20,
+      "operator": 20,
+      "shape": 16,
+      "detail": 14,
+      "evidence": 12,
+      "footer": 14,
+      "line_height": 1.18
+    },
+    "fill_width_nodes": [
+      "vae.decoder",
+      "vae.encoder",
+      "vae.forward",
+      "vae.posterior",
+      "vae.sampling"
+    ],
+    "visual_roles": {
+      "vae.dec_activation": "activation",
+      "vae.dec_sigmoid": "softmax",
+      "vae.decoder": "decoder",
+      "vae.enc_activation": "activation",
+      "vae.encoder": "encoder",
+      "vae.epsilon": "sampling",
+      "vae.forward": "group",
+      "vae.half_logvar": "tensor",
+      "vae.input": "input",
+      "vae.logvar_head": "inner",
+      "vae.mean_head": "inner",
+      "vae.mean_operand": "tensor",
+      "vae.noise_product": "norm",
+      "vae.posterior": "ffn",
+      "vae.return": "output",
+      "vae.root": "root",
+      "vae.sample_operands": "inner",
+      "vae.sampling": "sampling",
+      "vae.scaled_noise": "inner",
+      "vae.std": "activation",
+      "vae.z": "norm"
+    },
+    "semantics": "presentation aliases only; color does not imply mathematical equivalence or parameter sharing"
+  },
+  "computation_direction": "bottom-to-top; typed auxiliary edges may cross lanes",
+  "measurement": "conservative text-width estimate, recursive intrinsic height; inspected rendered export",
+  "presentation_overrides": {},
+  "folded_inline_nodes": [],
+  "semantic_ir_sha256": "57b045ff0c94c09038552010ead4c9e1fca6d794ddf468960279e34c6a937666"
+}

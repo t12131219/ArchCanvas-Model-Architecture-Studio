@@ -1,0 +1,210 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1330" height="1443" viewBox="0 0 1330 1443">
+<defs xmlns="http://www.w3.org/2000/svg"><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348" /></marker></defs>
+
+<rect xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" fill="white" />
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="source-binding">{"model": "shuffle_ir_stride1", "source_snapshot_sha256": "66209ff0a5fcaf22d0c55fcc2b008aa29f50dec4f265cbd902de8482ed44f5bd", "repository": "pytorch/vision", "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020", "semantic_ir_sha256": "c9fd37bbd384a6816408ddb5aa32b824dca79fcaafd6132cd4bf4eee260a43d6", "view": 1}</metadata>
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="diagram-style">{"name": "transformer-paper-model-zoo", "version": 1, "font": "DejaVu Sans, Arial, sans-serif", "text": "#172336", "line": "#263348", "palette": {"root": "#ffffff", "group": "#ffffff", "inner": "#fffaf6", "layer": "#ffffff", "encoder": "#e7f5fe", "decoder": "#fff0f5", "embedding": "#f8d4e1", "input": "#f8d4e1", "output": "#dfdff8", "attention": "#ffddb3", "ffn": "#c8ebfb", "mixing": "#c8ebfb", "conv": "#c8ebfb", "pool": "#d6f0df", "norm": "#fff6bd", "concat": "#fff6bd", "linear": "#dfdff8", "softmax": "#c9f1cd", "sampling": "#c9f1cd", "recurrent": "#ffddb3", "decomposition": "#d6f0df", "tensor": "#cdeaf8", "activation": "#f3f5f7", "control": "#f3f5f7"}, "typography": {"title": 30, "subtitle": 16, "module": 22, "inner": 20, "operator": 20, "shape": 16, "detail": 14, "evidence": 12, "footer": 14, "line_height": 1.18}, "fill_width_nodes": [], "visual_roles": {"shuffle_ir_stride1.b2.bn1": "norm", "shuffle_ir_stride1.b2.bn2": "norm", "shuffle_ir_stride1.b2.bn3": "norm", "shuffle_ir_stride1.b2.conv1": "conv", "shuffle_ir_stride1.b2.dw": "conv", "shuffle_ir_stride1.b2.project": "conv", "shuffle_ir_stride1.b2.relu1": "activation", "shuffle_ir_stride1.b2.relu2": "activation", "shuffle_ir_stride1.branch2": "conv", "shuffle_ir_stride1.branches": "inner", "shuffle_ir_stride1.chunk": "chunk", "shuffle_ir_stride1.concat": "concat", "shuffle_ir_stride1.input": "input", "shuffle_ir_stride1.module": "encoder", "shuffle_ir_stride1.output": "output", "shuffle_ir_stride1.retained": "tensor", "shuffle_ir_stride1.root": "root", "shuffle_ir_stride1.shuffle": "tensor"}, "semantics": "presentation aliases only; color does not imply mathematical equivalence or parameter sharing"}</metadata>
+
+<text xmlns="http://www.w3.org/2000/svg" x="665.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="665.0" dy="0">ShuffleNetV2 split/retain  |  Module decomposition</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="665.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="665.0" dy="0">InvertedResidual(24,24,stride=1)  /  read bottom to top</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="shuffle_ir_stride1.root" data-visual-role="root"><title>torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:38 InvertedResidual.__init__; torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:87 InvertedResidual.forward; parameter=not asserted; </title><rect x="230.0" y="98" width="870" height="1063" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="247.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="247.0" dy="0">ShuffleNetV2 split/retain</tspan>
+<tspan x="247.0" dy="25.959999999999997">/ module</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1083.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1083.0" dy="0">[B,24,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1087.0" y="177" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1087.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="shuffle_ir_stride1.input" data-visual-role="input" data-glyph-kind="tensor-grid"><title>torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:38 InvertedResidual.__init__; torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:87 InvertedResidual.forward; parameter=not asserted; </title><rect x="629.0" y="1078.5" width="72" height="32" rx="0" fill="#f8d4e1" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="641.0" x2="641.0" y1="1078.5" y2="1110.5" stroke="#263348" stroke-width=".6" /><line x1="653.0" x2="653.0" y1="1078.5" y2="1110.5" stroke="#263348" stroke-width=".6" /><line x1="665.0" x2="665.0" y1="1078.5" y2="1110.5" stroke="#263348" stroke-width=".6" /><line x1="677.0" x2="677.0" y1="1078.5" y2="1110.5" stroke="#263348" stroke-width=".6" /><line x1="689.0" x2="689.0" y1="1078.5" y2="1110.5" stroke="#263348" stroke-width=".6" /><line x1="629.0" x2="701.0" y1="1089.1666666666667" y2="1089.1666666666667" stroke="#263348" stroke-width=".6" /><line x1="629.0" x2="701.0" y1="1099.8333333333333" y2="1099.8333333333333" stroke="#263348" stroke-width=".6" /><text x="619.0" y="1091.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="619.0" dy="0">Module</tspan><tspan x="619.0" dy="16.52">input</tspan></text><text x="711.0" y="1091.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="711.0" dy="0">[B,24,16,16</tspan><tspan x="711.0" dy="16.52">]</tspan></text><text x="711.0" y="1132" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="711.0" dy="0">E002,E004</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="shuffle_ir_stride1.module" data-visual-role="encoder"><title>torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:38 InvertedResidual.__init__; torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:87 InvertedResidual.forward; parameter=not asserted; </title><rect x="262.0" y="294" width="806" height="736" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="279.0" y="324" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="279.0" dy="0">ShuffleNetV2</tspan>
+<tspan x="279.0" dy="28.32">InvertedResidual</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1051.0" y="324" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1051.0" dy="0">[B,24,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1055.0" y="376" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1055.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="shuffle_ir_stride1.chunk" data-visual-role="chunk"><title>torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:38 InvertedResidual.__init__; torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:87 InvertedResidual.forward; parameter=not asserted; </title><rect x="515.0" y="899" width="300" height="105" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="665.0" y="926" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="665.0" dy="0">Chunk channel dim1</tspan>
+<tspan x="665.0" dy="23.599999999999998">into2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="665.0" y="974" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="665.0" dy="0">2 tensors [B,12,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="802.0" y="994" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="802.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="shuffle_ir_stride1.branches" data-visual-role="inner"><title>torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:38 InvertedResidual.__init__; torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:87 InvertedResidual.forward; parameter=not asserted; </title><rect x="294.0" y="622" width="742" height="253" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="311.0" y="652" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="311.0" dy="0">Dispatch x1 / x2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1019.0" y="652" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1019.0" dy="0">x1 + transformed x2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1023.0" y="684" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1023.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="shuffle_ir_stride1.retained" data-visual-role="tensor"><title>torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:38 InvertedResidual.__init__; torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:87 InvertedResidual.forward; parameter=not asserted; </title><rect x="326.0" y="696" width="300" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="476.0" y="723" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="476.0" dy="0">Retain x1 / no</tspan>
+<tspan x="476.0" dy="23.599999999999998">learned branch1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="476.0" y="771" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="476.0" dy="0">[B,12,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="613.0" y="791" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="613.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="shuffle_ir_stride1.branch2" data-visual-role="conv"><title>torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:38 InvertedResidual.__init__; torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:87 InvertedResidual.forward; torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:77 InvertedResidual.depthwise_conv; parameter=not asserted; </title><rect x="674.0" y="720" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="839.0" y="747" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="839.0" dy="0">Learned branch2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="839.0" y="771" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="839.0" dy="0">[B,12,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="991.0" y="791" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="991.0" dy="0">E002 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="shuffle_ir_stride1.concat" data-visual-role="concat"><title>torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:38 InvertedResidual.__init__; torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:87 InvertedResidual.forward; parameter=not asserted; </title><rect x="515.0" y="517" width="300" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="665.0" y="544" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="665.0" dy="0">Concat channel dim=1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="665.0" y="568" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="665.0" dy="0">[B,24,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="802.0" y="588" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="802.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="shuffle_ir_stride1.shuffle" data-visual-role="tensor"><title>torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:87 InvertedResidual.forward; torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:21 channel_shuffle; parameter=not asserted; </title><rect x="515.0" y="388" width="300" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="665.0" y="415" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="665.0" dy="0">channel_shuffle /</tspan>
+<tspan x="665.0" dy="23.599999999999998">groups=2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="665.0" y="463" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="665.0" dy="0">[B,24,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="802.0" y="483" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="802.0" dy="0">E004,E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="shuffle_ir_stride1.output" data-visual-role="output" data-glyph-kind="tensor-grid"><title>torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:38 InvertedResidual.__init__; torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py:87 InvertedResidual.forward; parameter=not asserted; </title><rect x="629.0" y="213.5" width="72" height="32" rx="0" fill="#dfdff8" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="641.0" x2="641.0" y1="213.5" y2="245.5" stroke="#263348" stroke-width=".6" /><line x1="653.0" x2="653.0" y1="213.5" y2="245.5" stroke="#263348" stroke-width=".6" /><line x1="665.0" x2="665.0" y1="213.5" y2="245.5" stroke="#263348" stroke-width=".6" /><line x1="677.0" x2="677.0" y1="213.5" y2="245.5" stroke="#263348" stroke-width=".6" /><line x1="689.0" x2="689.0" y1="213.5" y2="245.5" stroke="#263348" stroke-width=".6" /><line x1="629.0" x2="701.0" y1="224.16666666666666" y2="224.16666666666666" stroke="#263348" stroke-width=".6" /><line x1="629.0" x2="701.0" y1="234.83333333333334" y2="234.83333333333334" stroke="#263348" stroke-width=".6" /><text x="619.0" y="226.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="619.0" dy="0">Module</tspan><tspan x="619.0" dy="16.52">output</tspan></text><text x="711.0" y="226.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="711.0" dy="0">[B,24,16,16</tspan><tspan x="711.0" dy="16.52">]</tspan></text><text x="711.0" y="267" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="711.0" dy="0">E002,E004</tspan></text></g>
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0001" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;shuffle_ir_stride1.retained&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;dispatch&quot;, &quot;src&quot;: &quot;shuffle_ir_stride1.branches&quot;, &quot;src_port&quot;: &quot;item[0]&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;shuffle_ir_stride1.retained&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;shuffle_ir_stride1.branches:item[0]-&gt;shuffle_ir_stride1.retained:in:dispatch&quot;, &quot;rendered_dst&quot;: &quot;shuffle_ir_stride1.retained:left&quot;, &quot;rendered_src&quot;: &quot;shuffle_ir_stride1.chunk:left&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;shuffle_ir_stride1.chunk&quot;, &quot;port&quot;: &quot;item[0]&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 515.0,951.5 L 302.0,951.5 L 302.0,748.5 L 326.0,748.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>shuffle_ir_stride1.branches:item[0] -&gt; shuffle_ir_stride1.retained:in; visible shuffle_ir_stride1.chunk:item[0] -&gt; shuffle_ir_stride1.retained:in; dispatch</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0002" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;shuffle_ir_stride1.branch2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;dispatch&quot;, &quot;src&quot;: &quot;shuffle_ir_stride1.branches&quot;, &quot;src_port&quot;: &quot;item[1]&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;shuffle_ir_stride1.branch2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;shuffle_ir_stride1.branches:item[1]-&gt;shuffle_ir_stride1.branch2:in:dispatch&quot;, &quot;rendered_dst&quot;: &quot;shuffle_ir_stride1.branch2:right.aux0&quot;, &quot;rendered_src&quot;: &quot;shuffle_ir_stride1.chunk:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;shuffle_ir_stride1.chunk&quot;, &quot;port&quot;: &quot;item[1]&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 815.0,951.5 L 1028.0,951.5 L 1028.0,748.5 L 1004.0,748.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>shuffle_ir_stride1.branches:item[1] -&gt; shuffle_ir_stride1.branch2:in; visible shuffle_ir_stride1.chunk:item[1] -&gt; shuffle_ir_stride1.branch2:in; dispatch</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0003" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;shuffle_ir_stride1.concat&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;shuffle_ir_stride1.branches&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;shuffle_ir_stride1.concat&quot;, &quot;port&quot;: &quot;operand[0]&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;shuffle_ir_stride1.branches:out-&gt;shuffle_ir_stride1.concat:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;shuffle_ir_stride1.concat:right.aux0&quot;, &quot;rendered_src&quot;: &quot;shuffle_ir_stride1.retained:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;shuffle_ir_stride1.retained&quot;, &quot;operand&quot;: 0, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;shuffle_ir_stride1.branches&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 626.0,748.5 L 665.0,748.5 L 665.0,601.16 L 839.0,601.16 L 839.0,545.5 L 815.0,545.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>shuffle_ir_stride1.branches:out -&gt; shuffle_ir_stride1.concat:in; visible shuffle_ir_stride1.retained:out -&gt; shuffle_ir_stride1.concat:operand[0]; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0004" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;shuffle_ir_stride1.concat&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;shuffle_ir_stride1.branches&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;shuffle_ir_stride1.concat&quot;, &quot;port&quot;: &quot;operand[1]&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;shuffle_ir_stride1.branches:out-&gt;shuffle_ir_stride1.concat:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;shuffle_ir_stride1.concat:right.aux1&quot;, &quot;rendered_src&quot;: &quot;shuffle_ir_stride1.branch2:right.aux1&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;shuffle_ir_stride1.branch2&quot;, &quot;operand&quot;: 1, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;shuffle_ir_stride1.branches&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1004.0,772.5 L 1030.0,772.5 L 1030.0,569.5 L 815.0,569.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>shuffle_ir_stride1.branches:out -&gt; shuffle_ir_stride1.concat:in; visible shuffle_ir_stride1.branch2:out -&gt; shuffle_ir_stride1.concat:operand[1]; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0005" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;shuffle_ir_stride1.shuffle&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;shuffle_ir_stride1.concat&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;shuffle_ir_stride1.shuffle&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;shuffle_ir_stride1.concat:out-&gt;shuffle_ir_stride1.shuffle:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;shuffle_ir_stride1.shuffle:in&quot;, &quot;rendered_src&quot;: &quot;shuffle_ir_stride1.concat:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;shuffle_ir_stride1.concat&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 665.0,517 L 665.0,493" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>shuffle_ir_stride1.concat:out -&gt; shuffle_ir_stride1.shuffle:in; visible shuffle_ir_stride1.concat:out -&gt; shuffle_ir_stride1.shuffle:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0006" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;shuffle_ir_stride1.module&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;shuffle_ir_stride1.input&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;shuffle_ir_stride1.chunk&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;shuffle_ir_stride1.module&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;shuffle_ir_stride1.input:out-&gt;shuffle_ir_stride1.module:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;shuffle_ir_stride1.chunk:in&quot;, &quot;rendered_src&quot;: &quot;shuffle_ir_stride1.input:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;shuffle_ir_stride1.input&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 665.0,1078.5 L 665.0,1004" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>shuffle_ir_stride1.input:out -&gt; shuffle_ir_stride1.module:in; visible shuffle_ir_stride1.input:out -&gt; shuffle_ir_stride1.chunk:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0007" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;shuffle_ir_stride1.output&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;shuffle_ir_stride1.module&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;shuffle_ir_stride1.output&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;shuffle_ir_stride1.module:out-&gt;shuffle_ir_stride1.output:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;shuffle_ir_stride1.output:in&quot;, &quot;rendered_src&quot;: &quot;shuffle_ir_stride1.shuffle:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;shuffle_ir_stride1.shuffle&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;shuffle_ir_stride1.module&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 665.0,388 L 665.0,245.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>shuffle_ir_stride1.module:out -&gt; shuffle_ir_stride1.output:in; visible shuffle_ir_stride1.shuffle:out -&gt; shuffle_ir_stride1.output:in; tensor</title></path>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="120.0" y="1198" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="143.0" y="1211" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="143.0" dy="0">Input</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="305.0" y="1198" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="328.0" y="1211" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="328.0" dy="0">Conv</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="490.0" y="1198" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="513.0" y="1211" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="513.0" dy="0">BN</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="675.0" y="1198" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="698.0" y="1211" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="698.0" dy="0">Concat</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="860.0" y="1198" width="16" height="16" rx="3" fill="#cdeaf8" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="883.0" y="1211" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="883.0" dy="0">Tensor</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1045.0" y="1198" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1068.0" y="1211" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1068.0" dy="0">Activation</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="582.5" y="1228" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="605.5" y="1241" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="605.5" dy="0">Output</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="665.0" y="1269" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="665.0" dy="0">Declared module scope; source code and kernels are not executed.</tspan>
+<tspan x="665.0" dy="16.52">Different parameter paths own independent weights; colors express operation roles.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="665.0" y="1343" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="665.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="665.0" y="1373" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="665.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="665.0" y="1398" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="665.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+
+</svg>

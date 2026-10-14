@@ -1,0 +1,261 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "inner_product_decoder",
+  "profile": {
+    "latent_width": 8,
+    "output": "dense pairwise adjacency probability",
+    "learned_decoder_parameters": 0,
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "dmlc/dgl",
+    "commit": "3d16000b4170fa741ed9e9667f22ba84d3493026",
+    "snapshot": "256f2eebacb1903d19349aeef0a390e2636085f42f8040551d709ebc32db427e"
+  },
+  "nodes": [
+    {
+      "id": "inner_product_decoder.root",
+      "label": "Graph inner-product decoder / module only",
+      "kind": "group",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.decoder"
+      ],
+      "shape": "[N,N]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "inner_product_decoder.z"
+        ],
+        [
+          "inner_product_decoder.module"
+        ],
+        [
+          "inner_product_decoder.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inner_product_decoder.z",
+      "label": "Node latents Z",
+      "kind": "input",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.decoder"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "parent": "inner_product_decoder.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inner_product_decoder.module",
+      "label": "Graph inner-product decoder / operators",
+      "kind": "group",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.decoder"
+      ],
+      "shape": "[N,N]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "inner_product_decoder.transpose"
+        ],
+        [
+          "inner_product_decoder.product"
+        ],
+        [
+          "inner_product_decoder.sigmoid"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "inner_product_decoder.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inner_product_decoder.transpose",
+      "label": "Transpose same Z",
+      "kind": "tensor",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.decoder"
+      ],
+      "shape": "[8,N]",
+      "detail": [],
+      "expression": "z.t()",
+      "parent": "inner_product_decoder.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inner_product_decoder.product",
+      "label": "All node-pair inner products",
+      "kind": "group",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.decoder"
+      ],
+      "shape": "[N,N]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "mode": "chain",
+      "parent": "inner_product_decoder.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inner_product_decoder.product.mm",
+      "label": "Z @ Z.T",
+      "kind": "matmul",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.decoder"
+      ],
+      "shape": "[N,N]",
+      "detail": [],
+      "expression": "torch.matmul(z, z.t())",
+      "ordered_operands": [
+        "z",
+        "transpose"
+      ],
+      "parent": "inner_product_decoder.product",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "left",
+        "right"
+      ]
+    },
+    {
+      "id": "inner_product_decoder.sigmoid",
+      "label": "Elementwise Sigmoid",
+      "kind": "sigmoid",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.decoder"
+      ],
+      "shape": "[N,N]",
+      "detail": [],
+      "parent": "inner_product_decoder.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "inner_product_decoder.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.decoder"
+      ],
+      "shape": "[N,N]",
+      "detail": [],
+      "parent": "inner_product_decoder.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "inner_product_decoder.product.mm:out->inner_product_decoder.product:out:boundary",
+      "src": "inner_product_decoder.product.mm",
+      "dst": "inner_product_decoder.product",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "inner_product_decoder.z:out->inner_product_decoder.transpose:in:tensor",
+      "src": "inner_product_decoder.z",
+      "dst": "inner_product_decoder.transpose",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inner_product_decoder.z:out->inner_product_decoder.product.mm:left:retained_value",
+      "src": "inner_product_decoder.z",
+      "dst": "inner_product_decoder.product.mm",
+      "src_port": "out",
+      "dst_port": "left",
+      "role": "retained_value"
+    },
+    {
+      "id": "inner_product_decoder.transpose:out->inner_product_decoder.product.mm:right:tensor",
+      "src": "inner_product_decoder.transpose",
+      "dst": "inner_product_decoder.product.mm",
+      "src_port": "out",
+      "dst_port": "right",
+      "role": "tensor"
+    },
+    {
+      "id": "inner_product_decoder.product.mm:out->inner_product_decoder.sigmoid:in:tensor",
+      "src": "inner_product_decoder.product.mm",
+      "dst": "inner_product_decoder.sigmoid",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "inner_product_decoder.sigmoid:out->inner_product_decoder.output:in:tensor",
+      "src": "inner_product_decoder.sigmoid",
+      "dst": "inner_product_decoder.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Decoder reuses exactly one Z in both matrix operands, giving symmetric dense pair scores.",
+    "Sigmoid is elementwise; source does not perform row Softmax, masking, diagonal deletion or learned decoder Linear.",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not turn the decoder into adjacency-conditioned message passing or a classification head."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

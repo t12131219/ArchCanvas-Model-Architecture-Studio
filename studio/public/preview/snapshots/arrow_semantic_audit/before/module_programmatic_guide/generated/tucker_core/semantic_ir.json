@@ -1,0 +1,499 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "tucker_core",
+  "profile": {
+    "d1": 8,
+    "d2": 6,
+    "relation_count": "R",
+    "hidden_dropout1": 0.3,
+    "subject_boundary": "x after bn0/input_dropout; before x.view",
+    "shape_boundary": "e1.size(1) from original E(e1_idx), shape only",
+    "output_boundary": "x after bmm and restore; before bn1",
+    "constructor_core_device": "cuda",
+    "core_executed": false,
+    "mode": "caller train/eval",
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "ibalazevic/TuckER",
+    "commit": "23aff592115ee91e099ce490cdbea28ef026fc54",
+    "snapshot": "d51776e896c18a8df5e25986a2a612f3876737ee474a464cbf2415a652c92bf2"
+  },
+  "nodes": [
+    {
+      "id": "tucker_core.root",
+      "label": "TuckER relation-conditioned core / module only",
+      "kind": "group",
+      "source": [
+        "tucker-modules/model.py::TuckER.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "tucker_core.subject",
+          "tucker_core.relation",
+          "tucker_core.core",
+          "tucker_core.e1shape"
+        ],
+        [
+          "tucker_core.module"
+        ],
+        [
+          "tucker_core.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tucker_core.subject",
+      "label": "Subject features after input Dropout",
+      "kind": "input",
+      "source": [
+        "tucker-modules/model.py::TuckER.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parent": "tucker_core.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tucker_core.relation",
+      "label": "Relation IDs r_idx",
+      "kind": "input",
+      "source": [
+        "tucker-modules/model.py::TuckER.forward"
+      ],
+      "shape": "[B]",
+      "detail": [],
+      "parent": "tucker_core.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tucker_core.core",
+      "label": "Owned learned 3-way core W",
+      "kind": "parameter",
+      "source": [
+        "tucker-modules/model.py::TuckER.__init__"
+      ],
+      "shape": "[6,8,8]",
+      "detail": [],
+      "parameter": "W",
+      "constructor_device": "cuda",
+      "storage_kind": "Parameter",
+      "parent": "tucker_core.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tucker_core.e1shape",
+      "label": "Original subject embedding WIDTH",
+      "kind": "control",
+      "source": [
+        "tucker-modules/model.py::TuckER.forward"
+      ],
+      "shape": "e1.size(1) = 8",
+      "detail": [],
+      "expression": "e1.size(1)",
+      "value_operand": false,
+      "origin": "E(e1_idx) before bn0/input_dropout",
+      "parent": "tucker_core.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "tucker_core.module",
+      "label": "TuckER relation-conditioned core / operators",
+      "kind": "group",
+      "source": [
+        "tucker-modules/model.py::TuckER.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "tucker_core.relationlookup",
+          "tucker_core.subjectview"
+        ],
+        [
+          "tucker_core.condition"
+        ],
+        [
+          "tucker_core.multiply"
+        ],
+        [
+          "tucker_core.restore"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "tucker_core.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tucker_core.relationlookup",
+      "label": "Owned relation embedding R",
+      "kind": "embedding",
+      "source": [
+        "tucker-modules/model.py::TuckER.__init__",
+        "tucker-modules/model.py::TuckER.forward"
+      ],
+      "shape": "[B,6]",
+      "detail": [],
+      "parameter_scope": "R.weight",
+      "instance_identity": "R",
+      "owned_weight_shape": "[R,6]",
+      "parent": "tucker_core.module",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "r_idx"
+      ]
+    },
+    {
+      "id": "tucker_core.subjectview",
+      "label": "View subject as row per batch",
+      "kind": "tensor",
+      "source": [
+        "tucker-modules/model.py::TuckER.forward"
+      ],
+      "shape": "[B,1,8]",
+      "detail": [],
+      "parent": "tucker_core.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "d1"
+      ]
+    },
+    {
+      "id": "tucker_core.condition",
+      "label": "Contract relation into core",
+      "kind": "group",
+      "source": [
+        "tucker-modules/model.py::TuckER.__init__",
+        "tucker-modules/model.py::TuckER.forward"
+      ],
+      "shape": "[B,8,8]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "mode": "chain",
+      "parent": "tucker_core.module",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tucker_core.condition.mm",
+      "label": "r @ core.view(6,-1)",
+      "kind": "matmul",
+      "source": [
+        "tucker-modules/model.py::TuckER.__init__",
+        "tucker-modules/model.py::TuckER.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [],
+      "expression": "torch.mm(r, self.W.view(r.size(1), -1))",
+      "ordered_operands": [
+        "relation embedding",
+        "W.view(d2,-1)"
+      ],
+      "parent": "tucker_core.condition",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "r",
+        "W"
+      ]
+    },
+    {
+      "id": "tucker_core.condition.reshape",
+      "label": "View conditioned matrix",
+      "kind": "tensor",
+      "source": [
+        "tucker-modules/model.py::TuckER.__init__",
+        "tucker-modules/model.py::TuckER.forward"
+      ],
+      "shape": "[B,8,8]",
+      "detail": [],
+      "parent": "tucker_core.condition",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "d1"
+      ]
+    },
+    {
+      "id": "tucker_core.condition.dropout",
+      "label": "Hidden Dropout1 .3",
+      "kind": "dropout",
+      "source": [
+        "tucker-modules/model.py::TuckER.__init__",
+        "tucker-modules/model.py::TuckER.forward"
+      ],
+      "shape": "[B,8,8]",
+      "detail": [],
+      "p": 0.3,
+      "parameter_free": true,
+      "parent": "tucker_core.condition",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tucker_core.multiply",
+      "label": "Subject row @ conditioned matrix",
+      "kind": "bmm",
+      "source": [
+        "tucker-modules/model.py::TuckER.forward"
+      ],
+      "shape": "[B,1,8]",
+      "detail": [],
+      "expression": "torch.bmm(x, W_mat)",
+      "ordered_operands": [
+        "subject row",
+        "relation-conditioned matrix"
+      ],
+      "parent": "tucker_core.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "subject_row",
+        "relation_matrix"
+      ]
+    },
+    {
+      "id": "tucker_core.restore",
+      "label": "Restore feature axis",
+      "kind": "tensor",
+      "source": [
+        "tucker-modules/model.py::TuckER.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parent": "tucker_core.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "d1"
+      ]
+    },
+    {
+      "id": "tucker_core.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "tucker-modules/model.py::TuckER.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parent": "tucker_core.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "tucker_core.condition.mm:out->tucker_core.condition.reshape:in:tensor",
+      "src": "tucker_core.condition.mm",
+      "dst": "tucker_core.condition.reshape",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tucker_core.condition.reshape:out->tucker_core.condition.dropout:in:tensor",
+      "src": "tucker_core.condition.reshape",
+      "dst": "tucker_core.condition.dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tucker_core.condition.dropout:out->tucker_core.condition:out:boundary",
+      "src": "tucker_core.condition.dropout",
+      "dst": "tucker_core.condition",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tucker_core.relation:out->tucker_core.relationlookup:r_idx:tensor",
+      "src": "tucker_core.relation",
+      "dst": "tucker_core.relationlookup",
+      "src_port": "out",
+      "dst_port": "r_idx",
+      "role": "tensor"
+    },
+    {
+      "id": "tucker_core.relationlookup:out->tucker_core.condition.mm:r:tensor",
+      "src": "tucker_core.relationlookup",
+      "dst": "tucker_core.condition.mm",
+      "src_port": "out",
+      "dst_port": "r",
+      "role": "tensor"
+    },
+    {
+      "id": "tucker_core.core:out->tucker_core.condition.mm:W:parameter_operand",
+      "src": "tucker_core.core",
+      "dst": "tucker_core.condition.mm",
+      "src_port": "out",
+      "dst_port": "W",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "tucker_core.subject:out->tucker_core.subjectview:in:tensor",
+      "src": "tucker_core.subject",
+      "dst": "tucker_core.subjectview",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tucker_core.e1shape:shape->tucker_core.subjectview:d1:shape_dependency",
+      "src": "tucker_core.e1shape",
+      "dst": "tucker_core.subjectview",
+      "src_port": "shape",
+      "dst_port": "d1",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "tucker_core.e1shape:shape->tucker_core.condition.reshape:d1:shape_dependency",
+      "src": "tucker_core.e1shape",
+      "dst": "tucker_core.condition.reshape",
+      "src_port": "shape",
+      "dst_port": "d1",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "tucker_core.e1shape:shape->tucker_core.restore:d1:shape_dependency",
+      "src": "tucker_core.e1shape",
+      "dst": "tucker_core.restore",
+      "src_port": "shape",
+      "dst_port": "d1",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "tucker_core.subjectview:out->tucker_core.multiply:subject_row:tensor",
+      "src": "tucker_core.subjectview",
+      "dst": "tucker_core.multiply",
+      "src_port": "out",
+      "dst_port": "subject_row",
+      "role": "tensor"
+    },
+    {
+      "id": "tucker_core.condition.dropout:out->tucker_core.multiply:relation_matrix:tensor",
+      "src": "tucker_core.condition.dropout",
+      "dst": "tucker_core.multiply",
+      "src_port": "out",
+      "dst_port": "relation_matrix",
+      "role": "tensor"
+    },
+    {
+      "id": "tucker_core.multiply:out->tucker_core.restore:in:tensor",
+      "src": "tucker_core.multiply",
+      "dst": "tucker_core.restore",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tucker_core.restore:out->tucker_core.output:in:tensor",
+      "src": "tucker_core.restore",
+      "dst": "tucker_core.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Owned relation embedding R[r_idx] contracts with owned core W[d2,d1,d1] to form one relation-conditioned square matrix per batch item. Subject features then multiply that matrix in ordered bmm.",
+    "hidden_dropout1 applies to the conditioned matrix BEFORE subject multiplication; it is not dropout of the final entity score.",
+    "Core constructor explicitly creates a CUDA tensor using NumPy random initialization. That is recorded as a runtime boundary; neither initialization nor CUDA/model code is executed.",
+    "Selected boundary is a reusable feature-transformation suffix. It excludes input preprocessing and the later tied entity embedding scoring; no full knowledge-graph task model is claimed.",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not draw relation as a gate multiplying subject elementwise, collapse the 3-way core into a plain Linear, or include unrelated classifier/sigmoid in this module."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

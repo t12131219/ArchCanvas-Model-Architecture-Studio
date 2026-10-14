@@ -1,0 +1,80 @@
+{
+  "source_project": "ggnn-modules",
+  "repository": "JamesChuanggg/ggnn.pytorch",
+  "commit": "0c7897fe9b05e9b4f9a963ff55bd3ad917ea734e",
+  "source_snapshot_sha256": "daea4b2fa353b1212185c1c04d807d65bc34e63c121945cc955d0371399a3122",
+  "entry": "ggnn-modules/model.py::GGNN.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "ggnn-modules/LICENSE": {
+      "sha256": "1b19d394e9e5cbcd41e79c39fb5e4b35085910cd7b333b5766bfa22ed333b8d4",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/JamesChuanggg/ggnn.pytorch/0c7897fe9b05e9b4f9a963ff55bd3ad917ea734e/LICENSE",
+      "derived_from": null
+    },
+    "ggnn-modules/model.py": {
+      "sha256": "f7ca113b3d9a21bb087ab6dd0620e11360a32a0953ac0f7099190c285ad0b9d0",
+      "lines": 125,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/JamesChuanggg/ggnn.pytorch/0c7897fe9b05e9b4f9a963ff55bd3ad917ea734e/model.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "ggnn-modules/model.py::AttrProxy.__getitem__": {
+      "path": "ggnn-modules/model.py",
+      "symbol": "AttrProxy.__getitem__",
+      "start": 14,
+      "end": 15,
+      "snippet": "    def __getitem__(self, i):\n        return getattr(self.module, self.prefix + str(i))",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "ggnn-modules/model.py::Propogator.__init__": {
+      "path": "ggnn-modules/model.py",
+      "symbol": "Propogator.__init__",
+      "start": 23,
+      "end": 40,
+      "snippet": "    def __init__(self, state_dim, n_node, n_edge_types):\n        super(Propogator, self).__init__()\n\n        self.n_node = n_node\n        self.n_edge_types = n_edge_types\n\n        self.reset_gate = nn.Sequential(\n            nn.Linear(state_dim*3, state_dim),\n            nn.Sigmoid()\n        )\n        self.update_gate = nn.Sequential(\n            nn.Linear(state_dim*3, state_dim),\n            nn.Sigmoid()\n        )\n        self.tansform = nn.Sequential(\n            nn.Linear(state_dim*3, state_dim),\n            nn.Tanh()\n        )",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "ggnn-modules/model.py::Propogator.forward": {
+      "path": "ggnn-modules/model.py",
+      "symbol": "Propogator.forward",
+      "start": 42,
+      "end": 57,
+      "snippet": "    def forward(self, state_in, state_out, state_cur, A):\n        A_in = A[:, :, :self.n_node*self.n_edge_types]\n        A_out = A[:, :, self.n_node*self.n_edge_types:]\n\n        a_in = torch.bmm(A_in, state_in)\n        a_out = torch.bmm(A_out, state_out)\n        a = torch.cat((a_in, a_out, state_cur), 2)\n\n        r = self.reset_gate(a)\n        z = self.update_gate(a)\n        joined_input = torch.cat((a_in, a_out, r * state_cur), 2)\n        h_hat = self.tansform(joined_input)\n\n        output = (1 - z) * state_cur + z * h_hat\n\n        return output",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E005"
+    },
+    "ggnn-modules/model.py::GGNN.__init__": {
+      "path": "ggnn-modules/model.py",
+      "symbol": "GGNN.__init__",
+      "start": 66,
+      "end": 98,
+      "snippet": "    def __init__(self, opt):\n        super(GGNN, self).__init__()\n\n        assert (opt.state_dim >= opt.annotation_dim,  \\\n                'state_dim must be no less than annotation_dim')\n\n        self.state_dim = opt.state_dim\n        self.annotation_dim = opt.annotation_dim\n        self.n_edge_types = opt.n_edge_types\n        self.n_node = opt.n_node\n        self.n_steps = opt.n_steps\n\n        for i in range(self.n_edge_types):\n            # incoming and outgoing edge embedding\n            in_fc = nn.Linear(self.state_dim, self.state_dim)\n            out_fc = nn.Linear(self.state_dim, self.state_dim)\n            self.add_module(\"in_{}\".format(i), in_fc)\n            self.add_module(\"out_{}\".format(i), out_fc)\n\n        self.in_fcs = AttrProxy(self, \"in_\")\n        self.out_fcs = AttrProxy(self, \"out_\")\n\n        # Propogation Model\n        self.propogator = Propogator(self.state_dim, self.n_node, self.n_edge_types)\n\n        # Output Model\n        self.out = nn.Sequential(\n            nn.Linear(self.state_dim + self.annotation_dim, self.state_dim),\n            nn.Tanh(),\n            nn.Linear(self.state_dim, 1)\n        )\n\n        self._initialization()",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "ggnn-modules/model.py::GGNN.forward": {
+      "path": "ggnn-modules/model.py",
+      "symbol": "GGNN.forward",
+      "start": 106,
+      "end": 125,
+      "snippet": "    def forward(self, prop_state, annotation, A):\n        for i_step in range(self.n_steps):\n            in_states = []\n            out_states = []\n            for i in range(self.n_edge_types):\n                in_states.append(self.in_fcs[i](prop_state))\n                out_states.append(self.out_fcs[i](prop_state))\n            in_states = torch.stack(in_states).transpose(0, 1).contiguous()\n            in_states = in_states.view(-1, self.n_node*self.n_edge_types, self.state_dim)\n            out_states = torch.stack(out_states).transpose(0, 1).contiguous()\n            out_states = out_states.view(-1, self.n_node*self.n_edge_types, self.state_dim)\n\n            prop_state = self.propogator(in_states, out_states, prop_state, A)\n\n        join_state = torch.cat((prop_state, annotation), 2)\n\n        output = self.out(join_state)\n        output = output.sum(2)\n\n        return output",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "ggnn-modules/LICENSE"
+  ]
+}

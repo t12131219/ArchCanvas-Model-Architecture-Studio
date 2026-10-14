@@ -1,0 +1,1700 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "densenet",
+  "profile": {
+    "dataset": "CIFAR10",
+    "growthRate": 12,
+    "depth": 100,
+    "reduction": 0.5,
+    "bottleneck": true,
+    "nClasses": 10,
+    "layers_per_block": 16,
+    "input_channels": 3,
+    "image_size": 32,
+    "batch_size": 64,
+    "mode": "evaluation",
+    "shape_batch_assumption": "B>1",
+    "symbolic_shapes": true,
+    "model_executed": false
+  },
+  "source": {
+    "repository": "bamos/densenet.pytorch",
+    "commit": "d1cd5e1957975628286e516512c6d1c14430f810",
+    "snapshot": "df3345f28708eb43c5c2725e28c0adae05ec41c6171ae0a9f4183e899bdc5e6b"
+  },
+  "nodes": [
+    {
+      "id": "densenet",
+      "label": "DenseNet-BC-100 / CIFAR-10",
+      "kind": "group",
+      "source": [
+        "densenet.pytorch/densenet.py::DenseNet.forward"
+      ],
+      "shape": "[B,3,32,32] -> [B,10]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_input",
+      "label": "CIFAR-10 image",
+      "kind": "input",
+      "source": [
+        "densenet.pytorch/train.py::main"
+      ],
+      "shape": "[B,3,32,32]",
+      "detail": [],
+      "parent": "densenet",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_stem",
+      "label": "Stem Conv 3x3: 3 -> 24",
+      "kind": "conv",
+      "source": [
+        "densenet.pytorch/densenet.py::DenseNet.__init__",
+        "densenet.pytorch/densenet.py::DenseNet.forward"
+      ],
+      "shape": "[B,24,32,32]",
+      "detail": [
+        "padding=1; bias=False; no stem pooling"
+      ],
+      "param_identity": "conv1",
+      "parent": "densenet",
+      "source_evidence": [
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b1",
+      "label": "Dense block 1 x 16",
+      "kind": "group",
+      "source": [
+        "densenet.pytorch/densenet.py::DenseNet._make_dense",
+        "densenet.pytorch/densenet.py::DenseNet.forward"
+      ],
+      "shape": "[B,24,32,32] -> [B,216,32,32]",
+      "detail": [
+        "Each layer appends k=12 channels; no feature summation"
+      ],
+      "param_identity": "dense1",
+      "repeat": {
+        "count": 16,
+        "index": "j",
+        "template": "dense_b1_layer",
+        "independent_parameters": true
+      },
+      "mode": "chain",
+      "parent": "densenet",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b1_layer",
+      "label": "Bottleneck template j=0...15",
+      "kind": "group",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.__init__",
+        "densenet.pytorch/densenet.py::Bottleneck.forward",
+        "densenet.pytorch/densenet.py::DenseNet._make_dense"
+      ],
+      "shape": "Cj=24+12j; growth k=12",
+      "detail": [
+        "16 sequential layers; each owns distinct parameters",
+        "Only one symbolic iteration is expanded"
+      ],
+      "param_identity": "dense1[j]",
+      "iteration_index": "j",
+      "channel_input": "24+12*j",
+      "channel_output": "24+12*(j+1)",
+      "mode": "chain",
+      "parent": "dense_b1",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b1_input",
+      "label": "Retain dense input x",
+      "kind": "tensor",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,Cj,32,32]",
+      "detail": [
+        "Cj=24+12j; j=0,...,15",
+        "This x contains every preceding feature in this block"
+      ],
+      "output_ports": [
+        "out",
+        "retained"
+      ],
+      "port_bindings": {
+        "retained": {
+          "node": "dense_b1_input",
+          "port": "out",
+          "direction": "src"
+        }
+      },
+      "parent": "dense_b1_layer",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "retained"
+      ]
+    },
+    {
+      "id": "dense_b1_bn1",
+      "label": "BatchNorm Cj",
+      "kind": "norm",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.__init__",
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,Cj,32,32]",
+      "detail": [],
+      "param_identity": "dense1[j].bn1",
+      "parent": "dense_b1_layer",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b1_relu1",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,Cj,32,32]",
+      "detail": [],
+      "parent": "dense_b1_layer",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b1_conv1",
+      "label": "Conv 1x1: Cj -> 4k",
+      "kind": "conv",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.__init__",
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,48,32,32]",
+      "detail": [
+        "k=12; stride=1; bias=False"
+      ],
+      "param_identity": "dense1[j].conv1",
+      "parent": "dense_b1_layer",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b1_bn2",
+      "label": "BatchNorm 4k",
+      "kind": "norm",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.__init__",
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,48,32,32]",
+      "detail": [],
+      "param_identity": "dense1[j].bn2",
+      "parent": "dense_b1_layer",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b1_relu2",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,48,32,32]",
+      "detail": [],
+      "parent": "dense_b1_layer",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b1_conv2",
+      "label": "Conv 3x3: 4k -> k",
+      "kind": "conv",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.__init__",
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,12,32,32]",
+      "detail": [
+        "padding=1; stride=1; bias=False"
+      ],
+      "param_identity": "dense1[j].conv2",
+      "parent": "dense_b1_layer",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b1_cat",
+      "label": "Concat x and new features",
+      "kind": "concat",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,Cj+12,32,32]",
+      "detail": [
+        "torch.cat((x,out),1); channel concatenation, not addition"
+      ],
+      "input_ports": [
+        "in",
+        "side"
+      ],
+      "parent": "dense_b1_layer",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "dense_t1",
+      "label": "Transition 1: compression + pooling",
+      "kind": "group",
+      "source": [
+        "densenet.pytorch/densenet.py::Transition.__init__",
+        "densenet.pytorch/densenet.py::Transition.forward"
+      ],
+      "shape": "[B,108,16,16]",
+      "detail": [],
+      "param_identity": "trans1",
+      "mode": "chain",
+      "parent": "densenet",
+      "source_evidence": [
+        "E009",
+        "E010"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_t1_bn",
+      "label": "BatchNorm",
+      "kind": "norm",
+      "source": [
+        "densenet.pytorch/densenet.py::Transition.__init__",
+        "densenet.pytorch/densenet.py::Transition.forward"
+      ],
+      "shape": "[B,216,32,32]",
+      "detail": [],
+      "param_identity": "trans1.bn1",
+      "parent": "dense_t1",
+      "source_evidence": [
+        "E009",
+        "E010"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_t1_relu",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "densenet.pytorch/densenet.py::Transition.forward"
+      ],
+      "shape": "[B,216,32,32]",
+      "detail": [],
+      "parent": "dense_t1",
+      "source_evidence": [
+        "E010"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_t1_conv",
+      "label": "Conv 1x1: 216 -> 108",
+      "kind": "conv",
+      "source": [
+        "densenet.pytorch/densenet.py::Transition.__init__",
+        "densenet.pytorch/densenet.py::Transition.forward"
+      ],
+      "shape": "[B,108,32,32]",
+      "detail": [
+        "floor(C*0.5); bias=False"
+      ],
+      "param_identity": "trans1.conv1",
+      "parent": "dense_t1",
+      "source_evidence": [
+        "E009",
+        "E010"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_t1_pool",
+      "label": "Average pool 2x2 / 2",
+      "kind": "pool",
+      "source": [
+        "densenet.pytorch/densenet.py::Transition.forward"
+      ],
+      "shape": "[B,108,16,16]",
+      "detail": [],
+      "parent": "dense_t1",
+      "source_evidence": [
+        "E010"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b2",
+      "label": "Dense block 2 x 16",
+      "kind": "group",
+      "source": [
+        "densenet.pytorch/densenet.py::DenseNet._make_dense",
+        "densenet.pytorch/densenet.py::DenseNet.forward"
+      ],
+      "shape": "[B,108,16,16] -> [B,300,16,16]",
+      "detail": [
+        "Each layer appends k=12 channels; no feature summation"
+      ],
+      "param_identity": "dense2",
+      "repeat": {
+        "count": 16,
+        "index": "j",
+        "template": "dense_b2_layer",
+        "independent_parameters": true
+      },
+      "mode": "chain",
+      "parent": "densenet",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b2_layer",
+      "label": "Bottleneck template j=0...15",
+      "kind": "group",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.__init__",
+        "densenet.pytorch/densenet.py::Bottleneck.forward",
+        "densenet.pytorch/densenet.py::DenseNet._make_dense"
+      ],
+      "shape": "Cj=108+12j; growth k=12",
+      "detail": [
+        "16 sequential layers; each owns distinct parameters",
+        "Only one symbolic iteration is expanded"
+      ],
+      "param_identity": "dense2[j]",
+      "iteration_index": "j",
+      "channel_input": "108+12*j",
+      "channel_output": "108+12*(j+1)",
+      "mode": "chain",
+      "parent": "dense_b2",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b2_input",
+      "label": "Retain dense input x",
+      "kind": "tensor",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,Cj,16,16]",
+      "detail": [
+        "Cj=108+12j; j=0,...,15",
+        "This x contains every preceding feature in this block"
+      ],
+      "output_ports": [
+        "out",
+        "retained"
+      ],
+      "port_bindings": {
+        "retained": {
+          "node": "dense_b2_input",
+          "port": "out",
+          "direction": "src"
+        }
+      },
+      "parent": "dense_b2_layer",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "retained"
+      ]
+    },
+    {
+      "id": "dense_b2_bn1",
+      "label": "BatchNorm Cj",
+      "kind": "norm",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.__init__",
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,Cj,16,16]",
+      "detail": [],
+      "param_identity": "dense2[j].bn1",
+      "parent": "dense_b2_layer",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b2_relu1",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,Cj,16,16]",
+      "detail": [],
+      "parent": "dense_b2_layer",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b2_conv1",
+      "label": "Conv 1x1: Cj -> 4k",
+      "kind": "conv",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.__init__",
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,48,16,16]",
+      "detail": [
+        "k=12; stride=1; bias=False"
+      ],
+      "param_identity": "dense2[j].conv1",
+      "parent": "dense_b2_layer",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b2_bn2",
+      "label": "BatchNorm 4k",
+      "kind": "norm",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.__init__",
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,48,16,16]",
+      "detail": [],
+      "param_identity": "dense2[j].bn2",
+      "parent": "dense_b2_layer",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b2_relu2",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,48,16,16]",
+      "detail": [],
+      "parent": "dense_b2_layer",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b2_conv2",
+      "label": "Conv 3x3: 4k -> k",
+      "kind": "conv",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.__init__",
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,12,16,16]",
+      "detail": [
+        "padding=1; stride=1; bias=False"
+      ],
+      "param_identity": "dense2[j].conv2",
+      "parent": "dense_b2_layer",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b2_cat",
+      "label": "Concat x and new features",
+      "kind": "concat",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,Cj+12,16,16]",
+      "detail": [
+        "torch.cat((x,out),1); channel concatenation, not addition"
+      ],
+      "input_ports": [
+        "in",
+        "side"
+      ],
+      "parent": "dense_b2_layer",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "dense_t2",
+      "label": "Transition 2: compression + pooling",
+      "kind": "group",
+      "source": [
+        "densenet.pytorch/densenet.py::Transition.__init__",
+        "densenet.pytorch/densenet.py::Transition.forward"
+      ],
+      "shape": "[B,150,8,8]",
+      "detail": [],
+      "param_identity": "trans2",
+      "mode": "chain",
+      "parent": "densenet",
+      "source_evidence": [
+        "E009",
+        "E010"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_t2_bn",
+      "label": "BatchNorm",
+      "kind": "norm",
+      "source": [
+        "densenet.pytorch/densenet.py::Transition.__init__",
+        "densenet.pytorch/densenet.py::Transition.forward"
+      ],
+      "shape": "[B,300,16,16]",
+      "detail": [],
+      "param_identity": "trans2.bn1",
+      "parent": "dense_t2",
+      "source_evidence": [
+        "E009",
+        "E010"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_t2_relu",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "densenet.pytorch/densenet.py::Transition.forward"
+      ],
+      "shape": "[B,300,16,16]",
+      "detail": [],
+      "parent": "dense_t2",
+      "source_evidence": [
+        "E010"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_t2_conv",
+      "label": "Conv 1x1: 300 -> 150",
+      "kind": "conv",
+      "source": [
+        "densenet.pytorch/densenet.py::Transition.__init__",
+        "densenet.pytorch/densenet.py::Transition.forward"
+      ],
+      "shape": "[B,150,16,16]",
+      "detail": [
+        "floor(C*0.5); bias=False"
+      ],
+      "param_identity": "trans2.conv1",
+      "parent": "dense_t2",
+      "source_evidence": [
+        "E009",
+        "E010"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_t2_pool",
+      "label": "Average pool 2x2 / 2",
+      "kind": "pool",
+      "source": [
+        "densenet.pytorch/densenet.py::Transition.forward"
+      ],
+      "shape": "[B,150,8,8]",
+      "detail": [],
+      "parent": "dense_t2",
+      "source_evidence": [
+        "E010"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b3",
+      "label": "Dense block 3 x 16",
+      "kind": "group",
+      "source": [
+        "densenet.pytorch/densenet.py::DenseNet._make_dense",
+        "densenet.pytorch/densenet.py::DenseNet.forward"
+      ],
+      "shape": "[B,150,8,8] -> [B,342,8,8]",
+      "detail": [
+        "Each layer appends k=12 channels; no feature summation"
+      ],
+      "param_identity": "dense3",
+      "repeat": {
+        "count": 16,
+        "index": "j",
+        "template": "dense_b3_layer",
+        "independent_parameters": true
+      },
+      "mode": "chain",
+      "parent": "densenet",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b3_layer",
+      "label": "Bottleneck template j=0...15",
+      "kind": "group",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.__init__",
+        "densenet.pytorch/densenet.py::Bottleneck.forward",
+        "densenet.pytorch/densenet.py::DenseNet._make_dense"
+      ],
+      "shape": "Cj=150+12j; growth k=12",
+      "detail": [
+        "16 sequential layers; each owns distinct parameters",
+        "Only one symbolic iteration is expanded"
+      ],
+      "param_identity": "dense3[j]",
+      "iteration_index": "j",
+      "channel_input": "150+12*j",
+      "channel_output": "150+12*(j+1)",
+      "mode": "chain",
+      "parent": "dense_b3",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b3_input",
+      "label": "Retain dense input x",
+      "kind": "tensor",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,Cj,8,8]",
+      "detail": [
+        "Cj=150+12j; j=0,...,15",
+        "This x contains every preceding feature in this block"
+      ],
+      "output_ports": [
+        "out",
+        "retained"
+      ],
+      "port_bindings": {
+        "retained": {
+          "node": "dense_b3_input",
+          "port": "out",
+          "direction": "src"
+        }
+      },
+      "parent": "dense_b3_layer",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "retained"
+      ]
+    },
+    {
+      "id": "dense_b3_bn1",
+      "label": "BatchNorm Cj",
+      "kind": "norm",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.__init__",
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,Cj,8,8]",
+      "detail": [],
+      "param_identity": "dense3[j].bn1",
+      "parent": "dense_b3_layer",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b3_relu1",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,Cj,8,8]",
+      "detail": [],
+      "parent": "dense_b3_layer",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b3_conv1",
+      "label": "Conv 1x1: Cj -> 4k",
+      "kind": "conv",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.__init__",
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,48,8,8]",
+      "detail": [
+        "k=12; stride=1; bias=False"
+      ],
+      "param_identity": "dense3[j].conv1",
+      "parent": "dense_b3_layer",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b3_bn2",
+      "label": "BatchNorm 4k",
+      "kind": "norm",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.__init__",
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,48,8,8]",
+      "detail": [],
+      "param_identity": "dense3[j].bn2",
+      "parent": "dense_b3_layer",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b3_relu2",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,48,8,8]",
+      "detail": [],
+      "parent": "dense_b3_layer",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b3_conv2",
+      "label": "Conv 3x3: 4k -> k",
+      "kind": "conv",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.__init__",
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,12,8,8]",
+      "detail": [
+        "padding=1; stride=1; bias=False"
+      ],
+      "param_identity": "dense3[j].conv2",
+      "parent": "dense_b3_layer",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_b3_cat",
+      "label": "Concat x and new features",
+      "kind": "concat",
+      "source": [
+        "densenet.pytorch/densenet.py::Bottleneck.forward"
+      ],
+      "shape": "[B,Cj+12,8,8]",
+      "detail": [
+        "torch.cat((x,out),1); channel concatenation, not addition"
+      ],
+      "input_ports": [
+        "in",
+        "side"
+      ],
+      "parent": "dense_b3_layer",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ]
+    },
+    {
+      "id": "dense_head",
+      "label": "Final normalization + classifier",
+      "kind": "group",
+      "source": [
+        "densenet.pytorch/densenet.py::DenseNet.forward"
+      ],
+      "shape": "342 features -> 10 classes",
+      "detail": [],
+      "mode": "chain",
+      "parent": "densenet",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_final_bn",
+      "label": "BatchNorm 342",
+      "kind": "norm",
+      "source": [
+        "densenet.pytorch/densenet.py::DenseNet.__init__",
+        "densenet.pytorch/densenet.py::DenseNet.forward"
+      ],
+      "shape": "[B,342,8,8]",
+      "detail": [],
+      "param_identity": "bn1",
+      "parent": "dense_head",
+      "source_evidence": [
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_final_relu",
+      "label": "ReLU",
+      "kind": "activation",
+      "source": [
+        "densenet.pytorch/densenet.py::DenseNet.forward"
+      ],
+      "shape": "[B,342,8,8]",
+      "detail": [],
+      "parent": "dense_head",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_global_pool",
+      "label": "Average pool 8x8",
+      "kind": "pool",
+      "source": [
+        "densenet.pytorch/densenet.py::DenseNet.forward"
+      ],
+      "shape": "[B,342,1,1]",
+      "detail": [
+        "Fixed kernel=8 in this CIFAR-10 path; not AdaptiveAvgPool"
+      ],
+      "parent": "dense_head",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_squeeze",
+      "label": "Squeeze singleton axes",
+      "kind": "tensor",
+      "source": [
+        "densenet.pytorch/densenet.py::DenseNet.forward"
+      ],
+      "shape": "[B,342] for B>1",
+      "detail": [
+        "torch.squeeze removes every singleton axis",
+        "At B=1 this legacy implementation produces [342]"
+      ],
+      "parent": "dense_head",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_fc",
+      "label": "Linear 342 -> 10",
+      "kind": "linear",
+      "source": [
+        "densenet.pytorch/densenet.py::DenseNet.__init__",
+        "densenet.pytorch/densenet.py::DenseNet.forward"
+      ],
+      "shape": "[B,10] for B>1",
+      "detail": [],
+      "param_identity": "fc",
+      "parent": "dense_head",
+      "source_evidence": [
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_log_softmax",
+      "label": "LogSoftmax over classes",
+      "kind": "softmax",
+      "source": [
+        "densenet.pytorch/densenet.py::DenseNet.forward"
+      ],
+      "shape": "[B,10] log probabilities",
+      "detail": [
+        "Legacy F.log_softmax(fc(out)) call omits dim",
+        "Class-axis interpretation assumes selected B>1 profile"
+      ],
+      "parent": "dense_head",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dense_output",
+      "label": "Class log probabilities",
+      "kind": "output",
+      "source": [
+        "densenet.pytorch/densenet.py::DenseNet.forward"
+      ],
+      "shape": "[B,10] for B>1",
+      "detail": [],
+      "parent": "densenet",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "dense_b1_layer:in->dense_b1_input:in:boundary",
+      "src": "dense_b1_layer",
+      "dst": "dense_b1_input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_b1_input:out->dense_b1_bn1:in:tensor",
+      "src": "dense_b1_input",
+      "dst": "dense_b1_bn1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b1_bn1:out->dense_b1_relu1:in:tensor",
+      "src": "dense_b1_bn1",
+      "dst": "dense_b1_relu1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b1_relu1:out->dense_b1_conv1:in:tensor",
+      "src": "dense_b1_relu1",
+      "dst": "dense_b1_conv1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b1_conv1:out->dense_b1_bn2:in:tensor",
+      "src": "dense_b1_conv1",
+      "dst": "dense_b1_bn2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b1_bn2:out->dense_b1_relu2:in:tensor",
+      "src": "dense_b1_bn2",
+      "dst": "dense_b1_relu2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b1_relu2:out->dense_b1_conv2:in:tensor",
+      "src": "dense_b1_relu2",
+      "dst": "dense_b1_conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b1_conv2:out->dense_b1_cat:in:tensor",
+      "src": "dense_b1_conv2",
+      "dst": "dense_b1_cat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b1_cat:out->dense_b1_layer:out:boundary",
+      "src": "dense_b1_cat",
+      "dst": "dense_b1_layer",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_b1:in->dense_b1_layer:in:boundary",
+      "src": "dense_b1",
+      "dst": "dense_b1_layer",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_b1_layer:out->dense_b1:out:boundary",
+      "src": "dense_b1_layer",
+      "dst": "dense_b1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_t1:in->dense_t1_bn:in:boundary",
+      "src": "dense_t1",
+      "dst": "dense_t1_bn",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_t1_bn:out->dense_t1_relu:in:tensor",
+      "src": "dense_t1_bn",
+      "dst": "dense_t1_relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_t1_relu:out->dense_t1_conv:in:tensor",
+      "src": "dense_t1_relu",
+      "dst": "dense_t1_conv",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_t1_conv:out->dense_t1_pool:in:tensor",
+      "src": "dense_t1_conv",
+      "dst": "dense_t1_pool",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_t1_pool:out->dense_t1:out:boundary",
+      "src": "dense_t1_pool",
+      "dst": "dense_t1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_b2_layer:in->dense_b2_input:in:boundary",
+      "src": "dense_b2_layer",
+      "dst": "dense_b2_input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_b2_input:out->dense_b2_bn1:in:tensor",
+      "src": "dense_b2_input",
+      "dst": "dense_b2_bn1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b2_bn1:out->dense_b2_relu1:in:tensor",
+      "src": "dense_b2_bn1",
+      "dst": "dense_b2_relu1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b2_relu1:out->dense_b2_conv1:in:tensor",
+      "src": "dense_b2_relu1",
+      "dst": "dense_b2_conv1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b2_conv1:out->dense_b2_bn2:in:tensor",
+      "src": "dense_b2_conv1",
+      "dst": "dense_b2_bn2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b2_bn2:out->dense_b2_relu2:in:tensor",
+      "src": "dense_b2_bn2",
+      "dst": "dense_b2_relu2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b2_relu2:out->dense_b2_conv2:in:tensor",
+      "src": "dense_b2_relu2",
+      "dst": "dense_b2_conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b2_conv2:out->dense_b2_cat:in:tensor",
+      "src": "dense_b2_conv2",
+      "dst": "dense_b2_cat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b2_cat:out->dense_b2_layer:out:boundary",
+      "src": "dense_b2_cat",
+      "dst": "dense_b2_layer",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_b2:in->dense_b2_layer:in:boundary",
+      "src": "dense_b2",
+      "dst": "dense_b2_layer",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_b2_layer:out->dense_b2:out:boundary",
+      "src": "dense_b2_layer",
+      "dst": "dense_b2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_t2:in->dense_t2_bn:in:boundary",
+      "src": "dense_t2",
+      "dst": "dense_t2_bn",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_t2_bn:out->dense_t2_relu:in:tensor",
+      "src": "dense_t2_bn",
+      "dst": "dense_t2_relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_t2_relu:out->dense_t2_conv:in:tensor",
+      "src": "dense_t2_relu",
+      "dst": "dense_t2_conv",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_t2_conv:out->dense_t2_pool:in:tensor",
+      "src": "dense_t2_conv",
+      "dst": "dense_t2_pool",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_t2_pool:out->dense_t2:out:boundary",
+      "src": "dense_t2_pool",
+      "dst": "dense_t2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_b3_layer:in->dense_b3_input:in:boundary",
+      "src": "dense_b3_layer",
+      "dst": "dense_b3_input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_b3_input:out->dense_b3_bn1:in:tensor",
+      "src": "dense_b3_input",
+      "dst": "dense_b3_bn1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b3_bn1:out->dense_b3_relu1:in:tensor",
+      "src": "dense_b3_bn1",
+      "dst": "dense_b3_relu1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b3_relu1:out->dense_b3_conv1:in:tensor",
+      "src": "dense_b3_relu1",
+      "dst": "dense_b3_conv1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b3_conv1:out->dense_b3_bn2:in:tensor",
+      "src": "dense_b3_conv1",
+      "dst": "dense_b3_bn2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b3_bn2:out->dense_b3_relu2:in:tensor",
+      "src": "dense_b3_bn2",
+      "dst": "dense_b3_relu2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b3_relu2:out->dense_b3_conv2:in:tensor",
+      "src": "dense_b3_relu2",
+      "dst": "dense_b3_conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b3_conv2:out->dense_b3_cat:in:tensor",
+      "src": "dense_b3_conv2",
+      "dst": "dense_b3_cat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b3_cat:out->dense_b3_layer:out:boundary",
+      "src": "dense_b3_cat",
+      "dst": "dense_b3_layer",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_b3:in->dense_b3_layer:in:boundary",
+      "src": "dense_b3",
+      "dst": "dense_b3_layer",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_b3_layer:out->dense_b3:out:boundary",
+      "src": "dense_b3_layer",
+      "dst": "dense_b3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_head:in->dense_final_bn:in:boundary",
+      "src": "dense_head",
+      "dst": "dense_final_bn",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_final_bn:out->dense_final_relu:in:tensor",
+      "src": "dense_final_bn",
+      "dst": "dense_final_relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_final_relu:out->dense_global_pool:in:tensor",
+      "src": "dense_final_relu",
+      "dst": "dense_global_pool",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_global_pool:out->dense_squeeze:in:tensor",
+      "src": "dense_global_pool",
+      "dst": "dense_squeeze",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_squeeze:out->dense_fc:in:tensor",
+      "src": "dense_squeeze",
+      "dst": "dense_fc",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_fc:out->dense_log_softmax:in:tensor",
+      "src": "dense_fc",
+      "dst": "dense_log_softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_log_softmax:out->dense_head:out:boundary",
+      "src": "dense_log_softmax",
+      "dst": "dense_head",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "densenet:in->dense_input:in:boundary",
+      "src": "densenet",
+      "dst": "dense_input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_input:out->dense_stem:in:tensor",
+      "src": "dense_input",
+      "dst": "dense_stem",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_stem:out->dense_b1:in:tensor",
+      "src": "dense_stem",
+      "dst": "dense_b1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b1:out->dense_t1:in:tensor",
+      "src": "dense_b1",
+      "dst": "dense_t1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_t1:out->dense_b2:in:tensor",
+      "src": "dense_t1",
+      "dst": "dense_b2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b2:out->dense_t2:in:tensor",
+      "src": "dense_b2",
+      "dst": "dense_t2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_t2:out->dense_b3:in:tensor",
+      "src": "dense_t2",
+      "dst": "dense_b3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_b3:out->dense_head:in:tensor",
+      "src": "dense_b3",
+      "dst": "dense_head",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_head:out->dense_output:in:tensor",
+      "src": "dense_head",
+      "dst": "dense_output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dense_output:out->densenet:out:boundary",
+      "src": "dense_output",
+      "dst": "densenet",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dense_b1_input:retained->dense_b1_cat:side:dense_concat",
+      "src": "dense_b1_input",
+      "dst": "dense_b1_cat",
+      "src_port": "retained",
+      "dst_port": "side",
+      "role": "dense_concat"
+    },
+    {
+      "id": "dense_b2_input:retained->dense_b2_cat:side:dense_concat",
+      "src": "dense_b2_input",
+      "dst": "dense_b2_cat",
+      "src_port": "retained",
+      "dst_port": "side",
+      "role": "dense_concat"
+    },
+    {
+      "id": "dense_b3_input:retained->dense_b3_cat:side:dense_concat",
+      "src": "dense_b3_input",
+      "dst": "dense_b3_cat",
+      "src_port": "retained",
+      "dst_port": "side",
+      "role": "dense_concat"
+    }
+  ],
+  "facts": [
+    "train.main constructs DenseNet(growthRate=12,depth=100,reduction=0.5,bottleneck=True,nClasses=10).",
+    "(100-4)//3//2 = 16 Bottleneck layers per dense block; 48 distinct bottleneck instances in total.",
+    "Feature channels are 3->24->216->108->300->150->342->10; spatial sizes are 32->16->8->1.",
+    "Every Bottleneck performs BN->ReLU->Conv1x1->BN->ReLU->Conv3x3->channel cat(x,out).",
+    "Dense reuse means channel concatenation, not a residual Add; retained x bypasses both convolutions.",
+    "Repeated blocks/layers have independently created parameters; a representative symbolic template is drawn.",
+    "The source uses fixed avg_pool2d(kernel=8), torch.squeeze without axis, and legacy log_softmax without dim.",
+    "The diagrams use a selected B>1 static profile; no claim of modern PyTorch runtime compatibility is made."
+  ],
+  "corrections": [
+    "Use the repository's CIFAR-10 BC-100 variant, not an ImageNet DenseNet-121 stem or four dense stages.",
+    "Draw explicit channel Concat and retained-input dependency; do not replace dense connections by Add.",
+    "Transition pooling is average pooling and compression is floor(C*0.5).",
+    "The returned output is log probability, not logits or ordinary Softmax probability.",
+    "Preserve the actual fixed pooling and all-axis squeeze, including their input-size/batch-size limitation."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

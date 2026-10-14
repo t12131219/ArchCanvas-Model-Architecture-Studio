@@ -1,0 +1,625 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1296" height="4062" viewBox="0 0 1296 4062">
+<defs xmlns="http://www.w3.org/2000/svg"><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348" /></marker></defs>
+
+<rect xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" fill="white" />
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="source-binding">{"model": "vgg19", "source_snapshot_sha256": "d99aabf41ee783fdb7b603dc53fc09c290e223223a1576e510b40206f438e950", "repository": "https://github.com/rasbt/deeplearning-models", "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3", "semantic_ir_sha256": "a42a654a105141c32911b708b126b6e0c22a61293c8f2314f8fcaaf612473c1f", "view": 2}</metadata>
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="diagram-style">{"name": "transformer-paper-model-zoo", "version": 1, "font": "DejaVu Sans, Arial, sans-serif", "text": "#172336", "line": "#263348", "palette": {"root": "#ffffff", "group": "#ffffff", "inner": "#fffaf6", "layer": "#ffffff", "encoder": "#e7f5fe", "decoder": "#fff0f5", "embedding": "#f8d4e1", "input": "#f8d4e1", "output": "#dfdff8", "attention": "#ffddb3", "ffn": "#c8ebfb", "mixing": "#c8ebfb", "conv": "#c8ebfb", "pool": "#d6f0df", "norm": "#fff6bd", "concat": "#fff6bd", "linear": "#dfdff8", "softmax": "#c9f1cd", "sampling": "#c9f1cd", "recurrent": "#ffddb3", "decomposition": "#d6f0df", "tensor": "#cdeaf8", "activation": "#f3f5f7", "control": "#f3f5f7"}, "typography": {"title": 30, "subtitle": 16, "module": 22, "inner": 20, "operator": 20, "shape": 16, "detail": 14, "evidence": 12, "footer": 14, "line_height": 1.18}, "fill_width_nodes": ["v19.block1", "v19.block2", "v19.block3", "v19.block4", "v19.block5", "v19.classifier", "v19.features", "v19.flatten", "v19.hidden1", "v19.hidden2", "v19.returns"], "visual_roles": {"v19.block1": "encoder", "v19.block1.conv1": "conv", "v19.block1.conv2": "conv", "v19.block1.pool": "pool", "v19.block1.relu1": "activation", "v19.block1.relu2": "activation", "v19.block2": "encoder", "v19.block2.conv1": "conv", "v19.block2.conv2": "conv", "v19.block2.pool": "pool", "v19.block2.relu1": "activation", "v19.block2.relu2": "activation", "v19.block3": "encoder", "v19.block3.conv1": "conv", "v19.block3.conv2": "conv", "v19.block3.conv3": "conv", "v19.block3.conv4": "conv", "v19.block3.pool": "pool", "v19.block3.relu1": "activation", "v19.block3.relu2": "activation", "v19.block3.relu3": "activation", "v19.block3.relu4": "activation", "v19.block4": "encoder", "v19.block4.conv1": "conv", "v19.block4.conv2": "conv", "v19.block4.conv3": "conv", "v19.block4.conv4": "conv", "v19.block4.pool": "pool", "v19.block4.relu1": "activation", "v19.block4.relu2": "activation", "v19.block4.relu3": "activation", "v19.block4.relu4": "activation", "v19.block5": "encoder", "v19.block5.conv1": "conv", "v19.block5.conv2": "conv", "v19.block5.conv3": "conv", "v19.block5.conv4": "conv", "v19.block5.pool": "pool", "v19.block5.relu1": "activation", "v19.block5.relu2": "activation", "v19.block5.relu3": "activation", "v19.block5.relu4": "activation", "v19.classifier": "ffn", "v19.fc3": "linear", "v19.features": "encoder", "v19.flatten": "tensor", "v19.hidden1": "ffn", "v19.hidden1.linear": "linear", "v19.hidden1.relu": "activation", "v19.hidden2": "ffn", "v19.hidden2.linear": "linear", "v19.hidden2.relu": "activation", "v19.input": "input", "v19.logits": "tensor", "v19.output": "output", "v19.returns": "group", "v19.root": "root", "v19.softmax": "softmax"}, "semantics": "presentation aliases only; color does not imply mathematical equivalence or parameter sharing"}</metadata>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">VGG19-type (source class VGG16)  |  Operators &amp; tensor flow</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">CIFAR-10 32x32 · Conv[2,2,4,4,4] · source class=VGG16 · eval  /  read bottom to top</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.root" data-visual-role="root"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:71 VGG16; parameter=not asserted; </title><rect x="230.0" y="98" width="836" height="3682" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="247.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="247.0" dy="0">VGG19-type · CIFAR-10</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1049.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1049.0" dy="0">2 x [B,10]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1053.0" y="160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1053.0" dy="0">E001</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.input" data-visual-role="input" data-glyph-kind="tensor-grid"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; actual Dataset is CIFAR10; nearby MNIST header is stale | ToTensor in caller; no resizing</title><rect x="612.0" y="3697.5" width="72" height="32" rx="0" fill="#f8d4e1" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="624.0" x2="624.0" y1="3697.5" y2="3729.5" stroke="#263348" stroke-width=".6" /><line x1="636.0" x2="636.0" y1="3697.5" y2="3729.5" stroke="#263348" stroke-width=".6" /><line x1="648.0" x2="648.0" y1="3697.5" y2="3729.5" stroke="#263348" stroke-width=".6" /><line x1="660.0" x2="660.0" y1="3697.5" y2="3729.5" stroke="#263348" stroke-width=".6" /><line x1="672.0" x2="672.0" y1="3697.5" y2="3729.5" stroke="#263348" stroke-width=".6" /><line x1="612.0" x2="684.0" y1="3708.1666666666665" y2="3708.1666666666665" stroke="#263348" stroke-width=".6" /><line x1="612.0" x2="684.0" y1="3718.8333333333335" y2="3718.8333333333335" stroke="#263348" stroke-width=".6" /><text x="602.0" y="3710.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="602.0" dy="0">CIFAR-10</tspan><tspan x="602.0" dy="16.52">image</tspan></text><text x="694.0" y="3718.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="694.0" dy="0">[B,3,32,32]</tspan></text><text x="694.0" y="3751" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="694.0" dy="0">E003</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.features" data-visual-role="encoder"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; 16 independent Conv2d layers; 5 MaxPool steps</title><rect x="262.0" y="1477" width="772" height="2172" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="279.0" y="1507" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="279.0" dy="0">Five convolutional</tspan>
+<tspan x="279.0" dy="28.32">blocks</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1017.0" y="1507" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1017.0" dy="0">[B,512,1,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1021.0" y="1559" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1021.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block1" data-visual-role="encoder"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=block_1; actual nn.Sequential block_1; distinct weights</title><rect x="294.0" y="3002" width="708" height="621" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="311.0" y="3032" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="311.0" dy="0">Block 1 · 2</tspan>
+<tspan x="311.0" dy="28.32">Conv/ReLU pairs</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="985.0" y="3032" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="985.0" dy="0">[B,64,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="989.0" y="3084" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="989.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block1.conv1" data-visual-role="conv"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=block_1.0; kernel=3; stride=1; padding=1; default bias=True</title><rect x="483.0" y="3516" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="3543" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">Conv2d 3 -&gt; 64</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="3567" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,64,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="3587" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block1.relu1" data-visual-role="activation"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; default inplace=False</title><rect x="483.0" y="3411" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="3438" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">ReLU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="3462" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,64,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="3482" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block1.conv2" data-visual-role="conv"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=block_1.2; kernel=3; stride=1; padding=1; default bias=True</title><rect x="483.0" y="3306" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="3333" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">Conv2d 64 -&gt; 64</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="3357" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,64,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="3377" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block1.relu2" data-visual-role="activation"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; default inplace=False</title><rect x="483.0" y="3201" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="3228" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">ReLU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="3252" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,64,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="3272" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block1.pool" data-visual-role="pool"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; block_1.4; no padding</title><rect x="483.0" y="3096" width="330" height="81" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="3123" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">MaxPool2d 2x2 / 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="3147" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,64,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="3167" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block2" data-visual-role="encoder"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=block_2; actual nn.Sequential block_2; distinct weights</title><rect x="294.0" y="2880" width="708" height="98" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2907" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">Block 2 · 2 Conv/ReLU pairs</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2931" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,128,8,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2950" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">actual nn.Sequential block_2; distinct weights</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="989.0" y="2968" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="989.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block3" data-visual-role="encoder"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=block_3; actual nn.Sequential block_3; distinct weights</title><rect x="294.0" y="1815" width="708" height="1041" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="311.0" y="1845" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="311.0" dy="0">Block 3 · 4</tspan>
+<tspan x="311.0" dy="28.32">Conv/ReLU pairs</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="985.0" y="1845" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="985.0" dy="0">[B,256,4,4]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="989.0" y="1897" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="989.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block3.conv1" data-visual-role="conv"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=block_3.0; kernel=3; stride=1; padding=1; default bias=True</title><rect x="483.0" y="2749" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2776" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">Conv2d 128 -&gt; 256</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2800" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,256,8,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="2820" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block3.relu1" data-visual-role="activation"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; default inplace=False</title><rect x="483.0" y="2644" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2671" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">ReLU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2695" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,256,8,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="2715" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block3.conv2" data-visual-role="conv"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=block_3.2; kernel=3; stride=1; padding=1; default bias=True</title><rect x="483.0" y="2539" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2566" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">Conv2d 256 -&gt; 256</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2590" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,256,8,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="2610" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block3.relu2" data-visual-role="activation"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; default inplace=False</title><rect x="483.0" y="2434" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2461" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">ReLU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2485" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,256,8,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="2505" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block3.conv3" data-visual-role="conv"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=block_3.4; kernel=3; stride=1; padding=1; default bias=True</title><rect x="483.0" y="2329" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2356" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">Conv2d 256 -&gt; 256</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2380" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,256,8,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="2400" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block3.relu3" data-visual-role="activation"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; default inplace=False</title><rect x="483.0" y="2224" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2251" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">ReLU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2275" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,256,8,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="2295" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block3.conv4" data-visual-role="conv"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=block_3.6; kernel=3; stride=1; padding=1; default bias=True</title><rect x="483.0" y="2119" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2146" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">Conv2d 256 -&gt; 256</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2170" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,256,8,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="2190" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block3.relu4" data-visual-role="activation"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; default inplace=False</title><rect x="483.0" y="2014" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2041" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">ReLU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="2065" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,256,8,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="2085" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block3.pool" data-visual-role="pool"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; block_3.8; no padding</title><rect x="483.0" y="1909" width="330" height="81" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="1936" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">MaxPool2d 2x2 / 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="1960" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,256,4,4]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="1980" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block4" data-visual-role="encoder"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=block_4; actual nn.Sequential block_4; distinct weights</title><rect x="294.0" y="1693" width="708" height="98" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="1720" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">Block 4 · 4 Conv/ReLU pairs</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="1744" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,512,2,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="1763" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">actual nn.Sequential block_4; distinct weights</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="989.0" y="1781" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="989.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.block5" data-visual-role="encoder"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=block_5; actual nn.Sequential block_5; distinct weights</title><rect x="294.0" y="1571" width="708" height="98" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="1598" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">Block 5 · 4 Conv/ReLU pairs</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="1622" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,512,1,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="1641" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">actual nn.Sequential block_5; distinct weights</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="989.0" y="1659" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="989.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.flatten" data-visual-role="tensor"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; x.view(-1,512); fixed 32x32 profile gives one row per example | hard-coded view width512; no avgpool is constructed</title><rect x="262.0" y="1372" width="772" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="1399" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">Flatten features</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="1423" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,512]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1021.0" y="1443" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1021.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.classifier" data-visual-role="ffn"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; no Dropout and no BatchNorm in this implementation</title><rect x="262.0" y="547" width="772" height="801" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="279.0" y="577" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="279.0" dy="0">Classifier head</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1017.0" y="577" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1017.0" dy="0">logits: [B,10]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1021.0" y="609" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1021.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.hidden1" data-visual-role="ffn"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; </title><rect x="294.0" y="1036" width="708" height="286" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="311.0" y="1066" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="311.0" dy="0">Linear / ReLU · 1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="985.0" y="1066" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="985.0" dy="0">[B,4096]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="989.0" y="1098" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="989.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.hidden1.linear" data-visual-role="linear"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=classifier.0; </title><rect x="483.0" y="1215" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="1242" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">Linear 512 -&gt; 4096</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="1266" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,4096]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="1286" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.hidden1.relu" data-visual-role="activation"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; inplace=True; no Dropout module in the source</title><rect x="483.0" y="1110" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="1137" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">ReLU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="1161" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,4096]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="1181" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.hidden2" data-visual-role="ffn"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; </title><rect x="294.0" y="726" width="708" height="286" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="311.0" y="756" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="311.0" dy="0">Linear / ReLU · 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="985.0" y="756" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="985.0" dy="0">[B,4096]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="989.0" y="788" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="989.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.hidden2.linear" data-visual-role="linear"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=classifier.2; </title><rect x="483.0" y="905" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="932" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">Linear 4096 -&gt; 4096</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="956" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,4096]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="976" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.hidden2.relu" data-visual-role="activation"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; inplace=True; no Dropout module in the source</title><rect x="483.0" y="800" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="827" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">ReLU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="851" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">[B,4096]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="871" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.fc3" data-visual-role="linear"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:73 VGG16.__init__; deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=classifier.4; </title><rect x="483.0" y="621" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="648" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">Linear 4096 -&gt; 10</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="672" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">logits: [B,10]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="692" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.returns" data-visual-role="group"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; same logits fan out to two actual return fields</title><rect x="262.0" y="277" width="772" height="246" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="279.0" y="307" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="279.0" dy="0">Return logits /</tspan>
+<tspan x="279.0" dy="25.959999999999997">probabilities</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1017.0" y="307" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1017.0" dy="0">(logits, probas)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1021.0" y="356" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1021.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.logits" data-visual-role="tensor"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; raw classifier output</title><rect x="294.0" y="368" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="459.0" y="395" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="459.0" dy="0">Retain logits</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="459.0" y="419" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="459.0" dy="0">[B,10]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="611.0" y="439" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="611.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.softmax" data-visual-role="softmax"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; F.softmax(logits,dim=1)</title><rect x="672.0" y="368" width="330" height="81" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="837.0" y="395" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="837.0" dy="0">Softmax</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="837.0" y="419" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="837.0" dy="0">[B,10]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="989.0" y="439" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="989.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="v19.output" data-visual-role="output"><title>deeplearning-models-batch4/pytorch_ipynb/cnn/cnn-vgg19.py:224 VGG16.forward; parameter=not asserted; return logits, probas</title><rect x="483.0" y="172" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="199" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="648.0" dy="0">Forward return tuple</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="223" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">2 x [B,10]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="800.0" y="243" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="800.0" dy="0">E003</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0001" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.block1.relu1&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.block1.conv1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.block1.relu1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.block1.conv1:out-&gt;v19.block1.relu1:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.block1.relu1:in&quot;, &quot;rendered_src&quot;: &quot;v19.block1.conv1:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.block1.conv1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,3516 L 648.0,3492" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.block1.conv1:out -&gt; v19.block1.relu1:in; visible v19.block1.conv1:out -&gt; v19.block1.relu1:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0002" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.block1.conv2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.block1.relu1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.block1.conv2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.block1.relu1:out-&gt;v19.block1.conv2:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.block1.conv2:in&quot;, &quot;rendered_src&quot;: &quot;v19.block1.relu1:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.block1.relu1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,3411 L 648.0,3387" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.block1.relu1:out -&gt; v19.block1.conv2:in; visible v19.block1.relu1:out -&gt; v19.block1.conv2:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0003" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.block1.relu2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.block1.conv2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.block1.relu2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.block1.conv2:out-&gt;v19.block1.relu2:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.block1.relu2:in&quot;, &quot;rendered_src&quot;: &quot;v19.block1.conv2:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.block1.conv2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,3306 L 648.0,3282" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.block1.conv2:out -&gt; v19.block1.relu2:in; visible v19.block1.conv2:out -&gt; v19.block1.relu2:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0004" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.block1.pool&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.block1.relu2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.block1.pool&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.block1.relu2:out-&gt;v19.block1.pool:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.block1.pool:in&quot;, &quot;rendered_src&quot;: &quot;v19.block1.relu2:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.block1.relu2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,3201 L 648.0,3177" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.block1.relu2:out -&gt; v19.block1.pool:in; visible v19.block1.relu2:out -&gt; v19.block1.pool:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0005" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.block3.relu1&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.block3.conv1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.block3.relu1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.block3.conv1:out-&gt;v19.block3.relu1:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.block3.relu1:in&quot;, &quot;rendered_src&quot;: &quot;v19.block3.conv1:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.block3.conv1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,2749 L 648.0,2725" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.block3.conv1:out -&gt; v19.block3.relu1:in; visible v19.block3.conv1:out -&gt; v19.block3.relu1:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0006" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.block3.conv2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.block3.relu1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.block3.conv2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.block3.relu1:out-&gt;v19.block3.conv2:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.block3.conv2:in&quot;, &quot;rendered_src&quot;: &quot;v19.block3.relu1:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.block3.relu1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,2644 L 648.0,2620" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.block3.relu1:out -&gt; v19.block3.conv2:in; visible v19.block3.relu1:out -&gt; v19.block3.conv2:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0007" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.block3.relu2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.block3.conv2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.block3.relu2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.block3.conv2:out-&gt;v19.block3.relu2:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.block3.relu2:in&quot;, &quot;rendered_src&quot;: &quot;v19.block3.conv2:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.block3.conv2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,2539 L 648.0,2515" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.block3.conv2:out -&gt; v19.block3.relu2:in; visible v19.block3.conv2:out -&gt; v19.block3.relu2:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0008" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.block3.conv3&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.block3.relu2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.block3.conv3&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.block3.relu2:out-&gt;v19.block3.conv3:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.block3.conv3:in&quot;, &quot;rendered_src&quot;: &quot;v19.block3.relu2:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.block3.relu2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,2434 L 648.0,2410" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.block3.relu2:out -&gt; v19.block3.conv3:in; visible v19.block3.relu2:out -&gt; v19.block3.conv3:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0009" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.block3.relu3&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.block3.conv3&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.block3.relu3&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.block3.conv3:out-&gt;v19.block3.relu3:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.block3.relu3:in&quot;, &quot;rendered_src&quot;: &quot;v19.block3.conv3:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.block3.conv3&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,2329 L 648.0,2305" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.block3.conv3:out -&gt; v19.block3.relu3:in; visible v19.block3.conv3:out -&gt; v19.block3.relu3:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0010" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.block3.conv4&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.block3.relu3&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.block3.conv4&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.block3.relu3:out-&gt;v19.block3.conv4:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.block3.conv4:in&quot;, &quot;rendered_src&quot;: &quot;v19.block3.relu3:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.block3.relu3&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,2224 L 648.0,2200" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.block3.relu3:out -&gt; v19.block3.conv4:in; visible v19.block3.relu3:out -&gt; v19.block3.conv4:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0011" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.block3.relu4&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.block3.conv4&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.block3.relu4&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.block3.conv4:out-&gt;v19.block3.relu4:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.block3.relu4:in&quot;, &quot;rendered_src&quot;: &quot;v19.block3.conv4:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.block3.conv4&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,2119 L 648.0,2095" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.block3.conv4:out -&gt; v19.block3.relu4:in; visible v19.block3.conv4:out -&gt; v19.block3.relu4:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0012" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.block3.pool&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.block3.relu4&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.block3.pool&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.block3.relu4:out-&gt;v19.block3.pool:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.block3.pool:in&quot;, &quot;rendered_src&quot;: &quot;v19.block3.relu4:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.block3.relu4&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,2014 L 648.0,1990" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.block3.relu4:out -&gt; v19.block3.pool:in; visible v19.block3.relu4:out -&gt; v19.block3.pool:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0013" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.block2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.block1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.block2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.block1:out-&gt;v19.block2:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.block2:in&quot;, &quot;rendered_src&quot;: &quot;v19.block1.pool:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.block1.pool&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;v19.block1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 648.0,3096 L 648.0,2978" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.block1:out -&gt; v19.block2:in; visible v19.block1.pool:out -&gt; v19.block2:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0014" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.block3&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.block2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.block3.conv1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;v19.block3&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;v19.block2:out-&gt;v19.block3:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.block3.conv1:in&quot;, &quot;rendered_src&quot;: &quot;v19.block2:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.block2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,2880 L 648.0,2830" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.block2:out -&gt; v19.block3:in; visible v19.block2:out -&gt; v19.block3.conv1:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0015" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.block4&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.block3&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.block4&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.block3:out-&gt;v19.block4:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.block4:in&quot;, &quot;rendered_src&quot;: &quot;v19.block3.pool:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.block3.pool&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;v19.block3&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 648.0,1909 L 648.0,1791" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.block3:out -&gt; v19.block4:in; visible v19.block3.pool:out -&gt; v19.block4:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0016" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.block5&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.block4&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.block5&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.block4:out-&gt;v19.block5:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.block5:in&quot;, &quot;rendered_src&quot;: &quot;v19.block4:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.block4&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,1693 L 648.0,1669" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.block4:out -&gt; v19.block5:in; visible v19.block4:out -&gt; v19.block5:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0017" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.hidden1.relu&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.hidden1.linear&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.hidden1.relu&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.hidden1.linear:out-&gt;v19.hidden1.relu:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.hidden1.relu:in&quot;, &quot;rendered_src&quot;: &quot;v19.hidden1.linear:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.hidden1.linear&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,1215 L 648.0,1191" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.hidden1.linear:out -&gt; v19.hidden1.relu:in; visible v19.hidden1.linear:out -&gt; v19.hidden1.relu:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0018" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.hidden2.relu&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.hidden2.linear&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.hidden2.relu&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.hidden2.linear:out-&gt;v19.hidden2.relu:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.hidden2.relu:in&quot;, &quot;rendered_src&quot;: &quot;v19.hidden2.linear:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.hidden2.linear&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,905 L 648.0,881" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.hidden2.linear:out -&gt; v19.hidden2.relu:in; visible v19.hidden2.linear:out -&gt; v19.hidden2.relu:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0019" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.hidden2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.hidden1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.hidden2.linear&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;v19.hidden2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;v19.hidden1:out-&gt;v19.hidden2:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.hidden2.linear:in&quot;, &quot;rendered_src&quot;: &quot;v19.hidden1.relu:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.hidden1.relu&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;v19.hidden1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 648.0,1110 L 648.0,986" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.hidden1:out -&gt; v19.hidden2:in; visible v19.hidden1.relu:out -&gt; v19.hidden2.linear:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0020" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.fc3&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.hidden2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.fc3&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.hidden2:out-&gt;v19.fc3:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.fc3:in&quot;, &quot;rendered_src&quot;: &quot;v19.hidden2.relu:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.hidden2.relu&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;v19.hidden2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 648.0,800 L 648.0,702" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.hidden2:out -&gt; v19.fc3:in; visible v19.hidden2.relu:out -&gt; v19.fc3:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0021" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.logits&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;fork&quot;, &quot;src&quot;: &quot;v19.returns&quot;, &quot;src_port&quot;: &quot;in&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.logits&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.returns:in-&gt;v19.logits:in:fork&quot;, &quot;rendered_dst&quot;: &quot;v19.logits:in&quot;, &quot;rendered_src&quot;: &quot;v19.fc3:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.fc3&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;v19.returns&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;captured-input&quot;}, {&quot;node&quot;: &quot;v19.classifier&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 648.0,621 L 648.0,473 L 459.0,473 L 459.0,449" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.returns:in -&gt; v19.logits:in; visible v19.fc3:out -&gt; v19.logits:in; fork</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0022" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.softmax&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;fork&quot;, &quot;src&quot;: &quot;v19.returns&quot;, &quot;src_port&quot;: &quot;in&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.softmax&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.returns:in-&gt;v19.softmax:in:fork&quot;, &quot;rendered_dst&quot;: &quot;v19.softmax:in&quot;, &quot;rendered_src&quot;: &quot;v19.fc3:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.fc3&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;v19.returns&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;captured-input&quot;}, {&quot;node&quot;: &quot;v19.classifier&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 648.0,621 L 648.0,473 L 837.0,473 L 837.0,449" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.returns:in -&gt; v19.softmax:in; visible v19.fc3:out -&gt; v19.softmax:in; fork</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0023" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.features&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.input&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.block1.conv1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;v19.features&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}, {&quot;node&quot;: &quot;v19.block1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;v19.input:out-&gt;v19.features:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.block1.conv1:in&quot;, &quot;rendered_src&quot;: &quot;v19.input:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.input&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,3697.5 L 648.0,3597" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.input:out -&gt; v19.features:in; visible v19.input:out -&gt; v19.block1.conv1:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0024" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.flatten&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.features&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.flatten&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.features:out-&gt;v19.flatten:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.flatten:in&quot;, &quot;rendered_src&quot;: &quot;v19.block5:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.block5&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;v19.features&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 648.0,1571 L 648.0,1453" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.features:out -&gt; v19.flatten:in; visible v19.block5:out -&gt; v19.flatten:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0025" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.classifier&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.flatten&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.hidden1.linear&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;v19.classifier&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}, {&quot;node&quot;: &quot;v19.hidden1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;v19.flatten:out-&gt;v19.classifier:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.hidden1.linear:in&quot;, &quot;rendered_src&quot;: &quot;v19.flatten:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.flatten&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 648.0,1372 L 648.0,1296" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.flatten:out -&gt; v19.classifier:in; visible v19.flatten:out -&gt; v19.hidden1.linear:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0026" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.output&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.returns&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.output&quot;, &quot;port&quot;: &quot;operand[0]&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.returns:out-&gt;v19.output:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.output:right.aux0&quot;, &quot;rendered_src&quot;: &quot;v19.logits:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.logits&quot;, &quot;operand&quot;: 0, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;v19.returns&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;declared-interface&quot;}]}}" d="M 624.0,408.5 L 660.0,408.5 L 660.0,256.15999999999997 L 837.0,256.15999999999997 L 837.0,200.5 L 813.0,200.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.returns:out -&gt; v19.output:in; visible v19.logits:out -&gt; v19.output:operand[0]; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0027" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;v19.output&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;v19.returns&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;v19.output&quot;, &quot;port&quot;: &quot;operand[1]&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;v19.returns:out-&gt;v19.output:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;v19.output:right.aux1&quot;, &quot;rendered_src&quot;: &quot;v19.softmax:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;v19.softmax&quot;, &quot;operand&quot;: 1, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;v19.returns&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;declared-interface&quot;}]}}" d="M 1002.0,408.5 L 1026.0,408.5 L 1026.0,224.5 L 813.0,224.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>v19.returns:out -&gt; v19.output:in; visible v19.softmax:out -&gt; v19.output:operand[1]; tensor</title></path>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="103.0" y="3817" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="126.0" y="3830" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="126.0" dy="0">Input / Embed</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="288.0" y="3817" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="311.0" y="3830" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="311.0" dy="0">Conv / MLP</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="473.0" y="3817" width="16" height="16" rx="3" fill="#d6f0df" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="496.0" y="3830" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="496.0" dy="0">Pool</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="658.0" y="3817" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="681.0" y="3830" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="681.0" dy="0">Norm / Add / Cat</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="843.0" y="3817" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="866.0" y="3830" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="866.0" dy="0">Linear / Output</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1028.0" y="3817" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1051.0" y="3830" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1051.0" dy="0">Activation</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="565.5" y="3847" width="16" height="16" rx="3" fill="#c9f1cd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="588.5" y="3860" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="588.5" dy="0">Prob. / Sample</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="3888" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">B batch; [B,C,H,W]; 32 -&gt;16 -&gt;8 -&gt;4 -&gt;2 -&gt;1 spatial sizes</tspan>
+<tspan x="648.0" dy="16.52">input pink / Conv blue / Linear and return purple / ReLU gray / pooling pale green / Softmax green</tspan>
+<tspan x="648.0" dy="16.52">blocks1/3 expand representative2/4 Conv patterns; all parameter identities remain in IR</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="3962" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="3992" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="648.0" y="4017" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="648.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+
+</svg>

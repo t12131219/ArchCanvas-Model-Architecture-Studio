@@ -1,0 +1,734 @@
+{
+  "schema": "module-vision-staging-catalog/1",
+  "modules": [
+    {
+      "key": "fire",
+      "name": "Fire squeeze/expand",
+      "family": "Squeeze/expand CNN block",
+      "artifact_scope": "module",
+      "status": "implemented_and_three_views_verified",
+      "catalog_provenance": {
+        "repository": "bharathgs/Awesome-pytorch-list",
+        "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+        "readme_line": 76,
+        "listed_repository": "pytorch/vision",
+        "selection": "Source-grounded module selected from a listed repository; not claimed as its own original list entry"
+      },
+      "new_value": "Squeeze bottleneck followed by independent 1x1/3x3 expand Concat; biases and no BN are explicit.",
+      "previous_coverage": "not separately drawn as this pinned module/configuration; ordinary operators reused",
+      "sourcefiles": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py"
+      ],
+      "source_project": "torchvision-v0.9.0-vision-extended",
+      "entry": "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire",
+      "module_scope": "One Fire block only",
+      "doc": "docs/Fire.md",
+      "profile": {
+        "scope": "One Fire block only",
+        "constructor": "Fire(64,16,64,64)",
+        "inplanes": 64,
+        "squeeze_planes": 16,
+        "expand_channels": [
+          64,
+          64
+        ],
+        "input_shape": "[B,64,32,32]",
+        "output_shape": "[B,128,32,32]",
+        "shape_origin": "explicit static module profile; not observed",
+        "mode": "caller train/eval; not executed",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "checks": "checks/vision_extended.py",
+      "preview": "/tmp/module-vision-extended/fire",
+      "upstream_license_status": "BSD LICENSE preserved",
+      "existing_comparison": "已有 NiN 的 1×1 通道变换、TextCNN 的并列分支与 DenseNet 的 Concat；本例新增共享 squeeze 后两份独立 1×1/3×3 expand，再按通道拼接。三个 Conv 有 bias 且没有 BN，不是残差 Add。"
+    },
+    {
+      "key": "aspp",
+      "name": "ASPP atrous context",
+      "family": "Spatial pyramid context",
+      "artifact_scope": "module",
+      "status": "implemented_and_three_views_verified",
+      "catalog_provenance": {
+        "repository": "bharathgs/Awesome-pytorch-list",
+        "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+        "readme_line": 76,
+        "listed_repository": "pytorch/vision",
+        "selection": "Source-grounded module selected from a listed repository; not claimed as its own original list entry"
+      },
+      "new_value": "Three true dilation rates plus global pooling/resize operand; project and training-mode dropout.",
+      "previous_coverage": "not separately drawn as this pinned module/configuration; ordinary operators reused",
+      "sourcefiles": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py"
+      ],
+      "source_project": "torchvision-v0.9.0-vision-extended",
+      "entry": "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP",
+      "module_scope": "ASPP only; no DeepLabHead/backbone",
+      "doc": "docs/ASPP.md",
+      "profile": {
+        "scope": "ASPP only; no DeepLabHead/backbone",
+        "constructor": "ASPP(256,[6,12,18],out_channels=64)",
+        "atrous_rates": [
+          6,
+          12,
+          18
+        ],
+        "out_channels": 64,
+        "branch_channels": [
+          64,
+          64,
+          64,
+          64,
+          64
+        ],
+        "input_shape": "[B,256,32,32]",
+        "output_shape": "[B,64,32,32]",
+        "shape_origin": "explicit static module profile; not observed",
+        "mode": "caller train/eval; not executed",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "checks": "checks/vision_extended.py",
+      "preview": "/tmp/module-vision-extended/aspp",
+      "upstream_license_status": "BSD LICENSE preserved",
+      "existing_comparison": "已有 CNN 卷积、AlexNet 自适应池化和 U-Net 多尺度路径；本例新增同一输入的 pointwise、三种 dilation 与全局池化五路并行上下文，池化路显式读取原输入 H/W 做 bilinear 恢复，再 Concat/project。"
+    },
+    {
+      "key": "pyramid_pooling",
+      "name": "Pyramid pooling / PSPModule",
+      "family": "Spatial pyramid context",
+      "artifact_scope": "module",
+      "status": "implemented_and_three_views_verified",
+      "catalog_provenance": {
+        "repository": "bharathgs/Awesome-pytorch-list",
+        "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+        "readme_line": 485,
+        "listed_repository": "Lextal/pspnet-pytorch",
+        "selection": "Source-grounded module selected from a listed repository; not claimed as its own original list entry"
+      },
+      "new_value": "Four adaptive bins, uncompressed C-channel project, original features last; no absent BN or align_corners invented.",
+      "previous_coverage": "not separately drawn as this pinned module/configuration; ordinary operators reused",
+      "sourcefiles": [
+        "pspnet-vision-extended/pspnet.py"
+      ],
+      "source_project": "pspnet-vision-extended",
+      "entry": "pspnet-vision-extended/pspnet.py::PSPModule",
+      "module_scope": "PSPModule only",
+      "doc": "docs/PyramidPooling.md",
+      "profile": {
+        "scope": "PSPModule only",
+        "constructor": "PSPModule(features=64,out_features=128,sizes=(1,2,3,6))",
+        "sizes": [
+          1,
+          2,
+          3,
+          6
+        ],
+        "features": 64,
+        "out_features": 128,
+        "license_status": "upstream tree contains no LICENSE; recorded rather than fabricated",
+        "input_shape": "[B,64,24,24]",
+        "output_shape": "[B,128,24,24]",
+        "shape_origin": "explicit static module profile; not observed",
+        "mode": "caller train/eval; not executed",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "checks": "checks/vision_extended.py",
+      "preview": "/tmp/module-vision-extended/pyramid_pooling",
+      "upstream_license_status": "not provided in pinned repository tree",
+      "existing_comparison": "已有 AlexNet 自适应池化、U-Net 跨尺度特征与 DenseNet 通道拼接；本例新增 1/2/3/6 四种空间池化 bin，每路独立 Conv 后按原 H/W 恢复，原特征在列表最后参与 Concat，再由 bottleneck Conv 压缩。"
+    },
+    {
+      "key": "inception_reduction",
+      "name": "InceptionB / independent module",
+      "family": "Inception branch modules",
+      "artifact_scope": "module",
+      "status": "implemented_and_three_views_verified",
+      "catalog_provenance": {
+        "repository": "bharathgs/Awesome-pytorch-list",
+        "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+        "readme_line": 76,
+        "listed_repository": "pytorch/vision",
+        "selection": "Source-grounded module selected from a listed repository; not claimed as its own original list entry"
+      },
+      "new_value": "InceptionB three-path reduction with MaxPool and actual source list; distinct from InceptionA.",
+      "previous_coverage": "not separately drawn as this pinned module/configuration; ordinary operators reused",
+      "sourcefiles": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py"
+      ],
+      "source_project": "torchvision-v0.9.0-modules",
+      "entry": "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionB",
+      "module_scope": "InceptionB only; no complete Inception network",
+      "doc": "docs/InceptionReduction.md",
+      "profile": {
+        "scope": "InceptionB only; no complete Inception network",
+        "constructor": "InceptionB(288)",
+        "in_channels": 288,
+        "channels_7x7": null,
+        "conv_block": null,
+        "output_channels": 768,
+        "branch_order": [
+          "branch3x3",
+          "branch3x3dbl",
+          "branch_pool"
+        ],
+        "branch_channels": [
+          384,
+          96,
+          288
+        ],
+        "input_shape": "[B,288,35,35]",
+        "output_shape": "[B,768,17,17]",
+        "shape_origin": "explicit static module profile; not observed",
+        "mode": "caller train/eval; not executed",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "checks": "checks/vision_extended.py",
+      "preview": "/tmp/module-vision-extended/inception_reduction",
+      "upstream_license_status": "BSD LICENSE preserved",
+      "existing_comparison": "已有 inception_a 的保分辨率多分支与 CNN stride/pool 下采样；本例为源码 InceptionB，两个独立卷积分支及 MaxPool 分支共同将 35→17，再 Concat 为 768 通道，不沿用 A 的分支数或池化类型。"
+    },
+    {
+      "key": "inception_factorized",
+      "name": "InceptionC / independent module",
+      "family": "Inception branch modules",
+      "artifact_scope": "module",
+      "status": "implemented_and_three_views_verified",
+      "catalog_provenance": {
+        "repository": "bharathgs/Awesome-pytorch-list",
+        "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+        "readme_line": 76,
+        "listed_repository": "pytorch/vision",
+        "selection": "Source-grounded module selected from a listed repository; not claimed as its own original list entry"
+      },
+      "new_value": "InceptionC serial 1x7/7x1 factorization; bounded AST parse preserves ten Conv/BN families.",
+      "previous_coverage": "not separately drawn as this pinned module/configuration; ordinary operators reused",
+      "sourcefiles": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py"
+      ],
+      "source_project": "torchvision-v0.9.0-modules",
+      "entry": "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionC",
+      "module_scope": "InceptionC only; no complete Inception network",
+      "doc": "docs/InceptionFactorized.md",
+      "profile": {
+        "scope": "InceptionC only; no complete Inception network",
+        "constructor": "InceptionC(768,channels_7x7=128)",
+        "in_channels": 768,
+        "channels_7x7": 128,
+        "conv_block": null,
+        "output_channels": 768,
+        "branch_order": [
+          "branch1x1",
+          "branch7x7",
+          "branch7x7dbl",
+          "branch_pool"
+        ],
+        "branch_channels": [
+          192,
+          192,
+          192,
+          192
+        ],
+        "input_shape": "[B,768,17,17]",
+        "output_shape": "[B,768,17,17]",
+        "shape_origin": "explicit static module profile; not observed",
+        "mode": "caller train/eval; not executed",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "checks": "checks/vision_extended.py",
+      "preview": "/tmp/module-vision-extended/inception_factorized",
+      "upstream_license_status": "BSD LICENSE preserved",
+      "existing_comparison": "已有 inception_a 的多分支 Conv/Concat；本例为 InceptionC，将 7×7 作用拆成方向明确的 1×7/7×1 顺序卷积，保留长、短分支的不同参数与深度，空间 17×17 不变。"
+    },
+    {
+      "key": "inception_reduction_factorized",
+      "name": "InceptionD / independent module",
+      "family": "Inception branch modules",
+      "artifact_scope": "module",
+      "status": "implemented_and_three_views_verified",
+      "catalog_provenance": {
+        "repository": "bharathgs/Awesome-pytorch-list",
+        "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+        "readme_line": 76,
+        "listed_repository": "pytorch/vision",
+        "selection": "Source-grounded module selected from a listed repository; not claimed as its own original list entry"
+      },
+      "new_value": "InceptionD mixed factorization and spatial reduction at terminal stride2.",
+      "previous_coverage": "not separately drawn as this pinned module/configuration; ordinary operators reused",
+      "sourcefiles": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py"
+      ],
+      "source_project": "torchvision-v0.9.0-modules",
+      "entry": "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionD",
+      "module_scope": "InceptionD only; no complete Inception network",
+      "doc": "docs/InceptionReductionFactorized.md",
+      "profile": {
+        "scope": "InceptionD only; no complete Inception network",
+        "constructor": "InceptionD(768)",
+        "in_channels": 768,
+        "channels_7x7": null,
+        "conv_block": null,
+        "output_channels": 1280,
+        "branch_order": [
+          "branch3x3",
+          "branch7x7x3",
+          "branch_pool"
+        ],
+        "branch_channels": [
+          320,
+          192,
+          768
+        ],
+        "input_shape": "[B,768,17,17]",
+        "output_shape": "[B,1280,8,8]",
+        "shape_origin": "explicit static module profile; not observed",
+        "mode": "caller train/eval; not executed",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "checks": "checks/vision_extended.py",
+      "preview": "/tmp/module-vision-extended/inception_reduction_factorized",
+      "upstream_license_status": "BSD LICENSE preserved",
+      "existing_comparison": "已有 inception_a 的并列卷积与普通 CNN 下采样；本例为 InceptionD，将方向分解卷积置于一条独立 reduction 分支，并与另一 Conv 路和 MaxPool 路拼接，17→8、768→1280。"
+    },
+    {
+      "key": "inception_split",
+      "name": "InceptionE / independent module",
+      "family": "Inception branch modules",
+      "artifact_scope": "module",
+      "status": "implemented_and_three_views_verified",
+      "catalog_provenance": {
+        "repository": "bharathgs/Awesome-pytorch-list",
+        "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+        "readme_line": 76,
+        "listed_repository": "pytorch/vision",
+        "selection": "Source-grounded module selected from a listed repository; not claimed as its own original list entry"
+      },
+      "new_value": "InceptionE two nested same-value 1x3/3x1 splits and three real Concat operators.",
+      "previous_coverage": "not separately drawn as this pinned module/configuration; ordinary operators reused",
+      "sourcefiles": [
+        "torchvision-v0.9.0-modules/torchvision/models/inception.py"
+      ],
+      "source_project": "torchvision-v0.9.0-modules",
+      "entry": "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionE",
+      "module_scope": "InceptionE only; no complete Inception network",
+      "doc": "docs/InceptionSplit.md",
+      "profile": {
+        "scope": "InceptionE only; no complete Inception network",
+        "constructor": "InceptionE(1280)",
+        "in_channels": 1280,
+        "channels_7x7": null,
+        "conv_block": null,
+        "output_channels": 2048,
+        "branch_order": [
+          "branch1x1",
+          "branch3x3",
+          "branch3x3dbl",
+          "branch_pool"
+        ],
+        "branch_channels": [
+          320,
+          768,
+          768,
+          192
+        ],
+        "input_shape": "[B,1280,8,8]",
+        "output_shape": "[B,2048,8,8]",
+        "shape_origin": "explicit static module profile; not observed",
+        "mode": "caller train/eval; not executed",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "checks": "checks/vision_extended.py",
+      "preview": "/tmp/module-vision-extended/inception_split",
+      "upstream_license_status": "BSD LICENSE preserved",
+      "existing_comparison": "已有 inception_a 外层分支 Concat 和 TextCNN 并行卷积；本例为 InceptionE，两条分支在内部各自拆成并列 1×3/3×1 并局部 Concat，然后进入外层四路 Concat，真实包含三个不同拼接算子。"
+    },
+    {
+      "key": "roi_align",
+      "name": "RoIAlign region sampling",
+      "family": "Region sampling",
+      "artifact_scope": "module",
+      "status": "implemented_and_three_views_verified",
+      "catalog_provenance": {
+        "repository": "bharathgs/Awesome-pytorch-list",
+        "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+        "readme_line": 76,
+        "listed_repository": "pytorch/vision",
+        "selection": "Source-grounded module selected from a listed repository; not claimed as its own original list entry"
+      },
+      "new_value": "Distinct caller feature/ROI coordinate operands with batch indices and opaque actual RoIAlign kernel.",
+      "previous_coverage": "not separately drawn as this pinned module/configuration; ordinary operators reused",
+      "sourcefiles": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py"
+      ],
+      "source_project": "torchvision-v0.9.0-vision-extended",
+      "entry": "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::RoIAlign",
+      "module_scope": "RoIAlign wrapper and actual kernel call only",
+      "doc": "docs/RoIAlign.md",
+      "profile": {
+        "scope": "RoIAlign wrapper and actual kernel call only",
+        "constructor": "RoIAlign((7,7),spatial_scale=.25,sampling_ratio=2,aligned=True)",
+        "rois_shape": [
+          "K",
+          5
+        ],
+        "boxes_type": "Tensor",
+        "aligned": true,
+        "sampling_ratio": 2,
+        "spatial_scale": 0.25,
+        "kernel_frozen": false,
+        "input_shape": "[B,64,32,32]",
+        "output_shape": "[K,64,7,7]",
+        "shape_origin": "explicit static module profile; not observed",
+        "mode": "caller train/eval; not executed",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "checks": "checks/vision_extended.py",
+      "preview": "/tmp/module-vision-extended/roi_align",
+      "upstream_license_status": "BSD LICENSE preserved",
+      "existing_comparison": "已有 stn 的全图 affine_grid/grid_sample 空间采样；本例新增外部 RoI 坐标与特征图双输入，使用 spatial_scale、sampling_ratio、aligned 配置提取 K 个固定 7×7 区域。底层 RoI kernel 保持不透明且没有学习参数。"
+    },
+    {
+      "key": "deformable_conv",
+      "name": "DeformableConv modulated",
+      "family": "Deformable sampling",
+      "artifact_scope": "module",
+      "status": "implemented_and_three_views_verified",
+      "catalog_provenance": {
+        "repository": "bharathgs/Awesome-pytorch-list",
+        "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+        "readme_line": 76,
+        "listed_repository": "pytorch/vision",
+        "selection": "Source-grounded module selected from a listed repository; not claimed as its own original list entry"
+      },
+      "new_value": "External offset and mask, learned kernel weight; correct modulation, grouping and opaque kernel boundary.",
+      "previous_coverage": "not separately drawn as this pinned module/configuration; ordinary operators reused",
+      "sourcefiles": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py"
+      ],
+      "source_project": "torchvision-v0.9.0-vision-extended",
+      "entry": "torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py::DeformConv2d",
+      "module_scope": "One DeformConv2d call; no offset/mask predictor network",
+      "doc": "docs/DeformableConv.md",
+      "profile": {
+        "scope": "One DeformConv2d call; no offset/mask predictor network",
+        "constructor": "DeformConv2d(8,16,3,padding=1,bias=False); mask supplied",
+        "mask_present": true,
+        "offset_channels": 18,
+        "mask_channels": 9,
+        "weight_shape": [
+          16,
+          8,
+          3,
+          3
+        ],
+        "kernel_frozen": false,
+        "input_shape": "[B,8,16,16]",
+        "output_shape": "[B,16,16,16]",
+        "shape_origin": "explicit static module profile; not observed",
+        "mode": "caller train/eval; not executed",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "checks": "checks/vision_extended.py",
+      "preview": "/tmp/module-vision-extended/deformable_conv",
+      "upstream_license_status": "BSD LICENSE preserved",
+      "existing_comparison": "已有普通 Conv 和 stn 的网格采样；本例新增外部 offset 与 modulation mask 独立进入可变形 Conv kernel，另有实际学习的卷积 weight。源码模块没有 offset/mask 预测网络，groups 与 offset_groups 也分别保留。"
+    },
+    {
+      "key": "deformable_conv_unmodulated",
+      "name": "DeformableConv unmodulated",
+      "family": "Deformable sampling",
+      "artifact_scope": "module",
+      "status": "implemented_and_three_views_verified",
+      "catalog_provenance": {
+        "repository": "bharathgs/Awesome-pytorch-list",
+        "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+        "readme_line": 76,
+        "listed_repository": "pytorch/vision",
+        "selection": "Source-grounded module selected from a listed repository; not claimed as its own original list entry"
+      },
+      "new_value": "Actual maskNone/use_maskFalse branch, without fabricated mask predictor or supplied mask operand.",
+      "previous_coverage": "not separately drawn as this pinned module/configuration; ordinary operators reused",
+      "sourcefiles": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py"
+      ],
+      "source_project": "torchvision-v0.9.0-vision-extended",
+      "entry": "torchvision-v0.9.0-vision-extended/torchvision/ops/deform_conv.py::DeformConv2d",
+      "module_scope": "One DeformConv2d call; no offset/mask predictor network",
+      "doc": "docs/DeformableConvUnmodulated.md",
+      "profile": {
+        "scope": "One DeformConv2d call; no offset/mask predictor network",
+        "constructor": "DeformConv2d(8,16,3,padding=1,bias=False); mask=None",
+        "mask_present": false,
+        "offset_channels": 18,
+        "mask_channels": 0,
+        "weight_shape": [
+          16,
+          8,
+          3,
+          3
+        ],
+        "kernel_frozen": false,
+        "input_shape": "[B,8,16,16]",
+        "output_shape": "[B,16,16,16]",
+        "shape_origin": "explicit static module profile; not observed",
+        "mode": "caller train/eval; not executed",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "checks": "checks/vision_extended.py",
+      "preview": "/tmp/module-vision-extended/deformable_conv_unmodulated",
+      "upstream_license_status": "BSD LICENSE preserved",
+      "existing_comparison": "已有普通 Conv 和 stn 空间采样；本例选择同一 DeformConv2d 的 mask=None 分支，只接外部 offset 与学习 weight，并记录 use_mask=False。它不生成 mask 路，也不把 modulated 变体的三输入照搬过来。"
+    },
+    {
+      "key": "shuffle_ir_stride1",
+      "name": "ShuffleNetV2 split/retain",
+      "family": "ShuffleNet branch modules",
+      "artifact_scope": "module",
+      "status": "implemented_and_three_views_verified",
+      "catalog_provenance": {
+        "repository": "bharathgs/Awesome-pytorch-list",
+        "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+        "readme_line": 76,
+        "listed_repository": "pytorch/vision",
+        "selection": "Source-grounded module selected from a listed repository; not claimed as its own original list entry"
+      },
+      "new_value": "Chunk/tuple dispatch, retained x1 and learned branch2(x2), channel Concat then true groups2 shuffle.",
+      "previous_coverage": "not separately drawn as this pinned module/configuration; ordinary operators reused",
+      "sourcefiles": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py"
+      ],
+      "source_project": "torchvision-v0.9.0-modules",
+      "entry": "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual",
+      "module_scope": "One ShuffleNetV2 InvertedResidual only",
+      "doc": "docs/ShuffleIRStride1.md",
+      "profile": {
+        "scope": "One ShuffleNetV2 InvertedResidual only",
+        "constructor": "InvertedResidual(24,24,stride=1)",
+        "inp": 24,
+        "oup": 24,
+        "stride": 1,
+        "branch_features": 12,
+        "branch1_called": false,
+        "split_called": true,
+        "input_shape": "[B,24,16,16]",
+        "output_shape": "[B,24,16,16]",
+        "shape_origin": "explicit static module profile; not observed",
+        "mode": "caller train/eval; not executed",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "checks": "checks/vision_extended.py",
+      "preview": "/tmp/module-vision-extended/shuffle_ir_stride1",
+      "upstream_license_status": "BSD LICENSE preserved",
+      "existing_comparison": "已有 channel_shuffle 的张量重排与 MobileNetV2 深度卷积/残差；本例为 ShuffleNetV2 stride1：输入 chunk 成两半，x1 直接保留，只有 x2 经独立 branch2，Concat 后 shuffle(groups=2)，没有 MobileNet 式 Add。"
+    },
+    {
+      "key": "shuffle_ir_stride2",
+      "name": "ShuffleNetV2 stride2/downsample",
+      "family": "ShuffleNet branch modules",
+      "artifact_scope": "module",
+      "status": "implemented_and_three_views_verified",
+      "catalog_provenance": {
+        "repository": "bharathgs/Awesome-pytorch-list",
+        "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+        "readme_line": 76,
+        "listed_repository": "pytorch/vision",
+        "selection": "Source-grounded module selected from a listed repository; not claimed as its own original list entry"
+      },
+      "new_value": "Same full x to two independent stride2 paths; no chunk or MobileNet residual.",
+      "previous_coverage": "not separately drawn as this pinned module/configuration; ordinary operators reused",
+      "sourcefiles": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py"
+      ],
+      "source_project": "torchvision-v0.9.0-modules",
+      "entry": "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual",
+      "module_scope": "One ShuffleNetV2 InvertedResidual only",
+      "doc": "docs/ShuffleIRStride2.md",
+      "profile": {
+        "scope": "One ShuffleNetV2 InvertedResidual only",
+        "constructor": "InvertedResidual(24,48,stride=2)",
+        "inp": 24,
+        "oup": 48,
+        "stride": 2,
+        "branch_features": 24,
+        "branch1_called": true,
+        "split_called": false,
+        "input_shape": "[B,24,16,16]",
+        "output_shape": "[B,48,8,8]",
+        "shape_origin": "explicit static module profile; not observed",
+        "mode": "caller train/eval; not executed",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "checks": "checks/vision_extended.py",
+      "preview": "/tmp/module-vision-extended/shuffle_ir_stride2",
+      "upstream_license_status": "BSD LICENSE preserved",
+      "existing_comparison": "已有 channel_shuffle 重排与 MobileNetV2 stride2 深度卷积；本例为 ShuffleNetV2 stride2，两条独立分支都读取完整输入，各自降采样后 Concat/shuffle；与 stride1 的 chunk/保留半通道拓扑不同。"
+    },
+    {
+      "key": "fpn",
+      "name": "Feature Pyramid Network",
+      "family": "Multiscale pyramid DAG",
+      "artifact_scope": "module",
+      "status": "implemented_and_three_views_verified",
+      "catalog_provenance": {
+        "repository": "bharathgs/Awesome-pytorch-list",
+        "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+        "readme_line": 76,
+        "listed_repository": "pytorch/vision",
+        "selection": "Source-grounded module selected from a listed repository; not claimed as its own original list entry"
+      },
+      "new_value": "Three independent dictionary inputs, lateral/Add top-down dependency, shape-only nearest resize targets, ordered outputs.",
+      "previous_coverage": "not separately drawn as this pinned module/configuration; ordinary operators reused",
+      "sourcefiles": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py"
+      ],
+      "source_project": "torchvision-v0.9.0-vision-extended",
+      "entry": "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::FeaturePyramidNetwork",
+      "module_scope": "FeaturePyramidNetwork only; caller backbone and extra blocks excluded",
+      "doc": "docs/FPN.md",
+      "profile": {
+        "scope": "FeaturePyramidNetwork only; caller backbone and extra blocks excluded",
+        "constructor": "FeaturePyramidNetwork([64,128,256],128,extra_blocks=None)",
+        "in_channels_list": [
+          64,
+          128,
+          256
+        ],
+        "out_channels": 128,
+        "extra_blocks": null,
+        "input_keys": [
+          "feat0",
+          "feat1",
+          "feat2"
+        ],
+        "loop_order": [
+          1,
+          0
+        ],
+        "input_shape": "OrderedDict(feat0[64,32,32],feat1[128,16,16],feat2[256,8,8])",
+        "output_shape": "OrderedDict(feat0[128,32,32],feat1[128,16,16],feat2[128,8,8])",
+        "shape_origin": "explicit static module profile; not observed",
+        "mode": "caller train/eval; not executed",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "checks": "checks/vision_extended.py",
+      "preview": "/tmp/module-vision-extended/fpn",
+      "upstream_license_status": "BSD LICENSE preserved",
+      "existing_comparison": "已有 U-Net 多尺度 skip/Concat、卷积自编码器插值以及残差 Add；本例新增三个独立字典输入、lateral 1×1、按目标 H/W 的 nearest top-down Add 与独立 output 3×3。递推读取 lateral/融合值，而非平滑后的输出 Conv。"
+    },
+    {
+      "key": "fpn_extra_levels",
+      "name": "FPN extra P6/P7 levels",
+      "family": "Multiscale pyramid DAG",
+      "artifact_scope": "module",
+      "status": "implemented_and_three_views_verified",
+      "catalog_provenance": {
+        "repository": "bharathgs/Awesome-pytorch-list",
+        "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+        "readme_line": 76,
+        "listed_repository": "pytorch/vision",
+        "selection": "Source-grounded module selected from a listed repository; not claimed as its own original list entry"
+      },
+      "new_value": "C5 vs P5 selected source, P6 bypass retained independently from P7, caller list/name mutation.",
+      "previous_coverage": "not separately drawn as this pinned module/configuration; ordinary operators reused",
+      "sourcefiles": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py"
+      ],
+      "source_project": "torchvision-v0.9.0-vision-extended",
+      "entry": "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7",
+      "module_scope": "LastLevelP6P7 only; excludes backbone and base FPN",
+      "doc": "docs/FPNExtraLevels.md",
+      "profile": {
+        "scope": "LastLevelP6P7 only; excludes backbone and base FPN",
+        "constructor": "LastLevelP6P7(256,128)",
+        "in_channels": 256,
+        "out_channels": 128,
+        "use_P5": false,
+        "input_shape": "c[-1][B,256,8,8]; existing p[-1][B,128,8,8]; names",
+        "output_shape": "(extended p including P6[B,128,4,4],P7[B,128,2,2], extended names)",
+        "shape_origin": "explicit static module profile; not observed",
+        "mode": "caller train/eval; not executed",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "checks": "checks/vision_extended.py",
+      "preview": "/tmp/module-vision-extended/fpn_extra_levels",
+      "upstream_license_status": "BSD LICENSE preserved",
+      "existing_comparison": "已有 CNN 连续 stride 下采样与 U-Net 多尺度输出；本例为 LastLevelP6P7 扩展：根据输入/输出通道是否相等选择 C5 或 P5，P6 既保留给返回列表又经 ReLU→P7，原 p/names 与新增 P6/P7 顺序分别记录。"
+    },
+    {
+      "key": "psp_upsample",
+      "name": "PSP resize/convolution upsample",
+      "family": "Upsampling and learned activation",
+      "artifact_scope": "module",
+      "status": "implemented_and_three_views_verified",
+      "catalog_provenance": {
+        "repository": "bharathgs/Awesome-pytorch-list",
+        "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+        "readme_line": 485,
+        "listed_repository": "Lextal/pspnet-pytorch",
+        "selection": "Source-grounded module selected from a listed repository; not claimed as its own original list entry"
+      },
+      "new_value": "Bilinear resize before Conv/BN/PReLU; one learned scalar slope shared across all channels.",
+      "previous_coverage": "not separately drawn as this pinned module/configuration; ordinary operators reused",
+      "sourcefiles": [
+        "pspnet-vision-extended/pspnet.py"
+      ],
+      "source_project": "pspnet-vision-extended",
+      "entry": "pspnet-vision-extended/pspnet.py::PSPUpsample",
+      "module_scope": "PSPUpsample only; PSP pooling, enclosing decoder and classifier excluded",
+      "doc": "docs/PSPUpsample.md",
+      "profile": {
+        "scope": "PSPUpsample only; PSP pooling, enclosing decoder and classifier excluded",
+        "constructor": "PSPUpsample(64,32)",
+        "in_channels": 64,
+        "out_channels": 32,
+        "spatial_scale": 2,
+        "prelu_num_parameters": 1,
+        "input_shape": "[B,64,8,8]",
+        "output_shape": "[B,32,16,16]",
+        "shape_origin": "explicit static module profile; not observed",
+        "mode": "caller train/eval; not executed",
+        "model_executed": false,
+        "artifact_scope": "module"
+      },
+      "checks": "checks/vision_extended.py",
+      "preview": "/tmp/module-vision-extended/psp_upsample",
+      "upstream_license_status": "not provided in pinned repository tree",
+      "existing_comparison": "已有卷积自编码器 nearest 上采样、U-Net 转置卷积及 pixelshuffle 重排；本例为 PSPUpsample 的 bilinear ×2→Conv3→BN→PReLU 顺序，尺寸来自原 H/W，并新增一个对全部输出通道共享的学习斜率。"
+    }
+  ],
+  "deduplicated": [
+    {
+      "symbol": "InceptionAux",
+      "sourcefile": "torchvision-v0.9.0-modules/torchvision/models/inception.py",
+      "reason": "Auxiliary classification head combines already covered average/adaptive pooling, BasicConv, flatten and Linear; no distinct inner dependency/state mechanism. .stddev attributes are initializer metadata, not runtime operators."
+    },
+    {
+      "symbol": "LastLevelMaxPool",
+      "sourcefile": "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py",
+      "reason": "A1x1 stride2 MaxPool sampling plus existing result/name list append. Pool semantics already covered and explicit caller list extension covered by LastLevelP6P7; retained as source boundary rather than counted as another new mechanism."
+    },
+    {
+      "symbol": "PSPNet / SqueezeNet / Inception3 / ShuffleNetV2",
+      "reason": "Enclosing complete models excluded from current module-only expansion; class wrappers are not counted as module figures."
+    }
+  ],
+  "deferred": [],
+  "limitations": [
+    "Modules drawn from pinned implementations, not arbitrary-source automatic discovery.",
+    "RoIAlign and deform_conv2d C++/CUDA kernels remain opaque; no kernel source or weights obtained.",
+    "PSP upstream missing LICENSE is preserved as missing, not replaced with another project license."
+  ]
+}

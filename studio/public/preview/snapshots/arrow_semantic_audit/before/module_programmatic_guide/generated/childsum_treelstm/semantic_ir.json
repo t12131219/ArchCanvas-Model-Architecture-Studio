@@ -1,0 +1,946 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "childsum_treelstm",
+  "profile": {
+    "in_dim": 12,
+    "mem_dim": 16,
+    "children": 3,
+    "input_rank": 1,
+    "leaf_zero_initializer_selected": false,
+    "return_fields": [
+      "c",
+      "h"
+    ],
+    "label": "One nonleaf node / I12,H16,K3 / child-sum gates + per-child forget",
+    "mode": "reviewed static selected module profile",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "dasguptar/treelstm.pytorch",
+    "commit": "228a314add09fc7f39ea752aa7b1fcf756cfe277",
+    "snapshot": "a5f94bc44a6f44e55a0405ce24b4b259432db7db9b4195e25bca7aa7f609a697"
+  },
+  "nodes": [
+    {
+      "id": "childsum_treelstm.root",
+      "label": "Child-Sum TreeLSTM / per-child forgetting",
+      "kind": "group",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.__init__",
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.forward",
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "tree.x",
+          "tree.child_c",
+          "tree.child_h"
+        ],
+        [
+          "tree.body"
+        ],
+        [
+          "tree.output"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tree.x",
+      "label": "One node input vector",
+      "kind": "input",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward",
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.forward"
+      ],
+      "shape": "[12]",
+      "detail": [],
+      "selected_from": "inputs[tree.idx]",
+      "parent": "childsum_treelstm.root",
+      "source_evidence": [
+        "E003",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tree.child_c",
+      "label": "Three child cell states",
+      "kind": "input",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[3,16]",
+      "detail": [],
+      "operand": "child_c",
+      "parent": "childsum_treelstm.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tree.child_h",
+      "label": "Three child hidden states",
+      "kind": "input",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[3,16]",
+      "detail": [],
+      "operand": "child_h",
+      "parent": "childsum_treelstm.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tree.body",
+      "label": "Child-Sum TreeLSTM / one node",
+      "kind": "group",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.__init__",
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "c,h:[1,16]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "tree.iou",
+          "tree.forget"
+        ],
+        [
+          "tree.new"
+        ],
+        [
+          "tree.cell"
+        ],
+        [
+          "tree.ctanh"
+        ],
+        [
+          "tree.hidden"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": "childsum_treelstm.root",
+      "source_evidence": [
+        "E001",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tree.iou",
+      "label": "Node gates from summed children",
+      "kind": "group",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.__init__",
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "i,o,u:[1,16]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "tree.ioux",
+          "tree.hsum"
+        ],
+        [
+          "tree.iouh"
+        ],
+        [
+          "tree.iou_add"
+        ],
+        [
+          "tree.split"
+        ],
+        [
+          "tree.i",
+          "tree.o",
+          "tree.u"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": "tree.body",
+      "source_evidence": [
+        "E001",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tree.ioux",
+      "label": "Node input Linear / ioux",
+      "kind": "linear",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.__init__",
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[48]",
+      "detail": [],
+      "parameter": "ioux",
+      "parameters": [
+        "ioux.weight",
+        "ioux.bias"
+      ],
+      "bias": true,
+      "weight_shape": [
+        48,
+        12
+      ],
+      "parent": "tree.iou",
+      "source_evidence": [
+        "E001",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "tree.hsum",
+      "label": "Sum child hidden / dim0",
+      "kind": "tensor",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[1,16]",
+      "detail": [],
+      "dim": 0,
+      "keepdim": true,
+      "expression": "torch.sum(child_h, dim=0, keepdim=True)",
+      "parent": "tree.iou",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "child_h"
+      ]
+    },
+    {
+      "id": "tree.iouh",
+      "label": "Child-sum Linear / iouh",
+      "kind": "linear",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.__init__",
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[1,48]",
+      "detail": [],
+      "parameter": "iouh",
+      "parameters": [
+        "iouh.weight",
+        "iouh.bias"
+      ],
+      "bias": true,
+      "weight_shape": [
+        48,
+        16
+      ],
+      "parent": "tree.iou",
+      "source_evidence": [
+        "E001",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "summed_hidden"
+      ]
+    },
+    {
+      "id": "tree.iou_add",
+      "label": "ioux + iouh / broadcast",
+      "kind": "add",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[1,48]",
+      "detail": [],
+      "expression": "self.ioux(inputs) + self.iouh(child_h_sum)",
+      "parent": "tree.iou",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input_projection",
+        "sum_projection"
+      ]
+    },
+    {
+      "id": "tree.split",
+      "label": "Split gates / i,o,u",
+      "kind": "tensor",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "three [1,16]",
+      "detail": [],
+      "fields": [
+        "i",
+        "o",
+        "u"
+      ],
+      "dim": 1,
+      "split_size": 16,
+      "expression": "torch.split(iou, iou.size(1) // 3, dim=1)",
+      "parent": "tree.iou",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "i",
+        "o",
+        "u"
+      ]
+    },
+    {
+      "id": "tree.i",
+      "label": "Input gate / Sigmoid",
+      "kind": "sigmoid",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[1,16]",
+      "detail": [],
+      "parent": "tree.iou",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "preactivation"
+      ]
+    },
+    {
+      "id": "tree.o",
+      "label": "Output gate / Sigmoid",
+      "kind": "sigmoid",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[1,16]",
+      "detail": [],
+      "parent": "tree.iou",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "preactivation"
+      ]
+    },
+    {
+      "id": "tree.u",
+      "label": "Candidate / Tanh",
+      "kind": "tanh",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[1,16]",
+      "detail": [],
+      "parent": "tree.iou",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "preactivation"
+      ]
+    },
+    {
+      "id": "tree.forget",
+      "label": "Per-child forgetting",
+      "kind": "group",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.__init__",
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "retained:[1,16]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "tree.fx",
+          "tree.fh"
+        ],
+        [
+          "tree.repeat"
+        ],
+        [
+          "tree.f_add"
+        ],
+        [
+          "tree.f"
+        ],
+        [
+          "tree.fc"
+        ],
+        [
+          "tree.fsum"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": "tree.body",
+      "source_evidence": [
+        "E001",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tree.fx",
+      "label": "Node input Linear / fx",
+      "kind": "linear",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.__init__",
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[16]",
+      "detail": [],
+      "parameter": "fx",
+      "parameters": [
+        "fx.weight",
+        "fx.bias"
+      ],
+      "bias": true,
+      "weight_shape": [
+        16,
+        12
+      ],
+      "parent": "tree.forget",
+      "source_evidence": [
+        "E001",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "tree.fh",
+      "label": "Per-child Linear / fh",
+      "kind": "linear",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.__init__",
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[3,16]",
+      "detail": [],
+      "parameter": "fh",
+      "parameters": [
+        "fh.weight",
+        "fh.bias"
+      ],
+      "bias": true,
+      "weight_shape": [
+        16,
+        16
+      ],
+      "parent": "tree.forget",
+      "source_evidence": [
+        "E001",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "per_child_hidden"
+      ]
+    },
+    {
+      "id": "tree.repeat",
+      "label": "Repeat fx across3 children",
+      "kind": "tensor",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[3,16]",
+      "detail": [],
+      "repeats": [
+        3,
+        1
+      ],
+      "expression": "self.fx(inputs).repeat(len(child_h), 1)",
+      "new_parameter_instances": false,
+      "parent": "tree.forget",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tree.f_add",
+      "label": "fh(child_h) + repeated fx",
+      "kind": "add",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[3,16]",
+      "detail": [],
+      "parent": "tree.forget",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "per_child",
+        "repeated_node"
+      ]
+    },
+    {
+      "id": "tree.f",
+      "label": "Per-child forget / Sigmoid",
+      "kind": "sigmoid",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[3,16]",
+      "detail": [],
+      "gate_count_per_node": 3,
+      "parent": "tree.forget",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tree.fc",
+      "label": "Forget * each child cell",
+      "kind": "multiply",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[3,16]",
+      "detail": [],
+      "expression": "torch.mul(f, child_c)",
+      "parent": "tree.forget",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "forget",
+        "child_cell"
+      ]
+    },
+    {
+      "id": "tree.fsum",
+      "label": "Sum retained children / dim0",
+      "kind": "tensor",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[1,16]",
+      "detail": [],
+      "dim": 0,
+      "keepdim": true,
+      "expression": "torch.sum(fc, dim=0, keepdim=True)",
+      "parent": "tree.forget",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tree.new",
+      "label": "Input gate * candidate",
+      "kind": "multiply",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[1,16]",
+      "detail": [],
+      "expression": "torch.mul(i, u)",
+      "parent": "tree.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input_gate",
+        "candidate"
+      ]
+    },
+    {
+      "id": "tree.cell",
+      "label": "New cell + retained children",
+      "kind": "add",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[1,16]",
+      "detail": [],
+      "expression": "torch.mul(i, u) + torch.sum(fc, dim=0, keepdim=True)",
+      "parent": "tree.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "new_cell",
+        "retained_children"
+      ]
+    },
+    {
+      "id": "tree.ctanh",
+      "label": "Tanh new cell c",
+      "kind": "tanh",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[1,16]",
+      "detail": [],
+      "parent": "tree.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tree.hidden",
+      "label": "Output gate * Tanh(c)",
+      "kind": "multiply",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "[1,16]",
+      "detail": [],
+      "expression": "torch.mul(o, F.tanh(c))",
+      "parent": "tree.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "output_gate",
+        "cell_tanh"
+      ]
+    },
+    {
+      "id": "tree.output",
+      "label": "Return c, h / cell first",
+      "kind": "output",
+      "source": [
+        "childsum-treelstm-sequence/treelstm/model.py::ChildSumTreeLSTM.node_forward"
+      ],
+      "shape": "c,h:[1,16]",
+      "detail": [],
+      "return_fields": [
+        "c",
+        "h"
+      ],
+      "actual_return": true,
+      "parent": "childsum_treelstm.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "cell",
+        "hidden"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "tree.x:out->tree.ioux:input:tensor",
+      "src": "tree.x",
+      "dst": "tree.ioux",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.child_h:out->tree.hsum:child_h:tensor",
+      "src": "tree.child_h",
+      "dst": "tree.hsum",
+      "src_port": "out",
+      "dst_port": "child_h",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.hsum:out->tree.iouh:summed_hidden:tensor",
+      "src": "tree.hsum",
+      "dst": "tree.iouh",
+      "src_port": "out",
+      "dst_port": "summed_hidden",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.ioux:out->tree.iou_add:input_projection:tensor",
+      "src": "tree.ioux",
+      "dst": "tree.iou_add",
+      "src_port": "out",
+      "dst_port": "input_projection",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.iouh:out->tree.iou_add:sum_projection:tensor",
+      "src": "tree.iouh",
+      "dst": "tree.iou_add",
+      "src_port": "out",
+      "dst_port": "sum_projection",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.iou_add:out->tree.split:in:tensor",
+      "src": "tree.iou_add",
+      "dst": "tree.split",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.x:out->tree.fx:input:tensor",
+      "src": "tree.x",
+      "dst": "tree.fx",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.child_h:out->tree.fh:per_child_hidden:tensor",
+      "src": "tree.child_h",
+      "dst": "tree.fh",
+      "src_port": "out",
+      "dst_port": "per_child_hidden",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.fx:out->tree.repeat:in:tensor",
+      "src": "tree.fx",
+      "dst": "tree.repeat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.fh:out->tree.f_add:per_child:tensor",
+      "src": "tree.fh",
+      "dst": "tree.f_add",
+      "src_port": "out",
+      "dst_port": "per_child",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.repeat:out->tree.f_add:repeated_node:tensor",
+      "src": "tree.repeat",
+      "dst": "tree.f_add",
+      "src_port": "out",
+      "dst_port": "repeated_node",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.f_add:out->tree.f:in:tensor",
+      "src": "tree.f_add",
+      "dst": "tree.f",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.f:out->tree.fc:forget:tensor",
+      "src": "tree.f",
+      "dst": "tree.fc",
+      "src_port": "out",
+      "dst_port": "forget",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.child_c:out->tree.fc:child_cell:tensor",
+      "src": "tree.child_c",
+      "dst": "tree.fc",
+      "src_port": "out",
+      "dst_port": "child_cell",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.fc:out->tree.fsum:in:tensor",
+      "src": "tree.fc",
+      "dst": "tree.fsum",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.i:out->tree.new:input_gate:tensor",
+      "src": "tree.i",
+      "dst": "tree.new",
+      "src_port": "out",
+      "dst_port": "input_gate",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.u:out->tree.new:candidate:tensor",
+      "src": "tree.u",
+      "dst": "tree.new",
+      "src_port": "out",
+      "dst_port": "candidate",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.new:out->tree.cell:new_cell:tensor",
+      "src": "tree.new",
+      "dst": "tree.cell",
+      "src_port": "out",
+      "dst_port": "new_cell",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.fsum:out->tree.cell:retained_children:tensor",
+      "src": "tree.fsum",
+      "dst": "tree.cell",
+      "src_port": "out",
+      "dst_port": "retained_children",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.cell:out->tree.ctanh:in:tensor",
+      "src": "tree.cell",
+      "dst": "tree.ctanh",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.o:out->tree.hidden:output_gate:tensor",
+      "src": "tree.o",
+      "dst": "tree.hidden",
+      "src_port": "out",
+      "dst_port": "output_gate",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.ctanh:out->tree.hidden:cell_tanh:tensor",
+      "src": "tree.ctanh",
+      "dst": "tree.hidden",
+      "src_port": "out",
+      "dst_port": "cell_tanh",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.cell:out->tree.output:cell:tensor",
+      "src": "tree.cell",
+      "dst": "tree.output",
+      "src_port": "out",
+      "dst_port": "cell",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.hidden:out->tree.output:hidden:tensor",
+      "src": "tree.hidden",
+      "dst": "tree.output",
+      "src_port": "out",
+      "dst_port": "hidden",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.split:i->tree.i:preactivation:tensor",
+      "src": "tree.split",
+      "dst": "tree.i",
+      "src_port": "i",
+      "dst_port": "preactivation",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.split:o->tree.o:preactivation:tensor",
+      "src": "tree.split",
+      "dst": "tree.o",
+      "src_port": "o",
+      "dst_port": "preactivation",
+      "role": "tensor"
+    },
+    {
+      "id": "tree.split:u->tree.u:preactivation:tensor",
+      "src": "tree.split",
+      "dst": "tree.u",
+      "src_port": "u",
+      "dst_port": "preactivation",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Child-Sum TreeLSTM first reduces child hidden states for shared i/o/u gates, but computes a distinct forget value for every child before reducing retained child cells.",
+    "The selected source caller inputs[tree.idx] is a rank1 node vector; its ioux output broadcasts against the rank2 child-sum projection.",
+    "Four independent nn.Linear instances ioux,iouh,fx,fh include default biases; repeat and per-child batch rows share fx/fh parameters.",
+    "The source returns cell c first, hidden h second; this differs from the conventional hy,cy order of a sequence LSTM cell.",
+    "The class recursively obtains child states outside node_forward; leaf callers supply a single zero child state, not a fabricated zero-length children tensor."
+  ],
+  "corrections": [
+    "Do not sum children before fh and thereby replace K forget gates with one shared forget gate.",
+    "Do not swap child_c and child_h or label node_forward outputs as a full similarity model prediction."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

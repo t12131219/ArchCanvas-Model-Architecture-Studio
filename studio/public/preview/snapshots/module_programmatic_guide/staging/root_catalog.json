@@ -1,0 +1,1150 @@
+[
+  {
+    "key": "glow_actnorm",
+    "name": "Glow ActNorm / data-initialized affine",
+    "family": "可逆归一化",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "loc and scale are learned Parameters, initialized from the first input under no_grad; initialized is a uint8 buffer.；Returned logdet is one scalar shared across batch, not a per-example vector. The data stream and determinant are separate outputs.",
+    "scope": "Only ActNorm with logdet=True; reverse is documented, not drawn as forward.",
+    "profile": {
+      "channels": 8,
+      "input_shape": [
+        "B",
+        8,
+        8,
+        8
+      ],
+      "logdet": true,
+      "initialization": "one-time data-dependent",
+      "parameters": [
+        "loc",
+        "scale"
+      ],
+      "buffers": [
+        "initialized"
+      ],
+      "logdet_shape": "scalar"
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 695,
+      "text": "327. [glow-pytorch](https://github.com/rosinality/glow-pytorch): PyTorch implementation of Glow, Generative Flow with Invertible 1x1 Convolutions (arxiv.org/abs/1807.03039) ",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L695",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/glow-modules/model.py",
+        "repository": "rosinality/glow-pytorch",
+        "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+        "symbols": [
+          "ActNorm.__init__",
+          "ActNorm.initialize",
+          "ActNorm.forward",
+          "ActNorm.reverse"
+        ],
+        "raw_path": "model.py",
+        "url": "https://github.com/rosinality/glow-pytorch/blob/97081ff115a694cf04aeedbd58447f33d242c879/model.py",
+        "sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/glow_actnorm.md",
+    "gallery": "generated/glow_actnorm/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "glow_invconv",
+    "name": "Direct invertible 1x1 convolution",
+    "family": "可逆通道混合",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "The 1x1 weight is square and mixes channels at each pixel; determinant scales by H*W.；The learned weight is initialized with QR once. Forward uses slogdet in float64 then casts the logabsdet to float32.",
+    "scope": "InvConv2d only; initialization is state provenance, not a repeated forward QR/LU.",
+    "profile": {
+      "channels": 8,
+      "parameters": [
+        "weight"
+      ],
+      "buffers": [],
+      "lu": false,
+      "kernel_size": [
+        1,
+        1
+      ],
+      "logdet_shape": "scalar"
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 695,
+      "text": "327. [glow-pytorch](https://github.com/rosinality/glow-pytorch): PyTorch implementation of Glow, Generative Flow with Invertible 1x1 Convolutions (arxiv.org/abs/1807.03039) ",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L695",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/glow-modules/model.py",
+        "repository": "rosinality/glow-pytorch",
+        "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+        "symbols": [
+          "InvConv2d.__init__",
+          "InvConv2d.forward",
+          "InvConv2d.reverse"
+        ],
+        "raw_path": "model.py",
+        "url": "https://github.com/rosinality/glow-pytorch/blob/97081ff115a694cf04aeedbd58447f33d242c879/model.py",
+        "sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/glow_invconv.md",
+    "gallery": "generated/glow_invconv/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "glow_invconv_lu",
+    "name": "LU invertible 1x1 convolution",
+    "family": "可逆通道混合",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "The 1x1 weight is square and mixes channels at each pixel; determinant scales by H*W.；LU source learns strict-triangular factors and log absolute diagonal; permutation, masks, signs and identity are buffers.",
+    "scope": "InvConv2dLU only; initialization is state provenance, not a repeated forward QR/LU.",
+    "profile": {
+      "channels": 8,
+      "parameters": [
+        "w_l",
+        "w_s",
+        "w_u"
+      ],
+      "buffers": [
+        "w_p",
+        "u_mask",
+        "l_mask",
+        "s_sign",
+        "l_eye"
+      ],
+      "lu": true,
+      "kernel_size": [
+        1,
+        1
+      ],
+      "logdet_shape": "scalar"
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 695,
+      "text": "327. [glow-pytorch](https://github.com/rosinality/glow-pytorch): PyTorch implementation of Glow, Generative Flow with Invertible 1x1 Convolutions (arxiv.org/abs/1807.03039) ",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L695",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/glow-modules/model.py",
+        "repository": "rosinality/glow-pytorch",
+        "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+        "symbols": [
+          "InvConv2dLU.__init__",
+          "InvConv2dLU.forward",
+          "InvConv2dLU.reverse",
+          "InvConv2dLU.calc_weight"
+        ],
+        "raw_path": "model.py",
+        "url": "https://github.com/rosinality/glow-pytorch/blob/97081ff115a694cf04aeedbd58447f33d242c879/model.py",
+        "sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/glow_invconv_lu.md",
+    "gallery": "generated/glow_invconv_lu/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "zero_conv",
+    "name": "ZeroConv2d conditioner",
+    "family": "特殊卷积初始化",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "The argument named padding in the constructor is unused; actual forward pads all four sides with value 1.；Conv weight and bias start at zero but remain learnable; exp(scale*3) starts at 1.",
+    "scope": "ZeroConv2d only; no surrounding Glow model or coupling input split.",
+    "profile": {
+      "in_channels": 16,
+      "out_channels": 8,
+      "padding_value": 1,
+      "conv_padding": 0,
+      "parameters": [
+        "conv.weight",
+        "conv.bias",
+        "scale"
+      ],
+      "initial_output": "zero before learning"
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 695,
+      "text": "327. [glow-pytorch](https://github.com/rosinality/glow-pytorch): PyTorch implementation of Glow, Generative Flow with Invertible 1x1 Convolutions (arxiv.org/abs/1807.03039) ",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L695",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/glow-modules/model.py",
+        "repository": "rosinality/glow-pytorch",
+        "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+        "symbols": [
+          "ZeroConv2d.__init__",
+          "ZeroConv2d.forward"
+        ],
+        "raw_path": "model.py",
+        "url": "https://github.com/rosinality/glow-pytorch/blob/97081ff115a694cf04aeedbd58447f33d242c879/model.py",
+        "sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/zero_conv.md",
+    "gallery": "generated/zero_conv/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "glow_affine_coupling",
+    "name": "Glow affine coupling",
+    "family": "可逆耦合",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "Conditioner consumes only a; b is retained through a separate update path. The two channel halves are rejoined in original order.；Affine branch uses sigmoid(log_s+2) and (b+t)*s; it does not use exp(log_s).",
+    "scope": "One AffineCoupling with affine=True; forward only, independent reviewed branch profile.",
+    "profile": {
+      "affine": true,
+      "channels": 8,
+      "filter_size": 16,
+      "split_dim": 1,
+      "head_order": [
+        "log_s",
+        "t"
+      ],
+      "logdet_type": "per_batch"
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 695,
+      "text": "327. [glow-pytorch](https://github.com/rosinality/glow-pytorch): PyTorch implementation of Glow, Generative Flow with Invertible 1x1 Convolutions (arxiv.org/abs/1807.03039) ",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L695",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/glow-modules/model.py",
+        "repository": "rosinality/glow-pytorch",
+        "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+        "symbols": [
+          "AffineCoupling.__init__",
+          "AffineCoupling.forward",
+          "AffineCoupling.reverse",
+          "ZeroConv2d.__init__",
+          "ZeroConv2d.forward"
+        ],
+        "raw_path": "model.py",
+        "url": "https://github.com/rosinality/glow-pytorch/blob/97081ff115a694cf04aeedbd58447f33d242c879/model.py",
+        "sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/glow_affine_coupling.md",
+    "gallery": "generated/glow_affine_coupling/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "glow_additive_coupling",
+    "name": "Glow additive coupling",
+    "family": "可逆耦合",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "Conditioner consumes only a; b is retained through a separate update path. The two channel halves are rejoined in original order.；Additive branch returns None as logdet, rather than constructing a numeric zero tensor.",
+    "scope": "One AffineCoupling with affine=False; forward only, independent reviewed branch profile.",
+    "profile": {
+      "affine": false,
+      "channels": 8,
+      "filter_size": 16,
+      "split_dim": 1,
+      "head_order": [
+        "net_out"
+      ],
+      "logdet_type": "None"
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 695,
+      "text": "327. [glow-pytorch](https://github.com/rosinality/glow-pytorch): PyTorch implementation of Glow, Generative Flow with Invertible 1x1 Convolutions (arxiv.org/abs/1807.03039) ",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L695",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/glow-modules/model.py",
+        "repository": "rosinality/glow-pytorch",
+        "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+        "symbols": [
+          "AffineCoupling.__init__",
+          "AffineCoupling.forward",
+          "AffineCoupling.reverse",
+          "ZeroConv2d.__init__",
+          "ZeroConv2d.forward"
+        ],
+        "raw_path": "model.py",
+        "url": "https://github.com/rosinality/glow-pytorch/blob/97081ff115a694cf04aeedbd58447f33d242c879/model.py",
+        "sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/glow_additive_coupling.md",
+    "gallery": "generated/glow_additive_coupling/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "glow_squeeze",
+    "name": "Squeeze / space-to-channel",
+    "family": "张量重排",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "This is a parameter-free bijective rearrangement of 2x2 offsets into channels.；H and W must be even for this selected profile. It is the space-to-channel direction, opposite to PixelShuffle.",
+    "scope": "Only the first three squeeze assignments in Block.forward; flow loop and prior are excluded.",
+    "profile": {
+      "input_shape": [
+        "B",
+        2,
+        8,
+        8
+      ],
+      "output_shape": [
+        "B",
+        8,
+        4,
+        4
+      ],
+      "factor": 2,
+      "parameters": [],
+      "require_even_spatial": true
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 695,
+      "text": "327. [glow-pytorch](https://github.com/rosinality/glow-pytorch): PyTorch implementation of Glow, Generative Flow with Invertible 1x1 Convolutions (arxiv.org/abs/1807.03039) ",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L695",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/glow-modules/model.py",
+        "repository": "rosinality/glow-pytorch",
+        "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+        "symbols": [
+          "Block.forward"
+        ],
+        "raw_path": "model.py",
+        "url": "https://github.com/rosinality/glow-pytorch/blob/97081ff115a694cf04aeedbd58447f33d242c879/model.py",
+        "sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/glow_squeeze.md",
+    "gallery": "generated/glow_squeeze/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "glow_split_prior",
+    "name": "Split prior / conditional Gaussian density",
+    "family": "条件密度头",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "Prior sees retained out, whereas density is evaluated on z_new; these operands cannot be interchanged.；log_sd denotes log standard deviation; density denominator is exp(2*log_sd), not exp(log_sd).",
+    "scope": "Only split=True prior subgraph after the omitted Flow loop; excludes squeeze, flow logdet and reverse sampling.",
+    "profile": {
+      "split": true,
+      "input_channels_after_squeeze": 8,
+      "retained_channels": 4,
+      "prior_channels": 8,
+      "head_order": [
+        "mean",
+        "log_sd"
+      ],
+      "sampling": false,
+      "logdet_excluded": true
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 695,
+      "text": "327. [glow-pytorch](https://github.com/rosinality/glow-pytorch): PyTorch implementation of Glow, Generative Flow with Invertible 1x1 Convolutions (arxiv.org/abs/1807.03039) ",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L695",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/glow-modules/model.py",
+        "repository": "rosinality/glow-pytorch",
+        "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+        "symbols": [
+          "Block.__init__",
+          "Block.forward",
+          "ZeroConv2d.__init__",
+          "ZeroConv2d.forward",
+          "gaussian_log_p"
+        ],
+        "raw_path": "model.py",
+        "url": "https://github.com/rosinality/glow-pytorch/blob/97081ff115a694cf04aeedbd58447f33d242c879/model.py",
+        "sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/glow_split_prior.md",
+    "gallery": "generated/glow_split_prior/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "masked_linear",
+    "name": "MaskedLinear / conditional projection",
+    "family": "掩码投影",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "Main and condition projections have distinct weights; only the main weight is masked.；Source constructor accepts bias but does not pass it to the main Linear, which retains its default bias.",
+    "scope": "One conditional MaskedLinear; get_mask supplies construction provenance, not a learned attention mask.",
+    "profile": {
+      "in_features": 4,
+      "out_features": 8,
+      "cond_in_features": 3,
+      "mask_storage": "buffer",
+      "main_bias": true,
+      "conditional_bias": false
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 631,
+      "text": "265. [pytorch-flows](https://github.com/ikostrikov/pytorch-flows): PyTorch implementations of algorithms for density estimation",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L631",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/density-flow-modules/flows.py",
+        "repository": "ikostrikov/pytorch-flows",
+        "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+        "symbols": [
+          "MaskedLinear.__init__",
+          "MaskedLinear.forward",
+          "get_mask"
+        ],
+        "raw_path": "flows.py",
+        "url": "https://github.com/ikostrikov/pytorch-flows/blob/bf12ed91b86867b38d74982f5e2d44c248604df9/flows.py",
+        "sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/masked_linear.md",
+    "gallery": "generated/masked_linear/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "made_affine",
+    "name": "MADE / autoregressive affine",
+    "family": "自回归流",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "Degree masks enforce strict autoregressive dependence through the output degree offset; masks are registered buffers.；MADE shares a masked trunk and chunks its 2D output into m then a; pre_exp_tanh is accepted but unused by this class.",
+    "scope": "MADE forward direct branch only; inverse loop is documented rather than falsely parallelized.",
+    "profile": {
+      "num_inputs": 4,
+      "num_hidden": 8,
+      "num_cond_inputs": null,
+      "mode": "direct",
+      "pre_exp_tanh": false,
+      "independent_networks": false,
+      "head_order": [
+        "m",
+        "a"
+      ],
+      "inverse": "sequential coordinate loop; same parameters"
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 631,
+      "text": "265. [pytorch-flows](https://github.com/ikostrikov/pytorch-flows): PyTorch implementations of algorithms for density estimation",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L631",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/density-flow-modules/flows.py",
+        "repository": "ikostrikov/pytorch-flows",
+        "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+        "symbols": [
+          "MADE.__init__",
+          "MADE.forward",
+          "MaskedLinear.__init__",
+          "MaskedLinear.forward",
+          "get_mask"
+        ],
+        "raw_path": "flows.py",
+        "url": "https://github.com/ikostrikov/pytorch-flows/blob/bf12ed91b86867b38d74982f5e2d44c248604df9/flows.py",
+        "sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/made_affine.md",
+    "gallery": "generated/made_affine/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "made_split",
+    "name": "MADESplit / autoregressive affine",
+    "family": "自回归流",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "Degree masks enforce strict autoregressive dependence through the output degree offset; masks are registered buffers.；MADESplit uses independent s_* and t_* networks. Despite their names, s_* predicts m with Tanh and t_* predicts a with ReLU.",
+    "scope": "MADESplit forward direct branch only; inverse loop is documented rather than falsely parallelized.",
+    "profile": {
+      "num_inputs": 4,
+      "num_hidden": 8,
+      "num_cond_inputs": null,
+      "mode": "direct",
+      "pre_exp_tanh": false,
+      "independent_networks": true,
+      "head_order": [
+        "m",
+        "a"
+      ],
+      "inverse": "sequential coordinate loop; same parameters"
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 631,
+      "text": "265. [pytorch-flows](https://github.com/ikostrikov/pytorch-flows): PyTorch implementations of algorithms for density estimation",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L631",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/density-flow-modules/flows.py",
+        "repository": "ikostrikov/pytorch-flows",
+        "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+        "symbols": [
+          "MADESplit.__init__",
+          "MADESplit.forward",
+          "MaskedLinear.__init__",
+          "MaskedLinear.forward",
+          "get_mask"
+        ],
+        "raw_path": "flows.py",
+        "url": "https://github.com/ikostrikov/pytorch-flows/blob/bf12ed91b86867b38d74982f5e2d44c248604df9/flows.py",
+        "sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/made_split.md",
+    "gallery": "generated/made_split/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "flow_batchnorm",
+    "name": "BatchNormFlow / affine + logdet",
+    "family": "可逆归一化",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "Mean/variance are vectors of length D. Source returns determinant shape [1], broadcastable across B.；Variance uses biased mean squared deviations and adds eps before sqrt; momentum weights the old value, unlike common PyTorch momentum naming.",
+    "scope": "BatchNormFlow direct training profile. Evaluation reads running statistics; inverse training requires saved batch statistics.",
+    "profile": {
+      "num_inputs": 4,
+      "mode": "direct",
+      "training": true,
+      "momentum": 0.0,
+      "epsilon": 1e-05,
+      "parameters": [
+        "log_gamma",
+        "beta"
+      ],
+      "buffers": [
+        "running_mean",
+        "running_var"
+      ],
+      "det_shape": [
+        1
+      ]
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 631,
+      "text": "265. [pytorch-flows](https://github.com/ikostrikov/pytorch-flows): PyTorch implementations of algorithms for density estimation",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L631",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/density-flow-modules/flows.py",
+        "repository": "ikostrikov/pytorch-flows",
+        "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+        "symbols": [
+          "BatchNormFlow.__init__",
+          "BatchNormFlow.forward"
+        ],
+        "raw_path": "flows.py",
+        "url": "https://github.com/ikostrikov/pytorch-flows/blob/bf12ed91b86867b38d74982f5e2d44c248604df9/flows.py",
+        "sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/flow_batchnorm.md",
+    "gallery": "generated/flow_batchnorm/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "realnvp_coupling",
+    "name": "RealNVP / masked coupling",
+    "family": "可逆耦合",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "Source mask is an ordinary tensor attribute, not a registered buffer. Selected mask retains entries 0 and 2.；The two MLPs are independent. Their outputs are masked with 1-mask, which makes the retained entries identity.",
+    "scope": "One CouplingLayer direct profile; optional condition concat and inverse are excluded.",
+    "profile": {
+      "num_inputs": 4,
+      "num_hidden": 8,
+      "num_cond_inputs": null,
+      "mask": [
+        1,
+        0,
+        1,
+        0
+      ],
+      "mask_storage": "ordinary_tensor_attribute",
+      "mode": "direct",
+      "affine_order": "scale_then_shift"
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 631,
+      "text": "265. [pytorch-flows](https://github.com/ikostrikov/pytorch-flows): PyTorch implementations of algorithms for density estimation",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L631",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/density-flow-modules/flows.py",
+        "repository": "ikostrikov/pytorch-flows",
+        "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+        "symbols": [
+          "CouplingLayer.__init__",
+          "CouplingLayer.forward"
+        ],
+        "raw_path": "flows.py",
+        "url": "https://github.com/ikostrikov/pytorch-flows/blob/bf12ed91b86867b38d74982f5e2d44c248604df9/flows.py",
+        "sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/realnvp_coupling.md",
+    "gallery": "generated/realnvp_coupling/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "sigmoid_bijector",
+    "name": "Sigmoid bijector / Jacobian branch",
+    "family": "逐元素可逆变换",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "Sigmoid source implements a real direct/inverse bijector and returns the sum of log derivative.；Logit subclass passes inverse as the second positional cond_inputs argument, leaving mode=direct. It is therefore not drawn as a correctly implemented logit wrapper.",
+    "scope": "Sigmoid.forward direct branch only. The separate Logit subclass argument bug is explicitly documented.",
+    "profile": {
+      "mode": "direct",
+      "input_features": 4,
+      "parameters": [],
+      "inverse": "log(x/(1-x))",
+      "logit_subclass_bug": true
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 631,
+      "text": "265. [pytorch-flows](https://github.com/ikostrikov/pytorch-flows): PyTorch implementations of algorithms for density estimation",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L631",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/density-flow-modules/flows.py",
+        "repository": "ikostrikov/pytorch-flows",
+        "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+        "symbols": [
+          "Sigmoid.forward",
+          "Logit.forward"
+        ],
+        "raw_path": "flows.py",
+        "url": "https://github.com/ikostrikov/pytorch-flows/blob/bf12ed91b86867b38d74982f5e2d44c248604df9/flows.py",
+        "sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/sigmoid_bijector.md",
+    "gallery": "generated/sigmoid_bijector/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "spectral_norm_linear",
+    "name": "Spectral normalization / Linear wrapper",
+    "family": "权重约束",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "Power vectors are estimated under no_grad, but the singular value calculation occurs outside that context.；u0 and sv0 are buffers. sv0 is for logging, whereas division uses current svs[0]; replacing the denominator by the buffer changes semantics.",
+    "scope": "One SNLinear with one power iteration/singular value; conv and embedding wrappers are excluded.",
+    "profile": {
+      "in_features": 16,
+      "out_features": 8,
+      "num_svs": 1,
+      "num_itrs": 1,
+      "transpose": false,
+      "training": true,
+      "buffers": [
+        "u0",
+        "sv0"
+      ],
+      "parameters": [
+        "weight",
+        "bias"
+      ],
+      "sv_logging_only": true
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 681,
+      "text": "313. [BigGAN-PyTorch](https://github.com/ajbrock/BigGAN-PyTorch): The author's officially unofficial PyTorch BigGAN implementation.",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L681",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/biggan-modules/layers.py",
+        "repository": "ajbrock/BigGAN-PyTorch",
+        "commit": "98459431a5d618d644d54cd1e9fceb1e5045648d",
+        "symbols": [
+          "SN.__init__",
+          "SN.W_",
+          "SNLinear.__init__",
+          "SNLinear.forward",
+          "power_iteration",
+          "gram_schmidt",
+          "proj"
+        ],
+        "raw_path": "layers.py",
+        "url": "https://github.com/ajbrock/BigGAN-PyTorch/blob/98459431a5d618d644d54cd1e9fceb1e5045648d/layers.py",
+        "sha256": "aaf26237cb86c7b0e8bdabc24e13d83e5253c0f969f16183155668e1b144f0e5",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/spectral_norm_linear.md",
+    "gallery": "generated/spectral_norm_linear/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "manual_fused_bn",
+    "name": "Manual / fused BatchNorm arithmetic",
+    "family": "归一化统计展开",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "Statistics are accumulated in float32, then mean and variance are cast to the original dtype.；The source uses E[x²]-E[x]² without clamping. Both moment reductions read the same input; their glyph is a compound statistics operation.",
+    "scope": "manual_bn calling fused_bn; gain/bias supplied by caller, no running-statistics module.",
+    "profile": {
+      "channels": 8,
+      "epsilon": 1e-05,
+      "return_mean_var": false,
+      "gain_provided": true,
+      "bias_provided": true,
+      "variance": "E[x²]-E[x]²",
+      "clamp": false,
+      "parameters": []
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 681,
+      "text": "313. [BigGAN-PyTorch](https://github.com/ajbrock/BigGAN-PyTorch): The author's officially unofficial PyTorch BigGAN implementation.",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L681",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/biggan-modules/layers.py",
+        "repository": "ajbrock/BigGAN-PyTorch",
+        "commit": "98459431a5d618d644d54cd1e9fceb1e5045648d",
+        "symbols": [
+          "manual_bn",
+          "fused_bn"
+        ],
+        "raw_path": "layers.py",
+        "url": "https://github.com/ajbrock/BigGAN-PyTorch/blob/98459431a5d618d644d54cd1e9fceb1e5045648d/layers.py",
+        "sha256": "aaf26237cb86c7b0e8bdabc24e13d83e5253c0f969f16183155668e1b144f0e5",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/manual_fused_bn.md",
+    "gallery": "generated/manual_fused_bn/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "conditional_bn",
+    "name": "Conditional BatchNorm / two condition heads",
+    "family": "条件归一化",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "Two independent condition heads predict per-example gain and bias; gain has an explicit +1 offset.；Feature normalization has no affine parameters. stored_mean/var are buffers and the selected training call may update them inside the library.",
+    "scope": "ccbn with norm_style=bn, mybn=False, cross_replica=False, which_linear=nn.Linear selected.",
+    "profile": {
+      "output_size": 8,
+      "input_size": 16,
+      "which_linear": "nn.Linear explicitly selected",
+      "cross_replica": false,
+      "mybn": false,
+      "norm_style": "bn",
+      "training": true,
+      "source_momentum_literal": 0.1
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 681,
+      "text": "313. [BigGAN-PyTorch](https://github.com/ajbrock/BigGAN-PyTorch): The author's officially unofficial PyTorch BigGAN implementation.",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L681",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/biggan-modules/layers.py",
+        "repository": "ajbrock/BigGAN-PyTorch",
+        "commit": "98459431a5d618d644d54cd1e9fceb1e5045648d",
+        "symbols": [
+          "ccbn.__init__",
+          "ccbn.forward"
+        ],
+        "raw_path": "layers.py",
+        "url": "https://github.com/ajbrock/BigGAN-PyTorch/blob/98459431a5d618d644d54cd1e9fceb1e5045648d/layers.py",
+        "sha256": "aaf26237cb86c7b0e8bdabc24e13d83e5253c0f969f16183155668e1b144f0e5",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/conditional_bn.md",
+    "gallery": "generated/conditional_bn/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "nonlocal_attention",
+    "name": "Non-local 2D attention / pooled keys-values",
+    "family": "非局部空间注意力",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "Theta remains full-resolution; phi and g use max pooling and therefore have four times fewer spatial positions.；Softmax normalizes the last pooled-position axis. No 1/sqrt(d) scale or positional embedding appears.",
+    "scope": "One BigGAN Attention module; SNConv2d is a normalized-weight call boundary, see separate SNLinear mechanism.",
+    "profile": {
+      "ch": 32,
+      "input_shape": [
+        "B",
+        32,
+        8,
+        8
+      ],
+      "which_conv": "SNConv2d default",
+      "theta_positions": 64,
+      "phi_positions": 16,
+      "g_positions": 16,
+      "softmax_dim": -1,
+      "gamma_initial": 0.0,
+      "attention_scaling": null
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 681,
+      "text": "313. [BigGAN-PyTorch](https://github.com/ajbrock/BigGAN-PyTorch): The author's officially unofficial PyTorch BigGAN implementation.",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L681",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/biggan-modules/layers.py",
+        "repository": "ajbrock/BigGAN-PyTorch",
+        "commit": "98459431a5d618d644d54cd1e9fceb1e5045648d",
+        "symbols": [
+          "Attention.__init__",
+          "Attention.forward",
+          "SNConv2d.__init__",
+          "SNConv2d.forward"
+        ],
+        "raw_path": "layers.py",
+        "url": "https://github.com/ajbrock/BigGAN-PyTorch/blob/98459431a5d618d644d54cd1e9fceb1e5045648d/layers.py",
+        "sha256": "aaf26237cb86c7b0e8bdabc24e13d83e5253c0f969f16183155668e1b144f0e5",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/nonlocal_attention.md",
+    "gallery": "generated/nonlocal_attention/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "coral_head",
+    "name": "CORAL / shared ordinal score head",
+    "family": "序数输出头",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "A single biasless linear score is shared by all K-1 logits, then each threshold receives its own learned bias.；Default preinitialized bias is arange(K-1,0,-1)/(K-1), here [1,.75,.5,.25]; the source does not impose a hard sorted-bias constraint after updates.",
+    "scope": "Local CoralLayer class only. It overrides the imported same-name class; upstream MLP and training losses excluded.",
+    "profile": {
+      "size_in": 16,
+      "num_classes": 5,
+      "thresholds": 4,
+      "preinit_bias": true,
+      "score_weights_shared": true,
+      "parameters": [
+        "coral_weights.weight",
+        "coral_bias"
+      ]
+    },
+    "directory_provenance": {
+      "index": "deeplearning-models",
+      "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+      "readme_path": "upstream/deeplearning-models/README.md",
+      "line": 164,
+      "text": "| CORAL multilayer perceptron | Cement | Implementation of [Rank Consistent Ordinal Regression for Neural Networks with Application to Age Estimation](https://www.sciencedirect.com/science/article/pii/S016786552030413X) 2020 | [![PyTorch](https://img.shields.io/badge/Py-Torch-red)](pytorch_ipynb/ordinal/CORAL_cement.ipynb) [![PyTorch Lightning](https://img.shields.io/badge/PyTorch-Lightning-blueviolet)](pytorch-lightning_ipynb/ordinal/CORAL-light_cement.ipynb) |",
+      "url": "https://github.com/rasbt/deeplearning-models/blob/59beda3aa25337e576564f1c18c6edd26f9f30e3/README.md#L164",
+      "relationship": "direct Notebook caller/class entry"
+    },
+    "sources": [
+      {
+        "local_path": "sources/rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORAL_cement.py",
+        "repository": "rasbt/deeplearning-models",
+        "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+        "symbols": [
+          "CoralLayer.__init__",
+          "CoralLayer.forward"
+        ],
+        "raw_path": "pytorch_ipynb/ordinal/CORAL_cement.ipynb",
+        "url": "https://github.com/rasbt/deeplearning-models/blob/59beda3aa25337e576564f1c18c6edd26f9f30e3/pytorch_ipynb/ordinal/CORAL_cement.ipynb",
+        "sha256": "b1a143b32d8dc27c8d8f9dbdb8b76476da5878ad0e9cfae42da9ea2bf4252b31",
+        "derived_from_notebook": true
+      }
+    ],
+    "documentation": "docs/coral_head.md",
+    "gallery": "generated/coral_head/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "corn_decoder",
+    "name": "CORN probability decoder",
+    "family": "序数概率解码",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "MLP.fc is an ordinary K-1-output Linear. Its logits enter this separate caller decoding block.；The j-th tail probability is the product of conditional probabilities through threshold j; sigmoid alone is insufficient.",
+    "scope": "Notebook caller sigmoid and cumprod subgraph only; not a custom nn.Module, not the MLP or external loss.",
+    "profile": {
+      "num_classes": 5,
+      "thresholds": 4,
+      "scope": "Notebook caller cell",
+      "parameters": [],
+      "output": "tail probabilities",
+      "threshold_dim": 1
+    },
+    "directory_provenance": {
+      "index": "deeplearning-models",
+      "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+      "readme_path": "upstream/deeplearning-models/README.md",
+      "line": 165,
+      "text": "| CORN multilayer perceptron | Cement | Implementation of [Deep Neural Networks for Rank-Consistent Ordinal Regression Based On Conditional Probabilities](https://arxiv.org/abs/2111.08851) 2022 | [![PyTorch](https://img.shields.io/badge/Py-Torch-red)](pytorch_ipynb/ordinal/CORN_cement.ipynb) [![PyTorch Lightning](https://img.shields.io/badge/PyTorch-Lightning-blueviolet)](pytorch-lightning_ipynb/ordinal/CORN-light_cement.ipynb) |",
+      "url": "https://github.com/rasbt/deeplearning-models/blob/59beda3aa25337e576564f1c18c6edd26f9f30e3/README.md#L165",
+      "relationship": "direct Notebook caller/class entry"
+    },
+    "sources": [
+      {
+        "local_path": "sources/rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORN_cement.py",
+        "repository": "rasbt/deeplearning-models",
+        "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+        "symbols": [
+          "__module__",
+          "MLP.__init__",
+          "MLP.forward"
+        ],
+        "raw_path": "pytorch_ipynb/ordinal/CORN_cement.ipynb",
+        "url": "https://github.com/rasbt/deeplearning-models/blob/59beda3aa25337e576564f1c18c6edd26f9f30e3/pytorch_ipynb/ordinal/CORN_cement.ipynb",
+        "sha256": "e4580084d1377b19d011018700a4cf0652eccbdbfe6700d32f1012a96e456821",
+        "derived_from_notebook": true
+      }
+    ],
+    "documentation": "docs/corn_decoder.md",
+    "gallery": "generated/corn_decoder/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "flow_sequential",
+    "name": "FlowSequential / dual-stream composition",
+    "family": "双流容器",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "Registration order controls direct traversal; inverse uses reversed(self._modules.values()) and asks each same instance for its inverse branch.；Each component returns a feature tensor and a logdet tensor. Feature composition and logdet accumulation are two distinct streams.",
+    "scope": "FlowSequential container with explicitly chosen two registered child instances Sigmoid then Reverse; not a source training configuration.",
+    "profile": {
+      "mode": "direct",
+      "num_inputs": 4,
+      "logdets": null,
+      "component_order": [
+        "Sigmoid",
+        "Reverse"
+      ],
+      "component_instances": [
+        "0",
+        "1"
+      ],
+      "inverse_order": [
+        "Reverse",
+        "Sigmoid"
+      ]
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 631,
+      "text": "265. [pytorch-flows](https://github.com/ikostrikov/pytorch-flows): PyTorch implementations of algorithms for density estimation",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L631",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/density-flow-modules/flows.py",
+        "repository": "ikostrikov/pytorch-flows",
+        "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+        "symbols": [
+          "FlowSequential.forward",
+          "Sigmoid.forward",
+          "Reverse.__init__",
+          "Reverse.forward"
+        ],
+        "raw_path": "flows.py",
+        "url": "https://github.com/ikostrikov/pytorch-flows/blob/bf12ed91b86867b38d74982f5e2d44c248604df9/flows.py",
+        "sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/flow_sequential.md",
+    "gallery": "generated/flow_sequential/index.html",
+    "status": "reviewed_module_adapter"
+  },
+  {
+    "key": "autoregressive_mask",
+    "name": "Degree mask / strict autoregressive topology",
+    "family": "掩码拓扑构造",
+    "artifact_scope": "module",
+    "previous_coverage": "not_drawn_as_this_module_subgraph_in_existing_cases",
+    "existing_comparison": "已有 Conv/Linear、一般注意力和 VAE 等基础运算；未展开本例特定参数、端口、状态与公式组合。",
+    "new_adaptation": "Input degrees use modulo D-1 for hidden units. Output degrees use modulo D then minus1, so output coordinate i can only depend on preceding input degrees.；Comparison result has row=output unit and column=input unit. The float mask is fixed topology, not an attention probability or learned parameter.",
+    "scope": "get_mask(mask_type=output) construction function only; no MaskedLinear forward or MADE model.",
+    "profile": {
+      "in_features": 8,
+      "out_features": 8,
+      "in_flow_features": 4,
+      "mask_type": "output",
+      "parameters": [],
+      "dtype": "float32",
+      "input_degrees": [
+        0,
+        1,
+        2,
+        0,
+        1,
+        2,
+        0,
+        1
+      ],
+      "output_degrees": [
+        -1,
+        0,
+        1,
+        2,
+        -1,
+        0,
+        1,
+        2
+      ]
+    },
+    "directory_provenance": {
+      "index": "Awesome-pytorch-list",
+      "commit": "06e9786eb64392cbe233d1a9ab7489256c0ac521",
+      "readme_path": "upstream/Awesome-pytorch-list/README.md",
+      "line": 631,
+      "text": "265. [pytorch-flows](https://github.com/ikostrikov/pytorch-flows): PyTorch implementations of algorithms for density estimation",
+      "url": "https://github.com/bharathgs/Awesome-pytorch-list/blob/06e9786eb64392cbe233d1a9ab7489256c0ac521/README.md#L631",
+      "relationship": "listed repository contains selected module; symbol is source-reviewed"
+    },
+    "sources": [
+      {
+        "local_path": "sources/density-flow-modules/flows.py",
+        "repository": "ikostrikov/pytorch-flows",
+        "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+        "symbols": [
+          "get_mask"
+        ],
+        "raw_path": "flows.py",
+        "url": "https://github.com/ikostrikov/pytorch-flows/blob/bf12ed91b86867b38d74982f5e2d44c248604df9/flows.py",
+        "sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+        "derived_from_notebook": false
+      }
+    ],
+    "documentation": "docs/autoregressive_mask.md",
+    "gallery": "generated/autoregressive_mask/index.html",
+    "status": "reviewed_module_adapter"
+  }
+]

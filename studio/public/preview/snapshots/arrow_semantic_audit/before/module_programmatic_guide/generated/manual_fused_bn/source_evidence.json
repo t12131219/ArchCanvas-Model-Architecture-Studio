@@ -1,0 +1,50 @@
+{
+  "source_project": "biggan-modules",
+  "repository": "ajbrock/BigGAN-PyTorch",
+  "commit": "98459431a5d618d644d54cd1e9fceb1e5045648d",
+  "source_snapshot_sha256": "bcb65449b0e95aa5867f78a42d97c40578083152549d64d9cb4b1601d7388218",
+  "entry": "biggan-modules/layers.py::manual_bn",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "biggan-modules/LICENSE": {
+      "sha256": "f1280fb72c21d398df9f738d279cda47ff1a1a7d0e6e60fec4b6d988caf26cb9",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ajbrock/BigGAN-PyTorch/98459431a5d618d644d54cd1e9fceb1e5045648d/LICENSE",
+      "derived_from": null
+    },
+    "biggan-modules/layers.py": {
+      "sha256": "aaf26237cb86c7b0e8bdabc24e13d83e5253c0f969f16183155668e1b144f0e5",
+      "lines": 459,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ajbrock/BigGAN-PyTorch/98459431a5d618d644d54cd1e9fceb1e5045648d/layers.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "biggan-modules/layers.py::fused_bn": {
+      "path": "biggan-modules/layers.py",
+      "symbol": "fused_bn",
+      "start": 173,
+      "end": 185,
+      "snippet": "def fused_bn(x, mean, var, gain=None, bias=None, eps=1e-5):\n  # Apply scale and shift--if gain and bias are provided, fuse them here\n  # Prepare scale\n  scale = torch.rsqrt(var + eps)\n  # If a gain is provided, use it\n  if gain is not None:\n    scale = scale * gain\n  # Prepare shift\n  shift = mean * scale\n  # If bias is provided, use it\n  if bias is not None:\n    shift = shift - bias\n  return x * scale - shift",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "biggan-modules/layers.py::manual_bn": {
+      "path": "biggan-modules/layers.py",
+      "symbol": "manual_bn",
+      "start": 191,
+      "end": 208,
+      "snippet": "def manual_bn(x, gain=None, bias=None, return_mean_var=False, eps=1e-5):\n  # Cast x to float32 if necessary\n  float_x = x.float()\n  # Calculate expected value of x (m) and expected value of x**2 (m2)  \n  # Mean of x\n  m = torch.mean(float_x, [0, 2, 3], keepdim=True)\n  # Mean of x squared\n  m2 = torch.mean(float_x ** 2, [0, 2, 3], keepdim=True)\n  # Calculate variance as mean of squared minus mean squared.\n  var = (m2 - m **2)\n  # Cast back to float 16 if necessary\n  var = var.type(x.type())\n  m = m.type(x.type())\n  # Return mean and variance for updating stored mean/var if requested  \n  if return_mean_var:\n    return fused_bn(x, m, var, gain, bias, eps), m.squeeze(), var.squeeze()\n  else:\n    return fused_bn(x, m, var, gain, bias, eps)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "biggan-modules/LICENSE"
+  ]
+}

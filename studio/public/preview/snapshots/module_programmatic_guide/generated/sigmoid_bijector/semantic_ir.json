@@ -1,0 +1,333 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "sigmoid_bijector",
+  "profile": {
+    "mode": "direct",
+    "input_features": 4,
+    "parameters": [],
+    "inverse": "log(x/(1-x))",
+    "logit_subclass_bug": true,
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "Sigmoid.forward direct branch only. The separate Logit subclass argument bug is explicitly documented.",
+    "source_contracts": [
+      [
+        "Sigmoid.forward",
+        "torch.log(s(inputs) * (1 - s(inputs))).sum(-1, keepdim=True)"
+      ],
+      [
+        "Logit.forward",
+        "super(Logit, self).forward(inputs, 'inverse')"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "ikostrikov/pytorch-flows",
+    "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+    "snapshot": "c0ebb6c1af0b9d8f0b8140bbc16c5cf7122408fa79a5b25da427fac8d15d657a"
+  },
+  "nodes": [
+    {
+      "id": "sigmoid_bijector.root",
+      "label": "Sigmoid bijector / Jacobian branch",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::Sigmoid.forward",
+        "density-flow-modules/flows.py::Logit.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "sigmoid_bijector.x"
+        ],
+        [
+          "sigmoid_bijector.body"
+        ],
+        [
+          "sigmoid_bijector.y",
+          "sigmoid_bijector.ld"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "sigmoid_bijector.x",
+      "label": "Real-valued x",
+      "kind": "input",
+      "source": [
+        "density-flow-modules/flows.py::Sigmoid.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parent": "sigmoid_bijector.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "sigmoid_bijector.body",
+      "label": "Sigmoid bijector module",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::Sigmoid.forward",
+        "density-flow-modules/flows.py::Logit.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "sigmoid_bijector.nonlinear"
+        ],
+        [
+          "sigmoid_bijector.jacobian"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "sigmoid_bijector.root",
+      "source_evidence": [
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "sigmoid_bijector.nonlinear",
+      "label": "Elementwise transform",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::Sigmoid.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "sigmoid_bijector.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "sigmoid_bijector.sigmoid",
+      "label": "sigmoid(inputs)",
+      "kind": "sigmoid",
+      "source": [
+        "density-flow-modules/flows.py::Sigmoid.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "s(inputs)",
+      "learnable": false,
+      "parent": "sigmoid_bijector.nonlinear",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "sigmoid_bijector.jacobian",
+      "label": "Derivative and log-volume",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::Sigmoid.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "sigmoid_bijector.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "sigmoid_bijector.derivative",
+      "label": "s(x) * (1-s(x))",
+      "kind": "multiply",
+      "source": [
+        "density-flow-modules/flows.py::Sigmoid.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "s(inputs) * (1 - s(inputs))",
+      "parent": "sigmoid_bijector.jacobian",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "sigmoid_bijector.logsum",
+      "label": "log then sum over D",
+      "kind": "density",
+      "source": [
+        "density-flow-modules/flows.py::Sigmoid.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "expression": "torch.log(s(inputs) * (1 - s(inputs))).sum(-1, keepdim=True)",
+      "dim": -1,
+      "keepdim": true,
+      "parent": "sigmoid_bijector.jacobian",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "sigmoid_bijector.y",
+      "label": "s(x) in (0,1)",
+      "kind": "output",
+      "source": [
+        "density-flow-modules/flows.py::Sigmoid.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parent": "sigmoid_bijector.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "sigmoid_bijector.ld",
+      "label": "Logdet per example",
+      "kind": "output",
+      "source": [
+        "density-flow-modules/flows.py::Sigmoid.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "parent": "sigmoid_bijector.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "sigmoid_bijector.nonlinear:in->sigmoid_bijector.sigmoid:in:boundary",
+      "src": "sigmoid_bijector.nonlinear",
+      "dst": "sigmoid_bijector.sigmoid",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "sigmoid_bijector.sigmoid:out->sigmoid_bijector.nonlinear:out:boundary",
+      "src": "sigmoid_bijector.sigmoid",
+      "dst": "sigmoid_bijector.nonlinear",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "sigmoid_bijector.jacobian:in->sigmoid_bijector.derivative:in:boundary",
+      "src": "sigmoid_bijector.jacobian",
+      "dst": "sigmoid_bijector.derivative",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "sigmoid_bijector.derivative:out->sigmoid_bijector.logsum:in:tensor",
+      "src": "sigmoid_bijector.derivative",
+      "dst": "sigmoid_bijector.logsum",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "sigmoid_bijector.logsum:out->sigmoid_bijector.jacobian:out:boundary",
+      "src": "sigmoid_bijector.logsum",
+      "dst": "sigmoid_bijector.jacobian",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "sigmoid_bijector.x:out->sigmoid_bijector.nonlinear:in:tensor",
+      "src": "sigmoid_bijector.x",
+      "dst": "sigmoid_bijector.nonlinear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "sigmoid_bijector.nonlinear:out->sigmoid_bijector.y:in:tensor",
+      "src": "sigmoid_bijector.nonlinear",
+      "dst": "sigmoid_bijector.y",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "sigmoid_bijector.nonlinear:out->sigmoid_bijector.jacobian:in:tensor",
+      "src": "sigmoid_bijector.nonlinear",
+      "dst": "sigmoid_bijector.jacobian",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "sigmoid_bijector.jacobian:out->sigmoid_bijector.ld:in:tensor",
+      "src": "sigmoid_bijector.jacobian",
+      "dst": "sigmoid_bijector.ld",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Sigmoid source implements a real direct/inverse bijector and returns the sum of log derivative.",
+    "Logit subclass passes inverse as the second positional cond_inputs argument, leaving mode=direct. It is therefore not drawn as a correctly implemented logit wrapper."
+  ],
+  "corrections": [
+    "Do not silently replace the actual buggy Logit.forward by the textbook logit implementation."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

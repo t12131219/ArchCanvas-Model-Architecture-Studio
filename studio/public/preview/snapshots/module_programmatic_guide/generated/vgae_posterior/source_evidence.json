@@ -1,0 +1,60 @@
+{
+  "source_project": "dgl-graph-modules",
+  "repository": "dmlc/dgl",
+  "commit": "3d16000b4170fa741ed9e9667f22ba84d3493026",
+  "source_snapshot_sha256": "256f2eebacb1903d19349aeef0a390e2636085f42f8040551d709ebc32db427e",
+  "entry": "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.encoder",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "dgl-graph-modules/LICENSE": {
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "lines": 201,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/dmlc/dgl/3d16000b4170fa741ed9e9667f22ba84d3493026/LICENSE",
+      "derived_from": null
+    },
+    "dgl-graph-modules/examples/pytorch/vgae/model.py": {
+      "sha256": "261e4d226ec51eae9eb949c366cc037a93b4c7b89b29a213c51a28a59cb9c8aa",
+      "lines": 57,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/dmlc/dgl/3d16000b4170fa741ed9e9667f22ba84d3493026/examples/pytorch/vgae/model.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "dgl-graph-modules/examples/pytorch/vgae/model.py::__module__": {
+      "path": "dgl-graph-modules/examples/pytorch/vgae/model.py",
+      "symbol": "__module__",
+      "start": 1,
+      "end": 57,
+      "snippet": "import torch\nimport torch.nn as nn\nimport torch.nn.functional as F\n\nfrom dgl.nn.pytorch import GraphConv\nfrom train import device\n\n\nclass VGAEModel(nn.Module):\n    def __init__(self, in_dim, hidden1_dim, hidden2_dim):\n        super(VGAEModel, self).__init__()\n        self.in_dim = in_dim\n        self.hidden1_dim = hidden1_dim\n        self.hidden2_dim = hidden2_dim\n\n        layers = [\n            GraphConv(\n                self.in_dim,\n                self.hidden1_dim,\n                activation=F.relu,\n                allow_zero_in_degree=True,\n            ),\n            GraphConv(\n                self.hidden1_dim,\n                self.hidden2_dim,\n                activation=lambda x: x,\n                allow_zero_in_degree=True,\n            ),\n            GraphConv(\n                self.hidden1_dim,\n                self.hidden2_dim,\n                activation=lambda x: x,\n                allow_zero_in_degree=True,\n            ),\n        ]\n        self.layers = nn.ModuleList(layers)\n\n    def encoder(self, g, features):\n        h = self.layers[0](g, features)\n        self.mean = self.layers[1](g, h)\n        self.log_std = self.layers[2](g, h)\n        gaussian_noise = torch.randn(features.size(0), self.hidden2_dim).to(\n            device\n        )\n        sampled_z = self.mean + gaussian_noise * torch.exp(self.log_std).to(\n            device\n        )\n        return sampled_z\n\n    def decoder(self, z):\n        adj_rec = torch.sigmoid(torch.matmul(z, z.t()))\n        return adj_rec\n\n    def forward(self, g, features):\n        z = self.encoder(g, features)\n        adj_rec = self.decoder(z)\n        return adj_rec",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.__init__": {
+      "path": "dgl-graph-modules/examples/pytorch/vgae/model.py",
+      "symbol": "VGAEModel.__init__",
+      "start": 10,
+      "end": 36,
+      "snippet": "    def __init__(self, in_dim, hidden1_dim, hidden2_dim):\n        super(VGAEModel, self).__init__()\n        self.in_dim = in_dim\n        self.hidden1_dim = hidden1_dim\n        self.hidden2_dim = hidden2_dim\n\n        layers = [\n            GraphConv(\n                self.in_dim,\n                self.hidden1_dim,\n                activation=F.relu,\n                allow_zero_in_degree=True,\n            ),\n            GraphConv(\n                self.hidden1_dim,\n                self.hidden2_dim,\n                activation=lambda x: x,\n                allow_zero_in_degree=True,\n            ),\n            GraphConv(\n                self.hidden1_dim,\n                self.hidden2_dim,\n                activation=lambda x: x,\n                allow_zero_in_degree=True,\n            ),\n        ]\n        self.layers = nn.ModuleList(layers)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.encoder": {
+      "path": "dgl-graph-modules/examples/pytorch/vgae/model.py",
+      "symbol": "VGAEModel.encoder",
+      "start": 38,
+      "end": 48,
+      "snippet": "    def encoder(self, g, features):\n        h = self.layers[0](g, features)\n        self.mean = self.layers[1](g, h)\n        self.log_std = self.layers[2](g, h)\n        gaussian_noise = torch.randn(features.size(0), self.hidden2_dim).to(\n            device\n        )\n        sampled_z = self.mean + gaussian_noise * torch.exp(self.log_std).to(\n            device\n        )\n        return sampled_z",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "dgl-graph-modules/LICENSE"
+  ]
+}

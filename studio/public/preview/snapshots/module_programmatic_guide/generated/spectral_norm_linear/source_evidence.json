@@ -1,0 +1,100 @@
+{
+  "source_project": "biggan-modules",
+  "repository": "ajbrock/BigGAN-PyTorch",
+  "commit": "98459431a5d618d644d54cd1e9fceb1e5045648d",
+  "source_snapshot_sha256": "bcb65449b0e95aa5867f78a42d97c40578083152549d64d9cb4b1601d7388218",
+  "entry": "biggan-modules/layers.py::SNLinear.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "biggan-modules/LICENSE": {
+      "sha256": "f1280fb72c21d398df9f738d279cda47ff1a1a7d0e6e60fec4b6d988caf26cb9",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ajbrock/BigGAN-PyTorch/98459431a5d618d644d54cd1e9fceb1e5045648d/LICENSE",
+      "derived_from": null
+    },
+    "biggan-modules/layers.py": {
+      "sha256": "aaf26237cb86c7b0e8bdabc24e13d83e5253c0f969f16183155668e1b144f0e5",
+      "lines": 459,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ajbrock/BigGAN-PyTorch/98459431a5d618d644d54cd1e9fceb1e5045648d/layers.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "biggan-modules/layers.py::proj": {
+      "path": "biggan-modules/layers.py",
+      "symbol": "proj",
+      "start": 16,
+      "end": 17,
+      "snippet": "def proj(x, y):\n  return torch.mm(y, x.t()) * y / torch.mm(y, y.t())",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E007"
+    },
+    "biggan-modules/layers.py::gram_schmidt": {
+      "path": "biggan-modules/layers.py",
+      "symbol": "gram_schmidt",
+      "start": 21,
+      "end": 24,
+      "snippet": "def gram_schmidt(x, ys):\n  for y in ys:\n    x = x - proj(x, y)\n  return x",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E005"
+    },
+    "biggan-modules/layers.py::power_iteration": {
+      "path": "biggan-modules/layers.py",
+      "symbol": "power_iteration",
+      "start": 28,
+      "end": 50,
+      "snippet": "def power_iteration(W, u_, update=True, eps=1e-12):\n  # Lists holding singular vectors and values\n  us, vs, svs = [], [], []\n  for i, u in enumerate(u_):\n    # Run one step of the power iteration\n    with torch.no_grad():\n      v = torch.matmul(u, W)\n      # Run Gram-Schmidt to subtract components of all other singular vectors\n      v = F.normalize(gram_schmidt(v, vs), eps=eps)\n      # Add to the list\n      vs += [v]\n      # Update the other singular vector\n      u = torch.matmul(v, W.t())\n      # Run Gram-Schmidt to subtract components of all other singular vectors\n      u = F.normalize(gram_schmidt(u, us), eps=eps)\n      # Add to the list\n      us += [u]\n      if update:\n        u_[i][:] = u\n    # Compute this singular value and add it to the list\n    svs += [torch.squeeze(torch.matmul(torch.matmul(v, W.t()), u.t()))]\n    #svs += [torch.sum(F.linear(u, W.transpose(0, 1)) * v)]\n  return svs, us, vs",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E006"
+    },
+    "biggan-modules/layers.py::SN.__init__": {
+      "path": "biggan-modules/layers.py",
+      "symbol": "SN.__init__",
+      "start": 61,
+      "end": 73,
+      "snippet": "  def __init__(self, num_svs, num_itrs, num_outputs, transpose=False, eps=1e-12):\n    # Number of power iterations per step\n    self.num_itrs = num_itrs\n    # Number of singular values\n    self.num_svs = num_svs\n    # Transposed?\n    self.transpose = transpose\n    # Epsilon value for avoiding divide-by-0\n    self.eps = eps\n    # Register a singular vector for each sv\n    for i in range(self.num_svs):\n      self.register_buffer('u%d' % i, torch.randn(1, num_outputs))\n      self.register_buffer('sv%d' % i, torch.ones(1))",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "biggan-modules/layers.py::SN.W_": {
+      "path": "biggan-modules/layers.py",
+      "symbol": "SN.W_",
+      "start": 87,
+      "end": 99,
+      "snippet": "  def W_(self):\n    W_mat = self.weight.view(self.weight.size(0), -1)\n    if self.transpose:\n      W_mat = W_mat.t()\n    # Apply num_itrs power iterations\n    for _ in range(self.num_itrs):\n      svs, us, vs = power_iteration(W_mat, self.u, update=self.training, eps=self.eps) \n    # Update the svs\n    if self.training:\n      with torch.no_grad(): # Make sure to do this in a no_grad() context or you'll get memory leaks!\n        for i, sv in enumerate(svs):\n          self.sv[i][:] = sv     \n    return self.weight / svs[0]",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "biggan-modules/layers.py::SNLinear.__init__": {
+      "path": "biggan-modules/layers.py",
+      "symbol": "SNLinear.__init__",
+      "start": 117,
+      "end": 120,
+      "snippet": "  def __init__(self, in_features, out_features, bias=True,\n               num_svs=1, num_itrs=1, eps=1e-12):\n    nn.Linear.__init__(self, in_features, out_features, bias)\n    SN.__init__(self, num_svs, num_itrs, out_features, eps=eps)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "biggan-modules/layers.py::SNLinear.forward": {
+      "path": "biggan-modules/layers.py",
+      "symbol": "SNLinear.forward",
+      "start": 121,
+      "end": 122,
+      "snippet": "  def forward(self, x):\n    return F.linear(x, self.W_(), self.bias)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "biggan-modules/LICENSE"
+  ]
+}

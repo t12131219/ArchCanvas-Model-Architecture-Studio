@@ -1,0 +1,40 @@
+{
+  "source_project": "torchvision-v0.9.0-modules",
+  "repository": "pytorch/vision",
+  "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+  "source_snapshot_sha256": "66209ff0a5fcaf22d0c55fcc2b008aa29f50dec4f265cbd902de8482ed44f5bd",
+  "entry": "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::channel_shuffle",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "torchvision-v0.9.0-modules/LICENSE": {
+      "sha256": "6502f676851cfe25f8af75531dfb32375b7325b73c37e7b43741fa422893e71d",
+      "lines": 29,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/LICENSE",
+      "derived_from": null
+    },
+    "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py": {
+      "sha256": "25466b1f6dda0e3fe0d0c43a731f841ed016d6b0919f60f45b4d66c4fa4a3255",
+      "lines": 231,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/torchvision/models/shufflenetv2.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::channel_shuffle": {
+      "path": "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py",
+      "symbol": "channel_shuffle",
+      "start": 21,
+      "end": 34,
+      "snippet": "def channel_shuffle(x: Tensor, groups: int) -> Tensor:\n    batchsize, num_channels, height, width = x.size()\n    channels_per_group = num_channels // groups\n\n    # reshape\n    x = x.view(batchsize, groups,\n               channels_per_group, height, width)\n\n    x = torch.transpose(x, 1, 2).contiguous()\n\n    # flatten\n    x = x.view(batchsize, -1, height, width)\n\n    return x",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "torchvision-v0.9.0-modules/LICENSE"
+  ]
+}

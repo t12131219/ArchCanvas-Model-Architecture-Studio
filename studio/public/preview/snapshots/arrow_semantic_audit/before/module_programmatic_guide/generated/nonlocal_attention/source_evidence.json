@@ -1,0 +1,70 @@
+{
+  "source_project": "biggan-modules",
+  "repository": "ajbrock/BigGAN-PyTorch",
+  "commit": "98459431a5d618d644d54cd1e9fceb1e5045648d",
+  "source_snapshot_sha256": "bcb65449b0e95aa5867f78a42d97c40578083152549d64d9cb4b1601d7388218",
+  "entry": "biggan-modules/layers.py::Attention.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "biggan-modules/LICENSE": {
+      "sha256": "f1280fb72c21d398df9f738d279cda47ff1a1a7d0e6e60fec4b6d988caf26cb9",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ajbrock/BigGAN-PyTorch/98459431a5d618d644d54cd1e9fceb1e5045648d/LICENSE",
+      "derived_from": null
+    },
+    "biggan-modules/layers.py": {
+      "sha256": "aaf26237cb86c7b0e8bdabc24e13d83e5253c0f969f16183155668e1b144f0e5",
+      "lines": 459,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ajbrock/BigGAN-PyTorch/98459431a5d618d644d54cd1e9fceb1e5045648d/layers.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "biggan-modules/layers.py::SNConv2d.__init__": {
+      "path": "biggan-modules/layers.py",
+      "symbol": "SNConv2d.__init__",
+      "start": 104,
+      "end": 109,
+      "snippet": "  def __init__(self, in_channels, out_channels, kernel_size, stride=1,\n             padding=0, dilation=1, groups=1, bias=True, \n             num_svs=1, num_itrs=1, eps=1e-12):\n    nn.Conv2d.__init__(self, in_channels, out_channels, kernel_size, stride, \n                     padding, dilation, groups, bias)\n    SN.__init__(self, num_svs, num_itrs, out_channels, eps=eps)    ",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "biggan-modules/layers.py::SNConv2d.forward": {
+      "path": "biggan-modules/layers.py",
+      "symbol": "SNConv2d.forward",
+      "start": 110,
+      "end": 112,
+      "snippet": "  def forward(self, x):\n    return F.conv2d(x, self.W_(), self.bias, self.stride, \n                    self.padding, self.dilation, self.groups)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "biggan-modules/layers.py::Attention.__init__": {
+      "path": "biggan-modules/layers.py",
+      "symbol": "Attention.__init__",
+      "start": 145,
+      "end": 155,
+      "snippet": "  def __init__(self, ch, which_conv=SNConv2d, name='attention'):\n    super(Attention, self).__init__()\n    # Channel multiplier\n    self.ch = ch\n    self.which_conv = which_conv\n    self.theta = self.which_conv(self.ch, self.ch // 8, kernel_size=1, padding=0, bias=False)\n    self.phi = self.which_conv(self.ch, self.ch // 8, kernel_size=1, padding=0, bias=False)\n    self.g = self.which_conv(self.ch, self.ch // 2, kernel_size=1, padding=0, bias=False)\n    self.o = self.which_conv(self.ch // 2, self.ch, kernel_size=1, padding=0, bias=False)\n    # Learnable gain parameter\n    self.gamma = P(torch.tensor(0.), requires_grad=True)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "biggan-modules/layers.py::Attention.forward": {
+      "path": "biggan-modules/layers.py",
+      "symbol": "Attention.forward",
+      "start": 156,
+      "end": 169,
+      "snippet": "  def forward(self, x, y=None):\n    # Apply convs\n    theta = self.theta(x)\n    phi = F.max_pool2d(self.phi(x), [2,2])\n    g = F.max_pool2d(self.g(x), [2,2])    \n    # Perform reshapes\n    theta = theta.view(-1, self. ch // 8, x.shape[2] * x.shape[3])\n    phi = phi.view(-1, self. ch // 8, x.shape[2] * x.shape[3] // 4)\n    g = g.view(-1, self. ch // 2, x.shape[2] * x.shape[3] // 4)\n    # Matmul and softmax to get attention maps\n    beta = F.softmax(torch.bmm(theta.transpose(1, 2), phi), -1)\n    # Attention map times g path\n    o = self.o(torch.bmm(g, beta.transpose(1,2)).view(-1, self.ch // 2, x.shape[2], x.shape[3]))\n    return self.gamma * o + x",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "biggan-modules/LICENSE"
+  ]
+}

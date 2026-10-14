@@ -1,0 +1,1087 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "spectral_filter",
+  "profile": {
+    "img_size": 28,
+    "nodes": 784,
+    "input_channels": 1,
+    "num_filters": 2,
+    "k": 20,
+    "which": "SM",
+    "input_shape": [
+      "B",
+      1,
+      28,
+      28
+    ],
+    "basis_shape": [
+      784,
+      20
+    ],
+    "filter_shape": [
+      784,
+      2
+    ],
+    "output_shape": [
+      "B",
+      784,
+      2
+    ],
+    "registered_buffers": [
+      "A",
+      "L",
+      "V",
+      "W_spectral"
+    ],
+    "module_parameter_families": [],
+    "W_spectral_storage": "buffer",
+    "W_spectral_optimizer_parameter": false,
+    "W_spectral_requires_grad": "runtime-dependent: Parameter created requires_grad=True; float/to identity not executed",
+    "V_dtype": "torch.from_numpy preserves eigsh array dtype; compatibility not executed",
+    "spectral_coefficients": "V_T @ node-domain W at each forward; not a stored20xF coefficient parameter",
+    "reconstruction": "V @ ((V_T @ X) * (V_T @ W))",
+    "eigenvalues_used_in_forward": false,
+    "dead_assignments": [
+      "V_tensor = self.V.unsqueeze(0)",
+      "V_tensor_T = self.V.T.unsqueeze(0)",
+      "W_spectral_tensor = self.W_spectral.unsqueeze(0)"
+    ],
+    "dead_assignment_reason": "Each temporary is immediately overwritten by direct buffer.expand, not used by returned filtering values",
+    "source_activation": null,
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "7b66bbdafc476b135d919c11ba3b432b974b334e59e93ff1dc255dda7bf9a4f6"
+  },
+  "nodes": [
+    {
+      "id": "spectral.root",
+      "label": "SpectralFilter / selected subgraph",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.__init__",
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "X + V + W -> Y",
+      "detail": [],
+      "literal_tuple": false,
+      "semantic_scope": "forward_filtering_only",
+      "mode": "graph",
+      "ranks": [
+        [
+          "spectral.xbranch",
+          "spectral.vbranch",
+          "spectral.wbranch"
+        ],
+        [
+          "spectral.filter"
+        ],
+        [
+          "spectral.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral.xbranch",
+      "label": "Image to node features",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "X: [B,784,1]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "mode": "chain",
+      "parent": "spectral.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral.input",
+      "label": "Input grayscale image",
+      "kind": "input",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [],
+      "input_channels": 1,
+      "parent": "spectral.xbranch",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "spectral.reshape",
+      "label": "view(B,-1,1)",
+      "kind": "tensor",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "X: [B,784,1]",
+      "detail": [],
+      "expression": "x.view(B,-1,1)",
+      "parent": "spectral.xbranch",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral.vbranch",
+      "label": "Basis read / transpose view",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.__init__",
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "V_T: [B,20,784]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "mode": "chain",
+      "parent": "spectral.root",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral.vread",
+      "label": "Read same V buffer",
+      "kind": "input",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.__init__",
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "V: [784,20]",
+      "detail": [],
+      "expression": "self.V",
+      "buffer_identity": "V",
+      "storage_kind": "buffer",
+      "parent": "spectral.vbranch",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "V"
+      ]
+    },
+    {
+      "id": "spectral.vt",
+      "label": "V.T.expand(B,-1,-1)",
+      "kind": "tensor",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "V_T: [B,20,784]",
+      "detail": [],
+      "expression": "self.V.T.expand(B,-1,-1)",
+      "buffer_identity": "V",
+      "broadcast_batch": true,
+      "input_ports": [
+        "V",
+        "B"
+      ],
+      "no_copy": true,
+      "parent": "spectral.vbranch",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "B"
+      ]
+    },
+    {
+      "id": "spectral.wbranch",
+      "label": "Node-domain filter read",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.__init__",
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "W_batch: [B,784,2]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "mode": "chain",
+      "parent": "spectral.root",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral.wread",
+      "label": "Read W_spectral buffer",
+      "kind": "input",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.__init__",
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "W: [784,2]",
+      "detail": [],
+      "expression": "self.W_spectral",
+      "buffer_identity": "W_spectral",
+      "storage_kind": "buffer",
+      "optimizer_parameter": false,
+      "requires_grad": "runtime-dependent: Parameter created requires_grad=True; float/to identity not executed",
+      "parent": "spectral.wbranch",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "W"
+      ]
+    },
+    {
+      "id": "spectral.wexpand",
+      "label": "W.expand(B,-1,-1)",
+      "kind": "tensor",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "W_batch: [B,784,2]",
+      "detail": [],
+      "expression": "self.W_spectral.expand(B,-1,-1)",
+      "buffer_identity": "W_spectral",
+      "broadcast_batch": true,
+      "input_ports": [
+        "W",
+        "B"
+      ],
+      "no_copy": true,
+      "parent": "spectral.wbranch",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "B"
+      ]
+    },
+    {
+      "id": "spectral.filter",
+      "label": "Truncated spectral filtering",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "Y: [B,784,2]",
+      "detail": [
+        "Two real projections; multiplication broadcasts channels; same V reconstructs nodes"
+      ],
+      "align_x": {
+        "spectral.vexpand": "spectral.xproject",
+        "spectral.product": "spectral.wproject"
+      },
+      "literal_tuple": false,
+      "mode": "graph",
+      "ranks": [
+        [
+          "spectral.xproject",
+          "spectral.wproject"
+        ],
+        [
+          "spectral.vexpand",
+          "spectral.product"
+        ],
+        [
+          "spectral.reconstruct"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "spectral.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral.xproject",
+      "label": "Signal projection / V_T @ X",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,20,1]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "mode": "chain",
+      "parent": "spectral.filter",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral.xproject.bmm",
+      "label": "Batch MatMul / Signal projection",
+      "kind": "mixing",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,20,1]",
+      "detail": [],
+      "expression": "V_tensor_T.bmm(x_reshape)",
+      "operation": "bmm",
+      "ordered_operands": [
+        "spectral.vt",
+        "spectral.reshape"
+      ],
+      "input_ports": [
+        "V_T",
+        "X"
+      ],
+      "parent": "spectral.xproject",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "X",
+        "V_T"
+      ]
+    },
+    {
+      "id": "spectral.wproject",
+      "label": "Filter projection / V_T @ W",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,20,2]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "mode": "chain",
+      "parent": "spectral.filter",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral.wproject.bmm",
+      "label": "Batch MatMul / Filter projection",
+      "kind": "mixing",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,20,2]",
+      "detail": [],
+      "expression": "V_tensor_T.bmm(W_spectral_tensor)",
+      "operation": "bmm",
+      "ordered_operands": [
+        "spectral.vt",
+        "spectral.wexpand"
+      ],
+      "input_ports": [
+        "V_T",
+        "W"
+      ],
+      "parent": "spectral.wproject",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "V_T",
+        "W"
+      ]
+    },
+    {
+      "id": "spectral.vexpand",
+      "label": "V.expand(B,-1,-1)",
+      "kind": "tensor",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "V_batch: [B,784,20]",
+      "detail": [],
+      "expression": "self.V.expand(B,-1,-1)",
+      "buffer_identity": "V",
+      "broadcast_batch": true,
+      "input_ports": [
+        "V",
+        "B"
+      ],
+      "no_copy": true,
+      "parent": "spectral.filter",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "V",
+        "B"
+      ]
+    },
+    {
+      "id": "spectral.product",
+      "label": "Broadcast elementwise multiply",
+      "kind": "multiply",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,20,2]",
+      "detail": [
+        "[B,20,1] * [B,20,2]; singleton channel broadcasts across F=2"
+      ],
+      "expression": "X_hat * W_hat",
+      "operation": "elementwise_multiply",
+      "broadcast_axis": 2,
+      "ordered_operands": [
+        "spectral.xproject.bmm",
+        "spectral.wproject.bmm"
+      ],
+      "parent": "spectral.filter",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "X_hat",
+        "W_hat"
+      ]
+    },
+    {
+      "id": "spectral.reconstruct",
+      "label": "Reconstruct / V @ product",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,784,2]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "mode": "chain",
+      "parent": "spectral.filter",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral.reconstruct.bmm",
+      "label": "Batch MatMul / Reconstruct",
+      "kind": "mixing",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,784,2]",
+      "detail": [],
+      "expression": "V_tensor.bmm(X_hat * W_hat)",
+      "operation": "bmm",
+      "ordered_operands": [
+        "spectral.vexpand",
+        "spectral.product"
+      ],
+      "input_ports": [
+        "V",
+        "product"
+      ],
+      "parent": "spectral.reconstruct",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "V",
+        "product"
+      ]
+    },
+    {
+      "id": "spectral.output",
+      "label": "Module result / node features Y",
+      "kind": "output",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.forward"
+      ],
+      "shape": "[B,784,2]",
+      "detail": [],
+      "expression": "Y",
+      "output_shape": [
+        "B",
+        784,
+        2
+      ],
+      "classifier_excluded": true,
+      "parent": "spectral.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "Y"
+      ]
+    },
+    {
+      "id": "spectral.basis_init",
+      "label": "Fixed basis / constructor",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::precompute_adjacency_matrix",
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::get_graph_laplacian",
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.__init__"
+      ],
+      "shape": "V: [N=784,K=20]",
+      "detail": [],
+      "execution_scope": "construction",
+      "buffer_identity": "V",
+      "learnable": false,
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E004",
+        "E003",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral.adj",
+      "label": "Grid adjacency helper",
+      "kind": "mixing",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::precompute_adjacency_matrix"
+      ],
+      "shape": "A: [784,784]",
+      "detail": [
+        "coords / img_size; Euclidean distance; exp(-dist/sigma^2); values<.01 set to0"
+      ],
+      "expression": "np.exp(- dist / sigma ** 2)",
+      "distance_squared": false,
+      "sigma": "0.05*np.pi",
+      "threshold": 0.01,
+      "normalized_adjacency": false,
+      "parent": "spectral.basis_init",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral.laplacian",
+      "label": "Normalized graph Laplacian",
+      "kind": "norm",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::get_graph_laplacian"
+      ],
+      "shape": "L: [784,784]",
+      "detail": [
+        "D=sum(A,axis=0); D_hat=diag((D+1e-5)^(-.5)); L=I-D_hat A D_hat"
+      ],
+      "expression": "np.identity(N) - np.dot(D_hat, A).dot(D_hat)",
+      "degree_axis": 0,
+      "epsilon": 1e-05,
+      "parent": "spectral.basis_init",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral.eigsh",
+      "label": "eigsh / SciPy boundary",
+      "kind": "control",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.__init__"
+      ],
+      "shape": "V: [784,20]; Lambda: [20]",
+      "detail": [
+        "eigsh(L.numpy(),k=20,which=\"SM\"); library internals not expanded or executed"
+      ],
+      "expression": "eigsh(L.numpy(), k=20, which='SM')",
+      "library_boundary": "scipy.sparse.linalg.eigsh",
+      "k": 20,
+      "which": "SM",
+      "executed": false,
+      "eigenvalues_used_in_forward": false,
+      "parent": "spectral.basis_init",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral.vbuffer",
+      "label": "from_numpy(V) / register V",
+      "kind": "control",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.__init__"
+      ],
+      "shape": "V: [784,20]",
+      "detail": [
+        "A and L are also registered buffers; V has no explicit .float() in source"
+      ],
+      "expression": "V = torch.from_numpy(V); self.register_buffer('V', V)",
+      "buffer_identity": "V",
+      "storage_kind": "buffer",
+      "learnable": false,
+      "persistent": true,
+      "dtype": "inherits eigsh array; not forced to float32",
+      "parent": "spectral.basis_init",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral.w_init",
+      "label": "Filter buffer / constructor",
+      "kind": "group",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.__init__"
+      ],
+      "shape": "registered W: [N=784,F=2]",
+      "detail": [],
+      "execution_scope": "construction",
+      "buffer_identity": "W_spectral",
+      "storage_kind": "buffer",
+      "optimizer_parameter": false,
+      "requires_grad": "runtime-dependent: Parameter created requires_grad=True; float/to identity not executed",
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral.wcreate",
+      "label": "Create Parameter / cast float",
+      "kind": "control",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.__init__"
+      ],
+      "shape": "W: [784,2]",
+      "detail": [
+        "Constructor expression starts with nn.Parameter; storage is decided by later registration"
+      ],
+      "expression": "nn.Parameter(torch.ones((img_size**2, num_filters))).float()",
+      "construction_origin": "nn.Parameter",
+      "requires_grad": "runtime-dependent: Parameter created requires_grad=True; float/to identity not executed",
+      "not_executed": true,
+      "parent": "spectral.w_init",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral.wkaiming",
+      "label": "Kaiming uniform init",
+      "kind": "control",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.__init__"
+      ],
+      "shape": "W: [784,2]",
+      "detail": [],
+      "expression": "torch.nn.init.kaiming_uniform_(W_spectral)",
+      "execution_scope": "construction",
+      "parent": "spectral.w_init",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral.wbuffer",
+      "label": "Register W buffer",
+      "kind": "control",
+      "source": [
+        "rasbt-modules/pytorch_ipynb/gnn/gnn-basic-graph-spectral-1.py::GraphNet.__init__"
+      ],
+      "shape": "W_spectral: [784,2]",
+      "detail": [
+        "Buffer registration does not expose W via model.parameters(); grad state is runtime dependent"
+      ],
+      "expression": "self.register_buffer('W_spectral', W_spectral)",
+      "buffer_identity": "W_spectral",
+      "storage_kind": "buffer",
+      "optimizer_parameter": false,
+      "requires_grad": "runtime-dependent: Parameter created requires_grad=True; float/to identity not executed",
+      "persistent": true,
+      "parent": "spectral.w_init",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "spectral.input:out->spectral.reshape:in:tensor",
+      "src": "spectral.input",
+      "dst": "spectral.reshape",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral.reshape:out->spectral.xbranch:out:boundary",
+      "src": "spectral.reshape",
+      "dst": "spectral.xbranch",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral.vread:out->spectral.vt:in:tensor",
+      "src": "spectral.vread",
+      "dst": "spectral.vt",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral.vt:out->spectral.vbranch:out:boundary",
+      "src": "spectral.vt",
+      "dst": "spectral.vbranch",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral.wread:out->spectral.wexpand:in:tensor",
+      "src": "spectral.wread",
+      "dst": "spectral.wexpand",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral.wexpand:out->spectral.wbranch:out:boundary",
+      "src": "spectral.wexpand",
+      "dst": "spectral.wbranch",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral.xproject.bmm:out->spectral.xproject:out:boundary",
+      "src": "spectral.xproject.bmm",
+      "dst": "spectral.xproject",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral.wproject.bmm:out->spectral.wproject:out:boundary",
+      "src": "spectral.wproject.bmm",
+      "dst": "spectral.wproject",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral.reconstruct.bmm:out->spectral.reconstruct:out:boundary",
+      "src": "spectral.reconstruct.bmm",
+      "dst": "spectral.reconstruct",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral.basis_init:in->spectral.adj:in:boundary",
+      "src": "spectral.basis_init",
+      "dst": "spectral.adj",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral.adj:out->spectral.laplacian:in:tensor",
+      "src": "spectral.adj",
+      "dst": "spectral.laplacian",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral.laplacian:out->spectral.eigsh:in:tensor",
+      "src": "spectral.laplacian",
+      "dst": "spectral.eigsh",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral.eigsh:out->spectral.vbuffer:in:tensor",
+      "src": "spectral.eigsh",
+      "dst": "spectral.vbuffer",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral.vbuffer:out->spectral.basis_init:out:boundary",
+      "src": "spectral.vbuffer",
+      "dst": "spectral.basis_init",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral.w_init:in->spectral.wcreate:in:boundary",
+      "src": "spectral.w_init",
+      "dst": "spectral.wcreate",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral.wcreate:out->spectral.wkaiming:in:tensor",
+      "src": "spectral.wcreate",
+      "dst": "spectral.wkaiming",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral.wkaiming:out->spectral.wbuffer:in:tensor",
+      "src": "spectral.wkaiming",
+      "dst": "spectral.wbuffer",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral.wbuffer:out->spectral.w_init:out:boundary",
+      "src": "spectral.wbuffer",
+      "dst": "spectral.w_init",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral.basis_init:out->spectral.vread:V:fixed_buffer",
+      "src": "spectral.basis_init",
+      "dst": "spectral.vread",
+      "src_port": "out",
+      "dst_port": "V",
+      "role": "fixed_buffer"
+    },
+    {
+      "id": "spectral.w_init:out->spectral.wread:W:fixed_buffer",
+      "src": "spectral.w_init",
+      "dst": "spectral.wread",
+      "src_port": "out",
+      "dst_port": "W",
+      "role": "fixed_buffer"
+    },
+    {
+      "id": "spectral.reshape:out->spectral.xproject.bmm:X:tensor",
+      "src": "spectral.reshape",
+      "dst": "spectral.xproject.bmm",
+      "src_port": "out",
+      "dst_port": "X",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral.vt:out->spectral.xproject.bmm:V_T:tensor",
+      "src": "spectral.vt",
+      "dst": "spectral.xproject.bmm",
+      "src_port": "out",
+      "dst_port": "V_T",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral.vt:out->spectral.wproject.bmm:V_T:tensor",
+      "src": "spectral.vt",
+      "dst": "spectral.wproject.bmm",
+      "src_port": "out",
+      "dst_port": "V_T",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral.wexpand:out->spectral.wproject.bmm:W:tensor",
+      "src": "spectral.wexpand",
+      "dst": "spectral.wproject.bmm",
+      "src_port": "out",
+      "dst_port": "W",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral.xproject.bmm:out->spectral.product:X_hat:tensor",
+      "src": "spectral.xproject.bmm",
+      "dst": "spectral.product",
+      "src_port": "out",
+      "dst_port": "X_hat",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral.wproject.bmm:out->spectral.product:W_hat:tensor",
+      "src": "spectral.wproject.bmm",
+      "dst": "spectral.product",
+      "src_port": "out",
+      "dst_port": "W_hat",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral.vread:out->spectral.vexpand:V:fixed_buffer",
+      "src": "spectral.vread",
+      "dst": "spectral.vexpand",
+      "src_port": "out",
+      "dst_port": "V",
+      "role": "fixed_buffer"
+    },
+    {
+      "id": "spectral.vexpand:out->spectral.reconstruct.bmm:V:tensor",
+      "src": "spectral.vexpand",
+      "dst": "spectral.reconstruct.bmm",
+      "src_port": "out",
+      "dst_port": "V",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral.product:out->spectral.reconstruct.bmm:product:tensor",
+      "src": "spectral.product",
+      "dst": "spectral.reconstruct.bmm",
+      "src_port": "out",
+      "dst_port": "product",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral.reconstruct.bmm:out->spectral.output:Y:tensor",
+      "src": "spectral.reconstruct.bmm",
+      "dst": "spectral.output",
+      "src_port": "out",
+      "dst_port": "Y",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral.input:shape->spectral.vt:B:shape_dependency",
+      "src": "spectral.input",
+      "dst": "spectral.vt",
+      "src_port": "shape",
+      "dst_port": "B",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "spectral.input:shape->spectral.vexpand:B:shape_dependency",
+      "src": "spectral.input",
+      "dst": "spectral.vexpand",
+      "src_port": "shape",
+      "dst_port": "B",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "spectral.input:shape->spectral.wexpand:B:shape_dependency",
+      "src": "spectral.input",
+      "dst": "spectral.wexpand",
+      "src_port": "shape",
+      "dst_port": "B",
+      "role": "shape_dependency"
+    }
+  ],
+  "facts": [
+    "Selected boundary ends at Y; it excludes the enclosing classification head and all training operations.",
+    "Constructor creates A from an unsquared Euclidean-distance exponential kernel and threshold. Its triple-quoted degree-normalization block after return is not executed.",
+    "L=I-D_hat A D_hat uses D=sum(A,axis0),epsilon1e-5; eigsh returns20 smallest-magnitude modes, not a full784-mode basis.",
+    "A,L,V,W_spectral are all explicitly register_buffer entries. W starts from nn.Parameter(...).float(), then buffer registration; model.parameters() does not discover W through this registration.",
+    "Whether float/to preserves Parameter identity, leaf status and gradients depends dtype/runtime. Drawing does not execute these conversions or claim W has requires_grad=False.",
+    "V=torch.from_numpy(V) has no explicit float32 conversion. Dtype compatibility of bmm must be checked in a separate runtime audit; this source-grounded example does not silently cast or fix source.",
+    "Live batch views are self.V.expand,self.V.T.expand,self.W_spectral.expand; three earlier unsqueeze assignments are overwritten and omitted from the live-dependency graph.",
+    "X_hat=V_T@X is[B,20,1], W_hat=V_T@W is[B,20,2]; elementwise multiplication broadcasts the singleton feature axis.",
+    "Reconstruction uses the same V buffer and produces Y[B,784,2]; Lambda is computed during construction but is not used in forward.",
+    "W is a node-domain784x2 buffer, projected every forward; it is not a stored20x2 learned spectral coefficient parameter.",
+    "Ranks are layout constraints on dependency stages; they do not promise Python parallel execution or reproduce the textual assignment order."
+  ],
+  "corrections": [
+    "Do not label this example FFT, Chebyshev filtering, a full eigendecomposition or a canonical learned GCN.",
+    "Do not label W an optimizer parameter solely because its construction starts with nn.Parameter.",
+    "Do not add eigenvalue multiplication, activation, pooling or a classification head inside the selected module.",
+    "Do not chain overwritten unsqueeze results into expand or collapse Y into a one-channel image."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

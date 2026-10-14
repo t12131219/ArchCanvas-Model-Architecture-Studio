@@ -1,0 +1,50 @@
+{
+  "source_project": "density-flow-modules",
+  "repository": "ikostrikov/pytorch-flows",
+  "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+  "source_snapshot_sha256": "c0ebb6c1af0b9d8f0b8140bbc16c5cf7122408fa79a5b25da427fac8d15d657a",
+  "entry": "density-flow-modules/flows.py::BatchNormFlow.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "density-flow-modules/LICENSE": {
+      "sha256": "d541e764a331fbfb13f50107a3466d47cb2422f878160bdcaf433c259a5e121a",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ikostrikov/pytorch-flows/bf12ed91b86867b38d74982f5e2d44c248604df9/LICENSE",
+      "derived_from": null
+    },
+    "density-flow-modules/flows.py": {
+      "sha256": "7b8ea929c2e0937946bedd757b05a66601d381cd36f204e48752122c335c51ba",
+      "lines": 504,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/ikostrikov/pytorch-flows/bf12ed91b86867b38d74982f5e2d44c248604df9/flows.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "density-flow-modules/flows.py::BatchNormFlow.__init__": {
+      "path": "density-flow-modules/flows.py",
+      "symbol": "BatchNormFlow.__init__",
+      "start": 212,
+      "end": 221,
+      "snippet": "    def __init__(self, num_inputs, momentum=0.0, eps=1e-5):\n        super(BatchNormFlow, self).__init__()\n\n        self.log_gamma = nn.Parameter(torch.zeros(num_inputs))\n        self.beta = nn.Parameter(torch.zeros(num_inputs))\n        self.momentum = momentum\n        self.eps = eps\n\n        self.register_buffer('running_mean', torch.zeros(num_inputs))\n        self.register_buffer('running_var', torch.ones(num_inputs))",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "density-flow-modules/flows.py::BatchNormFlow.forward": {
+      "path": "density-flow-modules/flows.py",
+      "symbol": "BatchNormFlow.forward",
+      "start": 223,
+      "end": 261,
+      "snippet": "    def forward(self, inputs, cond_inputs=None, mode='direct'):\n        if mode == 'direct':\n            if self.training:\n                self.batch_mean = inputs.mean(0)\n                self.batch_var = (\n                    inputs - self.batch_mean).pow(2).mean(0) + self.eps\n\n                self.running_mean.mul_(self.momentum)\n                self.running_var.mul_(self.momentum)\n\n                self.running_mean.add_(self.batch_mean.data *\n                                       (1 - self.momentum))\n                self.running_var.add_(self.batch_var.data *\n                                      (1 - self.momentum))\n\n                mean = self.batch_mean\n                var = self.batch_var\n            else:\n                mean = self.running_mean\n                var = self.running_var\n\n            x_hat = (inputs - mean) / var.sqrt()\n            y = torch.exp(self.log_gamma) * x_hat + self.beta\n            return y, (self.log_gamma - 0.5 * torch.log(var)).sum(\n                -1, keepdim=True)\n        else:\n            if self.training:\n                mean = self.batch_mean\n                var = self.batch_var\n            else:\n                mean = self.running_mean\n                var = self.running_var\n\n            x_hat = (inputs - self.beta) / torch.exp(self.log_gamma)\n\n            y = x_hat * var.sqrt() + mean\n\n            return y, (-self.log_gamma + 0.5 * torch.log(var)).sum(\n                -1, keepdim=True)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "density-flow-modules/LICENSE"
+  ]
+}

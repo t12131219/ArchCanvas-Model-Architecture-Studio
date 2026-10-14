@@ -1,0 +1,39 @@
+{
+  "task": "MNIST10-class classification",
+  "mode": "eval",
+  "input_size": [
+    28,
+    28
+  ],
+  "input_channels": 1,
+  "nodes": 784,
+  "node_feature_width": 1,
+  "num_classes": 10,
+  "batch_size_setting": 128,
+  "construction": "fixed grid adjacency precomputed in __init__",
+  "buffer": "A",
+  "adjacency_learnable": false,
+  "adjacency_shape": [
+    784,
+    784
+  ],
+  "kernel": "exp(-distance/sigma^2)",
+  "sigma": "0.05*pi",
+  "distance_squared": false,
+  "threshold": 0.01,
+  "degree_epsilon": 1e-05,
+  "normalization": "D_hat[:,None]*A*D_hat[None,:]",
+  "neighbor_operation": "weighted sum",
+  "self_loop": "diagonal starts at exp(0)=1; no extra identity addition",
+  "bias": false,
+  "classifier": [
+    784,
+    10
+  ],
+  "output": "(logits,probas)",
+  "dead_assignments": [
+    "A_tensor = self.A.unsqueeze(0); overwritten by self.A.expand(B,-1,-1)"
+  ],
+  "drawing_scope": "live dependencies of forward return plus explicit constructor buffer provenance",
+  "model_executed": false
+}

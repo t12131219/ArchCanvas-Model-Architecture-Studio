@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1988" height="947" viewBox="0 0 1988 947">
+<defs><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<metadata id="source-binding">{&quot;model&quot;: &quot;qanet_context_query_attention&quot;, &quot;source_snapshot_sha256&quot;: &quot;79d81102b7e6c62d55f716a9cc42851511040a7192e9d6d56e7c6e642d04b259&quot;, &quot;repository&quot;: &quot;hengruo/QANet-pytorch&quot;, &quot;commit&quot;: &quot;04605e21172b3a5e8b0e2b7a869f2e55ef02e8fb&quot;, &quot;semantic_ir_sha256&quot;: &quot;90161e7ffaf595d5810b14eda62a47db6b2acc13f64bbecec0a0c72d6e4cf91e&quot;, &quot;view&quot;: 0}</metadata>
+<metadata id="diagram-style">{&quot;name&quot;: &quot;transformer-paper-model-zoo&quot;, &quot;version&quot;: 1, &quot;font&quot;: &quot;DejaVu Sans, Arial, sans-serif&quot;, &quot;text&quot;: &quot;#172336&quot;, &quot;line&quot;: &quot;#263348&quot;, &quot;palette&quot;: {&quot;root&quot;: &quot;#ffffff&quot;, &quot;group&quot;: &quot;#ffffff&quot;, &quot;inner&quot;: &quot;#fffaf6&quot;, &quot;layer&quot;: &quot;#ffffff&quot;, &quot;encoder&quot;: &quot;#e7f5fe&quot;, &quot;decoder&quot;: &quot;#fff0f5&quot;, &quot;embedding&quot;: &quot;#f8d4e1&quot;, &quot;input&quot;: &quot;#f8d4e1&quot;, &quot;output&quot;: &quot;#dfdff8&quot;, &quot;attention&quot;: &quot;#ffddb3&quot;, &quot;ffn&quot;: &quot;#c8ebfb&quot;, &quot;mixing&quot;: &quot;#c8ebfb&quot;, &quot;conv&quot;: &quot;#c8ebfb&quot;, &quot;pool&quot;: &quot;#d6f0df&quot;, &quot;norm&quot;: &quot;#fff6bd&quot;, &quot;concat&quot;: &quot;#fff6bd&quot;, &quot;linear&quot;: &quot;#dfdff8&quot;, &quot;softmax&quot;: &quot;#c9f1cd&quot;, &quot;sampling&quot;: &quot;#c9f1cd&quot;, &quot;recurrent&quot;: &quot;#ffddb3&quot;, &quot;decomposition&quot;: &quot;#d6f0df&quot;, &quot;tensor&quot;: &quot;#cdeaf8&quot;, &quot;activation&quot;: &quot;#f3f5f7&quot;, &quot;control&quot;: &quot;#f3f5f7&quot;}, &quot;typography&quot;: {&quot;title&quot;: 30, &quot;subtitle&quot;: 16, &quot;module&quot;: 22, &quot;inner&quot;: 20, &quot;operator&quot;: 20, &quot;shape&quot;: 16, &quot;detail&quot;: 14, &quot;evidence&quot;: 12, &quot;footer&quot;: 14, &quot;line_height&quot;: 1.18}, &quot;fill_width_nodes&quot;: [], &quot;visual_roles&quot;: {&quot;cq.a&quot;: &quot;tensor&quot;, &quot;cq.b&quot;: &quot;tensor&quot;, &quot;cq.body&quot;: &quot;encoder&quot;, &quot;cq.c&quot;: &quot;tensor&quot;, &quot;cq.ca&quot;: &quot;tensor&quot;, &quot;cq.cb&quot;: &quot;tensor&quot;, &quot;cq.cmask&quot;: &quot;control&quot;, &quot;cq.cq&quot;: &quot;tensor&quot;, &quot;cq.cross&quot;: &quot;tensor&quot;, &quot;cq.ct&quot;: &quot;tensor&quot;, &quot;cq.drop&quot;: &quot;control&quot;, &quot;cq.features&quot;: &quot;norm&quot;, &quot;cq.fuse&quot;: &quot;norm&quot;, &quot;cq.input_c&quot;: &quot;input&quot;, &quot;cq.input_cm&quot;: &quot;input&quot;, &quot;cq.input_q&quot;: &quot;input&quot;, &quot;cq.input_qm&quot;: &quot;input&quot;, &quot;cq.output&quot;: &quot;output&quot;, &quot;cq.q&quot;: &quot;tensor&quot;, &quot;cq.qmask&quot;: &quot;control&quot;, &quot;cq.qt&quot;: &quot;tensor&quot;, &quot;cq.s1&quot;: &quot;attention&quot;, &quot;cq.s2&quot;: &quot;attention&quot;, &quot;cq.score&quot;: &quot;tensor&quot;, &quot;cq.softmax1&quot;: &quot;softmax&quot;, &quot;cq.softmax2&quot;: &quot;softmax&quot;, &quot;cq.tail&quot;: &quot;ffn&quot;, &quot;cq.transpose&quot;: &quot;tensor&quot;, &quot;qanet_context_query_attention.root&quot;: &quot;root&quot;}, &quot;semantics&quot;: &quot;presentation aliases only; color does not imply mathematical equivalence or parameter sharing&quot;}</metadata>
+<text x="994.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="994.0" dy="0">QANet context-query attention  |  Module overview</tspan>
+</text>
+<text x="994.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="994.0" dy="0">Tri-linear pair scores / D96 / context8,query5 / two normalization axes  /  read bottom to top</tspan>
+</text>
+<g data-node-id="qanet_context_query_attention.root" data-visual-role="root"><title>qanet-attention-sequence/models.py:212 CQAttention.__init__; qanet-attention-sequence/models.py:21 mask_logits; qanet-attention-sequence/models.py:219 CQAttention.forward; parameter=not asserted; </title><rect x="230.0" y="98" width="1528" height="567" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5"/></g>
+<text x="247.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="247.0" dy="0">QANet context-query attention</tspan>
+</text>
+<text x="1745.0" y="160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1745.0" dy="0">E002,E004,E003</tspan>
+</text>
+<g data-node-id="cq.input_c" data-visual-role="input"><title>qanet-attention-sequence/models.py:219 CQAttention.forward; parameter=not asserted; </title><rect x="262.0" y="534.0" width="330" height="105" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="427.0" y="561.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="427.0" dy="0">Context C /</tspan>
+<tspan x="427.0" dy="23.599999999999998">channels-first</tspan>
+</text>
+<text x="427.0" y="609.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="427.0" dy="0">[B,96,8]</tspan>
+</text>
+<text x="579.0" y="629.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="579.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="cq.input_q" data-visual-role="input"><title>qanet-attention-sequence/models.py:219 CQAttention.forward; parameter=not asserted; </title><rect x="640.0" y="534.0" width="330" height="105" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="805.0" y="561.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="805.0" dy="0">Query Q /</tspan>
+<tspan x="805.0" dy="23.599999999999998">channels-first</tspan>
+</text>
+<text x="805.0" y="609.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">[B,96,5]</tspan>
+</text>
+<text x="957.0" y="629.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="957.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="cq.input_cm" data-visual-role="input"><title>qanet-attention-sequence/models.py:219 CQAttention.forward; parameter=not asserted; </title><rect x="1018.0" y="534.0" width="330" height="105" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="1183.0" y="561.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">Context padding mask /</tspan>
+<tspan x="1183.0" dy="23.599999999999998">0 or1</tspan>
+</text>
+<text x="1183.0" y="609.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[B,8]</tspan>
+</text>
+<text x="1335.0" y="629.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="cq.input_qm" data-visual-role="input"><title>qanet-attention-sequence/models.py:219 CQAttention.forward; parameter=not asserted; </title><rect x="1396.0" y="534.0" width="330" height="105" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="1561.0" y="561.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1561.0" dy="0">Query padding mask / 0</tspan>
+<tspan x="1561.0" dy="23.599999999999998">or1</tspan>
+</text>
+<text x="1561.0" y="609.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1561.0" dy="0">[B,5]</tspan>
+</text>
+<text x="1713.0" y="629.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1713.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="cq.body" data-visual-role="encoder"><title>qanet-attention-sequence/models.py:212 CQAttention.__init__; qanet-attention-sequence/models.py:219 CQAttention.forward; qanet-attention-sequence/models.py:21 mask_logits; parameter=not asserted; </title><rect x="829.0" y="341.0" width="330" height="129" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="994.0" y="368.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="994.0" dy="0">Tri-linear</tspan>
+<tspan x="994.0" dy="23.599999999999998">bidirectional</tspan>
+<tspan x="994.0" dy="23.599999999999998">interaction</tspan>
+</text>
+<text x="994.0" y="440.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="994.0" dy="0">[B,384,8]</tspan>
+</text>
+<text x="1146.0" y="460.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1146.0" dy="0">E002,E003,E004</tspan>
+</text>
+<g data-node-id="cq.output" data-visual-role="output"><title>qanet-attention-sequence/models.py:219 CQAttention.forward; parameter=not asserted; </title><rect x="829.0" y="172.0" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="994.0" y="199.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="994.0" dy="0">Context-query</tspan>
+<tspan x="994.0" dy="23.599999999999998">interaction output</tspan>
+</text>
+<text x="994.0" y="247.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="994.0" dy="0">[B,384,8]</tspan>
+</text>
+<text x="1146.0" y="267.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1146.0" dy="0">E003</tspan>
+</text>
+<path data-route-id="route-0001" d="M 427.0,534.0 L 427.0,494.0 L 958.0,494.0 L 958.0,470.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>cq.input_c:out -&gt; cq.c:input; </title></path>
+<path data-route-id="route-0002" d="M 805.0,534.0 L 805.0,506.0 L 982.0,506.0 L 982.0,470.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>cq.input_q:out -&gt; cq.q:input; </title></path>
+<path data-route-id="route-0003" d="M 1183.0,534.0 L 1183.0,494.0 L 1006.0,494.0 L 1006.0,470.0" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>cq.input_cm:out -&gt; cq.cmask:mask; </title></path>
+<path data-route-id="route-0004" d="M 1561.0,534.0 L 1561.0,506.0 L 1030.0,506.0 L 1030.0,470.0" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>cq.input_qm:out -&gt; cq.qmask:mask; </title></path>
+<path data-route-id="route-0005" d="M 994.0,341.0 L 994.0,277.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>cq.tail:out -&gt; cq.output:output; </title></path>
+<rect x="449.0" y="702" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348"/>
+<text x="472.0" y="715" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="472.0" dy="0">Inputs</tspan>
+</text>
+<rect x="634.0" y="702" width="16" height="16" rx="3" fill="#ffddb3" stroke="#263348"/>
+<text x="657.0" y="715" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="657.0" dy="0">Gate / attention</tspan>
+</text>
+<rect x="819.0" y="702" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348"/>
+<text x="842.0" y="715" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="842.0" dy="0">Conv / transforms</tspan>
+</text>
+<rect x="1004.0" y="702" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348"/>
+<text x="1027.0" y="715" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1027.0" dy="0">Add / norm / concat</tspan>
+</text>
+<rect x="1189.0" y="702" width="16" height="16" rx="3" fill="#c9f1cd" stroke="#263348"/>
+<text x="1212.0" y="715" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1212.0" dy="0">Gates / Softmax</tspan>
+</text>
+<rect x="1374.0" y="702" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348"/>
+<text x="1397.0" y="715" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1397.0" dy="0">Linear / outputs</tspan>
+</text>
+<rect x="819.0" y="732" width="16" height="16" rx="3" fill="#cdeaf8" stroke="#263348"/>
+<text x="842.0" y="745" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="842.0" dy="0">Tensor operations</tspan>
+</text>
+<rect x="1004.0" y="732" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348"/>
+<text x="1027.0" y="745" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1027.0" dy="0">ReLU / Dropout</tspan>
+</text>
+<text x="994.0" y="773" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="994.0" dy="0">C[B,96,8],Q[B,96,5]; pair scoreS[B,8,5]; final channels4D=384.</tspan>
+<tspan x="994.0" dy="16.52">Mask1 means padding; S1 normalizes query, S2 normalizes context.</tspan>
+<tspan x="994.0" dy="16.52">One shared288-vector w scores all C/Q pairs; selected eval keeps Dropout node.</tspan>
+</text>
+<text x="994.0" y="847" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="994.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+<text x="994.0" y="877" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="994.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+<text x="994.0" y="902" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="994.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+</svg>

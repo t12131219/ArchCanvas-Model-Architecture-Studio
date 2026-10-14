@@ -1,0 +1,210 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2494" height="1277" viewBox="0 0 2494 1277">
+<defs><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<metadata id="source-binding">{&quot;model&quot;: &quot;aspp&quot;, &quot;source_snapshot_sha256&quot;: &quot;88b7578cd40309142e6f3aa152438e3ee450fcfd4e242f61cb3919c3efab888f&quot;, &quot;repository&quot;: &quot;pytorch/vision&quot;, &quot;commit&quot;: &quot;01dfa8ea81972bb74b52dc01e6a1b43b26b62020&quot;, &quot;semantic_ir_sha256&quot;: &quot;44f9f8e63a9a85cd0fe75524b456ce815b5fee77ca94c811f7336f1f95141ce9&quot;, &quot;view&quot;: 1}</metadata>
+<metadata id="diagram-style">{&quot;name&quot;: &quot;transformer-paper-model-zoo&quot;, &quot;version&quot;: 1, &quot;font&quot;: &quot;DejaVu Sans, Arial, sans-serif&quot;, &quot;text&quot;: &quot;#172336&quot;, &quot;line&quot;: &quot;#263348&quot;, &quot;palette&quot;: {&quot;root&quot;: &quot;#ffffff&quot;, &quot;group&quot;: &quot;#ffffff&quot;, &quot;inner&quot;: &quot;#fffaf6&quot;, &quot;layer&quot;: &quot;#ffffff&quot;, &quot;encoder&quot;: &quot;#e7f5fe&quot;, &quot;decoder&quot;: &quot;#fff0f5&quot;, &quot;embedding&quot;: &quot;#f8d4e1&quot;, &quot;input&quot;: &quot;#f8d4e1&quot;, &quot;output&quot;: &quot;#dfdff8&quot;, &quot;attention&quot;: &quot;#ffddb3&quot;, &quot;ffn&quot;: &quot;#c8ebfb&quot;, &quot;mixing&quot;: &quot;#c8ebfb&quot;, &quot;conv&quot;: &quot;#c8ebfb&quot;, &quot;pool&quot;: &quot;#d6f0df&quot;, &quot;norm&quot;: &quot;#fff6bd&quot;, &quot;concat&quot;: &quot;#fff6bd&quot;, &quot;linear&quot;: &quot;#dfdff8&quot;, &quot;softmax&quot;: &quot;#c9f1cd&quot;, &quot;sampling&quot;: &quot;#c9f1cd&quot;, &quot;recurrent&quot;: &quot;#ffddb3&quot;, &quot;decomposition&quot;: &quot;#d6f0df&quot;, &quot;tensor&quot;: &quot;#cdeaf8&quot;, &quot;activation&quot;: &quot;#f3f5f7&quot;, &quot;control&quot;: &quot;#f3f5f7&quot;}, &quot;typography&quot;: {&quot;title&quot;: 30, &quot;subtitle&quot;: 16, &quot;module&quot;: 22, &quot;inner&quot;: 20, &quot;operator&quot;: 20, &quot;shape&quot;: 16, &quot;detail&quot;: 14, &quot;evidence&quot;: 12, &quot;footer&quot;: 14, &quot;line_height&quot;: 1.18}, &quot;fill_width_nodes&quot;: [], &quot;visual_roles&quot;: {&quot;aspp.branches&quot;: &quot;inner&quot;, &quot;aspp.concat&quot;: &quot;concat&quot;, &quot;aspp.dropout&quot;: &quot;control&quot;, &quot;aspp.input&quot;: &quot;input&quot;, &quot;aspp.module&quot;: &quot;encoder&quot;, &quot;aspp.output&quot;: &quot;output&quot;, &quot;aspp.pointwise&quot;: &quot;conv&quot;, &quot;aspp.pointwise.bn&quot;: &quot;norm&quot;, &quot;aspp.pointwise.conv&quot;: &quot;conv&quot;, &quot;aspp.pointwise.relu&quot;: &quot;activation&quot;, &quot;aspp.pool&quot;: &quot;pool&quot;, &quot;aspp.pool_bn&quot;: &quot;norm&quot;, &quot;aspp.pool_conv&quot;: &quot;conv&quot;, &quot;aspp.pool_path&quot;: &quot;pool&quot;, &quot;aspp.pool_relu&quot;: &quot;activation&quot;, &quot;aspp.project&quot;: &quot;conv&quot;, &quot;aspp.project.bn&quot;: &quot;norm&quot;, &quot;aspp.project.conv&quot;: &quot;conv&quot;, &quot;aspp.project.relu&quot;: &quot;activation&quot;, &quot;aspp.rate12&quot;: &quot;conv&quot;, &quot;aspp.rate12.bn&quot;: &quot;norm&quot;, &quot;aspp.rate12.conv&quot;: &quot;conv&quot;, &quot;aspp.rate12.relu&quot;: &quot;activation&quot;, &quot;aspp.rate18&quot;: &quot;conv&quot;, &quot;aspp.rate18.bn&quot;: &quot;norm&quot;, &quot;aspp.rate18.conv&quot;: &quot;conv&quot;, &quot;aspp.rate18.relu&quot;: &quot;activation&quot;, &quot;aspp.rate6&quot;: &quot;conv&quot;, &quot;aspp.rate6.bn&quot;: &quot;norm&quot;, &quot;aspp.rate6.conv&quot;: &quot;conv&quot;, &quot;aspp.rate6.relu&quot;: &quot;activation&quot;, &quot;aspp.resize&quot;: &quot;tensor&quot;, &quot;aspp.root&quot;: &quot;root&quot;}, &quot;semantics&quot;: &quot;presentation aliases only; color does not imply mathematical equivalence or parameter sharing&quot;}</metadata>
+<text x="1247.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1247.0" dy="0">ASPP atrous context  |  Module decomposition</tspan>
+</text>
+<text x="1247.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1247.0" dy="0">ASPP(256,[6,12,18],out_channels=64)  /  read bottom to top</tspan>
+</text>
+<g data-node-id="aspp.root" data-visual-role="root"><title>torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:66 ASPP.__init__; torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:88 ASPP.forward; parameter=not asserted; </title><rect x="230.0" y="98" width="2034" height="897" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5"/></g>
+<text x="247.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="247.0" dy="0">ASPP atrous context / module</tspan>
+</text>
+<text x="2247.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2247.0" dy="0">[B,64,32,32]</tspan>
+</text>
+<text x="2251.0" y="160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2251.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="aspp.input" data-visual-role="input"><title>torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:66 ASPP.__init__; torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:88 ASPP.forward; parameter=not asserted; </title><rect x="1097.0" y="888" width="300" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="1247.0" y="915" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1247.0" dy="0">Module input</tspan>
+</text>
+<text x="1247.0" y="939" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1247.0" dy="0">[B,256,32,32]</tspan>
+</text>
+<text x="1384.0" y="959" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1384.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="aspp.module" data-visual-role="encoder"><title>torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:66 ASPP.__init__; torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:88 ASPP.forward; parameter=not asserted; </title><rect x="262.0" y="277" width="1970" height="587" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="279.0" y="307" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="279.0" dy="0">ASPP</tspan>
+</text>
+<text x="2215.0" y="307" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2215.0" dy="0">[B,64,32,32]</tspan>
+</text>
+<text x="2219.0" y="339" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2219.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="aspp.branches" data-visual-role="inner"><title>torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:66 ASPP.__init__; torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:88 ASPP.forward; parameter=not asserted; </title><rect x="294.0" y="585" width="1906" height="253" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6"/></g>
+<text x="311.0" y="615" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="311.0" dy="0">Pointwise / rates / global context</tspan>
+</text>
+<text x="2183.0" y="615" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2183.0" dy="0">5 x 64 channels</tspan>
+</text>
+<text x="2187.0" y="647" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2187.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="aspp.pointwise" data-visual-role="conv"><title>torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:66 ASPP.__init__; torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:88 ASPP.forward; parameter=convs.0; </title><rect x="326.0" y="659" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="491.0" y="686" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="491.0" dy="0">Pointwise Conv1 + BN +</tspan>
+<tspan x="491.0" dy="23.599999999999998">ReLU</tspan>
+</text>
+<text x="491.0" y="734" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="491.0" dy="0">[B,64,32,32]</tspan>
+</text>
+<text x="643.0" y="754" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="643.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="aspp.rate6" data-visual-role="conv"><title>torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:66 ASPP.__init__; torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:88 ASPP.forward; torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:41 ASPPConv.__init__; parameter=convs.1; </title><rect x="704.0" y="683" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="869.0" y="710" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="869.0" dy="0">Atrous Conv3 / rate=6</tspan>
+</text>
+<text x="869.0" y="734" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="869.0" dy="0">[B,64,32,32]</tspan>
+</text>
+<text x="1021.0" y="754" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1021.0" dy="0">E002,E003,E004</tspan>
+</text>
+<g data-node-id="aspp.rate12" data-visual-role="conv"><title>torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:66 ASPP.__init__; torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:88 ASPP.forward; torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:41 ASPPConv.__init__; parameter=convs.2; </title><rect x="1082.0" y="683" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1247.0" y="710" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1247.0" dy="0">Atrous Conv3 / rate=12</tspan>
+</text>
+<text x="1247.0" y="734" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1247.0" dy="0">[B,64,32,32]</tspan>
+</text>
+<text x="1399.0" y="754" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1399.0" dy="0">E002,E003,E004</tspan>
+</text>
+<g data-node-id="aspp.rate18" data-visual-role="conv"><title>torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:66 ASPP.__init__; torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:88 ASPP.forward; torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:41 ASPPConv.__init__; parameter=convs.3; </title><rect x="1460.0" y="683" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1625.0" y="710" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1625.0" dy="0">Atrous Conv3 / rate=18</tspan>
+</text>
+<text x="1625.0" y="734" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1625.0" dy="0">[B,64,32,32]</tspan>
+</text>
+<text x="1777.0" y="754" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1777.0" dy="0">E002,E003,E004</tspan>
+</text>
+<g data-node-id="aspp.pool_path" data-visual-role="pool"><title>torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:66 ASPP.__init__; torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:88 ASPP.forward; torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:51 ASPPPooling.__init__; torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:58 ASPPPooling.forward; parameter=not asserted; </title><rect x="1838.0" y="659" width="330" height="105" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2"/></g>
+<text x="2003.0" y="686" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="2003.0" dy="0">Global pool + project</tspan>
+<tspan x="2003.0" dy="23.599999999999998">+ resize</tspan>
+</text>
+<text x="2003.0" y="734" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2003.0" dy="0">[B,64,32,32]</tspan>
+</text>
+<text x="2155.0" y="754" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2155.0" dy="0">E002,E003,E005,E006</tspan>
+</text>
+<path data-route-id="route-0001" d="M 1247.0,838 L 1247.0,794" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0002" d="M 491.0,794 L 2003.0,794" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0003" d="M 491.0,794 L 491.0,764" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0004" d="M 491.0,659 L 491.0,641" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0005" d="M 869.0,794 L 869.0,764" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0006" d="M 869.0,683 L 869.0,641" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0007" d="M 1247.0,794 L 1247.0,764" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0008" d="M 1247.0,683 L 1247.0,641" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0009" d="M 1625.0,794 L 1625.0,764" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0010" d="M 1625.0,683 L 1625.0,641" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0011" d="M 2003.0,794 L 2003.0,764" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0012" d="M 2003.0,659 L 2003.0,641" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0013" d="M 491.0,641 L 2003.0,641" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path data-route-id="route-0014" d="M 1247.0,641 L 1247.0,585" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="aspp.concat" data-visual-role="concat"><title>torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:66 ASPP.__init__; torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:88 ASPP.forward; parameter=not asserted; </title><rect x="1097.0" y="480" width="300" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="1247.0" y="507" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1247.0" dy="0">Concat all5 paths</tspan>
+</text>
+<text x="1247.0" y="531" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1247.0" dy="0">[B,320,32,32]</tspan>
+</text>
+<text x="1384.0" y="551" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1384.0" dy="0">E002,E003</tspan>
+</text>
+<g data-node-id="aspp.project" data-visual-role="conv"><title>torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:66 ASPP.__init__; torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:88 ASPP.forward; parameter=not asserted; </title><rect x="1082.0" y="351" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="1247.0" y="378" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1247.0" dy="0">Project + BN + ReLU +</tspan>
+<tspan x="1247.0" dy="23.599999999999998">Dropout</tspan>
+</text>
+<text x="1247.0" y="426" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1247.0" dy="0">[B,64,32,32]</tspan>
+</text>
+<text x="1399.0" y="446" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1399.0" dy="0">E002,E003</tspan>
+</text>
+<path data-route-id="route-0015" d="M 1247.0,864 L 1247.0,838" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0016" d="M 1247.0,585 L 1247.0,561" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0017" d="M 1247.0,480 L 1247.0,456" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0018" d="M 1247.0,351 L 1247.0,277" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<g data-node-id="aspp.output" data-visual-role="output"><title>torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:66 ASPP.__init__; torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py:88 ASPP.forward; parameter=not asserted; </title><rect x="1097.0" y="172" width="300" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="1247.0" y="199" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1247.0" dy="0">Module output</tspan>
+</text>
+<text x="1247.0" y="223" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1247.0" dy="0">[B,64,32,32]</tspan>
+</text>
+<text x="1384.0" y="243" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1384.0" dy="0">E002,E003</tspan>
+</text>
+<path data-route-id="route-0019" d="M 1247.0,995 L 1247.0,969" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0020" d="M 1247.0,888 L 1247.0,864" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0021" d="M 1247.0,277 L 1247.0,253" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0022" d="M 1247.0,172 L 1247.0,98" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path data-route-id="route-0023" d="M 1397.0,928.5 L 2192.0,928.5 L 2192.0,711.5 L 2168.0,711.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>aspp.input:shape -&gt; aspp.resize:size; input H,W</title></path>
+<text x="1794.5" y="920.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle" fill="#536477">
+<tspan x="1794.5" dy="0">input H,W</tspan>
+</text>
+<rect x="702.0" y="1032" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348"/>
+<text x="725.0" y="1045" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="725.0" dy="0">Input</tspan>
+</text>
+<rect x="887.0" y="1032" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348"/>
+<text x="910.0" y="1045" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="910.0" dy="0">Conv</tspan>
+</text>
+<rect x="1072.0" y="1032" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348"/>
+<text x="1095.0" y="1045" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1095.0" dy="0">BN</tspan>
+</text>
+<rect x="1257.0" y="1032" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348"/>
+<text x="1280.0" y="1045" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1280.0" dy="0">Concat</tspan>
+</text>
+<rect x="1442.0" y="1032" width="16" height="16" rx="3" fill="#d6f0df" stroke="#263348"/>
+<text x="1465.0" y="1045" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1465.0" dy="0">Pool</tspan>
+</text>
+<rect x="1627.0" y="1032" width="16" height="16" rx="3" fill="#cdeaf8" stroke="#263348"/>
+<text x="1650.0" y="1045" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1650.0" dy="0">Tensor</tspan>
+</text>
+<rect x="979.5" y="1062" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348"/>
+<text x="1002.5" y="1075" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1002.5" dy="0">Activation</tspan>
+</text>
+<rect x="1164.5" y="1062" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348"/>
+<text x="1187.5" y="1075" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1187.5" dy="0">Control</tspan>
+</text>
+<rect x="1349.5" y="1062" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348"/>
+<text x="1372.5" y="1075" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1372.5" dy="0">Output</tspan>
+</text>
+<text x="1247.0" y="1103" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1247.0" dy="0">Declared module scope; source code and kernels are not executed.</tspan>
+<tspan x="1247.0" dy="16.52">Different parameter paths own independent weights; colors express operation roles.</tspan>
+</text>
+<text x="1247.0" y="1177" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1247.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+<text x="1247.0" y="1207" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1247.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+<text x="1247.0" y="1232" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1247.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+</svg>

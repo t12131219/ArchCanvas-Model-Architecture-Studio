@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Edge Router Lab · ArchCanvas</title><link rel="stylesheet" href="../../styles.css"></head>
+<body>
+<header class="topbar"><a class="brand" href="index.html"><span class="brand-icon">↱</span><div><span class="eyebrow">ARCHCANVAS / PROTOTYPE 07</span><strong>Edge Router Lab</strong></div></a><nav><a class="active" href="index.html">复刻实验</a><a href="../../report.html">解析证据 <span>↗</span></a><a href="https://live.yworks.com/demos/showcase/layoutstyles/index.html?layout=edge-router&amp;sample=edge-router" target="_blank" rel="noopener">原始演示 <span>↗</span></a></nav><span class="independent"><i></i> 独立实现 · 无 yFiles 依赖</span></header>
+<main>
+<section class="intro"><div><p class="eyebrow">ARROWS / PORTS / ROUTING</p><h1>让每一条连接，找到自己的路径。</h1><p class="subtitle">拖动节点、创建连接、重新接端点，再观察避障路由如何重新计算。箭头随路径末段方向旋转。</p></div><div class="intro-tag"><b>REA</b><span>源码 × 运行时<br>证据驱动的行为复刻</span></div></section>
+<div class="workspace">
+<aside class="settings">
+<div class="panel-title"><span class="number">01</span><h2>路由配置</h2></div>
+<label class="field">路径风格<select id="routingStyle"><option value="orthogonal">Orthogonal · 正交</option><option value="octilinear">Octilinear · 八方向</option><option value="curved">Curved · 曲线近似</option></select></label>
+<div class="preview-styles" aria-hidden="true"><svg viewBox="0 0 220 36"><path d="M8 27H29V9H52"/><path d="M82 27H92L110 9H126"/><path d="M158 27H169Q185 27 185 11V9H211"/></svg><span>90° 折线</span><span>45° 斜段</span><span>圆滑转角</span></div>
+<label class="field">作用范围<select id="scope"><option value="all">全部边</option><option value="selected">选中的边</option><option value="incident">选中节点的相邻边</option></select></label>
+<label class="field">路由策略<select id="policy"><option value="always">Always · 重新计算整条路径</option><option value="needed">Path As Needed · 有冲突才计算</option><option value="never">Never · 保留当前路径</option></select></label>
+<label class="field">允许的端口侧<select id="portSides"><option value="any">Any · 四侧自由选择</option><option value="lr">Left / Right · 左右</option><option value="tb">Top / Bottom · 上下</option></select></label>
+<div class="range-label"><label for="clearance">节点与边距离</label><output id="clearanceValue">14 px</output></div><input id="clearance" type="range" min="6" max="30" value="14">
+<label class="check"><input id="crossings" type="checkbox" checked><span>惩罚交叉与共线重叠</span></label>
+<label class="check"><input id="keepBends" type="checkbox"><span>保留手动折点作为途经点</span></label>
+<label class="check"><input id="gridEnabled" type="checkbox"><span>使用网格候选通道（24 px）</span></label>
+<button id="applyLayout" class="primary">↳ Apply Layout <kbd>Ctrl ↵</kbd></button>
+<p class="micro">配置在点击 Apply 时生效。节点位置保持固定。固定端口不会被侧约束覆盖。</p>
+<div class="divider"></div><div class="panel-title"><span class="number">02</span><h2>箭头样式</h2></div>
+<label class="field">应用到选中边<select id="arrowStyle"><option value="target">→ 目标端三角箭头</option><option value="both">↔ 双端箭头</option><option value="none">— 无箭头</option><option value="open">→ 空心箭头</option></select></label>
+<button id="setArrow" class="secondary">应用箭头</button><p class="micro">样式变化只重绘，不调用路由器。</p>
+</aside>
+<section class="canvas-card">
+<div class="canvas-toolbar"><div class="tools" role="group" aria-label="图编辑工具"><button data-tool="select" class="active" title="选择 / 移动">↖ <span>选择</span></button><button data-tool="connect" title="从端口拖动，或依次点击两个节点">↗ <span>连接</span></button><button data-tool="bend" title="点击选中的边添加折点">⌁ <span>折点</span></button></div><div class="history-tools"><button id="undo" title="撤销 (Ctrl Z)">↶</button><button id="redo" title="重做 (Ctrl Shift Z)">↷</button><button id="reset" title="重置实验">↺</button><button id="exportSvg" title="导出 SVG">↓ SVG</button></div></div>
+<div class="canvas-subhead"><span><i class="teal-dot"></i> <b id="sampleName">避障实验</b> <span id="graphCount"></span></span><label><input id="showGhost" type="checkbox" checked> 上次路径</label><label><input id="showObstacles" type="checkbox"> 安全边界</label><label><input id="showPorts" type="checkbox" checked> 端口</label></div>
+<div class="canvas-wrap"><svg id="graph" viewBox="0 0 1100 720" aria-label="可交互的图画布" tabindex="0">
+<defs><pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".8" fill="#d6e3e6"/></pattern><filter id="nodeShadow" x="-25%" y="-35%" width="150%" height="180%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#1a6170" flood-opacity=".12"/></filter></defs>
+<rect width="1100" height="720" fill="url(#dots)" class="background"/><g id="obstacleLayer"></g><g id="ghostLayer"></g><g id="edgeLayer"></g><g id="nodeLayer"></g><g id="handleLayer"></g><g id="previewLayer"></g>
+</svg><div class="canvas-label"><span class="mono">FIXED NODES / ADAPTIVE EDGES</span><span id="dirtyBadge" class="badge">路径已计算</span></div><div id="toast" role="status" aria-live="polite"></div></div>
+<div class="metrics"><div><span>路径总长</span><strong id="metricLength">—</strong><small>px</small></div><div><span>折点</span><strong id="metricBends">—</strong></div><div><span>交叉</span><strong id="metricCrossings">—</strong></div><div><span>本次重新布线</span><strong id="metricRouted">—</strong><small>条边</small></div><div><span>计算时间</span><strong id="metricTime">—</strong><small>ms</small></div></div>
+<p id="interactionHint" class="interaction-hint">拖动节点 → 旧路径保留 → Apply Layout 重新避障。选中边可拖动两个端点，改变连接关系。</p>
+</section>
+<aside class="inspector"><div class="panel-title"><span class="number">03</span><h2>连接检查器</h2></div><div id="selectionInfo" class="selection-info"></div><div class="divider"></div><h3>尝试这些操作</h3><ol class="steps"><li><b>移开中间障碍物</b><span>拖动灰色节点，再应用布线，对比虚线旧路径。</span></li><li><b>从端口创建连接</b><span>切换“连接”，从一个节点侧边的小圆点拖到另一个节点。</span></li><li><b>改变连接的目标</b><span>选中边，拖动 S / T 端点到新的节点或端口。</span></li><li><b>保留手动途经点</b><span>用“折点”工具点在线上，勾选保留折点，再应用。</span></li></ol><div class="small-note"><b>复刻范围</b><p>避障与八方向采用独立搜索；曲线是转角平滑近似。yFiles 内部求解器未公开，输出不保证逐点一致。</p><a href="../../report.html">查看证据与边界 ↗</a></div></aside>
+</div>
+<section class="evidence-section"><div class="evidence-heading"><div><p class="eyebrow">OBSERVE → TRACE → RECONSTRUCT</p><h2>看得到的证据，解释看得到的行为。</h2></div><a href="../../report.html" class="secondary link-button">完整解析报告 ↗</a></div><div class="evidence-grid"><article><span class="evidence-num">E01 / STATIC</span><h3>箭头 ≠ 路径算法</h3><p>GraphML 中 61 条边均有 TRIANGLE targetArrow；sourceArrow 为 NONE。源码修改 targetArrow 后仅刷新显示。</p><code>LayoutStylesDemo.js:792–815</code></article><article><span class="evidence-num">E02 / STATIC + UI</span><h3>端口决定连接落点</h3><p>sourceport / targetport 表示连接；Allowed Port Sides 传给源与目标候选端口，不是移动节点。</p><code>PolylineEdgeRouterConfig.js:624–636</code></article><article><span class="evidence-num">E03 / RUNTIME</span><h3>正交到曲线，节点固定</h3><p>在线 Curves 预设保留节点几何与箭头，用大量 SVG 直线采样出平滑路径。截图与路径快照已保存。</p><code>evidence/runtime/curved-paths.json</code></article></div></section>
+<footer><span>ArchCanvas · yWorks Edge Router 行为实验 · 2026-10-12</span><span>本地独立代码 / REA 分析 + CUA 运行时观察</span></footer>
+</main><script src="../../router.js"></script><script src="overlap-fixture.js"></script><script src="../../app.js"></script></body></html>

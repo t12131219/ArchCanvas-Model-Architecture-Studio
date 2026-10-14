@@ -1,0 +1,4307 @@
+{
+  "schema": "timeseries-semantic-ir/1",
+  "model": "autoformer",
+  "profile": {
+    "task": "long-term forecasting",
+    "mode": "eval / inference",
+    "seq_len": 96,
+    "label_len": 48,
+    "pred_len": 96,
+    "enc_in": 7,
+    "dec_in": 7,
+    "c_out": 7,
+    "d_model": 512,
+    "d_ff": 2048,
+    "n_heads": 8,
+    "e_layers": 2,
+    "d_layers": 1,
+    "moving_avg": 25,
+    "factor": 1,
+    "activation": "gelu",
+    "embed": "timeF",
+    "freq": "h",
+    "dropout": 0.05,
+    "output_attention": false,
+    "masks": "None; AutoCorrelation.forward ignores mask arguments"
+  },
+  "nodes": [
+    {
+      "id": "af_model",
+      "label": "Autoformer forecasting",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.forward"
+      ],
+      "shape": "B,P,C",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_input",
+            "port": "in",
+            "edge": "af_model:in->af_input:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_output",
+            "port": "out",
+            "edge": "af_output:out->af_model:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_input",
+      "label": "Input time series",
+      "kind": "input",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.forward"
+      ],
+      "shape": "x_enc: B,L,C",
+      "detail": [
+        "Time marks: B,L,4 and B,T,4",
+        "x_dec values unused; only shape consulted"
+      ],
+      "parent": "af_model",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_prepare",
+      "label": "Encoder + decoder preparation",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.forward"
+      ],
+      "shape": "(memory, seasonal, trend)",
+      "detail": [
+        "Both paths select the same raw x_enc",
+        "x_mark_enc/dec enter their own embedding"
+      ],
+      "mode": "parallel",
+      "parent": "af_model",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_encoder",
+      "label": "Encoder memory path",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.forward",
+        "Autoformer-main/layers/Autoformer_EncDec.py::Encoder.forward"
+      ],
+      "shape": "memory: B,L,D",
+      "detail": [],
+      "mode": "chain",
+      "parent": "af_prepare",
+      "source_evidence": [
+        "E018",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_enc_embedding",
+            "port": "in",
+            "edge": "af_encoder:in->af_enc_embedding:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_memory",
+            "port": "out",
+            "edge": "af_memory:out->af_encoder:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_enc_embedding",
+      "label": "Embedding (no PE)",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.__init__",
+        "Autoformer-main/layers/Embed.py::DataEmbedding_wo_pos.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [],
+      "mode": "chain",
+      "parent": "af_encoder",
+      "source_evidence": [
+        "E017",
+        "E014"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_enc_embedding_terms",
+            "port": "in",
+            "edge": "af_enc_embedding:in->af_enc_embedding_terms:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_enc_embedding_sum",
+            "port": "out",
+            "edge": "af_enc_embedding_sum:out->af_enc_embedding:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_enc_embedding_terms",
+      "label": "Value + time features",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/Embed.py::DataEmbedding_wo_pos.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "dispatch": true,
+      "mode": "parallel",
+      "parent": "af_enc_embedding",
+      "source_evidence": [
+        "E014"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "value",
+        "item[0]",
+        "x_mark_enc",
+        "item[1]"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_embedding_value",
+      "label": "Circular Conv1d",
+      "kind": "embedding",
+      "source": [
+        "Autoformer-main/layers/Embed.py::TokenEmbedding.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [
+        "kernel=3; C -> D"
+      ],
+      "input_selector": "value",
+      "param_identity": "enc_embedding.value_embedding.tokenConv",
+      "parent": "af_enc_embedding_terms",
+      "source_evidence": [
+        "E016"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_embedding_time",
+      "label": "Time feature Linear",
+      "kind": "embedding",
+      "source": [
+        "Autoformer-main/layers/Embed.py::TimeFeatureEmbedding.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [
+        "hourly: 4 -> D"
+      ],
+      "input_selector": "x_mark_enc",
+      "param_identity": "enc_embedding.temporal_embedding.embed",
+      "parent": "af_enc_embedding_terms",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_embedding_sum",
+      "label": "Add + dropout",
+      "kind": "mixing",
+      "source": [
+        "Autoformer-main/layers/Embed.py::DataEmbedding_wo_pos.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [
+        "No positional term"
+      ],
+      "parent": "af_enc_embedding",
+      "source_evidence": [
+        "E014"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_layer",
+      "label": "Encoder layer x N_e=2",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.__init__",
+        "Autoformer-main/layers/Autoformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [
+        "Two independently parameterized layers",
+        "Encoder trends are discarded"
+      ],
+      "flow_role": "seasonal",
+      "repeat": {
+        "count": 2,
+        "index": "i",
+        "independent_parameters": true
+      },
+      "param_identity": "encoder.attn_layers[i]; i=0,1; no tied weights",
+      "mode": "chain",
+      "parent": "af_encoder",
+      "source_evidence": [
+        "E017",
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_enc_ac_residual",
+            "port": "in",
+            "edge": "af_enc_layer:in->af_enc_ac_residual:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_enc_decomp2",
+            "port": "out",
+            "edge": "af_enc_decomp2:out->af_enc_layer:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_enc_ac_residual",
+      "label": "AutoCorr + residual",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [],
+      "residual": true,
+      "mode": "chain",
+      "parent": "af_enc_layer",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_enc_ac",
+            "port": "in",
+            "edge": "af_enc_ac_residual:in->af_enc_ac:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_enc_ac_add",
+            "port": "out",
+            "edge": "af_enc_ac_add:out->af_enc_ac_residual:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_enc_ac",
+      "label": "AutoCorrelation",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelationLayer.forward",
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [
+        "Inference branch; no mask applied"
+      ],
+      "mode": "chain",
+      "parent": "af_enc_ac_residual",
+      "source_evidence": [
+        "E005",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_enc_ac_qkv",
+            "port": "in",
+            "edge": "af_enc_ac:in->af_enc_ac_qkv:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_enc_ac_out",
+            "port": "out",
+            "edge": "af_enc_ac_out:out->af_enc_ac:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_enc_ac_qkv",
+      "label": "Q / K / V projections",
+      "kind": "linear",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelationLayer.forward"
+      ],
+      "shape": "(Q,K,V)",
+      "detail": [
+        "Q,K,V from same state",
+        "3 distinct Linear weights; split heads"
+      ],
+      "main_input_operand": "Q,K,V",
+      "auxiliary_input_operands": {},
+      "param_identity": "encoder.attn_layers[i].attention.{query_projection,key_projection,value_projection}",
+      "parent": "af_enc_ac",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_ac_operands",
+      "label": "Correlation and values",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "dispatch": true,
+      "mode": "parallel",
+      "parent": "af_enc_ac",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "Q,K",
+        "item[0]",
+        "V",
+        "item[1]"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_ac_corr",
+      "label": "Q/K period discovery",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "",
+      "detail": [
+        "Select Q,K from tuple"
+      ],
+      "input_selector": "Q,K",
+      "mode": "chain",
+      "parent": "af_enc_ac_operands",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_enc_ac_align",
+            "port": "in",
+            "edge": "af_enc_ac_corr:in->af_enc_ac_align:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_enc_ac_irfft",
+            "port": "out",
+            "edge": "af_enc_ac_irfft:out->af_enc_ac_corr:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_enc_ac_align",
+      "label": "Align K to Q length",
+      "kind": "tensor",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "Lq=L",
+      "detail": [
+        "Truncate or zero-pad K"
+      ],
+      "parent": "af_enc_ac_corr",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_ac_fft",
+      "label": "rFFT(Q) * conj(rFFT(K))",
+      "kind": "attention",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "B,H,E,freq",
+      "detail": [
+        "FFT along time only"
+      ],
+      "parent": "af_enc_ac_corr",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_ac_irfft",
+      "label": "irFFT: lag correlation",
+      "kind": "attention",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "B,H,E,L",
+      "detail": [],
+      "parent": "af_enc_ac_corr",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_ac_values",
+      "label": "V: align + bypass FFT",
+      "kind": "tensor",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "B,H,E,L",
+      "detail": [
+        "Independent aggregation operand"
+      ],
+      "input_selector": "V",
+      "parent": "af_enc_ac_operands",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_ac_delay",
+      "label": "Top-k delay aggregation",
+      "kind": "attention",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.time_delay_agg_inference"
+      ],
+      "shape": "B,H,E,L",
+      "detail": [
+        "k=floor(factor * log(Lq))",
+        "Per-sample delays; Softmax weights",
+        "Gather shifted V; weighted sum"
+      ],
+      "parent": "af_enc_ac",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_ac_out",
+      "label": "Merge heads + Linear",
+      "kind": "linear",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelationLayer.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [],
+      "param_identity": "encoder.attn_layers[i].attention.out_projection",
+      "parent": "af_enc_ac",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_ac_dropout",
+      "label": "Dropout",
+      "kind": "control",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [
+        "Identity in eval mode"
+      ],
+      "fold_inline": true,
+      "parent": "af_enc_ac_residual",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_ac_add",
+      "label": "Residual add",
+      "kind": "mixing",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [],
+      "parent": "af_enc_ac_residual",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_decomp1",
+      "label": "Decomposition 1",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::EncoderLayer.forward",
+        "Autoformer-main/layers/Autoformer_EncDec.py::series_decomp.forward"
+      ],
+      "shape": "seasonal: B,L,D",
+      "detail": [
+        "Trend is a separate output"
+      ],
+      "retained_input": true,
+      "output_bindings": {
+        "trend": "af_enc_decomp1_mean"
+      },
+      "mode": "chain",
+      "parent": "af_enc_layer",
+      "source_evidence": [
+        "E009",
+        "E012"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "trend"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_enc_decomp1_mean",
+            "port": "in",
+            "edge": "af_enc_decomp1:in->af_enc_decomp1_mean:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_enc_decomp1_split",
+            "port": "out",
+            "edge": "af_enc_decomp1_split:out->af_enc_decomp1:out:boundary"
+          },
+          "trend": {
+            "node": "af_enc_decomp1_mean",
+            "port": "out",
+            "edge": "af_enc_decomp1_mean:out->af_enc_decomp1:trend:output_binding"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_enc_decomp1_mean",
+      "label": "Moving average",
+      "kind": "decomposition",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::moving_avg.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [
+        "Replicate endpoints; window=25"
+      ],
+      "parent": "af_enc_decomp1",
+      "source_evidence": [
+        "E010"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_decomp1_split",
+      "label": "Seasonal = x - mean",
+      "kind": "decomposition",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::series_decomp.forward"
+      ],
+      "shape": "seasonal: B,L,D",
+      "detail": [
+        "Original x retained in block",
+        "Trend=mean; separate side output"
+      ],
+      "parent": "af_enc_decomp1",
+      "source_evidence": [
+        "E012"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_ffn",
+      "label": "Pointwise FFN + residual",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [],
+      "residual": true,
+      "mode": "chain",
+      "parent": "af_enc_layer",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_enc_ffn_conv1",
+            "port": "in",
+            "edge": "af_enc_ffn:in->af_enc_ffn_conv1:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_enc_ffn_add",
+            "port": "out",
+            "edge": "af_enc_ffn_add:out->af_enc_ffn:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_enc_ffn_conv1",
+      "label": "Conv1d: D -> F",
+      "kind": "linear",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "B,F,L",
+      "detail": [
+        "kernel=1; bias=False"
+      ],
+      "param_identity": "encoder.attn_layers[i].conv1",
+      "parent": "af_enc_ffn",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_ffn_act",
+      "label": "GELU + dropout",
+      "kind": "activation",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "B,F,L",
+      "detail": [],
+      "parent": "af_enc_ffn",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_ffn_conv2",
+      "label": "Conv1d: F -> D",
+      "kind": "linear",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [
+        "Transpose back; dropout"
+      ],
+      "param_identity": "encoder.attn_layers[i].conv2",
+      "parent": "af_enc_ffn",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_ffn_add",
+      "label": "Residual add",
+      "kind": "mixing",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::EncoderLayer.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [],
+      "parent": "af_enc_ffn",
+      "source_evidence": [
+        "E009"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_decomp2",
+      "label": "Decomposition 2",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::EncoderLayer.forward",
+        "Autoformer-main/layers/Autoformer_EncDec.py::series_decomp.forward"
+      ],
+      "shape": "seasonal: B,L,D",
+      "detail": [
+        "Trend is a separate output"
+      ],
+      "retained_input": true,
+      "output_bindings": {
+        "trend": "af_enc_decomp2_mean"
+      },
+      "mode": "chain",
+      "parent": "af_enc_layer",
+      "source_evidence": [
+        "E009",
+        "E012"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "trend"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_enc_decomp2_mean",
+            "port": "in",
+            "edge": "af_enc_decomp2:in->af_enc_decomp2_mean:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_enc_decomp2_split",
+            "port": "out",
+            "edge": "af_enc_decomp2_split:out->af_enc_decomp2:out:boundary"
+          },
+          "trend": {
+            "node": "af_enc_decomp2_mean",
+            "port": "out",
+            "edge": "af_enc_decomp2_mean:out->af_enc_decomp2:trend:output_binding"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_enc_decomp2_mean",
+      "label": "Moving average",
+      "kind": "decomposition",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::moving_avg.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [
+        "Replicate endpoints; window=25"
+      ],
+      "parent": "af_enc_decomp2",
+      "source_evidence": [
+        "E010"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_enc_decomp2_split",
+      "label": "Seasonal = x - mean",
+      "kind": "decomposition",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::series_decomp.forward"
+      ],
+      "shape": "seasonal: B,L,D",
+      "detail": [
+        "Original x retained in block",
+        "Trend=mean; separate side output"
+      ],
+      "parent": "af_enc_decomp2",
+      "source_evidence": [
+        "E012"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_memory",
+      "label": "Seasonal LayerNorm",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::my_Layernorm.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [],
+      "mode": "chain",
+      "parent": "af_encoder",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_memory_ln",
+            "port": "in",
+            "edge": "af_memory:in->af_memory_ln:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_memory_center",
+            "port": "out",
+            "edge": "af_memory_center:out->af_memory:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_memory_ln",
+      "label": "LayerNorm over D",
+      "kind": "norm",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::my_Layernorm.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [],
+      "param_identity": "encoder.norm.layernorm",
+      "parent": "af_memory",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_memory_center",
+      "label": "Subtract time mean",
+      "kind": "norm",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::my_Layernorm.forward"
+      ],
+      "shape": "B,L,D",
+      "detail": [],
+      "parent": "af_memory",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_decoder_init",
+      "label": "Decoder initialization from x_enc",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.forward"
+      ],
+      "shape": "(seasonal[B,T,D], trend[B,T,C])",
+      "detail": [],
+      "mode": "chain",
+      "parent": "af_prepare",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_init_decomp",
+            "port": "in",
+            "edge": "af_decoder_init:in->af_init_decomp:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_init_states",
+            "port": "out",
+            "edge": "af_init_states:out->af_decoder_init:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_init_decomp",
+      "label": "Decompose raw input",
+      "kind": "decomposition",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.forward",
+        "Autoformer-main/layers/Autoformer_EncDec.py::series_decomp.forward"
+      ],
+      "shape": "(seasonal[B,L,C], trend[B,L,C])",
+      "detail": [
+        "Moving average on raw channels"
+      ],
+      "parent": "af_decoder_init",
+      "source_evidence": [
+        "E018",
+        "E012"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_init_states",
+      "label": "Seasonal and trend seeds",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.forward"
+      ],
+      "shape": "(seasonal[B,T,D], trend[B,T,C])",
+      "detail": [],
+      "dispatch": true,
+      "mode": "parallel",
+      "parent": "af_decoder_init",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "seasonal",
+        "item[0]",
+        "trend, mean(x_enc)",
+        "item[1]"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_seasonal_seed",
+      "label": "Seasonal seed + embedding",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [],
+      "input_selector": "seasonal",
+      "mode": "chain",
+      "parent": "af_init_states",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_seasonal_init",
+            "port": "in",
+            "edge": "af_seasonal_seed:in->af_seasonal_init:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_dec_embedding",
+            "port": "out",
+            "edge": "af_dec_embedding:out->af_seasonal_seed:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_seasonal_init",
+      "label": "Last label + future zeros",
+      "kind": "tensor",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.forward"
+      ],
+      "shape": "B,T,C",
+      "detail": [
+        "T=label_len+pred_len"
+      ],
+      "parent": "af_seasonal_seed",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_embedding",
+      "label": "Embedding (no PE)",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.__init__",
+        "Autoformer-main/layers/Embed.py::DataEmbedding_wo_pos.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [],
+      "mode": "chain",
+      "parent": "af_seasonal_seed",
+      "source_evidence": [
+        "E017",
+        "E014"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_dec_embedding_terms",
+            "port": "in",
+            "edge": "af_dec_embedding:in->af_dec_embedding_terms:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_dec_embedding_sum",
+            "port": "out",
+            "edge": "af_dec_embedding_sum:out->af_dec_embedding:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_dec_embedding_terms",
+      "label": "Value + time features",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/Embed.py::DataEmbedding_wo_pos.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "dispatch": true,
+      "mode": "parallel",
+      "parent": "af_dec_embedding",
+      "source_evidence": [
+        "E014"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "value",
+        "item[0]",
+        "x_mark_dec",
+        "item[1]"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_embedding_value",
+      "label": "Circular Conv1d",
+      "kind": "embedding",
+      "source": [
+        "Autoformer-main/layers/Embed.py::TokenEmbedding.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [
+        "kernel=3; C -> D"
+      ],
+      "input_selector": "value",
+      "param_identity": "dec_embedding.value_embedding.tokenConv",
+      "parent": "af_dec_embedding_terms",
+      "source_evidence": [
+        "E016"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_embedding_time",
+      "label": "Time feature Linear",
+      "kind": "embedding",
+      "source": [
+        "Autoformer-main/layers/Embed.py::TimeFeatureEmbedding.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [
+        "hourly: 4 -> D"
+      ],
+      "input_selector": "x_mark_dec",
+      "param_identity": "dec_embedding.temporal_embedding.embed",
+      "parent": "af_dec_embedding_terms",
+      "source_evidence": [
+        "E015"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_embedding_sum",
+      "label": "Add + dropout",
+      "kind": "mixing",
+      "source": [
+        "Autoformer-main/layers/Embed.py::DataEmbedding_wo_pos.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [
+        "No positional term"
+      ],
+      "parent": "af_dec_embedding",
+      "source_evidence": [
+        "E014"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_trend_init",
+      "label": "Last trend + input mean",
+      "kind": "decomposition",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.forward"
+      ],
+      "shape": "B,T,C",
+      "detail": [
+        "Repeat raw x_enc mean for future"
+      ],
+      "input_selector": "trend, mean(x_enc)",
+      "parent": "af_init_states",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_layer",
+      "label": "Decoder layer x N_d=1",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.__init__",
+        "Autoformer-main/layers/Autoformer_EncDec.py::DecoderLayer.forward",
+        "Autoformer-main/layers/Autoformer_EncDec.py::Decoder.forward"
+      ],
+      "shape": "(seasonal[B,T,D], trend[B,T,C])",
+      "detail": [
+        "Seasonal main lane; explicit trend side state"
+      ],
+      "flow_role": "seasonal",
+      "param_identity": "decoder.layers[0]; self/cross use distinct weights",
+      "mode": "chain",
+      "parent": "af_model",
+      "source_evidence": [
+        "E017",
+        "E007",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_dec_self_residual",
+            "port": "in",
+            "edge": "af_dec_layer:in->af_dec_self_residual:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_trend_update",
+            "port": "out",
+            "edge": "af_trend_update:out->af_dec_layer:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_dec_self_residual",
+      "label": "AutoCorr + residual",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::DecoderLayer.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [],
+      "residual": true,
+      "mode": "chain",
+      "parent": "af_dec_layer",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_dec_self",
+            "port": "in",
+            "edge": "af_dec_self_residual:in->af_dec_self:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_dec_self_add",
+            "port": "out",
+            "edge": "af_dec_self_add:out->af_dec_self_residual:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_dec_self",
+      "label": "AutoCorrelation",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelationLayer.forward",
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [
+        "Inference branch; no mask applied"
+      ],
+      "mode": "chain",
+      "parent": "af_dec_self_residual",
+      "source_evidence": [
+        "E005",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_dec_self_qkv",
+            "port": "in",
+            "edge": "af_dec_self:in->af_dec_self_qkv:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_dec_self_out",
+            "port": "out",
+            "edge": "af_dec_self_out:out->af_dec_self:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_dec_self_qkv",
+      "label": "Q / K / V projections",
+      "kind": "linear",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelationLayer.forward"
+      ],
+      "shape": "(Q,K,V)",
+      "detail": [
+        "Q,K,V from same state",
+        "3 distinct Linear weights; split heads"
+      ],
+      "main_input_operand": "Q,K,V",
+      "auxiliary_input_operands": {},
+      "param_identity": "decoder.layers[0].self_attention.{query_projection,key_projection,value_projection}",
+      "parent": "af_dec_self",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_self_operands",
+      "label": "Correlation and values",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "dispatch": true,
+      "mode": "parallel",
+      "parent": "af_dec_self",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "Q,K",
+        "item[0]",
+        "V",
+        "item[1]"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_self_corr",
+      "label": "Q/K period discovery",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "",
+      "detail": [
+        "Select Q,K from tuple"
+      ],
+      "input_selector": "Q,K",
+      "mode": "chain",
+      "parent": "af_dec_self_operands",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_dec_self_align",
+            "port": "in",
+            "edge": "af_dec_self_corr:in->af_dec_self_align:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_dec_self_irfft",
+            "port": "out",
+            "edge": "af_dec_self_irfft:out->af_dec_self_corr:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_dec_self_align",
+      "label": "Align K to Q length",
+      "kind": "tensor",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "Lq=T",
+      "detail": [
+        "Truncate or zero-pad K"
+      ],
+      "parent": "af_dec_self_corr",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_self_fft",
+      "label": "rFFT(Q) * conj(rFFT(K))",
+      "kind": "attention",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "B,H,E,freq",
+      "detail": [
+        "FFT along time only"
+      ],
+      "parent": "af_dec_self_corr",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_self_irfft",
+      "label": "irFFT: lag correlation",
+      "kind": "attention",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "B,H,E,T",
+      "detail": [],
+      "parent": "af_dec_self_corr",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_self_values",
+      "label": "V: align + bypass FFT",
+      "kind": "tensor",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "B,H,E,T",
+      "detail": [
+        "Independent aggregation operand"
+      ],
+      "input_selector": "V",
+      "parent": "af_dec_self_operands",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_self_delay",
+      "label": "Top-k delay aggregation",
+      "kind": "attention",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.time_delay_agg_inference"
+      ],
+      "shape": "B,H,E,T",
+      "detail": [
+        "k=floor(factor * log(Lq))",
+        "Per-sample delays; Softmax weights",
+        "Gather shifted V; weighted sum"
+      ],
+      "parent": "af_dec_self",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_self_out",
+      "label": "Merge heads + Linear",
+      "kind": "linear",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelationLayer.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [],
+      "param_identity": "decoder.layers[0].self_attention.out_projection",
+      "parent": "af_dec_self",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_self_dropout",
+      "label": "Dropout",
+      "kind": "control",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::DecoderLayer.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [
+        "Identity in eval mode"
+      ],
+      "fold_inline": true,
+      "parent": "af_dec_self_residual",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_self_add",
+      "label": "Residual add",
+      "kind": "mixing",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::DecoderLayer.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [],
+      "parent": "af_dec_self_residual",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_decomp1",
+      "label": "Decomposition 1",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::DecoderLayer.forward",
+        "Autoformer-main/layers/Autoformer_EncDec.py::series_decomp.forward"
+      ],
+      "shape": "seasonal: B,T,D",
+      "detail": [
+        "Trend is a separate output"
+      ],
+      "retained_input": true,
+      "output_bindings": {
+        "trend": "af_dec_decomp1_mean"
+      },
+      "mode": "chain",
+      "parent": "af_dec_layer",
+      "source_evidence": [
+        "E007",
+        "E012"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "trend"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_dec_decomp1_mean",
+            "port": "in",
+            "edge": "af_dec_decomp1:in->af_dec_decomp1_mean:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_dec_decomp1_split",
+            "port": "out",
+            "edge": "af_dec_decomp1_split:out->af_dec_decomp1:out:boundary"
+          },
+          "trend": {
+            "node": "af_dec_decomp1_mean",
+            "port": "out",
+            "edge": "af_dec_decomp1_mean:out->af_dec_decomp1:trend:output_binding"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_dec_decomp1_mean",
+      "label": "Moving average",
+      "kind": "decomposition",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::moving_avg.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [
+        "Replicate endpoints; window=25"
+      ],
+      "parent": "af_dec_decomp1",
+      "source_evidence": [
+        "E010"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_decomp1_split",
+      "label": "Seasonal = x - mean",
+      "kind": "decomposition",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::series_decomp.forward"
+      ],
+      "shape": "seasonal: B,T,D",
+      "detail": [
+        "Original x retained in block",
+        "Trend=mean; separate side output"
+      ],
+      "parent": "af_dec_decomp1",
+      "source_evidence": [
+        "E012"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_cross_residual",
+      "label": "Cross + residual",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::DecoderLayer.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [],
+      "residual": true,
+      "mode": "chain",
+      "parent": "af_dec_layer",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_dec_cross",
+            "port": "in",
+            "edge": "af_dec_cross_residual:in->af_dec_cross:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_dec_cross_add",
+            "port": "out",
+            "edge": "af_dec_cross_add:out->af_dec_cross_residual:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_dec_cross",
+      "label": "Cross AutoCorrelation",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelationLayer.forward",
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [
+        "Inference branch; no mask applied"
+      ],
+      "mode": "chain",
+      "parent": "af_dec_cross_residual",
+      "source_evidence": [
+        "E005",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_dec_cross_qkv",
+            "port": "in",
+            "edge": "af_dec_cross:in->af_dec_cross_qkv:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_dec_cross_out",
+            "port": "out",
+            "edge": "af_dec_cross_out:out->af_dec_cross:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_dec_cross_qkv",
+      "label": "Q / K / V projections",
+      "kind": "linear",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelationLayer.forward"
+      ],
+      "shape": "Q: decoder; K,V: memory",
+      "detail": [
+        "Q=seasonal; K,V=memory",
+        "3 distinct Linear weights; split heads"
+      ],
+      "main_input_operand": "Q",
+      "auxiliary_input_operands": {
+        "memory_KV": [
+          "K",
+          "V"
+        ]
+      },
+      "param_identity": "decoder.layers[0].cross_attention.{query_projection,key_projection,value_projection}",
+      "parent": "af_dec_cross",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "memory_KV"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_cross_operands",
+      "label": "Correlation and values",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "dispatch": true,
+      "mode": "parallel",
+      "parent": "af_dec_cross",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "Q,K",
+        "item[0]",
+        "V",
+        "item[1]"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_cross_corr",
+      "label": "Q/K period discovery",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "",
+      "detail": [
+        "Select Q,K from tuple"
+      ],
+      "input_selector": "Q,K",
+      "mode": "chain",
+      "parent": "af_dec_cross_operands",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_dec_cross_align",
+            "port": "in",
+            "edge": "af_dec_cross_corr:in->af_dec_cross_align:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_dec_cross_irfft",
+            "port": "out",
+            "edge": "af_dec_cross_irfft:out->af_dec_cross_corr:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_dec_cross_align",
+      "label": "Align K to Q length",
+      "kind": "tensor",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "Lq=T",
+      "detail": [
+        "Truncate or zero-pad K"
+      ],
+      "parent": "af_dec_cross_corr",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_cross_fft",
+      "label": "rFFT(Q) * conj(rFFT(K))",
+      "kind": "attention",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "B,H,E,freq",
+      "detail": [
+        "FFT along time only"
+      ],
+      "parent": "af_dec_cross_corr",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_cross_irfft",
+      "label": "irFFT: lag correlation",
+      "kind": "attention",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "B,H,E,T",
+      "detail": [],
+      "parent": "af_dec_cross_corr",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_cross_values",
+      "label": "V: align + bypass FFT",
+      "kind": "tensor",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.forward"
+      ],
+      "shape": "B,H,E,T",
+      "detail": [
+        "Independent aggregation operand"
+      ],
+      "input_selector": "V",
+      "parent": "af_dec_cross_operands",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_cross_delay",
+      "label": "Top-k delay aggregation",
+      "kind": "attention",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelation.time_delay_agg_inference"
+      ],
+      "shape": "B,H,E,T",
+      "detail": [
+        "k=floor(factor * log(Lq))",
+        "Per-sample delays; Softmax weights",
+        "Gather shifted V; weighted sum"
+      ],
+      "parent": "af_dec_cross",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_cross_out",
+      "label": "Merge heads + Linear",
+      "kind": "linear",
+      "source": [
+        "Autoformer-main/layers/AutoCorrelation.py::AutoCorrelationLayer.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [],
+      "param_identity": "decoder.layers[0].cross_attention.out_projection",
+      "parent": "af_dec_cross",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_cross_dropout",
+      "label": "Dropout",
+      "kind": "control",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::DecoderLayer.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [
+        "Identity in eval mode"
+      ],
+      "fold_inline": true,
+      "parent": "af_dec_cross_residual",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_cross_add",
+      "label": "Residual add",
+      "kind": "mixing",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::DecoderLayer.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [],
+      "parent": "af_dec_cross_residual",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_decomp2",
+      "label": "Decomposition 2",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::DecoderLayer.forward",
+        "Autoformer-main/layers/Autoformer_EncDec.py::series_decomp.forward"
+      ],
+      "shape": "seasonal: B,T,D",
+      "detail": [
+        "Trend is a separate output"
+      ],
+      "retained_input": true,
+      "output_bindings": {
+        "trend": "af_dec_decomp2_mean"
+      },
+      "mode": "chain",
+      "parent": "af_dec_layer",
+      "source_evidence": [
+        "E007",
+        "E012"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "trend"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_dec_decomp2_mean",
+            "port": "in",
+            "edge": "af_dec_decomp2:in->af_dec_decomp2_mean:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_dec_decomp2_split",
+            "port": "out",
+            "edge": "af_dec_decomp2_split:out->af_dec_decomp2:out:boundary"
+          },
+          "trend": {
+            "node": "af_dec_decomp2_mean",
+            "port": "out",
+            "edge": "af_dec_decomp2_mean:out->af_dec_decomp2:trend:output_binding"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_dec_decomp2_mean",
+      "label": "Moving average",
+      "kind": "decomposition",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::moving_avg.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [
+        "Replicate endpoints; window=25"
+      ],
+      "parent": "af_dec_decomp2",
+      "source_evidence": [
+        "E010"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_decomp2_split",
+      "label": "Seasonal = x - mean",
+      "kind": "decomposition",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::series_decomp.forward"
+      ],
+      "shape": "seasonal: B,T,D",
+      "detail": [
+        "Original x retained in block",
+        "Trend=mean; separate side output"
+      ],
+      "parent": "af_dec_decomp2",
+      "source_evidence": [
+        "E012"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_ffn",
+      "label": "Pointwise FFN + residual",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::DecoderLayer.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [],
+      "residual": true,
+      "mode": "chain",
+      "parent": "af_dec_layer",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_dec_ffn_conv1",
+            "port": "in",
+            "edge": "af_dec_ffn:in->af_dec_ffn_conv1:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_dec_ffn_add",
+            "port": "out",
+            "edge": "af_dec_ffn_add:out->af_dec_ffn:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_dec_ffn_conv1",
+      "label": "Conv1d: D -> F",
+      "kind": "linear",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::DecoderLayer.forward"
+      ],
+      "shape": "B,F,T",
+      "detail": [
+        "kernel=1; bias=False"
+      ],
+      "param_identity": "decoder.layers[0].conv1",
+      "parent": "af_dec_ffn",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_ffn_act",
+      "label": "GELU + dropout",
+      "kind": "activation",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::DecoderLayer.forward"
+      ],
+      "shape": "B,F,T",
+      "detail": [],
+      "parent": "af_dec_ffn",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_ffn_conv2",
+      "label": "Conv1d: F -> D",
+      "kind": "linear",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::DecoderLayer.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [
+        "Transpose back; dropout"
+      ],
+      "param_identity": "decoder.layers[0].conv2",
+      "parent": "af_dec_ffn",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_ffn_add",
+      "label": "Residual add",
+      "kind": "mixing",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::DecoderLayer.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [],
+      "parent": "af_dec_ffn",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_decomp3",
+      "label": "Decomposition 3",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::DecoderLayer.forward",
+        "Autoformer-main/layers/Autoformer_EncDec.py::series_decomp.forward"
+      ],
+      "shape": "seasonal: B,T,D",
+      "detail": [
+        "Trend is a separate output"
+      ],
+      "retained_input": true,
+      "output_bindings": {
+        "trend": "af_dec_decomp3_mean"
+      },
+      "mode": "chain",
+      "parent": "af_dec_layer",
+      "source_evidence": [
+        "E007",
+        "E012"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "trend"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_dec_decomp3_mean",
+            "port": "in",
+            "edge": "af_dec_decomp3:in->af_dec_decomp3_mean:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_dec_decomp3_split",
+            "port": "out",
+            "edge": "af_dec_decomp3_split:out->af_dec_decomp3:out:boundary"
+          },
+          "trend": {
+            "node": "af_dec_decomp3_mean",
+            "port": "out",
+            "edge": "af_dec_decomp3_mean:out->af_dec_decomp3:trend:output_binding"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_dec_decomp3_mean",
+      "label": "Moving average",
+      "kind": "decomposition",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::moving_avg.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [
+        "Replicate endpoints; window=25"
+      ],
+      "parent": "af_dec_decomp3",
+      "source_evidence": [
+        "E010"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_decomp3_split",
+      "label": "Seasonal = x - mean",
+      "kind": "decomposition",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::series_decomp.forward"
+      ],
+      "shape": "seasonal: B,T,D",
+      "detail": [
+        "Original x retained in block",
+        "Trend=mean; separate side output"
+      ],
+      "parent": "af_dec_decomp3",
+      "source_evidence": [
+        "E012"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "side"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_trend_update",
+      "label": "Trend update; carry seasonal",
+      "kind": "mixing",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::DecoderLayer.forward",
+        "Autoformer-main/layers/Autoformer_EncDec.py::Decoder.forward"
+      ],
+      "shape": "(seasonal[B,T,D], trend[B,T,C])",
+      "detail": [
+        "Sum trend1 + trend2 + trend3",
+        "Circular Conv1d: D -> C, k=3",
+        "trend += projected sum; seasonal bypass"
+      ],
+      "param_identity": "decoder.layers[0].projection",
+      "parent": "af_dec_layer",
+      "source_evidence": [
+        "E007",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "initial_trend",
+        "trend1",
+        "trend2",
+        "trend3"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_final_parts",
+      "label": "Seasonal and trend outputs",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::Decoder.forward"
+      ],
+      "shape": "(seasonal[B,T,C], trend[B,T,C])",
+      "detail": [],
+      "dispatch": true,
+      "mode": "parallel",
+      "parent": "af_model",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "seasonal",
+        "item[0]",
+        "trend",
+        "item[1]"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_seasonal_output",
+      "label": "Seasonal forecast",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::Decoder.forward"
+      ],
+      "shape": "B,T,C",
+      "detail": [],
+      "input_selector": "seasonal",
+      "mode": "chain",
+      "parent": "af_final_parts",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_dec_norm",
+            "port": "in",
+            "edge": "af_seasonal_output:in->af_dec_norm:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_seasonal_projection",
+            "port": "out",
+            "edge": "af_seasonal_projection:out->af_seasonal_output:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_dec_norm",
+      "label": "Seasonal LayerNorm",
+      "kind": "group",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::my_Layernorm.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [],
+      "mode": "chain",
+      "parent": "af_seasonal_output",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {
+          "in": {
+            "node": "af_dec_norm_ln",
+            "port": "in",
+            "edge": "af_dec_norm:in->af_dec_norm_ln:in:boundary"
+          }
+        },
+        "outputs": {
+          "out": {
+            "node": "af_dec_norm_center",
+            "port": "out",
+            "edge": "af_dec_norm_center:out->af_dec_norm:out:boundary"
+          }
+        }
+      }
+    },
+    {
+      "id": "af_dec_norm_ln",
+      "label": "LayerNorm over D",
+      "kind": "norm",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::my_Layernorm.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [],
+      "param_identity": "decoder.norm.layernorm",
+      "parent": "af_dec_norm",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_dec_norm_center",
+      "label": "Subtract time mean",
+      "kind": "norm",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::my_Layernorm.forward"
+      ],
+      "shape": "B,T,D",
+      "detail": [],
+      "parent": "af_dec_norm",
+      "source_evidence": [
+        "E011"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_seasonal_projection",
+      "label": "Linear: D -> C",
+      "kind": "linear",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.__init__",
+        "Autoformer-main/layers/Autoformer_EncDec.py::Decoder.forward"
+      ],
+      "shape": "B,T,C",
+      "detail": [],
+      "param_identity": "decoder.projection",
+      "parent": "af_seasonal_output",
+      "source_evidence": [
+        "E017",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_trend_output",
+      "label": "Accumulated trend",
+      "kind": "tensor",
+      "source": [
+        "Autoformer-main/layers/Autoformer_EncDec.py::Decoder.forward"
+      ],
+      "shape": "B,T,C",
+      "detail": [
+        "Select trend from state tuple"
+      ],
+      "input_selector": "trend",
+      "parent": "af_final_parts",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_sum",
+      "label": "Seasonal + trend",
+      "kind": "mixing",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.forward"
+      ],
+      "shape": "B,T,C",
+      "detail": [],
+      "parent": "af_model",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_slice",
+      "label": "Keep last pred_len",
+      "kind": "tensor",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.forward"
+      ],
+      "shape": "B,P,C",
+      "detail": [],
+      "parent": "af_model",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_output",
+      "label": "Forecast",
+      "kind": "output",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.forward"
+      ],
+      "shape": "B,P,C",
+      "detail": [],
+      "parent": "af_model",
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_x_mark_enc",
+      "label": "Encoder time marks",
+      "kind": "input",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.forward"
+      ],
+      "shape": "B,L,4",
+      "detail": [
+        "External x_mark_enc; hourly timeF"
+      ],
+      "parent": null,
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    },
+    {
+      "id": "af_x_mark_dec",
+      "label": "Decoder time marks",
+      "kind": "input",
+      "source": [
+        "Autoformer-main/models/Autoformer.py::Model.forward"
+      ],
+      "shape": "B,T,4",
+      "detail": [
+        "External x_mark_dec; hourly timeF"
+      ],
+      "parent": null,
+      "source_evidence": [
+        "E018"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ],
+      "port_bindings": {
+        "inputs": {},
+        "outputs": {}
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "af_enc_embedding_terms:value->af_enc_embedding_value:in:dispatch",
+      "src": "af_enc_embedding_terms",
+      "dst": "af_enc_embedding_value",
+      "src_port": "value",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "af_enc_embedding_value:out->af_enc_embedding_terms:item[0]:tuple_collection",
+      "src": "af_enc_embedding_value",
+      "dst": "af_enc_embedding_terms",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "af_enc_embedding_terms:x_mark_enc->af_enc_embedding_time:in:dispatch",
+      "src": "af_enc_embedding_terms",
+      "dst": "af_enc_embedding_time",
+      "src_port": "x_mark_enc",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "af_enc_embedding_time:out->af_enc_embedding_terms:item[1]:tuple_collection",
+      "src": "af_enc_embedding_time",
+      "dst": "af_enc_embedding_terms",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "af_enc_embedding:in->af_enc_embedding_terms:in:boundary",
+      "src": "af_enc_embedding",
+      "dst": "af_enc_embedding_terms",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_enc_embedding_terms:out->af_enc_embedding_sum:in:tensor",
+      "src": "af_enc_embedding_terms",
+      "dst": "af_enc_embedding_sum",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_enc_embedding_sum:out->af_enc_embedding:out:boundary",
+      "src": "af_enc_embedding_sum",
+      "dst": "af_enc_embedding",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_enc_ac_corr:in->af_enc_ac_align:in:boundary",
+      "src": "af_enc_ac_corr",
+      "dst": "af_enc_ac_align",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_enc_ac_align:out->af_enc_ac_fft:in:tensor",
+      "src": "af_enc_ac_align",
+      "dst": "af_enc_ac_fft",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_enc_ac_fft:out->af_enc_ac_irfft:in:tensor",
+      "src": "af_enc_ac_fft",
+      "dst": "af_enc_ac_irfft",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_enc_ac_irfft:out->af_enc_ac_corr:out:boundary",
+      "src": "af_enc_ac_irfft",
+      "dst": "af_enc_ac_corr",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_enc_ac_operands:Q,K->af_enc_ac_corr:in:dispatch",
+      "src": "af_enc_ac_operands",
+      "dst": "af_enc_ac_corr",
+      "src_port": "Q,K",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "af_enc_ac_corr:out->af_enc_ac_operands:item[0]:tuple_collection",
+      "src": "af_enc_ac_corr",
+      "dst": "af_enc_ac_operands",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "af_enc_ac_operands:V->af_enc_ac_values:in:dispatch",
+      "src": "af_enc_ac_operands",
+      "dst": "af_enc_ac_values",
+      "src_port": "V",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "af_enc_ac_values:out->af_enc_ac_operands:item[1]:tuple_collection",
+      "src": "af_enc_ac_values",
+      "dst": "af_enc_ac_operands",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "af_enc_ac:in->af_enc_ac_qkv:in:boundary",
+      "src": "af_enc_ac",
+      "dst": "af_enc_ac_qkv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_enc_ac_qkv:out->af_enc_ac_operands:in:tensor",
+      "src": "af_enc_ac_qkv",
+      "dst": "af_enc_ac_operands",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_enc_ac_operands:out->af_enc_ac_delay:in:tensor",
+      "src": "af_enc_ac_operands",
+      "dst": "af_enc_ac_delay",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_enc_ac_delay:out->af_enc_ac_out:in:tensor",
+      "src": "af_enc_ac_delay",
+      "dst": "af_enc_ac_out",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_enc_ac_out:out->af_enc_ac:out:boundary",
+      "src": "af_enc_ac_out",
+      "dst": "af_enc_ac",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_enc_ac_residual:in->af_enc_ac:in:boundary",
+      "src": "af_enc_ac_residual",
+      "dst": "af_enc_ac",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_enc_ac:out->af_enc_ac_dropout:in:tensor",
+      "src": "af_enc_ac",
+      "dst": "af_enc_ac_dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_enc_ac_dropout:out->af_enc_ac_add:in:tensor",
+      "src": "af_enc_ac_dropout",
+      "dst": "af_enc_ac_add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_enc_ac_add:out->af_enc_ac_residual:out:boundary",
+      "src": "af_enc_ac_add",
+      "dst": "af_enc_ac_residual",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_enc_ac_residual:in->af_enc_ac_add:side:residual",
+      "src": "af_enc_ac_residual",
+      "dst": "af_enc_ac_add",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "residual"
+    },
+    {
+      "id": "af_enc_decomp1:in->af_enc_decomp1_mean:in:boundary",
+      "src": "af_enc_decomp1",
+      "dst": "af_enc_decomp1_mean",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_enc_decomp1_mean:out->af_enc_decomp1_split:in:tensor",
+      "src": "af_enc_decomp1_mean",
+      "dst": "af_enc_decomp1_split",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_enc_decomp1_split:out->af_enc_decomp1:out:boundary",
+      "src": "af_enc_decomp1_split",
+      "dst": "af_enc_decomp1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_enc_decomp1:in->af_enc_decomp1_split:side:retained_input",
+      "src": "af_enc_decomp1",
+      "dst": "af_enc_decomp1_split",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "retained_input"
+    },
+    {
+      "id": "af_enc_decomp1_mean:out->af_enc_decomp1:trend:output_binding",
+      "src": "af_enc_decomp1_mean",
+      "dst": "af_enc_decomp1",
+      "src_port": "out",
+      "dst_port": "trend",
+      "role": "output_binding"
+    },
+    {
+      "id": "af_enc_ffn:in->af_enc_ffn_conv1:in:boundary",
+      "src": "af_enc_ffn",
+      "dst": "af_enc_ffn_conv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_enc_ffn_conv1:out->af_enc_ffn_act:in:tensor",
+      "src": "af_enc_ffn_conv1",
+      "dst": "af_enc_ffn_act",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_enc_ffn_act:out->af_enc_ffn_conv2:in:tensor",
+      "src": "af_enc_ffn_act",
+      "dst": "af_enc_ffn_conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_enc_ffn_conv2:out->af_enc_ffn_add:in:tensor",
+      "src": "af_enc_ffn_conv2",
+      "dst": "af_enc_ffn_add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_enc_ffn_add:out->af_enc_ffn:out:boundary",
+      "src": "af_enc_ffn_add",
+      "dst": "af_enc_ffn",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_enc_ffn:in->af_enc_ffn_add:side:residual",
+      "src": "af_enc_ffn",
+      "dst": "af_enc_ffn_add",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "residual"
+    },
+    {
+      "id": "af_enc_decomp2:in->af_enc_decomp2_mean:in:boundary",
+      "src": "af_enc_decomp2",
+      "dst": "af_enc_decomp2_mean",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_enc_decomp2_mean:out->af_enc_decomp2_split:in:tensor",
+      "src": "af_enc_decomp2_mean",
+      "dst": "af_enc_decomp2_split",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_enc_decomp2_split:out->af_enc_decomp2:out:boundary",
+      "src": "af_enc_decomp2_split",
+      "dst": "af_enc_decomp2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_enc_decomp2:in->af_enc_decomp2_split:side:retained_input",
+      "src": "af_enc_decomp2",
+      "dst": "af_enc_decomp2_split",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "retained_input"
+    },
+    {
+      "id": "af_enc_decomp2_mean:out->af_enc_decomp2:trend:output_binding",
+      "src": "af_enc_decomp2_mean",
+      "dst": "af_enc_decomp2",
+      "src_port": "out",
+      "dst_port": "trend",
+      "role": "output_binding"
+    },
+    {
+      "id": "af_enc_layer:in->af_enc_ac_residual:in:boundary",
+      "src": "af_enc_layer",
+      "dst": "af_enc_ac_residual",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_enc_ac_residual:out->af_enc_decomp1:in:seasonal",
+      "src": "af_enc_ac_residual",
+      "dst": "af_enc_decomp1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "seasonal"
+    },
+    {
+      "id": "af_enc_decomp1:out->af_enc_ffn:in:seasonal",
+      "src": "af_enc_decomp1",
+      "dst": "af_enc_ffn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "seasonal"
+    },
+    {
+      "id": "af_enc_ffn:out->af_enc_decomp2:in:seasonal",
+      "src": "af_enc_ffn",
+      "dst": "af_enc_decomp2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "seasonal"
+    },
+    {
+      "id": "af_enc_decomp2:out->af_enc_layer:out:boundary",
+      "src": "af_enc_decomp2",
+      "dst": "af_enc_layer",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_memory:in->af_memory_ln:in:boundary",
+      "src": "af_memory",
+      "dst": "af_memory_ln",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_memory_ln:out->af_memory_center:in:tensor",
+      "src": "af_memory_ln",
+      "dst": "af_memory_center",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_memory_center:out->af_memory:out:boundary",
+      "src": "af_memory_center",
+      "dst": "af_memory",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_encoder:in->af_enc_embedding:in:boundary",
+      "src": "af_encoder",
+      "dst": "af_enc_embedding",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_enc_embedding:out->af_enc_layer:in:tensor",
+      "src": "af_enc_embedding",
+      "dst": "af_enc_layer",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_enc_layer:out->af_memory:in:tensor",
+      "src": "af_enc_layer",
+      "dst": "af_memory",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_memory:out->af_encoder:out:boundary",
+      "src": "af_memory",
+      "dst": "af_encoder",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_embedding_terms:value->af_dec_embedding_value:in:dispatch",
+      "src": "af_dec_embedding_terms",
+      "dst": "af_dec_embedding_value",
+      "src_port": "value",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "af_dec_embedding_value:out->af_dec_embedding_terms:item[0]:tuple_collection",
+      "src": "af_dec_embedding_value",
+      "dst": "af_dec_embedding_terms",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "af_dec_embedding_terms:x_mark_dec->af_dec_embedding_time:in:dispatch",
+      "src": "af_dec_embedding_terms",
+      "dst": "af_dec_embedding_time",
+      "src_port": "x_mark_dec",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "af_dec_embedding_time:out->af_dec_embedding_terms:item[1]:tuple_collection",
+      "src": "af_dec_embedding_time",
+      "dst": "af_dec_embedding_terms",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "af_dec_embedding:in->af_dec_embedding_terms:in:boundary",
+      "src": "af_dec_embedding",
+      "dst": "af_dec_embedding_terms",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_embedding_terms:out->af_dec_embedding_sum:in:tensor",
+      "src": "af_dec_embedding_terms",
+      "dst": "af_dec_embedding_sum",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_embedding_sum:out->af_dec_embedding:out:boundary",
+      "src": "af_dec_embedding_sum",
+      "dst": "af_dec_embedding",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_seasonal_seed:in->af_seasonal_init:in:boundary",
+      "src": "af_seasonal_seed",
+      "dst": "af_seasonal_init",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_seasonal_init:out->af_dec_embedding:in:tensor",
+      "src": "af_seasonal_init",
+      "dst": "af_dec_embedding",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_embedding:out->af_seasonal_seed:out:boundary",
+      "src": "af_dec_embedding",
+      "dst": "af_seasonal_seed",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_init_states:seasonal->af_seasonal_seed:in:dispatch",
+      "src": "af_init_states",
+      "dst": "af_seasonal_seed",
+      "src_port": "seasonal",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "af_seasonal_seed:out->af_init_states:item[0]:tuple_collection",
+      "src": "af_seasonal_seed",
+      "dst": "af_init_states",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "af_init_states:trend, mean(x_enc)->af_trend_init:in:dispatch",
+      "src": "af_init_states",
+      "dst": "af_trend_init",
+      "src_port": "trend, mean(x_enc)",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "af_trend_init:out->af_init_states:item[1]:tuple_collection",
+      "src": "af_trend_init",
+      "dst": "af_init_states",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "af_decoder_init:in->af_init_decomp:in:boundary",
+      "src": "af_decoder_init",
+      "dst": "af_init_decomp",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_init_decomp:out->af_init_states:in:tensor",
+      "src": "af_init_decomp",
+      "dst": "af_init_states",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_init_states:out->af_decoder_init:out:boundary",
+      "src": "af_init_states",
+      "dst": "af_decoder_init",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_prepare:in->af_encoder:in:fork",
+      "src": "af_prepare",
+      "dst": "af_encoder",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "af_encoder:out->af_prepare:item[0]:tuple_collection",
+      "src": "af_encoder",
+      "dst": "af_prepare",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "af_prepare:in->af_decoder_init:in:fork",
+      "src": "af_prepare",
+      "dst": "af_decoder_init",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "af_decoder_init:out->af_prepare:item[1]:tuple_collection",
+      "src": "af_decoder_init",
+      "dst": "af_prepare",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "af_dec_self_corr:in->af_dec_self_align:in:boundary",
+      "src": "af_dec_self_corr",
+      "dst": "af_dec_self_align",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_self_align:out->af_dec_self_fft:in:tensor",
+      "src": "af_dec_self_align",
+      "dst": "af_dec_self_fft",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_self_fft:out->af_dec_self_irfft:in:tensor",
+      "src": "af_dec_self_fft",
+      "dst": "af_dec_self_irfft",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_self_irfft:out->af_dec_self_corr:out:boundary",
+      "src": "af_dec_self_irfft",
+      "dst": "af_dec_self_corr",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_self_operands:Q,K->af_dec_self_corr:in:dispatch",
+      "src": "af_dec_self_operands",
+      "dst": "af_dec_self_corr",
+      "src_port": "Q,K",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "af_dec_self_corr:out->af_dec_self_operands:item[0]:tuple_collection",
+      "src": "af_dec_self_corr",
+      "dst": "af_dec_self_operands",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "af_dec_self_operands:V->af_dec_self_values:in:dispatch",
+      "src": "af_dec_self_operands",
+      "dst": "af_dec_self_values",
+      "src_port": "V",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "af_dec_self_values:out->af_dec_self_operands:item[1]:tuple_collection",
+      "src": "af_dec_self_values",
+      "dst": "af_dec_self_operands",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "af_dec_self:in->af_dec_self_qkv:in:boundary",
+      "src": "af_dec_self",
+      "dst": "af_dec_self_qkv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_self_qkv:out->af_dec_self_operands:in:tensor",
+      "src": "af_dec_self_qkv",
+      "dst": "af_dec_self_operands",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_self_operands:out->af_dec_self_delay:in:tensor",
+      "src": "af_dec_self_operands",
+      "dst": "af_dec_self_delay",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_self_delay:out->af_dec_self_out:in:tensor",
+      "src": "af_dec_self_delay",
+      "dst": "af_dec_self_out",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_self_out:out->af_dec_self:out:boundary",
+      "src": "af_dec_self_out",
+      "dst": "af_dec_self",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_self_residual:in->af_dec_self:in:boundary",
+      "src": "af_dec_self_residual",
+      "dst": "af_dec_self",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_self:out->af_dec_self_dropout:in:tensor",
+      "src": "af_dec_self",
+      "dst": "af_dec_self_dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_self_dropout:out->af_dec_self_add:in:tensor",
+      "src": "af_dec_self_dropout",
+      "dst": "af_dec_self_add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_self_add:out->af_dec_self_residual:out:boundary",
+      "src": "af_dec_self_add",
+      "dst": "af_dec_self_residual",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_self_residual:in->af_dec_self_add:side:residual",
+      "src": "af_dec_self_residual",
+      "dst": "af_dec_self_add",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "residual"
+    },
+    {
+      "id": "af_dec_decomp1:in->af_dec_decomp1_mean:in:boundary",
+      "src": "af_dec_decomp1",
+      "dst": "af_dec_decomp1_mean",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_decomp1_mean:out->af_dec_decomp1_split:in:tensor",
+      "src": "af_dec_decomp1_mean",
+      "dst": "af_dec_decomp1_split",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_decomp1_split:out->af_dec_decomp1:out:boundary",
+      "src": "af_dec_decomp1_split",
+      "dst": "af_dec_decomp1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_decomp1:in->af_dec_decomp1_split:side:retained_input",
+      "src": "af_dec_decomp1",
+      "dst": "af_dec_decomp1_split",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "retained_input"
+    },
+    {
+      "id": "af_dec_decomp1_mean:out->af_dec_decomp1:trend:output_binding",
+      "src": "af_dec_decomp1_mean",
+      "dst": "af_dec_decomp1",
+      "src_port": "out",
+      "dst_port": "trend",
+      "role": "output_binding"
+    },
+    {
+      "id": "af_dec_cross_corr:in->af_dec_cross_align:in:boundary",
+      "src": "af_dec_cross_corr",
+      "dst": "af_dec_cross_align",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_cross_align:out->af_dec_cross_fft:in:tensor",
+      "src": "af_dec_cross_align",
+      "dst": "af_dec_cross_fft",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_cross_fft:out->af_dec_cross_irfft:in:tensor",
+      "src": "af_dec_cross_fft",
+      "dst": "af_dec_cross_irfft",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_cross_irfft:out->af_dec_cross_corr:out:boundary",
+      "src": "af_dec_cross_irfft",
+      "dst": "af_dec_cross_corr",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_cross_operands:Q,K->af_dec_cross_corr:in:dispatch",
+      "src": "af_dec_cross_operands",
+      "dst": "af_dec_cross_corr",
+      "src_port": "Q,K",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "af_dec_cross_corr:out->af_dec_cross_operands:item[0]:tuple_collection",
+      "src": "af_dec_cross_corr",
+      "dst": "af_dec_cross_operands",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "af_dec_cross_operands:V->af_dec_cross_values:in:dispatch",
+      "src": "af_dec_cross_operands",
+      "dst": "af_dec_cross_values",
+      "src_port": "V",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "af_dec_cross_values:out->af_dec_cross_operands:item[1]:tuple_collection",
+      "src": "af_dec_cross_values",
+      "dst": "af_dec_cross_operands",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "af_dec_cross:in->af_dec_cross_qkv:in:boundary",
+      "src": "af_dec_cross",
+      "dst": "af_dec_cross_qkv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_cross_qkv:out->af_dec_cross_operands:in:tensor",
+      "src": "af_dec_cross_qkv",
+      "dst": "af_dec_cross_operands",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_cross_operands:out->af_dec_cross_delay:in:tensor",
+      "src": "af_dec_cross_operands",
+      "dst": "af_dec_cross_delay",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_cross_delay:out->af_dec_cross_out:in:tensor",
+      "src": "af_dec_cross_delay",
+      "dst": "af_dec_cross_out",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_cross_out:out->af_dec_cross:out:boundary",
+      "src": "af_dec_cross_out",
+      "dst": "af_dec_cross",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_cross_residual:in->af_dec_cross:in:boundary",
+      "src": "af_dec_cross_residual",
+      "dst": "af_dec_cross",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_cross:out->af_dec_cross_dropout:in:tensor",
+      "src": "af_dec_cross",
+      "dst": "af_dec_cross_dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_cross_dropout:out->af_dec_cross_add:in:tensor",
+      "src": "af_dec_cross_dropout",
+      "dst": "af_dec_cross_add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_cross_add:out->af_dec_cross_residual:out:boundary",
+      "src": "af_dec_cross_add",
+      "dst": "af_dec_cross_residual",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_cross_residual:in->af_dec_cross_add:side:residual",
+      "src": "af_dec_cross_residual",
+      "dst": "af_dec_cross_add",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "residual"
+    },
+    {
+      "id": "af_dec_decomp2:in->af_dec_decomp2_mean:in:boundary",
+      "src": "af_dec_decomp2",
+      "dst": "af_dec_decomp2_mean",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_decomp2_mean:out->af_dec_decomp2_split:in:tensor",
+      "src": "af_dec_decomp2_mean",
+      "dst": "af_dec_decomp2_split",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_decomp2_split:out->af_dec_decomp2:out:boundary",
+      "src": "af_dec_decomp2_split",
+      "dst": "af_dec_decomp2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_decomp2:in->af_dec_decomp2_split:side:retained_input",
+      "src": "af_dec_decomp2",
+      "dst": "af_dec_decomp2_split",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "retained_input"
+    },
+    {
+      "id": "af_dec_decomp2_mean:out->af_dec_decomp2:trend:output_binding",
+      "src": "af_dec_decomp2_mean",
+      "dst": "af_dec_decomp2",
+      "src_port": "out",
+      "dst_port": "trend",
+      "role": "output_binding"
+    },
+    {
+      "id": "af_dec_ffn:in->af_dec_ffn_conv1:in:boundary",
+      "src": "af_dec_ffn",
+      "dst": "af_dec_ffn_conv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_ffn_conv1:out->af_dec_ffn_act:in:tensor",
+      "src": "af_dec_ffn_conv1",
+      "dst": "af_dec_ffn_act",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_ffn_act:out->af_dec_ffn_conv2:in:tensor",
+      "src": "af_dec_ffn_act",
+      "dst": "af_dec_ffn_conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_ffn_conv2:out->af_dec_ffn_add:in:tensor",
+      "src": "af_dec_ffn_conv2",
+      "dst": "af_dec_ffn_add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_ffn_add:out->af_dec_ffn:out:boundary",
+      "src": "af_dec_ffn_add",
+      "dst": "af_dec_ffn",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_ffn:in->af_dec_ffn_add:side:residual",
+      "src": "af_dec_ffn",
+      "dst": "af_dec_ffn_add",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "residual"
+    },
+    {
+      "id": "af_dec_decomp3:in->af_dec_decomp3_mean:in:boundary",
+      "src": "af_dec_decomp3",
+      "dst": "af_dec_decomp3_mean",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_decomp3_mean:out->af_dec_decomp3_split:in:tensor",
+      "src": "af_dec_decomp3_mean",
+      "dst": "af_dec_decomp3_split",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_decomp3_split:out->af_dec_decomp3:out:boundary",
+      "src": "af_dec_decomp3_split",
+      "dst": "af_dec_decomp3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_decomp3:in->af_dec_decomp3_split:side:retained_input",
+      "src": "af_dec_decomp3",
+      "dst": "af_dec_decomp3_split",
+      "src_port": "in",
+      "dst_port": "side",
+      "role": "retained_input"
+    },
+    {
+      "id": "af_dec_decomp3_mean:out->af_dec_decomp3:trend:output_binding",
+      "src": "af_dec_decomp3_mean",
+      "dst": "af_dec_decomp3",
+      "src_port": "out",
+      "dst_port": "trend",
+      "role": "output_binding"
+    },
+    {
+      "id": "af_dec_layer:in->af_dec_self_residual:in:boundary",
+      "src": "af_dec_layer",
+      "dst": "af_dec_self_residual",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_self_residual:out->af_dec_decomp1:in:seasonal",
+      "src": "af_dec_self_residual",
+      "dst": "af_dec_decomp1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "seasonal"
+    },
+    {
+      "id": "af_dec_decomp1:out->af_dec_cross_residual:in:seasonal",
+      "src": "af_dec_decomp1",
+      "dst": "af_dec_cross_residual",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "seasonal"
+    },
+    {
+      "id": "af_dec_cross_residual:out->af_dec_decomp2:in:seasonal",
+      "src": "af_dec_cross_residual",
+      "dst": "af_dec_decomp2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "seasonal"
+    },
+    {
+      "id": "af_dec_decomp2:out->af_dec_ffn:in:seasonal",
+      "src": "af_dec_decomp2",
+      "dst": "af_dec_ffn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "seasonal"
+    },
+    {
+      "id": "af_dec_ffn:out->af_dec_decomp3:in:seasonal",
+      "src": "af_dec_ffn",
+      "dst": "af_dec_decomp3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "seasonal"
+    },
+    {
+      "id": "af_dec_decomp3:out->af_trend_update:in:seasonal",
+      "src": "af_dec_decomp3",
+      "dst": "af_trend_update",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "seasonal"
+    },
+    {
+      "id": "af_trend_update:out->af_dec_layer:out:boundary",
+      "src": "af_trend_update",
+      "dst": "af_dec_layer",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_norm:in->af_dec_norm_ln:in:boundary",
+      "src": "af_dec_norm",
+      "dst": "af_dec_norm_ln",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_norm_ln:out->af_dec_norm_center:in:tensor",
+      "src": "af_dec_norm_ln",
+      "dst": "af_dec_norm_center",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_norm_center:out->af_dec_norm:out:boundary",
+      "src": "af_dec_norm_center",
+      "dst": "af_dec_norm",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_seasonal_output:in->af_dec_norm:in:boundary",
+      "src": "af_seasonal_output",
+      "dst": "af_dec_norm",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_dec_norm:out->af_seasonal_projection:in:tensor",
+      "src": "af_dec_norm",
+      "dst": "af_seasonal_projection",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_seasonal_projection:out->af_seasonal_output:out:boundary",
+      "src": "af_seasonal_projection",
+      "dst": "af_seasonal_output",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_final_parts:seasonal->af_seasonal_output:in:dispatch",
+      "src": "af_final_parts",
+      "dst": "af_seasonal_output",
+      "src_port": "seasonal",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "af_seasonal_output:out->af_final_parts:item[0]:tuple_collection",
+      "src": "af_seasonal_output",
+      "dst": "af_final_parts",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "af_final_parts:trend->af_trend_output:in:dispatch",
+      "src": "af_final_parts",
+      "dst": "af_trend_output",
+      "src_port": "trend",
+      "dst_port": "in",
+      "role": "dispatch"
+    },
+    {
+      "id": "af_trend_output:out->af_final_parts:item[1]:tuple_collection",
+      "src": "af_trend_output",
+      "dst": "af_final_parts",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "af_model:in->af_input:in:boundary",
+      "src": "af_model",
+      "dst": "af_input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "af_input:out->af_prepare:in:tensor",
+      "src": "af_input",
+      "dst": "af_prepare",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_prepare:out->af_dec_layer:in:tensor",
+      "src": "af_prepare",
+      "dst": "af_dec_layer",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_dec_layer:out->af_final_parts:in:tensor",
+      "src": "af_dec_layer",
+      "dst": "af_final_parts",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_final_parts:out->af_sum:in:tensor",
+      "src": "af_final_parts",
+      "dst": "af_sum",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_sum:out->af_slice:in:tensor",
+      "src": "af_sum",
+      "dst": "af_slice",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_slice:out->af_output:in:tensor",
+      "src": "af_slice",
+      "dst": "af_output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "af_output:out->af_model:out:boundary",
+      "src": "af_output",
+      "dst": "af_model",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "af_x_mark_enc:out->af_enc_embedding_time:side:covariate",
+      "src": "af_x_mark_enc",
+      "dst": "af_enc_embedding_time",
+      "src_port": "out",
+      "dst_port": "side",
+      "role": "covariate"
+    },
+    {
+      "id": "af_x_mark_dec:out->af_dec_embedding_time:side:covariate",
+      "src": "af_x_mark_dec",
+      "dst": "af_dec_embedding_time",
+      "src_port": "out",
+      "dst_port": "side",
+      "role": "covariate"
+    },
+    {
+      "id": "af_memory:out->af_dec_cross_qkv:memory_KV:memory",
+      "src": "af_memory",
+      "dst": "af_dec_cross_qkv",
+      "src_port": "out",
+      "dst_port": "memory_KV",
+      "role": "memory"
+    },
+    {
+      "id": "af_trend_init:out->af_trend_update:initial_trend:trend",
+      "src": "af_trend_init",
+      "dst": "af_trend_update",
+      "src_port": "out",
+      "dst_port": "initial_trend",
+      "role": "trend"
+    },
+    {
+      "id": "af_dec_decomp1:trend->af_trend_update:trend1:trend",
+      "src": "af_dec_decomp1",
+      "dst": "af_trend_update",
+      "src_port": "trend",
+      "dst_port": "trend1",
+      "role": "trend"
+    },
+    {
+      "id": "af_dec_decomp2:trend->af_trend_update:trend2:trend",
+      "src": "af_dec_decomp2",
+      "dst": "af_trend_update",
+      "src_port": "trend",
+      "dst_port": "trend2",
+      "role": "trend"
+    },
+    {
+      "id": "af_dec_decomp3:trend->af_trend_update:trend3:trend",
+      "src": "af_dec_decomp3",
+      "dst": "af_trend_update",
+      "src_port": "trend",
+      "dst_port": "trend3",
+      "role": "trend"
+    }
+  ],
+  "facts": [
+    "Reviewed handwritten adapter; AST evidence does not automatically recover semantics.",
+    "DataEmbedding_wo_pos sums a circular Conv1d value embedding and time feature embedding; no positional encoding.",
+    "Encoder has two residual-plus-decomposition stages per layer; discarded trends never feed the decoder.",
+    "Decoder uses self AutoCorrelation, cross AutoCorrelation, and FFN with three decomposition stages.",
+    "Cross Q is decoder seasonal state; cross K/V are final normalized encoder memory.",
+    "Decoder trend1/2/3 are summed, Conv1d-projected to C, and added to the carried raw-channel trend.",
+    "Autocorrelation uses FFT lag correlation and delay-weighted V aggregation, not dot-product attention.",
+    "Inference picks delays per sample; training uses batch-shared delay indices and a different aggregation method.",
+    "mask_flag and attn_mask are accepted but not applied in the supplied AutoCorrelation.forward.",
+    "Forecast is the final pred_len slice of seasonal projection plus accumulated trend.",
+    "Repeated encoder layers are distinct modules with independent parameters; same color does not mean weight sharing."
+  ],
+  "corrections": [
+    "Replace the reference image's ordinary Add & Norm blocks by residual + progressive series decomposition.",
+    "Remove positional encoding: it is constructed in DataEmbedding_wo_pos but unused by forward.",
+    "Replace Linear token embedding with kernel-3 circular Conv1d; preserve the distinct time-feature Linear.",
+    "Remove causal-mask claims for decoder AutoCorrelation; the supplied implementation does not apply masks.",
+    "Move raw-series decomposition to decoder initialization; encoder consumes raw x_enc through embedding.",
+    "Draw encoder self correlation before its FFN, and decoder self -> cross -> FFN in actual source order.",
+    "Show three decoder trend contributions and accumulation separately from the seasonal forecast projection.",
+    "Replace a right-shifted x_dec value path by x_enc-derived seasonal/trend initialization."
+  ],
+  "semantics": "reviewed static adapter; selected profile; boundary and tuple edges explicit"
+}

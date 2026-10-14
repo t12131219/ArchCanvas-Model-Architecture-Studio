@@ -1,0 +1,428 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "glow_invconv",
+  "profile": {
+    "channels": 8,
+    "parameters": [
+      "weight"
+    ],
+    "buffers": [],
+    "lu": false,
+    "kernel_size": [
+      1,
+      1
+    ],
+    "logdet_shape": "scalar",
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "InvConv2d only; initialization is state provenance, not a repeated forward QR/LU.",
+    "source_contracts": [
+      [
+        "InvConv2d.forward",
+        "height * width * torch.slogdet(self.weight.squeeze().double())[1].float()"
+      ],
+      [
+        "InvConv2d.forward",
+        "F.conv2d(input, self.weight)"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "rosinality/glow-pytorch",
+    "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+    "snapshot": "1d5cf48ba47a5ecf7ea7059a37c9d1584a95871f52d5022f76b59cc51138d2ce"
+  },
+  "nodes": [
+    {
+      "id": "glow_invconv.root",
+      "label": "Direct invertible 1x1 convolution",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::InvConv2d.__init__",
+        "glow-modules/model.py::InvConv2d.forward",
+        "glow-modules/model.py::InvConv2d.reverse"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "glow_invconv.x",
+          "glow_invconv.p"
+        ],
+        [
+          "glow_invconv.body"
+        ],
+        [
+          "glow_invconv.y",
+          "glow_invconv.ld"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv.x",
+      "label": "Input x",
+      "kind": "input",
+      "source": [
+        "glow-modules/model.py::InvConv2d.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "parent": "glow_invconv.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "glow_invconv.p",
+      "label": "Weight state",
+      "kind": "input",
+      "source": [
+        "glow-modules/model.py::InvConv2d.__init__"
+      ],
+      "shape": "C=8",
+      "detail": [],
+      "parameters": [
+        "weight"
+      ],
+      "buffers": [],
+      "parent": "glow_invconv.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv.body",
+      "label": "Direct invertible 1x1 convolution module",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::InvConv2d.__init__",
+        "glow-modules/model.py::InvConv2d.forward",
+        "glow-modules/model.py::InvConv2d.reverse"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "glow_invconv.weight"
+        ],
+        [
+          "glow_invconv.conv",
+          "glow_invconv.det"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "glow_invconv.root",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv.weight",
+      "label": "Weight materialization",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::InvConv2d.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "glow_invconv.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv.weight_read",
+      "label": "Read QR-initialized Parameter W",
+      "kind": "tensor",
+      "source": [
+        "glow-modules/model.py::InvConv2d.__init__"
+      ],
+      "shape": "[8,8,1,1]",
+      "detail": [],
+      "parameters": [
+        "weight"
+      ],
+      "initialization": "QR only at construction",
+      "parent": "glow_invconv.weight",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv.conv",
+      "label": "Channel mixing",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::InvConv2d.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "glow_invconv.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv.convop",
+      "label": "F.conv2d / 1x1",
+      "kind": "conv2d",
+      "source": [
+        "glow-modules/model.py::InvConv2d.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "kernel_size": [
+        1,
+        1
+      ],
+      "bias": false,
+      "expression": "F.conv2d(input, self.weight)",
+      "parent": "glow_invconv.conv",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv.det",
+      "label": "Determinant branch",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::InvConv2d.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "glow_invconv.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv.detop",
+      "label": "H*W * slogdet(W)",
+      "kind": "density",
+      "source": [
+        "glow-modules/model.py::InvConv2d.forward"
+      ],
+      "shape": "scalar",
+      "detail": [],
+      "expression": "height * width * torch.slogdet(self.weight.squeeze().double())[1].float()",
+      "spatial_factor": 64,
+      "parent": "glow_invconv.det",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "glow_invconv.y",
+      "label": "Convolved y",
+      "kind": "output",
+      "source": [
+        "glow-modules/model.py::InvConv2d.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "parent": "glow_invconv.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv.ld",
+      "label": "Log determinant",
+      "kind": "output",
+      "source": [
+        "glow-modules/model.py::InvConv2d.forward"
+      ],
+      "shape": "scalar",
+      "detail": [],
+      "parent": "glow_invconv.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "glow_invconv.weight:in->glow_invconv.weight_read:in:boundary",
+      "src": "glow_invconv.weight",
+      "dst": "glow_invconv.weight_read",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_invconv.weight_read:out->glow_invconv.weight:out:boundary",
+      "src": "glow_invconv.weight_read",
+      "dst": "glow_invconv.weight",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_invconv.conv:in->glow_invconv.convop:in:boundary",
+      "src": "glow_invconv.conv",
+      "dst": "glow_invconv.convop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_invconv.convop:out->glow_invconv.conv:out:boundary",
+      "src": "glow_invconv.convop",
+      "dst": "glow_invconv.conv",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_invconv.det:in->glow_invconv.detop:in:boundary",
+      "src": "glow_invconv.det",
+      "dst": "glow_invconv.detop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_invconv.detop:out->glow_invconv.det:out:boundary",
+      "src": "glow_invconv.detop",
+      "dst": "glow_invconv.det",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_invconv.p:out->glow_invconv.weight:in:tensor",
+      "src": "glow_invconv.p",
+      "dst": "glow_invconv.weight",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_invconv.weight:out->glow_invconv.conv:in:weight",
+      "src": "glow_invconv.weight",
+      "dst": "glow_invconv.conv",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "weight"
+    },
+    {
+      "id": "glow_invconv.x:out->glow_invconv.conv:in:tensor",
+      "src": "glow_invconv.x",
+      "dst": "glow_invconv.conv",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_invconv.weight:out->glow_invconv.det:in:weight",
+      "src": "glow_invconv.weight",
+      "dst": "glow_invconv.det",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "weight"
+    },
+    {
+      "id": "glow_invconv.conv:out->glow_invconv.y:in:tensor",
+      "src": "glow_invconv.conv",
+      "dst": "glow_invconv.y",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_invconv.det:out->glow_invconv.ld:in:tensor",
+      "src": "glow_invconv.det",
+      "dst": "glow_invconv.ld",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_invconv.x:shape->glow_invconv.detop:shape:shape_dependency",
+      "src": "glow_invconv.x",
+      "dst": "glow_invconv.detop",
+      "src_port": "shape",
+      "dst_port": "shape",
+      "role": "shape_dependency"
+    }
+  ],
+  "facts": [
+    "The 1x1 weight is square and mixes channels at each pixel; determinant scales by H*W.",
+    "The learned weight is initialized with QR once. Forward uses slogdet in float64 then casts the logabsdet to float32.",
+    "Reverse uses an explicit matrix inverse, outside the selected forward view."
+  ],
+  "corrections": [
+    "No attention, spatial kernel3 or extra bias is present.",
+    "Do not count fixed LU buffers as learned parameters."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

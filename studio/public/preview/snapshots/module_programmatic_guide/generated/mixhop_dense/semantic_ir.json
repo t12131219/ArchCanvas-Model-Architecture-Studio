@@ -1,0 +1,388 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "mixhop_dense",
+  "profile": {
+    "in_channels": 12,
+    "out_channels": 4,
+    "iterations": 3,
+    "adjacency_multiplications": 2,
+    "dropout": 0.5,
+    "activation": null,
+    "bias_position": "after propagation",
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "benedekrozemberczki/MixHop-and-N-GCN",
+    "commit": "e9df5eb988f0dbe5192ac87902c55cbe6d8191fe",
+    "snapshot": "43f8f04f0fc217b8933576df0ba44ca6d5747e92c12346fb5cf5f73b90e1b25d"
+  },
+  "nodes": [
+    {
+      "id": "mixhop_dense.root",
+      "label": "MixHop dense power branch / module only",
+      "kind": "group",
+      "source": [
+        "mixhop-modules/src/layers.py::DenseNGCNLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "mixhop_dense.x",
+          "mixhop_dense.adj",
+          "mixhop_dense.weight",
+          "mixhop_dense.bias"
+        ],
+        [
+          "mixhop_dense.module"
+        ],
+        [
+          "mixhop_dense.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_dense.x",
+      "label": "Dense node features",
+      "kind": "input",
+      "source": [
+        "mixhop-modules/src/layers.py::DenseNGCNLayer.forward"
+      ],
+      "shape": "[N,12]",
+      "detail": [],
+      "parent": "mixhop_dense.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_dense.adj",
+      "label": "Supplied normalized sparse A",
+      "kind": "control",
+      "source": [
+        "mixhop-modules/src/layers.py::DenseNGCNLayer.forward"
+      ],
+      "shape": "[N,N]",
+      "detail": [],
+      "parent": "mixhop_dense.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_dense.weight",
+      "label": "Owned dense W",
+      "kind": "parameter",
+      "source": [
+        "mixhop-modules/src/layers.py::DenseNGCNLayer.define_parameters"
+      ],
+      "shape": "[12,4]",
+      "detail": [],
+      "parameter": "weight_matrix",
+      "parent": "mixhop_dense.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_dense.bias",
+      "label": "Owned dense bias",
+      "kind": "parameter",
+      "source": [
+        "mixhop-modules/src/layers.py::DenseNGCNLayer.define_parameters"
+      ],
+      "shape": "[1,4]",
+      "detail": [],
+      "parameter": "bias",
+      "parent": "mixhop_dense.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_dense.module",
+      "label": "MixHop dense power branch / operators",
+      "kind": "group",
+      "source": [
+        "mixhop-modules/src/layers.py::DenseNGCNLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "mixhop_dense.project"
+        ],
+        [
+          "mixhop_dense.drop"
+        ],
+        [
+          "mixhop_dense.prop0"
+        ],
+        [
+          "mixhop_dense.prop1"
+        ],
+        [
+          "mixhop_dense.biasadd"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "mixhop_dense.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_dense.project",
+      "label": "Dense X @ W",
+      "kind": "matmul",
+      "source": [
+        "mixhop-modules/src/layers.py::DenseNGCNLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "expression": "torch.mm(features, self.weight_matrix)",
+      "parent": "mixhop_dense.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "X",
+        "W"
+      ]
+    },
+    {
+      "id": "mixhop_dense.drop",
+      "label": "Dropout .5 / caller mode",
+      "kind": "dropout",
+      "source": [
+        "mixhop-modules/src/layers.py::DenseNGCNLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "p": 0.5,
+      "parent": "mixhop_dense.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "mixhop_dense.prop0",
+      "label": "A @ features / pass1",
+      "kind": "spmm",
+      "source": [
+        "mixhop-modules/src/layers.py::DenseNGCNLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "iteration": 1,
+      "opaque_runtime_boundary": true,
+      "parent": "mixhop_dense.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "features",
+        "A"
+      ]
+    },
+    {
+      "id": "mixhop_dense.prop1",
+      "label": "A @ features / pass2",
+      "kind": "spmm",
+      "source": [
+        "mixhop-modules/src/layers.py::DenseNGCNLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "iteration": 2,
+      "opaque_runtime_boundary": true,
+      "parent": "mixhop_dense.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "features",
+        "A"
+      ]
+    },
+    {
+      "id": "mixhop_dense.biasadd",
+      "label": "Add bias AFTER propagation",
+      "kind": "add",
+      "source": [
+        "mixhop-modules/src/layers.py::DenseNGCNLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "bias_after_propagation": true,
+      "activation": null,
+      "parent": "mixhop_dense.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "features",
+        "bias"
+      ]
+    },
+    {
+      "id": "mixhop_dense.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "mixhop-modules/src/layers.py::DenseNGCNLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "parent": "mixhop_dense.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "mixhop_dense.x:out->mixhop_dense.project:X:tensor",
+      "src": "mixhop_dense.x",
+      "dst": "mixhop_dense.project",
+      "src_port": "out",
+      "dst_port": "X",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_dense.weight:out->mixhop_dense.project:W:parameter_operand",
+      "src": "mixhop_dense.weight",
+      "dst": "mixhop_dense.project",
+      "src_port": "out",
+      "dst_port": "W",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "mixhop_dense.project:out->mixhop_dense.drop:in:tensor",
+      "src": "mixhop_dense.project",
+      "dst": "mixhop_dense.drop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_dense.drop:out->mixhop_dense.prop0:features:tensor",
+      "src": "mixhop_dense.drop",
+      "dst": "mixhop_dense.prop0",
+      "src_port": "out",
+      "dst_port": "features",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_dense.adj:out->mixhop_dense.prop0:A:topology",
+      "src": "mixhop_dense.adj",
+      "dst": "mixhop_dense.prop0",
+      "src_port": "out",
+      "dst_port": "A",
+      "role": "topology"
+    },
+    {
+      "id": "mixhop_dense.prop0:out->mixhop_dense.prop1:features:tensor",
+      "src": "mixhop_dense.prop0",
+      "dst": "mixhop_dense.prop1",
+      "src_port": "out",
+      "dst_port": "features",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_dense.adj:out->mixhop_dense.prop1:A:topology",
+      "src": "mixhop_dense.adj",
+      "dst": "mixhop_dense.prop1",
+      "src_port": "out",
+      "dst_port": "A",
+      "role": "topology"
+    },
+    {
+      "id": "mixhop_dense.prop1:out->mixhop_dense.biasadd:features:tensor",
+      "src": "mixhop_dense.prop1",
+      "dst": "mixhop_dense.biasadd",
+      "src_port": "out",
+      "dst_port": "features",
+      "role": "tensor"
+    },
+    {
+      "id": "mixhop_dense.bias:out->mixhop_dense.biasadd:bias:parameter_operand",
+      "src": "mixhop_dense.bias",
+      "dst": "mixhop_dense.biasadd",
+      "src_port": "out",
+      "dst_port": "bias",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "mixhop_dense.biasadd:out->mixhop_dense.output:in:tensor",
+      "src": "mixhop_dense.biasadd",
+      "dst": "mixhop_dense.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "DenseNGCN differs materially from SparseNGCN: dense mm, Dropout, iterations-1 adjacency products, THEN bias; no ReLU.",
+    "iterations3 denotes two repeated uses of supplied adjacency, and the SAME node-feature weight is applied only once.",
+    "Sparse multiplication remains an opaque torch_sparse library boundary; normalization is supplied externally.",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not merge sparse/dense NGNC branches merely because both names contain GCN.",
+    "Do not move bias before propagation or add a missing ReLU."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

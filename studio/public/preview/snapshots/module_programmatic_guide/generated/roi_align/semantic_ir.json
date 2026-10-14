@@ -1,0 +1,243 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "roi_align",
+  "profile": {
+    "scope": "RoIAlign wrapper and actual kernel call only",
+    "constructor": "RoIAlign((7,7),spatial_scale=.25,sampling_ratio=2,aligned=True)",
+    "rois_shape": [
+      "K",
+      5
+    ],
+    "boxes_type": "Tensor",
+    "aligned": true,
+    "sampling_ratio": 2,
+    "spatial_scale": 0.25,
+    "kernel_frozen": false,
+    "input_shape": "[B,64,32,32]",
+    "output_shape": "[K,64,7,7]",
+    "shape_origin": "explicit static module profile; not observed",
+    "mode": "caller train/eval; not executed",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "pytorch/vision",
+    "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+    "snapshot": "88b7578cd40309142e6f3aa152438e3ee450fcfd4e242f61cb3919c3efab888f"
+  },
+  "nodes": [
+    {
+      "id": "roi_align.root",
+      "label": "RoIAlign region sampling / module",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::RoIAlign.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::RoIAlign.forward"
+      ],
+      "shape": "[K,64,7,7]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "roi_align.input",
+      "label": "Module input",
+      "kind": "input",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::RoIAlign.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::RoIAlign.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "learnable": false,
+      "parent": "roi_align.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "roi_align.module",
+      "label": "RoIAlign module",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::RoIAlign.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::RoIAlign.forward"
+      ],
+      "shape": "[K,64,7,7]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "roi_align.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "roi_align.kernel",
+      "label": "RoIAlign / torchvision kernel",
+      "kind": "roi_align",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::RoIAlign.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::RoIAlign.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::roi_align"
+      ],
+      "shape": "[K,64,7,7]",
+      "detail": [],
+      "learnable": false,
+      "opaque_runtime_boundary": true,
+      "runtime_dependency": "torch.ops.torchvision.roi_align",
+      "output_size": [
+        7,
+        7
+      ],
+      "spatial_scale": 0.25,
+      "sampling_ratio": 2,
+      "aligned": true,
+      "boxes_representation": "Tensor[K,5]",
+      "input_ports": [
+        "in",
+        "rois"
+      ],
+      "parent": "roi_align.module",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "rois"
+      ]
+    },
+    {
+      "id": "roi_align.output",
+      "label": "Module output",
+      "kind": "output",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::RoIAlign.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::RoIAlign.forward"
+      ],
+      "shape": "[K,64,7,7]",
+      "detail": [],
+      "learnable": false,
+      "parent": "roi_align.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "roi_align.boxes",
+      "label": "RoIs / batch index + xyxy",
+      "kind": "input",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::roi_align"
+      ],
+      "shape": "[K,5]",
+      "detail": [],
+      "learnable": false,
+      "coordinate_format": "batch_index,x1,y1,x2,y2",
+      "origin": "caller",
+      "parent": null,
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "roi_align.module:in->roi_align.kernel:in:boundary",
+      "src": "roi_align.module",
+      "dst": "roi_align.kernel",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "roi_align.kernel:out->roi_align.module:out:boundary",
+      "src": "roi_align.kernel",
+      "dst": "roi_align.module",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "roi_align.root:in->roi_align.input:in:boundary",
+      "src": "roi_align.root",
+      "dst": "roi_align.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "roi_align.input:out->roi_align.module:in:tensor",
+      "src": "roi_align.input",
+      "dst": "roi_align.module",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "roi_align.module:out->roi_align.output:in:tensor",
+      "src": "roi_align.module",
+      "dst": "roi_align.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "roi_align.output:out->roi_align.root:out:boundary",
+      "src": "roi_align.output",
+      "dst": "roi_align.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "roi_align.boxes:out->roi_align.kernel:rois:roi_coordinates",
+      "src": "roi_align.boxes",
+      "dst": "roi_align.kernel",
+      "src_port": "out",
+      "dst_port": "rois",
+      "role": "roi_coordinates"
+    }
+  ],
+  "facts": [
+    "Features and coordinates are different operands; each box first column selects a batch image.",
+    "Tensor RoIs bypass convert_boxes_to_roi_format; output size is pair7x7.",
+    "Source kernel call is opaque; interpolation/bin details are API context rather than invented AST nodes.",
+    "No learning parameters; alignedTrue and fixed2x2 bin sampling are explicitly selected."
+  ],
+  "corrections": [
+    "This is torchvision RoIAlign, not longcw crop_and_resize.",
+    "Do not pool the whole image or replace coordinates with feature values."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

@@ -1,0 +1,342 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="2467" viewBox="0 0 1200 2467">
+<defs xmlns="http://www.w3.org/2000/svg"><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348" /></marker></defs>
+
+<rect xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" fill="white" />
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="source-binding">{"model": "unet", "source_snapshot_sha256": "63846dfc95a44122862734f46bfd09329bed91896797371d14e6643e8eca44fd", "repository": "mateuszbuda/brain-segmentation-pytorch", "commit": "d45f8908ab2f0246ba204c702a6161c9eb25f902", "semantic_ir_sha256": "fdb6e18007ebec105429e0141217173ddcdfb2313a71c65df85edd884a73719b", "view": 0}</metadata>
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="diagram-style">{"name": "transformer-paper-model-zoo", "version": 1, "font": "DejaVu Sans, Arial, sans-serif", "text": "#172336", "line": "#263348", "palette": {"root": "#ffffff", "group": "#ffffff", "inner": "#fffaf6", "layer": "#ffffff", "encoder": "#e7f5fe", "decoder": "#fff0f5", "embedding": "#f8d4e1", "input": "#f8d4e1", "output": "#dfdff8", "attention": "#ffddb3", "ffn": "#c8ebfb", "mixing": "#c8ebfb", "conv": "#c8ebfb", "pool": "#d6f0df", "norm": "#fff6bd", "concat": "#fff6bd", "linear": "#dfdff8", "softmax": "#c9f1cd", "sampling": "#c9f1cd", "recurrent": "#ffddb3", "decomposition": "#d6f0df", "tensor": "#cdeaf8", "activation": "#f3f5f7", "control": "#f3f5f7"}, "typography": {"title": 30, "subtitle": 16, "module": 22, "inner": 20, "operator": 20, "shape": 16, "detail": 14, "evidence": 12, "footer": 14, "line_height": 1.18}, "fill_width_nodes": ["unet_bottleneck", "unet_bottleneck_block", "unet_dec1", "unet_dec1_block", "unet_dec2", "unet_dec2_block", "unet_dec3", "unet_dec3_block", "unet_dec4", "unet_dec4_block", "unet_enc1", "unet_enc1_block", "unet_enc2", "unet_enc2_block", "unet_enc3", "unet_enc3_block", "unet_enc4", "unet_enc4_block", "unet_head", "unet_pool1", "unet_pool2", "unet_pool3", "unet_pool4"], "visual_roles": {"unet": "root", "unet_bottleneck": "group", "unet_bottleneck_block": "conv", "unet_dec1": "decoder", "unet_dec1_block": "conv", "unet_dec1_cat": "concat", "unet_dec2": "decoder", "unet_dec2_block": "conv", "unet_dec2_cat": "concat", "unet_dec3": "decoder", "unet_dec3_block": "conv", "unet_dec3_cat": "concat", "unet_dec4": "decoder", "unet_dec4_block": "conv", "unet_dec4_cat": "concat", "unet_enc1": "encoder", "unet_enc1_block": "conv", "unet_enc2": "encoder", "unet_enc2_block": "conv", "unet_enc3": "encoder", "unet_enc3_block": "conv", "unet_enc4": "encoder", "unet_enc4_block": "conv", "unet_head": "ffn", "unet_sigmoid": "softmax"}, "semantics": "presentation aliases only; color does not imply mathematical equivalence or parameter sharing"}</metadata>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">U-Net  |  Architecture overview</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">3 input channels / 1 foreground mask / features=32 / 256x256  /  read bottom to top</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="unet" data-visual-role="root"><title>brain-segmentation-pytorch/unet.py:45 UNet.forward; parameter=not asserted; </title><rect x="403.0" y="98" width="394" height="2087" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="420.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="420.0" dy="0">U-Net /</tspan>
+<tspan x="420.0" dy="25.959999999999997">brain</tspan>
+<tspan x="420.0" dy="25.959999999999997">segmentation</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="780.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="780.0" dy="0">[B,3,256,256]</tspan>
+<tspan x="780.0" dy="18.88">-&gt;</tspan>
+<tspan x="780.0" dy="18.88">[B,1,256,256]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="784.0" y="203" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="784.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="unet_input" data-visual-role="input" data-glyph-kind="tensor-grid"><title>brain-segmentation-pytorch/unet.py:45 UNet.forward; parameter=not asserted; </title><rect x="564.0" y="2090.5" width="72" height="32" rx="0" fill="#f8d4e1" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="576.0" x2="576.0" y1="2090.5" y2="2122.5" stroke="#263348" stroke-width=".6" /><line x1="588.0" x2="588.0" y1="2090.5" y2="2122.5" stroke="#263348" stroke-width=".6" /><line x1="600.0" x2="600.0" y1="2090.5" y2="2122.5" stroke="#263348" stroke-width=".6" /><line x1="612.0" x2="612.0" y1="2090.5" y2="2122.5" stroke="#263348" stroke-width=".6" /><line x1="624.0" x2="624.0" y1="2090.5" y2="2122.5" stroke="#263348" stroke-width=".6" /><line x1="564.0" x2="636.0" y1="2101.1666666666665" y2="2101.1666666666665" stroke="#263348" stroke-width=".6" /><line x1="564.0" x2="636.0" y1="2111.8333333333335" y2="2111.8333333333335" stroke="#263348" stroke-width=".6" /><text x="554.0" y="2103.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="554.0" dy="0">Input image /</tspan><tspan x="554.0" dy="16.52">MRI channels</tspan></text><text x="646.0" y="2111.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="646.0" dy="0">[B,3,256,256]</tspan></text><text x="646.0" y="2156" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="646.0" dy="0">E006</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="unet_enc1" data-visual-role="encoder"><title>brain-segmentation-pytorch/unet.py:9 UNet.__init__; brain-segmentation-pytorch/unet.py:45 UNet.forward; brain-segmentation-pytorch/unet.py:68 UNet._block; parameter=encoder1; Skip operand is the block output, before MaxPool</title><rect x="435.0" y="1925" width="330" height="105" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1952" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Encoder 1 / retained</tspan>
+<tspan x="600.0" dy="23.599999999999998">skip</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="2000" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">enc1: [B,32,256,256]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="2020" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="unet_pool1" data-visual-role="pool"><title>brain-segmentation-pytorch/unet.py:9 UNet.__init__; brain-segmentation-pytorch/unet.py:45 UNet.forward; parameter=not asserted; No learned parameters</title><rect x="435.0" y="1820" width="330" height="81" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1847" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">MaxPool 1: 2x2 / 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1871" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,32,128,128]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="1891" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004,E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="unet_enc2" data-visual-role="encoder"><title>brain-segmentation-pytorch/unet.py:9 UNet.__init__; brain-segmentation-pytorch/unet.py:45 UNet.forward; brain-segmentation-pytorch/unet.py:68 UNet._block; parameter=encoder2; Skip operand is the block output, before MaxPool</title><rect x="435.0" y="1691" width="330" height="105" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1718" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Encoder 2 / retained</tspan>
+<tspan x="600.0" dy="23.599999999999998">skip</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1766" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">enc2: [B,64,128,128]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="1786" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="unet_pool2" data-visual-role="pool"><title>brain-segmentation-pytorch/unet.py:9 UNet.__init__; brain-segmentation-pytorch/unet.py:45 UNet.forward; parameter=not asserted; No learned parameters</title><rect x="435.0" y="1586" width="330" height="81" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1613" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">MaxPool 2: 2x2 / 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1637" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,64,64,64]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="1657" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004,E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="unet_enc3" data-visual-role="encoder"><title>brain-segmentation-pytorch/unet.py:9 UNet.__init__; brain-segmentation-pytorch/unet.py:45 UNet.forward; brain-segmentation-pytorch/unet.py:68 UNet._block; parameter=encoder3; Skip operand is the block output, before MaxPool</title><rect x="435.0" y="1457" width="330" height="105" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1484" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Encoder 3 / retained</tspan>
+<tspan x="600.0" dy="23.599999999999998">skip</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1532" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">enc3: [B,128,64,64]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="1552" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="unet_pool3" data-visual-role="pool"><title>brain-segmentation-pytorch/unet.py:9 UNet.__init__; brain-segmentation-pytorch/unet.py:45 UNet.forward; parameter=not asserted; No learned parameters</title><rect x="435.0" y="1352" width="330" height="81" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1379" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">MaxPool 3: 2x2 / 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1403" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,128,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="1423" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004,E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="unet_enc4" data-visual-role="encoder"><title>brain-segmentation-pytorch/unet.py:9 UNet.__init__; brain-segmentation-pytorch/unet.py:45 UNet.forward; brain-segmentation-pytorch/unet.py:68 UNet._block; parameter=encoder4; Skip operand is the block output, before MaxPool</title><rect x="435.0" y="1223" width="330" height="105" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1250" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Encoder 4 / retained</tspan>
+<tspan x="600.0" dy="23.599999999999998">skip</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1298" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">enc4: [B,256,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="1318" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="unet_pool4" data-visual-role="pool"><title>brain-segmentation-pytorch/unet.py:9 UNet.__init__; brain-segmentation-pytorch/unet.py:45 UNet.forward; parameter=not asserted; No learned parameters</title><rect x="435.0" y="1118" width="330" height="81" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1145" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">MaxPool 4: 2x2 / 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1169" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,256,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="1189" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004,E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="unet_bottleneck" data-visual-role="group"><title>brain-segmentation-pytorch/unet.py:9 UNet.__init__; brain-segmentation-pytorch/unet.py:45 UNet.forward; brain-segmentation-pytorch/unet.py:68 UNet._block; parameter=bottleneck; </title><rect x="435.0" y="989" width="330" height="105" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1016" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Bottleneck / lowest</tspan>
+<tspan x="600.0" dy="23.599999999999998">resolution</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="1064" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,512,16,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="1084" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004 +2</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="unet_dec4" data-visual-role="decoder"><title>brain-segmentation-pytorch/unet.py:9 UNet.__init__; brain-segmentation-pytorch/unet.py:45 UNet.forward; parameter=decoder4; Upsampling halves channels; concatenation doubles them before the double-conv block</title><rect x="435.0" y="860" width="330" height="105" rx="18" fill="#fff0f5" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="887" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Decoder 4 / upsample +</tspan>
+<tspan x="600.0" dy="23.599999999999998">skip fusion</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="935" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,256,32,32]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="955" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004,E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="unet_dec3" data-visual-role="decoder"><title>brain-segmentation-pytorch/unet.py:9 UNet.__init__; brain-segmentation-pytorch/unet.py:45 UNet.forward; parameter=decoder3; Upsampling halves channels; concatenation doubles them before the double-conv block</title><rect x="435.0" y="731" width="330" height="105" rx="18" fill="#fff0f5" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="758" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Decoder 3 / upsample +</tspan>
+<tspan x="600.0" dy="23.599999999999998">skip fusion</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="806" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,128,64,64]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="826" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004,E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="unet_dec2" data-visual-role="decoder"><title>brain-segmentation-pytorch/unet.py:9 UNet.__init__; brain-segmentation-pytorch/unet.py:45 UNet.forward; parameter=decoder2; Upsampling halves channels; concatenation doubles them before the double-conv block</title><rect x="435.0" y="602" width="330" height="105" rx="18" fill="#fff0f5" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="629" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Decoder 2 / upsample +</tspan>
+<tspan x="600.0" dy="23.599999999999998">skip fusion</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="677" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,64,128,128]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="697" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004,E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="unet_dec1" data-visual-role="decoder"><title>brain-segmentation-pytorch/unet.py:9 UNet.__init__; brain-segmentation-pytorch/unet.py:45 UNet.forward; parameter=decoder1; Upsampling halves channels; concatenation doubles them before the double-conv block</title><rect x="435.0" y="473" width="330" height="105" rx="18" fill="#fff0f5" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="500" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Decoder 1 / upsample +</tspan>
+<tspan x="600.0" dy="23.599999999999998">skip fusion</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="548" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,32,256,256]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="568" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E004,E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="unet_head" data-visual-role="ffn"><title>brain-segmentation-pytorch/unet.py:45 UNet.forward; parameter=not asserted; </title><rect x="435.0" y="344" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="371" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="600.0" dy="0">Pixel-wise</tspan>
+<tspan x="600.0" dy="23.599999999999998">segmentation head</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="419" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">[B,1,256,256]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="752.0" y="439" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="752.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="unet_output" data-visual-role="output" data-glyph-kind="tensor-grid"><title>brain-segmentation-pytorch/unet.py:45 UNet.forward; parameter=not asserted; </title><rect x="564.0" y="251.5" width="72" height="32" rx="0" fill="#dfdff8" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="576.0" x2="576.0" y1="251.5" y2="283.5" stroke="#263348" stroke-width=".6" /><line x1="588.0" x2="588.0" y1="251.5" y2="283.5" stroke="#263348" stroke-width=".6" /><line x1="600.0" x2="600.0" y1="251.5" y2="283.5" stroke="#263348" stroke-width=".6" /><line x1="612.0" x2="612.0" y1="251.5" y2="283.5" stroke="#263348" stroke-width=".6" /><line x1="624.0" x2="624.0" y1="251.5" y2="283.5" stroke="#263348" stroke-width=".6" /><line x1="564.0" x2="636.0" y1="262.1666666666667" y2="262.1666666666667" stroke="#263348" stroke-width=".6" /><line x1="564.0" x2="636.0" y1="272.8333333333333" y2="272.8333333333333" stroke="#263348" stroke-width=".6" /><text x="554.0" y="256.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="554.0" dy="0">Foreground</tspan><tspan x="554.0" dy="16.52">probability</tspan><tspan x="554.0" dy="16.52">mask</tspan></text><text x="646.0" y="272.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="646.0" dy="0">[B,1,256,256]</tspan></text><text x="646.0" y="317" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="646.0" dy="0">E006</tspan></text></g>
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0001" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_enc1&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;unet_input&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;unet_enc1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;unet_input:out-&gt;unet_enc1:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;unet_enc1:in&quot;, &quot;rendered_src&quot;: &quot;unet_input:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_input&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,2090.5 L 600.0,2030" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>unet_input:out -&gt; unet_enc1:in; visible unet_input:out -&gt; unet_enc1:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0002" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_pool1&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;unet_enc1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;unet_pool1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;unet_enc1:out-&gt;unet_pool1:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;unet_pool1:in&quot;, &quot;rendered_src&quot;: &quot;unet_enc1:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_enc1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,1925 L 600.0,1901" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>unet_enc1:out -&gt; unet_pool1:in; visible unet_enc1:out -&gt; unet_pool1:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0003" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_enc2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;unet_pool1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;unet_enc2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;unet_pool1:out-&gt;unet_enc2:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;unet_enc2:in&quot;, &quot;rendered_src&quot;: &quot;unet_pool1:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_pool1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,1820 L 600.0,1796" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>unet_pool1:out -&gt; unet_enc2:in; visible unet_pool1:out -&gt; unet_enc2:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0004" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_pool2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;unet_enc2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;unet_pool2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;unet_enc2:out-&gt;unet_pool2:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;unet_pool2:in&quot;, &quot;rendered_src&quot;: &quot;unet_enc2:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_enc2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,1691 L 600.0,1667" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>unet_enc2:out -&gt; unet_pool2:in; visible unet_enc2:out -&gt; unet_pool2:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0005" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_enc3&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;unet_pool2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;unet_enc3&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;unet_pool2:out-&gt;unet_enc3:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;unet_enc3:in&quot;, &quot;rendered_src&quot;: &quot;unet_pool2:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_pool2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,1586 L 600.0,1562" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>unet_pool2:out -&gt; unet_enc3:in; visible unet_pool2:out -&gt; unet_enc3:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0006" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_pool3&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;unet_enc3&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;unet_pool3&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;unet_enc3:out-&gt;unet_pool3:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;unet_pool3:in&quot;, &quot;rendered_src&quot;: &quot;unet_enc3:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_enc3&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,1457 L 600.0,1433" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>unet_enc3:out -&gt; unet_pool3:in; visible unet_enc3:out -&gt; unet_pool3:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0007" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_enc4&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;unet_pool3&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;unet_enc4&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;unet_pool3:out-&gt;unet_enc4:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;unet_enc4:in&quot;, &quot;rendered_src&quot;: &quot;unet_pool3:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_pool3&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,1352 L 600.0,1328" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>unet_pool3:out -&gt; unet_enc4:in; visible unet_pool3:out -&gt; unet_enc4:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0008" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_pool4&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;unet_enc4&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;unet_pool4&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;unet_enc4:out-&gt;unet_pool4:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;unet_pool4:in&quot;, &quot;rendered_src&quot;: &quot;unet_enc4:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_enc4&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,1223 L 600.0,1199" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>unet_enc4:out -&gt; unet_pool4:in; visible unet_enc4:out -&gt; unet_pool4:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0009" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_bottleneck&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;unet_pool4&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;unet_bottleneck&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;unet_pool4:out-&gt;unet_bottleneck:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;unet_bottleneck:in&quot;, &quot;rendered_src&quot;: &quot;unet_pool4:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_pool4&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,1118 L 600.0,1094" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>unet_pool4:out -&gt; unet_bottleneck:in; visible unet_pool4:out -&gt; unet_bottleneck:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0010" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_dec4&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;unet_bottleneck&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;unet_dec4&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;unet_bottleneck:out-&gt;unet_dec4:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;unet_dec4:in&quot;, &quot;rendered_src&quot;: &quot;unet_bottleneck:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_bottleneck&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,989 L 600.0,965" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>unet_bottleneck:out -&gt; unet_dec4:in; visible unet_bottleneck:out -&gt; unet_dec4:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0011" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_dec3&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;unet_dec4&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;unet_dec3&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;unet_dec4:out-&gt;unet_dec3:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;unet_dec3:in&quot;, &quot;rendered_src&quot;: &quot;unet_dec4:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_dec4&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,860 L 600.0,836" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>unet_dec4:out -&gt; unet_dec3:in; visible unet_dec4:out -&gt; unet_dec3:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0012" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_dec2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;unet_dec3&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;unet_dec2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;unet_dec3:out-&gt;unet_dec2:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;unet_dec2:in&quot;, &quot;rendered_src&quot;: &quot;unet_dec3:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_dec3&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,731 L 600.0,707" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>unet_dec3:out -&gt; unet_dec2:in; visible unet_dec3:out -&gt; unet_dec2:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0013" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_dec1&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;unet_dec2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;unet_dec1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;unet_dec2:out-&gt;unet_dec1:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;unet_dec1:in&quot;, &quot;rendered_src&quot;: &quot;unet_dec2:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_dec2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,602 L 600.0,578" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>unet_dec2:out -&gt; unet_dec1:in; visible unet_dec2:out -&gt; unet_dec1:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0014" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_head&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;unet_dec1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;unet_head&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;unet_dec1:out-&gt;unet_head:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;unet_head:in&quot;, &quot;rendered_src&quot;: &quot;unet_dec1:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_dec1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,473 L 600.0,449" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>unet_dec1:out -&gt; unet_head:in; visible unet_dec1:out -&gt; unet_head:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0015" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_output&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;unet_head&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;unet_output&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;unet_head:out-&gt;unet_output:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;unet_output:in&quot;, &quot;rendered_src&quot;: &quot;unet_head:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_head&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 600.0,344 L 600.0,283.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>unet_head:out -&gt; unet_output:in; visible unet_head:out -&gt; unet_output:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0016" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_dec4_cat&quot;, &quot;dst_port&quot;: &quot;side&quot;, &quot;role&quot;: &quot;skip_concat&quot;, &quot;src&quot;: &quot;unet_enc4&quot;, &quot;src_port&quot;: &quot;skip&quot;}, &quot;destination&quot;: {&quot;canonical_node&quot;: &quot;unet_dec4_cat&quot;, &quot;canonical_port&quot;: &quot;side&quot;, &quot;node&quot;: &quot;unet_dec4&quot;, &quot;port&quot;: &quot;unet_dec4_cat:side&quot;, &quot;projection&quot;: &quot;folded&quot;}, &quot;edge_id&quot;: &quot;unet_enc4:skip-&gt;unet_dec4_cat:side:skip_concat&quot;, &quot;rendered_dst&quot;: &quot;unet_dec4:right&quot;, &quot;rendered_src&quot;: &quot;unet_enc4:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_enc4&quot;, &quot;port&quot;: &quot;skip&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 765.0,1275.5 L 1182,1275.5 L 1182,912.5 L 765.0,912.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>unet_enc4:skip -&gt; unet_dec4_cat:side; visible unet_enc4:skip -&gt; unet_dec4:unet_dec4_cat:side; enc4: 256 channels</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0017" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_dec3_cat&quot;, &quot;dst_port&quot;: &quot;side&quot;, &quot;role&quot;: &quot;skip_concat&quot;, &quot;src&quot;: &quot;unet_enc3&quot;, &quot;src_port&quot;: &quot;skip&quot;}, &quot;destination&quot;: {&quot;canonical_node&quot;: &quot;unet_dec3_cat&quot;, &quot;canonical_port&quot;: &quot;side&quot;, &quot;node&quot;: &quot;unet_dec3&quot;, &quot;port&quot;: &quot;unet_dec3_cat:side&quot;, &quot;projection&quot;: &quot;folded&quot;}, &quot;edge_id&quot;: &quot;unet_enc3:skip-&gt;unet_dec3_cat:side:skip_concat&quot;, &quot;rendered_dst&quot;: &quot;unet_dec3:right&quot;, &quot;rendered_src&quot;: &quot;unet_enc3:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_enc3&quot;, &quot;port&quot;: &quot;skip&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 765.0,1509.5 L 1194,1509.5 L 1194,783.5 L 765.0,783.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>unet_enc3:skip -&gt; unet_dec3_cat:side; visible unet_enc3:skip -&gt; unet_dec3:unet_dec3_cat:side; enc3: 128 channels</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0018" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_dec2_cat&quot;, &quot;dst_port&quot;: &quot;side&quot;, &quot;role&quot;: &quot;skip_concat&quot;, &quot;src&quot;: &quot;unet_enc2&quot;, &quot;src_port&quot;: &quot;skip&quot;}, &quot;destination&quot;: {&quot;canonical_node&quot;: &quot;unet_dec2_cat&quot;, &quot;canonical_port&quot;: &quot;side&quot;, &quot;node&quot;: &quot;unet_dec2&quot;, &quot;port&quot;: &quot;unet_dec2_cat:side&quot;, &quot;projection&quot;: &quot;folded&quot;}, &quot;edge_id&quot;: &quot;unet_enc2:skip-&gt;unet_dec2_cat:side:skip_concat&quot;, &quot;rendered_dst&quot;: &quot;unet_dec2:right&quot;, &quot;rendered_src&quot;: &quot;unet_enc2:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_enc2&quot;, &quot;port&quot;: &quot;skip&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 765.0,1743.5 L 1182,1743.5 L 1182,1287.5 L 1170,1287.5 L 1170,654.5 L 765.0,654.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>unet_enc2:skip -&gt; unet_dec2_cat:side; visible unet_enc2:skip -&gt; unet_dec2:unet_dec2_cat:side; enc2: 64 channels</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0019" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;unet_dec1_cat&quot;, &quot;dst_port&quot;: &quot;side&quot;, &quot;role&quot;: &quot;skip_concat&quot;, &quot;src&quot;: &quot;unet_enc1&quot;, &quot;src_port&quot;: &quot;skip&quot;}, &quot;destination&quot;: {&quot;canonical_node&quot;: &quot;unet_dec1_cat&quot;, &quot;canonical_port&quot;: &quot;side&quot;, &quot;node&quot;: &quot;unet_dec1&quot;, &quot;port&quot;: &quot;unet_dec1_cat:side&quot;, &quot;projection&quot;: &quot;folded&quot;}, &quot;edge_id&quot;: &quot;unet_enc1:skip-&gt;unet_dec1_cat:side:skip_concat&quot;, &quot;rendered_dst&quot;: &quot;unet_dec1:right&quot;, &quot;rendered_src&quot;: &quot;unet_enc1:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;unet_enc1&quot;, &quot;port&quot;: &quot;skip&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 765.0,1977.5 L 1194,1977.5 L 1194,1521.5 L 1170,1521.5 L 1170,1287.5 L 1158,1287.5 L 1158,908 L 1182,908 L 1182,525.5 L 765.0,525.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>unet_enc1:skip -&gt; unet_dec1_cat:side; visible unet_enc1:skip -&gt; unet_dec1:unet_dec1_cat:side; enc1: 32 channels</title></path>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="55.0" y="2222" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="78.0" y="2235" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="78.0" dy="0">Input / Embed</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="240.0" y="2222" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="263.0" y="2235" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="263.0" dy="0">Conv / MLP</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="425.0" y="2222" width="16" height="16" rx="3" fill="#d6f0df" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="448.0" y="2235" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="448.0" dy="0">Pool</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="610.0" y="2222" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="633.0" y="2235" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="633.0" dy="0">Norm / Add / Cat</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="795.0" y="2222" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="818.0" y="2235" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="818.0" dy="0">Linear / Output</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="980.0" y="2222" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1003.0" y="2235" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1003.0" dy="0">Activation</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="517.5" y="2252" width="16" height="16" rx="3" fill="#c9f1cd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="540.5" y="2265" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="540.5" dy="0">Prob. / Sample</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="2293" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">B batch</tspan>
+<tspan x="600.0" dy="16.52">C channels</tspan>
+<tspan x="600.0" dy="16.52">H,W spatial axes</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="2367" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="2397" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="600.0" y="2422" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="600.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+
+</svg>

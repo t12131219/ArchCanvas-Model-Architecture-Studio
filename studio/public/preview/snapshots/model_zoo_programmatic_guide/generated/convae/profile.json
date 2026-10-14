@@ -1,0 +1,30 @@
+{
+  "task": "MNIST image reconstruction",
+  "mode": "eval",
+  "input_channels": 1,
+  "input_size": [
+    28,
+    28
+  ],
+  "encoder_channels": [
+    4,
+    8
+  ],
+  "decoder_channels": [
+    4,
+    1
+  ],
+  "conv_kernel": 3,
+  "conv_stride": 1,
+  "conv_padding": 1,
+  "conv_bias": true,
+  "encoder_pool": "MaxPool2d(kernel=2,stride=2)",
+  "decoder_upsampling": "F.interpolate(scale_factor=2, mode='nearest')",
+  "activation": "LeakyReLU",
+  "negative_slope": 0.01,
+  "encoded_shape": "[B,8,7,7]",
+  "output": "(logits, probas)",
+  "batch_size_setting": 128,
+  "training_loss_in_forward": false,
+  "config_source": "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py notebook cells 7,9,11"
+}

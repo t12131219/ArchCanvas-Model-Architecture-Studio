@@ -1,0 +1,69 @@
+{
+  "task": "MNIST conditioned augmented reconstruction",
+  "mode": "forward with stochastic sampling in train and eval",
+  "latent_dim": 50,
+  "latent_levels": 1,
+  "num_classes": 10,
+  "input_shape": [
+    "B",
+    1,
+    28,
+    28
+  ],
+  "encoder_input_channels": 11,
+  "encoder_channels": [
+    16,
+    32,
+    64
+  ],
+  "encoder_spatial": [
+    28,
+    12,
+    5,
+    2
+  ],
+  "decoder_channels": [
+    64,
+    32,
+    16,
+    11
+  ],
+  "decoder_spatial": [
+    2,
+    4,
+    11,
+    28
+  ],
+  "decoder_convtranspose": [
+    {
+      "kernel": 2,
+      "stride": 2,
+      "padding": 0
+    },
+    {
+      "kernel": 4,
+      "stride": 3,
+      "padding": 1
+    },
+    {
+      "kernel": 6,
+      "stride": 3,
+      "padding": 4
+    }
+  ],
+  "decoder_linear_input": 60,
+  "decoder_output_channels": 11,
+  "negative_slope": 0.01,
+  "batch_size_setting": 128,
+  "training_sampling_gate": false,
+  "num_features_argument_used": false,
+  "conditional": true,
+  "output_tuple": [
+    "mu",
+    "logvar",
+    "z",
+    "decoded"
+  ],
+  "symbolic_shapes": true,
+  "model_executed": false
+}

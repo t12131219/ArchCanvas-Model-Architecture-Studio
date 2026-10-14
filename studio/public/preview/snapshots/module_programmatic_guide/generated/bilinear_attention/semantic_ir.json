@@ -1,0 +1,746 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "bilinear_attention",
+  "profile": {
+    "x_dim": 8,
+    "y_dim": 6,
+    "z_dim": 4,
+    "k": 3,
+    "glimpse": 2,
+    "V": 5,
+    "Q": 3,
+    "v_mask": true,
+    "logit": false,
+    "output_tuple": [
+      "probabilities",
+      "masked_logits"
+    ],
+    "norm": "joint V*Q per glimpse",
+    "mode": "caller train/eval",
+    "between_examples_weight_sharing": "not implied",
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "jnhwkim/ban-vqa",
+    "commit": "ef4cc36d63f6b31344301ac1bd91afd807d132e5",
+    "snapshot": "a5191c9c4202d0077f095d63d65623fc13dc06628d644f21a8b4ba18fe69a443"
+  },
+  "nodes": [
+    {
+      "id": "bilinear_attention.root",
+      "label": "BAN bilinear attention / module only",
+      "kind": "group",
+      "source": [
+        "ban-modules/attention.py::BiAttention.forward_all"
+      ],
+      "shape": "p, logits: 2 x [B,2,5,3]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "bilinear_attention.v",
+          "bilinear_attention.q",
+          "bilinear_attention.scoreparams"
+        ],
+        [
+          "bilinear_attention.module"
+        ],
+        [
+          "bilinear_attention.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilinear_attention.v",
+      "label": "Visual features V",
+      "kind": "input",
+      "source": [
+        "ban-modules/attention.py::BiAttention.forward_all"
+      ],
+      "shape": "[B,5,8]",
+      "detail": [],
+      "parent": "bilinear_attention.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "bilinear_attention.q",
+      "label": "Language features Q",
+      "kind": "input",
+      "source": [
+        "ban-modules/attention.py::BiAttention.forward_all"
+      ],
+      "shape": "[B,3,6]",
+      "detail": [],
+      "parent": "bilinear_attention.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "bilinear_attention.scoreparams",
+      "label": "Owned h_mat(g,v), h_bias",
+      "kind": "parameter",
+      "source": [
+        "ban-modules/attention.py::BiAttention.__init__",
+        "ban-modules/bc.py::BCNet.__init__"
+      ],
+      "shape": "h[1,2,1,12]; b[1,2,1,1]",
+      "detail": [],
+      "h_mat_weight_normalized": true,
+      "parameter_families": [
+        "logits.h_mat_g",
+        "logits.h_mat_v",
+        "logits.h_bias"
+      ],
+      "parent": "bilinear_attention.root",
+      "source_evidence": [
+        "E001",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "h_mat",
+        "h_bias"
+      ]
+    },
+    {
+      "id": "bilinear_attention.module",
+      "label": "BAN bilinear attention / operators",
+      "kind": "group",
+      "source": [
+        "ban-modules/attention.py::BiAttention.forward_all"
+      ],
+      "shape": "p, logits: 2 x [B,2,5,3]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "bilinear_attention.vproject",
+          "bilinear_attention.qproject"
+        ],
+        [
+          "bilinear_attention.score"
+        ],
+        [
+          "bilinear_attention.mask"
+        ],
+        [
+          "bilinear_attention.normalize"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "bilinear_attention.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilinear_attention.vproject",
+      "label": "V projection",
+      "kind": "group",
+      "source": [
+        "ban-modules/bc.py::BCNet.forward",
+        "ban-modules/fc.py::FCNet.forward"
+      ],
+      "shape": "[B,5,12]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "bilinear_attention.module",
+      "source_evidence": [
+        "E004",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilinear_attention.vproject.drop",
+      "label": "Dropout .2",
+      "kind": "dropout",
+      "source": [
+        "ban-modules/fc.py::FCNet.__init__",
+        "ban-modules/fc.py::FCNet.forward"
+      ],
+      "shape": "[B,5,8]",
+      "detail": [],
+      "p": 0.2,
+      "parent": "bilinear_attention.vproject",
+      "source_evidence": [
+        "E005",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilinear_attention.vproject.linear",
+      "label": "WeightNorm Linear 8 -> 12",
+      "kind": "linear",
+      "source": [
+        "ban-modules/fc.py::FCNet.__init__"
+      ],
+      "shape": "[B,5,12]",
+      "detail": [],
+      "parameter_scope": "v_net.main.1",
+      "weight_normalization_dim": null,
+      "opaque_weight_norm": true,
+      "bias": true,
+      "parent": "bilinear_attention.vproject",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilinear_attention.vproject.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "ban-modules/fc.py::FCNet.__init__",
+        "ban-modules/fc.py::FCNet.forward"
+      ],
+      "shape": "[B,5,12]",
+      "detail": [],
+      "parent": "bilinear_attention.vproject",
+      "source_evidence": [
+        "E005",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilinear_attention.vproject.extra",
+      "label": "Extra attention Dropout .5",
+      "kind": "dropout",
+      "source": [
+        "ban-modules/bc.py::BCNet.__init__",
+        "ban-modules/bc.py::BCNet.forward"
+      ],
+      "shape": "[B,5,12]",
+      "detail": [],
+      "p": 0.5,
+      "parent": "bilinear_attention.vproject",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilinear_attention.qproject",
+      "label": "Q projection",
+      "kind": "group",
+      "source": [
+        "ban-modules/bc.py::BCNet.forward",
+        "ban-modules/fc.py::FCNet.forward"
+      ],
+      "shape": "[B,3,12]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "bilinear_attention.module",
+      "source_evidence": [
+        "E004",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilinear_attention.qproject.drop",
+      "label": "Dropout .2",
+      "kind": "dropout",
+      "source": [
+        "ban-modules/fc.py::FCNet.__init__",
+        "ban-modules/fc.py::FCNet.forward"
+      ],
+      "shape": "[B,3,6]",
+      "detail": [],
+      "p": 0.2,
+      "parent": "bilinear_attention.qproject",
+      "source_evidence": [
+        "E005",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilinear_attention.qproject.linear",
+      "label": "WeightNorm Linear 6 -> 12",
+      "kind": "linear",
+      "source": [
+        "ban-modules/fc.py::FCNet.__init__"
+      ],
+      "shape": "[B,3,12]",
+      "detail": [],
+      "parameter_scope": "q_net.main.1",
+      "weight_normalization_dim": null,
+      "opaque_weight_norm": true,
+      "bias": true,
+      "parent": "bilinear_attention.qproject",
+      "source_evidence": [
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilinear_attention.qproject.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "ban-modules/fc.py::FCNet.__init__",
+        "ban-modules/fc.py::FCNet.forward"
+      ],
+      "shape": "[B,3,12]",
+      "detail": [],
+      "parent": "bilinear_attention.qproject",
+      "source_evidence": [
+        "E005",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilinear_attention.score",
+      "label": "Low-rank bilinear scores + bias",
+      "kind": "einsum",
+      "source": [
+        "ban-modules/bc.py::BCNet.forward"
+      ],
+      "shape": "[B,2,5,3]",
+      "detail": [],
+      "expression": "torch.einsum('xhyk,bvk,bqk->bhvq', (self.h_mat, v_, q_)) + self.h_bias",
+      "glimpse": 2,
+      "k": 3,
+      "h_mat_weight_normalized": true,
+      "parameter_scope": "logits.h_mat_{g,v} and logits.h_bias",
+      "parent": "bilinear_attention.module",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "V",
+        "Q",
+        "h_mat",
+        "h_bias"
+      ]
+    },
+    {
+      "id": "bilinear_attention.mask",
+      "label": "Mask zero visual rows / -inf",
+      "kind": "control",
+      "source": [
+        "ban-modules/attention.py::BiAttention.forward_all"
+      ],
+      "shape": "[B,2,5,3]",
+      "detail": [],
+      "mask_from": "v.abs().sum(2)==0",
+      "masked_fill": "-inf",
+      "mutation": "logits.data.masked_fill_",
+      "parent": "bilinear_attention.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "logits",
+        "mask_input"
+      ]
+    },
+    {
+      "id": "bilinear_attention.normalize",
+      "label": "Normalize all V,Q pairs",
+      "kind": "group",
+      "source": [
+        "ban-modules/attention.py::BiAttention.forward_all"
+      ],
+      "shape": "[B,2,5,3]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "bilinear_attention.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilinear_attention.normalize.flat",
+      "label": "View V*Q positions",
+      "kind": "tensor",
+      "source": [
+        "ban-modules/attention.py::BiAttention.forward_all"
+      ],
+      "shape": "[B,2,15]",
+      "detail": [],
+      "parent": "bilinear_attention.normalize",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "v_num",
+        "q_num"
+      ]
+    },
+    {
+      "id": "bilinear_attention.normalize.softmax",
+      "label": "Softmax dim=2",
+      "kind": "softmax",
+      "source": [
+        "ban-modules/attention.py::BiAttention.forward_all"
+      ],
+      "shape": "[B,2,15]",
+      "detail": [],
+      "dim": 2,
+      "normalization_axis": "joint V*Q per glimpse",
+      "parent": "bilinear_attention.normalize",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilinear_attention.normalize.view",
+      "label": "Restore V,Q axes",
+      "kind": "tensor",
+      "source": [
+        "ban-modules/attention.py::BiAttention.forward_all"
+      ],
+      "shape": "[B,2,5,3]",
+      "detail": [],
+      "parent": "bilinear_attention.normalize",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "v_num",
+        "q_num"
+      ]
+    },
+    {
+      "id": "bilinear_attention.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "ban-modules/attention.py::BiAttention.forward_all"
+      ],
+      "shape": "p, logits: 2 x [B,2,5,3]",
+      "detail": [],
+      "parent": "bilinear_attention.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "probabilities",
+        "masked_logits"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "bilinear_attention.vproject:in->bilinear_attention.vproject.drop:in:boundary",
+      "src": "bilinear_attention.vproject",
+      "dst": "bilinear_attention.vproject.drop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "bilinear_attention.vproject.drop:out->bilinear_attention.vproject.linear:in:tensor",
+      "src": "bilinear_attention.vproject.drop",
+      "dst": "bilinear_attention.vproject.linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilinear_attention.vproject.linear:out->bilinear_attention.vproject.relu:in:tensor",
+      "src": "bilinear_attention.vproject.linear",
+      "dst": "bilinear_attention.vproject.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilinear_attention.vproject.relu:out->bilinear_attention.vproject.extra:in:tensor",
+      "src": "bilinear_attention.vproject.relu",
+      "dst": "bilinear_attention.vproject.extra",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilinear_attention.vproject.extra:out->bilinear_attention.vproject:out:boundary",
+      "src": "bilinear_attention.vproject.extra",
+      "dst": "bilinear_attention.vproject",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "bilinear_attention.qproject:in->bilinear_attention.qproject.drop:in:boundary",
+      "src": "bilinear_attention.qproject",
+      "dst": "bilinear_attention.qproject.drop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "bilinear_attention.qproject.drop:out->bilinear_attention.qproject.linear:in:tensor",
+      "src": "bilinear_attention.qproject.drop",
+      "dst": "bilinear_attention.qproject.linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilinear_attention.qproject.linear:out->bilinear_attention.qproject.relu:in:tensor",
+      "src": "bilinear_attention.qproject.linear",
+      "dst": "bilinear_attention.qproject.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilinear_attention.qproject.relu:out->bilinear_attention.qproject:out:boundary",
+      "src": "bilinear_attention.qproject.relu",
+      "dst": "bilinear_attention.qproject",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "bilinear_attention.normalize:in->bilinear_attention.normalize.flat:in:boundary",
+      "src": "bilinear_attention.normalize",
+      "dst": "bilinear_attention.normalize.flat",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "bilinear_attention.normalize.flat:out->bilinear_attention.normalize.softmax:in:tensor",
+      "src": "bilinear_attention.normalize.flat",
+      "dst": "bilinear_attention.normalize.softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilinear_attention.normalize.softmax:out->bilinear_attention.normalize.view:in:tensor",
+      "src": "bilinear_attention.normalize.softmax",
+      "dst": "bilinear_attention.normalize.view",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilinear_attention.normalize.view:out->bilinear_attention.normalize:out:boundary",
+      "src": "bilinear_attention.normalize.view",
+      "dst": "bilinear_attention.normalize",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "bilinear_attention.v:out->bilinear_attention.vproject.drop:in:tensor",
+      "src": "bilinear_attention.v",
+      "dst": "bilinear_attention.vproject.drop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilinear_attention.q:out->bilinear_attention.qproject.drop:in:tensor",
+      "src": "bilinear_attention.q",
+      "dst": "bilinear_attention.qproject.drop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilinear_attention.vproject.extra:out->bilinear_attention.score:V:tensor",
+      "src": "bilinear_attention.vproject.extra",
+      "dst": "bilinear_attention.score",
+      "src_port": "out",
+      "dst_port": "V",
+      "role": "tensor"
+    },
+    {
+      "id": "bilinear_attention.qproject.relu:out->bilinear_attention.score:Q:tensor",
+      "src": "bilinear_attention.qproject.relu",
+      "dst": "bilinear_attention.score",
+      "src_port": "out",
+      "dst_port": "Q",
+      "role": "tensor"
+    },
+    {
+      "id": "bilinear_attention.score:out->bilinear_attention.mask:logits:tensor",
+      "src": "bilinear_attention.score",
+      "dst": "bilinear_attention.mask",
+      "src_port": "out",
+      "dst_port": "logits",
+      "role": "tensor"
+    },
+    {
+      "id": "bilinear_attention.v:out->bilinear_attention.mask:mask_input:retained_value",
+      "src": "bilinear_attention.v",
+      "dst": "bilinear_attention.mask",
+      "src_port": "out",
+      "dst_port": "mask_input",
+      "role": "retained_value"
+    },
+    {
+      "id": "bilinear_attention.mask:out->bilinear_attention.normalize.flat:in:tensor",
+      "src": "bilinear_attention.mask",
+      "dst": "bilinear_attention.normalize.flat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilinear_attention.v:shape->bilinear_attention.normalize.flat:v_num:shape_dependency",
+      "src": "bilinear_attention.v",
+      "dst": "bilinear_attention.normalize.flat",
+      "src_port": "shape",
+      "dst_port": "v_num",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "bilinear_attention.q:shape->bilinear_attention.normalize.flat:q_num:shape_dependency",
+      "src": "bilinear_attention.q",
+      "dst": "bilinear_attention.normalize.flat",
+      "src_port": "shape",
+      "dst_port": "q_num",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "bilinear_attention.v:shape->bilinear_attention.normalize.view:v_num:shape_dependency",
+      "src": "bilinear_attention.v",
+      "dst": "bilinear_attention.normalize.view",
+      "src_port": "shape",
+      "dst_port": "v_num",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "bilinear_attention.q:shape->bilinear_attention.normalize.view:q_num:shape_dependency",
+      "src": "bilinear_attention.q",
+      "dst": "bilinear_attention.normalize.view",
+      "src_port": "shape",
+      "dst_port": "q_num",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "bilinear_attention.normalize.view:out->bilinear_attention.output:probabilities:tensor",
+      "src": "bilinear_attention.normalize.view",
+      "dst": "bilinear_attention.output",
+      "src_port": "out",
+      "dst_port": "probabilities",
+      "role": "tensor"
+    },
+    {
+      "id": "bilinear_attention.mask:out->bilinear_attention.output:masked_logits:retained_value",
+      "src": "bilinear_attention.mask",
+      "dst": "bilinear_attention.output",
+      "src_port": "out",
+      "dst_port": "masked_logits",
+      "role": "retained_value"
+    },
+    {
+      "id": "bilinear_attention.scoreparams:h_mat->bilinear_attention.score:h_mat:parameter_operand",
+      "src": "bilinear_attention.scoreparams",
+      "dst": "bilinear_attention.score",
+      "src_port": "h_mat",
+      "dst_port": "h_mat",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "bilinear_attention.scoreparams:h_bias->bilinear_attention.score:h_bias:parameter_operand",
+      "src": "bilinear_attention.scoreparams",
+      "dst": "bilinear_attention.score",
+      "src_port": "h_bias",
+      "dst_port": "h_bias",
+      "role": "parameter_operand"
+    }
+  ],
+  "facts": [
+    "h_out2<=32 selects the real low-rank einsum branch with k3 factors. h_mat is weight_norm reparameterized by BiAttention; it is not a plain final Parameter named h_mat.",
+    "FCNet includes Dropout.2 before WeightNorm Linear and ReLU; only the visual path gets the extra attention Dropout.5.",
+    "Zero visual rows are detected from original v; source mutates logits.data with -inf, then Softmax normalizes flattened V*Q jointly for each glimpse.",
+    "forward_all returns p and masked logits; logit=True alternate raw-only path is outside this selected profile.",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not substitute Transformer QK^T/sqrt(d): BAN uses a learned three-operand low-rank bilinear einsum.",
+    "Do not normalize only over question tokens or mask zero question rows.",
+    "Do not silently replace the source data mutation with a different autograd implementation."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

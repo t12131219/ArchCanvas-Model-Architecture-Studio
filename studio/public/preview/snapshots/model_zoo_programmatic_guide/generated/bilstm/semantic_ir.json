@@ -1,0 +1,1000 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "bilstm",
+  "profile": {
+    "task": "AGNews 4-class text classification",
+    "mode": "eval",
+    "selected_caller": "compute_accuracy: per-batch prediction segment",
+    "vocabulary_size": "V=len(TEXT.vocab)",
+    "vocabulary_max_size_setting": 5000,
+    "embedding_dim": 128,
+    "hidden_dim": 256,
+    "output_dim": 4,
+    "num_layers": 2,
+    "bidirectional": true,
+    "batch_first": false,
+    "bias": true,
+    "recurrent_dropout": 0.5,
+    "external_dropout": 0.5,
+    "external_dropout_calls": 3,
+    "recurrent_dropout_active": false,
+    "external_dropout_active": false,
+    "batch_size_setting": 128,
+    "enforce_sorted": "default True",
+    "last_layer_hidden_indices": [
+      2,
+      3
+    ],
+    "concatenation_width": 512,
+    "classifier_widths": [
+      512,
+      64,
+      4
+    ],
+    "classifier_first_width_source": "hidden_dim * num_layers",
+    "return_value": "[B,4] logits",
+    "caller_output": "torch.max(logits,1) indices",
+    "training_loss": "cross_entropy outside forward",
+    "vocabulary_vector_reference": "glove.6B.100d, not copied into Embedding",
+    "pretrained_embedding": false,
+    "recurrent_internals": "opaque PyTorch nn.LSTM library boundary"
+  },
+  "source": {
+    "repository": "https://github.com/rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "a1cb8ca6e3b3489daf1e2276769302cabd9a1ed9055ae534ae06aec90929c946"
+  },
+  "nodes": [
+    {
+      "id": "bilstm.root",
+      "label": "BiLSTM: AGNews",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::compute_accuracy"
+      ],
+      "shape": "per-batch labels: [B]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.input",
+      "label": "Padded content token IDs",
+      "kind": "input",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::compute_accuracy"
+      ],
+      "shape": "text: [T,B]",
+      "detail": [],
+      "parent": "bilstm.root",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.forward",
+      "label": "RNN.forward: AGNews classifier",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "logits: [B,4]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "bilstm.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.embedding",
+      "label": "Token embedding / dropout",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "[T,B,128]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "bilstm.forward",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.lookup",
+      "label": "Embedding V -> 128",
+      "kind": "embedding",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "[T,B,128]",
+      "detail": [
+        "padding_idx=PAD_IDX; default random Embedding, not a copied GloVe matrix"
+      ],
+      "parameter": "embedding.weight",
+      "padding_idx": "TEXT.vocab.stoi[TEXT.pad_token]",
+      "pretrained_vectors_copied": false,
+      "parent": "bilstm.embedding",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.embed_dropout",
+      "label": "Dropout .5 (eval off)",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "[T,B,128]",
+      "detail": [
+        "same self.dropout instance, distinct call site; identity in this eval profile",
+        "training calls sample fresh masks; Dropout has no learned parameters"
+      ],
+      "module_identity": "dropout",
+      "instance_identity": "self.dropout",
+      "p": 0.5,
+      "active": false,
+      "learnable": false,
+      "runtime_dependency": "torch.nn.Dropout",
+      "parent": "bilstm.embedding",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.packing",
+      "label": "Pack valid time steps",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "PackedSequence",
+      "detail": [],
+      "mode": "chain",
+      "parent": "bilstm.forward",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.pack",
+      "label": "pack_padded_sequence",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "PackedSequence",
+      "detail": [
+        "external text_length; sorted descending by content length within each batch",
+        "source leaves batch_first and enforce_sorted at API defaults"
+      ],
+      "batch_first": false,
+      "enforce_sorted": "default True",
+      "runtime_dependency": "torch.nn.utils.rnn.pack_padded_sequence",
+      "parent": "bilstm.packing",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "lengths"
+      ]
+    },
+    {
+      "id": "bilstm.recurrent",
+      "label": "Two-layer bidirectional LSTM",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "h_n: [4,B,256]",
+      "detail": [],
+      "parameter_scope": "rnn",
+      "mode": "chain",
+      "parent": "bilstm.forward",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.core",
+      "label": "nn.LSTM 128 -> 256 / 2 layers / 2 directions",
+      "kind": "recurrent",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "(packed_output,(h_n,c_n))",
+      "detail": [
+        "four layer/direction parameter families; shared across time within each family",
+        "dropout=.5 between recurrent layers during train; inactive in eval"
+      ],
+      "parameter_scope": "rnn",
+      "parameters": [
+        "rnn.weight_ih_l0",
+        "rnn.weight_hh_l0",
+        "rnn.bias_ih_l0",
+        "rnn.bias_hh_l0",
+        "rnn.weight_ih_l0_reverse",
+        "rnn.weight_hh_l0_reverse",
+        "rnn.bias_ih_l0_reverse",
+        "rnn.bias_hh_l0_reverse",
+        "rnn.weight_ih_l1",
+        "rnn.weight_hh_l1",
+        "rnn.bias_ih_l1",
+        "rnn.bias_hh_l1",
+        "rnn.weight_ih_l1_reverse",
+        "rnn.weight_hh_l1_reverse",
+        "rnn.bias_ih_l1_reverse",
+        "rnn.bias_hh_l1_reverse"
+      ],
+      "runtime_dependency": "torch.nn.LSTM",
+      "opaque_runtime_boundary": true,
+      "num_layers": 2,
+      "bidirectional": true,
+      "bias": true,
+      "batch_first": false,
+      "dropout": 0.5,
+      "recurrent_dropout_active": false,
+      "initial_state": "PyTorch default zeros",
+      "temporal_parameter_sharing": true,
+      "layer_direction_parameter_sharing": false,
+      "output_tuple": [
+        "packed_output",
+        [
+          "hidden",
+          "cell"
+        ]
+      ],
+      "hidden_shape": "[4,B,256]",
+      "parameter_shapes": {
+        "layer0_weight_ih": [
+          1024,
+          128
+        ],
+        "layer1_weight_ih": [
+          1024,
+          512
+        ],
+        "weight_hh": [
+          1024,
+          256
+        ],
+        "bias": [
+          1024
+        ]
+      },
+      "parent": "bilstm.recurrent",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.select_hidden",
+      "label": "Select hidden h_n",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "[4,B,256]",
+      "detail": [
+        "packed_output and cell are unused; no pad_packed_sequence call"
+      ],
+      "input_selector": "hidden",
+      "parent": "bilstm.recurrent",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.aggregation",
+      "label": "Last-layer Concat",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "[B,512]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "bilstm.forward",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.last_layer",
+      "label": "Last-layer directional states",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "two operands [B,256]",
+      "detail": [],
+      "semantic_mode": "operand_bundle",
+      "literal_tuple": true,
+      "child_inputs": {
+        "bilstm.forward_state": {
+          "role": "value",
+          "producer": "bilstm.select_hidden",
+          "src_port": "out"
+        },
+        "bilstm.reverse_state": {
+          "role": "value",
+          "producer": "bilstm.select_hidden",
+          "src_port": "out"
+        }
+      },
+      "operand_order": [
+        "bilstm.forward_state",
+        "bilstm.reverse_state"
+      ],
+      "mode": "parallel",
+      "port_bindings": {
+        "out": [
+          {
+            "node": "bilstm.forward_state",
+            "port": "out"
+          },
+          {
+            "node": "bilstm.reverse_state",
+            "port": "out"
+          }
+        ],
+        "item[0]": {
+          "node": "bilstm.forward_state",
+          "port": "out"
+        },
+        "item[1]": {
+          "node": "bilstm.reverse_state",
+          "port": "out"
+        },
+        "forward_hidden": {
+          "node": "bilstm.forward_state",
+          "port": "out"
+        },
+        "reverse_hidden": {
+          "node": "bilstm.reverse_state",
+          "port": "out"
+        }
+      },
+      "parent": "bilstm.aggregation",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "forward_hidden",
+        "reverse_hidden",
+        "operand[0]",
+        "operand[1]"
+      ]
+    },
+    {
+      "id": "bilstm.forward_state",
+      "label": "Forward state: hidden[-2]",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "[B,256]",
+      "detail": [
+        "last recurrent layer, forward direction; layer-direction index 2"
+      ],
+      "expression": "hidden[-2,:,:]",
+      "layer_index": 1,
+      "direction": "forward",
+      "hidden_index": 2,
+      "parent": "bilstm.last_layer",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.reverse_state",
+      "label": "Reverse state: hidden[-1]",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "[B,256]",
+      "detail": [
+        "last recurrent layer, reverse direction; layer-direction index 3"
+      ],
+      "expression": "hidden[-1,:,:]",
+      "layer_index": 1,
+      "direction": "reverse",
+      "hidden_index": 3,
+      "parent": "bilstm.last_layer",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.concat",
+      "label": "Concat forward / reverse",
+      "kind": "concat",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "[B,512]",
+      "detail": [
+        "torch.cat((hidden[-2,:,:],hidden[-1,:,:]),dim=1); forward then reverse"
+      ],
+      "dim": 1,
+      "operand_order": [
+        "bilstm.forward_state",
+        "bilstm.reverse_state"
+      ],
+      "parent": "bilstm.aggregation",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.hidden_dropout",
+      "label": "Dropout .5 (eval off)",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "[B,512]",
+      "detail": [
+        "same self.dropout instance, distinct call site; identity in this eval profile",
+        "training calls sample fresh masks; Dropout has no learned parameters"
+      ],
+      "module_identity": "dropout",
+      "instance_identity": "self.dropout",
+      "p": 0.5,
+      "active": false,
+      "learnable": false,
+      "runtime_dependency": "torch.nn.Dropout",
+      "parent": "bilstm.aggregation",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.classifier",
+      "label": "Two linear layers / logits",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "logits: [B,4]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "bilstm.forward",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.fc1",
+      "label": "Linear 512 -> 64",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [
+        "source expression hidden_dim*num_layers: 256*2=512 for this fixed profile",
+        "the selected hidden concatenation width is hidden_dim*2 directions"
+      ],
+      "parameter": "fc1",
+      "in_features": 512,
+      "out_features": 64,
+      "source_in_features_expression": "hidden_dim * num_layers",
+      "parent": "bilstm.classifier",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.head_dropout",
+      "label": "Dropout .5 (eval off)",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "[B,64]",
+      "detail": [
+        "same self.dropout instance, distinct call site; identity in this eval profile",
+        "training calls sample fresh masks; Dropout has no learned parameters"
+      ],
+      "module_identity": "dropout",
+      "instance_identity": "self.dropout",
+      "p": 0.5,
+      "active": false,
+      "learnable": false,
+      "runtime_dependency": "torch.nn.Dropout",
+      "parent": "bilstm.classifier",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.fc2",
+      "label": "Linear 64 -> 4",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.__init__",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward"
+      ],
+      "shape": "logits: [B,4]",
+      "detail": [
+        "returned directly; no intervening activation after fc1"
+      ],
+      "parameter": "fc2",
+      "in_features": 64,
+      "out_features": 4,
+      "parent": "bilstm.classifier",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.caller",
+      "label": "Caller: per-batch class decisions",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::compute_accuracy"
+      ],
+      "shape": "class labels: [B]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "bilstm.root",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.argmax",
+      "label": "max(logits, dim=1): indices",
+      "kind": "control",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::compute_accuracy"
+      ],
+      "shape": "labels: [B]",
+      "detail": [
+        "torch.max returns values and indices; only indices become predicted labels",
+        "accuracy accumulation and final percentage are outside the diagram"
+      ],
+      "boundary": "caller",
+      "expression": "torch.max(logits, 1)[1]",
+      "dim": 1,
+      "parent": "bilstm.caller",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "bilstm.lengths",
+      "label": "External sequence lengths",
+      "kind": "input",
+      "source": [
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::RNN.forward",
+        "deeplearning-models-batch3/pytorch_ipynb/rnn/rnn_bi_multilayer_lstm_own_csv_agnews.py::compute_accuracy"
+      ],
+      "shape": "text_length: [B]",
+      "detail": [
+        "batch_data.content[1]; participates only in packing"
+      ],
+      "origin": "caller_batch_data.content[1]",
+      "learnable": false,
+      "parent": null,
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "bilstm.embedding:in->bilstm.lookup:in:boundary",
+      "src": "bilstm.embedding",
+      "dst": "bilstm.lookup",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "bilstm.lookup:out->bilstm.embed_dropout:in:tensor",
+      "src": "bilstm.lookup",
+      "dst": "bilstm.embed_dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilstm.embed_dropout:out->bilstm.embedding:out:boundary",
+      "src": "bilstm.embed_dropout",
+      "dst": "bilstm.embedding",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "bilstm.packing:in->bilstm.pack:in:boundary",
+      "src": "bilstm.packing",
+      "dst": "bilstm.pack",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "bilstm.pack:out->bilstm.packing:out:boundary",
+      "src": "bilstm.pack",
+      "dst": "bilstm.packing",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "bilstm.recurrent:in->bilstm.core:in:boundary",
+      "src": "bilstm.recurrent",
+      "dst": "bilstm.core",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "bilstm.core:out->bilstm.select_hidden:in:tensor",
+      "src": "bilstm.core",
+      "dst": "bilstm.select_hidden",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilstm.select_hidden:out->bilstm.recurrent:out:boundary",
+      "src": "bilstm.select_hidden",
+      "dst": "bilstm.recurrent",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "bilstm.select_hidden:out->bilstm.forward_state:in:value_operand",
+      "src": "bilstm.select_hidden",
+      "dst": "bilstm.forward_state",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "bilstm.forward_state:out->bilstm.last_layer:operand[0]:operand_collection",
+      "src": "bilstm.forward_state",
+      "dst": "bilstm.last_layer",
+      "src_port": "out",
+      "dst_port": "operand[0]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "bilstm.select_hidden:out->bilstm.reverse_state:in:value_operand",
+      "src": "bilstm.select_hidden",
+      "dst": "bilstm.reverse_state",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "value_operand"
+    },
+    {
+      "id": "bilstm.reverse_state:out->bilstm.last_layer:operand[1]:operand_collection",
+      "src": "bilstm.reverse_state",
+      "dst": "bilstm.last_layer",
+      "src_port": "out",
+      "dst_port": "operand[1]",
+      "role": "operand_collection"
+    },
+    {
+      "id": "bilstm.aggregation:in->bilstm.last_layer:in:boundary",
+      "src": "bilstm.aggregation",
+      "dst": "bilstm.last_layer",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "bilstm.last_layer:out->bilstm.concat:in:tensor",
+      "src": "bilstm.last_layer",
+      "dst": "bilstm.concat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilstm.concat:out->bilstm.hidden_dropout:in:tensor",
+      "src": "bilstm.concat",
+      "dst": "bilstm.hidden_dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilstm.hidden_dropout:out->bilstm.aggregation:out:boundary",
+      "src": "bilstm.hidden_dropout",
+      "dst": "bilstm.aggregation",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "bilstm.classifier:in->bilstm.fc1:in:boundary",
+      "src": "bilstm.classifier",
+      "dst": "bilstm.fc1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "bilstm.fc1:out->bilstm.head_dropout:in:tensor",
+      "src": "bilstm.fc1",
+      "dst": "bilstm.head_dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilstm.head_dropout:out->bilstm.fc2:in:tensor",
+      "src": "bilstm.head_dropout",
+      "dst": "bilstm.fc2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilstm.fc2:out->bilstm.classifier:out:boundary",
+      "src": "bilstm.fc2",
+      "dst": "bilstm.classifier",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "bilstm.forward:in->bilstm.embedding:in:boundary",
+      "src": "bilstm.forward",
+      "dst": "bilstm.embedding",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "bilstm.embedding:out->bilstm.packing:in:tensor",
+      "src": "bilstm.embedding",
+      "dst": "bilstm.packing",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilstm.packing:out->bilstm.recurrent:in:tensor",
+      "src": "bilstm.packing",
+      "dst": "bilstm.recurrent",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilstm.recurrent:out->bilstm.aggregation:in:tensor",
+      "src": "bilstm.recurrent",
+      "dst": "bilstm.aggregation",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilstm.aggregation:out->bilstm.classifier:in:tensor",
+      "src": "bilstm.aggregation",
+      "dst": "bilstm.classifier",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilstm.classifier:out->bilstm.forward:out:boundary",
+      "src": "bilstm.classifier",
+      "dst": "bilstm.forward",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "bilstm.caller:in->bilstm.argmax:in:boundary",
+      "src": "bilstm.caller",
+      "dst": "bilstm.argmax",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "bilstm.argmax:out->bilstm.caller:out:boundary",
+      "src": "bilstm.argmax",
+      "dst": "bilstm.caller",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "bilstm.root:in->bilstm.input:in:boundary",
+      "src": "bilstm.root",
+      "dst": "bilstm.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "bilstm.input:out->bilstm.forward:in:tensor",
+      "src": "bilstm.input",
+      "dst": "bilstm.forward",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilstm.forward:out->bilstm.caller:in:tensor",
+      "src": "bilstm.forward",
+      "dst": "bilstm.caller",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "bilstm.caller:out->bilstm.root:out:boundary",
+      "src": "bilstm.caller",
+      "dst": "bilstm.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "bilstm.lengths:out->bilstm.pack:lengths:sequence_length",
+      "src": "bilstm.lengths",
+      "dst": "bilstm.pack",
+      "src_port": "out",
+      "dst_port": "lengths",
+      "role": "sequence_length"
+    }
+  ],
+  "facts": [
+    "The fixed constructor uses Embedding(V,128,padding_idx=PAD_IDX), LSTM(128,256,num_layers=2,bidirectional=True,dropout=.5).",
+    "The selected caller sets eval; all three self.dropout calls and recurrent inter-layer dropout are inactive identities in this profile.",
+    "Training recurrent dropout operates between two LSTM layers, not on h_n as a separate source-defined gate.",
+    "The three external dropout call sites reuse one weightless module; training draws fresh masks rather than sharing one mask.",
+    "Packing is sequence-first with default enforce_sorted=True; BucketIterator sorts within batch by content length.",
+    "h_n and c_n have [4,B,256]; forward selects only last-layer forward hidden[-2] and reverse hidden[-1], in that order.",
+    "The 512-wide concat does not combine all four hidden states, time outputs, or cell states.",
+    "fc1 is constructed from hidden_dim*num_layers, which equals512 only for this selected2-layer profile; the concat width depends on2 directions.",
+    "Linear512->64, self.dropout, Linear64->4 contain no ReLU/other activation between the Linear layers; forward returns raw logits.",
+    "compute_accuracy selects max(logits,1) indices without Softmax; predict_class separately applies Softmax and is not the chosen caller.",
+    "build_vocab references GloVe100-dimensional vectors, but the source never copies them to the128-dimensional Embedding.",
+    "Layer and direction families have independent parameters; each family reuses its weights across valid time steps.",
+    "The notebook has no gate implementation; nn.LSTM remains an opaque external library boundary. Models and old torchtext code are never executed."
+  ],
+  "corrections": [
+    "Do not draw a generic single-layer LSTM or replace hidden[-2]/[-1] with all-layer flattening or last time output.",
+    "Do not add hidden/cell summation, attention, mean pooling, or the commented-out pad_packed_sequence call.",
+    "Do not rename the actual fc1 expression to a generic direction formula; explain why it works for this fixed profile only.",
+    "Do not invent ReLU between fc1 and fc2 or put the predict_class Softmax into model.forward or compute_accuracy.",
+    "Do not label Embedding as pretrained GloVe or a100-dimensional projection based only on build_vocab vectors metadata.",
+    "Two directions describe the opaque LSTM runtime, not two separately constructed notebook nn.LSTM modules or extracted gate graphs."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

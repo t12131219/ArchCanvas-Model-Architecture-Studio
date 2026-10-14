@@ -1,0 +1,569 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "fire",
+  "profile": {
+    "scope": "One Fire block only",
+    "constructor": "Fire(64,16,64,64)",
+    "inplanes": 64,
+    "squeeze_planes": 16,
+    "expand_channels": [
+      64,
+      64
+    ],
+    "input_shape": "[B,64,32,32]",
+    "output_shape": "[B,128,32,32]",
+    "shape_origin": "explicit static module profile; not observed",
+    "mode": "caller train/eval; not executed",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "pytorch/vision",
+    "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+    "snapshot": "88b7578cd40309142e6f3aa152438e3ee450fcfd4e242f61cb3919c3efab888f"
+  },
+  "nodes": [
+    {
+      "id": "fire.root",
+      "label": "Fire squeeze/expand / module",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.forward"
+      ],
+      "shape": "[B,128,32,32]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fire.input",
+      "label": "Module input",
+      "kind": "input",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "learnable": false,
+      "parent": "fire.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fire.module",
+      "label": "Fire",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.forward"
+      ],
+      "shape": "[B,128,32,32]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "fire.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fire.squeeze",
+      "label": "Squeeze 1x1",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.forward"
+      ],
+      "shape": "[B,16,32,32]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "fire.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fire.squeeze.conv",
+      "label": "Conv 1 / 64→16",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.forward"
+      ],
+      "shape": "[B,16,32,32]",
+      "detail": [],
+      "parameter": "squeeze",
+      "instance_identity": "fire.squeeze",
+      "learnable": true,
+      "in_channels": 64,
+      "out_channels": 16,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": true,
+      "source_operation": "nn.Conv2d",
+      "parent": "fire.squeeze",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fire.squeeze.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.forward"
+      ],
+      "shape": "[B,16,32,32]",
+      "detail": [],
+      "inplace": true,
+      "learnable": false,
+      "parent": "fire.squeeze",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fire.expand",
+      "label": "Two independent expansions",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.forward"
+      ],
+      "shape": "2 x [B,64,32,32]",
+      "detail": [],
+      "collection_type": "list",
+      "literal_tuple": false,
+      "dispatch": false,
+      "mode": "parallel",
+      "parent": "fire.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]"
+      ]
+    },
+    {
+      "id": "fire.expand1x1",
+      "label": "expand1x1",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "fire.expand",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fire.expand1x1.conv",
+      "label": "Conv 1 / 16→64",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "parameter": "expand1x1",
+      "instance_identity": "fire.expand1x1",
+      "learnable": true,
+      "in_channels": 16,
+      "out_channels": 64,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": true,
+      "source_operation": "nn.Conv2d",
+      "parent": "fire.expand1x1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fire.expand1x1.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "inplace": true,
+      "learnable": false,
+      "parent": "fire.expand1x1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fire.expand3x3",
+      "label": "expand3x3",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "fire.expand",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fire.expand3x3.conv",
+      "label": "Conv 3 / 16→64",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "parameter": "expand3x3",
+      "instance_identity": "fire.expand3x3",
+      "learnable": true,
+      "in_channels": 16,
+      "out_channels": 64,
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "groups": 1,
+      "bias": true,
+      "source_operation": "nn.Conv2d",
+      "parent": "fire.expand3x3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fire.expand3x3.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "inplace": true,
+      "learnable": false,
+      "parent": "fire.expand3x3",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fire.concat",
+      "label": "Concat channel dim=1",
+      "kind": "concat",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.forward"
+      ],
+      "shape": "[B,128,32,32]",
+      "detail": [],
+      "dim": 1,
+      "ordered_inputs": [
+        "fire.expand1x1",
+        "fire.expand3x3"
+      ],
+      "learnable": false,
+      "parent": "fire.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fire.output",
+      "label": "Module output",
+      "kind": "output",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.forward"
+      ],
+      "shape": "[B,128,32,32]",
+      "detail": [],
+      "learnable": false,
+      "parent": "fire.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "fire.squeeze:in->fire.squeeze.conv:in:boundary",
+      "src": "fire.squeeze",
+      "dst": "fire.squeeze.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "fire.squeeze.conv:out->fire.squeeze.relu:in:tensor",
+      "src": "fire.squeeze.conv",
+      "dst": "fire.squeeze.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fire.squeeze.relu:out->fire.squeeze:out:boundary",
+      "src": "fire.squeeze.relu",
+      "dst": "fire.squeeze",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "fire.expand1x1:in->fire.expand1x1.conv:in:boundary",
+      "src": "fire.expand1x1",
+      "dst": "fire.expand1x1.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "fire.expand1x1.conv:out->fire.expand1x1.relu:in:tensor",
+      "src": "fire.expand1x1.conv",
+      "dst": "fire.expand1x1.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fire.expand1x1.relu:out->fire.expand1x1:out:boundary",
+      "src": "fire.expand1x1.relu",
+      "dst": "fire.expand1x1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "fire.expand3x3:in->fire.expand3x3.conv:in:boundary",
+      "src": "fire.expand3x3",
+      "dst": "fire.expand3x3.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "fire.expand3x3.conv:out->fire.expand3x3.relu:in:tensor",
+      "src": "fire.expand3x3.conv",
+      "dst": "fire.expand3x3.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fire.expand3x3.relu:out->fire.expand3x3:out:boundary",
+      "src": "fire.expand3x3.relu",
+      "dst": "fire.expand3x3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "fire.expand:in->fire.expand1x1:in:fork",
+      "src": "fire.expand",
+      "dst": "fire.expand1x1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "fire.expand1x1:out->fire.expand:item[0]:tuple_collection",
+      "src": "fire.expand1x1",
+      "dst": "fire.expand",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "fire.expand:in->fire.expand3x3:in:fork",
+      "src": "fire.expand",
+      "dst": "fire.expand3x3",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "fire.expand3x3:out->fire.expand:item[1]:tuple_collection",
+      "src": "fire.expand3x3",
+      "dst": "fire.expand",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "fire.module:in->fire.squeeze:in:boundary",
+      "src": "fire.module",
+      "dst": "fire.squeeze",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "fire.squeeze:out->fire.expand:in:tensor",
+      "src": "fire.squeeze",
+      "dst": "fire.expand",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fire.expand:out->fire.concat:in:tensor",
+      "src": "fire.expand",
+      "dst": "fire.concat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fire.concat:out->fire.module:out:boundary",
+      "src": "fire.concat",
+      "dst": "fire.module",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "fire.root:in->fire.input:in:boundary",
+      "src": "fire.root",
+      "dst": "fire.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "fire.input:out->fire.module:in:tensor",
+      "src": "fire.input",
+      "dst": "fire.module",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fire.module:out->fire.output:in:tensor",
+      "src": "fire.module",
+      "dst": "fire.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fire.output:out->fire.root:out:boundary",
+      "src": "fire.output",
+      "dst": "fire.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    }
+  ],
+  "facts": [
+    "Squeeze Conv/ReLU runs before both independent expand paths.",
+    "All three Conv use bias=True; no BN, pooling or residual.",
+    "Two expanded tensors concatenate in 1x1 then3x3 order;128 channels."
+  ],
+  "corrections": [
+    "The expand paths consume squeezed x, not raw64-channel x.",
+    "Same16->64 channel change is not shared weights."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

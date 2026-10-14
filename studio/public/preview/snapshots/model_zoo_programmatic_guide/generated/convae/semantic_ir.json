@@ -1,0 +1,893 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "convae",
+  "profile": {
+    "task": "MNIST image reconstruction",
+    "mode": "eval",
+    "input_channels": 1,
+    "input_size": [
+      28,
+      28
+    ],
+    "encoder_channels": [
+      4,
+      8
+    ],
+    "decoder_channels": [
+      4,
+      1
+    ],
+    "conv_kernel": 3,
+    "conv_stride": 1,
+    "conv_padding": 1,
+    "conv_bias": true,
+    "encoder_pool": "MaxPool2d(kernel=2,stride=2)",
+    "decoder_upsampling": "F.interpolate(scale_factor=2, mode='nearest')",
+    "activation": "LeakyReLU",
+    "negative_slope": 0.01,
+    "encoded_shape": "[B,8,7,7]",
+    "output": "(logits, probas)",
+    "batch_size_setting": 128,
+    "training_loss_in_forward": false,
+    "config_source": "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py notebook cells 7,9,11"
+  },
+  "source": {
+    "repository": "rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "d72c614d79563c7756290b44770a5262b15bfc58e12c9844311724d2862bc09c"
+  },
+  "nodes": [
+    {
+      "id": "convae.root",
+      "label": "ConvolutionalAutoencoder / MNIST",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "(logits, probas)",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.input",
+      "label": "MNIST grayscale image",
+      "kind": "input",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [
+        "caller ToTensor gives [0,1]; no image flattening"
+      ],
+      "parent": "convae.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.encoder",
+      "label": "Encoder: convolution + pooling",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,8,7,7]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "convae.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.enc1",
+      "label": "Encode stage 1 / 1 -> 4",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,4,14,14]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "convae.encoder",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.conv1",
+      "label": "Conv2d 1 -> 4",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,4,28,28]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; bias=True"
+      ],
+      "parameter": "conv_1",
+      "parent": "convae.enc1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.act1",
+      "label": "LeakyReLU",
+      "kind": "leaky_relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,4,28,28]",
+      "detail": [
+        "F.leaky_relu default negative_slope=0.01"
+      ],
+      "negative_slope": 0.01,
+      "parent": "convae.enc1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.pool1",
+      "label": "MaxPool2d 2x2 / 2",
+      "kind": "max_pool2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,4,14,14]",
+      "detail": [
+        "padding=0; pool indices are not returned"
+      ],
+      "parent": "convae.enc1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.enc2",
+      "label": "Encode stage 2 / 4 -> 8",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,8,7,7]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "convae.encoder",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.conv2",
+      "label": "Conv2d 4 -> 8",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,8,14,14]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; bias=True"
+      ],
+      "parameter": "conv_2",
+      "parent": "convae.enc2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.act2",
+      "label": "LeakyReLU",
+      "kind": "leaky_relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,8,14,14]",
+      "detail": [
+        "F.leaky_relu default negative_slope=0.01"
+      ],
+      "negative_slope": 0.01,
+      "parent": "convae.enc2",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.pool2",
+      "label": "MaxPool2d 2x2 / 2",
+      "kind": "max_pool2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,8,7,7]",
+      "detail": [
+        "padding=0; no retained max-pool indices"
+      ],
+      "parent": "convae.enc2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.code",
+      "label": "Encoded feature map",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,8,7,7]",
+      "detail": [
+        "logical label for pool_2 output; not an extra source computation"
+      ],
+      "parent": "convae.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.decoder",
+      "label": "Decoder: resize then convolution",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "logits: [B,1,28,28]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "convae.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.dec1",
+      "label": "Decode stage 1 / nearest + 8 -> 4",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,4,14,14]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "convae.decoder",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.resize1",
+      "label": "Nearest interpolation x 2",
+      "kind": "interpolate",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,8,14,14]",
+      "detail": [
+        "F.interpolate(scale_factor=2, mode='nearest')",
+        "not MaxUnpool2d; no learned upsampling weights"
+      ],
+      "scale_factor": 2,
+      "mode": "nearest",
+      "learnable": false,
+      "parent": "convae.dec1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.conv3",
+      "label": "Conv2d 8 -> 4",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,4,14,14]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; bias=True"
+      ],
+      "parameter": "conv_3",
+      "parent": "convae.dec1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.act3",
+      "label": "LeakyReLU",
+      "kind": "leaky_relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,4,14,14]",
+      "detail": [
+        "F.leaky_relu default negative_slope=0.01"
+      ],
+      "negative_slope": 0.01,
+      "parent": "convae.dec1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.dec2",
+      "label": "Decode stage 2 / nearest + 4 -> 1",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "convae.decoder",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.resize2",
+      "label": "Nearest interpolation x 2",
+      "kind": "interpolate",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,4,28,28]",
+      "detail": [
+        "F.interpolate(scale_factor=2, mode='nearest')"
+      ],
+      "scale_factor": 2,
+      "mode": "nearest",
+      "learnable": false,
+      "parent": "convae.dec2",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.conv4",
+      "label": "Conv2d 4 -> 1",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [
+        "kernel=3; stride=1; padding=1; bias=True"
+      ],
+      "parameter": "conv_4",
+      "parent": "convae.dec2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.act4",
+      "label": "LeakyReLU -> logits",
+      "kind": "leaky_relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "logits: [B,1,28,28]",
+      "detail": [
+        "source applies activation AFTER final Conv2d",
+        "F.leaky_relu default negative_slope=0.01"
+      ],
+      "negative_slope": 0.01,
+      "parent": "convae.dec2",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.returns",
+      "label": "Return logits / decoded probabilities",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "(logits, probas)",
+      "detail": [
+        "same logits tensor goes to both branches; tuple collection is not arithmetic addition"
+      ],
+      "mode": "parallel",
+      "port_bindings": {
+        "out": [
+          {
+            "node": "convae.logits",
+            "port": "out"
+          },
+          {
+            "node": "convae.sigmoid",
+            "port": "out"
+          }
+        ],
+        "item[0]": {
+          "node": "convae.logits",
+          "port": "out"
+        },
+        "item[1]": {
+          "node": "convae.sigmoid",
+          "port": "out"
+        },
+        "logits": {
+          "node": "convae.logits",
+          "port": "out"
+        },
+        "probas": {
+          "node": "convae.sigmoid",
+          "port": "out"
+        }
+      },
+      "parent": "convae.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "logits",
+        "probas"
+      ]
+    },
+    {
+      "id": "convae.logits",
+      "label": "Retain activated logits",
+      "kind": "identity",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [
+        "return first field; used by binary_cross_entropy_with_logits"
+      ],
+      "parent": "convae.returns",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.sigmoid",
+      "label": "Sigmoid",
+      "kind": "sigmoid",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "probas: [B,1,28,28]",
+      "detail": [
+        "torch.sigmoid(logits); reconstruction in [0,1]"
+      ],
+      "parent": "convae.returns",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "convae.output",
+      "label": "Forward return tuple",
+      "kind": "output",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/autoencoder/ae-conv-nneighbor.py::ConvolutionalAutoencoder.forward"
+      ],
+      "shape": "2 x [B,1,28,28]",
+      "detail": [
+        "return logits, probas; output is not only reconstruction"
+      ],
+      "parent": "convae.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "convae.enc1:in->convae.conv1:in:boundary",
+      "src": "convae.enc1",
+      "dst": "convae.conv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convae.conv1:out->convae.act1:in:tensor",
+      "src": "convae.conv1",
+      "dst": "convae.act1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convae.act1:out->convae.pool1:in:tensor",
+      "src": "convae.act1",
+      "dst": "convae.pool1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convae.pool1:out->convae.enc1:out:boundary",
+      "src": "convae.pool1",
+      "dst": "convae.enc1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convae.enc2:in->convae.conv2:in:boundary",
+      "src": "convae.enc2",
+      "dst": "convae.conv2",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convae.conv2:out->convae.act2:in:tensor",
+      "src": "convae.conv2",
+      "dst": "convae.act2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convae.act2:out->convae.pool2:in:tensor",
+      "src": "convae.act2",
+      "dst": "convae.pool2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convae.pool2:out->convae.enc2:out:boundary",
+      "src": "convae.pool2",
+      "dst": "convae.enc2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convae.encoder:in->convae.enc1:in:boundary",
+      "src": "convae.encoder",
+      "dst": "convae.enc1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convae.enc1:out->convae.enc2:in:tensor",
+      "src": "convae.enc1",
+      "dst": "convae.enc2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convae.enc2:out->convae.encoder:out:boundary",
+      "src": "convae.enc2",
+      "dst": "convae.encoder",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convae.dec1:in->convae.resize1:in:boundary",
+      "src": "convae.dec1",
+      "dst": "convae.resize1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convae.resize1:out->convae.conv3:in:tensor",
+      "src": "convae.resize1",
+      "dst": "convae.conv3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convae.conv3:out->convae.act3:in:tensor",
+      "src": "convae.conv3",
+      "dst": "convae.act3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convae.act3:out->convae.dec1:out:boundary",
+      "src": "convae.act3",
+      "dst": "convae.dec1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convae.dec2:in->convae.resize2:in:boundary",
+      "src": "convae.dec2",
+      "dst": "convae.resize2",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convae.resize2:out->convae.conv4:in:tensor",
+      "src": "convae.resize2",
+      "dst": "convae.conv4",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convae.conv4:out->convae.act4:in:tensor",
+      "src": "convae.conv4",
+      "dst": "convae.act4",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convae.act4:out->convae.dec2:out:boundary",
+      "src": "convae.act4",
+      "dst": "convae.dec2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convae.decoder:in->convae.dec1:in:boundary",
+      "src": "convae.decoder",
+      "dst": "convae.dec1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convae.dec1:out->convae.dec2:in:tensor",
+      "src": "convae.dec1",
+      "dst": "convae.dec2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convae.dec2:out->convae.decoder:out:boundary",
+      "src": "convae.dec2",
+      "dst": "convae.decoder",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "convae.returns:in->convae.logits:in:fork",
+      "src": "convae.returns",
+      "dst": "convae.logits",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "convae.logits:out->convae.returns:item[0]:tuple_collection",
+      "src": "convae.logits",
+      "dst": "convae.returns",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "convae.returns:in->convae.sigmoid:in:fork",
+      "src": "convae.returns",
+      "dst": "convae.sigmoid",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "convae.sigmoid:out->convae.returns:item[1]:tuple_collection",
+      "src": "convae.sigmoid",
+      "dst": "convae.returns",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "convae.root:in->convae.input:in:boundary",
+      "src": "convae.root",
+      "dst": "convae.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "convae.input:out->convae.encoder:in:tensor",
+      "src": "convae.input",
+      "dst": "convae.encoder",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convae.encoder:out->convae.code:in:tensor",
+      "src": "convae.encoder",
+      "dst": "convae.code",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convae.code:out->convae.decoder:in:tensor",
+      "src": "convae.code",
+      "dst": "convae.decoder",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convae.decoder:out->convae.returns:in:tensor",
+      "src": "convae.decoder",
+      "dst": "convae.returns",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convae.returns:out->convae.output:in:tensor",
+      "src": "convae.returns",
+      "dst": "convae.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "convae.output:out->convae.root:out:boundary",
+      "src": "convae.output",
+      "dst": "convae.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    }
+  ],
+  "facts": [
+    "Encoder is Conv1->LeakyReLU->MaxPool1->Conv2->LeakyReLU->MaxPool2.",
+    "The code map has shape [B,8,7,7]; no fully connected latent layer or image flattening is present.",
+    "Decoder performs two nearest-neighbor F.interpolate calls followed by ordinary Conv2d.",
+    "conv_3 actually maps 8 to 4 channels; its nearby 14x14x8 comment is stale.",
+    "MaxPool2d does not return indices, so no MaxUnpool2d or pooling-index dependency exists.",
+    "Both F.leaky_relu calls in encoder and both in decoder use the API default negative_slope=0.01.",
+    "The final Conv2d output is passed through LeakyReLU before being named logits and then Sigmoid.",
+    "forward returns both activated logits and sigmoid probabilities; the loss uses logits in the caller.",
+    "Four Conv2d modules have independent weights, with default bias=True; there is no BatchNorm."
+  ],
+  "corrections": [
+    "The decoder comments say Unpool, but executed code is nearest interpolation; draw the actual function.",
+    "Correct conv_3 channel label from the stale comment to the constructed 8->4 mapping.",
+    "Do not substitute ConvTranspose2d, MaxUnpool2d or learned upsampling for this implementation.",
+    "Keep the final LeakyReLU before Sigmoid, even though many other autoencoders omit it.",
+    "Retain both forward outputs and keep binary_cross_entropy_with_logits outside the architecture.",
+    "No model-specific reference PNG is supplied; the diagram follows source and the shared Transformer theme."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

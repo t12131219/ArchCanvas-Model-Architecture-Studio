@@ -1,0 +1,68 @@
+{
+  "task": "MNIST adversarial generation",
+  "mode": "train caller forward paths",
+  "latent_dim": 100,
+  "noise_distribution": "uniform",
+  "noise_range": [
+    0.0,
+    1.0
+  ],
+  "batch_size_setting": 128,
+  "conditioning": false,
+  "generator_channels": [
+    64,
+    32,
+    16,
+    8,
+    1
+  ],
+  "generator_spatial": [
+    7,
+    13,
+    25,
+    27,
+    28
+  ],
+  "generator_output_range": [
+    -1,
+    1
+  ],
+  "discriminator_channels": [
+    1,
+    8,
+    16,
+    32
+  ],
+  "discriminator_spatial": [
+    28,
+    14,
+    7,
+    4
+  ],
+  "discriminator_conv_stages": 3,
+  "discriminator_linear_input": 512,
+  "discriminator_sigmoid": false,
+  "discriminator_output": "critic_score",
+  "discriminator_receiver": "global model.discriminator",
+  "discriminator_call_site_count": 3,
+  "discriminator_invocations_per_batch": 11,
+  "discriminator_instance_count": 1,
+  "selected_entries": [
+    "GAN.generator_forward",
+    "GAN.discriminator_forward"
+  ],
+  "joint_forward_defined": false,
+  "generator_objective_detached": false,
+  "discriminator_fake_detached": true,
+  "fake_reused_after_generator_step": true,
+  "loss": "mean(y_true*y_pred)",
+  "valid_target": -1,
+  "fake_target": 1,
+  "optimizer": "RMSprop",
+  "learning_rate": 5e-05,
+  "discriminator_iterations": 5,
+  "weight_clipping": 0.01,
+  "gradient_penalty": false,
+  "model_executed": false,
+  "symbolic_shapes": true
+}

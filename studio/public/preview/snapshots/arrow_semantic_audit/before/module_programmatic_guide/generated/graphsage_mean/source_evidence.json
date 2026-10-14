@@ -1,0 +1,58 @@
+{
+  "source_project": "graphsage-modules",
+  "repository": "williamleif/graphsage-simple",
+  "commit": "d3105e5223e9602ba3ef2dd27e343d044fe4bb5f",
+  "source_snapshot_sha256": "4cc04deac242a7149120c5f8dd8a3614fca244ca72ec4a3dd980049d363e3527",
+  "entry": "graphsage-modules/graphsage/encoders.py::Encoder.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "graphsage-modules/graphsage/aggregators.py": {
+      "sha256": "d1e5365b8d50c6af729cfde67012546568e00a7ed4263113d9302b3bc77d7c32",
+      "lines": 63,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/williamleif/graphsage-simple/d3105e5223e9602ba3ef2dd27e343d044fe4bb5f/graphsage/aggregators.py",
+      "derived_from": null
+    },
+    "graphsage-modules/graphsage/encoders.py": {
+      "sha256": "125969b2849c77f961318409d6d4bc2d57d8f1f266df05b279b0c85a78f350b9",
+      "lines": 50,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/williamleif/graphsage-simple/d3105e5223e9602ba3ef2dd27e343d044fe4bb5f/graphsage/encoders.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "graphsage-modules/graphsage/aggregators.py::MeanAggregator.forward": {
+      "path": "graphsage-modules/graphsage/aggregators.py",
+      "symbol": "MeanAggregator.forward",
+      "start": 30,
+      "end": 63,
+      "snippet": "    def forward(self, nodes, to_neighs, num_sample=10):\n        \"\"\"\n        nodes --- list of nodes in a batch\n        to_neighs --- list of sets, each set is the set of neighbors for node in batch\n        num_sample --- number of neighbors to sample. No sampling if None.\n        \"\"\"\n        # Local pointers to functions (speed hack)\n        _set = set\n        if not num_sample is None:\n            _sample = random.sample\n            samp_neighs = [_set(_sample(to_neigh, \n                            num_sample,\n                            )) if len(to_neigh) >= num_sample else to_neigh for to_neigh in to_neighs]\n        else:\n            samp_neighs = to_neighs\n\n        if self.gcn:\n            samp_neighs = [samp_neigh + set([nodes[i]]) for i, samp_neigh in enumerate(samp_neighs)]\n        unique_nodes_list = list(set.union(*samp_neighs))\n        unique_nodes = {n:i for i,n in enumerate(unique_nodes_list)}\n        mask = Variable(torch.zeros(len(samp_neighs), len(unique_nodes)))\n        column_indices = [unique_nodes[n] for samp_neigh in samp_neighs for n in samp_neigh]   \n        row_indices = [i for i in range(len(samp_neighs)) for j in range(len(samp_neighs[i]))]\n        mask[row_indices, column_indices] = 1\n        if self.cuda:\n            mask = mask.cuda()\n        num_neigh = mask.sum(1, keepdim=True)\n        mask = mask.div(num_neigh)\n        if self.cuda:\n            embed_matrix = self.features(torch.LongTensor(unique_nodes_list).cuda())\n        else:\n            embed_matrix = self.features(torch.LongTensor(unique_nodes_list))\n        to_feats = mask.mm(embed_matrix)\n        return to_feats",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "graphsage-modules/graphsage/encoders.py::Encoder.__init__": {
+      "path": "graphsage-modules/graphsage/encoders.py",
+      "symbol": "Encoder.__init__",
+      "start": 10,
+      "end": 31,
+      "snippet": "    def __init__(self, features, feature_dim, \n            embed_dim, adj_lists, aggregator,\n            num_sample=10,\n            base_model=None, gcn=False, cuda=False, \n            feature_transform=False): \n        super(Encoder, self).__init__()\n\n        self.features = features\n        self.feat_dim = feature_dim\n        self.adj_lists = adj_lists\n        self.aggregator = aggregator\n        self.num_sample = num_sample\n        if base_model != None:\n            self.base_model = base_model\n\n        self.gcn = gcn\n        self.embed_dim = embed_dim\n        self.cuda = cuda\n        self.aggregator.cuda = cuda\n        self.weight = nn.Parameter(\n                torch.FloatTensor(embed_dim, self.feat_dim if self.gcn else 2 * self.feat_dim))\n        init.xavier_uniform(self.weight)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "graphsage-modules/graphsage/encoders.py::Encoder.forward": {
+      "path": "graphsage-modules/graphsage/encoders.py",
+      "symbol": "Encoder.forward",
+      "start": 33,
+      "end": 50,
+      "snippet": "    def forward(self, nodes):\n        \"\"\"\n        Generates embeddings for a batch of nodes.\n\n        nodes     -- list of nodes\n        \"\"\"\n        neigh_feats = self.aggregator.forward(nodes, [self.adj_lists[int(node)] for node in nodes], \n                self.num_sample)\n        if not self.gcn:\n            if self.cuda:\n                self_feats = self.features(torch.LongTensor(nodes).cuda())\n            else:\n                self_feats = self.features(torch.LongTensor(nodes))\n            combined = torch.cat([self_feats, neigh_feats], dim=1)\n        else:\n            combined = neigh_feats\n        combined = F.relu(self.weight.mm(combined.t()))\n        return combined",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": []
+}

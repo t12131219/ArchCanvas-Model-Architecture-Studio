@@ -1,0 +1,558 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "flow_sequential",
+  "profile": {
+    "mode": "direct",
+    "num_inputs": 4,
+    "logdets": null,
+    "component_order": [
+      "Sigmoid",
+      "Reverse"
+    ],
+    "component_instances": [
+      "0",
+      "1"
+    ],
+    "inverse_order": [
+      "Reverse",
+      "Sigmoid"
+    ],
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "FlowSequential container with explicitly chosen two registered child instances Sigmoid then Reverse; not a source training configuration.",
+    "source_contracts": [
+      [
+        "FlowSequential.forward",
+        "torch.zeros(inputs.size(0), 1, device=inputs.device)"
+      ],
+      [
+        "FlowSequential.forward",
+        "module(inputs, cond_inputs, mode)"
+      ],
+      [
+        "FlowSequential.forward",
+        "reversed(self._modules.values())"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "ikostrikov/pytorch-flows",
+    "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+    "snapshot": "c0ebb6c1af0b9d8f0b8140bbc16c5cf7122408fa79a5b25da427fac8d15d657a"
+  },
+  "nodes": [
+    {
+      "id": "flow_sequential.root",
+      "label": "FlowSequential / dual-stream composition",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::FlowSequential.forward",
+        "density-flow-modules/flows.py::Sigmoid.forward",
+        "density-flow-modules/flows.py::Reverse.__init__",
+        "density-flow-modules/flows.py::Reverse.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "flow_sequential.x"
+        ],
+        [
+          "flow_sequential.body"
+        ],
+        [
+          "flow_sequential.y",
+          "flow_sequential.ld"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E004",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "flow_sequential.x",
+      "label": "Input features",
+      "kind": "input",
+      "source": [
+        "density-flow-modules/flows.py::FlowSequential.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parent": "flow_sequential.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "flow_sequential.body",
+      "label": "FlowSequential module",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::FlowSequential.forward",
+        "density-flow-modules/flows.py::Sigmoid.forward",
+        "density-flow-modules/flows.py::Reverse.__init__",
+        "density-flow-modules/flows.py::Reverse.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "flow_sequential.init"
+        ],
+        [
+          "flow_sequential.first"
+        ],
+        [
+          "flow_sequential.second",
+          "flow_sequential.add0"
+        ],
+        [
+          "flow_sequential.add1"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "flow_sequential.root",
+      "source_evidence": [
+        "E001",
+        "E004",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "flow_sequential.init",
+      "label": "Initialize accumulator",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::FlowSequential.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "flow_sequential.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "flow_sequential.zeros",
+      "label": "zeros(B,1) if logdets=None",
+      "kind": "control",
+      "source": [
+        "density-flow-modules/flows.py::FlowSequential.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "expression": "torch.zeros(inputs.size(0), 1, device=inputs.device)",
+      "condition": "logdets is None",
+      "learnable": false,
+      "parent": "flow_sequential.init",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "flow_sequential.first",
+      "label": "Registered component 0",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::FlowSequential.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "flow_sequential.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "features",
+        "logdet"
+      ]
+    },
+    {
+      "id": "flow_sequential.call0",
+      "label": "Sigmoid call -> u, det0",
+      "kind": "sigmoid",
+      "source": [
+        "density-flow-modules/flows.py::Sigmoid.forward",
+        "density-flow-modules/flows.py::FlowSequential.forward"
+      ],
+      "shape": "u[B,4]; det0[B,1]",
+      "detail": [],
+      "module_identity": "0",
+      "opaque_local_expansion": "see sigmoid_bijector case",
+      "selected_component": "Sigmoid",
+      "parent": "flow_sequential.first",
+      "source_evidence": [
+        "E004",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "flow_sequential.second",
+      "label": "Registered component 1",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::FlowSequential.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "flow_sequential.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "features",
+        "logdet"
+      ]
+    },
+    {
+      "id": "flow_sequential.call1",
+      "label": "Reverse call -> v, det1=0",
+      "kind": "tensor",
+      "source": [
+        "density-flow-modules/flows.py::Reverse.forward",
+        "density-flow-modules/flows.py::Reverse.__init__",
+        "density-flow-modules/flows.py::FlowSequential.forward"
+      ],
+      "shape": "v[B,4]; det1[B,1]",
+      "detail": [],
+      "module_identity": "1",
+      "selected_component": "Reverse",
+      "permutation": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "parameters": [],
+      "parent": "flow_sequential.second",
+      "source_evidence": [
+        "E003",
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "flow_sequential.add0",
+      "label": "Accumulate component 0",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::FlowSequential.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "flow_sequential.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "accumulator",
+        "increment"
+      ]
+    },
+    {
+      "id": "flow_sequential.sum0",
+      "label": "logdets += det0",
+      "kind": "add",
+      "source": [
+        "density-flow-modules/flows.py::FlowSequential.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "expression": "logdet",
+      "operation": "inplace accumulator add",
+      "iteration": 0,
+      "parent": "flow_sequential.add0",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "flow_sequential.add1",
+      "label": "Accumulate component 1",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::FlowSequential.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "flow_sequential.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "accumulator",
+        "increment"
+      ]
+    },
+    {
+      "id": "flow_sequential.sum1",
+      "label": "logdets += det1",
+      "kind": "add",
+      "source": [
+        "density-flow-modules/flows.py::FlowSequential.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "expression": "logdet",
+      "operation": "inplace accumulator add",
+      "iteration": 1,
+      "parent": "flow_sequential.add1",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "flow_sequential.y",
+      "label": "Composed transform output",
+      "kind": "output",
+      "source": [
+        "density-flow-modules/flows.py::FlowSequential.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parent": "flow_sequential.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "flow_sequential.ld",
+      "label": "Accumulated logdet",
+      "kind": "output",
+      "source": [
+        "density-flow-modules/flows.py::FlowSequential.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "parent": "flow_sequential.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "flow_sequential.init:in->flow_sequential.zeros:in:boundary",
+      "src": "flow_sequential.init",
+      "dst": "flow_sequential.zeros",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_sequential.zeros:out->flow_sequential.init:out:boundary",
+      "src": "flow_sequential.zeros",
+      "dst": "flow_sequential.init",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_sequential.first:in->flow_sequential.call0:in:boundary",
+      "src": "flow_sequential.first",
+      "dst": "flow_sequential.call0",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_sequential.call0:out->flow_sequential.first:out:boundary",
+      "src": "flow_sequential.call0",
+      "dst": "flow_sequential.first",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_sequential.second:in->flow_sequential.call1:in:boundary",
+      "src": "flow_sequential.second",
+      "dst": "flow_sequential.call1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_sequential.call1:out->flow_sequential.second:out:boundary",
+      "src": "flow_sequential.call1",
+      "dst": "flow_sequential.second",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_sequential.add0:in->flow_sequential.sum0:in:boundary",
+      "src": "flow_sequential.add0",
+      "dst": "flow_sequential.sum0",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_sequential.sum0:out->flow_sequential.add0:out:boundary",
+      "src": "flow_sequential.sum0",
+      "dst": "flow_sequential.add0",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_sequential.add1:in->flow_sequential.sum1:in:boundary",
+      "src": "flow_sequential.add1",
+      "dst": "flow_sequential.sum1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_sequential.sum1:out->flow_sequential.add1:out:boundary",
+      "src": "flow_sequential.sum1",
+      "dst": "flow_sequential.add1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_sequential.x:out->flow_sequential.first:in:tensor",
+      "src": "flow_sequential.x",
+      "dst": "flow_sequential.first",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "flow_sequential.first:features->flow_sequential.second:features:tensor",
+      "src": "flow_sequential.first",
+      "dst": "flow_sequential.second",
+      "src_port": "features",
+      "dst_port": "features",
+      "role": "tensor"
+    },
+    {
+      "id": "flow_sequential.init:out->flow_sequential.add0:accumulator:tensor",
+      "src": "flow_sequential.init",
+      "dst": "flow_sequential.add0",
+      "src_port": "out",
+      "dst_port": "accumulator",
+      "role": "tensor"
+    },
+    {
+      "id": "flow_sequential.first:logdet->flow_sequential.add0:increment:tensor",
+      "src": "flow_sequential.first",
+      "dst": "flow_sequential.add0",
+      "src_port": "logdet",
+      "dst_port": "increment",
+      "role": "tensor"
+    },
+    {
+      "id": "flow_sequential.add0:out->flow_sequential.add1:accumulator:tensor",
+      "src": "flow_sequential.add0",
+      "dst": "flow_sequential.add1",
+      "src_port": "out",
+      "dst_port": "accumulator",
+      "role": "tensor"
+    },
+    {
+      "id": "flow_sequential.second:logdet->flow_sequential.add1:increment:tensor",
+      "src": "flow_sequential.second",
+      "dst": "flow_sequential.add1",
+      "src_port": "logdet",
+      "dst_port": "increment",
+      "role": "tensor"
+    },
+    {
+      "id": "flow_sequential.second:features->flow_sequential.y:in:tensor",
+      "src": "flow_sequential.second",
+      "dst": "flow_sequential.y",
+      "src_port": "features",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "flow_sequential.add1:out->flow_sequential.ld:in:tensor",
+      "src": "flow_sequential.add1",
+      "dst": "flow_sequential.ld",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Registration order controls direct traversal; inverse uses reversed(self._modules.values()) and asks each same instance for its inverse branch.",
+    "Each component returns a feature tensor and a logdet tensor. Feature composition and logdet accumulation are two distinct streams.",
+    "Selected Sigmoid/Reverse components are an illustrative constructor profile, not a claim that an upstream callsite instantiates this exact pair.",
+    "Reverse perm and inv_perm are ordinary NumPy attributes; no learned parameters. Their scalar Jacobian is zero."
+  ],
+  "corrections": [
+    "Do not chain component logdet into the next feature tensor or imply duplicate instances on inverse traversal."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

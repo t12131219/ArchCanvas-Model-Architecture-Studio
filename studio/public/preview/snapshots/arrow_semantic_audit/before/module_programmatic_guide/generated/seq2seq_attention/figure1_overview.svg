@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1610" height="940" viewBox="0 0 1610 940">
+<defs><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<metadata id="source-binding">{&quot;model&quot;: &quot;seq2seq_attention&quot;, &quot;source_snapshot_sha256&quot;: &quot;70a55845acd6db1afb3fa0c7b4a027b64773c11ebdf799a65bb0fa014c0dfe46&quot;, &quot;repository&quot;: &quot;IBM/pytorch-seq2seq&quot;, &quot;commit&quot;: &quot;f146087a9a271e9b50f46561e090324764b081fb&quot;, &quot;semantic_ir_sha256&quot;: &quot;f38f9f52d674658da26c282618204257e11452caaa19fbf304148097083ff942&quot;, &quot;view&quot;: 0}</metadata>
+<metadata id="diagram-style">{&quot;name&quot;: &quot;transformer-paper-model-zoo&quot;, &quot;version&quot;: 1, &quot;font&quot;: &quot;DejaVu Sans, Arial, sans-serif&quot;, &quot;text&quot;: &quot;#172336&quot;, &quot;line&quot;: &quot;#263348&quot;, &quot;palette&quot;: {&quot;root&quot;: &quot;#ffffff&quot;, &quot;group&quot;: &quot;#ffffff&quot;, &quot;inner&quot;: &quot;#fffaf6&quot;, &quot;layer&quot;: &quot;#ffffff&quot;, &quot;encoder&quot;: &quot;#e7f5fe&quot;, &quot;decoder&quot;: &quot;#fff0f5&quot;, &quot;embedding&quot;: &quot;#f8d4e1&quot;, &quot;input&quot;: &quot;#f8d4e1&quot;, &quot;output&quot;: &quot;#dfdff8&quot;, &quot;attention&quot;: &quot;#ffddb3&quot;, &quot;ffn&quot;: &quot;#c8ebfb&quot;, &quot;mixing&quot;: &quot;#c8ebfb&quot;, &quot;conv&quot;: &quot;#c8ebfb&quot;, &quot;pool&quot;: &quot;#d6f0df&quot;, &quot;norm&quot;: &quot;#fff6bd&quot;, &quot;concat&quot;: &quot;#fff6bd&quot;, &quot;linear&quot;: &quot;#dfdff8&quot;, &quot;softmax&quot;: &quot;#c9f1cd&quot;, &quot;sampling&quot;: &quot;#c9f1cd&quot;, &quot;recurrent&quot;: &quot;#ffddb3&quot;, &quot;decomposition&quot;: &quot;#d6f0df&quot;, &quot;tensor&quot;: &quot;#cdeaf8&quot;, &quot;activation&quot;: &quot;#f3f5f7&quot;, &quot;control&quot;: &quot;#f3f5f7&quot;}, &quot;typography&quot;: {&quot;title&quot;: 30, &quot;subtitle&quot;: 16, &quot;module&quot;: 22, &quot;inner&quot;: 20, &quot;operator&quot;: 20, &quot;shape&quot;: 16, &quot;detail&quot;: 14, &quot;evidence&quot;: 12, &quot;footer&quot;: 14, &quot;line_height&quot;: 1.18}, &quot;fill_width_nodes&quot;: [], &quot;visual_roles&quot;: {&quot;ibm.body&quot;: &quot;encoder&quot;, &quot;ibm.concat&quot;: &quot;norm&quot;, &quot;ibm.context&quot;: &quot;input&quot;, &quot;ibm.external_mask&quot;: &quot;input&quot;, &quot;ibm.flat&quot;: &quot;tensor&quot;, &quot;ibm.fusion&quot;: &quot;ffn&quot;, &quot;ibm.linear&quot;: &quot;linear&quot;, &quot;ibm.mask&quot;: &quot;control&quot;, &quot;ibm.mix&quot;: &quot;tensor&quot;, &quot;ibm.output&quot;: &quot;output&quot;, &quot;ibm.query&quot;: &quot;input&quot;, &quot;ibm.score&quot;: &quot;tensor&quot;, &quot;ibm.softmax&quot;: &quot;softmax&quot;, &quot;ibm.tanh&quot;: &quot;softmax&quot;, &quot;seq2seq_attention.root&quot;: &quot;root&quot;}, &quot;semantics&quot;: &quot;presentation aliases only; color does not imply mathematical equivalence or parameter sharing&quot;}</metadata>
+<text x="805.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="805.0" dy="0">Seq2seq dot attention / context fusion  |  Module overview</tspan>
+</text>
+<text x="805.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">IBM Attention / D16,query3,context8 / masked unscaled dot / returns weights  /  read bottom to top</tspan>
+</text>
+<g data-node-id="seq2seq_attention.root" data-visual-role="root"><title>ibm-seq2seq-attention/seq2seq/models/attention.py:40 Attention.__init__; ibm-seq2seq-attention/seq2seq/models/attention.py:45 Attention.set_mask; ibm-seq2seq-attention/seq2seq/models/attention.py:54 Attention.forward; parameter=not asserted; </title><rect x="230.0" y="98" width="1150" height="560" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5"/></g>
+<text x="247.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="247.0" dy="0">Seq2seq dot attention / context</tspan>
+<tspan x="247.0" dy="25.959999999999997">fusion</tspan>
+</text>
+<text x="1367.0" y="177" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1367.0" dy="0">E001,E003,E002</tspan>
+</text>
+<g data-node-id="ibm.query" data-visual-role="input"><title>ibm-seq2seq-attention/seq2seq/models/attention.py:54 Attention.forward; parameter=not asserted; </title><rect x="262.0" y="539.0" width="330" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="427.0" y="566.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="427.0" dy="0">Decoder output / query</tspan>
+</text>
+<text x="427.0" y="590.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="427.0" dy="0">[B,3,16]</tspan>
+</text>
+<text x="579.0" y="610.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="579.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="ibm.context" data-visual-role="input"><title>ibm-seq2seq-attention/seq2seq/models/attention.py:54 Attention.forward; parameter=not asserted; </title><rect x="640.0" y="527.0" width="330" height="105" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="805.0" y="554.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="805.0" dy="0">Encoder context / keys</tspan>
+<tspan x="805.0" dy="23.599999999999998">and values</tspan>
+</text>
+<text x="805.0" y="602.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">[B,8,16]</tspan>
+</text>
+<text x="957.0" y="622.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="957.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="ibm.external_mask" data-visual-role="input"><title>ibm-seq2seq-attention/seq2seq/models/attention.py:45 Attention.set_mask; parameter=not asserted; </title><rect x="1018.0" y="527.0" width="330" height="105" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="1183.0" y="554.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">Mask set by caller /</tspan>
+<tspan x="1183.0" dy="23.599999999999998">optional branch</tspan>
+</text>
+<text x="1183.0" y="602.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[B,3,8]</tspan>
+</text>
+<text x="1335.0" y="622.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E003</tspan>
+</text>
+<g data-node-id="ibm.body" data-visual-role="encoder"><title>ibm-seq2seq-attention/seq2seq/models/attention.py:40 Attention.__init__; ibm-seq2seq-attention/seq2seq/models/attention.py:54 Attention.forward; parameter=not asserted; </title><rect x="640.0" y="358.0" width="330" height="105" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="805.0" y="385.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="805.0" dy="0">Dot attention +</tspan>
+<tspan x="805.0" dy="23.599999999999998">decoder fusion</tspan>
+</text>
+<text x="805.0" y="433.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">[B,3,16]</tspan>
+</text>
+<text x="957.0" y="453.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="957.0" dy="0">E001,E002</tspan>
+</text>
+<g data-node-id="ibm.output" data-visual-role="output"><title>ibm-seq2seq-attention/seq2seq/models/attention.py:54 Attention.forward; parameter=not asserted; </title><rect x="640.0" y="189.0" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="805.0" y="216.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="805.0" dy="0">Return fused output,</tspan>
+<tspan x="805.0" dy="23.599999999999998">attention</tspan>
+</text>
+<text x="805.0" y="264.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">[B,3,16]; [B,3,8]</tspan>
+</text>
+<text x="957.0" y="284.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="957.0" dy="0">E002</tspan>
+</text>
+<path data-route-id="route-0001" d="M 415.0,539.0 L 415.0,487.0 L 757.0,487.0 L 757.0,463.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>ibm.query:out -&gt; ibm.score:query; </title></path>
+<path data-route-id="route-0002" d="M 793.0,527.0 L 793.0,487.0 L 781.0,487.0 L 781.0,463.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>ibm.context:out -&gt; ibm.score:keys; </title></path>
+<path data-route-id="route-0003" d="M 1183.0,527.0 L 1183.0,487.0 L 805.0,487.0 L 805.0,463.0" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>ibm.external_mask:out -&gt; ibm.mask:mask; </title></path>
+<path data-route-id="route-0004" d="M 817.0,527.0 L 817.0,499.0 L 829.0,499.0 L 829.0,463.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>ibm.context:out -&gt; ibm.mix:values; </title></path>
+<path data-route-id="route-0005" d="M 439.0,539.0 L 439.0,509.0 L 853.0,509.0 L 853.0,463.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>ibm.query:out -&gt; ibm.concat:output; </title></path>
+<path data-route-id="route-0006" d="M 793.0,358.0 L 793.0,294.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>ibm.fusion:out -&gt; ibm.output:output; </title></path>
+<path data-route-id="route-0007" d="M 817.0,358.0 L 817.0,294.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>ibm.softmax:out -&gt; ibm.output:attention; </title></path>
+<rect x="260.0" y="695" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348"/>
+<text x="283.0" y="708" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="283.0" dy="0">Inputs</tspan>
+</text>
+<rect x="445.0" y="695" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348"/>
+<text x="468.0" y="708" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="468.0" dy="0">Conv / transforms</tspan>
+</text>
+<rect x="630.0" y="695" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348"/>
+<text x="653.0" y="708" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="653.0" dy="0">Add / norm / concat</tspan>
+</text>
+<rect x="815.0" y="695" width="16" height="16" rx="3" fill="#c9f1cd" stroke="#263348"/>
+<text x="838.0" y="708" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="838.0" dy="0">Gates / Softmax</tspan>
+</text>
+<rect x="1000.0" y="695" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348"/>
+<text x="1023.0" y="708" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1023.0" dy="0">Linear / outputs</tspan>
+</text>
+<rect x="1185.0" y="695" width="16" height="16" rx="3" fill="#cdeaf8" stroke="#263348"/>
+<text x="1208.0" y="708" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1208.0" dy="0">Tensor operations</tspan>
+</text>
+<rect x="722.5" y="725" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348"/>
+<text x="745.5" y="738" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="745.5" dy="0">ReLU / Dropout</tspan>
+</text>
+<text x="805.0" y="766" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">B=batch; query3 positions attend over8 encoder positions; D16.</tspan>
+<tspan x="805.0" dy="16.52">Gray mask is optional source state, selected here; True blocks a score.</tspan>
+<tspan x="805.0" dy="16.52">One learned linear_out follows [mix, original output]; no score projections.</tspan>
+</text>
+<text x="805.0" y="840" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+<text x="805.0" y="870" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+<text x="805.0" y="895" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+</svg>

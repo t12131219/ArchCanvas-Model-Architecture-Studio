@@ -1,0 +1,581 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "spectral_norm_linear",
+  "profile": {
+    "in_features": 16,
+    "out_features": 8,
+    "num_svs": 1,
+    "num_itrs": 1,
+    "transpose": false,
+    "training": true,
+    "buffers": [
+      "u0",
+      "sv0"
+    ],
+    "parameters": [
+      "weight",
+      "bias"
+    ],
+    "sv_logging_only": true,
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "One SNLinear with one power iteration/singular value; conv and embedding wrappers are excluded.",
+    "source_contracts": [
+      [
+        "SN.W_",
+        "self.weight / svs[0]"
+      ],
+      [
+        "SNLinear.forward",
+        "F.linear(x, self.W_(), self.bias)"
+      ],
+      [
+        "power_iteration",
+        "torch.squeeze(torch.matmul(torch.matmul(v, W.t()), u.t()))"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "ajbrock/BigGAN-PyTorch",
+    "commit": "98459431a5d618d644d54cd1e9fceb1e5045648d",
+    "snapshot": "bcb65449b0e95aa5867f78a42d97c40578083152549d64d9cb4b1601d7388218"
+  },
+  "nodes": [
+    {
+      "id": "spectral_norm_linear.root",
+      "label": "Spectral normalization / Linear wrapper",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::SN.__init__",
+        "biggan-modules/layers.py::SN.W_",
+        "biggan-modules/layers.py::SNLinear.__init__",
+        "biggan-modules/layers.py::SNLinear.forward",
+        "biggan-modules/layers.py::power_iteration",
+        "biggan-modules/layers.py::gram_schmidt",
+        "biggan-modules/layers.py::proj"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "spectral_norm_linear.x",
+          "spectral_norm_linear.weight"
+        ],
+        [
+          "spectral_norm_linear.body"
+        ],
+        [
+          "spectral_norm_linear.y"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E002",
+        "E001",
+        "E003",
+        "E004",
+        "E006",
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral_norm_linear.x",
+      "label": "Data x",
+      "kind": "input",
+      "source": [
+        "biggan-modules/layers.py::SNLinear.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "spectral_norm_linear.root",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral_norm_linear.weight",
+      "label": "Learned W and u buffer",
+      "kind": "input",
+      "source": [
+        "biggan-modules/layers.py::SNLinear.__init__",
+        "biggan-modules/layers.py::SN.__init__"
+      ],
+      "shape": "W [8,16]; u0 [1,8]",
+      "detail": [],
+      "parameters": [
+        "weight",
+        "bias"
+      ],
+      "buffers": [
+        "u0",
+        "sv0"
+      ],
+      "parent": "spectral_norm_linear.root",
+      "source_evidence": [
+        "E003",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral_norm_linear.body",
+      "label": "Spectral normalization module",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::SN.__init__",
+        "biggan-modules/layers.py::SN.W_",
+        "biggan-modules/layers.py::SNLinear.__init__",
+        "biggan-modules/layers.py::SNLinear.forward",
+        "biggan-modules/layers.py::power_iteration",
+        "biggan-modules/layers.py::gram_schmidt",
+        "biggan-modules/layers.py::proj"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "spectral_norm_linear.estimate"
+        ],
+        [
+          "spectral_norm_linear.normalize",
+          "spectral_norm_linear.state"
+        ],
+        [
+          "spectral_norm_linear.linear"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "spectral_norm_linear.root",
+      "source_evidence": [
+        "E002",
+        "E001",
+        "E003",
+        "E004",
+        "E006",
+        "E005",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral_norm_linear.estimate",
+      "label": "Power iteration / 1 SV",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::SNLinear.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "spectral_norm_linear.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral_norm_linear.flatten",
+      "label": "W.view(out_channels,-1)",
+      "kind": "tensor",
+      "source": [
+        "biggan-modules/layers.py::SN.W_"
+      ],
+      "shape": "[8,16]",
+      "detail": [],
+      "expression": "self.weight.view(self.weight.size(0), -1)",
+      "parent": "spectral_norm_linear.estimate",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral_norm_linear.vectors",
+      "label": "v=norm(uW); u=norm(vW.T)",
+      "kind": "tensor",
+      "source": [
+        "biggan-modules/layers.py::power_iteration",
+        "biggan-modules/layers.py::gram_schmidt"
+      ],
+      "shape": "v[1,16]; u[1,8]",
+      "detail": [],
+      "no_grad": true,
+      "eps": 1e-12,
+      "orthogonalization": "Gram-Schmidt; vacuous with num_svs=1",
+      "update_u": "only training=True",
+      "parent": "spectral_norm_linear.estimate",
+      "source_evidence": [
+        "E006",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral_norm_linear.sigma",
+      "label": "sigma = squeeze(v W.T u.T)",
+      "kind": "matmul",
+      "source": [
+        "biggan-modules/layers.py::power_iteration"
+      ],
+      "shape": "scalar",
+      "detail": [],
+      "expression": "torch.squeeze(torch.matmul(torch.matmul(v, W.t()), u.t()))",
+      "sigma_no_grad": false,
+      "parent": "spectral_norm_linear.estimate",
+      "source_evidence": [
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "weight"
+      ]
+    },
+    {
+      "id": "spectral_norm_linear.normalize",
+      "label": "Normalize learned weight",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::SNLinear.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "spectral_norm_linear.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral_norm_linear.divide",
+      "label": "weight / svs[0]",
+      "kind": "norm",
+      "source": [
+        "biggan-modules/layers.py::SN.W_"
+      ],
+      "shape": "[8,16]",
+      "detail": [],
+      "expression": "self.weight / svs[0]",
+      "parameters": [
+        "weight"
+      ],
+      "parent": "spectral_norm_linear.normalize",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral_norm_linear.state",
+      "label": "Training-only buffer writes",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::SNLinear.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "spectral_norm_linear.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral_norm_linear.write",
+      "label": "Update u0 and logging sv0",
+      "kind": "control",
+      "source": [
+        "biggan-modules/layers.py::SN.W_",
+        "biggan-modules/layers.py::power_iteration"
+      ],
+      "shape": "",
+      "detail": [],
+      "buffers": [
+        "u0",
+        "sv0"
+      ],
+      "condition": "training",
+      "sv0_used_for_weight": false,
+      "operand_bundle": [
+        "new_u",
+        "sigma"
+      ],
+      "parent": "spectral_norm_linear.state",
+      "source_evidence": [
+        "E001",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "u",
+        "sv"
+      ]
+    },
+    {
+      "id": "spectral_norm_linear.linear",
+      "label": "F.linear with normalized weight",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::SNLinear.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "spectral_norm_linear.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral_norm_linear.linearop",
+      "label": "F.linear(x,W_,bias)",
+      "kind": "linear",
+      "source": [
+        "biggan-modules/layers.py::SNLinear.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "expression": "F.linear(x, self.W_(), self.bias)",
+      "parameters": [
+        "bias"
+      ],
+      "bias": true,
+      "parent": "spectral_norm_linear.linear",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "spectral_norm_linear.y",
+      "label": "Spectrally normalized output",
+      "kind": "output",
+      "source": [
+        "biggan-modules/layers.py::SNLinear.forward"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "parent": "spectral_norm_linear.root",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "spectral_norm_linear.estimate:in->spectral_norm_linear.flatten:in:boundary",
+      "src": "spectral_norm_linear.estimate",
+      "dst": "spectral_norm_linear.flatten",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral_norm_linear.flatten:out->spectral_norm_linear.vectors:in:tensor",
+      "src": "spectral_norm_linear.flatten",
+      "dst": "spectral_norm_linear.vectors",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral_norm_linear.vectors:out->spectral_norm_linear.sigma:in:tensor",
+      "src": "spectral_norm_linear.vectors",
+      "dst": "spectral_norm_linear.sigma",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral_norm_linear.sigma:out->spectral_norm_linear.estimate:out:boundary",
+      "src": "spectral_norm_linear.sigma",
+      "dst": "spectral_norm_linear.estimate",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral_norm_linear.normalize:in->spectral_norm_linear.divide:in:boundary",
+      "src": "spectral_norm_linear.normalize",
+      "dst": "spectral_norm_linear.divide",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral_norm_linear.divide:out->spectral_norm_linear.normalize:out:boundary",
+      "src": "spectral_norm_linear.divide",
+      "dst": "spectral_norm_linear.normalize",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral_norm_linear.state:in->spectral_norm_linear.write:in:boundary",
+      "src": "spectral_norm_linear.state",
+      "dst": "spectral_norm_linear.write",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral_norm_linear.write:out->spectral_norm_linear.state:out:boundary",
+      "src": "spectral_norm_linear.write",
+      "dst": "spectral_norm_linear.state",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral_norm_linear.linear:in->spectral_norm_linear.linearop:in:boundary",
+      "src": "spectral_norm_linear.linear",
+      "dst": "spectral_norm_linear.linearop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral_norm_linear.linearop:out->spectral_norm_linear.linear:out:boundary",
+      "src": "spectral_norm_linear.linearop",
+      "dst": "spectral_norm_linear.linear",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "spectral_norm_linear.weight:out->spectral_norm_linear.estimate:in:tensor",
+      "src": "spectral_norm_linear.weight",
+      "dst": "spectral_norm_linear.estimate",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral_norm_linear.estimate:out->spectral_norm_linear.normalize:in:weight",
+      "src": "spectral_norm_linear.estimate",
+      "dst": "spectral_norm_linear.normalize",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "weight"
+    },
+    {
+      "id": "spectral_norm_linear.weight:out->spectral_norm_linear.normalize:in:weight",
+      "src": "spectral_norm_linear.weight",
+      "dst": "spectral_norm_linear.normalize",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "weight"
+    },
+    {
+      "id": "spectral_norm_linear.normalize:out->spectral_norm_linear.linear:in:weight",
+      "src": "spectral_norm_linear.normalize",
+      "dst": "spectral_norm_linear.linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "weight"
+    },
+    {
+      "id": "spectral_norm_linear.x:out->spectral_norm_linear.linear:in:tensor",
+      "src": "spectral_norm_linear.x",
+      "dst": "spectral_norm_linear.linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral_norm_linear.linear:out->spectral_norm_linear.y:in:tensor",
+      "src": "spectral_norm_linear.linear",
+      "dst": "spectral_norm_linear.y",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "spectral_norm_linear.flatten:out->spectral_norm_linear.sigma:weight:weight",
+      "src": "spectral_norm_linear.flatten",
+      "dst": "spectral_norm_linear.sigma",
+      "src_port": "out",
+      "dst_port": "weight",
+      "role": "weight"
+    },
+    {
+      "id": "spectral_norm_linear.vectors:out->spectral_norm_linear.write:u:state_update",
+      "src": "spectral_norm_linear.vectors",
+      "dst": "spectral_norm_linear.write",
+      "src_port": "out",
+      "dst_port": "u",
+      "role": "state_update"
+    },
+    {
+      "id": "spectral_norm_linear.sigma:out->spectral_norm_linear.write:sv:state_update",
+      "src": "spectral_norm_linear.sigma",
+      "dst": "spectral_norm_linear.write",
+      "src_port": "out",
+      "dst_port": "sv",
+      "role": "state_update"
+    }
+  ],
+  "facts": [
+    "Power vectors are estimated under no_grad, but the singular value calculation occurs outside that context.",
+    "u0 and sv0 are buffers. sv0 is for logging, whereas division uses current svs[0]; replacing the denominator by the buffer changes semantics.",
+    "Every forward normalizes W. Training controls the state writes, not whether normalization happens."
+  ],
+  "corrections": [
+    "Do not turn spectral normalization into an activation normalization layer."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

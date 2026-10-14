@@ -1,0 +1,893 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="2308" viewBox="0 0 1600 2308">
+<defs><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<metadata id="source-binding">{&quot;schema&quot;: &quot;transformer-source-contracts/2&quot;, &quot;view&quot;: &quot;detailed&quot;, &quot;source_sha256&quot;: &quot;322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba&quot;, &quot;semantic_ir_sha256&quot;: &quot;8790f318d62e30ff86ffd7b8a8910a725a8da5395e9c5d02debb4491cc6c4f4a&quot;}</metadata>
+<text x="800.0" y="38" font-family="DejaVu Sans, Arial, sans-serif" font-size="26" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="800.0" dy="0">3 · Source-grounded detailed view</tspan>
+</text>
+<text x="800.0" y="69" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="800.0" dy="0">Same semantic IR · Post-LayerNorm · independent layer parameters</tspan>
+</text>
+<text x="800.0" y="94" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="800.0" dy="0">Solid: model forward · dashed: explanation · cross-attention SDPA is folded</tspan>
+</text>
+<rect x="998.0" y="110" width="480" height="58" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" data-node-id="probabilities" data-source-symbols="[]" data-semantic-parent="model" data-parameter-identity=""><title>probabilities | source:  | parameter: None</title></rect>
+<text data-follow-id="label-1" data-follow-source="probabilities" data-follow-owner="probabilities" data-follow-kind="label" x="1238.0" y="134.92" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Softmax → probabilities [B,T,V]</tspan>
+<tspan x="1238.0" dy="20.06">Explanation only; outside Transformer.forward</tspan>
+</text>
+<rect x="1048.0" y="188" width="380" height="48" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="generator" data-source-symbols="[&quot;Transformer.__init__&quot;, &quot;Transformer.forward&quot;]" data-semantic-parent="model" data-parameter-identity="model.generator.weight"><title>generator | source: Transformer.__init__, Transformer.forward | parameter: model.generator.weight</title></rect>
+<text data-follow-id="label-2" data-follow-source="generator" data-follow-owner="generator" data-follow-kind="label" x="1238.0" y="218.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Generator Linear D → vocabulary V</tspan>
+</text>
+<text data-follow-id="label-3" data-follow-source="generator" data-follow-owner="generator" data-follow-kind="label" x="1456.0" y="216" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="1456.0" dy="0">logits</tspan>
+</text>
+<rect x="42" y="286" width="660" height="1088" rx="19" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" data-node-id="enc.layer_i" data-source-symbols="[&quot;EncoderLayer.forward&quot;]" data-semantic-parent="enc" data-parameter-identity="model.encoder.layers[i]"><title>enc.layer_i | source: EncoderLayer.forward | parameter: model.encoder.layers[i]</title></rect>
+<text data-follow-id="label-4" data-follow-source="enc.layer_i" data-follow-owner="enc.layer_i" data-follow-kind="label" x="62" y="266" font-family="DejaVu Sans, Arial, sans-serif" font-size="23" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="62" dy="0">Encoder × N_encoder</tspan>
+</text>
+<rect x="80" y="308" width="604" height="110" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" data-node-id="enc.norm2" data-source-symbols="[&quot;EncoderLayer.forward&quot;]" data-semantic-parent="enc.layer_i" data-parameter-identity="model.encoder.layers[i].norm2" data-semantic-contract="{&quot;branch_dropout&quot;: &quot;dropout2&quot;, &quot;formula&quot;: &quot;LayerNorm(x + Dropout(sublayer(x)))&quot;, &quot;ordering&quot;: &quot;post_layer_norm&quot;, &quot;skip_source&quot;: &quot;enc.norm1&quot;, &quot;source_expression&quot;: &quot;self.norm2(x + self.dropout2(ffn_out))&quot;, &quot;source_line&quot;: 287, &quot;source_symbol&quot;: &quot;EncoderLayer.forward&quot;, &quot;stage&quot;: 2}"><title>enc.norm2 | source: EncoderLayer.forward | parameter: model.encoder.layers[i].norm2</title></rect>
+<text data-follow-id="label-5" data-follow-source="enc.norm2" data-follow-owner="enc.norm2" data-follow-kind="label" x="102" y="335" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="102" dy="0">Add &amp; Norm · Post-LN</tspan>
+</text>
+<circle cx="250" cy="364" r="14" fill="white" stroke="#263348" stroke-width="2"  data-node-id="enc.norm2.add" data-source-symbols="[&quot;EncoderLayer.forward&quot;]" data-semantic-parent="enc.norm2" data-parameter-identity=""/>
+<text data-follow-id="label-6" data-follow-source="enc.norm2.add" data-follow-owner="enc.norm2.add" data-follow-kind="label" x="250" y="371" font-family="DejaVu Sans, Arial, sans-serif" font-size="25" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="250" dy="0">+</tspan>
+</text>
+<text data-follow-id="label-7" data-follow-source="enc.norm2" data-follow-edge="binding-039" data-follow-owner="enc.norm2" data-follow-kind="edge-label" x="128" y="355" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="128" dy="0">x (skip)</tspan>
+</text>
+<rect x="350" y="346" width="200" height="36" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.norm2.layernorm" data-source-symbols="[&quot;EncoderLayer.forward&quot;]" data-semantic-parent="enc.norm2" data-parameter-identity="model.encoder.layers[i].norm2"><title>enc.norm2.layernorm | source: EncoderLayer.forward | parameter: model.encoder.layers[i].norm2</title></rect>
+<text data-follow-id="label-8" data-follow-source="enc.norm2.layernorm" data-follow-owner="enc.norm2.layernorm" data-follow-kind="label" x="450.0" y="370.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="450.0" dy="0">LayerNorm</tspan>
+</text>
+<rect x="80" y="442" width="604" height="210" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" data-node-id="enc.ffn" data-source-symbols="[&quot;PositionwiseFeedForward.forward&quot;, &quot;EncoderLayer.forward&quot;]" data-semantic-parent="enc.layer_i" data-parameter-identity="model.encoder.layers[i].ffn" data-semantic-contract="{&quot;branch_result&quot;: &quot;ffn_out&quot;, &quot;input_identity&quot;: &quot;enc.norm1&quot;, &quot;source_expression&quot;: &quot;self.ffn(x)&quot;, &quot;source_line&quot;: 286, &quot;source_symbol&quot;: &quot;EncoderLayer.forward&quot;, &quot;stage&quot;: 2}"><title>enc.ffn | source: PositionwiseFeedForward.forward, EncoderLayer.forward | parameter: model.encoder.layers[i].ffn</title></rect>
+<text data-follow-id="label-9" data-follow-source="enc.ffn" data-follow-owner="enc.ffn" data-follow-kind="label" x="382.0" y="470" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Position-wise feed-forward network</tspan>
+</text>
+<g data-node-id="enc.ffn.input_value" data-value-owner="enc.ffn:in">
+<rect x="120.0" y="514.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="128.33333333333334" y="514.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="136.66666666666666" y="514.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="145.0" y="514.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="153.33333333333334" y="514.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="161.66666666666666" y="514.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="120.0" y="524.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="128.33333333333334" y="524.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="136.66666666666666" y="524.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="145.0" y="524.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="153.33333333333334" y="524.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="161.66666666666666" y="524.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="120.0" y="534.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="128.33333333333334" y="534.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="136.66666666666666" y="534.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="145.0" y="534.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="153.33333333333334" y="534.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="161.66666666666666" y="534.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+</g>
+<text data-follow-id="label-10" data-follow-source="enc.ffn:in" data-follow-owner="enc.ffn.input_value" data-follow-kind="label" x="145.0" y="564" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="145.0" dy="0">[B,L,D]</tspan>
+</text>
+<g data-node-id="enc.ffn.output_value" data-value-owner="enc.ffn.linear2:out">
+<rect x="556.0" y="514.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="564.3333333333334" y="514.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="572.6666666666666" y="514.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="581.0" y="514.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="589.3333333333334" y="514.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="597.6666666666666" y="514.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="556.0" y="524.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="564.3333333333334" y="524.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="572.6666666666666" y="524.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="581.0" y="524.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="589.3333333333334" y="524.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="597.6666666666666" y="524.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="556.0" y="534.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="564.3333333333334" y="534.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="572.6666666666666" y="534.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="581.0" y="534.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="589.3333333333334" y="534.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="597.6666666666666" y="534.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+</g>
+<text data-follow-id="label-11" data-follow-source="enc.ffn.linear2:out" data-follow-owner="enc.ffn.output_value" data-follow-kind="label" x="581.0" y="564" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="581.0" dy="0">[B,L,D]</tspan>
+</text>
+<text data-follow-id="label-12" data-follow-source="enc.ffn:in" data-follow-owner="enc.ffn.input_value" data-follow-kind="label" x="145" y="504" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="145" dy="0">X</tspan>
+</text>
+<text data-follow-id="label-13" data-follow-source="enc.ffn.linear2:out" data-follow-owner="enc.ffn.output_value" data-follow-kind="label" x="581" y="504" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="581" dy="0">Z</tspan>
+</text>
+<rect x="190" y="504" width="110" height="50" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="enc.ffn.linear1" data-source-symbols="[&quot;PositionwiseFeedForward.forward&quot;]" data-semantic-parent="enc.ffn" data-parameter-identity="model.encoder.layers[i].ffn.linear1"><title>enc.ffn.linear1 | source: PositionwiseFeedForward.forward | parameter: model.encoder.layers[i].ffn.linear1</title></rect>
+<text data-follow-id="label-14" data-follow-source="enc.ffn.linear1" data-follow-owner="enc.ffn.linear1" data-follow-kind="label" x="245.0" y="524.68" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="245.0" dy="0">Linear</tspan>
+<tspan x="245.0" dy="21.24">D → Dff</tspan>
+</text>
+<rect x="320" y="504" width="86" height="50" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.ffn.relu" data-source-symbols="[&quot;PositionwiseFeedForward.forward&quot;]" data-semantic-parent="enc.ffn" data-parameter-identity=""><title>enc.ffn.relu | source: PositionwiseFeedForward.forward | parameter: None</title></rect>
+<text data-follow-id="label-15" data-follow-source="enc.ffn.relu" data-follow-owner="enc.ffn.relu" data-follow-kind="label" x="363.0" y="535.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="363.0" dy="0">ReLU</tspan>
+</text>
+<rect x="426" y="504" width="110" height="50" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="enc.ffn.linear2" data-source-symbols="[&quot;PositionwiseFeedForward.forward&quot;]" data-semantic-parent="enc.ffn" data-parameter-identity="model.encoder.layers[i].ffn.linear2"><title>enc.ffn.linear2 | source: PositionwiseFeedForward.forward | parameter: model.encoder.layers[i].ffn.linear2</title></rect>
+<text data-follow-id="label-16" data-follow-source="enc.ffn.linear2" data-follow-owner="enc.ffn.linear2" data-follow-kind="label" x="481.0" y="524.68" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="481.0" dy="0">Linear</tspan>
+<tspan x="481.0" dy="21.24">Dff → D</tspan>
+</text>
+<g data-follow-id="enc.ffn.hidden_snapshot" data-follow-source="enc.ffn.relu" data-follow-owner="enc.ffn.relu" data-follow-kind="value-snapshot" data-value-owner="enc.ffn.relu:out">
+<rect x="338.0" y="570.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="346.3333333333333" y="570.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="354.6666666666667" y="570.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="363.0" y="570.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="371.3333333333333" y="570.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="379.6666666666667" y="570.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="338.0" y="580.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="346.3333333333333" y="580.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="354.6666666666667" y="580.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="363.0" y="580.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="371.3333333333333" y="580.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="379.6666666666667" y="580.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="338.0" y="590.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="346.3333333333333" y="590.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="354.6666666666667" y="590.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="363.0" y="590.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="371.3333333333333" y="590.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="379.6666666666667" y="590.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<text x="329" y="590" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="end" fill="#172336">
+<tspan x="329" dy="0">hidden</tspan>
+</text>
+<text x="363.0" y="620" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="363.0" dy="0">[B,L,Dff]</tspan>
+</text>
+<path data-annotation-kind="value-snapshot" data-value-owner="enc.ffn.relu:out" d="M 363,554 L 363,560" fill="none" stroke="#263348" stroke-width="1.6" stroke-dasharray="5 4" stroke-linecap="butt"/>
+</g>
+<circle data-junction-id="source-fork-1" data-junction-source="enc.norm1.layernorm:out" data-junction-routes="[&quot;binding-032&quot;, &quot;binding-039&quot;]" cx="382.0" cy="664.0" r="2.5" fill="#263348"/>
+<rect x="80" y="676" width="604" height="110" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" data-node-id="enc.norm1" data-source-symbols="[&quot;EncoderLayer.forward&quot;]" data-semantic-parent="enc.layer_i" data-parameter-identity="model.encoder.layers[i].norm1" data-semantic-contract="{&quot;branch_dropout&quot;: &quot;dropout1&quot;, &quot;formula&quot;: &quot;LayerNorm(x + Dropout(sublayer(x)))&quot;, &quot;ordering&quot;: &quot;post_layer_norm&quot;, &quot;skip_source&quot;: &quot;src_pe&quot;, &quot;source_expression&quot;: &quot;self.norm1(x + self.dropout1(attn_out))&quot;, &quot;source_line&quot;: 284, &quot;source_symbol&quot;: &quot;EncoderLayer.forward&quot;, &quot;stage&quot;: 1}"><title>enc.norm1 | source: EncoderLayer.forward | parameter: model.encoder.layers[i].norm1</title></rect>
+<text data-follow-id="label-18" data-follow-source="enc.norm1" data-follow-owner="enc.norm1" data-follow-kind="label" x="102" y="703" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="102" dy="0">Add &amp; Norm · Post-LN</tspan>
+</text>
+<circle cx="250" cy="732" r="14" fill="white" stroke="#263348" stroke-width="2"  data-node-id="enc.norm1.add" data-source-symbols="[&quot;EncoderLayer.forward&quot;]" data-semantic-parent="enc.norm1" data-parameter-identity=""/>
+<text data-follow-id="label-19" data-follow-source="enc.norm1.add" data-follow-owner="enc.norm1.add" data-follow-kind="label" x="250" y="739" font-family="DejaVu Sans, Arial, sans-serif" font-size="25" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="250" dy="0">+</tspan>
+</text>
+<text data-follow-id="label-20" data-follow-source="enc.norm1" data-follow-edge="binding-005" data-follow-owner="enc.norm1" data-follow-kind="edge-label" x="128" y="723" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="128" dy="0">x (skip)</tspan>
+</text>
+<rect x="350" y="714" width="200" height="36" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.norm1.layernorm" data-source-symbols="[&quot;EncoderLayer.forward&quot;]" data-semantic-parent="enc.norm1" data-parameter-identity="model.encoder.layers[i].norm1"><title>enc.norm1.layernorm | source: EncoderLayer.forward | parameter: model.encoder.layers[i].norm1</title></rect>
+<text data-follow-id="label-21" data-follow-source="enc.norm1.layernorm" data-follow-owner="enc.norm1.layernorm" data-follow-kind="label" x="450.0" y="738.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="450.0" dy="0">LayerNorm</tspan>
+</text>
+<rect x="80" y="810" width="604" height="542" rx="10" fill="#ffddb3" stroke="#263348" stroke-width="2" data-node-id="enc.self" data-source-symbols="[&quot;MultiHeadAttention.forward&quot;, &quot;EncoderLayer.forward&quot;]" data-semantic-parent="enc.layer_i" data-parameter-identity="model.encoder.layers[i].self_attn" data-semantic-contract="{&quot;branch_result&quot;: &quot;attn_out&quot;, &quot;input_identity&quot;: &quot;src_pe&quot;, &quot;k_shape&quot;: &quot;[B,S,D]&quot;, &quot;key_source&quot;: &quot;src_pe&quot;, &quot;mask_args&quot;: [&quot;src_key_padding_mask&quot;], &quot;mask_bindings&quot;: {&quot;key_padding_mask&quot;: &quot;src_key_padding_mask&quot;}, &quot;mask_semantics&quot;: &quot;boolean True masks scores with -inf before Softmax; causal only when tgt_mask is supplied&quot;, &quot;q_shape&quot;: &quot;[B,S,D]&quot;, &quot;query_source&quot;: &quot;src_pe&quot;, &quot;role&quot;: &quot;encoder_self&quot;, &quot;source_expression&quot;: &quot;self.self_attn(query=x, key=x, value=x, key_padding_mask=src_key_padding_mask)&quot;, &quot;source_line&quot;: 278, &quot;source_symbol&quot;: &quot;EncoderLayer.forward&quot;, &quot;stage&quot;: 1, &quot;v_shape&quot;: &quot;[B,S,D]&quot;, &quot;value_source&quot;: &quot;src_pe&quot;}"><title>enc.self | source: MultiHeadAttention.forward, EncoderLayer.forward | parameter: model.encoder.layers[i].self_attn</title></rect>
+<text data-follow-id="label-22" data-follow-source="enc.self" data-follow-owner="enc.self" data-follow-kind="label" x="382.0" y="838" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Encoder self-attention</tspan>
+</text>
+<text data-follow-id="label-23" data-follow-source="enc.self" data-follow-owner="enc.self" data-follow-kind="label" x="382.0" y="864" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Q,K,V ← X [B,S,D]</tspan>
+</text>
+<rect x="122.0" y="914" width="86" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="enc.self.q" data-source-symbols="[&quot;MultiHeadAttention.__init__&quot;, &quot;MultiHeadAttention.forward&quot;]" data-semantic-parent="enc.self" data-parameter-identity="model.encoder.layers[i].self_attn.w_q"><title>enc.self.q | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.encoder.layers[i].self_attn.w_q</title></rect>
+<text data-follow-id="label-24" data-follow-source="enc.self.q" data-follow-owner="enc.self.q" data-follow-kind="label" x="165.0" y="936.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="165.0" dy="0">Linear WQ</tspan>
+</text>
+<g data-node-id="enc.self.q.value" data-value-owner="enc.self.q:out">
+<rect x="232.0" y="916.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="240.33333333333334" y="916.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="248.66666666666666" y="916.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="257.0" y="916.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="265.3333333333333" y="916.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="273.6666666666667" y="916.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="232.0" y="926.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="240.33333333333334" y="926.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="248.66666666666666" y="926.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="257.0" y="926.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="265.3333333333333" y="926.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="273.6666666666667" y="926.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="232.0" y="936.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="240.33333333333334" y="936.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="248.66666666666666" y="936.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="257.0" y="936.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="265.3333333333333" y="936.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="273.6666666666667" y="936.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+</g>
+<text data-follow-id="label-25" data-follow-source="enc.self.q:out" data-follow-owner="enc.self.q.value" data-follow-kind="label" x="257.0" y="966" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="257.0" dy="0"></tspan>
+</text>
+<text data-follow-id="label-26" data-follow-source="enc.self.q:out" data-follow-owner="enc.self.q.value" data-follow-kind="label" x="257.0" y="911" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="257.0" dy="0">Q</tspan>
+</text>
+<text data-follow-id="label-27" data-follow-source="enc.self.q:out" data-follow-owner="enc.self.q.value" data-follow-kind="label" x="247.0" y="965" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="247.0" dy="0">[B,S,D]</tspan>
+</text>
+<rect x="301.33333333333337" y="914" width="86" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="enc.self.k" data-source-symbols="[&quot;MultiHeadAttention.__init__&quot;, &quot;MultiHeadAttention.forward&quot;]" data-semantic-parent="enc.self" data-parameter-identity="model.encoder.layers[i].self_attn.w_k"><title>enc.self.k | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.encoder.layers[i].self_attn.w_k</title></rect>
+<text data-follow-id="label-28" data-follow-source="enc.self.k" data-follow-owner="enc.self.k" data-follow-kind="label" x="344.33333333333337" y="936.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="344.33333333333337" dy="0">Linear WK</tspan>
+</text>
+<g data-node-id="enc.self.k.value" data-value-owner="enc.self.k:out">
+<rect x="411.33333333333337" y="916.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="419.6666666666667" y="916.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="428.00000000000006" y="916.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="436.33333333333337" y="916.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="444.6666666666667" y="916.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="453.00000000000006" y="916.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="411.33333333333337" y="926.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="419.6666666666667" y="926.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="428.00000000000006" y="926.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="436.33333333333337" y="926.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="444.6666666666667" y="926.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="453.00000000000006" y="926.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="411.33333333333337" y="936.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="419.6666666666667" y="936.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="428.00000000000006" y="936.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="436.33333333333337" y="936.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="444.6666666666667" y="936.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="453.00000000000006" y="936.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+</g>
+<text data-follow-id="label-29" data-follow-source="enc.self.k:out" data-follow-owner="enc.self.k.value" data-follow-kind="label" x="436.33333333333337" y="966" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="436.33333333333337" dy="0"></tspan>
+</text>
+<text data-follow-id="label-30" data-follow-source="enc.self.k:out" data-follow-owner="enc.self.k.value" data-follow-kind="label" x="436.33333333333337" y="911" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="436.33333333333337" dy="0">K</tspan>
+</text>
+<text data-follow-id="label-31" data-follow-source="enc.self.k:out" data-follow-owner="enc.self.k.value" data-follow-kind="label" x="426.33333333333337" y="965" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="426.33333333333337" dy="0">[B,S,D]</tspan>
+</text>
+<rect x="480.6666666666667" y="914" width="86" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="enc.self.v" data-source-symbols="[&quot;MultiHeadAttention.__init__&quot;, &quot;MultiHeadAttention.forward&quot;]" data-semantic-parent="enc.self" data-parameter-identity="model.encoder.layers[i].self_attn.w_v"><title>enc.self.v | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.encoder.layers[i].self_attn.w_v</title></rect>
+<text data-follow-id="label-32" data-follow-source="enc.self.v" data-follow-owner="enc.self.v" data-follow-kind="label" x="523.6666666666667" y="936.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="523.6666666666667" dy="0">Linear WV</tspan>
+</text>
+<g data-node-id="enc.self.v.value" data-value-owner="enc.self.v:out">
+<rect x="590.6666666666667" y="916.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="599.0000000000001" y="916.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="607.3333333333334" y="916.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="615.6666666666667" y="916.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="624.0000000000001" y="916.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="632.3333333333334" y="916.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="590.6666666666667" y="926.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="599.0000000000001" y="926.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="607.3333333333334" y="926.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="615.6666666666667" y="926.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="624.0000000000001" y="926.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="632.3333333333334" y="926.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="590.6666666666667" y="936.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="599.0000000000001" y="936.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="607.3333333333334" y="936.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="615.6666666666667" y="936.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="624.0000000000001" y="936.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="632.3333333333334" y="936.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+</g>
+<text data-follow-id="label-33" data-follow-source="enc.self.v:out" data-follow-owner="enc.self.v.value" data-follow-kind="label" x="615.6666666666667" y="966" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="615.6666666666667" dy="0"></tspan>
+</text>
+<text data-follow-id="label-34" data-follow-source="enc.self.v:out" data-follow-owner="enc.self.v.value" data-follow-kind="label" x="615.6666666666667" y="911" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="615.6666666666667" dy="0">V</tspan>
+</text>
+<text data-follow-id="label-35" data-follow-source="enc.self.v:out" data-follow-owner="enc.self.v.value" data-follow-kind="label" x="605.6666666666667" y="965" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="605.6666666666667" dy="0">[B,S,D]</tspan>
+</text>
+<rect x="122" y="996" width="520" height="38" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.self.split" data-source-symbols="[&quot;MultiHeadAttention._split_heads&quot;]" data-semantic-parent="enc.self" data-parameter-identity=""><title>enc.self.split | source: MultiHeadAttention._split_heads | parameter: None</title></rect>
+<text data-follow-id="label-36" data-follow-source="enc.self.split" data-follow-owner="enc.self.split" data-follow-kind="label" x="382.0" y="1020.95" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Split heads: Q / K / V → [B,H,L,Dh]</tspan>
+</text>
+<rect x="122" y="1058" width="520" height="124" rx="10" fill="#fffaf4" stroke="#263348" stroke-width="2" data-node-id="enc.self.sdpa" data-source-symbols="[&quot;scaled_dot_product_attention&quot;]" data-semantic-parent="enc.self" data-parameter-identity="" data-mask-inputs="[&quot;src_key_padding_mask&quot;]"><title>enc.self.sdpa | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text data-follow-id="label-37" data-follow-source="enc.self.sdpa" data-follow-owner="enc.self.sdpa" data-follow-kind="label" x="382.0" y="1080" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Scaled dot-product attention · each head</tspan>
+</text>
+<rect x="144" y="1102" width="82" height="40" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.self.sdpa.qkt" data-source-symbols="[&quot;scaled_dot_product_attention&quot;]" data-semantic-parent="enc.self.sdpa" data-parameter-identity=""><title>enc.self.sdpa.qkt | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text data-follow-id="label-38" data-follow-source="enc.self.sdpa.qkt" data-follow-owner="enc.self.sdpa.qkt" data-follow-kind="label" x="185.0" y="1127.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="185.0" dy="0">Q @ Kᵀ</tspan>
+</text>
+<rect x="247.5" y="1102" width="64" height="40" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.self.sdpa.scale" data-source-symbols="[&quot;scaled_dot_product_attention&quot;]" data-semantic-parent="enc.self.sdpa" data-parameter-identity=""><title>enc.self.sdpa.scale | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text data-follow-id="label-39" data-follow-source="enc.self.sdpa.scale" data-follow-owner="enc.self.sdpa.scale" data-follow-kind="label" x="279.5" y="1127.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="279.5" dy="0">÷ √Dh</tspan>
+</text>
+<rect x="333.0" y="1102" width="92" height="40" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.self.sdpa.mask" data-source-symbols="[&quot;scaled_dot_product_attention&quot;]" data-semantic-parent="enc.self.sdpa" data-parameter-identity="" data-mask-inputs="[&quot;src_key_padding_mask&quot;]"><title>enc.self.sdpa.mask | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text data-follow-id="label-40" data-follow-source="enc.self.sdpa.mask" data-follow-owner="enc.self.sdpa.mask" data-follow-kind="label" x="379.0" y="1118.4" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="379.0" dy="0">padding</tspan>
+<tspan x="379.0" dy="17.7">(optional)</tspan>
+</text>
+<rect x="446.5" y="1102" width="82" height="40" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" data-node-id="enc.self.sdpa.softmax" data-source-symbols="[&quot;scaled_dot_product_attention&quot;]" data-semantic-parent="enc.self.sdpa" data-parameter-identity=""><title>enc.self.sdpa.softmax | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text data-follow-id="label-41" data-follow-source="enc.self.sdpa.softmax" data-follow-owner="enc.self.sdpa.softmax" data-follow-kind="label" x="487.5" y="1127.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="487.5" dy="0">Softmax</tspan>
+</text>
+<rect x="550.0" y="1102" width="70" height="40" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.self.sdpa.av" data-source-symbols="[&quot;scaled_dot_product_attention&quot;]" data-semantic-parent="enc.self.sdpa" data-parameter-identity=""><title>enc.self.sdpa.av | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text data-follow-id="label-42" data-follow-source="enc.self.sdpa.av" data-follow-owner="enc.self.sdpa.av" data-follow-kind="label" x="585.0" y="1127.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="585.0" dy="0">A @ V</tspan>
+</text>
+<text data-follow-id="label-43" data-follow-source="enc.self.split" data-follow-edge="binding-017" data-follow-owner="enc.self.split" data-follow-kind="edge-label" x="160" y="1052" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="160" dy="0">Qh</tspan>
+</text>
+<text data-follow-id="label-44" data-follow-source="enc.self.split" data-follow-edge="binding-020" data-follow-owner="enc.self.split" data-follow-kind="edge-label" x="208" y="1052" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="208" dy="0">Kh</tspan>
+</text>
+<text data-follow-id="label-45" data-follow-source="enc.self.split" data-follow-edge="binding-023" data-follow-owner="enc.self.split" data-follow-kind="edge-label" x="579.0" y="1052" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="579.0" dy="0">Vh</tspan>
+</text>
+<text data-follow-id="label-46" data-follow-source="enc.self.sdpa" data-follow-edge="binding-029" data-follow-owner="enc.self.sdpa" data-follow-kind="edge-label" x="542.0" y="1151" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="542.0" dy="0">A: [B,H,Lq,Lk]</tspan>
+</text>
+<text data-follow-id="label-47" data-follow-source="enc.self.sdpa" data-follow-edge="binding-028" data-follow-owner="enc.self.sdpa" data-follow-kind="edge-label" x="382.0" y="1158" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">mask before</tspan>
+<tspan x="382.0" dy="15.34">Softmax</tspan>
+</text>
+<rect x="122" y="1230" width="520" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="enc.self.merge" data-source-symbols="[&quot;MultiHeadAttention._combine_heads&quot;]" data-semantic-parent="enc.self" data-parameter-identity=""><title>enc.self.merge | source: MultiHeadAttention._combine_heads | parameter: None</title></rect>
+<text data-follow-id="label-48" data-follow-source="enc.self.merge" data-follow-owner="enc.self.merge" data-follow-kind="label" x="382.0" y="1251.95" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Combine heads: [B,H,Lq,Dh] → [B,Lq,D]</tspan>
+</text>
+<rect x="272.0" y="1286" width="220" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="enc.self.wo" data-source-symbols="[&quot;MultiHeadAttention.forward&quot;]" data-semantic-parent="enc.self" data-parameter-identity="model.encoder.layers[i].self_attn.w_o"><title>enc.self.wo | source: MultiHeadAttention.forward | parameter: model.encoder.layers[i].self_attn.w_o</title></rect>
+<text data-follow-id="label-49" data-follow-source="enc.self.wo" data-follow-owner="enc.self.wo" data-follow-kind="label" x="382.0" y="1309.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Linear Wᴼ  (D → D)</tspan>
+</text>
+<circle data-junction-id="source-fork-2" data-junction-source="src_pe.add:out" data-junction-routes="[&quot;binding-002&quot;, &quot;binding-003&quot;, &quot;binding-004&quot;, &quot;binding-005&quot;]" cx="382.0" cy="1364.0" r="2.5" fill="#263348"/>
+<rect x="135" y="2058" width="494" height="62" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2" data-node-id="src_embed" data-source-symbols="[&quot;TokenEmbedding.forward&quot;]" data-semantic-parent="model" data-parameter-identity="model.src_embedding.embedding.weight"><title>src_embed | source: TokenEmbedding.forward | parameter: model.src_embedding.embedding.weight</title></rect>
+<text data-follow-id="label-50" data-follow-source="src_embed" data-follow-owner="src_embed" data-follow-kind="label" x="382.0" y="2095.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Source token embedding × √D</tspan>
+</text>
+<circle cx="382.0" cy="2016" r="15" fill="white" stroke="#263348" stroke-width="2"  data-node-id="src_pe.add" data-source-symbols="[&quot;PositionalEncoding.forward&quot;]" data-semantic-parent="src_pe" data-parameter-identity=""/>
+<text data-follow-id="label-51" data-follow-source="src_pe.add" data-follow-owner="src_pe.add" data-follow-kind="label" x="382.0" y="2023" font-family="DejaVu Sans, Arial, sans-serif" font-size="25" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">+</tspan>
+</text>
+<rect x="80.0" y="1993" width="210" height="46" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="src_pe.buffer" data-source-symbols="[&quot;PositionalEncoding.forward&quot;]" data-semantic-parent="src_pe" data-parameter-identity=""><title>src_pe.buffer | source: PositionalEncoding.forward | parameter: None</title></rect>
+<text data-follow-id="label-52" data-follow-source="src_pe.buffer" data-follow-owner="src_pe.buffer" data-follow-kind="label" x="185.0" y="2021.95" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="185.0" dy="0">Fixed sinusoidal PE</tspan>
+</text>
+<g  data-node-id="src_tokens" data-source-symbols="[&quot;Transformer.forward&quot;]" data-semantic-parent="model" data-parameter-identity="" data-bbox="342.0,2139,80,19">
+<text x="382.0" y="2149" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">src [B,S]</tspan>
+</text>
+</g>
+<text data-follow-id="label-53" data-follow-source="src_embed" data-follow-owner="src_embed" data-follow-kind="label" x="382.0" y="2176" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="382.0" dy="0">Embedding output [B,L,D] · PE dropout folded</tspan>
+</text>
+<rect x="898" y="286" width="660" height="1684" rx="19" fill="#fff0f5" stroke="#263348" stroke-width="2.5" data-node-id="dec.layer_i" data-source-symbols="[&quot;DecoderLayer.forward&quot;]" data-semantic-parent="dec" data-parameter-identity="model.decoder.layers[i]"><title>dec.layer_i | source: DecoderLayer.forward | parameter: model.decoder.layers[i]</title></rect>
+<text data-follow-id="label-54" data-follow-source="dec.layer_i" data-follow-owner="dec.layer_i" data-follow-kind="label" x="918" y="266" font-family="DejaVu Sans, Arial, sans-serif" font-size="23" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="918" dy="0">Decoder × N_decoder</tspan>
+</text>
+<rect x="936" y="308" width="604" height="110" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" data-node-id="dec.norm3" data-source-symbols="[&quot;DecoderLayer.forward&quot;]" data-semantic-parent="dec.layer_i" data-parameter-identity="model.decoder.layers[i].norm3" data-semantic-contract="{&quot;branch_dropout&quot;: &quot;dropout3&quot;, &quot;formula&quot;: &quot;LayerNorm(x + Dropout(sublayer(x)))&quot;, &quot;ordering&quot;: &quot;post_layer_norm&quot;, &quot;skip_source&quot;: &quot;dec.norm2&quot;, &quot;source_expression&quot;: &quot;self.norm3(x + self.dropout3(ffn_out))&quot;, &quot;source_line&quot;: 365, &quot;source_symbol&quot;: &quot;DecoderLayer.forward&quot;, &quot;stage&quot;: 3}"><title>dec.norm3 | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm3</title></rect>
+<text data-follow-id="label-55" data-follow-source="dec.norm3" data-follow-owner="dec.norm3" data-follow-kind="label" x="958" y="335" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="958" dy="0">Add &amp; Norm · Post-LN</tspan>
+</text>
+<circle cx="1106" cy="364" r="14" fill="white" stroke="#263348" stroke-width="2"  data-node-id="dec.norm3.add" data-source-symbols="[&quot;DecoderLayer.forward&quot;]" data-semantic-parent="dec.norm3" data-parameter-identity=""/>
+<text data-follow-id="label-56" data-follow-source="dec.norm3.add" data-follow-owner="dec.norm3.add" data-follow-kind="label" x="1106" y="371" font-family="DejaVu Sans, Arial, sans-serif" font-size="25" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1106" dy="0">+</tspan>
+</text>
+<text data-follow-id="label-57" data-follow-source="dec.norm3" data-follow-edge="binding-083" data-follow-owner="dec.norm3" data-follow-kind="edge-label" x="984" y="355" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="984" dy="0">x (skip)</tspan>
+</text>
+<rect x="1206" y="346" width="200" height="36" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.norm3.layernorm" data-source-symbols="[&quot;DecoderLayer.forward&quot;]" data-semantic-parent="dec.norm3" data-parameter-identity="model.decoder.layers[i].norm3"><title>dec.norm3.layernorm | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm3</title></rect>
+<text data-follow-id="label-58" data-follow-source="dec.norm3.layernorm" data-follow-owner="dec.norm3.layernorm" data-follow-kind="label" x="1306.0" y="370.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1306.0" dy="0">LayerNorm</tspan>
+</text>
+<rect x="936" y="442" width="604" height="210" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" data-node-id="dec.ffn" data-source-symbols="[&quot;PositionwiseFeedForward.forward&quot;, &quot;DecoderLayer.forward&quot;]" data-semantic-parent="dec.layer_i" data-parameter-identity="model.decoder.layers[i].ffn" data-semantic-contract="{&quot;branch_result&quot;: &quot;ffn_out&quot;, &quot;input_identity&quot;: &quot;dec.norm2&quot;, &quot;source_expression&quot;: &quot;self.ffn(x)&quot;, &quot;source_line&quot;: 364, &quot;source_symbol&quot;: &quot;DecoderLayer.forward&quot;, &quot;stage&quot;: 3}"><title>dec.ffn | source: PositionwiseFeedForward.forward, DecoderLayer.forward | parameter: model.decoder.layers[i].ffn</title></rect>
+<text data-follow-id="label-59" data-follow-source="dec.ffn" data-follow-owner="dec.ffn" data-follow-kind="label" x="1238.0" y="470" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Position-wise feed-forward network</tspan>
+</text>
+<g data-node-id="dec.ffn.input_value" data-value-owner="dec.ffn:in">
+<rect x="976.0" y="514.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="984.3333333333334" y="514.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="992.6666666666666" y="514.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1001.0" y="514.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1009.3333333333334" y="514.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1017.6666666666666" y="514.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="976.0" y="524.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="984.3333333333334" y="524.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="992.6666666666666" y="524.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1001.0" y="524.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1009.3333333333334" y="524.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1017.6666666666666" y="524.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="976.0" y="534.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="984.3333333333334" y="534.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="992.6666666666666" y="534.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1001.0" y="534.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1009.3333333333334" y="534.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1017.6666666666666" y="534.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+</g>
+<text data-follow-id="label-60" data-follow-source="dec.ffn:in" data-follow-owner="dec.ffn.input_value" data-follow-kind="label" x="1001.0" y="564" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1001.0" dy="0">[B,L,D]</tspan>
+</text>
+<g data-node-id="dec.ffn.output_value" data-value-owner="dec.ffn.linear2:out">
+<rect x="1412.0" y="514.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1420.3333333333333" y="514.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1428.6666666666667" y="514.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1437.0" y="514.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1445.3333333333333" y="514.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1453.6666666666667" y="514.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1412.0" y="524.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1420.3333333333333" y="524.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1428.6666666666667" y="524.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1437.0" y="524.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1445.3333333333333" y="524.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1453.6666666666667" y="524.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1412.0" y="534.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1420.3333333333333" y="534.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1428.6666666666667" y="534.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1437.0" y="534.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1445.3333333333333" y="534.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1453.6666666666667" y="534.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+</g>
+<text data-follow-id="label-61" data-follow-source="dec.ffn.linear2:out" data-follow-owner="dec.ffn.output_value" data-follow-kind="label" x="1437.0" y="564" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1437.0" dy="0">[B,L,D]</tspan>
+</text>
+<text data-follow-id="label-62" data-follow-source="dec.ffn:in" data-follow-owner="dec.ffn.input_value" data-follow-kind="label" x="1001" y="504" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1001" dy="0">X</tspan>
+</text>
+<text data-follow-id="label-63" data-follow-source="dec.ffn.linear2:out" data-follow-owner="dec.ffn.output_value" data-follow-kind="label" x="1437" y="504" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1437" dy="0">Z</tspan>
+</text>
+<rect x="1046" y="504" width="110" height="50" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.ffn.linear1" data-source-symbols="[&quot;PositionwiseFeedForward.forward&quot;]" data-semantic-parent="dec.ffn" data-parameter-identity="model.decoder.layers[i].ffn.linear1"><title>dec.ffn.linear1 | source: PositionwiseFeedForward.forward | parameter: model.decoder.layers[i].ffn.linear1</title></rect>
+<text data-follow-id="label-64" data-follow-source="dec.ffn.linear1" data-follow-owner="dec.ffn.linear1" data-follow-kind="label" x="1101.0" y="524.68" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1101.0" dy="0">Linear</tspan>
+<tspan x="1101.0" dy="21.24">D → Dff</tspan>
+</text>
+<rect x="1176" y="504" width="86" height="50" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.ffn.relu" data-source-symbols="[&quot;PositionwiseFeedForward.forward&quot;]" data-semantic-parent="dec.ffn" data-parameter-identity=""><title>dec.ffn.relu | source: PositionwiseFeedForward.forward | parameter: None</title></rect>
+<text data-follow-id="label-65" data-follow-source="dec.ffn.relu" data-follow-owner="dec.ffn.relu" data-follow-kind="label" x="1219.0" y="535.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1219.0" dy="0">ReLU</tspan>
+</text>
+<rect x="1282" y="504" width="110" height="50" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.ffn.linear2" data-source-symbols="[&quot;PositionwiseFeedForward.forward&quot;]" data-semantic-parent="dec.ffn" data-parameter-identity="model.decoder.layers[i].ffn.linear2"><title>dec.ffn.linear2 | source: PositionwiseFeedForward.forward | parameter: model.decoder.layers[i].ffn.linear2</title></rect>
+<text data-follow-id="label-66" data-follow-source="dec.ffn.linear2" data-follow-owner="dec.ffn.linear2" data-follow-kind="label" x="1337.0" y="524.68" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1337.0" dy="0">Linear</tspan>
+<tspan x="1337.0" dy="21.24">Dff → D</tspan>
+</text>
+<g data-follow-id="dec.ffn.hidden_snapshot" data-follow-source="dec.ffn.relu" data-follow-owner="dec.ffn.relu" data-follow-kind="value-snapshot" data-value-owner="dec.ffn.relu:out">
+<rect x="1194.0" y="570.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1202.3333333333333" y="570.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1210.6666666666667" y="570.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1219.0" y="570.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1227.3333333333333" y="570.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1235.6666666666667" y="570.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1194.0" y="580.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1202.3333333333333" y="580.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1210.6666666666667" y="580.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1219.0" y="580.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1227.3333333333333" y="580.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1235.6666666666667" y="580.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1194.0" y="590.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1202.3333333333333" y="590.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1210.6666666666667" y="590.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1219.0" y="590.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1227.3333333333333" y="590.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1235.6666666666667" y="590.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<text x="1185" y="590" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="end" fill="#172336">
+<tspan x="1185" dy="0">hidden</tspan>
+</text>
+<text x="1219.0" y="620" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1219.0" dy="0">[B,L,Dff]</tspan>
+</text>
+<path data-annotation-kind="value-snapshot" data-value-owner="dec.ffn.relu:out" d="M 1219,554 L 1219,560" fill="none" stroke="#263348" stroke-width="1.6" stroke-dasharray="5 4" stroke-linecap="butt"/>
+</g>
+<circle data-junction-id="source-fork-3" data-junction-source="dec.norm2.layernorm:out" data-junction-routes="[&quot;binding-076&quot;, &quot;binding-083&quot;]" cx="1238.0" cy="664.0" r="2.5" fill="#263348"/>
+<rect x="936" y="676" width="604" height="110" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" data-node-id="dec.norm2" data-source-symbols="[&quot;DecoderLayer.forward&quot;]" data-semantic-parent="dec.layer_i" data-parameter-identity="model.decoder.layers[i].norm2" data-semantic-contract="{&quot;branch_dropout&quot;: &quot;dropout2&quot;, &quot;formula&quot;: &quot;LayerNorm(x + Dropout(sublayer(x)))&quot;, &quot;ordering&quot;: &quot;post_layer_norm&quot;, &quot;skip_source&quot;: &quot;dec.norm1&quot;, &quot;source_expression&quot;: &quot;self.norm2(x + self.dropout2(cross_attn_out))&quot;, &quot;source_line&quot;: 361, &quot;source_symbol&quot;: &quot;DecoderLayer.forward&quot;, &quot;stage&quot;: 2}"><title>dec.norm2 | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm2</title></rect>
+<text data-follow-id="label-68" data-follow-source="dec.norm2" data-follow-owner="dec.norm2" data-follow-kind="label" x="958" y="703" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="958" dy="0">Add &amp; Norm · Post-LN</tspan>
+</text>
+<circle cx="1106" cy="732" r="14" fill="white" stroke="#263348" stroke-width="2"  data-node-id="dec.norm2.add" data-source-symbols="[&quot;DecoderLayer.forward&quot;]" data-semantic-parent="dec.norm2" data-parameter-identity=""/>
+<text data-follow-id="label-69" data-follow-source="dec.norm2.add" data-follow-owner="dec.norm2.add" data-follow-kind="label" x="1106" y="739" font-family="DejaVu Sans, Arial, sans-serif" font-size="25" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1106" dy="0">+</tspan>
+</text>
+<text data-follow-id="label-70" data-follow-source="dec.norm2" data-follow-edge="binding-075" data-follow-owner="dec.norm2" data-follow-kind="edge-label" x="984" y="723" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="984" dy="0">x (skip)</tspan>
+</text>
+<rect x="1206" y="714" width="200" height="36" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.norm2.layernorm" data-source-symbols="[&quot;DecoderLayer.forward&quot;]" data-semantic-parent="dec.norm2" data-parameter-identity="model.decoder.layers[i].norm2"><title>dec.norm2.layernorm | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm2</title></rect>
+<text data-follow-id="label-71" data-follow-source="dec.norm2.layernorm" data-follow-owner="dec.norm2.layernorm" data-follow-kind="label" x="1306.0" y="738.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1306.0" dy="0">LayerNorm</tspan>
+</text>
+<rect x="936" y="810" width="604" height="438" rx="10" fill="#ffddb3" stroke="#263348" stroke-width="2" data-node-id="dec.cross" data-source-symbols="[&quot;MultiHeadAttention.forward&quot;, &quot;DecoderLayer.forward&quot;]" data-semantic-parent="dec.layer_i" data-parameter-identity="model.decoder.layers[i].cross_attn" data-semantic-contract="{&quot;branch_result&quot;: &quot;cross_attn_out&quot;, &quot;input_identity&quot;: &quot;dec.norm1&quot;, &quot;k_shape&quot;: &quot;[B,S,D]&quot;, &quot;key_source&quot;: &quot;enc.output&quot;, &quot;mask_args&quot;: [&quot;memory_key_padding_mask&quot;], &quot;mask_bindings&quot;: {&quot;key_padding_mask&quot;: &quot;memory_key_padding_mask&quot;}, &quot;mask_semantics&quot;: &quot;boolean True masks scores with -inf before Softmax; causal only when tgt_mask is supplied&quot;, &quot;q_shape&quot;: &quot;[B,T,D]&quot;, &quot;query_source&quot;: &quot;dec.norm1&quot;, &quot;role&quot;: &quot;encoder_decoder_cross&quot;, &quot;source_expression&quot;: &quot;self.cross_attn(query=x, key=memory, value=memory, key_padding_mask=memory_key_padding_mask)&quot;, &quot;source_line&quot;: 355, &quot;source_symbol&quot;: &quot;DecoderLayer.forward&quot;, &quot;stage&quot;: 2, &quot;v_shape&quot;: &quot;[B,S,D]&quot;, &quot;value_source&quot;: &quot;enc.output&quot;}"><title>dec.cross | source: MultiHeadAttention.forward, DecoderLayer.forward | parameter: model.decoder.layers[i].cross_attn</title></rect>
+<text data-follow-id="label-72" data-follow-source="dec.cross" data-follow-owner="dec.cross" data-follow-kind="label" x="1238.0" y="838" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Encoder–decoder cross-attention</tspan>
+</text>
+<text data-follow-id="label-73" data-follow-source="dec.cross" data-follow-owner="dec.cross" data-follow-kind="label" x="1238.0" y="864" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Q ← H [B,T,D]; K,V ← M [B,S,D]</tspan>
+</text>
+<rect x="972" y="896" width="173.33333333333334" height="86" rx="7" fill="#fffaf6" stroke="#263348" stroke-width="1.2"><title> | source:  | parameter: None</title></rect>
+<rect x="1151.3333333333333" y="896" width="352.6666666666667" height="86" rx="7" fill="#fffaf6" stroke="#263348" stroke-width="1.2"><title> | source:  | parameter: None</title></rect>
+<rect x="978.0" y="914" width="86" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.cross.q" data-source-symbols="[&quot;MultiHeadAttention.__init__&quot;, &quot;MultiHeadAttention.forward&quot;]" data-semantic-parent="dec.cross" data-parameter-identity="model.decoder.layers[i].cross_attn.w_q"><title>dec.cross.q | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.decoder.layers[i].cross_attn.w_q</title></rect>
+<text data-follow-id="label-74" data-follow-source="dec.cross.q" data-follow-owner="dec.cross.q" data-follow-kind="label" x="1021.0" y="936.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1021.0" dy="0">Linear WQ</tspan>
+</text>
+<g data-node-id="dec.cross.q.value" data-value-owner="dec.cross.q:out">
+<rect x="1088.0" y="916.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1096.3333333333333" y="916.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1104.6666666666667" y="916.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1113.0" y="916.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1121.3333333333333" y="916.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1129.6666666666667" y="916.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1088.0" y="926.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1096.3333333333333" y="926.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1104.6666666666667" y="926.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1113.0" y="926.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1121.3333333333333" y="926.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1129.6666666666667" y="926.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1088.0" y="936.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1096.3333333333333" y="936.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1104.6666666666667" y="936.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1113.0" y="936.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1121.3333333333333" y="936.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1129.6666666666667" y="936.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+</g>
+<text data-follow-id="label-75" data-follow-source="dec.cross.q:out" data-follow-owner="dec.cross.q.value" data-follow-kind="label" x="1113.0" y="966" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1113.0" dy="0"></tspan>
+</text>
+<text data-follow-id="label-76" data-follow-source="dec.cross.q:out" data-follow-owner="dec.cross.q.value" data-follow-kind="label" x="1113.0" y="911" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1113.0" dy="0">Q</tspan>
+</text>
+<text data-follow-id="label-77" data-follow-source="dec.cross.q:out" data-follow-owner="dec.cross.q.value" data-follow-kind="label" x="1103.0" y="965" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="1103.0" dy="0">[B,T,D]</tspan>
+</text>
+<rect x="1157.3333333333333" y="914" width="86" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.cross.k" data-source-symbols="[&quot;MultiHeadAttention.__init__&quot;, &quot;MultiHeadAttention.forward&quot;]" data-semantic-parent="dec.cross" data-parameter-identity="model.decoder.layers[i].cross_attn.w_k"><title>dec.cross.k | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.decoder.layers[i].cross_attn.w_k</title></rect>
+<text data-follow-id="label-78" data-follow-source="dec.cross.k" data-follow-owner="dec.cross.k" data-follow-kind="label" x="1200.3333333333333" y="936.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1200.3333333333333" dy="0">Linear WK</tspan>
+</text>
+<g data-node-id="dec.cross.k.value" data-value-owner="dec.cross.k:out">
+<rect x="1267.3333333333333" y="916.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1275.6666666666665" y="916.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1284.0" y="916.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1292.3333333333333" y="916.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1300.6666666666665" y="916.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1309.0" y="916.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1267.3333333333333" y="926.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1275.6666666666665" y="926.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1284.0" y="926.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1292.3333333333333" y="926.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1300.6666666666665" y="926.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1309.0" y="926.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1267.3333333333333" y="936.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1275.6666666666665" y="936.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1284.0" y="936.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1292.3333333333333" y="936.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1300.6666666666665" y="936.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1309.0" y="936.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+</g>
+<text data-follow-id="label-79" data-follow-source="dec.cross.k:out" data-follow-owner="dec.cross.k.value" data-follow-kind="label" x="1292.3333333333333" y="966" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1292.3333333333333" dy="0"></tspan>
+</text>
+<text data-follow-id="label-80" data-follow-source="dec.cross.k:out" data-follow-owner="dec.cross.k.value" data-follow-kind="label" x="1292.3333333333333" y="911" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1292.3333333333333" dy="0">K</tspan>
+</text>
+<text data-follow-id="label-81" data-follow-source="dec.cross.k:out" data-follow-owner="dec.cross.k.value" data-follow-kind="label" x="1282.3333333333333" y="965" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="1282.3333333333333" dy="0">[B,S,D]</tspan>
+</text>
+<rect x="1336.6666666666667" y="914" width="86" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.cross.v" data-source-symbols="[&quot;MultiHeadAttention.__init__&quot;, &quot;MultiHeadAttention.forward&quot;]" data-semantic-parent="dec.cross" data-parameter-identity="model.decoder.layers[i].cross_attn.w_v"><title>dec.cross.v | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.decoder.layers[i].cross_attn.w_v</title></rect>
+<text data-follow-id="label-82" data-follow-source="dec.cross.v" data-follow-owner="dec.cross.v" data-follow-kind="label" x="1379.6666666666667" y="936.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1379.6666666666667" dy="0">Linear WV</tspan>
+</text>
+<g data-node-id="dec.cross.v.value" data-value-owner="dec.cross.v:out">
+<rect x="1446.6666666666667" y="916.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1455.0" y="916.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1463.3333333333335" y="916.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1471.6666666666667" y="916.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1480.0" y="916.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1488.3333333333335" y="916.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1446.6666666666667" y="926.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1455.0" y="926.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1463.3333333333335" y="926.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1471.6666666666667" y="926.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1480.0" y="926.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1488.3333333333335" y="926.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1446.6666666666667" y="936.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1455.0" y="936.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1463.3333333333335" y="936.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1471.6666666666667" y="936.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1480.0" y="936.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1488.3333333333335" y="936.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+</g>
+<text data-follow-id="label-83" data-follow-source="dec.cross.v:out" data-follow-owner="dec.cross.v.value" data-follow-kind="label" x="1471.6666666666667" y="966" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1471.6666666666667" dy="0"></tspan>
+</text>
+<text data-follow-id="label-84" data-follow-source="dec.cross.v:out" data-follow-owner="dec.cross.v.value" data-follow-kind="label" x="1471.6666666666667" y="911" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1471.6666666666667" dy="0">V</tspan>
+</text>
+<text data-follow-id="label-85" data-follow-source="dec.cross.v:out" data-follow-owner="dec.cross.v.value" data-follow-kind="label" x="1461.6666666666667" y="965" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="1461.6666666666667" dy="0">[B,S,D]</tspan>
+</text>
+<rect x="978" y="996" width="520" height="38" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.cross.split" data-source-symbols="[&quot;MultiHeadAttention._split_heads&quot;]" data-semantic-parent="dec.cross" data-parameter-identity=""><title>dec.cross.split | source: MultiHeadAttention._split_heads | parameter: None</title></rect>
+<text data-follow-id="label-86" data-follow-source="dec.cross.split" data-follow-owner="dec.cross.split" data-follow-kind="label" x="1238.0" y="1020.95" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Split heads: Q / K / V → [B,H,L,Dh]</tspan>
+</text>
+<rect x="978" y="1058" width="520" height="42" rx="10" fill="#fbe8ef" stroke="#263348" stroke-width="2" data-node-id="dec.cross.sdpa" data-source-symbols="[&quot;scaled_dot_product_attention&quot;]" data-semantic-parent="dec.cross" data-parameter-identity="" data-mask-inputs="[&quot;memory_key_padding_mask&quot;]"><title>dec.cross.sdpa | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text data-follow-id="label-87" data-follow-source="dec.cross.sdpa" data-follow-owner="dec.cross.sdpa" data-follow-kind="label" x="1238.0" y="1085.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Scaled dot-product attention · per head</tspan>
+</text>
+<rect x="978" y="1124" width="520" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.cross.merge" data-source-symbols="[&quot;MultiHeadAttention._combine_heads&quot;]" data-semantic-parent="dec.cross" data-parameter-identity=""><title>dec.cross.merge | source: MultiHeadAttention._combine_heads | parameter: None</title></rect>
+<text data-follow-id="label-88" data-follow-source="dec.cross.merge" data-follow-owner="dec.cross.merge" data-follow-kind="label" x="1238.0" y="1145.95" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Combine heads: [B,H,Lq,Dh] → [B,Lq,D]</tspan>
+</text>
+<rect x="1128.0" y="1180" width="220" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.cross.wo" data-source-symbols="[&quot;MultiHeadAttention.forward&quot;]" data-semantic-parent="dec.cross" data-parameter-identity="model.decoder.layers[i].cross_attn.w_o"><title>dec.cross.wo | source: MultiHeadAttention.forward | parameter: model.decoder.layers[i].cross_attn.w_o</title></rect>
+<text data-follow-id="label-89" data-follow-source="dec.cross.wo" data-follow-owner="dec.cross.wo" data-follow-kind="label" x="1238.0" y="1203.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Linear Wᴼ  (D → D)</tspan>
+</text>
+<circle data-junction-id="source-fork-4" data-junction-source="dec.norm1.layernorm:out" data-junction-routes="[&quot;binding-061&quot;, &quot;binding-075&quot;]" cx="1238.0" cy="1260.0" r="2.5" fill="#263348"/>
+<rect x="936" y="1272" width="604" height="110" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" data-node-id="dec.norm1" data-source-symbols="[&quot;DecoderLayer.forward&quot;]" data-semantic-parent="dec.layer_i" data-parameter-identity="model.decoder.layers[i].norm1" data-semantic-contract="{&quot;branch_dropout&quot;: &quot;dropout1&quot;, &quot;formula&quot;: &quot;LayerNorm(x + Dropout(sublayer(x)))&quot;, &quot;ordering&quot;: &quot;post_layer_norm&quot;, &quot;skip_source&quot;: &quot;tgt_pe&quot;, &quot;source_expression&quot;: &quot;self.norm1(x + self.dropout1(self_attn_out))&quot;, &quot;source_line&quot;: 352, &quot;source_symbol&quot;: &quot;DecoderLayer.forward&quot;, &quot;stage&quot;: 1}"><title>dec.norm1 | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm1</title></rect>
+<text data-follow-id="label-90" data-follow-source="dec.norm1" data-follow-owner="dec.norm1" data-follow-kind="label" x="958" y="1299" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="start" fill="#172336">
+<tspan x="958" dy="0">Add &amp; Norm · Post-LN</tspan>
+</text>
+<circle cx="1106" cy="1328" r="14" fill="white" stroke="#263348" stroke-width="2"  data-node-id="dec.norm1.add" data-source-symbols="[&quot;DecoderLayer.forward&quot;]" data-semantic-parent="dec.norm1" data-parameter-identity=""/>
+<text data-follow-id="label-91" data-follow-source="dec.norm1.add" data-follow-owner="dec.norm1.add" data-follow-kind="label" x="1106" y="1335" font-family="DejaVu Sans, Arial, sans-serif" font-size="25" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1106" dy="0">+</tspan>
+</text>
+<text data-follow-id="label-92" data-follow-source="dec.norm1" data-follow-edge="binding-012" data-follow-owner="dec.norm1" data-follow-kind="edge-label" x="984" y="1319" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="984" dy="0">x (skip)</tspan>
+</text>
+<rect x="1206" y="1310" width="200" height="36" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.norm1.layernorm" data-source-symbols="[&quot;DecoderLayer.forward&quot;]" data-semantic-parent="dec.norm1" data-parameter-identity="model.decoder.layers[i].norm1"><title>dec.norm1.layernorm | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm1</title></rect>
+<text data-follow-id="label-93" data-follow-source="dec.norm1.layernorm" data-follow-owner="dec.norm1.layernorm" data-follow-kind="label" x="1306.0" y="1334.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1306.0" dy="0">LayerNorm</tspan>
+</text>
+<rect x="936" y="1406" width="604" height="542" rx="10" fill="#ffddb3" stroke="#263348" stroke-width="2" data-node-id="dec.self" data-source-symbols="[&quot;MultiHeadAttention.forward&quot;, &quot;DecoderLayer.forward&quot;]" data-semantic-parent="dec.layer_i" data-parameter-identity="model.decoder.layers[i].self_attn" data-semantic-contract="{&quot;branch_result&quot;: &quot;self_attn_out&quot;, &quot;input_identity&quot;: &quot;tgt_pe&quot;, &quot;k_shape&quot;: &quot;[B,T,D]&quot;, &quot;key_source&quot;: &quot;tgt_pe&quot;, &quot;mask_args&quot;: [&quot;tgt_mask&quot;, &quot;tgt_key_padding_mask&quot;], &quot;mask_bindings&quot;: {&quot;attn_mask&quot;: &quot;tgt_mask&quot;, &quot;key_padding_mask&quot;: &quot;tgt_key_padding_mask&quot;}, &quot;mask_semantics&quot;: &quot;boolean True masks scores with -inf before Softmax; causal only when tgt_mask is supplied&quot;, &quot;q_shape&quot;: &quot;[B,T,D]&quot;, &quot;query_source&quot;: &quot;tgt_pe&quot;, &quot;role&quot;: &quot;decoder_masked_self&quot;, &quot;source_expression&quot;: &quot;self.self_attn(query=x, key=x, value=x, attn_mask=tgt_mask, key_padding_mask=tgt_key_padding_mask)&quot;, &quot;source_line&quot;: 345, &quot;source_symbol&quot;: &quot;DecoderLayer.forward&quot;, &quot;stage&quot;: 1, &quot;v_shape&quot;: &quot;[B,T,D]&quot;, &quot;value_source&quot;: &quot;tgt_pe&quot;}"><title>dec.self | source: MultiHeadAttention.forward, DecoderLayer.forward | parameter: model.decoder.layers[i].self_attn</title></rect>
+<text data-follow-id="label-94" data-follow-source="dec.self" data-follow-owner="dec.self" data-follow-kind="label" x="1238.0" y="1434" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Decoder masked self-attention</tspan>
+</text>
+<text data-follow-id="label-95" data-follow-source="dec.self" data-follow-owner="dec.self" data-follow-kind="label" x="1238.0" y="1460" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Q,K,V ← X [B,T,D]</tspan>
+</text>
+<rect x="978.0" y="1510" width="86" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.self.q" data-source-symbols="[&quot;MultiHeadAttention.__init__&quot;, &quot;MultiHeadAttention.forward&quot;]" data-semantic-parent="dec.self" data-parameter-identity="model.decoder.layers[i].self_attn.w_q"><title>dec.self.q | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.decoder.layers[i].self_attn.w_q</title></rect>
+<text data-follow-id="label-96" data-follow-source="dec.self.q" data-follow-owner="dec.self.q" data-follow-kind="label" x="1021.0" y="1532.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1021.0" dy="0">Linear WQ</tspan>
+</text>
+<g data-node-id="dec.self.q.value" data-value-owner="dec.self.q:out">
+<rect x="1088.0" y="1512.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1096.3333333333333" y="1512.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1104.6666666666667" y="1512.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1113.0" y="1512.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1121.3333333333333" y="1512.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1129.6666666666667" y="1512.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1088.0" y="1522.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1096.3333333333333" y="1522.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1104.6666666666667" y="1522.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1113.0" y="1522.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1121.3333333333333" y="1522.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1129.6666666666667" y="1522.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1088.0" y="1532.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1096.3333333333333" y="1532.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1104.6666666666667" y="1532.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1113.0" y="1532.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1121.3333333333333" y="1532.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1129.6666666666667" y="1532.0" width="8.333333333333334" height="10.0" fill="#9ed5f2" stroke="#4d5d6b" stroke-width="0.65"/>
+</g>
+<text data-follow-id="label-97" data-follow-source="dec.self.q:out" data-follow-owner="dec.self.q.value" data-follow-kind="label" x="1113.0" y="1562" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1113.0" dy="0"></tspan>
+</text>
+<text data-follow-id="label-98" data-follow-source="dec.self.q:out" data-follow-owner="dec.self.q.value" data-follow-kind="label" x="1113.0" y="1507" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1113.0" dy="0">Q</tspan>
+</text>
+<text data-follow-id="label-99" data-follow-source="dec.self.q:out" data-follow-owner="dec.self.q.value" data-follow-kind="label" x="1103.0" y="1561" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="1103.0" dy="0">[B,T,D]</tspan>
+</text>
+<rect x="1157.3333333333333" y="1510" width="86" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.self.k" data-source-symbols="[&quot;MultiHeadAttention.__init__&quot;, &quot;MultiHeadAttention.forward&quot;]" data-semantic-parent="dec.self" data-parameter-identity="model.decoder.layers[i].self_attn.w_k"><title>dec.self.k | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.decoder.layers[i].self_attn.w_k</title></rect>
+<text data-follow-id="label-100" data-follow-source="dec.self.k" data-follow-owner="dec.self.k" data-follow-kind="label" x="1200.3333333333333" y="1532.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1200.3333333333333" dy="0">Linear WK</tspan>
+</text>
+<g data-node-id="dec.self.k.value" data-value-owner="dec.self.k:out">
+<rect x="1267.3333333333333" y="1512.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1275.6666666666665" y="1512.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1284.0" y="1512.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1292.3333333333333" y="1512.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1300.6666666666665" y="1512.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1309.0" y="1512.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1267.3333333333333" y="1522.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1275.6666666666665" y="1522.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1284.0" y="1522.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1292.3333333333333" y="1522.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1300.6666666666665" y="1522.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1309.0" y="1522.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1267.3333333333333" y="1532.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1275.6666666666665" y="1532.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1284.0" y="1532.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1292.3333333333333" y="1532.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1300.6666666666665" y="1532.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1309.0" y="1532.0" width="8.333333333333334" height="10.0" fill="#b6e5b8" stroke="#4d5d6b" stroke-width="0.65"/>
+</g>
+<text data-follow-id="label-101" data-follow-source="dec.self.k:out" data-follow-owner="dec.self.k.value" data-follow-kind="label" x="1292.3333333333333" y="1562" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1292.3333333333333" dy="0"></tspan>
+</text>
+<text data-follow-id="label-102" data-follow-source="dec.self.k:out" data-follow-owner="dec.self.k.value" data-follow-kind="label" x="1292.3333333333333" y="1507" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1292.3333333333333" dy="0">K</tspan>
+</text>
+<text data-follow-id="label-103" data-follow-source="dec.self.k:out" data-follow-owner="dec.self.k.value" data-follow-kind="label" x="1282.3333333333333" y="1561" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="1282.3333333333333" dy="0">[B,T,D]</tspan>
+</text>
+<rect x="1336.6666666666667" y="1510" width="86" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.self.v" data-source-symbols="[&quot;MultiHeadAttention.__init__&quot;, &quot;MultiHeadAttention.forward&quot;]" data-semantic-parent="dec.self" data-parameter-identity="model.decoder.layers[i].self_attn.w_v"><title>dec.self.v | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.decoder.layers[i].self_attn.w_v</title></rect>
+<text data-follow-id="label-104" data-follow-source="dec.self.v" data-follow-owner="dec.self.v" data-follow-kind="label" x="1379.6666666666667" y="1532.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1379.6666666666667" dy="0">Linear WV</tspan>
+</text>
+<g data-node-id="dec.self.v.value" data-value-owner="dec.self.v:out">
+<rect x="1446.6666666666667" y="1512.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1455.0" y="1512.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1463.3333333333335" y="1512.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1471.6666666666667" y="1512.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1480.0" y="1512.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1488.3333333333335" y="1512.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1446.6666666666667" y="1522.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1455.0" y="1522.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1463.3333333333335" y="1522.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1471.6666666666667" y="1522.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1480.0" y="1522.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1488.3333333333335" y="1522.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1446.6666666666667" y="1532.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1455.0" y="1532.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1463.3333333333335" y="1532.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1471.6666666666667" y="1532.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1480.0" y="1532.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+<rect x="1488.3333333333335" y="1532.0" width="8.333333333333334" height="10.0" fill="#f2b5ce" stroke="#4d5d6b" stroke-width="0.65"/>
+</g>
+<text data-follow-id="label-105" data-follow-source="dec.self.v:out" data-follow-owner="dec.self.v.value" data-follow-kind="label" x="1471.6666666666667" y="1562" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1471.6666666666667" dy="0"></tspan>
+</text>
+<text data-follow-id="label-106" data-follow-source="dec.self.v:out" data-follow-owner="dec.self.v.value" data-follow-kind="label" x="1471.6666666666667" y="1507" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1471.6666666666667" dy="0">V</tspan>
+</text>
+<text data-follow-id="label-107" data-follow-source="dec.self.v:out" data-follow-owner="dec.self.v.value" data-follow-kind="label" x="1461.6666666666667" y="1561" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="1461.6666666666667" dy="0">[B,T,D]</tspan>
+</text>
+<rect x="978" y="1592" width="520" height="38" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.self.split" data-source-symbols="[&quot;MultiHeadAttention._split_heads&quot;]" data-semantic-parent="dec.self" data-parameter-identity=""><title>dec.self.split | source: MultiHeadAttention._split_heads | parameter: None</title></rect>
+<text data-follow-id="label-108" data-follow-source="dec.self.split" data-follow-owner="dec.self.split" data-follow-kind="label" x="1238.0" y="1616.95" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Split heads: Q / K / V → [B,H,L,Dh]</tspan>
+</text>
+<rect x="978" y="1654" width="520" height="124" rx="10" fill="#fffaf4" stroke="#263348" stroke-width="2" data-node-id="dec.self.sdpa" data-source-symbols="[&quot;scaled_dot_product_attention&quot;]" data-semantic-parent="dec.self" data-parameter-identity="" data-mask-inputs="[&quot;tgt_mask&quot;, &quot;tgt_key_padding_mask&quot;]"><title>dec.self.sdpa | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text data-follow-id="label-109" data-follow-source="dec.self.sdpa" data-follow-owner="dec.self.sdpa" data-follow-kind="label" x="1238.0" y="1676" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Scaled dot-product attention · each head</tspan>
+</text>
+<rect x="1000" y="1698" width="82" height="40" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.self.sdpa.qkt" data-source-symbols="[&quot;scaled_dot_product_attention&quot;]" data-semantic-parent="dec.self.sdpa" data-parameter-identity=""><title>dec.self.sdpa.qkt | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text data-follow-id="label-110" data-follow-source="dec.self.sdpa.qkt" data-follow-owner="dec.self.sdpa.qkt" data-follow-kind="label" x="1041.0" y="1723.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1041.0" dy="0">Q @ Kᵀ</tspan>
+</text>
+<rect x="1103.5" y="1698" width="64" height="40" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.self.sdpa.scale" data-source-symbols="[&quot;scaled_dot_product_attention&quot;]" data-semantic-parent="dec.self.sdpa" data-parameter-identity=""><title>dec.self.sdpa.scale | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text data-follow-id="label-111" data-follow-source="dec.self.sdpa.scale" data-follow-owner="dec.self.sdpa.scale" data-follow-kind="label" x="1135.5" y="1723.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1135.5" dy="0">÷ √Dh</tspan>
+</text>
+<rect x="1189.0" y="1698" width="92" height="40" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.self.sdpa.mask" data-source-symbols="[&quot;scaled_dot_product_attention&quot;]" data-semantic-parent="dec.self.sdpa" data-parameter-identity="" data-mask-inputs="[&quot;tgt_mask&quot;, &quot;tgt_key_padding_mask&quot;]"><title>dec.self.sdpa.mask | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text data-follow-id="label-112" data-follow-source="dec.self.sdpa.mask" data-follow-owner="dec.self.sdpa.mask" data-follow-kind="label" x="1235.0" y="1714.4" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1235.0" dy="0">causal +</tspan>
+<tspan x="1235.0" dy="17.7">padding</tspan>
+</text>
+<rect x="1302.5" y="1698" width="82" height="40" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" data-node-id="dec.self.sdpa.softmax" data-source-symbols="[&quot;scaled_dot_product_attention&quot;]" data-semantic-parent="dec.self.sdpa" data-parameter-identity=""><title>dec.self.sdpa.softmax | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text data-follow-id="label-113" data-follow-source="dec.self.sdpa.softmax" data-follow-owner="dec.self.sdpa.softmax" data-follow-kind="label" x="1343.5" y="1723.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1343.5" dy="0">Softmax</tspan>
+</text>
+<rect x="1406.0" y="1698" width="70" height="40" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.self.sdpa.av" data-source-symbols="[&quot;scaled_dot_product_attention&quot;]" data-semantic-parent="dec.self.sdpa" data-parameter-identity=""><title>dec.self.sdpa.av | source: scaled_dot_product_attention | parameter: None</title></rect>
+<text data-follow-id="label-114" data-follow-source="dec.self.sdpa.av" data-follow-owner="dec.self.sdpa.av" data-follow-kind="label" x="1441.0" y="1723.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1441.0" dy="0">A @ V</tspan>
+</text>
+<text data-follow-id="label-115" data-follow-source="dec.self.split" data-follow-edge="binding-046" data-follow-owner="dec.self.split" data-follow-kind="edge-label" x="1016" y="1648" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="1016" dy="0">Qh</tspan>
+</text>
+<text data-follow-id="label-116" data-follow-source="dec.self.split" data-follow-edge="binding-049" data-follow-owner="dec.self.split" data-follow-kind="edge-label" x="1064" y="1648" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="normal" text-anchor="start" fill="#172336">
+<tspan x="1064" dy="0">Kh</tspan>
+</text>
+<text data-follow-id="label-117" data-follow-source="dec.self.split" data-follow-edge="binding-052" data-follow-owner="dec.self.split" data-follow-kind="edge-label" x="1435.0" y="1648" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="1435.0" dy="0">Vh</tspan>
+</text>
+<text data-follow-id="label-118" data-follow-source="dec.self.sdpa" data-follow-edge="binding-058" data-follow-owner="dec.self.sdpa" data-follow-kind="edge-label" x="1398.0" y="1747" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#172336">
+<tspan x="1398.0" dy="0">A: [B,H,Lq,Lk]</tspan>
+</text>
+<text data-follow-id="label-119" data-follow-source="dec.self.sdpa" data-follow-edge="binding-057" data-follow-owner="dec.self.sdpa" data-follow-kind="edge-label" x="1238.0" y="1754" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">mask before</tspan>
+<tspan x="1238.0" dy="15.34">Softmax</tspan>
+</text>
+<rect x="978" y="1826" width="520" height="32" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="dec.self.merge" data-source-symbols="[&quot;MultiHeadAttention._combine_heads&quot;]" data-semantic-parent="dec.self" data-parameter-identity=""><title>dec.self.merge | source: MultiHeadAttention._combine_heads | parameter: None</title></rect>
+<text data-follow-id="label-120" data-follow-source="dec.self.merge" data-follow-owner="dec.self.merge" data-follow-kind="label" x="1238.0" y="1847.95" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Combine heads: [B,H,Lq,Dh] → [B,Lq,D]</tspan>
+</text>
+<rect x="1128.0" y="1882" width="220" height="34" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" data-node-id="dec.self.wo" data-source-symbols="[&quot;MultiHeadAttention.forward&quot;]" data-semantic-parent="dec.self" data-parameter-identity="model.decoder.layers[i].self_attn.w_o"><title>dec.self.wo | source: MultiHeadAttention.forward | parameter: model.decoder.layers[i].self_attn.w_o</title></rect>
+<text data-follow-id="label-121" data-follow-source="dec.self.wo" data-follow-owner="dec.self.wo" data-follow-kind="label" x="1238.0" y="1905.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Linear Wᴼ  (D → D)</tspan>
+</text>
+<circle data-junction-id="source-fork-5" data-junction-source="tgt_pe.add:out" data-junction-routes="[&quot;binding-009&quot;, &quot;binding-010&quot;, &quot;binding-011&quot;, &quot;binding-012&quot;]" cx="1238.0" cy="1960.0" r="2.5" fill="#263348"/>
+<rect x="991" y="2058" width="494" height="62" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2" data-node-id="tgt_embed" data-source-symbols="[&quot;TokenEmbedding.forward&quot;]" data-semantic-parent="model" data-parameter-identity="model.tgt_embedding.embedding.weight"><title>tgt_embed | source: TokenEmbedding.forward | parameter: model.tgt_embedding.embedding.weight</title></rect>
+<text data-follow-id="label-122" data-follow-source="tgt_embed" data-follow-owner="tgt_embed" data-follow-kind="label" x="1238.0" y="2095.65" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Target token embedding × √D</tspan>
+</text>
+<circle cx="1238.0" cy="2016" r="15" fill="white" stroke="#263348" stroke-width="2"  data-node-id="tgt_pe.add" data-source-symbols="[&quot;PositionalEncoding.forward&quot;]" data-semantic-parent="tgt_pe" data-parameter-identity=""/>
+<text data-follow-id="label-123" data-follow-source="tgt_pe.add" data-follow-owner="tgt_pe.add" data-follow-kind="label" x="1238.0" y="2023" font-family="DejaVu Sans, Arial, sans-serif" font-size="25" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">+</tspan>
+</text>
+<rect x="936.0" y="1993" width="210" height="46" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" data-node-id="tgt_pe.buffer" data-source-symbols="[&quot;PositionalEncoding.forward&quot;]" data-semantic-parent="tgt_pe" data-parameter-identity=""><title>tgt_pe.buffer | source: PositionalEncoding.forward | parameter: None</title></rect>
+<text data-follow-id="label-124" data-follow-source="tgt_pe.buffer" data-follow-owner="tgt_pe.buffer" data-follow-kind="label" x="1041.0" y="2021.95" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1041.0" dy="0">Fixed sinusoidal PE</tspan>
+</text>
+<g  data-node-id="tgt_tokens" data-source-symbols="[&quot;Transformer.forward&quot;]" data-semantic-parent="model" data-parameter-identity="" data-bbox="1198.0,2139,80,19">
+<text x="1238.0" y="2149" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" font-weight="bold" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">tgt [B,T] · shifted-right by caller</tspan>
+</text>
+</g>
+<text data-follow-id="label-125" data-follow-source="tgt_embed" data-follow-owner="tgt_embed" data-follow-kind="label" x="1238.0" y="2176" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="1238.0" dy="0">Embedding output [B,L,D] · PE dropout folded</tspan>
+</text>
+<g data-node-id="enc.memory.value" data-value-owner="enc.output:out">
+<rect x="720.0" y="318" width="160" height="104" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2"><title> | source:  | parameter: None</title></rect>
+<text x="800.0" y="347.28000000000003" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="800.0" dy="0">Memory M</tspan>
+<tspan x="800.0" dy="18.88">[B,S,D]</tspan>
+<tspan x="800.0" dy="18.88">final Encoder</tspan>
+<tspan x="800.0" dy="18.88">output</tspan>
+</text>
+</g>
+<text x="800.0" y="2210" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="800.0" dy="0">Tensor glyphs: Q blue · K green · V pink. Same type ≠ shared parameters. Macro flow ↑; attention detail ↓; FFN detail →.</tspan>
+</text>
+<text x="800.0" y="2237" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="800.0" dy="0">Masks act before Softmax; causal mask is supplied by caller. ReLU · fixed sinusoidal PE · no generation loop shown.</tspan>
+</text>
+<text x="800.0" y="2264" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="normal" text-anchor="middle" fill="#172336">
+<tspan x="800.0" dy="0">Dropout / NaN guard are folded in the view and retained in semantic_ir.json. Matrix grids are symbolic.</tspan>
+</text>
+<path data-route-id="binding-001" data-src="src_pe.buffer:out" data-dst="src_pe.add:pe" data-canonical-src="src_pe.buffer:out" data-canonical-dst="src_pe.add:pe" data-semantic-edges="[&quot;src_pe.buffer:out-&gt;src_pe.add:pe&quot;]" d="M 290.0,2016 L 367.0,2016" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-002" data-src="src_pe.add:out" data-dst="enc.self.q:in" data-canonical-src="src_pe.add:out" data-canonical-dst="enc.self.q:in" data-semantic-edges="[&quot;enc.self:in-&gt;enc.self.q:in&quot;, &quot;src_pe.add:out-&gt;src_pe.dropout:in&quot;, &quot;src_pe.dropout:out-&gt;src_pe:out&quot;, &quot;src_pe:out-&gt;enc.self:in&quot;]" d="M 382.0,2001 L 382.0,1334 L 98,1334 L 98,890 L 165.0,890 L 165.0,914" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-003" data-src="src_pe.add:out" data-dst="enc.self.k:in" data-canonical-src="src_pe.add:out" data-canonical-dst="enc.self.k:in" data-semantic-edges="[&quot;enc.self:in-&gt;enc.self.k:in&quot;, &quot;src_pe.add:out-&gt;src_pe.dropout:in&quot;, &quot;src_pe.dropout:out-&gt;src_pe:out&quot;, &quot;src_pe:out-&gt;enc.self:in&quot;]" d="M 382.0,2001 L 382.0,1334 L 98,1334 L 98,890 L 344.33333333333337,890 L 344.33333333333337,914" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-004" data-src="src_pe.add:out" data-dst="enc.self.v:in" data-canonical-src="src_pe.add:out" data-canonical-dst="enc.self.v:in" data-semantic-edges="[&quot;enc.self:in-&gt;enc.self.v:in&quot;, &quot;src_pe.add:out-&gt;src_pe.dropout:in&quot;, &quot;src_pe.dropout:out-&gt;src_pe:out&quot;, &quot;src_pe:out-&gt;enc.self:in&quot;]" d="M 382.0,2001 L 382.0,1334 L 98,1334 L 98,890 L 523.6666666666667,890 L 523.6666666666667,914" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-005" data-src="src_pe.add:out" data-dst="enc.norm1.add:x" data-canonical-src="src_pe.add:out" data-canonical-dst="enc.norm1.add:x" data-semantic-edges="[&quot;enc.norm1:skip-&gt;enc.norm1.add:x&quot;, &quot;src_pe.add:out-&gt;src_pe.dropout:in&quot;, &quot;src_pe.dropout:out-&gt;src_pe:out&quot;, &quot;src_pe:out-&gt;enc.norm1:skip&quot;]" d="M 382.0,2001 L 382.0,1364.0 L 56,1364.0 L 56,732 L 236,732" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-006" data-src="src_tokens:out" data-dst="src_embed:in" data-canonical-src="src_tokens:out" data-canonical-dst="src_embed:in" data-semantic-edges="[&quot;src_tokens:out-&gt;src_embed:in&quot;]" d="M 382.0,2139 L 382.0,2120" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-007" data-src="src_embed:out" data-dst="src_pe.add:x" data-canonical-src="src_embed:out" data-canonical-dst="src_pe.add:x" data-semantic-edges="[&quot;src_embed:out-&gt;src_pe:in&quot;, &quot;src_pe:in-&gt;src_pe.add:x&quot;]" d="M 382.0,2058 L 382.0,2031" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-008" data-src="tgt_pe.buffer:out" data-dst="tgt_pe.add:pe" data-canonical-src="tgt_pe.buffer:out" data-canonical-dst="tgt_pe.add:pe" data-semantic-edges="[&quot;tgt_pe.buffer:out-&gt;tgt_pe.add:pe&quot;]" d="M 1146.0,2016 L 1223.0,2016" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-009" data-src="tgt_pe.add:out" data-dst="dec.self.q:in" data-canonical-src="tgt_pe.add:out" data-canonical-dst="dec.self.q:in" data-semantic-edges="[&quot;dec.self:in-&gt;dec.self.q:in&quot;, &quot;tgt_pe.add:out-&gt;tgt_pe.dropout:in&quot;, &quot;tgt_pe.dropout:out-&gt;tgt_pe:out&quot;, &quot;tgt_pe:out-&gt;dec.self:in&quot;]" d="M 1238.0,2001 L 1238.0,1930 L 954,1930 L 954,1486 L 1021.0,1486 L 1021.0,1510" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-010" data-src="tgt_pe.add:out" data-dst="dec.self.k:in" data-canonical-src="tgt_pe.add:out" data-canonical-dst="dec.self.k:in" data-semantic-edges="[&quot;dec.self:in-&gt;dec.self.k:in&quot;, &quot;tgt_pe.add:out-&gt;tgt_pe.dropout:in&quot;, &quot;tgt_pe.dropout:out-&gt;tgt_pe:out&quot;, &quot;tgt_pe:out-&gt;dec.self:in&quot;]" d="M 1238.0,2001 L 1238.0,1930 L 954,1930 L 954,1486 L 1200.3333333333333,1486 L 1200.3333333333333,1510" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-011" data-src="tgt_pe.add:out" data-dst="dec.self.v:in" data-canonical-src="tgt_pe.add:out" data-canonical-dst="dec.self.v:in" data-semantic-edges="[&quot;dec.self:in-&gt;dec.self.v:in&quot;, &quot;tgt_pe.add:out-&gt;tgt_pe.dropout:in&quot;, &quot;tgt_pe.dropout:out-&gt;tgt_pe:out&quot;, &quot;tgt_pe:out-&gt;dec.self:in&quot;]" d="M 1238.0,2001 L 1238.0,1930 L 954,1930 L 954,1486 L 1379.6666666666667,1486 L 1379.6666666666667,1510" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-012" data-src="tgt_pe.add:out" data-dst="dec.norm1.add:x" data-canonical-src="tgt_pe.add:out" data-canonical-dst="dec.norm1.add:x" data-semantic-edges="[&quot;dec.norm1:skip-&gt;dec.norm1.add:x&quot;, &quot;tgt_pe.add:out-&gt;tgt_pe.dropout:in&quot;, &quot;tgt_pe.dropout:out-&gt;tgt_pe:out&quot;, &quot;tgt_pe:out-&gt;dec.norm1:skip&quot;]" d="M 1238.0,2001 L 1238.0,1960.0 L 912,1960.0 L 912,1328 L 1092,1328" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-013" data-src="tgt_tokens:out" data-dst="tgt_embed:in" data-canonical-src="tgt_tokens:out" data-canonical-dst="tgt_embed:in" data-semantic-edges="[&quot;tgt_tokens:out-&gt;tgt_embed:in&quot;]" d="M 1238.0,2139 L 1238.0,2120" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-014" data-src="tgt_embed:out" data-dst="tgt_pe.add:x" data-canonical-src="tgt_embed:out" data-canonical-dst="tgt_pe.add:x" data-semantic-edges="[&quot;tgt_embed:out-&gt;tgt_pe:in&quot;, &quot;tgt_pe:in-&gt;tgt_pe.add:x&quot;]" d="M 1238.0,2058 L 1238.0,2031" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-015" data-src="enc.self.q:out" data-dst="enc.self.q.value:in" data-canonical-src="enc.self.q:out" data-canonical-dst="enc.self.split:q_in" data-semantic-edges="[&quot;enc.self.q:out-&gt;enc.self.split:q_in&quot;]" d="M 208.0,931 L 232.0,931" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-016" data-src="enc.self.q.value:out" data-dst="enc.self.split:q_in" data-canonical-src="enc.self.q:out" data-canonical-dst="enc.self.split:q_in" data-semantic-edges="[&quot;enc.self.q:out-&gt;enc.self.split:q_in&quot;]" d="M 257.0,946 L 257.0,996" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-017" data-src="enc.self.split:q_out" data-dst="enc.self.sdpa.qkt:q" data-canonical-src="enc.self.split:q_out" data-canonical-dst="enc.self.sdpa.qkt:q" data-semantic-edges="[&quot;enc.self.sdpa:q-&gt;enc.self.sdpa.qkt:q&quot;, &quot;enc.self.split:q_out-&gt;enc.self.sdpa:q&quot;]" d="M 166,1034 L 166,1102" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-018" data-src="enc.self.k:out" data-dst="enc.self.k.value:in" data-canonical-src="enc.self.k:out" data-canonical-dst="enc.self.split:k_in" data-semantic-edges="[&quot;enc.self.k:out-&gt;enc.self.split:k_in&quot;]" d="M 387.33333333333337,931 L 411.33333333333337,931" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-019" data-src="enc.self.k.value:out" data-dst="enc.self.split:k_in" data-canonical-src="enc.self.k:out" data-canonical-dst="enc.self.split:k_in" data-semantic-edges="[&quot;enc.self.k:out-&gt;enc.self.split:k_in&quot;]" d="M 436.33333333333337,946 L 436.33333333333337,996" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-020" data-src="enc.self.split:k_out" data-dst="enc.self.sdpa.qkt:k" data-canonical-src="enc.self.split:k_out" data-canonical-dst="enc.self.sdpa.qkt:k" data-semantic-edges="[&quot;enc.self.sdpa:k-&gt;enc.self.sdpa.qkt:k&quot;, &quot;enc.self.split:k_out-&gt;enc.self.sdpa:k&quot;]" d="M 202,1034 L 202,1102" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-021" data-src="enc.self.v:out" data-dst="enc.self.v.value:in" data-canonical-src="enc.self.v:out" data-canonical-dst="enc.self.split:v_in" data-semantic-edges="[&quot;enc.self.v:out-&gt;enc.self.split:v_in&quot;]" d="M 566.6666666666667,931 L 590.6666666666667,931" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-022" data-src="enc.self.v.value:out" data-dst="enc.self.split:v_in" data-canonical-src="enc.self.v:out" data-canonical-dst="enc.self.split:v_in" data-semantic-edges="[&quot;enc.self.v:out-&gt;enc.self.split:v_in&quot;]" d="M 615.6666666666667,946 L 615.6666666666667,996" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-023" data-src="enc.self.split:v_out" data-dst="enc.self.sdpa.av:v" data-canonical-src="enc.self.split:v_out" data-canonical-dst="enc.self.sdpa.av:v" data-semantic-edges="[&quot;enc.self.sdpa:v-&gt;enc.self.sdpa.av:v&quot;, &quot;enc.self.split:v_out-&gt;enc.self.sdpa:v&quot;]" d="M 585.0,1034 L 585.0,1102" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-024" data-src="enc.self.sdpa.av:out" data-dst="enc.self.merge:in" data-canonical-src="enc.self.sdpa.av:out" data-canonical-dst="enc.self.merge:in" data-semantic-edges="[&quot;enc.self.sdpa.av:out-&gt;enc.self.sdpa:out&quot;, &quot;enc.self.sdpa:out-&gt;enc.self.merge:in&quot;]" d="M 620.0,1122 L 630,1122 L 630,1206 L 382.0,1206 L 382.0,1230" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-025" data-src="enc.self.merge:out" data-dst="enc.self.wo:in" data-canonical-src="enc.self.merge:out" data-canonical-dst="enc.self.wo:in" data-semantic-edges="[&quot;enc.self.merge:out-&gt;enc.self.wo:in&quot;]" d="M 382.0,1262 L 382.0,1286" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-026" data-src="enc.self.sdpa.qkt:out" data-dst="enc.self.sdpa.scale:in" data-canonical-src="enc.self.sdpa.qkt:out" data-canonical-dst="enc.self.sdpa.scale:in" data-semantic-edges="[&quot;enc.self.sdpa.qkt:out-&gt;enc.self.sdpa.scale:in&quot;]" d="M 226,1122 L 247.5,1122" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-027" data-src="enc.self.sdpa.scale:out" data-dst="enc.self.sdpa.mask:in" data-canonical-src="enc.self.sdpa.scale:out" data-canonical-dst="enc.self.sdpa.mask:in" data-semantic-edges="[&quot;enc.self.sdpa.scale:out-&gt;enc.self.sdpa.mask:in&quot;]" d="M 311.5,1122 L 333.0,1122" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-028" data-src="enc.self.sdpa.mask:out" data-dst="enc.self.sdpa.softmax:in" data-canonical-src="enc.self.sdpa.mask:out" data-canonical-dst="enc.self.sdpa.softmax:in" data-semantic-edges="[&quot;enc.self.sdpa.mask:out-&gt;enc.self.sdpa.softmax:in&quot;]" d="M 425.0,1122 L 446.5,1122" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-029" data-src="enc.self.sdpa.softmax:out" data-dst="enc.self.sdpa.av:a" data-canonical-src="enc.self.sdpa.softmax:out" data-canonical-dst="enc.self.sdpa.av:a" data-semantic-edges="[&quot;enc.self.sdpa.attn_dropout:out-&gt;enc.self.sdpa.av:a&quot;, &quot;enc.self.sdpa.nan_guard:out-&gt;enc.self.sdpa.attn_dropout:in&quot;, &quot;enc.self.sdpa.softmax:out-&gt;enc.self.sdpa.nan_guard:in&quot;]" d="M 528.5,1122 L 550.0,1122" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-030" data-src="enc.self.wo:out" data-dst="enc.norm1.add:f" data-canonical-src="enc.self.wo:out" data-canonical-dst="enc.norm1.add:f" data-semantic-edges="[&quot;enc.norm1.branch_dropout:out-&gt;enc.norm1.add:f&quot;, &quot;enc.norm1:in-&gt;enc.norm1.branch_dropout:in&quot;, &quot;enc.self.wo:out-&gt;enc.self:out&quot;, &quot;enc.self:out-&gt;enc.norm1:in&quot;]" d="M 492.0,1303 L 666,1303 L 666,772 L 250,772 L 250,746" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-031" data-src="enc.norm1.add:out" data-dst="enc.norm1.layernorm:in" data-canonical-src="enc.norm1.add:out" data-canonical-dst="enc.norm1.layernorm:in" data-semantic-edges="[&quot;enc.norm1.add:out-&gt;enc.norm1.layernorm:in&quot;]" d="M 264,732 L 350,732" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-032" data-src="enc.norm1.layernorm:out" data-dst="enc.ffn.input_value:in" data-canonical-src="enc.norm1.layernorm:out" data-canonical-dst="enc.ffn.linear1:in" data-semantic-edges="[&quot;enc.ffn:in-&gt;enc.ffn.linear1:in&quot;, &quot;enc.norm1.layernorm:out-&gt;enc.norm1:out&quot;, &quot;enc.norm1:out-&gt;enc.ffn:in&quot;]" d="M 550,732 L 666,732 L 666,700 L 382.0,700 L 382.0,634 L 98,634 L 98,529 L 120,529" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-033" data-src="enc.ffn.input_value:out" data-dst="enc.ffn.linear1:in" data-canonical-src="enc.norm1.layernorm:out" data-canonical-dst="enc.ffn.linear1:in" data-semantic-edges="[&quot;enc.ffn:in-&gt;enc.ffn.linear1:in&quot;, &quot;enc.norm1.layernorm:out-&gt;enc.norm1:out&quot;, &quot;enc.norm1:out-&gt;enc.ffn:in&quot;]" d="M 170,529.0 L 190,529" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-034" data-src="enc.ffn.linear1:out" data-dst="enc.ffn.relu:in" data-canonical-src="enc.ffn.linear1:out" data-canonical-dst="enc.ffn.relu:in" data-semantic-edges="[&quot;enc.ffn.linear1:out-&gt;enc.ffn.relu:in&quot;]" d="M 300,529 L 320,529" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-035" data-src="enc.ffn.relu:out" data-dst="enc.ffn.linear2:in" data-canonical-src="enc.ffn.relu:out" data-canonical-dst="enc.ffn.linear2:in" data-semantic-edges="[&quot;enc.ffn.dropout:out-&gt;enc.ffn.linear2:in&quot;, &quot;enc.ffn.relu:out-&gt;enc.ffn.dropout:in&quot;]" d="M 406,529 L 426,529" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-036" data-src="enc.ffn.linear2:out" data-dst="enc.ffn.output_value:in" data-canonical-src="enc.ffn.linear2:out" data-canonical-dst="enc.norm2.add:f" data-semantic-edges="[&quot;enc.ffn.linear2:out-&gt;enc.ffn:out&quot;, &quot;enc.ffn:out-&gt;enc.norm2:in&quot;, &quot;enc.norm2.branch_dropout:out-&gt;enc.norm2.add:f&quot;, &quot;enc.norm2:in-&gt;enc.norm2.branch_dropout:in&quot;]" d="M 536,529 L 556,529" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-037" data-src="enc.ffn.output_value:out" data-dst="enc.norm2.add:f" data-canonical-src="enc.ffn.linear2:out" data-canonical-dst="enc.norm2.add:f" data-semantic-edges="[&quot;enc.ffn.linear2:out-&gt;enc.ffn:out&quot;, &quot;enc.ffn:out-&gt;enc.norm2:in&quot;, &quot;enc.norm2.branch_dropout:out-&gt;enc.norm2.add:f&quot;, &quot;enc.norm2:in-&gt;enc.norm2.branch_dropout:in&quot;]" d="M 606,529.0 L 666,529 L 666,404 L 250,404 L 250,378" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-038" data-src="enc.norm2.add:out" data-dst="enc.norm2.layernorm:in" data-canonical-src="enc.norm2.add:out" data-canonical-dst="enc.norm2.layernorm:in" data-semantic-edges="[&quot;enc.norm2.add:out-&gt;enc.norm2.layernorm:in&quot;]" d="M 264,364 L 350,364" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-039" data-src="enc.norm1.layernorm:out" data-dst="enc.norm2.add:x" data-canonical-src="enc.norm1.layernorm:out" data-canonical-dst="enc.norm2.add:x" data-semantic-edges="[&quot;enc.norm1.layernorm:out-&gt;enc.norm1:out&quot;, &quot;enc.norm1:out-&gt;enc.norm2:skip&quot;, &quot;enc.norm2:skip-&gt;enc.norm2.add:x&quot;]" d="M 550,732 L 666,732 L 666,700 L 382.0,700 L 382.0,664.0 L 56,664.0 L 56,364 L 236,364" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="encoder-memory-to-cross" data-src="enc.norm2.layernorm:out" data-dst="enc.memory.value:in" data-canonical-src="enc.norm2.layernorm:out" data-canonical-dst="dec.cross.k:in" data-semantic-edges="[&quot;dec.cross:memory-&gt;dec.cross.k:in&quot;, &quot;enc.norm2.layernorm:out-&gt;enc.norm2:out&quot;, &quot;enc.norm2:out-&gt;enc.output:in&quot;, &quot;enc.output:out-&gt;dec.cross:memory&quot;]" d="M 550,364 L 666,364 L 666,332 L 382.0,332 L 382.0,219 L 800.0,219 L 800.0,318" fill="none" stroke="#263348" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="encoder-memory-to-cross-040" data-src="enc.memory.value:out" data-dst="dec.cross.k:in" data-canonical-src="enc.norm2.layernorm:out" data-canonical-dst="dec.cross.k:in" data-semantic-edges="[&quot;dec.cross:memory-&gt;dec.cross.k:in&quot;, &quot;enc.norm2.layernorm:out-&gt;enc.norm2:out&quot;, &quot;enc.norm2:out-&gt;enc.output:in&quot;, &quot;enc.output:out-&gt;dec.cross:memory&quot;]" d="M 800.0,422 L 800.0,874 L 1200.3333333333333,874 L 1200.3333333333333,914" fill="none" stroke="#263348" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="encoder-memory-to-cross-041" data-src="enc.norm2.layernorm:out" data-dst="enc.memory.value:in" data-canonical-src="enc.norm2.layernorm:out" data-canonical-dst="dec.cross.v:in" data-semantic-edges="[&quot;dec.cross:memory-&gt;dec.cross.v:in&quot;, &quot;enc.norm2.layernorm:out-&gt;enc.norm2:out&quot;, &quot;enc.norm2:out-&gt;enc.output:in&quot;, &quot;enc.output:out-&gt;dec.cross:memory&quot;]" d="M 550,364 L 666,364 L 666,332 L 382.0,332 L 382.0,219 L 800.0,219 L 800.0,318" fill="none" stroke="#263348" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="encoder-memory-to-cross-042" data-src="enc.memory.value:out" data-dst="dec.cross.v:in" data-canonical-src="enc.norm2.layernorm:out" data-canonical-dst="dec.cross.v:in" data-semantic-edges="[&quot;dec.cross:memory-&gt;dec.cross.v:in&quot;, &quot;enc.norm2.layernorm:out-&gt;enc.norm2:out&quot;, &quot;enc.norm2:out-&gt;enc.output:in&quot;, &quot;enc.output:out-&gt;dec.cross:memory&quot;]" d="M 800.0,422 L 800.0,874 L 1379.6666666666667,874 L 1379.6666666666667,914" fill="none" stroke="#263348" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-044" data-src="dec.self.q:out" data-dst="dec.self.q.value:in" data-canonical-src="dec.self.q:out" data-canonical-dst="dec.self.split:q_in" data-semantic-edges="[&quot;dec.self.q:out-&gt;dec.self.split:q_in&quot;]" d="M 1064.0,1527 L 1088.0,1527" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-045" data-src="dec.self.q.value:out" data-dst="dec.self.split:q_in" data-canonical-src="dec.self.q:out" data-canonical-dst="dec.self.split:q_in" data-semantic-edges="[&quot;dec.self.q:out-&gt;dec.self.split:q_in&quot;]" d="M 1113.0,1542 L 1113.0,1592" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-046" data-src="dec.self.split:q_out" data-dst="dec.self.sdpa.qkt:q" data-canonical-src="dec.self.split:q_out" data-canonical-dst="dec.self.sdpa.qkt:q" data-semantic-edges="[&quot;dec.self.sdpa:q-&gt;dec.self.sdpa.qkt:q&quot;, &quot;dec.self.split:q_out-&gt;dec.self.sdpa:q&quot;]" d="M 1022,1630 L 1022,1698" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-047" data-src="dec.self.k:out" data-dst="dec.self.k.value:in" data-canonical-src="dec.self.k:out" data-canonical-dst="dec.self.split:k_in" data-semantic-edges="[&quot;dec.self.k:out-&gt;dec.self.split:k_in&quot;]" d="M 1243.3333333333333,1527 L 1267.3333333333333,1527" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-048" data-src="dec.self.k.value:out" data-dst="dec.self.split:k_in" data-canonical-src="dec.self.k:out" data-canonical-dst="dec.self.split:k_in" data-semantic-edges="[&quot;dec.self.k:out-&gt;dec.self.split:k_in&quot;]" d="M 1292.3333333333333,1542 L 1292.3333333333333,1592" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-049" data-src="dec.self.split:k_out" data-dst="dec.self.sdpa.qkt:k" data-canonical-src="dec.self.split:k_out" data-canonical-dst="dec.self.sdpa.qkt:k" data-semantic-edges="[&quot;dec.self.sdpa:k-&gt;dec.self.sdpa.qkt:k&quot;, &quot;dec.self.split:k_out-&gt;dec.self.sdpa:k&quot;]" d="M 1058,1630 L 1058,1698" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-050" data-src="dec.self.v:out" data-dst="dec.self.v.value:in" data-canonical-src="dec.self.v:out" data-canonical-dst="dec.self.split:v_in" data-semantic-edges="[&quot;dec.self.v:out-&gt;dec.self.split:v_in&quot;]" d="M 1422.6666666666667,1527 L 1446.6666666666667,1527" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-051" data-src="dec.self.v.value:out" data-dst="dec.self.split:v_in" data-canonical-src="dec.self.v:out" data-canonical-dst="dec.self.split:v_in" data-semantic-edges="[&quot;dec.self.v:out-&gt;dec.self.split:v_in&quot;]" d="M 1471.6666666666667,1542 L 1471.6666666666667,1592" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-052" data-src="dec.self.split:v_out" data-dst="dec.self.sdpa.av:v" data-canonical-src="dec.self.split:v_out" data-canonical-dst="dec.self.sdpa.av:v" data-semantic-edges="[&quot;dec.self.sdpa:v-&gt;dec.self.sdpa.av:v&quot;, &quot;dec.self.split:v_out-&gt;dec.self.sdpa:v&quot;]" d="M 1441.0,1630 L 1441.0,1698" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-053" data-src="dec.self.sdpa.av:out" data-dst="dec.self.merge:in" data-canonical-src="dec.self.sdpa.av:out" data-canonical-dst="dec.self.merge:in" data-semantic-edges="[&quot;dec.self.sdpa.av:out-&gt;dec.self.sdpa:out&quot;, &quot;dec.self.sdpa:out-&gt;dec.self.merge:in&quot;]" d="M 1476.0,1718 L 1486,1718 L 1486,1802 L 1238.0,1802 L 1238.0,1826" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-054" data-src="dec.self.merge:out" data-dst="dec.self.wo:in" data-canonical-src="dec.self.merge:out" data-canonical-dst="dec.self.wo:in" data-semantic-edges="[&quot;dec.self.merge:out-&gt;dec.self.wo:in&quot;]" d="M 1238.0,1858 L 1238.0,1882" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-055" data-src="dec.self.sdpa.qkt:out" data-dst="dec.self.sdpa.scale:in" data-canonical-src="dec.self.sdpa.qkt:out" data-canonical-dst="dec.self.sdpa.scale:in" data-semantic-edges="[&quot;dec.self.sdpa.qkt:out-&gt;dec.self.sdpa.scale:in&quot;]" d="M 1082,1718 L 1103.5,1718" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-056" data-src="dec.self.sdpa.scale:out" data-dst="dec.self.sdpa.mask:in" data-canonical-src="dec.self.sdpa.scale:out" data-canonical-dst="dec.self.sdpa.mask:in" data-semantic-edges="[&quot;dec.self.sdpa.scale:out-&gt;dec.self.sdpa.mask:in&quot;]" d="M 1167.5,1718 L 1189.0,1718" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-057" data-src="dec.self.sdpa.mask:out" data-dst="dec.self.sdpa.softmax:in" data-canonical-src="dec.self.sdpa.mask:out" data-canonical-dst="dec.self.sdpa.softmax:in" data-semantic-edges="[&quot;dec.self.sdpa.mask:out-&gt;dec.self.sdpa.softmax:in&quot;]" d="M 1281.0,1718 L 1302.5,1718" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-058" data-src="dec.self.sdpa.softmax:out" data-dst="dec.self.sdpa.av:a" data-canonical-src="dec.self.sdpa.softmax:out" data-canonical-dst="dec.self.sdpa.av:a" data-semantic-edges="[&quot;dec.self.sdpa.attn_dropout:out-&gt;dec.self.sdpa.av:a&quot;, &quot;dec.self.sdpa.nan_guard:out-&gt;dec.self.sdpa.attn_dropout:in&quot;, &quot;dec.self.sdpa.softmax:out-&gt;dec.self.sdpa.nan_guard:in&quot;]" d="M 1384.5,1718 L 1406.0,1718" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-059" data-src="dec.self.wo:out" data-dst="dec.norm1.add:f" data-canonical-src="dec.self.wo:out" data-canonical-dst="dec.norm1.add:f" data-semantic-edges="[&quot;dec.norm1.branch_dropout:out-&gt;dec.norm1.add:f&quot;, &quot;dec.norm1:in-&gt;dec.norm1.branch_dropout:in&quot;, &quot;dec.self.wo:out-&gt;dec.self:out&quot;, &quot;dec.self:out-&gt;dec.norm1:in&quot;]" d="M 1348.0,1899 L 1522,1899 L 1522,1368 L 1106,1368 L 1106,1342" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-060" data-src="dec.norm1.add:out" data-dst="dec.norm1.layernorm:in" data-canonical-src="dec.norm1.add:out" data-canonical-dst="dec.norm1.layernorm:in" data-semantic-edges="[&quot;dec.norm1.add:out-&gt;dec.norm1.layernorm:in&quot;]" d="M 1120,1328 L 1206,1328" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-061" data-src="dec.norm1.layernorm:out" data-dst="dec.cross.q:in" data-canonical-src="dec.norm1.layernorm:out" data-canonical-dst="dec.cross.q:in" data-semantic-edges="[&quot;dec.cross:in-&gt;dec.cross.q:in&quot;, &quot;dec.norm1.layernorm:out-&gt;dec.norm1:out&quot;, &quot;dec.norm1:out-&gt;dec.cross:in&quot;]" d="M 1406,1328 L 1522,1328 L 1522,1296 L 1238.0,1296 L 1238.0,1230 L 954,1230 L 954,890 L 1021.0,890 L 1021.0,914" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-062" data-src="dec.cross.q:out" data-dst="dec.cross.q.value:in" data-canonical-src="dec.cross.q:out" data-canonical-dst="dec.cross.split:q_in" data-semantic-edges="[&quot;dec.cross.q:out-&gt;dec.cross.split:q_in&quot;]" d="M 1064.0,931 L 1088.0,931" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-063" data-src="dec.cross.q.value:out" data-dst="dec.cross.split:q_in" data-canonical-src="dec.cross.q:out" data-canonical-dst="dec.cross.split:q_in" data-semantic-edges="[&quot;dec.cross.q:out-&gt;dec.cross.split:q_in&quot;]" d="M 1113.0,946 L 1113.0,996" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-064" data-src="dec.cross.split:q_out" data-dst="dec.cross.sdpa:q" data-canonical-src="dec.cross.split:q_out" data-canonical-dst="dec.cross.sdpa:q" data-semantic-edges="[&quot;dec.cross.split:q_out-&gt;dec.cross.sdpa:q&quot;]" d="M 1113.0,1034 L 1113.0,1058" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-065" data-src="dec.cross.k:out" data-dst="dec.cross.k.value:in" data-canonical-src="dec.cross.k:out" data-canonical-dst="dec.cross.split:k_in" data-semantic-edges="[&quot;dec.cross.k:out-&gt;dec.cross.split:k_in&quot;]" d="M 1243.3333333333333,931 L 1267.3333333333333,931" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-066" data-src="dec.cross.k.value:out" data-dst="dec.cross.split:k_in" data-canonical-src="dec.cross.k:out" data-canonical-dst="dec.cross.split:k_in" data-semantic-edges="[&quot;dec.cross.k:out-&gt;dec.cross.split:k_in&quot;]" d="M 1292.3333333333333,946 L 1292.3333333333333,996" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-067" data-src="dec.cross.split:k_out" data-dst="dec.cross.sdpa:k" data-canonical-src="dec.cross.split:k_out" data-canonical-dst="dec.cross.sdpa:k" data-semantic-edges="[&quot;dec.cross.split:k_out-&gt;dec.cross.sdpa:k&quot;]" d="M 1292.3333333333333,1034 L 1292.3333333333333,1058" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-068" data-src="dec.cross.v:out" data-dst="dec.cross.v.value:in" data-canonical-src="dec.cross.v:out" data-canonical-dst="dec.cross.split:v_in" data-semantic-edges="[&quot;dec.cross.v:out-&gt;dec.cross.split:v_in&quot;]" d="M 1422.6666666666667,931 L 1446.6666666666667,931" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-069" data-src="dec.cross.v.value:out" data-dst="dec.cross.split:v_in" data-canonical-src="dec.cross.v:out" data-canonical-dst="dec.cross.split:v_in" data-semantic-edges="[&quot;dec.cross.v:out-&gt;dec.cross.split:v_in&quot;]" d="M 1471.6666666666667,946 L 1471.6666666666667,996" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-070" data-src="dec.cross.split:v_out" data-dst="dec.cross.sdpa:v" data-canonical-src="dec.cross.split:v_out" data-canonical-dst="dec.cross.sdpa:v" data-semantic-edges="[&quot;dec.cross.split:v_out-&gt;dec.cross.sdpa:v&quot;]" d="M 1471.6666666666667,1034 L 1471.6666666666667,1058" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-071" data-src="dec.cross.sdpa:out" data-dst="dec.cross.merge:in" data-canonical-src="dec.cross.sdpa:out" data-canonical-dst="dec.cross.merge:in" data-semantic-edges="[&quot;dec.cross.sdpa:out-&gt;dec.cross.merge:in&quot;]" d="M 1238.0,1100 L 1238.0,1124" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-072" data-src="dec.cross.merge:out" data-dst="dec.cross.wo:in" data-canonical-src="dec.cross.merge:out" data-canonical-dst="dec.cross.wo:in" data-semantic-edges="[&quot;dec.cross.merge:out-&gt;dec.cross.wo:in&quot;]" d="M 1238.0,1156 L 1238.0,1180" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-073" data-src="dec.cross.wo:out" data-dst="dec.norm2.add:f" data-canonical-src="dec.cross.wo:out" data-canonical-dst="dec.norm2.add:f" data-semantic-edges="[&quot;dec.cross.wo:out-&gt;dec.cross:out&quot;, &quot;dec.cross:out-&gt;dec.norm2:in&quot;, &quot;dec.norm2.branch_dropout:out-&gt;dec.norm2.add:f&quot;, &quot;dec.norm2:in-&gt;dec.norm2.branch_dropout:in&quot;]" d="M 1348.0,1197 L 1522,1197 L 1522,772 L 1106,772 L 1106,746" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-074" data-src="dec.norm2.add:out" data-dst="dec.norm2.layernorm:in" data-canonical-src="dec.norm2.add:out" data-canonical-dst="dec.norm2.layernorm:in" data-semantic-edges="[&quot;dec.norm2.add:out-&gt;dec.norm2.layernorm:in&quot;]" d="M 1120,732 L 1206,732" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-075" data-src="dec.norm1.layernorm:out" data-dst="dec.norm2.add:x" data-canonical-src="dec.norm1.layernorm:out" data-canonical-dst="dec.norm2.add:x" data-semantic-edges="[&quot;dec.norm1.layernorm:out-&gt;dec.norm1:out&quot;, &quot;dec.norm1:out-&gt;dec.norm2:skip&quot;, &quot;dec.norm2:skip-&gt;dec.norm2.add:x&quot;]" d="M 1406,1328 L 1522,1328 L 1522,1296 L 1238.0,1296 L 1238.0,1260.0 L 912,1260.0 L 912,732 L 1092,732" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-076" data-src="dec.norm2.layernorm:out" data-dst="dec.ffn.input_value:in" data-canonical-src="dec.norm2.layernorm:out" data-canonical-dst="dec.ffn.linear1:in" data-semantic-edges="[&quot;dec.ffn:in-&gt;dec.ffn.linear1:in&quot;, &quot;dec.norm2.layernorm:out-&gt;dec.norm2:out&quot;, &quot;dec.norm2:out-&gt;dec.ffn:in&quot;]" d="M 1406,732 L 1522,732 L 1522,700 L 1238.0,700 L 1238.0,634 L 954,634 L 954,529 L 976,529" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-077" data-src="dec.ffn.input_value:out" data-dst="dec.ffn.linear1:in" data-canonical-src="dec.norm2.layernorm:out" data-canonical-dst="dec.ffn.linear1:in" data-semantic-edges="[&quot;dec.ffn:in-&gt;dec.ffn.linear1:in&quot;, &quot;dec.norm2.layernorm:out-&gt;dec.norm2:out&quot;, &quot;dec.norm2:out-&gt;dec.ffn:in&quot;]" d="M 1026,529.0 L 1046,529" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-078" data-src="dec.ffn.linear1:out" data-dst="dec.ffn.relu:in" data-canonical-src="dec.ffn.linear1:out" data-canonical-dst="dec.ffn.relu:in" data-semantic-edges="[&quot;dec.ffn.linear1:out-&gt;dec.ffn.relu:in&quot;]" d="M 1156,529 L 1176,529" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-079" data-src="dec.ffn.relu:out" data-dst="dec.ffn.linear2:in" data-canonical-src="dec.ffn.relu:out" data-canonical-dst="dec.ffn.linear2:in" data-semantic-edges="[&quot;dec.ffn.dropout:out-&gt;dec.ffn.linear2:in&quot;, &quot;dec.ffn.relu:out-&gt;dec.ffn.dropout:in&quot;]" d="M 1262,529 L 1282,529" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-080" data-src="dec.ffn.linear2:out" data-dst="dec.ffn.output_value:in" data-canonical-src="dec.ffn.linear2:out" data-canonical-dst="dec.norm3.add:f" data-semantic-edges="[&quot;dec.ffn.linear2:out-&gt;dec.ffn:out&quot;, &quot;dec.ffn:out-&gt;dec.norm3:in&quot;, &quot;dec.norm3.branch_dropout:out-&gt;dec.norm3.add:f&quot;, &quot;dec.norm3:in-&gt;dec.norm3.branch_dropout:in&quot;]" d="M 1392,529 L 1412,529" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-081" data-src="dec.ffn.output_value:out" data-dst="dec.norm3.add:f" data-canonical-src="dec.ffn.linear2:out" data-canonical-dst="dec.norm3.add:f" data-semantic-edges="[&quot;dec.ffn.linear2:out-&gt;dec.ffn:out&quot;, &quot;dec.ffn:out-&gt;dec.norm3:in&quot;, &quot;dec.norm3.branch_dropout:out-&gt;dec.norm3.add:f&quot;, &quot;dec.norm3:in-&gt;dec.norm3.branch_dropout:in&quot;]" d="M 1462,529.0 L 1522,529 L 1522,404 L 1106,404 L 1106,378" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-082" data-src="dec.norm3.add:out" data-dst="dec.norm3.layernorm:in" data-canonical-src="dec.norm3.add:out" data-canonical-dst="dec.norm3.layernorm:in" data-semantic-edges="[&quot;dec.norm3.add:out-&gt;dec.norm3.layernorm:in&quot;]" d="M 1120,364 L 1206,364" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-083" data-src="dec.norm2.layernorm:out" data-dst="dec.norm3.add:x" data-canonical-src="dec.norm2.layernorm:out" data-canonical-dst="dec.norm3.add:x" data-semantic-edges="[&quot;dec.norm2.layernorm:out-&gt;dec.norm2:out&quot;, &quot;dec.norm2:out-&gt;dec.norm3:skip&quot;, &quot;dec.norm3:skip-&gt;dec.norm3.add:x&quot;]" d="M 1406,732 L 1522,732 L 1522,700 L 1238.0,700 L 1238.0,664.0 L 912,664.0 L 912,364 L 1092,364" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-084" data-src="dec.norm3.layernorm:out" data-dst="generator:in" data-canonical-src="dec.norm3.layernorm:out" data-canonical-dst="generator:in" data-semantic-edges="[&quot;dec.norm3.layernorm:out-&gt;dec.norm3:out&quot;, &quot;dec.norm3:out-&gt;dec.output:in&quot;, &quot;dec.output:out-&gt;generator:in&quot;]" d="M 1406,364 L 1522,364 L 1522,332 L 1238.0,332 L 1238.0,236" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" marker-end="url(#arrow)"/>
+<path data-route-id="binding-085" data-src="generator:out" data-dst="probabilities:in" data-canonical-src="generator:out" data-canonical-dst="probabilities:in" data-semantic-edges="[&quot;generator:out-&gt;logits:in&quot;, &quot;logits:out-&gt;probabilities:in&quot;]" d="M 1238.0,188 L 1238.0,168" fill="none" stroke="#263348" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="butt" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+</svg>

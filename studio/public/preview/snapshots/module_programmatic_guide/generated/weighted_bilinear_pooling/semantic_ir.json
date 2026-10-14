@@ -1,0 +1,599 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "weighted_bilinear_pooling",
+  "profile": {
+    "v_dim": 8,
+    "q_dim": 6,
+    "h_dim": 4,
+    "k": 3,
+    "h_out": null,
+    "output_shape": [
+      "B",
+      4
+    ],
+    "pool": "AvgPool*k equals grouped sum",
+    "attention_dropout_used": false,
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "jnhwkim/ban-vqa",
+    "commit": "ef4cc36d63f6b31344301ac1bd91afd807d132e5",
+    "snapshot": "a5191c9c4202d0077f095d63d65623fc13dc06628d644f21a8b4ba18fe69a443"
+  },
+  "nodes": [
+    {
+      "id": "weighted_bilinear_pooling.root",
+      "label": "Weighted bilinear pooling / module only",
+      "kind": "group",
+      "source": [
+        "ban-modules/bc.py::BCNet.forward_with_weights"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "weighted_bilinear_pooling.v",
+          "weighted_bilinear_pooling.q",
+          "weighted_bilinear_pooling.w"
+        ],
+        [
+          "weighted_bilinear_pooling.module"
+        ],
+        [
+          "weighted_bilinear_pooling.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.v",
+      "label": "Visual features V",
+      "kind": "input",
+      "source": [
+        "ban-modules/bc.py::BCNet.forward_with_weights"
+      ],
+      "shape": "[B,5,8]",
+      "detail": [],
+      "parent": "weighted_bilinear_pooling.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.q",
+      "label": "Language features Q",
+      "kind": "input",
+      "source": [
+        "ban-modules/bc.py::BCNet.forward_with_weights"
+      ],
+      "shape": "[B,3,6]",
+      "detail": [],
+      "parent": "weighted_bilinear_pooling.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.w",
+      "label": "External pair weights w",
+      "kind": "input",
+      "source": [
+        "ban-modules/bc.py::BCNet.forward_with_weights"
+      ],
+      "shape": "[B,5,3]",
+      "detail": [],
+      "parent": "weighted_bilinear_pooling.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.module",
+      "label": "Weighted bilinear pooling / operators",
+      "kind": "group",
+      "source": [
+        "ban-modules/bc.py::BCNet.forward_with_weights"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "weighted_bilinear_pooling.vproject",
+          "weighted_bilinear_pooling.qproject"
+        ],
+        [
+          "weighted_bilinear_pooling.einsum"
+        ],
+        [
+          "weighted_bilinear_pooling.pool"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "weighted_bilinear_pooling.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.vproject",
+      "label": "V projection",
+      "kind": "group",
+      "source": [
+        "ban-modules/bc.py::BCNet.forward_with_weights",
+        "ban-modules/fc.py::FCNet.forward"
+      ],
+      "shape": "[B,5,12]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "weighted_bilinear_pooling.module",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.vproject.drop",
+      "label": "Dropout .2",
+      "kind": "dropout",
+      "source": [
+        "ban-modules/fc.py::FCNet.__init__",
+        "ban-modules/fc.py::FCNet.forward"
+      ],
+      "shape": "[B,5,8]",
+      "detail": [],
+      "p": 0.2,
+      "parent": "weighted_bilinear_pooling.vproject",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.vproject.linear",
+      "label": "WeightNorm Linear 8 -> 12",
+      "kind": "linear",
+      "source": [
+        "ban-modules/fc.py::FCNet.__init__"
+      ],
+      "shape": "[B,5,12]",
+      "detail": [],
+      "parameter_scope": "v_net.main.1",
+      "weight_normalization_dim": null,
+      "opaque_weight_norm": true,
+      "bias": true,
+      "parent": "weighted_bilinear_pooling.vproject",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.vproject.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "ban-modules/fc.py::FCNet.__init__",
+        "ban-modules/fc.py::FCNet.forward"
+      ],
+      "shape": "[B,5,12]",
+      "detail": [],
+      "parent": "weighted_bilinear_pooling.vproject",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.qproject",
+      "label": "Q projection",
+      "kind": "group",
+      "source": [
+        "ban-modules/bc.py::BCNet.forward_with_weights",
+        "ban-modules/fc.py::FCNet.forward"
+      ],
+      "shape": "[B,3,12]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "weighted_bilinear_pooling.module",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.qproject.drop",
+      "label": "Dropout .2",
+      "kind": "dropout",
+      "source": [
+        "ban-modules/fc.py::FCNet.__init__",
+        "ban-modules/fc.py::FCNet.forward"
+      ],
+      "shape": "[B,3,6]",
+      "detail": [],
+      "p": 0.2,
+      "parent": "weighted_bilinear_pooling.qproject",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.qproject.linear",
+      "label": "WeightNorm Linear 6 -> 12",
+      "kind": "linear",
+      "source": [
+        "ban-modules/fc.py::FCNet.__init__"
+      ],
+      "shape": "[B,3,12]",
+      "detail": [],
+      "parameter_scope": "q_net.main.1",
+      "weight_normalization_dim": null,
+      "opaque_weight_norm": true,
+      "bias": true,
+      "parent": "weighted_bilinear_pooling.qproject",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.qproject.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "ban-modules/fc.py::FCNet.__init__",
+        "ban-modules/fc.py::FCNet.forward"
+      ],
+      "shape": "[B,3,12]",
+      "detail": [],
+      "parent": "weighted_bilinear_pooling.qproject",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.einsum",
+      "label": "Weighted bilinear contraction",
+      "kind": "einsum",
+      "source": [
+        "ban-modules/bc.py::BCNet.forward_with_weights"
+      ],
+      "shape": "[B,12]",
+      "detail": [],
+      "expression": "torch.einsum('bvk,bvq,bqk->bk', (v_, w, q_))",
+      "parent": "weighted_bilinear_pooling.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "V",
+        "Q",
+        "weights"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.pool",
+      "label": "Group k3 factors / sum",
+      "kind": "group",
+      "source": [
+        "ban-modules/bc.py::BCNet.forward_with_weights"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "weighted_bilinear_pooling.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.pool.unsqueeze",
+      "label": "Insert pool channel axis",
+      "kind": "tensor",
+      "source": [
+        "ban-modules/bc.py::BCNet.forward_with_weights"
+      ],
+      "shape": "[B,1,12]",
+      "detail": [],
+      "parent": "weighted_bilinear_pooling.pool",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.pool.avg",
+      "label": "AvgPool1d k3 / stride3",
+      "kind": "mean",
+      "source": [
+        "ban-modules/bc.py::BCNet.forward_with_weights"
+      ],
+      "shape": "[B,1,4]",
+      "detail": [],
+      "kernel": 3,
+      "stride": 3,
+      "parent": "weighted_bilinear_pooling.pool",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.pool.sum",
+      "label": "Squeeze + multiply by k",
+      "kind": "multiply",
+      "source": [
+        "ban-modules/bc.py::BCNet.forward_with_weights"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "self.p_net(logits).squeeze(1) * self.k",
+      "factor": 3,
+      "parent": "weighted_bilinear_pooling.pool",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "weighted_bilinear_pooling.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "ban-modules/bc.py::BCNet.forward_with_weights"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parent": "weighted_bilinear_pooling.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "weighted_bilinear_pooling.vproject:in->weighted_bilinear_pooling.vproject.drop:in:boundary",
+      "src": "weighted_bilinear_pooling.vproject",
+      "dst": "weighted_bilinear_pooling.vproject.drop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "weighted_bilinear_pooling.vproject.drop:out->weighted_bilinear_pooling.vproject.linear:in:tensor",
+      "src": "weighted_bilinear_pooling.vproject.drop",
+      "dst": "weighted_bilinear_pooling.vproject.linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "weighted_bilinear_pooling.vproject.linear:out->weighted_bilinear_pooling.vproject.relu:in:tensor",
+      "src": "weighted_bilinear_pooling.vproject.linear",
+      "dst": "weighted_bilinear_pooling.vproject.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "weighted_bilinear_pooling.vproject.relu:out->weighted_bilinear_pooling.vproject:out:boundary",
+      "src": "weighted_bilinear_pooling.vproject.relu",
+      "dst": "weighted_bilinear_pooling.vproject",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "weighted_bilinear_pooling.qproject:in->weighted_bilinear_pooling.qproject.drop:in:boundary",
+      "src": "weighted_bilinear_pooling.qproject",
+      "dst": "weighted_bilinear_pooling.qproject.drop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "weighted_bilinear_pooling.qproject.drop:out->weighted_bilinear_pooling.qproject.linear:in:tensor",
+      "src": "weighted_bilinear_pooling.qproject.drop",
+      "dst": "weighted_bilinear_pooling.qproject.linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "weighted_bilinear_pooling.qproject.linear:out->weighted_bilinear_pooling.qproject.relu:in:tensor",
+      "src": "weighted_bilinear_pooling.qproject.linear",
+      "dst": "weighted_bilinear_pooling.qproject.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "weighted_bilinear_pooling.qproject.relu:out->weighted_bilinear_pooling.qproject:out:boundary",
+      "src": "weighted_bilinear_pooling.qproject.relu",
+      "dst": "weighted_bilinear_pooling.qproject",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "weighted_bilinear_pooling.pool:in->weighted_bilinear_pooling.pool.unsqueeze:in:boundary",
+      "src": "weighted_bilinear_pooling.pool",
+      "dst": "weighted_bilinear_pooling.pool.unsqueeze",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "weighted_bilinear_pooling.pool.unsqueeze:out->weighted_bilinear_pooling.pool.avg:in:tensor",
+      "src": "weighted_bilinear_pooling.pool.unsqueeze",
+      "dst": "weighted_bilinear_pooling.pool.avg",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "weighted_bilinear_pooling.pool.avg:out->weighted_bilinear_pooling.pool.sum:in:tensor",
+      "src": "weighted_bilinear_pooling.pool.avg",
+      "dst": "weighted_bilinear_pooling.pool.sum",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "weighted_bilinear_pooling.pool.sum:out->weighted_bilinear_pooling.pool:out:boundary",
+      "src": "weighted_bilinear_pooling.pool.sum",
+      "dst": "weighted_bilinear_pooling.pool",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "weighted_bilinear_pooling.v:out->weighted_bilinear_pooling.vproject.drop:in:tensor",
+      "src": "weighted_bilinear_pooling.v",
+      "dst": "weighted_bilinear_pooling.vproject.drop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "weighted_bilinear_pooling.q:out->weighted_bilinear_pooling.qproject.drop:in:tensor",
+      "src": "weighted_bilinear_pooling.q",
+      "dst": "weighted_bilinear_pooling.qproject.drop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "weighted_bilinear_pooling.vproject.relu:out->weighted_bilinear_pooling.einsum:V:tensor",
+      "src": "weighted_bilinear_pooling.vproject.relu",
+      "dst": "weighted_bilinear_pooling.einsum",
+      "src_port": "out",
+      "dst_port": "V",
+      "role": "tensor"
+    },
+    {
+      "id": "weighted_bilinear_pooling.qproject.relu:out->weighted_bilinear_pooling.einsum:Q:tensor",
+      "src": "weighted_bilinear_pooling.qproject.relu",
+      "dst": "weighted_bilinear_pooling.einsum",
+      "src_port": "out",
+      "dst_port": "Q",
+      "role": "tensor"
+    },
+    {
+      "id": "weighted_bilinear_pooling.w:out->weighted_bilinear_pooling.einsum:weights:tensor",
+      "src": "weighted_bilinear_pooling.w",
+      "dst": "weighted_bilinear_pooling.einsum",
+      "src_port": "out",
+      "dst_port": "weights",
+      "role": "tensor"
+    },
+    {
+      "id": "weighted_bilinear_pooling.einsum:out->weighted_bilinear_pooling.pool.unsqueeze:in:tensor",
+      "src": "weighted_bilinear_pooling.einsum",
+      "dst": "weighted_bilinear_pooling.pool.unsqueeze",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "weighted_bilinear_pooling.pool.sum:out->weighted_bilinear_pooling.output:in:tensor",
+      "src": "weighted_bilinear_pooling.pool.sum",
+      "dst": "weighted_bilinear_pooling.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Two FCNet projections are separate owned parameter families; external w is a two-axis pair weight input, not a learned module parameter.",
+    "einsum contracts both visual and question positions; k3 feature factors then pool by AvgPool1d and multiplication by3, which implements sum-pooling.",
+    "This method does not use BCNet.dropout(.5), h_mat or h_bias; attention-generation and pooling examples do not imply shared instances.",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not add Softmax, concatenate modalities, or insert the attention-only extra visual Dropout.5.",
+    "Do not label the output as average pooling: source multiplies pooled values by k."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

@@ -1,0 +1,90 @@
+{
+  "source_project": "torchvision-v0.9.0-vision-extended",
+  "repository": "pytorch/vision",
+  "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+  "source_snapshot_sha256": "88b7578cd40309142e6f3aa152438e3ee450fcfd4e242f61cb3919c3efab888f",
+  "entry": "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "torchvision-v0.9.0-vision-extended/LICENSE": {
+      "sha256": "6502f676851cfe25f8af75531dfb32375b7325b73c37e7b43741fa422893e71d",
+      "lines": 29,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/LICENSE",
+      "derived_from": null
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py": {
+      "sha256": "21ba8df0ae76a1204d4716eacc679aff9107b776f0a9d35446516153f64c84fe",
+      "lines": 93,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/torchvision/models/segmentation/deeplabv3.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPConv.__init__": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py",
+      "symbol": "ASPPConv.__init__",
+      "start": 41,
+      "end": 47,
+      "snippet": "    def __init__(self, in_channels, out_channels, dilation):\n        modules = [\n            nn.Conv2d(in_channels, out_channels, 3, padding=dilation, dilation=dilation, bias=False),\n            nn.BatchNorm2d(out_channels),\n            nn.ReLU()\n        ]\n        super(ASPPConv, self).__init__(*modules)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPPooling.__init__": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py",
+      "symbol": "ASPPPooling.__init__",
+      "start": 51,
+      "end": 56,
+      "snippet": "    def __init__(self, in_channels, out_channels):\n        super(ASPPPooling, self).__init__(\n            nn.AdaptiveAvgPool2d(1),\n            nn.Conv2d(in_channels, out_channels, 1, bias=False),\n            nn.BatchNorm2d(out_channels),\n            nn.ReLU())",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E005"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPPooling.forward": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py",
+      "symbol": "ASPPPooling.forward",
+      "start": 58,
+      "end": 62,
+      "snippet": "    def forward(self, x):\n        size = x.shape[-2:]\n        for mod in self:\n            x = mod(x)\n        return F.interpolate(x, size=size, mode='bilinear', align_corners=False)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E006"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py",
+      "symbol": "ASPP",
+      "start": 65,
+      "end": 93,
+      "snippet": "class ASPP(nn.Module):\n    def __init__(self, in_channels, atrous_rates, out_channels=256):\n        super(ASPP, self).__init__()\n        modules = []\n        modules.append(nn.Sequential(\n            nn.Conv2d(in_channels, out_channels, 1, bias=False),\n            nn.BatchNorm2d(out_channels),\n            nn.ReLU()))\n\n        rates = tuple(atrous_rates)\n        for rate in rates:\n            modules.append(ASPPConv(in_channels, out_channels, rate))\n\n        modules.append(ASPPPooling(in_channels, out_channels))\n\n        self.convs = nn.ModuleList(modules)\n\n        self.project = nn.Sequential(\n            nn.Conv2d(len(self.convs) * out_channels, out_channels, 1, bias=False),\n            nn.BatchNorm2d(out_channels),\n            nn.ReLU(),\n            nn.Dropout(0.5))\n\n    def forward(self, x):\n        res = []\n        for conv in self.convs:\n            res.append(conv(x))\n        res = torch.cat(res, dim=1)\n        return self.project(res)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py",
+      "symbol": "ASPP.__init__",
+      "start": 66,
+      "end": 86,
+      "snippet": "    def __init__(self, in_channels, atrous_rates, out_channels=256):\n        super(ASPP, self).__init__()\n        modules = []\n        modules.append(nn.Sequential(\n            nn.Conv2d(in_channels, out_channels, 1, bias=False),\n            nn.BatchNorm2d(out_channels),\n            nn.ReLU()))\n\n        rates = tuple(atrous_rates)\n        for rate in rates:\n            modules.append(ASPPConv(in_channels, out_channels, rate))\n\n        modules.append(ASPPPooling(in_channels, out_channels))\n\n        self.convs = nn.ModuleList(modules)\n\n        self.project = nn.Sequential(\n            nn.Conv2d(len(self.convs) * out_channels, out_channels, 1, bias=False),\n            nn.BatchNorm2d(out_channels),\n            nn.ReLU(),\n            nn.Dropout(0.5))",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py",
+      "symbol": "ASPP.forward",
+      "start": 88,
+      "end": 93,
+      "snippet": "    def forward(self, x):\n        res = []\n        for conv in self.convs:\n            res.append(conv(x))\n        res = torch.cat(res, dim=1)\n        return self.project(res)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "torchvision-v0.9.0-vision-extended/LICENSE"
+  ]
+}

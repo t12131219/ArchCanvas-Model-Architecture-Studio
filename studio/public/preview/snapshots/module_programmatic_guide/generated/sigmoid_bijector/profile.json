@@ -1,0 +1,21 @@
+{
+  "mode": "direct",
+  "input_features": 4,
+  "parameters": [],
+  "inverse": "log(x/(1-x))",
+  "logit_subclass_bug": true,
+  "shape_origin": "declared example; statically inferred, not observed",
+  "drawing_scope": "Sigmoid.forward direct branch only. The separate Logit subclass argument bug is explicitly documented.",
+  "source_contracts": [
+    [
+      "Sigmoid.forward",
+      "torch.log(s(inputs) * (1 - s(inputs))).sum(-1, keepdim=True)"
+    ],
+    [
+      "Logit.forward",
+      "super(Logit, self).forward(inputs, 'inverse')"
+    ]
+  ],
+  "model_executed": false,
+  "artifact_scope": "module"
+}

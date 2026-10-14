@@ -1,0 +1,77 @@
+{
+  "task": "CelebA adversarial image generation",
+  "mode": "selected training-mode generator scoring call",
+  "diagram_scope": "caller composition: fake_images = generator_forward(z); discriminator_forward(fake_images)",
+  "source_entrypoints": [
+    "DCGAN.generator_forward",
+    "DCGAN.discriminator_forward"
+  ],
+  "no_unified_forward": true,
+  "real_image_call_in_main_graph": false,
+  "gradient_detach": false,
+  "latent_dim": 100,
+  "num_maps_gen": 64,
+  "num_maps_dis": 64,
+  "image_size": [
+    64,
+    64,
+    3
+  ],
+  "image_layout": "NCHW",
+  "batch_size_setting": 128,
+  "generator_channels": [
+    100,
+    512,
+    256,
+    128,
+    64,
+    3
+  ],
+  "generator_spatial": [
+    1,
+    4,
+    8,
+    16,
+    32,
+    64
+  ],
+  "discriminator_channels": [
+    3,
+    64,
+    128,
+    256,
+    512,
+    1
+  ],
+  "discriminator_spatial": [
+    64,
+    32,
+    16,
+    8,
+    4,
+    1
+  ],
+  "generator_batchnorm_count": 4,
+  "discriminator_batchnorm_count": 3,
+  "generator_conv_bias": false,
+  "discriminator_conv_bias": [
+    true,
+    false,
+    false,
+    false,
+    true
+  ],
+  "discriminator_global_receiver": "model",
+  "global_model_alias_assumption": "module global model is the same selected constructed DCGAN instance",
+  "source_discriminator_uses_self": false,
+  "output": "[B,1,1,1] score; caller flatten is outside methods",
+  "output_range": "G Tanh [-1,1]; D Sigmoid [0,1]",
+  "caller_notebook_cells": [
+    9,
+    16,
+    21,
+    25
+  ],
+  "training_losses_in_graph": false,
+  "model_executed": false
+}

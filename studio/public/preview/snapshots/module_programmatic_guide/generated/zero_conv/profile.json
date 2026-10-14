@@ -1,0 +1,26 @@
+{
+  "in_channels": 16,
+  "out_channels": 8,
+  "padding_value": 1,
+  "conv_padding": 0,
+  "parameters": [
+    "conv.weight",
+    "conv.bias",
+    "scale"
+  ],
+  "initial_output": "zero before learning",
+  "shape_origin": "declared example; statically inferred, not observed",
+  "drawing_scope": "ZeroConv2d only; no surrounding Glow model or coupling input split.",
+  "source_contracts": [
+    [
+      "ZeroConv2d.forward",
+      "F.pad(input, [1, 1, 1, 1], value=1)"
+    ],
+    [
+      "ZeroConv2d.forward",
+      "out * torch.exp(self.scale * 3)"
+    ]
+  ],
+  "model_executed": false,
+  "artifact_scope": "module"
+}

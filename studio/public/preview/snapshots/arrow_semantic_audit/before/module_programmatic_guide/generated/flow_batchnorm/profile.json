@@ -1,0 +1,32 @@
+{
+  "num_inputs": 4,
+  "mode": "direct",
+  "training": true,
+  "momentum": 0.0,
+  "epsilon": 1e-05,
+  "parameters": [
+    "log_gamma",
+    "beta"
+  ],
+  "buffers": [
+    "running_mean",
+    "running_var"
+  ],
+  "det_shape": [
+    1
+  ],
+  "shape_origin": "declared example; statically inferred, not observed",
+  "drawing_scope": "BatchNormFlow direct training profile. Evaluation reads running statistics; inverse training requires saved batch statistics.",
+  "source_contracts": [
+    [
+      "BatchNormFlow.forward",
+      "(inputs - self.batch_mean).pow(2).mean(0) + self.eps"
+    ],
+    [
+      "BatchNormFlow.forward",
+      "torch.exp(self.log_gamma) * x_hat + self.beta"
+    ]
+  ],
+  "model_executed": false,
+  "artifact_scope": "module"
+}

@@ -1,0 +1,354 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "fpn_extra_levels",
+  "profile": {
+    "scope": "LastLevelP6P7 only; excludes backbone and base FPN",
+    "constructor": "LastLevelP6P7(256,128)",
+    "in_channels": 256,
+    "out_channels": 128,
+    "use_P5": false,
+    "input_shape": "c[-1][B,256,8,8]; existing p[-1][B,128,8,8]; names",
+    "output_shape": "(extended p including P6[B,128,4,4],P7[B,128,2,2], extended names)",
+    "shape_origin": "explicit static module profile; not observed",
+    "mode": "caller train/eval; not executed",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "pytorch/vision",
+    "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+    "snapshot": "88b7578cd40309142e6f3aa152438e3ee450fcfd4e242f61cb3919c3efab888f"
+  },
+  "nodes": [
+    {
+      "id": "fpn_extra_levels.root",
+      "label": "FPN extra levels / module",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.forward"
+      ],
+      "shape": "C5 → P6 + P7",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "fpn_extra_levels.c5",
+          "fpn_extra_levels.existing"
+        ],
+        [
+          "fpn_extra_levels.module"
+        ],
+        [
+          "fpn_extra_levels.output"
+        ]
+      ],
+      "rank_gap": 80,
+      "column_gap": 76,
+      "parent": null,
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn_extra_levels.c5",
+      "label": "Caller c[-1] / C5",
+      "kind": "input",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [],
+      "learnable": false,
+      "value": "c[-1]",
+      "parent": "fpn_extra_levels.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn_extra_levels.existing",
+      "label": "Existing p + names / retain",
+      "kind": "input",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.forward"
+      ],
+      "shape": "p contains P5[128,8,8]; names match p",
+      "detail": [],
+      "learnable": false,
+      "value": "p,names",
+      "p5_selected": false,
+      "parent": "fpn_extra_levels.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn_extra_levels.module",
+      "label": "LastLevelP6P7 / C5 branch",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.forward"
+      ],
+      "shape": "P6 and P7 / both retained",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "fpn_extra_levels.p6"
+        ],
+        [
+          "fpn_extra_levels.relu"
+        ],
+        [
+          "fpn_extra_levels.p7"
+        ],
+        [
+          "fpn_extra_levels.extend"
+        ]
+      ],
+      "rank_gap": 80,
+      "column_gap": 64,
+      "parent": "fpn_extra_levels.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn_extra_levels.p6",
+      "label": "P6 / Conv3 stride2",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.forward"
+      ],
+      "shape": "[B,128,4,4]",
+      "detail": [],
+      "parameter": "p6",
+      "instance_identity": "fpn_extra_levels.p6",
+      "learnable": true,
+      "in_channels": 256,
+      "out_channels": 128,
+      "kernel_size": 3,
+      "stride": 2,
+      "padding": 1,
+      "dilation": 1,
+      "groups": 1,
+      "bias": true,
+      "source_operation": "nn.Conv2d",
+      "initialization": "kaiming_uniform_(a=1); bias=0",
+      "parent": "fpn_extra_levels.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn_extra_levels.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.forward"
+      ],
+      "shape": "[B,128,4,4]",
+      "detail": [],
+      "inplace": false,
+      "learnable": false,
+      "parent": "fpn_extra_levels.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn_extra_levels.p7",
+      "label": "P7 / Conv3 stride2",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.forward"
+      ],
+      "shape": "[B,128,2,2]",
+      "detail": [],
+      "parameter": "p7",
+      "instance_identity": "fpn_extra_levels.p7",
+      "learnable": true,
+      "in_channels": 128,
+      "out_channels": 128,
+      "kernel_size": 3,
+      "stride": 2,
+      "padding": 1,
+      "dilation": 1,
+      "groups": 1,
+      "bias": true,
+      "source_operation": "nn.Conv2d",
+      "initialization": "kaiming_uniform_(a=1); bias=0",
+      "parent": "fpn_extra_levels.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "fpn_extra_levels.extend",
+      "label": "Extend p and names / P6 + P7",
+      "kind": "tensor",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.forward"
+      ],
+      "shape": "p + P6[128,4,4] + P7[128,2,2]",
+      "detail": [],
+      "ordered_values": [
+        "fpn_extra_levels.p6",
+        "fpn_extra_levels.p7"
+      ],
+      "appended_names": [
+        "p6",
+        "p7"
+      ],
+      "mutates_caller_lists": true,
+      "learnable": false,
+      "parent": "fpn_extra_levels.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "P6",
+        "P7",
+        "retained_lists"
+      ]
+    },
+    {
+      "id": "fpn_extra_levels.output",
+      "label": "Return extended p, names",
+      "kind": "output",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py::LastLevelP6P7.forward"
+      ],
+      "shape": "(existing p + [P6,P7], names + [p6,p7])",
+      "detail": [],
+      "literal_tuple": true,
+      "learnable": false,
+      "parent": "fpn_extra_levels.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "fpn_extra_levels.c5:out->fpn_extra_levels.p6:in:tensor",
+      "src": "fpn_extra_levels.c5",
+      "dst": "fpn_extra_levels.p6",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn_extra_levels.p6:out->fpn_extra_levels.relu:in:tensor",
+      "src": "fpn_extra_levels.p6",
+      "dst": "fpn_extra_levels.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn_extra_levels.relu:out->fpn_extra_levels.p7:in:tensor",
+      "src": "fpn_extra_levels.relu",
+      "dst": "fpn_extra_levels.p7",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn_extra_levels.p6:out->fpn_extra_levels.extend:P6:tensor",
+      "src": "fpn_extra_levels.p6",
+      "dst": "fpn_extra_levels.extend",
+      "src_port": "out",
+      "dst_port": "P6",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn_extra_levels.p7:out->fpn_extra_levels.extend:P7:tensor",
+      "src": "fpn_extra_levels.p7",
+      "dst": "fpn_extra_levels.extend",
+      "src_port": "out",
+      "dst_port": "P7",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn_extra_levels.existing:out->fpn_extra_levels.extend:retained_lists:tensor",
+      "src": "fpn_extra_levels.existing",
+      "dst": "fpn_extra_levels.extend",
+      "src_port": "out",
+      "dst_port": "retained_lists",
+      "role": "tensor"
+    },
+    {
+      "id": "fpn_extra_levels.extend:out->fpn_extra_levels.output:in:tensor",
+      "src": "fpn_extra_levels.extend",
+      "dst": "fpn_extra_levels.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "in_channels != out_channels selects C5, even though the caller p list contains P5.",
+    "P6=Conv3 stride2(C5); P7=Conv3 stride2(ReLU(P6)); ReLU is not applied before P6 or to returned P6.",
+    "Both P6 and P7 are appended to the existing p list, and matching names append in the same order.",
+    "p6 and p7 are independent default-bias Conv families initialized with Kaiming(a=1), bias0."
+  ],
+  "corrections": [
+    "Do not show only P7 at the output; P6 is independently retained.",
+    "An equal-channel construction selects P5 and needs a separately reviewed profile."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

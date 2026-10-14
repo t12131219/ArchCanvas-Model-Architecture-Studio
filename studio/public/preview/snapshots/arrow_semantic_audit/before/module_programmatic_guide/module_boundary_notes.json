@@ -1,0 +1,32 @@
+{
+  "vision_catalog.json": {
+    "deduplicated": [
+      {
+        "symbol": "InceptionAux",
+        "sourcefile": "torchvision-v0.9.0-modules/torchvision/models/inception.py",
+        "reason": "Auxiliary classification head combines already covered average/adaptive pooling, BasicConv, flatten and Linear; no distinct inner dependency/state mechanism. .stddev attributes are initializer metadata, not runtime operators."
+      },
+      {
+        "symbol": "LastLevelMaxPool",
+        "sourcefile": "torchvision-v0.9.0-vision-extended/torchvision/ops/feature_pyramid_network.py",
+        "reason": "A1x1 stride2 MaxPool sampling plus existing result/name list append. Pool semantics already covered and explicit caller list extension covered by LastLevelP6P7; retained as source boundary rather than counted as another new mechanism."
+      },
+      {
+        "symbol": "PSPNet / SqueezeNet / Inception3 / ShuffleNetV2",
+        "reason": "Enclosing complete models excluded from current module-only expansion; class wrappers are not counted as module figures."
+      }
+    ],
+    "deferred": [],
+    "limitations": [
+      "Modules drawn from pinned implementations, not arbitrary-source automatic discovery.",
+      "RoIAlign and deform_conv2d C++/CUDA kernels remain opaque; no kernel source or weights obtained.",
+      "PSP upstream missing LICENSE is preserved as missing, not replaced with another project license."
+    ]
+  },
+  "sequence_catalog.json": {
+    "deferred": []
+  },
+  "graph_catalog.json": {
+    "deferred": []
+  }
+}

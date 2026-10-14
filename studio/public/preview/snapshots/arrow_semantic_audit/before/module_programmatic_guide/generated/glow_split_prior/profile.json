@@ -1,0 +1,26 @@
+{
+  "split": true,
+  "input_channels_after_squeeze": 8,
+  "retained_channels": 4,
+  "prior_channels": 8,
+  "head_order": [
+    "mean",
+    "log_sd"
+  ],
+  "sampling": false,
+  "logdet_excluded": true,
+  "shape_origin": "declared example; statically inferred, not observed",
+  "drawing_scope": "Only split=True prior subgraph after the omitted Flow loop; excludes squeeze, flow logdet and reverse sampling.",
+  "source_contracts": [
+    [
+      "Block.forward",
+      "self.prior(out).chunk(2, 1)"
+    ],
+    [
+      "gaussian_log_p",
+      "-0.5 * log(2 * pi) - log_sd - 0.5 * (x - mean) ** 2 / torch.exp(2 * log_sd)"
+    ]
+  ],
+  "model_executed": false,
+  "artifact_scope": "module"
+}

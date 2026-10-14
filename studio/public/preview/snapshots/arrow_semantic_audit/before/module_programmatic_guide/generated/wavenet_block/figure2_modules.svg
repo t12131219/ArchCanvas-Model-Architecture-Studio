@@ -1,0 +1,235 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2052" height="1651" viewBox="0 0 2052 1651">
+<defs><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<metadata id="source-binding">{&quot;model&quot;: &quot;wavenet_block&quot;, &quot;source_snapshot_sha256&quot;: &quot;2982d3a983045e452afd537d7b59d84765b12bbe7e5bf15224df2f9a6e08c690&quot;, &quot;repository&quot;: &quot;vincentherrmann/pytorch-wavenet&quot;, &quot;commit&quot;: &quot;26ba28989edcf8688f6216057aafda07601ff07e&quot;, &quot;semantic_ir_sha256&quot;: &quot;eb8fd9e2a6ccbdb599fdc4640d897bbaa6d98b63fb7235a2240f9a9a15da2e15&quot;, &quot;view&quot;: 1}</metadata>
+<metadata id="diagram-style">{&quot;name&quot;: &quot;transformer-paper-model-zoo&quot;, &quot;version&quot;: 1, &quot;font&quot;: &quot;DejaVu Sans, Arial, sans-serif&quot;, &quot;text&quot;: &quot;#172336&quot;, &quot;line&quot;: &quot;#263348&quot;, &quot;palette&quot;: {&quot;root&quot;: &quot;#ffffff&quot;, &quot;group&quot;: &quot;#ffffff&quot;, &quot;inner&quot;: &quot;#fffaf6&quot;, &quot;layer&quot;: &quot;#ffffff&quot;, &quot;encoder&quot;: &quot;#e7f5fe&quot;, &quot;decoder&quot;: &quot;#fff0f5&quot;, &quot;embedding&quot;: &quot;#f8d4e1&quot;, &quot;input&quot;: &quot;#f8d4e1&quot;, &quot;output&quot;: &quot;#dfdff8&quot;, &quot;attention&quot;: &quot;#ffddb3&quot;, &quot;ffn&quot;: &quot;#c8ebfb&quot;, &quot;mixing&quot;: &quot;#c8ebfb&quot;, &quot;conv&quot;: &quot;#c8ebfb&quot;, &quot;pool&quot;: &quot;#d6f0df&quot;, &quot;norm&quot;: &quot;#fff6bd&quot;, &quot;concat&quot;: &quot;#fff6bd&quot;, &quot;linear&quot;: &quot;#dfdff8&quot;, &quot;softmax&quot;: &quot;#c9f1cd&quot;, &quot;sampling&quot;: &quot;#c9f1cd&quot;, &quot;recurrent&quot;: &quot;#ffddb3&quot;, &quot;decomposition&quot;: &quot;#d6f0df&quot;, &quot;tensor&quot;: &quot;#cdeaf8&quot;, &quot;activation&quot;: &quot;#f3f5f7&quot;, &quot;control&quot;: &quot;#f3f5f7&quot;}, &quot;typography&quot;: {&quot;title&quot;: 30, &quot;subtitle&quot;: 16, &quot;module&quot;: 22, &quot;inner&quot;: 20, &quot;operator&quot;: 20, &quot;shape&quot;: 16, &quot;detail&quot;: 14, &quot;evidence&quot;: 12, &quot;footer&quot;: 14, &quot;line_height&quot;: 1.18}, &quot;fill_width_nodes&quot;: [], &quot;visual_roles&quot;: {&quot;wave.body&quot;: &quot;encoder&quot;, &quot;wave.dilate&quot;: &quot;tensor&quot;, &quot;wave.filter&quot;: &quot;ffn&quot;, &quot;wave.filter_act&quot;: &quot;softmax&quot;, &quot;wave.filter_conv&quot;: &quot;conv&quot;, &quot;wave.gate&quot;: &quot;attention&quot;, &quot;wave.gate_act&quot;: &quot;softmax&quot;, &quot;wave.gate_conv&quot;: &quot;conv&quot;, &quot;wave.output_skip&quot;: &quot;output&quot;, &quot;wave.output_x&quot;: &quot;output&quot;, &quot;wave.previous_skip&quot;: &quot;input&quot;, &quot;wave.product&quot;: &quot;tensor&quot;, &quot;wave.res_add&quot;: &quot;norm&quot;, &quot;wave.res_conv&quot;: &quot;conv&quot;, &quot;wave.res_crop&quot;: &quot;tensor&quot;, &quot;wave.skip&quot;: &quot;ffn&quot;, &quot;wave.skip_add&quot;: &quot;norm&quot;, &quot;wave.skip_conv&quot;: &quot;conv&quot;, &quot;wave.skip_crop&quot;: &quot;tensor&quot;, &quot;wave.undilate&quot;: &quot;tensor&quot;, &quot;wave.x&quot;: &quot;input&quot;, &quot;wavenet_block.root&quot;: &quot;root&quot;}, &quot;semantics&quot;: &quot;presentation aliases only; color does not imply mathematical equivalence or parameter sharing&quot;}</metadata>
+<text x="1026.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1026.0" dy="0">WaveNet / gated residual and skip iteration  |  Module decomposition</tspan>
+</text>
+<text x="1026.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1026.0" dy="0">Loop i1 / phase dilation2 / gated Conv2 / residual + skip states  /  read bottom to top</tspan>
+</text>
+<g data-node-id="wavenet_block.root" data-visual-role="root"><title>pytorch-wavenet-sequence/wavenet_model.py:28 WaveNetModel.__init__; pytorch-wavenet-sequence/wavenet_model.py:173 WaveNetModel.wavenet_dilate; pytorch-wavenet-sequence/wavenet_model.py:125 WaveNetModel.wavenet; parameter=not asserted; </title><rect x="230.0" y="98" width="1592" height="1271" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5"/></g>
+<text x="247.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="247.0" dy="0">WaveNet / gated residual and skip iteration</tspan>
+</text>
+<text x="1809.0" y="160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1809.0" dy="0">E001,E003,E002</tspan>
+</text>
+<g data-node-id="wave.x" data-visual-role="input"><title>pytorch-wavenet-sequence/wavenet_model.py:125 WaveNetModel.wavenet; parameter=not asserted; </title><rect x="672.0" y="1238.0" width="330" height="105" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="837.0" y="1265.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="837.0" dy="0">Previous loop residual</tspan>
+<tspan x="837.0" dy="23.599999999999998">x</tspan>
+</text>
+<text x="837.0" y="1313.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="837.0" dy="0">[1,32,18]</tspan>
+</text>
+<text x="989.0" y="1333.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="989.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="wave.previous_skip" data-visual-role="input"><title>pytorch-wavenet-sequence/wavenet_model.py:125 WaveNetModel.wavenet; parameter=not asserted; </title><rect x="1050.0" y="1250.0" width="330" height="81" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2"/></g>
+<text x="1215.0" y="1277.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1215.0" dy="0">Previous tensor skip</tspan>
+</text>
+<text x="1215.0" y="1301.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1215.0" dy="0">[1,256,18]</tspan>
+</text>
+<text x="1367.0" y="1321.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1367.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="wave.body" data-visual-role="encoder"><title>pytorch-wavenet-sequence/wavenet_model.py:28 WaveNetModel.__init__; pytorch-wavenet-sequence/wavenet_model.py:125 WaveNetModel.wavenet; pytorch-wavenet-sequence/wavenet_modules.py:10 dilate; parameter=not asserted; </title><rect x="262.0" y="341.0" width="1528" height="833" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5"/></g>
+<text x="279.0" y="371.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="279.0" dy="0">WaveNet loop iteration i=1</tspan>
+</text>
+<text x="1773.0" y="371.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1773.0" dy="0">x_next:[2,32,8]; skip_next:[1,256,16]</tspan>
+</text>
+<text x="1777.0" y="403.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1777.0" dy="0">E001,E002,E004</tspan>
+</text>
+<g data-node-id="wave.dilate" data-visual-role="tensor"><title>pytorch-wavenet-sequence/wavenet_model.py:125 WaveNetModel.wavenet; pytorch-wavenet-sequence/wavenet_model.py:173 WaveNetModel.wavenet_dilate; pytorch-wavenet-sequence/wavenet_modules.py:10 dilate; parameter=not asserted; selected inputN1,L18 divisible by2; permute/view/permute helper</title><rect x="861.0" y="1043.0" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="1026.0" y="1070.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1026.0" dy="0">Dilate2 / fold phases</tspan>
+<tspan x="1026.0" dy="23.599999999999998">into N</tspan>
+</text>
+<text x="1026.0" y="1118.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1026.0" dy="0">[2,32,9]</tspan>
+</text>
+<text x="1178.0" y="1138.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1178.0" dy="0">E002,E003,E004</tspan>
+</text>
+<g data-node-id="wave.filter" data-visual-role="ffn"><title>pytorch-wavenet-sequence/wavenet_model.py:28 WaveNetModel.__init__; pytorch-wavenet-sequence/wavenet_model.py:125 WaveNetModel.wavenet; parameter=not asserted; </title><rect x="672.0" y="898.0" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="837.0" y="925.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="837.0" dy="0">Filter branch</tspan>
+</text>
+<text x="837.0" y="949.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="837.0" dy="0">[2,32,8]</tspan>
+</text>
+<text x="989.0" y="969.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="989.0" dy="0">E001,E002</tspan>
+</text>
+<g data-node-id="wave.gate" data-visual-role="attention"><title>pytorch-wavenet-sequence/wavenet_model.py:28 WaveNetModel.__init__; pytorch-wavenet-sequence/wavenet_model.py:125 WaveNetModel.wavenet; parameter=not asserted; </title><rect x="1050.0" y="898.0" width="330" height="81" rx="10" fill="#ffddb3" stroke="#263348" stroke-width="2"/></g>
+<text x="1215.0" y="925.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1215.0" dy="0">Gate branch</tspan>
+</text>
+<text x="1215.0" y="949.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1215.0" dy="0">[2,32,8]</tspan>
+</text>
+<text x="1367.0" y="969.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1367.0" dy="0">E001,E002</tspan>
+</text>
+<g data-node-id="wave.product" data-visual-role="tensor"><title>pytorch-wavenet-sequence/wavenet_model.py:125 WaveNetModel.wavenet; parameter=not asserted; </title><rect x="861.0" y="753.0" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="1026.0" y="780.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1026.0" dy="0">Filter * gate</tspan>
+</text>
+<text x="1026.0" y="804.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1026.0" dy="0">[2,32,8]</tspan>
+</text>
+<text x="1178.0" y="824.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1178.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="wave.skip" data-visual-role="ffn"><title>pytorch-wavenet-sequence/wavenet_model.py:28 WaveNetModel.__init__; pytorch-wavenet-sequence/wavenet_model.py:125 WaveNetModel.wavenet; pytorch-wavenet-sequence/wavenet_modules.py:10 dilate; parameter=not asserted; </title><rect x="294.0" y="584.0" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="459.0" y="611.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="459.0" dy="0">Skip path / undo phase</tspan>
+<tspan x="459.0" dy="23.599999999999998">folding</tspan>
+</text>
+<text x="459.0" y="659.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="459.0" dy="0">[1,256,16]</tspan>
+</text>
+<text x="611.0" y="679.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="611.0" dy="0">E001,E002,E004</tspan>
+</text>
+<g data-node-id="wave.res_conv" data-visual-role="conv"><title>pytorch-wavenet-sequence/wavenet_model.py:28 WaveNetModel.__init__; pytorch-wavenet-sequence/wavenet_model.py:125 WaveNetModel.wavenet; parameter=residual_convs.1; </title><rect x="672.0" y="584.0" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2"/></g>
+<text x="837.0" y="611.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="837.0" dy="0">Residual Conv1 / 32 -&gt;</tspan>
+<tspan x="837.0" dy="23.599999999999998">32</tspan>
+</text>
+<text x="837.0" y="659.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="837.0" dy="0">[2,32,8]</tspan>
+</text>
+<text x="989.0" y="679.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="989.0" dy="0">E001,E002</tspan>
+</text>
+<g data-node-id="wave.res_crop" data-visual-role="tensor"><title>pytorch-wavenet-sequence/wavenet_model.py:125 WaveNetModel.wavenet; parameter=not asserted; </title><rect x="1050.0" y="596.0" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="1215.0" y="623.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1215.0" dy="0">Crop residual left1</tspan>
+</text>
+<text x="1215.0" y="647.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1215.0" dy="0">[2,32,8]</tspan>
+</text>
+<text x="1367.0" y="667.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1367.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="wave.skip_crop" data-visual-role="tensor"><title>pytorch-wavenet-sequence/wavenet_model.py:125 WaveNetModel.wavenet; parameter=not asserted; </title><rect x="1428.0" y="584.0" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2"/></g>
+<text x="1593.0" y="611.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1593.0" dy="0">Keep last16 previous</tspan>
+<tspan x="1593.0" dy="23.599999999999998">skip positions</tspan>
+</text>
+<text x="1593.0" y="659.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1593.0" dy="0">[1,256,16]</tspan>
+</text>
+<text x="1745.0" y="679.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1745.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="wave.skip_add" data-visual-role="norm"><title>pytorch-wavenet-sequence/wavenet_model.py:125 WaveNetModel.wavenet; parameter=not asserted; </title><rect x="672.0" y="415.0" width="330" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="837.0" y="442.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="837.0" dy="0">s + cropped previous</tspan>
+<tspan x="837.0" dy="23.599999999999998">skip</tspan>
+</text>
+<text x="837.0" y="490.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="837.0" dy="0">[1,256,16]</tspan>
+</text>
+<text x="989.0" y="510.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="989.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="wave.res_add" data-visual-role="norm"><title>pytorch-wavenet-sequence/wavenet_model.py:125 WaveNetModel.wavenet; parameter=not asserted; </title><rect x="1050.0" y="415.0" width="330" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2"/></g>
+<text x="1215.0" y="442.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1215.0" dy="0">Projected x + cropped</tspan>
+<tspan x="1215.0" dy="23.599999999999998">residual</tspan>
+</text>
+<text x="1215.0" y="490.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1215.0" dy="0">[2,32,8]</tspan>
+</text>
+<text x="1367.0" y="510.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1367.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="wave.output_x" data-visual-role="output"><title>pytorch-wavenet-sequence/wavenet_model.py:125 WaveNetModel.wavenet; parameter=not asserted; </title><rect x="672.0" y="172.0" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="837.0" y="199.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="837.0" dy="0">Updated loop x /</tspan>
+<tspan x="837.0" dy="23.599999999999998">phase-folded</tspan>
+</text>
+<text x="837.0" y="247.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="837.0" dy="0">[2,32,8]</tspan>
+</text>
+<text x="989.0" y="267.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="989.0" dy="0">E002</tspan>
+</text>
+<g data-node-id="wave.output_skip" data-visual-role="output"><title>pytorch-wavenet-sequence/wavenet_model.py:125 WaveNetModel.wavenet; parameter=not asserted; </title><rect x="1050.0" y="184.0" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2"/></g>
+<text x="1215.0" y="211.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1215.0" dy="0">Updated loop skip</tspan>
+</text>
+<text x="1215.0" y="235.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1215.0" dy="0">[1,256,16]</tspan>
+</text>
+<text x="1367.0" y="255.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1367.0" dy="0">E002</tspan>
+</text>
+<path data-route-id="route-0001" d="M 837.0,1238.0 L 837.0,1192.0 L 1026.0,1192.0 L 1026.0,1148.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>wave.x:out -&gt; wave.dilate:input; </title></path>
+<path data-route-id="route-0002" d="M 1002.0,1043.0 L 1002.0,1003.0 L 837.0,1003.0 L 837.0,979.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>wave.dilate:out -&gt; wave.filter:in; </title></path>
+<path data-route-id="route-0003" d="M 1026.0,1043.0 L 1026.0,1003.0 L 1215.0,1003.0 L 1215.0,979.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>wave.dilate:out -&gt; wave.gate:in; </title></path>
+<path data-route-id="route-0004" d="M 837.0,898.0 L 837.0,858.0 L 1014.0,858.0 L 1014.0,834.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>wave.filter_act:out -&gt; wave.product:filter; </title></path>
+<path data-route-id="route-0005" d="M 1215.0,898.0 L 1215.0,858.0 L 1038.0,858.0 L 1038.0,834.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>wave.gate_act:out -&gt; wave.product:gate; </title></path>
+<path data-route-id="route-0006" d="M 1014.0,753.0 L 1014.0,713.0 L 459.0,713.0 L 459.0,689.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>wave.product:out -&gt; wave.skip:in; </title></path>
+<path data-route-id="route-0007" d="M 1038.0,753.0 L 1038.0,713.0 L 837.0,713.0 L 837.0,689.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>wave.product:out -&gt; wave.res_conv:input; </title></path>
+<path data-route-id="route-0008" d="M 1050.0,1043.0 L 1050.0,997.0 L 1032.0,997.0 L 1032.0,846.0 L 1215.0,846.0 L 1215.0,677.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>wave.dilate:out -&gt; wave.res_crop:residual; </title></path>
+<path data-route-id="route-0009" d="M 1215.0,1250.0 L 1215.0,1009.0 L 1593.0,1009.0 L 1593.0,689.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>wave.previous_skip:out -&gt; wave.skip_crop:previous_skip; </title></path>
+<path data-route-id="route-0010" d="M 624.0,636.5 L 654.0,636.5 L 654.0,701.0 L 1404.0,701.0 L 1404.0,636.5 L 1428.0,636.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>wave.skip_conv:out -&gt; wave.skip_crop:shape; </title></path>
+<path data-route-id="route-0011" d="M 459.0,584.0 L 459.0,544.0 L 825.0,544.0 L 825.0,520.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>wave.skip:out -&gt; wave.skip_add:new_skip; </title></path>
+<path data-route-id="route-0012" d="M 1593.0,584.0 L 1593.0,544.0 L 849.0,544.0 L 849.0,520.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>wave.skip_crop:out -&gt; wave.skip_add:previous_skip; </title></path>
+<path data-route-id="route-0013" d="M 837.0,584.0 L 837.0,556.0 L 1203.0,556.0 L 1203.0,520.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>wave.res_conv:out -&gt; wave.res_add:projected; </title></path>
+<path data-route-id="route-0014" d="M 1215.0,596.0 L 1215.0,556.0 L 1227.0,556.0 L 1227.0,520.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>wave.res_crop:out -&gt; wave.res_add:retained; </title></path>
+<path data-route-id="route-0015" d="M 1215.0,415.0 L 1215.0,301.0 L 837.0,301.0 L 837.0,277.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>wave.res_add:out -&gt; wave.output_x:x; </title></path>
+<path data-route-id="route-0016" d="M 837.0,415.0 L 837.0,313.0 L 1209.0,313.0 L 1209.0,289.0 L 1215.0,289.0 L 1215.0,265.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"><title>wave.skip_add:out -&gt; wave.output_skip:skip; </title></path>
+<rect x="481.0" y="1406" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348"/>
+<text x="504.0" y="1419" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="504.0" dy="0">Inputs</tspan>
+</text>
+<rect x="666.0" y="1406" width="16" height="16" rx="3" fill="#ffddb3" stroke="#263348"/>
+<text x="689.0" y="1419" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="689.0" dy="0">Gate / attention</tspan>
+</text>
+<rect x="851.0" y="1406" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348"/>
+<text x="874.0" y="1419" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="874.0" dy="0">Conv / transforms</tspan>
+</text>
+<rect x="1036.0" y="1406" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348"/>
+<text x="1059.0" y="1419" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1059.0" dy="0">Add / norm / concat</tspan>
+</text>
+<rect x="1221.0" y="1406" width="16" height="16" rx="3" fill="#c9f1cd" stroke="#263348"/>
+<text x="1244.0" y="1419" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1244.0" dy="0">Gates / Softmax</tspan>
+</text>
+<rect x="1406.0" y="1406" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348"/>
+<text x="1429.0" y="1419" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1429.0" dy="0">Linear / outputs</tspan>
+</text>
+<rect x="943.5" y="1436" width="16" height="16" rx="3" fill="#cdeaf8" stroke="#263348"/>
+<text x="966.5" y="1449" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="966.5" dy="0">Tensor operations</tspan>
+</text>
+<text x="1026.0" y="1477" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1026.0" dy="0">First dimension encodes folded dilation phases in this implementation; selectedN1, not an arbitrary batch claim.</tspan>
+<tspan x="1026.0" dy="16.52">Filter/gate/residual/skip ModuleList index1 are four independent weight families.</tspan>
+<tspan x="1026.0" dy="16.52">Two top outputs are loop-state boundaries; the model output head is excluded.</tspan>
+</text>
+<text x="1026.0" y="1551" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1026.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+<text x="1026.0" y="1581" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1026.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+<text x="1026.0" y="1606" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1026.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+</svg>

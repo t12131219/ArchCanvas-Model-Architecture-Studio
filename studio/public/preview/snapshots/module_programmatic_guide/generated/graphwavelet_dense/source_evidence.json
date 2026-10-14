@@ -1,0 +1,60 @@
+{
+  "source_project": "graphwavelet-modules",
+  "repository": "benedekrozemberczki/GraphWaveletNeuralNetwork",
+  "commit": "fbd93c8db066e03224f1bc66167985a56f1fe7aa",
+  "source_snapshot_sha256": "6da3b6260173a093be1e3330fa936dfac79c5d87cf1fe037ebaef51002f3ff4c",
+  "entry": "graphwavelet-modules/src/gwnn_layer.py::DenseGraphWaveletLayer.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "graphwavelet-modules/LICENSE": {
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "lines": 674,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/benedekrozemberczki/GraphWaveletNeuralNetwork/fbd93c8db066e03224f1bc66167985a56f1fe7aa/LICENSE",
+      "derived_from": null
+    },
+    "graphwavelet-modules/src/gwnn_layer.py": {
+      "sha256": "a2aeef1764fa91f0cfa676eb07417fff32d0a9cc8ff0c9628d254326b3125806",
+      "lines": 129,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/benedekrozemberczki/GraphWaveletNeuralNetwork/fbd93c8db066e03224f1bc66167985a56f1fe7aa/src/gwnn_layer.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "graphwavelet-modules/src/gwnn_layer.py::GraphWaveletLayer.define_parameters": {
+      "path": "graphwavelet-modules/src/gwnn_layer.py",
+      "symbol": "GraphWaveletLayer.define_parameters",
+      "start": 23,
+      "end": 32,
+      "snippet": "    def define_parameters(self):\n        \"\"\"\n        Defining diagonal filter matrix (Theta in the paper) and weight matrix.\n        \"\"\"\n        self.weight_matrix = torch.nn.Parameter(torch.Tensor(self.in_channels, self.out_channels))\n        self.diagonal_weight_indices = torch.LongTensor([[node for node in range(self.ncount)],\n                                                         [node for node in range(self.ncount)]])\n\n        self.diagonal_weight_indices = self.diagonal_weight_indices.to(self.device)\n        self.diagonal_weight_filter = torch.nn.Parameter(torch.Tensor(self.ncount, 1))",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "graphwavelet-modules/src/gwnn_layer.py::GraphWaveletLayer.init_parameters": {
+      "path": "graphwavelet-modules/src/gwnn_layer.py",
+      "symbol": "GraphWaveletLayer.init_parameters",
+      "start": 34,
+      "end": 39,
+      "snippet": "    def init_parameters(self):\n        \"\"\"\n        Initializing the diagonal filter and the weight matrix.\n        \"\"\"\n        torch.nn.init.uniform_(self.diagonal_weight_filter, 0.9, 1.1)\n        torch.nn.init.xavier_uniform_(self.weight_matrix)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "graphwavelet-modules/src/gwnn_layer.py::DenseGraphWaveletLayer.forward": {
+      "path": "graphwavelet-modules/src/gwnn_layer.py",
+      "symbol": "DenseGraphWaveletLayer.forward",
+      "start": 95,
+      "end": 129,
+      "snippet": "    def forward(self, phi_indices, phi_values, phi_inverse_indices, phi_inverse_values, features):\n        \"\"\"\n        Forward propagation pass.\n        :param phi_indices: Sparse wavelet matrix index pairs.\n        :param phi_values: Sparse wavelet matrix values.\n        :param phi_inverse_indices: Inverse wavelet matrix index pairs.\n        :param phi_inverse_values: Inverse wavelet matrix values.\n        :param features: Feature matrix.\n        :return localized_features: Filtered feature matrix extracted.\n        \"\"\"\n        rescaled_phi_indices, rescaled_phi_values = spspmm(phi_indices,\n                                                           phi_values,\n                                                           self.diagonal_weight_indices,\n                                                           self.diagonal_weight_filter.view(-1),\n                                                           self.ncount,\n                                                           self.ncount,\n                                                           self.ncount)\n\n        phi_product_indices, phi_product_values = spspmm(rescaled_phi_indices,\n                                                         rescaled_phi_values,\n                                                         phi_inverse_indices,\n                                                         phi_inverse_values,\n                                                         self.ncount,\n                                                         self.ncount,\n                                                         self.ncount)\n\n        filtered_features = torch.mm(features, self.weight_matrix)\n\n        localized_features = spmm(phi_product_indices,\n                                  phi_product_values,\n                                  self.ncount,\n                                  self.ncount,\n                                  filtered_features)\n\n        return localized_features",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "graphwavelet-modules/LICENSE"
+  ]
+}

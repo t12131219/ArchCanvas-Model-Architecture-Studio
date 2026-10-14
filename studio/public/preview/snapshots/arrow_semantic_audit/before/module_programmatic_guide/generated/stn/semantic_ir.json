@@ -1,0 +1,816 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "stn",
+  "profile": {
+    "task": "learned affine image resampling submodule",
+    "mode": "static selected path",
+    "input_shape": [
+      "B",
+      1,
+      28,
+      28
+    ],
+    "output_shape": [
+      "B",
+      1,
+      28,
+      28
+    ],
+    "localization_shapes": [
+      [
+        8,
+        22,
+        22
+      ],
+      [
+        8,
+        11,
+        11
+      ],
+      [
+        10,
+        7,
+        7
+      ],
+      [
+        10,
+        3,
+        3
+      ]
+    ],
+    "affine_coefficients": 6,
+    "theta_shape": [
+      "B",
+      2,
+      3
+    ],
+    "grid_shape": [
+      "B",
+      28,
+      28,
+      2
+    ],
+    "align_corners_argument": "omitted",
+    "classifier_excluded": true,
+    "drawing_scope": "Net.stn and its __init__ localization/fc_loc definitions only",
+    "initialization": "fc_loc.2 weight zero; bias identity affine",
+    "kernel_implementation_frozen": false,
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "pytorch/tutorials",
+    "commit": "ce8d551d11baebcf8064be3caba7b28a4d84a15d",
+    "snapshot": "66714505e40795e84cd7cbb187313080db88e81582c7b8611ac19ec1145bbab3"
+  },
+  "nodes": [
+    {
+      "id": "stn.root",
+      "label": "STN submodule / MNIST image",
+      "kind": "group",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "stn.input",
+      "label": "Input image / retained pixels",
+      "kind": "input",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [],
+      "tensor_shape": [
+        "B",
+        1,
+        28,
+        28
+      ],
+      "parent": "stn.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape",
+        "image"
+      ]
+    },
+    {
+      "id": "stn.module",
+      "label": "Spatial transformer / Net.stn",
+      "kind": "group",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [
+        "localization -> affine theta -> grid -> sample original image"
+      ],
+      "mode": "chain",
+      "parent": "stn.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "stn.localization",
+      "label": "Locate transform",
+      "kind": "group",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.__init__",
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,10,3,3]",
+      "detail": [],
+      "module_identity": "localization",
+      "parameter_scope": "localization",
+      "mode": "chain",
+      "parent": "stn.module",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "stn.loc.conv1",
+      "label": "Conv7x7: 1 -> 8",
+      "kind": "conv2d",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.__init__",
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,8,22,22]",
+      "detail": [
+        "stride=1; padding=0; bias=True"
+      ],
+      "module_identity": "localization.0",
+      "parameters": [
+        "localization.0.weight",
+        "localization.0.bias"
+      ],
+      "in_channels": 1,
+      "out_channels": 8,
+      "kernel_size": 7,
+      "stride": 1,
+      "padding": 0,
+      "bias": true,
+      "parent": "stn.localization",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "stn.loc.pool1",
+      "label": "MaxPool2x2 / stride2",
+      "kind": "max_pool2d",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.__init__",
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,8,11,11]",
+      "detail": [],
+      "kernel_size": 2,
+      "stride": 2,
+      "module_identity": "localization.1",
+      "parent": "stn.localization",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "stn.loc.relu1",
+      "label": "ReLU / inplace",
+      "kind": "relu",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.__init__",
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,8,11,11]",
+      "detail": [],
+      "inplace": true,
+      "module_identity": "localization.2",
+      "parent": "stn.localization",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "stn.loc.conv2",
+      "label": "Conv5x5: 8 -> 10",
+      "kind": "conv2d",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.__init__",
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,10,7,7]",
+      "detail": [
+        "stride=1; padding=0; bias=True"
+      ],
+      "module_identity": "localization.3",
+      "parameters": [
+        "localization.3.weight",
+        "localization.3.bias"
+      ],
+      "in_channels": 8,
+      "out_channels": 10,
+      "kernel_size": 5,
+      "stride": 1,
+      "padding": 0,
+      "bias": true,
+      "parent": "stn.localization",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "stn.loc.pool2",
+      "label": "MaxPool2x2 / stride2",
+      "kind": "max_pool2d",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.__init__",
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,10,3,3]",
+      "detail": [],
+      "kernel_size": 2,
+      "stride": 2,
+      "module_identity": "localization.4",
+      "parent": "stn.localization",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "stn.loc.relu2",
+      "label": "ReLU / inplace",
+      "kind": "relu",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.__init__",
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,10,3,3]",
+      "detail": [],
+      "inplace": true,
+      "module_identity": "localization.5",
+      "parent": "stn.localization",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "stn.parameters",
+      "label": "Affine parameter regressor",
+      "kind": "group",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.__init__",
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "theta: [B,2,3]",
+      "detail": [
+        "six learned affine coefficients; no classifier head"
+      ],
+      "parameter_scope": "fc_loc",
+      "mode": "chain",
+      "parent": "stn.module",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "stn.flatten",
+      "label": "View localization features",
+      "kind": "tensor",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,90]",
+      "detail": [],
+      "expression": "xs.view(-1, 10 * 3 * 3)",
+      "feature_width": 90,
+      "parent": "stn.parameters",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "stn.fc1",
+      "label": "Linear 90 -> 32",
+      "kind": "linear",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.__init__",
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,32]",
+      "detail": [],
+      "module_identity": "fc_loc.0",
+      "parameters": [
+        "fc_loc.0.weight",
+        "fc_loc.0.bias"
+      ],
+      "in_features": 90,
+      "out_features": 32,
+      "bias": true,
+      "parent": "stn.parameters",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "stn.relu",
+      "label": "ReLU / inplace",
+      "kind": "relu",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.__init__",
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,32]",
+      "detail": [],
+      "inplace": true,
+      "module_identity": "fc_loc.1",
+      "parent": "stn.parameters",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "stn.fc2",
+      "label": "Linear 32 -> 6",
+      "kind": "linear",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.__init__",
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,6]",
+      "detail": [
+        "constructor: zero weight; bias=[1,0,0,0,1,0]",
+        "learnable after initialization; not permanently fixed identity"
+      ],
+      "module_identity": "fc_loc.2",
+      "parameters": [
+        "fc_loc.2.weight",
+        "fc_loc.2.bias"
+      ],
+      "in_features": 32,
+      "out_features": 6,
+      "bias": true,
+      "initial_weight": "zeros",
+      "initial_bias": [
+        1,
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      "parent": "stn.parameters",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "stn.theta",
+      "label": "View affine matrix theta",
+      "kind": "tensor",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,2,3]",
+      "detail": [],
+      "expression": "theta.view(-1, 2, 3)",
+      "affine_rows": 2,
+      "affine_columns": 3,
+      "parent": "stn.parameters",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "stn.resampling",
+      "label": "Grid + image resampling",
+      "kind": "group",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [
+        "grid output points to original input-image coordinates"
+      ],
+      "mode": "chain",
+      "parent": "stn.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "stn.grid",
+      "label": "F.affine_grid(theta, size)",
+      "kind": "tensor",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,28,28,2]",
+      "detail": [
+        "size=x.size(); consumes image shape, not image pixel values",
+        "normalized sampling coordinates (x,y); functional library boundary"
+      ],
+      "expression": "F.affine_grid(theta, x.size())",
+      "input_ports": [
+        "theta",
+        "size"
+      ],
+      "main_input": "theta",
+      "ordered_operands": [
+        "stn.theta",
+        "stn.input:shape"
+      ],
+      "grid_coordinate_order": [
+        "x",
+        "y"
+      ],
+      "coordinate_domain": "normalized input coordinates",
+      "align_corners_argument": "omitted",
+      "runtime_dependency": "torch.nn.functional.affine_grid",
+      "opaque_runtime_boundary": true,
+      "learnable": false,
+      "parent": "stn.resampling",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "size"
+      ]
+    },
+    {
+      "id": "stn.sample",
+      "label": "F.grid_sample(image, grid)",
+      "kind": "sampling",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [
+        "original image pixels + predicted sampling grid",
+        "mode, padding_mode and align_corners arguments are all omitted"
+      ],
+      "expression": "F.grid_sample(x, grid)",
+      "main_input": "grid",
+      "input_ports": [
+        "image",
+        "grid"
+      ],
+      "ordered_operands": [
+        "stn.input",
+        "stn.grid"
+      ],
+      "align_corners_argument": "omitted",
+      "mode_argument": "omitted",
+      "padding_mode_argument": "omitted",
+      "runtime_dependency": "torch.nn.functional.grid_sample",
+      "opaque_runtime_boundary": true,
+      "learnable": false,
+      "parent": "stn.resampling",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "image"
+      ]
+    },
+    {
+      "id": "stn.output",
+      "label": "Warped image",
+      "kind": "output",
+      "source": [
+        "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn"
+      ],
+      "shape": "[B,1,28,28]",
+      "detail": [],
+      "return_value": "x after F.grid_sample",
+      "parent": "stn.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "stn.localization:in->stn.loc.conv1:in:boundary",
+      "src": "stn.localization",
+      "dst": "stn.loc.conv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "stn.loc.conv1:out->stn.loc.pool1:in:tensor",
+      "src": "stn.loc.conv1",
+      "dst": "stn.loc.pool1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "stn.loc.pool1:out->stn.loc.relu1:in:tensor",
+      "src": "stn.loc.pool1",
+      "dst": "stn.loc.relu1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "stn.loc.relu1:out->stn.loc.conv2:in:tensor",
+      "src": "stn.loc.relu1",
+      "dst": "stn.loc.conv2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "stn.loc.conv2:out->stn.loc.pool2:in:tensor",
+      "src": "stn.loc.conv2",
+      "dst": "stn.loc.pool2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "stn.loc.pool2:out->stn.loc.relu2:in:tensor",
+      "src": "stn.loc.pool2",
+      "dst": "stn.loc.relu2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "stn.loc.relu2:out->stn.localization:out:boundary",
+      "src": "stn.loc.relu2",
+      "dst": "stn.localization",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "stn.parameters:in->stn.flatten:in:boundary",
+      "src": "stn.parameters",
+      "dst": "stn.flatten",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "stn.flatten:out->stn.fc1:in:tensor",
+      "src": "stn.flatten",
+      "dst": "stn.fc1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "stn.fc1:out->stn.relu:in:tensor",
+      "src": "stn.fc1",
+      "dst": "stn.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "stn.relu:out->stn.fc2:in:tensor",
+      "src": "stn.relu",
+      "dst": "stn.fc2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "stn.fc2:out->stn.theta:in:tensor",
+      "src": "stn.fc2",
+      "dst": "stn.theta",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "stn.theta:out->stn.parameters:out:boundary",
+      "src": "stn.theta",
+      "dst": "stn.parameters",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "stn.resampling:in->stn.grid:in:boundary",
+      "src": "stn.resampling",
+      "dst": "stn.grid",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "stn.grid:out->stn.sample:in:tensor",
+      "src": "stn.grid",
+      "dst": "stn.sample",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "stn.sample:out->stn.resampling:out:boundary",
+      "src": "stn.sample",
+      "dst": "stn.resampling",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "stn.module:in->stn.localization:in:boundary",
+      "src": "stn.module",
+      "dst": "stn.localization",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "stn.localization:out->stn.parameters:in:tensor",
+      "src": "stn.localization",
+      "dst": "stn.parameters",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "stn.parameters:out->stn.resampling:in:tensor",
+      "src": "stn.parameters",
+      "dst": "stn.resampling",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "stn.resampling:out->stn.module:out:boundary",
+      "src": "stn.resampling",
+      "dst": "stn.module",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "stn.root:in->stn.input:in:boundary",
+      "src": "stn.root",
+      "dst": "stn.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "stn.input:out->stn.module:in:tensor",
+      "src": "stn.input",
+      "dst": "stn.module",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "stn.module:out->stn.output:in:tensor",
+      "src": "stn.module",
+      "dst": "stn.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "stn.output:out->stn.root:out:boundary",
+      "src": "stn.output",
+      "dst": "stn.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "stn.input:shape->stn.grid:size:shape_dependency",
+      "src": "stn.input",
+      "dst": "stn.grid",
+      "src_port": "shape",
+      "dst_port": "size",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "stn.input:image->stn.sample:image:retained_image",
+      "src": "stn.input",
+      "dst": "stn.sample",
+      "src_port": "image",
+      "dst_port": "image",
+      "role": "retained_image"
+    }
+  ],
+  "facts": [
+    "The selected artifact is the Net.stn submodule; Net.forward classification convolutions, dropout and log_softmax are outside the scope.",
+    "For a28x28 single-channel image the localization sequence is Conv7, Pool2, ReLU, Conv5, Pool2, ReLU; its last map is10x3x3.",
+    "The regressor views90 features then executes Linear90->32, ReLU, Linear32->6, and view[B,2,3].",
+    "fc_loc.2 has learnable weight and bias. The constructor sets its weight to zero and bias to identity affine coefficients; training may change both.",
+    "affine_grid receives theta and x.size(), so its dependency on the original image is shape-only, not a second localization pixel path.",
+    "grid_sample receives the original image pixel values and the generated normalized(x,y) grid. It does not resample the localization feature map.",
+    "The source omits align_corners in both functional calls; the drawing preserves omission instead of claiming explicitTrue or an executed backend default.",
+    "Modern PyTorch APIs document align_corners=False by default, grid_sample bilinear mode and zero padding; these are API context, not extra arguments present in this source.",
+    "affine_grid and grid_sample are opaque functional library boundaries; normalized grid shape and meanings are API contracts, not a traced implementation.",
+    "All tensor shapes are statically inferred from the chosen image shape; no tutorial, model, training loop, initialization or resampling was executed."
+  ],
+  "corrections": [
+    "Keep the original image value route to grid_sample distinct from the image-size route to affine_grid.",
+    "Do not replace predicted theta with a permanently fixed identity matrix, a crop operator, or a classification head.",
+    "Do not insert inverse(theta), pixel-coordinate normalization operators or interpolation-kernel internals absent from the frozen tutorial."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

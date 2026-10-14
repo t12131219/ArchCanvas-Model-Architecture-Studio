@@ -1,0 +1,80 @@
+{
+  "source_project": "torchvision-v0.9.0-modules",
+  "repository": "pytorch/vision",
+  "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+  "source_snapshot_sha256": "66209ff0a5fcaf22d0c55fcc2b008aa29f50dec4f265cbd902de8482ed44f5bd",
+  "entry": "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "torchvision-v0.9.0-modules/LICENSE": {
+      "sha256": "6502f676851cfe25f8af75531dfb32375b7325b73c37e7b43741fa422893e71d",
+      "lines": 29,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/LICENSE",
+      "derived_from": null
+    },
+    "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py": {
+      "sha256": "25466b1f6dda0e3fe0d0c43a731f841ed016d6b0919f60f45b4d66c4fa4a3255",
+      "lines": 231,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/torchvision/models/shufflenetv2.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::channel_shuffle": {
+      "path": "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py",
+      "symbol": "channel_shuffle",
+      "start": 21,
+      "end": 34,
+      "snippet": "def channel_shuffle(x: Tensor, groups: int) -> Tensor:\n    batchsize, num_channels, height, width = x.size()\n    channels_per_group = num_channels // groups\n\n    # reshape\n    x = x.view(batchsize, groups,\n               channels_per_group, height, width)\n\n    x = torch.transpose(x, 1, 2).contiguous()\n\n    # flatten\n    x = x.view(batchsize, -1, height, width)\n\n    return x",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E005"
+    },
+    "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual": {
+      "path": "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py",
+      "symbol": "InvertedResidual",
+      "start": 37,
+      "end": 96,
+      "snippet": "class InvertedResidual(nn.Module):\n    def __init__(\n        self,\n        inp: int,\n        oup: int,\n        stride: int\n    ) -> None:\n        super(InvertedResidual, self).__init__()\n\n        if not (1 <= stride <= 3):\n            raise ValueError('illegal stride value')\n        self.stride = stride\n\n        branch_features = oup // 2\n        assert (self.stride != 1) or (inp == branch_features << 1)\n\n        if self.stride > 1:\n            self.branch1 = nn.Sequential(\n                self.depthwise_conv(inp, inp, kernel_size=3, stride=self.stride, padding=1),\n                nn.BatchNorm2d(inp),\n                nn.Conv2d(inp, branch_features, kernel_size=1, stride=1, padding=0, bias=False),\n                nn.BatchNorm2d(branch_features),\n                nn.ReLU(inplace=True),\n            )\n        else:\n            self.branch1 = nn.Sequential()\n\n        self.branch2 = nn.Sequential(\n            nn.Conv2d(inp if (self.stride > 1) else branch_features,\n                      branch_features, kernel_size=1, stride=1, padding=0, bias=False),\n            nn.BatchNorm2d(branch_features),\n            nn.ReLU(inplace=True),\n            self.depthwise_conv(branch_features, branch_features, kernel_size=3, stride=self.stride, padding=1),\n            nn.BatchNorm2d(branch_features),\n            nn.Conv2d(branch_features, branch_features, kernel_size=1, stride=1, padding=0, bias=False),\n            nn.BatchNorm2d(branch_features),\n            nn.ReLU(inplace=True),\n        )\n\n    @staticmethod\n    def depthwise_conv(\n        i: int,\n        o: int,\n        kernel_size: int,\n        stride: int = 1,\n        padding: int = 0,\n        bias: bool = False\n    ) -> nn.Conv2d:\n        return nn.Conv2d(i, o, kernel_size, stride, padding, bias=bias, groups=i)\n\n    def forward(self, x: Tensor) -> Tensor:\n        if self.stride == 1:\n            x1, x2 = x.chunk(2, dim=1)\n            out = torch.cat((x1, self.branch2(x2)), dim=1)\n        else:\n            out = torch.cat((self.branch1(x), self.branch2(x)), dim=1)\n\n        out = channel_shuffle(out, 2)\n\n        return out",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__": {
+      "path": "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py",
+      "symbol": "InvertedResidual.__init__",
+      "start": 38,
+      "end": 74,
+      "snippet": "    def __init__(\n        self,\n        inp: int,\n        oup: int,\n        stride: int\n    ) -> None:\n        super(InvertedResidual, self).__init__()\n\n        if not (1 <= stride <= 3):\n            raise ValueError('illegal stride value')\n        self.stride = stride\n\n        branch_features = oup // 2\n        assert (self.stride != 1) or (inp == branch_features << 1)\n\n        if self.stride > 1:\n            self.branch1 = nn.Sequential(\n                self.depthwise_conv(inp, inp, kernel_size=3, stride=self.stride, padding=1),\n                nn.BatchNorm2d(inp),\n                nn.Conv2d(inp, branch_features, kernel_size=1, stride=1, padding=0, bias=False),\n                nn.BatchNorm2d(branch_features),\n                nn.ReLU(inplace=True),\n            )\n        else:\n            self.branch1 = nn.Sequential()\n\n        self.branch2 = nn.Sequential(\n            nn.Conv2d(inp if (self.stride > 1) else branch_features,\n                      branch_features, kernel_size=1, stride=1, padding=0, bias=False),\n            nn.BatchNorm2d(branch_features),\n            nn.ReLU(inplace=True),\n            self.depthwise_conv(branch_features, branch_features, kernel_size=3, stride=self.stride, padding=1),\n            nn.BatchNorm2d(branch_features),\n            nn.Conv2d(branch_features, branch_features, kernel_size=1, stride=1, padding=0, bias=False),\n            nn.BatchNorm2d(branch_features),\n            nn.ReLU(inplace=True),\n        )",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.depthwise_conv": {
+      "path": "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py",
+      "symbol": "InvertedResidual.depthwise_conv",
+      "start": 77,
+      "end": 85,
+      "snippet": "    def depthwise_conv(\n        i: int,\n        o: int,\n        kernel_size: int,\n        stride: int = 1,\n        padding: int = 0,\n        bias: bool = False\n    ) -> nn.Conv2d:\n        return nn.Conv2d(i, o, kernel_size, stride, padding, bias=bias, groups=i)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward": {
+      "path": "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py",
+      "symbol": "InvertedResidual.forward",
+      "start": 87,
+      "end": 96,
+      "snippet": "    def forward(self, x: Tensor) -> Tensor:\n        if self.stride == 1:\n            x1, x2 = x.chunk(2, dim=1)\n            out = torch.cat((x1, self.branch2(x2)), dim=1)\n        else:\n            out = torch.cat((self.branch1(x), self.branch2(x)), dim=1)\n\n        out = channel_shuffle(out, 2)\n\n        return out",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "torchvision-v0.9.0-modules/LICENSE"
+  ]
+}

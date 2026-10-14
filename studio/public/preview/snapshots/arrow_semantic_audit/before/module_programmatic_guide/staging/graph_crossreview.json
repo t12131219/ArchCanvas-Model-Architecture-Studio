@@ -1,0 +1,366 @@
+{
+  "schema": "module-graph-crossreview-vision/1",
+  "reviewer": "vision agent, independent of graph adapter implementation",
+  "source_semantics_passed": true,
+  "model_executed": false,
+  "modules": [
+    {
+      "module": "bilinear_attention",
+      "source_sha256": {
+        "ban-modules/attention.py": "da2acf00a83fb5bb0c72f73fd90d2c2200bfdc3c001689d344b529c81c02ff93",
+        "ban-modules/bc.py": "f3996f891abbef9b5a15248ac1cbe8282b6d604ce25c0446356b76ad6fd4ae4a",
+        "ban-modules/fc.py": "bf3d9b607505765c3e539397ef4b67e7272040d71b192c3adf6726cc0803a654"
+      },
+      "adapter_sha256": "d22eeb9902776898c326b9c0a84f46cf4ae5a4c0dfa915017010806f55a38b7b",
+      "fresh_IR": true,
+      "source_execution": false,
+      "visual_reviewed": true,
+      "detailed_png": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/module_programmatic_guide/generated/bilinear_attention/figure3_detailed.png",
+      "source_semantics_passed": true,
+      "png_sha256": "22c3f5146e9f8d6f14103087595d21997b6bcae54d20715a5ea4fcf2f6fa9a69",
+      "final_shape_followup_passed": true,
+      "final_detailed_png_visual_review": "Final formal PNG inspected at full image resolution; shape routes use independent dashed ports, avoid label/box/border overlap, and preserve bottom-up main flow."
+    },
+    {
+      "module": "graph_attention",
+      "source_sha256": {
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py": "c474f1b577000a1599512fbed2bced040698bc3f75dfc64ce4526468be44b529"
+      },
+      "adapter_sha256": "6556fd8934d6f239a4e01c92dc009428c11a04304b76dcdd03a1374356cd65a8",
+      "fresh_IR": true,
+      "source_execution": false,
+      "visual_reviewed": true,
+      "detailed_png": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/module_programmatic_guide/generated/graph_attention/figure3_detailed.png",
+      "source_semantics_passed": true,
+      "png_sha256": "2ecc6b832427d575dea60fdbfe6479ab3bb72c9444ea5b9898cb38ab3a7fde3f"
+    },
+    {
+      "module": "graphwavelet_sparse",
+      "source_sha256": {
+        "graphwavelet-modules/src/gwnn_layer.py": "a2aeef1764fa91f0cfa676eb07417fff32d0a9cc8ff0c9628d254326b3125806"
+      },
+      "adapter_sha256": "5a0980c009f37ad57f8c923494280cc4a881612991ff5a1f9cf2576d9c15dcfc",
+      "fresh_IR": true,
+      "source_execution": false,
+      "visual_reviewed": true,
+      "detailed_png": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/module_programmatic_guide/generated/graphwavelet_sparse/figure3_detailed.png",
+      "source_semantics_passed": true,
+      "png_sha256": "f4d092f74a7cdfe624d9c2a130ca18c8950be6e039407df346d379ad29ed4284"
+    },
+    {
+      "module": "simgnn_tensor",
+      "source_sha256": {
+        "simgnn-modules/src/layers.py": "5fefa74f43527f6897a8232753dcf35e5e748d46c99477306c824573f091720c"
+      },
+      "adapter_sha256": "5ea8fee4d629bb85b4bfeb892d0c14696e138b7afee0ddf25343c1ce2f0b6a34",
+      "fresh_IR": true,
+      "source_execution": false,
+      "visual_reviewed": true,
+      "detailed_png": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/module_programmatic_guide/generated/simgnn_tensor/figure3_detailed.png",
+      "source_semantics_passed": true,
+      "png_sha256": "d662827c6f7d916f402fc5fe3804e34bc28cf70b3fbb4f0bd418bf684f026aee"
+    },
+    {
+      "module": "tucker_core",
+      "source_sha256": {
+        "tucker-modules/model.py": "423ac87a9d08904b898b7a33b9c1649fe624bd3bc3400a4eb0851b5a08ed80b6"
+      },
+      "adapter_sha256": "f6fc21139db97d1d85498e539e8be75a5dea64817e8b4acc5ba11f4d0379e6a8",
+      "fresh_IR": true,
+      "source_execution": false,
+      "visual_reviewed": true,
+      "detailed_png": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/module_programmatic_guide/generated/tucker_core/figure3_detailed.png",
+      "source_semantics_passed": true,
+      "png_sha256": "7bbe6cb5b417d865181b08e4bd963062cb7159f03385f059225f838580f118d4",
+      "final_shape_followup_passed": true,
+      "final_detailed_png_visual_review": "Final formal PNG inspected at full image resolution; shape routes use independent dashed ports, avoid label/box/border overlap, and preserve bottom-up main flow."
+    }
+  ],
+  "checks": [
+    {
+      "module": "bilinear_attention",
+      "check": "independent source AST BiAttention.forward_all / nn.functional.softmax(logits.view(-1, self.glimpse, v_num * q_num), 2)",
+      "passed": true
+    },
+    {
+      "module": "bilinear_attention",
+      "check": "independent source AST BiAttention.forward_all / logits.data.masked_fill_(mask.data, mask_with)",
+      "passed": true
+    },
+    {
+      "module": "bilinear_attention",
+      "check": "independent source AST BCNet.forward / torch.einsum('xhyk,bvk,bqk->bhvq', (self.h_mat, v_, q_)) + self.h_bias",
+      "passed": true
+    },
+    {
+      "module": "bilinear_attention",
+      "check": "selected static module boundary",
+      "passed": true
+    },
+    {
+      "module": "graph_attention",
+      "check": "independent source AST GATConv.forward / fn.u_add_v(\"el\", \"er\", \"e\")",
+      "passed": true
+    },
+    {
+      "module": "graph_attention",
+      "check": "independent source AST GATConv.forward / self.attn_drop(edge_softmax(graph, e))",
+      "passed": true
+    },
+    {
+      "module": "graph_attention",
+      "check": "independent source AST GATConv.forward / graph.update_all(fn.u_mul_e(\"ft\", \"a\", \"m\"), fn.sum(\"m\", \"ft\"))",
+      "passed": true
+    },
+    {
+      "module": "graph_attention",
+      "check": "selected static module boundary",
+      "passed": true
+    },
+    {
+      "module": "graphwavelet_sparse",
+      "check": "independent source AST SparseGraphWaveletLayer.forward / spspmm(phi_indices, phi_values, self.diagonal_weight_indices, self.diagonal_weight_filter.view(-1), self.ncount, self.ncount, self.ncount)",
+      "passed": true
+    },
+    {
+      "module": "graphwavelet_sparse",
+      "check": "independent source AST SparseGraphWaveletLayer.forward / spspmm(rescaled_phi_indices, rescaled_phi_values, phi_inverse_indices, phi_inverse_values, self.ncount, self.ncount, self.ncount)",
+      "passed": true
+    },
+    {
+      "module": "graphwavelet_sparse",
+      "check": "independent source AST SparseGraphWaveletLayer.forward / torch.nn.functional.dropout(torch.nn.functional.relu(localized_features), training=self.training, p=dropout)",
+      "passed": true
+    },
+    {
+      "module": "graphwavelet_sparse",
+      "check": "selected static module boundary",
+      "passed": true
+    },
+    {
+      "module": "simgnn_tensor",
+      "check": "independent source AST TenorNetworkModule.forward / torch.mm(torch.t(embedding_1), self.weight_matrix.view(self.args.filters_3, -1))",
+      "passed": true
+    },
+    {
+      "module": "simgnn_tensor",
+      "check": "independent source AST TenorNetworkModule.forward / torch.mm(torch.t(scoring), embedding_2)",
+      "passed": true
+    },
+    {
+      "module": "simgnn_tensor",
+      "check": "independent source AST TenorNetworkModule.forward / torch.nn.functional.relu(scoring + block_scoring + self.bias)",
+      "passed": true
+    },
+    {
+      "module": "simgnn_tensor",
+      "check": "selected static module boundary",
+      "passed": true
+    },
+    {
+      "module": "tucker_core",
+      "check": "independent source AST TuckER.forward / torch.mm(r, self.W.view(r.size(1), -1))",
+      "passed": true
+    },
+    {
+      "module": "tucker_core",
+      "check": "independent source AST TuckER.forward / self.hidden_dropout1(W_mat)",
+      "passed": true
+    },
+    {
+      "module": "tucker_core",
+      "check": "independent source AST TuckER.forward / torch.bmm(x, W_mat)",
+      "passed": true
+    },
+    {
+      "module": "tucker_core",
+      "check": "selected static module boundary",
+      "passed": true
+    },
+    {
+      "module": "bilinear_attention",
+      "check": "Original visual v alone supplies zero-row mask; q is not visual padding source",
+      "passed": true
+    },
+    {
+      "module": "bilinear_attention",
+      "check": "Bilinear score receives independent transformed V,Q and reparameterized h/bias",
+      "passed": true
+    },
+    {
+      "module": "bilinear_attention",
+      "check": "Both masked logits and probabilities are independent tuple outputs",
+      "passed": true
+    },
+    {
+      "module": "bilinear_attention",
+      "check": "Softmax jointly normalizes VQ positions per glimpse, with only V extra Dropout",
+      "passed": true
+    },
+    {
+      "module": "graph_attention",
+      "check": "Homogeneous source and destination share one fc but distinct attention Parameters",
+      "passed": true
+    },
+    {
+      "module": "graph_attention",
+      "check": "Incoming graph topology supports score, edge Softmax and SUM message kernels",
+      "passed": true
+    },
+    {
+      "module": "graph_attention",
+      "check": "Projected features reach messages independently from scalar attention path",
+      "passed": true
+    },
+    {
+      "module": "graph_attention",
+      "check": "Explicit owned bias retains heads without implicit head aggregation",
+      "passed": true
+    },
+    {
+      "module": "graphwavelet_sparse",
+      "check": "Sparse kernel order is Phi diag(theta) Phi_inverse, independent of XW path",
+      "passed": true
+    },
+    {
+      "module": "graphwavelet_sparse",
+      "check": "Localize receives learned kernel and independently projected features",
+      "passed": true
+    },
+    {
+      "module": "graphwavelet_sparse",
+      "check": "Diagonal indices are ordinary tensor; theta and feature W remain independent Parameters",
+      "passed": true
+    },
+    {
+      "module": "graphwavelet_sparse",
+      "check": "Sparse tail is ReLU before caller-mode Dropout, never shared with dense",
+      "passed": true
+    },
+    {
+      "module": "simgnn_tensor",
+      "check": "Two real bilinear matrix products have correct intermediate shapes and ordered embeddings",
+      "passed": true
+    },
+    {
+      "module": "simgnn_tensor",
+      "check": "Distinct block path consumes ordered graph concat and separate owned weight",
+      "passed": true
+    },
+    {
+      "module": "simgnn_tensor",
+      "check": "Bias, block and bilinear inputs meet before ReLU; output is4 features",
+      "passed": true
+    },
+    {
+      "module": "tucker_core",
+      "check": "Relation embedding and learned 3-way core contract independently of subject",
+      "passed": true
+    },
+    {
+      "module": "tucker_core",
+      "check": "Dropout belongs to relation-conditioned matrix before subject row BMM",
+      "passed": true
+    },
+    {
+      "module": "tucker_core",
+      "check": "Owned R and W are distinct; constructor CUDA boundary is recorded without execution",
+      "passed": true
+    },
+    {
+      "module": "bilinear_attention",
+      "check": "Formal generated IR equals independently rebuilt current adapter IR",
+      "passed": true
+    },
+    {
+      "module": "tucker_core",
+      "check": "Formal generated IR equals independently rebuilt current adapter IR",
+      "passed": true
+    },
+    {
+      "module": "bilinear_attention",
+      "check": "v.size(1) supplies actual normalize.flat v_num shape operand",
+      "passed": true
+    },
+    {
+      "module": "bilinear_attention",
+      "check": "v.size(1) supplies actual normalize.view v_num shape operand",
+      "passed": true
+    },
+    {
+      "module": "bilinear_attention",
+      "check": "q.size(1) supplies actual normalize.flat q_num shape operand",
+      "passed": true
+    },
+    {
+      "module": "bilinear_attention",
+      "check": "q.size(1) supplies actual normalize.view q_num shape operand",
+      "passed": true
+    },
+    {
+      "module": "tucker_core",
+      "check": "Original e1.size(1) supplies actual subjectview d1 shape operand",
+      "passed": true
+    },
+    {
+      "module": "tucker_core",
+      "check": "Original e1.size(1) supplies actual condition.reshape d1 shape operand",
+      "passed": true
+    },
+    {
+      "module": "tucker_core",
+      "check": "Original e1.size(1) supplies actual restore d1 shape operand",
+      "passed": true
+    },
+    {
+      "module": "tucker_core",
+      "check": "Boundary metadata preserves original embedding origin, separate from post-dropout feature value",
+      "passed": true
+    },
+    {
+      "module": "bilinear_attention",
+      "check": "Independent source AST proves all newly drawn dimension reads",
+      "passed": true
+    },
+    {
+      "module": "bilinear_attention",
+      "check": "All newly added detailed shape routes preserve typed ports,24px terminals and8px border clearance",
+      "passed": true
+    },
+    {
+      "module": "tucker_core",
+      "check": "Independent source AST proves all newly drawn dimension reads",
+      "passed": true
+    },
+    {
+      "module": "tucker_core",
+      "check": "All newly added detailed shape routes preserve typed ports,24px terminals and8px border clearance",
+      "passed": true
+    }
+  ],
+  "pending_improvements": [],
+  "unresolved_semantic_errors": [],
+  "limitations": [
+    "Fixed selected profiles only; independent AST and IR operands are checked without upstream execution.",
+    "Source API kernels remain opaque; this is not runtime equivalence testing.",
+    "Some retained-value bypasses in BAN, GAT and SimGNN use the shared outer routing gutter. They clear borders/text/nodes but are not guaranteed globally shortest or contained within the outer model frame. This is an explicitly retained presentation limitation; port-only experiments were reverted and the shared engine was not changed."
+  ],
+  "passed": true,
+  "independent_check_count": 52,
+  "reviewed_module_count": 5,
+  "resolved_findings": [
+    {
+      "module": "bilinear_attention",
+      "finding": "Original V/Q dimension inputs were not wired to flatten/restore.",
+      "resolution": "Four original v/q shape edges with typed v_num/q_num ports; final source/IR/PNG verified.",
+      "status": "resolved"
+    },
+    {
+      "module": "tucker_core",
+      "finding": "Three view operations require original pre-BN embedding width, distinct from processed subject value.",
+      "resolution": "Explicit e1shape metadata boundary with shape:d1 edges to subjectview,condition.reshape,restore; final source/IR/PNG verified.",
+      "status": "resolved"
+    }
+  ],
+  "final_followup_scope": "Only the two necessary BAN/TuckER shape changes were rebuilt and visually re-reviewed; unchanged prior source/IR checks remain from the five-module independent review."
+}

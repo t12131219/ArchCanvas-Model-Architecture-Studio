@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Transformer 示例 · 版式选择</title>
+<style>
+body{margin:0;background:#eef2f7;color:#172336;font:16px/1.65 system-ui,sans-serif}
+main{max-width:1180px;margin:36px auto;padding:0 24px 32px}
+h1{font-size:28px;line-height:1.3;margin:0 0 12px}h2{font-size:22px;margin:0 0 8px}
+.intro{color:#526173;margin:0 0 26px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+article{background:white;border:1px solid #d7dfeb;border-radius:16px;padding:24px;box-shadow:0 6px 20px #17233608}
+.tag{display:inline-block;border-radius:20px;background:#e7f3ff;color:#24518a;padding:3px 12px;font-size:13px;margin-bottom:12px}
+.optional{background:#fff0d9;color:#815511}.description{min-height:78px;color:#526173;margin:0 0 16px}
+img{display:block;width:100%;height:460px;object-fit:contain;border:1px solid #e1e7ef;border-radius:8px;margin-bottom:18px;background:white}
+.links{display:flex;flex-wrap:wrap;gap:10px}a{color:#2458b0;text-decoration:none}.links a{border:1px solid #c7d4e7;border-radius:8px;padding:8px 13px}
+.links a:first-child{background:#2458b0;color:white;border-color:#2458b0}a:hover{text-decoration:underline}a:focus-visible{outline:3px solid #f2a83b;outline-offset:3px}
+.note{margin-top:24px;color:#526173;font-size:14px}@media(max-width:760px){.grid{grid-template-columns:1fr}.description{min-height:0}main{margin-top:24px}img{height:400px}}
+</style>
+<main>
+<h1>Transformer 程序化示例：版式选择</h1>
+<p class="intro">两种版式保留相同的源码语义与参数身份，可分别查看三层粒度的架构图。</p>
+<div class="grid">
+<article>
+<span class="tag">当前默认</span>
+<h2>统一自底向上版</h2>
+<p class="description">Attention / SDPA、FFN 与 Add &amp; Norm 的主计算链均向上，Q/K/V 保持并列。图3：1600 × 2742。</p>
+<a href="generated/figure3_detailed.svg" aria-label="查看自底向上版图3"><img src="generated/figure3_detailed.png" alt="统一自底向上版 Transformer 图3"></a>
+<div class="links"><a href="generated/figure3_detailed.svg">查看图3</a><a href="generated/index.html">三图预览</a><a href="源码到Transformer三层架构图_对应关系与程序化布局.md">完整说明</a></div>
+</article>
+<article>
+<span class="tag optional">可选 · 上次结果</span>
+<h2>紧凑混合方向版</h2>
+<p class="description">整体向上，Attention 内部向下，SDPA / FFN 横排；保留横向 Linear→Q/K/V 张量连接与优化后的箭头。图3：1600 × 2308。</p>
+<a href="variants/compact_mixed_flow/generated/figure3_detailed.svg" aria-label="查看上次紧凑版图3"><img src="variants/compact_mixed_flow/generated/figure3_detailed.png" alt="箭头优化后的紧凑混合方向版 Transformer 图3"></a>
+<div class="links"><a href="variants/compact_mixed_flow/generated/figure3_detailed.svg">查看图3</a><a href="variants/compact_mixed_flow/generated/index.html">三图预览</a><a href="variants/compact_mixed_flow/源码到Transformer三层架构图_对应关系与程序化布局.md">当时的说明</a></div>
+</article>
+</div>
+<p class="note">两套生成脚本和输出分别保存。<a href="版本选择.md">查看版本目录与生成命令</a></p>
+</main>
+</html>

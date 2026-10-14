@@ -1,0 +1,1292 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "aspp",
+  "profile": {
+    "scope": "ASPP only; no DeepLabHead/backbone",
+    "constructor": "ASPP(256,[6,12,18],out_channels=64)",
+    "atrous_rates": [
+      6,
+      12,
+      18
+    ],
+    "out_channels": 64,
+    "branch_channels": [
+      64,
+      64,
+      64,
+      64,
+      64
+    ],
+    "input_shape": "[B,256,32,32]",
+    "output_shape": "[B,64,32,32]",
+    "shape_origin": "explicit static module profile; not observed",
+    "mode": "caller train/eval; not executed",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "pytorch/vision",
+    "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+    "snapshot": "88b7578cd40309142e6f3aa152438e3ee450fcfd4e242f61cb3919c3efab888f"
+  },
+  "nodes": [
+    {
+      "id": "aspp.root",
+      "label": "ASPP atrous context / module",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.input",
+      "label": "Module input",
+      "kind": "input",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward"
+      ],
+      "shape": "[B,256,32,32]",
+      "detail": [],
+      "learnable": false,
+      "parent": "aspp.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "aspp.module",
+      "label": "ASPP",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "aspp.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.branches",
+      "label": "Pointwise / rates / global context",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward"
+      ],
+      "shape": "5 x 64 channels",
+      "detail": [],
+      "collection_type": "list",
+      "literal_tuple": false,
+      "dispatch": false,
+      "branch_order": [
+        "pointwise",
+        "rate6",
+        "rate12",
+        "rate18",
+        "pool_path"
+      ],
+      "mode": "parallel",
+      "parent": "aspp.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]",
+        "item[2]",
+        "item[3]",
+        "item[4]"
+      ]
+    },
+    {
+      "id": "aspp.pointwise",
+      "label": "Pointwise Conv1 + BN + ReLU",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "parameter_scope": "convs.0",
+      "mode": "chain",
+      "parent": "aspp.branches",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.pointwise.conv",
+      "label": "Conv 1 / 256→64",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "parameter": "convs.0.0",
+      "instance_identity": "aspp.convs.0.0",
+      "learnable": true,
+      "in_channels": 256,
+      "out_channels": 64,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "aspp.pointwise",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.pointwise.bn",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "parameter": "convs.0.1",
+      "instance_identity": "aspp.convs.0.1",
+      "learnable": true,
+      "num_features": 64,
+      "eps": 1e-05,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "aspp.pointwise",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.pointwise.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "inplace": false,
+      "learnable": false,
+      "parent": "aspp.pointwise",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.rate6",
+      "label": "Atrous Conv3 / rate=6",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPConv.__init__"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "parameter_scope": "convs.1",
+      "mode": "chain",
+      "parent": "aspp.branches",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.rate6.conv",
+      "label": "Conv 3 / 256→64",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPConv.__init__"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [
+        "dilation=6; padding=6; bias=False"
+      ],
+      "parameter": "convs.1.0",
+      "instance_identity": "aspp.convs.1.0",
+      "learnable": true,
+      "in_channels": 256,
+      "out_channels": 64,
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 6,
+      "dilation": 6,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "aspp.rate6",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.rate6.bn",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPConv.__init__"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "parameter": "convs.1.1",
+      "instance_identity": "aspp.convs.1.1",
+      "learnable": true,
+      "num_features": 64,
+      "eps": 1e-05,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "aspp.rate6",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.rate6.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPConv.__init__"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "inplace": false,
+      "learnable": false,
+      "parent": "aspp.rate6",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.rate12",
+      "label": "Atrous Conv3 / rate=12",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPConv.__init__"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "parameter_scope": "convs.2",
+      "mode": "chain",
+      "parent": "aspp.branches",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.rate12.conv",
+      "label": "Conv 3 / 256→64",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPConv.__init__"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [
+        "dilation=12; padding=12; bias=False"
+      ],
+      "parameter": "convs.2.0",
+      "instance_identity": "aspp.convs.2.0",
+      "learnable": true,
+      "in_channels": 256,
+      "out_channels": 64,
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 12,
+      "dilation": 12,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "aspp.rate12",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.rate12.bn",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPConv.__init__"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "parameter": "convs.2.1",
+      "instance_identity": "aspp.convs.2.1",
+      "learnable": true,
+      "num_features": 64,
+      "eps": 1e-05,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "aspp.rate12",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.rate12.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPConv.__init__"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "inplace": false,
+      "learnable": false,
+      "parent": "aspp.rate12",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.rate18",
+      "label": "Atrous Conv3 / rate=18",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPConv.__init__"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "parameter_scope": "convs.3",
+      "mode": "chain",
+      "parent": "aspp.branches",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.rate18.conv",
+      "label": "Conv 3 / 256→64",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPConv.__init__"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [
+        "dilation=18; padding=18; bias=False"
+      ],
+      "parameter": "convs.3.0",
+      "instance_identity": "aspp.convs.3.0",
+      "learnable": true,
+      "in_channels": 256,
+      "out_channels": 64,
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 18,
+      "dilation": 18,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "aspp.rate18",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.rate18.bn",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPConv.__init__"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "parameter": "convs.3.1",
+      "instance_identity": "aspp.convs.3.1",
+      "learnable": true,
+      "num_features": 64,
+      "eps": 1e-05,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "aspp.rate18",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.rate18.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPConv.__init__"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "inplace": false,
+      "learnable": false,
+      "parent": "aspp.rate18",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.pool_path",
+      "label": "Global pool + project + resize",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPPooling.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPPooling.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "aspp.branches",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E005",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.pool",
+      "label": "Adaptive average pool1",
+      "kind": "pool",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPPooling.__init__"
+      ],
+      "shape": "[B,256,1,1]",
+      "detail": [],
+      "pool_type": "adaptive_average",
+      "output_size": 1,
+      "parent": "aspp.pool_path",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.pool_conv",
+      "label": "Conv 1 / 256→64",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPPooling.__init__"
+      ],
+      "shape": "[B,64,1,1]",
+      "detail": [],
+      "parameter": "convs.4.1",
+      "instance_identity": "aspp.convs.4.1",
+      "learnable": true,
+      "in_channels": 256,
+      "out_channels": 64,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "aspp.pool_path",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.pool_bn",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPPooling.__init__"
+      ],
+      "shape": "[B,64,1,1]",
+      "detail": [],
+      "parameter": "convs.4.2",
+      "instance_identity": "aspp.convs.4.2",
+      "learnable": true,
+      "num_features": 64,
+      "eps": 1e-05,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "aspp.pool_path",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.pool_relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPPooling.__init__"
+      ],
+      "shape": "[B,64,1,1]",
+      "detail": [],
+      "inplace": false,
+      "learnable": false,
+      "parent": "aspp.pool_path",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.resize",
+      "label": "Bilinear resize to input H,W",
+      "kind": "interpolate",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPPPooling.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "mode_argument": "bilinear",
+      "align_corners": false,
+      "size_from": "aspp.module:input_shape",
+      "library_boundary": true,
+      "parent": "aspp.pool_path",
+      "source_evidence": [
+        "E002",
+        "E003",
+        "E006"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "size"
+      ]
+    },
+    {
+      "id": "aspp.concat",
+      "label": "Concat all5 paths",
+      "kind": "concat",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward"
+      ],
+      "shape": "[B,320,32,32]",
+      "detail": [],
+      "dim": 1,
+      "parent": "aspp.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.project",
+      "label": "Project + BN + ReLU + Dropout",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "aspp.module",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.project.conv",
+      "label": "Conv 1 / 320→64",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "parameter": "project.0",
+      "instance_identity": "aspp.project.0",
+      "learnable": true,
+      "in_channels": 320,
+      "out_channels": 64,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "aspp.project",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.project.bn",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "parameter": "project.1",
+      "instance_identity": "aspp.project.1",
+      "learnable": true,
+      "num_features": 64,
+      "eps": 1e-05,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "aspp.project",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.project.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "inplace": false,
+      "learnable": false,
+      "parent": "aspp.project",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.dropout",
+      "label": "Dropout p=0.5",
+      "kind": "dropout",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "p": 0.5,
+      "learnable": false,
+      "parent": "aspp.project",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "aspp.output",
+      "label": "Module output",
+      "kind": "output",
+      "source": [
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.__init__",
+        "torchvision-v0.9.0-vision-extended/torchvision/models/segmentation/deeplabv3.py::ASPP.forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "learnable": false,
+      "parent": "aspp.root",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "aspp.pointwise:in->aspp.pointwise.conv:in:boundary",
+      "src": "aspp.pointwise",
+      "dst": "aspp.pointwise.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "aspp.pointwise.conv:out->aspp.pointwise.bn:in:tensor",
+      "src": "aspp.pointwise.conv",
+      "dst": "aspp.pointwise.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.pointwise.bn:out->aspp.pointwise.relu:in:tensor",
+      "src": "aspp.pointwise.bn",
+      "dst": "aspp.pointwise.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.pointwise.relu:out->aspp.pointwise:out:boundary",
+      "src": "aspp.pointwise.relu",
+      "dst": "aspp.pointwise",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "aspp.rate6:in->aspp.rate6.conv:in:boundary",
+      "src": "aspp.rate6",
+      "dst": "aspp.rate6.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "aspp.rate6.conv:out->aspp.rate6.bn:in:tensor",
+      "src": "aspp.rate6.conv",
+      "dst": "aspp.rate6.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.rate6.bn:out->aspp.rate6.relu:in:tensor",
+      "src": "aspp.rate6.bn",
+      "dst": "aspp.rate6.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.rate6.relu:out->aspp.rate6:out:boundary",
+      "src": "aspp.rate6.relu",
+      "dst": "aspp.rate6",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "aspp.rate12:in->aspp.rate12.conv:in:boundary",
+      "src": "aspp.rate12",
+      "dst": "aspp.rate12.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "aspp.rate12.conv:out->aspp.rate12.bn:in:tensor",
+      "src": "aspp.rate12.conv",
+      "dst": "aspp.rate12.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.rate12.bn:out->aspp.rate12.relu:in:tensor",
+      "src": "aspp.rate12.bn",
+      "dst": "aspp.rate12.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.rate12.relu:out->aspp.rate12:out:boundary",
+      "src": "aspp.rate12.relu",
+      "dst": "aspp.rate12",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "aspp.rate18:in->aspp.rate18.conv:in:boundary",
+      "src": "aspp.rate18",
+      "dst": "aspp.rate18.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "aspp.rate18.conv:out->aspp.rate18.bn:in:tensor",
+      "src": "aspp.rate18.conv",
+      "dst": "aspp.rate18.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.rate18.bn:out->aspp.rate18.relu:in:tensor",
+      "src": "aspp.rate18.bn",
+      "dst": "aspp.rate18.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.rate18.relu:out->aspp.rate18:out:boundary",
+      "src": "aspp.rate18.relu",
+      "dst": "aspp.rate18",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "aspp.pool_path:in->aspp.pool:in:boundary",
+      "src": "aspp.pool_path",
+      "dst": "aspp.pool",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "aspp.pool:out->aspp.pool_conv:in:tensor",
+      "src": "aspp.pool",
+      "dst": "aspp.pool_conv",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.pool_conv:out->aspp.pool_bn:in:tensor",
+      "src": "aspp.pool_conv",
+      "dst": "aspp.pool_bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.pool_bn:out->aspp.pool_relu:in:tensor",
+      "src": "aspp.pool_bn",
+      "dst": "aspp.pool_relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.pool_relu:out->aspp.resize:in:tensor",
+      "src": "aspp.pool_relu",
+      "dst": "aspp.resize",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.resize:out->aspp.pool_path:out:boundary",
+      "src": "aspp.resize",
+      "dst": "aspp.pool_path",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "aspp.branches:in->aspp.pointwise:in:fork",
+      "src": "aspp.branches",
+      "dst": "aspp.pointwise",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "aspp.pointwise:out->aspp.branches:item[0]:tuple_collection",
+      "src": "aspp.pointwise",
+      "dst": "aspp.branches",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "aspp.branches:in->aspp.rate6:in:fork",
+      "src": "aspp.branches",
+      "dst": "aspp.rate6",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "aspp.rate6:out->aspp.branches:item[1]:tuple_collection",
+      "src": "aspp.rate6",
+      "dst": "aspp.branches",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "aspp.branches:in->aspp.rate12:in:fork",
+      "src": "aspp.branches",
+      "dst": "aspp.rate12",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "aspp.rate12:out->aspp.branches:item[2]:tuple_collection",
+      "src": "aspp.rate12",
+      "dst": "aspp.branches",
+      "src_port": "out",
+      "dst_port": "item[2]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "aspp.branches:in->aspp.rate18:in:fork",
+      "src": "aspp.branches",
+      "dst": "aspp.rate18",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "aspp.rate18:out->aspp.branches:item[3]:tuple_collection",
+      "src": "aspp.rate18",
+      "dst": "aspp.branches",
+      "src_port": "out",
+      "dst_port": "item[3]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "aspp.branches:in->aspp.pool_path:in:fork",
+      "src": "aspp.branches",
+      "dst": "aspp.pool_path",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "aspp.pool_path:out->aspp.branches:item[4]:tuple_collection",
+      "src": "aspp.pool_path",
+      "dst": "aspp.branches",
+      "src_port": "out",
+      "dst_port": "item[4]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "aspp.project:in->aspp.project.conv:in:boundary",
+      "src": "aspp.project",
+      "dst": "aspp.project.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "aspp.project.conv:out->aspp.project.bn:in:tensor",
+      "src": "aspp.project.conv",
+      "dst": "aspp.project.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.project.bn:out->aspp.project.relu:in:tensor",
+      "src": "aspp.project.bn",
+      "dst": "aspp.project.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.project.relu:out->aspp.dropout:in:tensor",
+      "src": "aspp.project.relu",
+      "dst": "aspp.dropout",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.dropout:out->aspp.project:out:boundary",
+      "src": "aspp.dropout",
+      "dst": "aspp.project",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "aspp.module:in->aspp.branches:in:boundary",
+      "src": "aspp.module",
+      "dst": "aspp.branches",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "aspp.branches:out->aspp.concat:in:tensor",
+      "src": "aspp.branches",
+      "dst": "aspp.concat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.concat:out->aspp.project:in:tensor",
+      "src": "aspp.concat",
+      "dst": "aspp.project",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.project:out->aspp.module:out:boundary",
+      "src": "aspp.project",
+      "dst": "aspp.module",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "aspp.root:in->aspp.input:in:boundary",
+      "src": "aspp.root",
+      "dst": "aspp.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "aspp.input:out->aspp.module:in:tensor",
+      "src": "aspp.input",
+      "dst": "aspp.module",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.module:out->aspp.output:in:tensor",
+      "src": "aspp.module",
+      "dst": "aspp.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "aspp.output:out->aspp.root:out:boundary",
+      "src": "aspp.output",
+      "dst": "aspp.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "aspp.input:shape->aspp.resize:size:shape_dependency",
+      "src": "aspp.input",
+      "dst": "aspp.resize",
+      "src_port": "shape",
+      "dst_port": "size",
+      "role": "shape_dependency"
+    }
+  ],
+  "facts": [
+    "Five paths receive the same feature input; three3x3 paths have distinct rates and independent parameters.",
+    "Global pooling path records adaptive pool1 and bilinear resize with align_corners=False.",
+    "Concat320 precedes Conv1x1/BN/ReLU/Dropout.5; caller mode controls BN/Dropout."
+  ],
+  "corrections": [
+    "Rates6/12/18 and width64 are explicitly chosen; DeepLabHead uses12/24/36 and default width256.",
+    "A global-pool path is not a fourth dilated convolution."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

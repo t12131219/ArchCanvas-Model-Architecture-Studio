@@ -1,0 +1,479 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "vgae_posterior",
+  "profile": {
+    "in_dim": 8,
+    "hidden1_dim": 16,
+    "hidden2_dim": 8,
+    "shared_base": "layers.0",
+    "independent_heads": [
+      "layers.1",
+      "layers.2"
+    ],
+    "distribution_quantity": "log_std",
+    "always_samples": true,
+    "eval_mean_shortcut": false,
+    "device_origin": "from train import device",
+    "graphconv_boundary": "opaque DGL library, not expanded",
+    "allow_zero_in_degree": true,
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "dmlc/dgl",
+    "commit": "3d16000b4170fa741ed9e9667f22ba84d3493026",
+    "snapshot": "256f2eebacb1903d19349aeef0a390e2636085f42f8040551d709ebc32db427e"
+  },
+  "nodes": [
+    {
+      "id": "vgae_posterior.root",
+      "label": "VGAE graph posterior sampling / module only",
+      "kind": "group",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.encoder"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "vgae_posterior.features",
+          "vgae_posterior.g",
+          "vgae_posterior.device"
+        ],
+        [
+          "vgae_posterior.module"
+        ],
+        [
+          "vgae_posterior.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vgae_posterior.features",
+      "label": "Node features",
+      "kind": "input",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.encoder"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "parent": "vgae_posterior.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vgae_posterior.g",
+      "label": "Supplied DGL graph",
+      "kind": "control",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.encoder"
+      ],
+      "shape": "N nodes / E edges",
+      "detail": [],
+      "parent": "vgae_posterior.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vgae_posterior.device",
+      "label": "Imported global device",
+      "kind": "control",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::__module__"
+      ],
+      "shape": "from train import device",
+      "detail": [],
+      "runtime_boundary": true,
+      "parent": "vgae_posterior.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vgae_posterior.module",
+      "label": "VGAE graph posterior sampling / operators",
+      "kind": "group",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.encoder"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "vgae_posterior.shared"
+        ],
+        [
+          "vgae_posterior.mean",
+          "vgae_posterior.logstd"
+        ],
+        [
+          "vgae_posterior.noise",
+          "vgae_posterior.exp"
+        ],
+        [
+          "vgae_posterior.multiply"
+        ],
+        [
+          "vgae_posterior.add"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "vgae_posterior.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "vgae_posterior.shared",
+      "label": "layers0 GraphConv8 -> 16 / ReLU",
+      "kind": "conv",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.__init__",
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.encoder"
+      ],
+      "shape": "[N,16]",
+      "detail": [],
+      "instance_identity": "layers.0",
+      "parameter_scope": "layers.0",
+      "activation": "relu",
+      "opaque_library": true,
+      "allow_zero_in_degree": true,
+      "parent": "vgae_posterior.module",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "features",
+        "graph"
+      ]
+    },
+    {
+      "id": "vgae_posterior.mean",
+      "label": "layers1 GraphConv16 -> 8 / MEAN",
+      "kind": "conv",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.__init__",
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.encoder"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "instance_identity": "layers.1",
+      "parameter_scope": "layers.1",
+      "activation": "identity",
+      "opaque_library": true,
+      "allow_zero_in_degree": true,
+      "parent": "vgae_posterior.module",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "h",
+        "graph"
+      ]
+    },
+    {
+      "id": "vgae_posterior.logstd",
+      "label": "layers2 GraphConv16 -> 8 / LOG STD",
+      "kind": "conv",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.__init__",
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.encoder"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "instance_identity": "layers.2",
+      "parameter_scope": "layers.2",
+      "activation": "identity",
+      "opaque_library": true,
+      "allow_zero_in_degree": true,
+      "parent": "vgae_posterior.module",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "h",
+        "graph"
+      ]
+    },
+    {
+      "id": "vgae_posterior.noise",
+      "label": "Fresh Gaussian noise / to(device)",
+      "kind": "control",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.encoder"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "expression": "torch.randn(features.size(0), self.hidden2_dim).to(device)",
+      "value_dependent_on_features": false,
+      "always_sample": true,
+      "parent": "vgae_posterior.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "N",
+        "device"
+      ]
+    },
+    {
+      "id": "vgae_posterior.exp",
+      "label": "exp(log_std) / to(device)",
+      "kind": "activation",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.encoder"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "expression": "torch.exp(self.log_std).to(device)",
+      "log_quantity": "log_std",
+      "variance_halved": false,
+      "parent": "vgae_posterior.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "device"
+      ]
+    },
+    {
+      "id": "vgae_posterior.multiply",
+      "label": "epsilon * standard deviation",
+      "kind": "multiply",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.encoder"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "parent": "vgae_posterior.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "epsilon",
+        "std"
+      ]
+    },
+    {
+      "id": "vgae_posterior.add",
+      "label": "mean + epsilon * std",
+      "kind": "add",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.encoder"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "expression": "self.mean + gaussian_noise * torch.exp(self.log_std).to(device)",
+      "parent": "vgae_posterior.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mean",
+        "scaled_noise"
+      ]
+    },
+    {
+      "id": "vgae_posterior.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "dgl-graph-modules/examples/pytorch/vgae/model.py::VGAEModel.encoder"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "parent": "vgae_posterior.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "vgae_posterior.features:out->vgae_posterior.shared:features:tensor",
+      "src": "vgae_posterior.features",
+      "dst": "vgae_posterior.shared",
+      "src_port": "out",
+      "dst_port": "features",
+      "role": "tensor"
+    },
+    {
+      "id": "vgae_posterior.g:out->vgae_posterior.shared:graph:topology",
+      "src": "vgae_posterior.g",
+      "dst": "vgae_posterior.shared",
+      "src_port": "out",
+      "dst_port": "graph",
+      "role": "topology"
+    },
+    {
+      "id": "vgae_posterior.shared:out->vgae_posterior.mean:h:tensor",
+      "src": "vgae_posterior.shared",
+      "dst": "vgae_posterior.mean",
+      "src_port": "out",
+      "dst_port": "h",
+      "role": "tensor"
+    },
+    {
+      "id": "vgae_posterior.shared:out->vgae_posterior.logstd:h:tensor",
+      "src": "vgae_posterior.shared",
+      "dst": "vgae_posterior.logstd",
+      "src_port": "out",
+      "dst_port": "h",
+      "role": "tensor"
+    },
+    {
+      "id": "vgae_posterior.g:out->vgae_posterior.mean:graph:topology",
+      "src": "vgae_posterior.g",
+      "dst": "vgae_posterior.mean",
+      "src_port": "out",
+      "dst_port": "graph",
+      "role": "topology"
+    },
+    {
+      "id": "vgae_posterior.g:out->vgae_posterior.logstd:graph:topology",
+      "src": "vgae_posterior.g",
+      "dst": "vgae_posterior.logstd",
+      "src_port": "out",
+      "dst_port": "graph",
+      "role": "topology"
+    },
+    {
+      "id": "vgae_posterior.logstd:out->vgae_posterior.exp:in:tensor",
+      "src": "vgae_posterior.logstd",
+      "dst": "vgae_posterior.exp",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "vgae_posterior.features:out->vgae_posterior.noise:N:shape_dependency",
+      "src": "vgae_posterior.features",
+      "dst": "vgae_posterior.noise",
+      "src_port": "out",
+      "dst_port": "N",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "vgae_posterior.device:out->vgae_posterior.noise:device:control",
+      "src": "vgae_posterior.device",
+      "dst": "vgae_posterior.noise",
+      "src_port": "out",
+      "dst_port": "device",
+      "role": "control"
+    },
+    {
+      "id": "vgae_posterior.device:out->vgae_posterior.exp:device:control",
+      "src": "vgae_posterior.device",
+      "dst": "vgae_posterior.exp",
+      "src_port": "out",
+      "dst_port": "device",
+      "role": "control"
+    },
+    {
+      "id": "vgae_posterior.noise:out->vgae_posterior.multiply:epsilon:tensor",
+      "src": "vgae_posterior.noise",
+      "dst": "vgae_posterior.multiply",
+      "src_port": "out",
+      "dst_port": "epsilon",
+      "role": "tensor"
+    },
+    {
+      "id": "vgae_posterior.exp:out->vgae_posterior.multiply:std:tensor",
+      "src": "vgae_posterior.exp",
+      "dst": "vgae_posterior.multiply",
+      "src_port": "out",
+      "dst_port": "std",
+      "role": "tensor"
+    },
+    {
+      "id": "vgae_posterior.mean:out->vgae_posterior.add:mean:tensor",
+      "src": "vgae_posterior.mean",
+      "dst": "vgae_posterior.add",
+      "src_port": "out",
+      "dst_port": "mean",
+      "role": "tensor"
+    },
+    {
+      "id": "vgae_posterior.multiply:out->vgae_posterior.add:scaled_noise:tensor",
+      "src": "vgae_posterior.multiply",
+      "dst": "vgae_posterior.add",
+      "src_port": "out",
+      "dst_port": "scaled_noise",
+      "role": "tensor"
+    },
+    {
+      "id": "vgae_posterior.add:out->vgae_posterior.output:in:tensor",
+      "src": "vgae_posterior.add",
+      "dst": "vgae_posterior.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Three GraphConv instances are owned in ModuleList: one shared base and two independent posterior heads. Heads consume the SAME h and supplied graph, while weights are not shared.",
+    "Source predicts log_std, so standard deviation is exp(log_std), with no log variance/2 operation.",
+    "Fresh randn(N,hidden2_dim) occurs unconditionally even in eval mode; features supplies only the N shape to random generation. Global device comes from train import and is a runtime boundary.",
+    "GraphConv implementation is deliberately not expanded in this example; glyphs state opaque DGL library, exact widths, activation and allow_zero_in_degree flags. No GCN formula or self-loop preprocessing is invented.",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not replace log_std with log_var, introduce an eval shortcut returning mean, or feed feature values into Gaussian noise.",
+    "Do not include adjacency decoder in the posterior module; it has a separate inner_product_decoder adapter."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

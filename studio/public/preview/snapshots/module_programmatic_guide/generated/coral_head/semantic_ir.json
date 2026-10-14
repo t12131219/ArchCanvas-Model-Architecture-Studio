@@ -1,0 +1,336 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "coral_head",
+  "profile": {
+    "size_in": 16,
+    "num_classes": 5,
+    "thresholds": 4,
+    "preinit_bias": true,
+    "score_weights_shared": true,
+    "parameters": [
+      "coral_weights.weight",
+      "coral_bias"
+    ],
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "Local CoralLayer class only. It overrides the imported same-name class; upstream MLP and training losses excluded.",
+    "source_contracts": [
+      [
+        "CoralLayer.__init__",
+        "torch.nn.Linear(self.size_in, 1, bias=False)"
+      ],
+      [
+        "CoralLayer.forward",
+        "self.coral_weights(x) + self.coral_bias"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "1b7951bb30c86874ac96a00da3997d89358549d13b69f591b461b39770900612"
+  },
+  "nodes": [
+    {
+      "id": "coral_head.root",
+      "label": "CORAL / shared ordinal score head",
+      "kind": "group",
+      "source": [
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORAL_cement.py::CoralLayer.__init__",
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORAL_cement.py::CoralLayer.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "coral_head.x",
+          "coral_head.bias"
+        ],
+        [
+          "coral_head.body"
+        ],
+        [
+          "coral_head.y"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "coral_head.x",
+      "label": "Features after omitted MLP",
+      "kind": "input",
+      "source": [
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORAL_cement.py::CoralLayer.forward"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "coral_head.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "coral_head.bias",
+      "label": "Learned threshold biases",
+      "kind": "input",
+      "source": [
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORAL_cement.py::CoralLayer.__init__"
+      ],
+      "shape": "[4]",
+      "detail": [],
+      "parameters": [
+        "coral_bias"
+      ],
+      "parent": "coral_head.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "coral_head.body",
+      "label": "CORAL module",
+      "kind": "group",
+      "source": [
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORAL_cement.py::CoralLayer.__init__",
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORAL_cement.py::CoralLayer.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "coral_head.score"
+        ],
+        [
+          "coral_head.broadcast"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "coral_head.root",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "coral_head.score",
+      "label": "Single shared score",
+      "kind": "group",
+      "source": [
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORAL_cement.py::CoralLayer.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "coral_head.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "coral_head.linear",
+      "label": "Linear 16 -> 1 / no bias",
+      "kind": "linear",
+      "source": [
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORAL_cement.py::CoralLayer.__init__",
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORAL_cement.py::CoralLayer.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "parameters": [
+        "coral_weights.weight"
+      ],
+      "in_features": 16,
+      "out_features": 1,
+      "bias": false,
+      "parent": "coral_head.score",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "coral_head.broadcast",
+      "label": "Broadcast across K-1 thresholds",
+      "kind": "group",
+      "source": [
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORAL_cement.py::CoralLayer.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "port_bindings": {
+        "threshold_bias": {
+          "node": "coral_head.add",
+          "port": "threshold_bias"
+        }
+      },
+      "port_binding_evidence": {
+        "threshold_bias": {
+          "source": [
+            "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORAL_cement.py::CoralLayer.forward"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        }
+      },
+      "parent": "coral_head.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "threshold_bias"
+      ]
+    },
+    {
+      "id": "coral_head.add",
+      "label": "score + coral_bias",
+      "kind": "add",
+      "source": [
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORAL_cement.py::CoralLayer.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "self.coral_weights(x) + self.coral_bias",
+      "threshold_count": 4,
+      "score_shared": true,
+      "parent": "coral_head.broadcast",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "threshold_bias"
+      ]
+    },
+    {
+      "id": "coral_head.y",
+      "label": "Ordinal threshold logits",
+      "kind": "output",
+      "source": [
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORAL_cement.py::CoralLayer.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parent": "coral_head.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "coral_head.score:in->coral_head.linear:in:boundary",
+      "src": "coral_head.score",
+      "dst": "coral_head.linear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "coral_head.linear:out->coral_head.score:out:boundary",
+      "src": "coral_head.linear",
+      "dst": "coral_head.score",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "coral_head.broadcast:in->coral_head.add:in:boundary",
+      "src": "coral_head.broadcast",
+      "dst": "coral_head.add",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "coral_head.add:out->coral_head.broadcast:out:boundary",
+      "src": "coral_head.add",
+      "dst": "coral_head.broadcast",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "coral_head.x:out->coral_head.score:in:tensor",
+      "src": "coral_head.x",
+      "dst": "coral_head.score",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "coral_head.score:out->coral_head.broadcast:in:tensor",
+      "src": "coral_head.score",
+      "dst": "coral_head.broadcast",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "coral_head.bias:out->coral_head.broadcast:threshold_bias:tensor",
+      "src": "coral_head.bias",
+      "dst": "coral_head.broadcast",
+      "src_port": "out",
+      "dst_port": "threshold_bias",
+      "role": "tensor"
+    },
+    {
+      "id": "coral_head.broadcast:out->coral_head.y:in:tensor",
+      "src": "coral_head.broadcast",
+      "dst": "coral_head.y",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "A single biasless linear score is shared by all K-1 logits, then each threshold receives its own learned bias.",
+    "Default preinitialized bias is arange(K-1,0,-1)/(K-1), here [1,.75,.5,.25]; the source does not impose a hard sorted-bias constraint after updates.",
+    "This view stops at logits. Sigmoid decoding and loss calls are outside the class."
+  ],
+  "corrections": [
+    "Do not draw K-1 independent score weight vectors or import an unreviewed external CoralLayer implementation."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

@@ -1,0 +1,43 @@
+{
+  "input_size": 8,
+  "hidden_size": 16,
+  "sequence_length": 3,
+  "batch": "B",
+  "num_layers": 1,
+  "bidirectional": false,
+  "construction": "LSTMLayer(LSTMCell, input_size=8, hidden_size=16)",
+  "configuration_origin": "explicit illustrative configuration, not upstream benchmark defaults",
+  "input_layout": "[T,B,I]",
+  "initial_state": "external h_init,c_init; no default assumed",
+  "source_variant": "LSTMCell, not LayerNormLSTMCell or premultiplied variants",
+  "chunk_order": [
+    "i",
+    "f",
+    "g",
+    "o"
+  ],
+  "parameter_shapes": {
+    "cell.weight_ih": [
+      64,
+      8
+    ],
+    "cell.weight_hh": [
+      64,
+      16
+    ],
+    "cell.bias_ih": [
+      64
+    ],
+    "cell.bias_hh": [
+      64
+    ]
+  },
+  "bias_initialization": "torch.randn, no +1 forget bias",
+  "temporal_parameter_sharing": true,
+  "source_concat": false,
+  "peepholes": false,
+  "dropout": false,
+  "model_executed": false,
+  "shapes": "static derivation",
+  "output": "(stacked h_0..h_2, (h_2,c_2))"
+}

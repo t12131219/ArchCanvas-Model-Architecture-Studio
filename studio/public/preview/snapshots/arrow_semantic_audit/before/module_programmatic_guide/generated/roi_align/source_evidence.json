@@ -1,0 +1,70 @@
+{
+  "source_project": "torchvision-v0.9.0-vision-extended",
+  "repository": "pytorch/vision",
+  "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+  "source_snapshot_sha256": "88b7578cd40309142e6f3aa152438e3ee450fcfd4e242f61cb3919c3efab888f",
+  "entry": "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::RoIAlign",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "torchvision-v0.9.0-vision-extended/LICENSE": {
+      "sha256": "6502f676851cfe25f8af75531dfb32375b7325b73c37e7b43741fa422893e71d",
+      "lines": 29,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/LICENSE",
+      "derived_from": null
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py": {
+      "sha256": "7e7ab19350a5be28700f97b05863355d7baa25853ad74c55977e371d0bf6d04e",
+      "lines": 85,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/torchvision/ops/roi_align.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::roi_align": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py",
+      "symbol": "roi_align",
+      "start": 11,
+      "end": 55,
+      "snippet": "def roi_align(\n    input: Tensor,\n    boxes: Tensor,\n    output_size: BroadcastingList2[int],\n    spatial_scale: float = 1.0,\n    sampling_ratio: int = -1,\n    aligned: bool = False,\n) -> Tensor:\n    \"\"\"\n    Performs Region of Interest (RoI) Align operator described in Mask R-CNN\n\n    Args:\n        input (Tensor[N, C, H, W]): input tensor\n        boxes (Tensor[K, 5] or List[Tensor[L, 4]]): the box coordinates in (x1, y1, x2, y2)\n            format where the regions will be taken from.\n            The coordinate must satisfy ``0 <= x1 < x2`` and ``0 <= y1 < y2``.\n            If a single Tensor is passed,\n            then the first column should contain the batch index. If a list of Tensors\n            is passed, then each Tensor will correspond to the boxes for an element i\n            in a batch\n        output_size (int or Tuple[int, int]): the size of the output after the cropping\n            is performed, as (height, width)\n        spatial_scale (float): a scaling factor that maps the input coordinates to\n            the box coordinates. Default: 1.0\n        sampling_ratio (int): number of sampling points in the interpolation grid\n            used to compute the output value of each pooled output bin. If > 0,\n            then exactly sampling_ratio x sampling_ratio grid points are used. If\n            <= 0, then an adaptive number of grid points are used (computed as\n            ceil(roi_width / pooled_w), and likewise for height). Default: -1\n        aligned (bool): If False, use the legacy implementation.\n            If True, pixel shift it by -0.5 for align more perfectly about two neighboring pixel indices.\n            This version in Detectron2\n\n    Returns:\n        output (Tensor[K, C, output_size[0], output_size[1]])\n    \"\"\"\n    _assert_has_ops()\n    check_roi_boxes_shape(boxes)\n    rois = boxes\n    output_size = _pair(output_size)\n    if not isinstance(rois, torch.Tensor):\n        rois = convert_boxes_to_roi_format(rois)\n    return torch.ops.torchvision.roi_align(input, rois, spatial_scale,\n                                           output_size[0], output_size[1],\n                                           sampling_ratio, aligned)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::RoIAlign": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py",
+      "symbol": "RoIAlign",
+      "start": 58,
+      "end": 85,
+      "snippet": "class RoIAlign(nn.Module):\n    \"\"\"\n    See roi_align\n    \"\"\"\n    def __init__(\n        self,\n        output_size: BroadcastingList2[int],\n        spatial_scale: float,\n        sampling_ratio: int,\n        aligned: bool = False,\n    ):\n        super(RoIAlign, self).__init__()\n        self.output_size = output_size\n        self.spatial_scale = spatial_scale\n        self.sampling_ratio = sampling_ratio\n        self.aligned = aligned\n\n    def forward(self, input: Tensor, rois: Tensor) -> Tensor:\n        return roi_align(input, rois, self.output_size, self.spatial_scale, self.sampling_ratio, self.aligned)\n\n    def __repr__(self) -> str:\n        tmpstr = self.__class__.__name__ + '('\n        tmpstr += 'output_size=' + str(self.output_size)\n        tmpstr += ', spatial_scale=' + str(self.spatial_scale)\n        tmpstr += ', sampling_ratio=' + str(self.sampling_ratio)\n        tmpstr += ', aligned=' + str(self.aligned)\n        tmpstr += ')'\n        return tmpstr",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::RoIAlign.__init__": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py",
+      "symbol": "RoIAlign.__init__",
+      "start": 62,
+      "end": 73,
+      "snippet": "    def __init__(\n        self,\n        output_size: BroadcastingList2[int],\n        spatial_scale: float,\n        sampling_ratio: int,\n        aligned: bool = False,\n    ):\n        super(RoIAlign, self).__init__()\n        self.output_size = output_size\n        self.spatial_scale = spatial_scale\n        self.sampling_ratio = sampling_ratio\n        self.aligned = aligned",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py::RoIAlign.forward": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/ops/roi_align.py",
+      "symbol": "RoIAlign.forward",
+      "start": 75,
+      "end": 76,
+      "snippet": "    def forward(self, input: Tensor, rois: Tensor) -> Tensor:\n        return roi_align(input, rois, self.output_size, self.spatial_scale, self.sampling_ratio, self.aligned)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "torchvision-v0.9.0-vision-extended/LICENSE"
+  ]
+}

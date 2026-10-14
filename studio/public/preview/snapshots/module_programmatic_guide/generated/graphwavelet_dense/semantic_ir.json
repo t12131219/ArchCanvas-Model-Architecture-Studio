@@ -1,0 +1,424 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "graphwavelet_dense",
+  "profile": {
+    "in_channels": 8,
+    "out_channels": 4,
+    "ncount": "N",
+    "input_sparse": false,
+    "theta_learned": true,
+    "diagonal_indices_buffer": false,
+    "dropout": null,
+    "activation": null,
+    "phi_preprocessing": "external",
+    "library_kernels": "opaque torch_sparse spmm/spspmm",
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "benedekrozemberczki/GraphWaveletNeuralNetwork",
+    "commit": "fbd93c8db066e03224f1bc66167985a56f1fe7aa",
+    "snapshot": "6da3b6260173a093be1e3330fa936dfac79c5d87cf1fe037ebaef51002f3ff4c"
+  },
+  "nodes": [
+    {
+      "id": "graphwavelet_dense.root",
+      "label": "Graph wavelet dense layer / module only",
+      "kind": "group",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::DenseGraphWaveletLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "graphwavelet_dense.x",
+          "graphwavelet_dense.phi",
+          "graphwavelet_dense.inverse",
+          "graphwavelet_dense.diagindices",
+          "graphwavelet_dense.theta",
+          "graphwavelet_dense.weight"
+        ],
+        [
+          "graphwavelet_dense.module"
+        ],
+        [
+          "graphwavelet_dense.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_dense.x",
+      "label": "Dense node features X",
+      "kind": "input",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::DenseGraphWaveletLayer.forward"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "parent": "graphwavelet_dense.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_dense.phi",
+      "label": "Supplied sparse wavelet Phi",
+      "kind": "control",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::DenseGraphWaveletLayer.forward"
+      ],
+      "shape": "indices / values; [N,N]",
+      "detail": [],
+      "parent": "graphwavelet_dense.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_dense.inverse",
+      "label": "Supplied sparse inverse Phi",
+      "kind": "control",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::DenseGraphWaveletLayer.forward"
+      ],
+      "shape": "indices / values; [N,N]",
+      "detail": [],
+      "parent": "graphwavelet_dense.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_dense.diagindices",
+      "label": "Fixed diagonal index Tensor",
+      "kind": "control",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::GraphWaveletLayer.define_parameters"
+      ],
+      "shape": "[2,N]",
+      "detail": [],
+      "storage_kind": "ordinary Tensor attribute",
+      "registered_buffer": false,
+      "parameter": false,
+      "parent": "graphwavelet_dense.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_dense.theta",
+      "label": "Owned diagonal filter theta",
+      "kind": "parameter",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::GraphWaveletLayer.define_parameters"
+      ],
+      "shape": "[N,1]",
+      "detail": [],
+      "parameter": "diagonal_weight_filter",
+      "parent": "graphwavelet_dense.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_dense.weight",
+      "label": "Owned feature projection W",
+      "kind": "parameter",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::GraphWaveletLayer.define_parameters"
+      ],
+      "shape": "[8,4]",
+      "detail": [],
+      "parameter": "weight_matrix",
+      "parent": "graphwavelet_dense.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_dense.module",
+      "label": "Graph wavelet dense layer / operators",
+      "kind": "group",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::DenseGraphWaveletLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "graphwavelet_dense.rescale",
+          "graphwavelet_dense.project"
+        ],
+        [
+          "graphwavelet_dense.kernel"
+        ],
+        [
+          "graphwavelet_dense.localize"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "graphwavelet_dense.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graphwavelet_dense.rescale",
+      "label": "Sparse Phi @ diag(theta)",
+      "kind": "mixing",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::DenseGraphWaveletLayer.forward"
+      ],
+      "shape": "sparse pair [N,N]",
+      "detail": [],
+      "ordered_operands": [
+        "phi",
+        "diag(theta)"
+      ],
+      "operation": "spspmm",
+      "opaque_runtime_boundary": true,
+      "theta_view": "view(-1)",
+      "parent": "graphwavelet_dense.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "phi",
+        "theta_indices",
+        "theta_values"
+      ]
+    },
+    {
+      "id": "graphwavelet_dense.project",
+      "label": "Dense X @ W",
+      "kind": "matmul",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::DenseGraphWaveletLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "operation": "mm",
+      "opaque_runtime_boundary": false,
+      "parent": "graphwavelet_dense.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "X",
+        "W"
+      ]
+    },
+    {
+      "id": "graphwavelet_dense.kernel",
+      "label": "Rescaled Phi @ Phi inverse",
+      "kind": "mixing",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::DenseGraphWaveletLayer.forward"
+      ],
+      "shape": "sparse pair [N,N]",
+      "detail": [],
+      "ordered_operands": [
+        "phi@diag(theta)",
+        "phi_inverse"
+      ],
+      "operation": "spspmm",
+      "opaque_runtime_boundary": true,
+      "parent": "graphwavelet_dense.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "rescaled_phi",
+        "phi_inverse"
+      ]
+    },
+    {
+      "id": "graphwavelet_dense.localize",
+      "label": "Learned wavelet kernel @ XW",
+      "kind": "spmm",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::DenseGraphWaveletLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "ordered_operands": [
+        "phi@diag(theta)@phi_inverse",
+        "X@W"
+      ],
+      "operation": "spmm",
+      "opaque_runtime_boundary": true,
+      "parent": "graphwavelet_dense.module",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "kernel",
+        "features"
+      ]
+    },
+    {
+      "id": "graphwavelet_dense.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "graphwavelet-modules/src/gwnn_layer.py::DenseGraphWaveletLayer.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "parent": "graphwavelet_dense.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "graphwavelet_dense.phi:out->graphwavelet_dense.rescale:phi:topology",
+      "src": "graphwavelet_dense.phi",
+      "dst": "graphwavelet_dense.rescale",
+      "src_port": "out",
+      "dst_port": "phi",
+      "role": "topology"
+    },
+    {
+      "id": "graphwavelet_dense.diagindices:out->graphwavelet_dense.rescale:theta_indices:fixed_state",
+      "src": "graphwavelet_dense.diagindices",
+      "dst": "graphwavelet_dense.rescale",
+      "src_port": "out",
+      "dst_port": "theta_indices",
+      "role": "fixed_state"
+    },
+    {
+      "id": "graphwavelet_dense.theta:out->graphwavelet_dense.rescale:theta_values:parameter_operand",
+      "src": "graphwavelet_dense.theta",
+      "dst": "graphwavelet_dense.rescale",
+      "src_port": "out",
+      "dst_port": "theta_values",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "graphwavelet_dense.rescale:out->graphwavelet_dense.kernel:rescaled_phi:tensor",
+      "src": "graphwavelet_dense.rescale",
+      "dst": "graphwavelet_dense.kernel",
+      "src_port": "out",
+      "dst_port": "rescaled_phi",
+      "role": "tensor"
+    },
+    {
+      "id": "graphwavelet_dense.inverse:out->graphwavelet_dense.kernel:phi_inverse:topology",
+      "src": "graphwavelet_dense.inverse",
+      "dst": "graphwavelet_dense.kernel",
+      "src_port": "out",
+      "dst_port": "phi_inverse",
+      "role": "topology"
+    },
+    {
+      "id": "graphwavelet_dense.x:out->graphwavelet_dense.project:X:tensor",
+      "src": "graphwavelet_dense.x",
+      "dst": "graphwavelet_dense.project",
+      "src_port": "out",
+      "dst_port": "X",
+      "role": "tensor"
+    },
+    {
+      "id": "graphwavelet_dense.weight:out->graphwavelet_dense.project:W:parameter_operand",
+      "src": "graphwavelet_dense.weight",
+      "dst": "graphwavelet_dense.project",
+      "src_port": "out",
+      "dst_port": "W",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "graphwavelet_dense.kernel:out->graphwavelet_dense.localize:kernel:tensor",
+      "src": "graphwavelet_dense.kernel",
+      "dst": "graphwavelet_dense.localize",
+      "src_port": "out",
+      "dst_port": "kernel",
+      "role": "tensor"
+    },
+    {
+      "id": "graphwavelet_dense.project:out->graphwavelet_dense.localize:features:tensor",
+      "src": "graphwavelet_dense.project",
+      "dst": "graphwavelet_dense.localize",
+      "src_port": "out",
+      "dst_port": "features",
+      "role": "tensor"
+    },
+    {
+      "id": "graphwavelet_dense.localize:out->graphwavelet_dense.output:in:tensor",
+      "src": "graphwavelet_dense.localize",
+      "dst": "graphwavelet_dense.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Source constructs Phi @ diag(theta) first, multiplies by supplied Phi_inverse second, then applies resulting sparse kernel to X@W. Parentheses, sparse representation and multiplication order remain explicit.",
+    "theta[N,1] and W[8,4] are learned Parameters. Diagonal_weight_indices is an ordinary Tensor attribute moved to device, NOT registered_buffer and NOT Parameter.",
+    "Supplied Phi/inverse preprocessing and torch_sparse kernels stay opaque. The diagram does not assert an orthogonal transform, compute a wavelet spectrum or run sparse products.",
+    "Sparse forward applies ReLU then caller-mode Dropout after localization; Dense forward returns localization directly with no activation or Dropout.",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not equate this learned diagonal graph-wavelet filter with the existing eigenspace elementwise SpectralFilter.",
+    "Do not register the fixed indices as a buffer absent in source or copy Sparse tail into Dense version."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

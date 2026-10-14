@@ -1,0 +1,679 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "graph_attention",
+  "profile": {
+    "in_feats": 8,
+    "out_feats": 4,
+    "num_heads": 2,
+    "feat_drop": 0.1,
+    "attn_drop": 0.2,
+    "negative_slope": 0.2,
+    "residual": false,
+    "bias": true,
+    "activation": null,
+    "edge_weight": null,
+    "get_attention": false,
+    "homogeneous": true,
+    "is_block": false,
+    "allow_zero_in_degree": true,
+    "head_axis_retained": true,
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "dmlc/dgl",
+    "commit": "3d16000b4170fa741ed9e9667f22ba84d3493026",
+    "snapshot": "256f2eebacb1903d19349aeef0a390e2636085f42f8040551d709ebc32db427e"
+  },
+  "nodes": [
+    {
+      "id": "graph_attention.root",
+      "label": "DGL multi-head graph attention / module only",
+      "kind": "group",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward"
+      ],
+      "shape": "[N,2,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "graph_attention.x",
+          "graph_attention.g",
+          "graph_attention.attention",
+          "graph_attention.bias"
+        ],
+        [
+          "graph_attention.module"
+        ],
+        [
+          "graph_attention.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graph_attention.x",
+      "label": "Homogeneous node features",
+      "kind": "input",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "parent": "graph_attention.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graph_attention.g",
+      "label": "Supplied DGL graph topology",
+      "kind": "control",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward"
+      ],
+      "shape": "N nodes / E edges",
+      "detail": [],
+      "parent": "graph_attention.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graph_attention.attention",
+      "label": "Distinct owned a_l and a_r",
+      "kind": "parameter",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.__init__"
+      ],
+      "shape": "each[1,2,4]",
+      "detail": [],
+      "parameters": [
+        "attn_l",
+        "attn_r"
+      ],
+      "independent_parameters": true,
+      "parent": "graph_attention.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "a_l",
+        "a_r"
+      ]
+    },
+    {
+      "id": "graph_attention.bias",
+      "label": "Owned explicit bias",
+      "kind": "parameter",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.__init__"
+      ],
+      "shape": "[8]",
+      "detail": [],
+      "parameter": "bias",
+      "parent": "graph_attention.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graph_attention.module",
+      "label": "DGL multi-head graph attention / operators",
+      "kind": "group",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward"
+      ],
+      "shape": "[N,2,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "graph_attention.projection"
+        ],
+        [
+          "graph_attention.left",
+          "graph_attention.right"
+        ],
+        [
+          "graph_attention.score"
+        ],
+        [
+          "graph_attention.message"
+        ],
+        [
+          "graph_attention.biasadd"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "graph_attention.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graph_attention.projection",
+      "label": "ONE shared homogeneous projection",
+      "kind": "group",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward",
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.__init__"
+      ],
+      "shape": "[N,2,4]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "graph_attention.module",
+      "source_evidence": [
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graph_attention.projection.drop",
+      "label": "Feature Dropout .1",
+      "kind": "dropout",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward",
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.__init__"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "p": 0.1,
+      "parent": "graph_attention.projection",
+      "source_evidence": [
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graph_attention.projection.linear",
+      "label": "Owned Linear8 -> 8 / no bias",
+      "kind": "linear",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward",
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.__init__"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "instance_identity": "fc",
+      "bias": false,
+      "parameter_scope": "fc.weight",
+      "parent": "graph_attention.projection",
+      "source_evidence": [
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graph_attention.projection.heads",
+      "label": "View head and feature axes",
+      "kind": "tensor",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward",
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.__init__"
+      ],
+      "shape": "[N,2,4]",
+      "detail": [],
+      "same_src_dst_tensor": true,
+      "parent": "graph_attention.projection",
+      "source_evidence": [
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graph_attention.left",
+      "label": "Source contribution / a_l",
+      "kind": "multiply",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward"
+      ],
+      "shape": "[N,2,1]",
+      "detail": [],
+      "parameter": "attn_l",
+      "expression": "(feat_src * self.attn_l).sum(dim=-1).unsqueeze(-1)",
+      "parent": "graph_attention.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "features",
+        "a_l"
+      ]
+    },
+    {
+      "id": "graph_attention.right",
+      "label": "Destination contribution / a_r",
+      "kind": "multiply",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward"
+      ],
+      "shape": "[N,2,1]",
+      "detail": [],
+      "parameter": "attn_r",
+      "expression": "(feat_dst * self.attn_r).sum(dim=-1).unsqueeze(-1)",
+      "parent": "graph_attention.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "features",
+        "a_r"
+      ]
+    },
+    {
+      "id": "graph_attention.score",
+      "label": "Edge attention / incoming Softmax",
+      "kind": "group",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward"
+      ],
+      "shape": "[E,2,1]",
+      "detail": [],
+      "suppress_input_boundary": true,
+      "mode": "chain",
+      "parent": "graph_attention.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graph_attention.score.add",
+      "label": "Gather el(src) + er(dst)",
+      "kind": "add",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward"
+      ],
+      "shape": "[E,2,1]",
+      "detail": [],
+      "expression": "fn.u_add_v(\"el\", \"er\", \"e\")",
+      "score_operator": "source plus destination",
+      "parent": "graph_attention.score",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "e_l",
+        "e_r",
+        "edge_pairs"
+      ]
+    },
+    {
+      "id": "graph_attention.score.leaky",
+      "label": "LeakyReLU slope .2",
+      "kind": "activation",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward"
+      ],
+      "shape": "[E,2,1]",
+      "detail": [],
+      "negative_slope": 0.2,
+      "parent": "graph_attention.score",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graph_attention.score.softmax",
+      "label": "Incoming-neighbor edge Softmax",
+      "kind": "softmax",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward"
+      ],
+      "shape": "[E,2,1]",
+      "detail": [],
+      "axis": "incoming neighbors per destination/head",
+      "opaque_library": true,
+      "parent": "graph_attention.score",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "neighbors"
+      ]
+    },
+    {
+      "id": "graph_attention.score.drop",
+      "label": "Attention Dropout .2",
+      "kind": "dropout",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward"
+      ],
+      "shape": "[E,2,1]",
+      "detail": [],
+      "p": 0.2,
+      "parent": "graph_attention.score",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "graph_attention.message",
+      "label": "Weighted source messages / SUM",
+      "kind": "mixing",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward"
+      ],
+      "shape": "[N,2,4]",
+      "detail": [],
+      "expression": "graph.update_all(fn.u_mul_e(\"ft\", \"a\", \"m\"), fn.sum(\"m\", \"ft\"))",
+      "reduction": "sum",
+      "opaque_dgl_kernel": true,
+      "parent": "graph_attention.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "a",
+        "ft",
+        "neighbors"
+      ]
+    },
+    {
+      "id": "graph_attention.biasadd",
+      "label": "Broadcast bias / RETAIN heads",
+      "kind": "add",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward"
+      ],
+      "shape": "[N,2,4]",
+      "detail": [],
+      "has_explicit_bias": true,
+      "parent": "graph_attention.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "features",
+        "bias"
+      ]
+    },
+    {
+      "id": "graph_attention.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "dgl-graph-modules/python/dgl/nn/pytorch/conv/gatconv.py::GATConv.forward"
+      ],
+      "shape": "[N,2,4]",
+      "detail": [],
+      "parent": "graph_attention.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "graph_attention.projection:in->graph_attention.projection.drop:in:boundary",
+      "src": "graph_attention.projection",
+      "dst": "graph_attention.projection.drop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "graph_attention.projection.drop:out->graph_attention.projection.linear:in:tensor",
+      "src": "graph_attention.projection.drop",
+      "dst": "graph_attention.projection.linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graph_attention.projection.linear:out->graph_attention.projection.heads:in:tensor",
+      "src": "graph_attention.projection.linear",
+      "dst": "graph_attention.projection.heads",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graph_attention.projection.heads:out->graph_attention.projection:out:boundary",
+      "src": "graph_attention.projection.heads",
+      "dst": "graph_attention.projection",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "graph_attention.score.add:out->graph_attention.score.leaky:in:tensor",
+      "src": "graph_attention.score.add",
+      "dst": "graph_attention.score.leaky",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graph_attention.score.leaky:out->graph_attention.score.softmax:in:tensor",
+      "src": "graph_attention.score.leaky",
+      "dst": "graph_attention.score.softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graph_attention.score.softmax:out->graph_attention.score.drop:in:tensor",
+      "src": "graph_attention.score.softmax",
+      "dst": "graph_attention.score.drop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graph_attention.score.drop:out->graph_attention.score:out:boundary",
+      "src": "graph_attention.score.drop",
+      "dst": "graph_attention.score",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "graph_attention.x:out->graph_attention.projection.drop:in:tensor",
+      "src": "graph_attention.x",
+      "dst": "graph_attention.projection.drop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "graph_attention.projection.heads:out->graph_attention.left:features:tensor",
+      "src": "graph_attention.projection.heads",
+      "dst": "graph_attention.left",
+      "src_port": "out",
+      "dst_port": "features",
+      "role": "tensor"
+    },
+    {
+      "id": "graph_attention.projection.heads:out->graph_attention.right:features:tensor",
+      "src": "graph_attention.projection.heads",
+      "dst": "graph_attention.right",
+      "src_port": "out",
+      "dst_port": "features",
+      "role": "tensor"
+    },
+    {
+      "id": "graph_attention.attention:a_l->graph_attention.left:a_l:parameter_operand",
+      "src": "graph_attention.attention",
+      "dst": "graph_attention.left",
+      "src_port": "a_l",
+      "dst_port": "a_l",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "graph_attention.attention:a_r->graph_attention.right:a_r:parameter_operand",
+      "src": "graph_attention.attention",
+      "dst": "graph_attention.right",
+      "src_port": "a_r",
+      "dst_port": "a_r",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "graph_attention.left:out->graph_attention.score.add:e_l:tensor",
+      "src": "graph_attention.left",
+      "dst": "graph_attention.score.add",
+      "src_port": "out",
+      "dst_port": "e_l",
+      "role": "tensor"
+    },
+    {
+      "id": "graph_attention.right:out->graph_attention.score.add:e_r:tensor",
+      "src": "graph_attention.right",
+      "dst": "graph_attention.score.add",
+      "src_port": "out",
+      "dst_port": "e_r",
+      "role": "tensor"
+    },
+    {
+      "id": "graph_attention.g:out->graph_attention.score.add:edge_pairs:topology",
+      "src": "graph_attention.g",
+      "dst": "graph_attention.score.add",
+      "src_port": "out",
+      "dst_port": "edge_pairs",
+      "role": "topology"
+    },
+    {
+      "id": "graph_attention.g:out->graph_attention.score.softmax:neighbors:topology",
+      "src": "graph_attention.g",
+      "dst": "graph_attention.score.softmax",
+      "src_port": "out",
+      "dst_port": "neighbors",
+      "role": "topology"
+    },
+    {
+      "id": "graph_attention.score.drop:out->graph_attention.message:a:tensor",
+      "src": "graph_attention.score.drop",
+      "dst": "graph_attention.message",
+      "src_port": "out",
+      "dst_port": "a",
+      "role": "tensor"
+    },
+    {
+      "id": "graph_attention.projection.heads:out->graph_attention.message:ft:retained_value",
+      "src": "graph_attention.projection.heads",
+      "dst": "graph_attention.message",
+      "src_port": "out",
+      "dst_port": "ft",
+      "role": "retained_value"
+    },
+    {
+      "id": "graph_attention.g:out->graph_attention.message:neighbors:topology",
+      "src": "graph_attention.g",
+      "dst": "graph_attention.message",
+      "src_port": "out",
+      "dst_port": "neighbors",
+      "role": "topology"
+    },
+    {
+      "id": "graph_attention.message:out->graph_attention.biasadd:features:tensor",
+      "src": "graph_attention.message",
+      "dst": "graph_attention.biasadd",
+      "src_port": "out",
+      "dst_port": "features",
+      "role": "tensor"
+    },
+    {
+      "id": "graph_attention.bias:out->graph_attention.biasadd:bias:parameter_operand",
+      "src": "graph_attention.bias",
+      "dst": "graph_attention.biasadd",
+      "src_port": "out",
+      "dst_port": "bias",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "graph_attention.biasadd:out->graph_attention.output:in:tensor",
+      "src": "graph_attention.biasadd",
+      "dst": "graph_attention.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Homogeneous forward shares a single dropped feature tensor and single fc projection for source/destination nodes. Two attention vectors attn_l/attn_r remain independent owned Parameters.",
+    "Implementation computes source and destination scalar contributions separately and ADDS them on edges before LeakyReLU; it does not materialize a concatenation or compute Transformer QK dot products.",
+    "edge_softmax normalizes incoming neighbors for each destination/head, then attention Dropout and weighted-message sum follow. DGL graph kernels remain opaque boundaries.",
+    "Selected residualFalse yields explicit bias[heads*out_feats]; no final activation, edge-weight multiplier, head mean/concat or attention tuple is introduced. Output retains [N,2,4].",
+    "allow_zero_in_degree=True suppresses the source check; this module does not add self loops automatically.",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not draw a dense N*N attention matrix, reuse one vector for both endpoint contributions, or reduce the retained head axis."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

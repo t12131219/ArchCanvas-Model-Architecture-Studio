@@ -1,0 +1,147 @@
+{
+  "source_project": "densenet.pytorch",
+  "repository": "bamos/densenet.pytorch",
+  "commit": "d1cd5e1957975628286e516512c6d1c14430f810",
+  "source_snapshot_sha256": "df3345f28708eb43c5c2725e28c0adae05ec41c6171ae0a9f4183e899bdc5e6b",
+  "entry": "densenet.pytorch/densenet.py::DenseNet",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "densenet.pytorch/LICENSE": {
+      "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+      "lines": 202,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/bamos/densenet.pytorch/d1cd5e1957975628286e516512c6d1c14430f810/LICENSE",
+      "derived_from": null
+    },
+    "densenet.pytorch/densenet.py": {
+      "sha256": "a70287a82e6841a0fedc18abba04be8172249549d09eec494c3b3cc50edd0787",
+      "lines": 116,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/bamos/densenet.pytorch/d1cd5e1957975628286e516512c6d1c14430f810/densenet.py",
+      "derived_from": null
+    },
+    "densenet.pytorch/train.py": {
+      "sha256": "5a88158cab83dd5dfdcaaea9cec45f327a87fa8df96b2289a4c95b2c89cfbff5",
+      "lines": 166,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/bamos/densenet.pytorch/d1cd5e1957975628286e516512c6d1c14430f810/train.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "densenet.pytorch/densenet.py::Bottleneck": {
+      "path": "densenet.pytorch/densenet.py",
+      "symbol": "Bottleneck",
+      "start": 18,
+      "end": 33,
+      "snippet": "class Bottleneck(nn.Module):\n    def __init__(self, nChannels, growthRate):\n        super(Bottleneck, self).__init__()\n        interChannels = 4*growthRate\n        self.bn1 = nn.BatchNorm2d(nChannels)\n        self.conv1 = nn.Conv2d(nChannels, interChannels, kernel_size=1,\n                               bias=False)\n        self.bn2 = nn.BatchNorm2d(interChannels)\n        self.conv2 = nn.Conv2d(interChannels, growthRate, kernel_size=3,\n                               padding=1, bias=False)\n\n    def forward(self, x):\n        out = self.conv1(F.relu(self.bn1(x)))\n        out = self.conv2(F.relu(self.bn2(out)))\n        out = torch.cat((x, out), 1)\n        return out",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "densenet.pytorch/densenet.py::Bottleneck.__init__": {
+      "path": "densenet.pytorch/densenet.py",
+      "symbol": "Bottleneck.__init__",
+      "start": 19,
+      "end": 27,
+      "snippet": "    def __init__(self, nChannels, growthRate):\n        super(Bottleneck, self).__init__()\n        interChannels = 4*growthRate\n        self.bn1 = nn.BatchNorm2d(nChannels)\n        self.conv1 = nn.Conv2d(nChannels, interChannels, kernel_size=1,\n                               bias=False)\n        self.bn2 = nn.BatchNorm2d(interChannels)\n        self.conv2 = nn.Conv2d(interChannels, growthRate, kernel_size=3,\n                               padding=1, bias=False)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "densenet.pytorch/densenet.py::Bottleneck.forward": {
+      "path": "densenet.pytorch/densenet.py",
+      "symbol": "Bottleneck.forward",
+      "start": 29,
+      "end": 33,
+      "snippet": "    def forward(self, x):\n        out = self.conv1(F.relu(self.bn1(x)))\n        out = self.conv2(F.relu(self.bn2(out)))\n        out = torch.cat((x, out), 1)\n        return out",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "densenet.pytorch/densenet.py::Transition": {
+      "path": "densenet.pytorch/densenet.py",
+      "symbol": "Transition",
+      "start": 47,
+      "end": 57,
+      "snippet": "class Transition(nn.Module):\n    def __init__(self, nChannels, nOutChannels):\n        super(Transition, self).__init__()\n        self.bn1 = nn.BatchNorm2d(nChannels)\n        self.conv1 = nn.Conv2d(nChannels, nOutChannels, kernel_size=1,\n                               bias=False)\n\n    def forward(self, x):\n        out = self.conv1(F.relu(self.bn1(x)))\n        out = F.avg_pool2d(out, 2)\n        return out",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E008"
+    },
+    "densenet.pytorch/densenet.py::Transition.__init__": {
+      "path": "densenet.pytorch/densenet.py",
+      "symbol": "Transition.__init__",
+      "start": 48,
+      "end": 52,
+      "snippet": "    def __init__(self, nChannels, nOutChannels):\n        super(Transition, self).__init__()\n        self.bn1 = nn.BatchNorm2d(nChannels)\n        self.conv1 = nn.Conv2d(nChannels, nOutChannels, kernel_size=1,\n                               bias=False)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E009"
+    },
+    "densenet.pytorch/densenet.py::Transition.forward": {
+      "path": "densenet.pytorch/densenet.py",
+      "symbol": "Transition.forward",
+      "start": 54,
+      "end": 57,
+      "snippet": "    def forward(self, x):\n        out = self.conv1(F.relu(self.bn1(x)))\n        out = F.avg_pool2d(out, 2)\n        return out",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E010"
+    },
+    "densenet.pytorch/densenet.py::DenseNet": {
+      "path": "densenet.pytorch/densenet.py",
+      "symbol": "DenseNet",
+      "start": 60,
+      "end": 116,
+      "snippet": "class DenseNet(nn.Module):\n    def __init__(self, growthRate, depth, reduction, nClasses, bottleneck):\n        super(DenseNet, self).__init__()\n\n        nDenseBlocks = (depth-4) // 3\n        if bottleneck:\n            nDenseBlocks //= 2\n\n        nChannels = 2*growthRate\n        self.conv1 = nn.Conv2d(3, nChannels, kernel_size=3, padding=1,\n                               bias=False)\n        self.dense1 = self._make_dense(nChannels, growthRate, nDenseBlocks, bottleneck)\n        nChannels += nDenseBlocks*growthRate\n        nOutChannels = int(math.floor(nChannels*reduction))\n        self.trans1 = Transition(nChannels, nOutChannels)\n\n        nChannels = nOutChannels\n        self.dense2 = self._make_dense(nChannels, growthRate, nDenseBlocks, bottleneck)\n        nChannels += nDenseBlocks*growthRate\n        nOutChannels = int(math.floor(nChannels*reduction))\n        self.trans2 = Transition(nChannels, nOutChannels)\n\n        nChannels = nOutChannels\n        self.dense3 = self._make_dense(nChannels, growthRate, nDenseBlocks, bottleneck)\n        nChannels += nDenseBlocks*growthRate\n\n        self.bn1 = nn.BatchNorm2d(nChannels)\n        self.fc = nn.Linear(nChannels, nClasses)\n\n        for m in self.modules():\n            if isinstance(m, nn.Conv2d):\n                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels\n                m.weight.data.normal_(0, math.sqrt(2. / n))\n            elif isinstance(m, nn.BatchNorm2d):\n                m.weight.data.fill_(1)\n                m.bias.data.zero_()\n            elif isinstance(m, nn.Linear):\n                m.bias.data.zero_()\n\n    def _make_dense(self, nChannels, growthRate, nDenseBlocks, bottleneck):\n        layers = []\n        for i in range(int(nDenseBlocks)):\n            if bottleneck:\n                layers.append(Bottleneck(nChannels, growthRate))\n            else:\n                layers.append(SingleLayer(nChannels, growthRate))\n            nChannels += growthRate\n        return nn.Sequential(*layers)\n\n    def forward(self, x):\n        out = self.conv1(x)\n        out = self.trans1(self.dense1(out))\n        out = self.trans2(self.dense2(out))\n        out = self.dense3(out)\n        out = torch.squeeze(F.avg_pool2d(F.relu(self.bn1(out)), 8))\n        out = F.log_softmax(self.fc(out))\n        return out",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "densenet.pytorch/densenet.py::DenseNet.__init__": {
+      "path": "densenet.pytorch/densenet.py",
+      "symbol": "DenseNet.__init__",
+      "start": 61,
+      "end": 97,
+      "snippet": "    def __init__(self, growthRate, depth, reduction, nClasses, bottleneck):\n        super(DenseNet, self).__init__()\n\n        nDenseBlocks = (depth-4) // 3\n        if bottleneck:\n            nDenseBlocks //= 2\n\n        nChannels = 2*growthRate\n        self.conv1 = nn.Conv2d(3, nChannels, kernel_size=3, padding=1,\n                               bias=False)\n        self.dense1 = self._make_dense(nChannels, growthRate, nDenseBlocks, bottleneck)\n        nChannels += nDenseBlocks*growthRate\n        nOutChannels = int(math.floor(nChannels*reduction))\n        self.trans1 = Transition(nChannels, nOutChannels)\n\n        nChannels = nOutChannels\n        self.dense2 = self._make_dense(nChannels, growthRate, nDenseBlocks, bottleneck)\n        nChannels += nDenseBlocks*growthRate\n        nOutChannels = int(math.floor(nChannels*reduction))\n        self.trans2 = Transition(nChannels, nOutChannels)\n\n        nChannels = nOutChannels\n        self.dense3 = self._make_dense(nChannels, growthRate, nDenseBlocks, bottleneck)\n        nChannels += nDenseBlocks*growthRate\n\n        self.bn1 = nn.BatchNorm2d(nChannels)\n        self.fc = nn.Linear(nChannels, nClasses)\n\n        for m in self.modules():\n            if isinstance(m, nn.Conv2d):\n                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels\n                m.weight.data.normal_(0, math.sqrt(2. / n))\n            elif isinstance(m, nn.BatchNorm2d):\n                m.weight.data.fill_(1)\n                m.bias.data.zero_()\n            elif isinstance(m, nn.Linear):\n                m.bias.data.zero_()",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E005"
+    },
+    "densenet.pytorch/densenet.py::DenseNet._make_dense": {
+      "path": "densenet.pytorch/densenet.py",
+      "symbol": "DenseNet._make_dense",
+      "start": 99,
+      "end": 107,
+      "snippet": "    def _make_dense(self, nChannels, growthRate, nDenseBlocks, bottleneck):\n        layers = []\n        for i in range(int(nDenseBlocks)):\n            if bottleneck:\n                layers.append(Bottleneck(nChannels, growthRate))\n            else:\n                layers.append(SingleLayer(nChannels, growthRate))\n            nChannels += growthRate\n        return nn.Sequential(*layers)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E006"
+    },
+    "densenet.pytorch/densenet.py::DenseNet.forward": {
+      "path": "densenet.pytorch/densenet.py",
+      "symbol": "DenseNet.forward",
+      "start": 109,
+      "end": 116,
+      "snippet": "    def forward(self, x):\n        out = self.conv1(x)\n        out = self.trans1(self.dense1(out))\n        out = self.trans2(self.dense2(out))\n        out = self.dense3(out)\n        out = torch.squeeze(F.avg_pool2d(F.relu(self.bn1(out)), 8))\n        out = F.log_softmax(self.fc(out))\n        return out",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E007"
+    },
+    "densenet.pytorch/train.py::main": {
+      "path": "densenet.pytorch/train.py",
+      "symbol": "main",
+      "start": 29,
+      "end": 104,
+      "snippet": "def main():\n    parser = argparse.ArgumentParser()\n    parser.add_argument('--batchSz', type=int, default=64)\n    parser.add_argument('--nEpochs', type=int, default=300)\n    parser.add_argument('--no-cuda', action='store_true')\n    parser.add_argument('--save')\n    parser.add_argument('--seed', type=int, default=1)\n    parser.add_argument('--opt', type=str, default='sgd',\n                        choices=('sgd', 'adam', 'rmsprop'))\n    args = parser.parse_args()\n\n    args.cuda = not args.no_cuda and torch.cuda.is_available()\n    args.save = args.save or 'work/densenet.base'\n    setproctitle.setproctitle(args.save)\n\n    torch.manual_seed(args.seed)\n    if args.cuda:\n        torch.cuda.manual_seed(args.seed)\n\n    if os.path.exists(args.save):\n        shutil.rmtree(args.save)\n    os.makedirs(args.save, exist_ok=True)\n\n    normMean = [0.49139968, 0.48215827, 0.44653124]\n    normStd = [0.24703233, 0.24348505, 0.26158768]\n    normTransform = transforms.Normalize(normMean, normStd)\n\n    trainTransform = transforms.Compose([\n        transforms.RandomCrop(32, padding=4),\n        transforms.RandomHorizontalFlip(),\n        transforms.ToTensor(),\n        normTransform\n    ])\n    testTransform = transforms.Compose([\n        transforms.ToTensor(),\n        normTransform\n    ])\n\n    kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}\n    trainLoader = DataLoader(\n        dset.CIFAR10(root='cifar', train=True, download=True,\n                     transform=trainTransform),\n        batch_size=args.batchSz, shuffle=True, **kwargs)\n    testLoader = DataLoader(\n        dset.CIFAR10(root='cifar', train=False, download=True,\n                     transform=testTransform),\n        batch_size=args.batchSz, shuffle=False, **kwargs)\n\n    net = densenet.DenseNet(growthRate=12, depth=100, reduction=0.5,\n                            bottleneck=True, nClasses=10)\n\n    print('  + Number of params: {}'.format(\n        sum([p.data.nelement() for p in net.parameters()])))\n    if args.cuda:\n        net = net.cuda()\n\n    if args.opt == 'sgd':\n        optimizer = optim.SGD(net.parameters(), lr=1e-1,\n                            momentum=0.9, weight_decay=1e-4)\n    elif args.opt == 'adam':\n        optimizer = optim.Adam(net.parameters(), weight_decay=1e-4)\n    elif args.opt == 'rmsprop':\n        optimizer = optim.RMSprop(net.parameters(), weight_decay=1e-4)\n\n    trainF = open(os.path.join(args.save, 'train.csv'), 'w')\n    testF = open(os.path.join(args.save, 'test.csv'), 'w')\n\n    for epoch in range(1, args.nEpochs + 1):\n        adjust_opt(args.opt, optimizer, epoch)\n        train(args, epoch, net, trainLoader, optimizer, trainF)\n        test(args, epoch, net, testLoader, optimizer, testF)\n        torch.save(net, os.path.join(args.save, 'latest.pth'))\n        os.system('./plot.py {} &'.format(args.save))\n\n    trainF.close()\n    testF.close()",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E011"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "densenet.pytorch/LICENSE"
+  ]
+}

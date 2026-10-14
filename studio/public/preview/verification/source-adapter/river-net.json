@@ -1,0 +1,692 @@
+{
+  "schema": "summary-source-adapter/1",
+  "id": "source-731880fa7146bc6c",
+  "title": "RiverNet",
+  "entry": "novel_model:RiverNet",
+  "files": [
+    {
+      "path": "novel_model.py",
+      "sha256": "1b6bd4adb4703ac1b89883c2b630847459fee5fedf9d393625cb57920d3514d1",
+      "text": "\"\"\"An unfamiliar name, a local composition, a shared layer and residual arithmetic.\"\"\"\nimport torch\nfrom torch import nn\n\n\nclass LanternUnit(nn.Module):\n    def __init__(self, width=16):\n        super().__init__()\n        self.value = nn.Linear(width, width)\n        self.gate = nn.Sequential(nn.Linear(width, width), nn.Sigmoid())\n\n    def forward(self, x):\n        value = self.value(x)\n        gate = self.gate(x)\n        return x + value * gate\n\n\nclass RiverNet(nn.Module):\n    def __init__(self, width=16):\n        super().__init__()\n        self.block = LanternUnit(width)\n        self.shared = nn.Linear(width, width)\n        self.readout = self.shared\n        self.norm = nn.LayerNorm(width)\n\n    def forward(self, features):\n        hidden = self.block(features)\n        left = self.shared(hidden)\n        right = self.readout(features)\n        return self.norm(left + right)\n"
+    }
+  ],
+  "sourceSha256": "2d870840b7de96346149c78c6534557f77562395e0ec0b3b29741d1c66a67247",
+  "ir": {
+    "schema": "summary-source-ir/1",
+    "entry": "novel_model:RiverNet",
+    "nodes": [
+      {
+        "id": "model/group-18-0-1",
+        "parent": null,
+        "kind": "group",
+        "label": "RiverNet",
+        "source_evidence": [
+          "e-490987e0be6e46a7"
+        ],
+        "expression": "class RiverNet(nn.Module):\n\n    def __init__(self, width=16):\n        super().__init__()\n        self.block = LanternUnit(width)\n        self.shared = nn.Linear(width, width)\n        self.readout = self.shared\n        self.norm = nn.LayerNorm(width)\n\n    def forward(self, features):\n        hidden = self.block(features)\n        left = self.shared(hidden)\n        right = self.readout(features)\n        return self.norm(left + right)",
+        "instance": "novel_model:RiverNet",
+        "certainty": "static",
+        "constructor": "novel_model:RiverNet",
+        "moduleType": "RiverNet",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-18-0-1/input-26-22-2",
+        "parent": "model/group-18-0-1",
+        "kind": "input",
+        "label": "features",
+        "source_evidence": [
+          "e-44be4f856f748f20"
+        ],
+        "expression": "features"
+      },
+      {
+        "id": "model/group-18-0-1/group-27-17-3",
+        "parent": "model/group-18-0-1",
+        "kind": "group",
+        "label": "LanternUnit",
+        "source_evidence": [
+          "e-1b75c7757beb06ab"
+        ],
+        "expression": "self.block(features)",
+        "instance": "novel_model:RiverNet.block",
+        "certainty": "static",
+        "constructor": "LanternUnit(width)",
+        "moduleType": "LanternUnit",
+        "constructorArgs": [
+          16
+        ],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-18-0-1/group-27-17-3/input-12-22-4",
+        "parent": "model/group-18-0-1/group-27-17-3",
+        "kind": "input",
+        "label": "x",
+        "source_evidence": [
+          "e-8ade08b48a1eb1cc"
+        ],
+        "expression": "x"
+      },
+      {
+        "id": "model/group-18-0-1/group-27-17-3/linear-13-16-5",
+        "parent": "model/group-18-0-1/group-27-17-3",
+        "kind": "linear",
+        "label": "Linear",
+        "source_evidence": [
+          "e-477e6950b9bfeb1d"
+        ],
+        "expression": "self.value(x)",
+        "instance": "novel_model:RiverNet.block.value",
+        "certainty": "static",
+        "constructor": "nn.Linear(width, width)",
+        "moduleType": "Linear",
+        "constructorArgs": [
+          16,
+          16
+        ],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-18-0-1/group-27-17-3/group-14-15-6",
+        "parent": "model/group-18-0-1/group-27-17-3",
+        "kind": "group",
+        "label": "Sequential",
+        "source_evidence": [
+          "e-c7765efd16c35321"
+        ],
+        "expression": "self.gate(x)",
+        "instance": "novel_model:RiverNet.block.gate",
+        "certainty": "static",
+        "constructor": "nn.Sequential(nn.Linear(width, width), nn.Sigmoid())",
+        "moduleType": "Sequential",
+        "constructorArgs": [
+          {
+            "unresolved": "nn.Linear(width, width)"
+          },
+          {
+            "unresolved": "nn.Sigmoid()"
+          }
+        ],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-18-0-1/group-27-17-3/group-14-15-6/input-14-15-7",
+        "parent": "model/group-18-0-1/group-27-17-3/group-14-15-6",
+        "kind": "input",
+        "label": "Sequential input",
+        "source_evidence": [
+          "e-c7765efd16c35321"
+        ],
+        "expression": "self.gate(x)"
+      },
+      {
+        "id": "model/group-18-0-1/group-27-17-3/group-14-15-6/linear-14-15-8",
+        "parent": "model/group-18-0-1/group-27-17-3/group-14-15-6",
+        "kind": "linear",
+        "label": "Linear",
+        "source_evidence": [
+          "e-c7765efd16c35321"
+        ],
+        "expression": "self.gate(x)",
+        "instance": "novel_model:RiverNet.block.gate.0",
+        "certainty": "static",
+        "constructor": "nn.Linear(width, width)",
+        "moduleType": "Linear",
+        "constructorArgs": [
+          16,
+          16
+        ],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-18-0-1/group-27-17-3/group-14-15-6/activation-14-15-9",
+        "parent": "model/group-18-0-1/group-27-17-3/group-14-15-6",
+        "kind": "activation",
+        "label": "Sigmoid",
+        "source_evidence": [
+          "e-c7765efd16c35321"
+        ],
+        "expression": "self.gate(x)",
+        "instance": "novel_model:RiverNet.block.gate.1",
+        "certainty": "static",
+        "constructor": "nn.Sigmoid()",
+        "moduleType": "Sigmoid",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-18-0-1/group-27-17-3/group-14-15-6/output-14-15-10",
+        "parent": "model/group-18-0-1/group-27-17-3/group-14-15-6",
+        "kind": "output",
+        "label": "Sequential output",
+        "source_evidence": [
+          "e-c7765efd16c35321"
+        ],
+        "expression": "self.gate(x)"
+      },
+      {
+        "id": "model/group-18-0-1/group-27-17-3/multiply-15-19-11",
+        "parent": "model/group-18-0-1/group-27-17-3",
+        "kind": "multiply",
+        "label": "value * gate",
+        "source_evidence": [
+          "e-7861018eeefcf845"
+        ],
+        "expression": "value * gate",
+        "certainty": "syntax"
+      },
+      {
+        "id": "model/group-18-0-1/group-27-17-3/add-15-15-12",
+        "parent": "model/group-18-0-1/group-27-17-3",
+        "kind": "add",
+        "label": "x + value * gate",
+        "source_evidence": [
+          "e-23c1ff29ca69da1c"
+        ],
+        "expression": "x + value * gate",
+        "certainty": "syntax"
+      },
+      {
+        "id": "model/group-18-0-1/group-27-17-3/output-15-8-13",
+        "parent": "model/group-18-0-1/group-27-17-3",
+        "kind": "output",
+        "label": "return",
+        "source_evidence": [
+          "e-e21eab0ecfaccb48"
+        ],
+        "expression": "return x + value * gate"
+      },
+      {
+        "id": "model/group-18-0-1/linear-28-15-14",
+        "parent": "model/group-18-0-1",
+        "kind": "linear",
+        "label": "Linear",
+        "source_evidence": [
+          "e-d20363c6e8f603e8"
+        ],
+        "expression": "self.shared(hidden)",
+        "instance": "novel_model:RiverNet.shared",
+        "certainty": "static",
+        "constructor": "nn.Linear(width, width)",
+        "moduleType": "Linear",
+        "constructorArgs": [
+          16,
+          16
+        ],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-18-0-1/linear-29-16-15",
+        "parent": "model/group-18-0-1",
+        "kind": "linear",
+        "label": "Linear",
+        "source_evidence": [
+          "e-6354086ed762d205"
+        ],
+        "expression": "self.readout(features)",
+        "instance": "novel_model:RiverNet.shared",
+        "certainty": "static",
+        "constructor": "nn.Linear(width, width)",
+        "moduleType": "Linear",
+        "constructorArgs": [
+          16,
+          16
+        ],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-18-0-1/add-30-25-16",
+        "parent": "model/group-18-0-1",
+        "kind": "add",
+        "label": "left + right",
+        "source_evidence": [
+          "e-a7c2a7a6738425fc"
+        ],
+        "expression": "left + right",
+        "certainty": "syntax"
+      },
+      {
+        "id": "model/group-18-0-1/normalization-30-15-17",
+        "parent": "model/group-18-0-1",
+        "kind": "normalization",
+        "label": "LayerNorm",
+        "source_evidence": [
+          "e-d7bc53dfe9ca19e2"
+        ],
+        "expression": "self.norm(left + right)",
+        "instance": "novel_model:RiverNet.norm",
+        "certainty": "static",
+        "constructor": "nn.LayerNorm(width)",
+        "moduleType": "LayerNorm",
+        "constructorArgs": [
+          16
+        ],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-18-0-1/output-30-8-18",
+        "parent": "model/group-18-0-1",
+        "kind": "output",
+        "label": "return",
+        "source_evidence": [
+          "e-c277b672e927c5d7"
+        ],
+        "expression": "return self.norm(left + right)"
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-1",
+        "source": "model/group-18-0-1/input-26-22-2",
+        "target": "model/group-18-0-1/group-27-17-3/input-12-22-4",
+        "sourcePort": "out",
+        "targetPort": "in",
+        "wire": "model/group-18-0-1/input-26-22-2:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-1b75c7757beb06ab"
+        ]
+      },
+      {
+        "id": "edge-2",
+        "source": "model/group-18-0-1/group-27-17-3/input-12-22-4",
+        "target": "model/group-18-0-1/group-27-17-3/linear-13-16-5",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-18-0-1/group-27-17-3/input-12-22-4:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-477e6950b9bfeb1d"
+        ]
+      },
+      {
+        "id": "edge-3",
+        "source": "model/group-18-0-1/group-27-17-3/input-12-22-4",
+        "target": "model/group-18-0-1/group-27-17-3/group-14-15-6/input-14-15-7",
+        "sourcePort": "out",
+        "targetPort": "in",
+        "wire": "model/group-18-0-1/group-27-17-3/input-12-22-4:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-c7765efd16c35321"
+        ]
+      },
+      {
+        "id": "edge-4",
+        "source": "model/group-18-0-1/group-27-17-3/group-14-15-6/input-14-15-7",
+        "target": "model/group-18-0-1/group-27-17-3/group-14-15-6/linear-14-15-8",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-18-0-1/group-27-17-3/group-14-15-6/input-14-15-7:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-c7765efd16c35321"
+        ]
+      },
+      {
+        "id": "edge-5",
+        "source": "model/group-18-0-1/group-27-17-3/group-14-15-6/linear-14-15-8",
+        "target": "model/group-18-0-1/group-27-17-3/group-14-15-6/activation-14-15-9",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-18-0-1/group-27-17-3/group-14-15-6/linear-14-15-8:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-c7765efd16c35321"
+        ]
+      },
+      {
+        "id": "edge-6",
+        "source": "model/group-18-0-1/group-27-17-3/group-14-15-6/activation-14-15-9",
+        "target": "model/group-18-0-1/group-27-17-3/group-14-15-6/output-14-15-10",
+        "sourcePort": "out",
+        "targetPort": "value",
+        "wire": "model/group-18-0-1/group-27-17-3/group-14-15-6/activation-14-15-9:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-c7765efd16c35321"
+        ]
+      },
+      {
+        "id": "edge-7",
+        "source": "model/group-18-0-1/group-27-17-3/linear-13-16-5",
+        "target": "model/group-18-0-1/group-27-17-3/multiply-15-19-11",
+        "sourcePort": "out",
+        "targetPort": "lhs",
+        "wire": "model/group-18-0-1/group-27-17-3/linear-13-16-5:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-7861018eeefcf845"
+        ]
+      },
+      {
+        "id": "edge-8",
+        "source": "model/group-18-0-1/group-27-17-3/group-14-15-6/output-14-15-10",
+        "target": "model/group-18-0-1/group-27-17-3/multiply-15-19-11",
+        "sourcePort": "out",
+        "targetPort": "rhs",
+        "wire": "model/group-18-0-1/group-27-17-3/group-14-15-6/output-14-15-10:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-7861018eeefcf845"
+        ]
+      },
+      {
+        "id": "edge-9",
+        "source": "model/group-18-0-1/group-27-17-3/input-12-22-4",
+        "target": "model/group-18-0-1/group-27-17-3/add-15-15-12",
+        "sourcePort": "out",
+        "targetPort": "lhs",
+        "wire": "model/group-18-0-1/group-27-17-3/input-12-22-4:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-23c1ff29ca69da1c"
+        ]
+      },
+      {
+        "id": "edge-10",
+        "source": "model/group-18-0-1/group-27-17-3/multiply-15-19-11",
+        "target": "model/group-18-0-1/group-27-17-3/add-15-15-12",
+        "sourcePort": "out",
+        "targetPort": "rhs",
+        "wire": "model/group-18-0-1/group-27-17-3/multiply-15-19-11:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-23c1ff29ca69da1c"
+        ]
+      },
+      {
+        "id": "edge-11",
+        "source": "model/group-18-0-1/group-27-17-3/add-15-15-12",
+        "target": "model/group-18-0-1/group-27-17-3/output-15-8-13",
+        "sourcePort": "out",
+        "targetPort": "value",
+        "wire": "model/group-18-0-1/group-27-17-3/add-15-15-12:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-e21eab0ecfaccb48"
+        ]
+      },
+      {
+        "id": "edge-12",
+        "source": "model/group-18-0-1/group-27-17-3/output-15-8-13",
+        "target": "model/group-18-0-1/linear-28-15-14",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-18-0-1/group-27-17-3/output-15-8-13:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-d20363c6e8f603e8"
+        ]
+      },
+      {
+        "id": "edge-13",
+        "source": "model/group-18-0-1/input-26-22-2",
+        "target": "model/group-18-0-1/linear-29-16-15",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-18-0-1/input-26-22-2:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-6354086ed762d205"
+        ]
+      },
+      {
+        "id": "edge-14",
+        "source": "model/group-18-0-1/linear-28-15-14",
+        "target": "model/group-18-0-1/add-30-25-16",
+        "sourcePort": "out",
+        "targetPort": "lhs",
+        "wire": "model/group-18-0-1/linear-28-15-14:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-a7c2a7a6738425fc"
+        ]
+      },
+      {
+        "id": "edge-15",
+        "source": "model/group-18-0-1/linear-29-16-15",
+        "target": "model/group-18-0-1/add-30-25-16",
+        "sourcePort": "out",
+        "targetPort": "rhs",
+        "wire": "model/group-18-0-1/linear-29-16-15:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-a7c2a7a6738425fc"
+        ]
+      },
+      {
+        "id": "edge-16",
+        "source": "model/group-18-0-1/add-30-25-16",
+        "target": "model/group-18-0-1/normalization-30-15-17",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-18-0-1/add-30-25-16:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-d7bc53dfe9ca19e2"
+        ]
+      },
+      {
+        "id": "edge-17",
+        "source": "model/group-18-0-1/normalization-30-15-17",
+        "target": "model/group-18-0-1/output-30-8-18",
+        "sourcePort": "out",
+        "targetPort": "value",
+        "wire": "model/group-18-0-1/normalization-30-15-17:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-c277b672e927c5d7"
+        ]
+      }
+    ],
+    "instances": {
+      "novel_model:RiverNet": [
+        "model/group-18-0-1"
+      ],
+      "novel_model:RiverNet.block": [
+        "model/group-18-0-1/group-27-17-3"
+      ],
+      "novel_model:RiverNet.block.value": [
+        "model/group-18-0-1/group-27-17-3/linear-13-16-5"
+      ],
+      "novel_model:RiverNet.block.gate": [
+        "model/group-18-0-1/group-27-17-3/group-14-15-6"
+      ],
+      "novel_model:RiverNet.block.gate.0": [
+        "model/group-18-0-1/group-27-17-3/group-14-15-6/linear-14-15-8"
+      ],
+      "novel_model:RiverNet.block.gate.1": [
+        "model/group-18-0-1/group-27-17-3/group-14-15-6/activation-14-15-9"
+      ],
+      "novel_model:RiverNet.shared": [
+        "model/group-18-0-1/linear-28-15-14",
+        "model/group-18-0-1/linear-29-16-15"
+      ],
+      "novel_model:RiverNet.norm": [
+        "model/group-18-0-1/normalization-30-15-17"
+      ]
+    },
+    "analysis": "static-source-dependencies",
+    "modelExecuted": false,
+    "shapePolicy": "No tensor dimensions or execution path inferred",
+    "registrySha256": "9c153d45ae26c27b1f5da8becde63af92eb51883b8e8ad1b00860151802f7e5f"
+  },
+  "canonicalIR": "{\"analysis\":\"static-source-dependencies\",\"edges\":[{\"id\":\"edge-1\",\"role\":\"source_dependency\",\"source\":\"model/group-18-0-1/input-26-22-2\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-1b75c7757beb06ab\"],\"target\":\"model/group-18-0-1/group-27-17-3/input-12-22-4\",\"targetPort\":\"in\",\"wire\":\"model/group-18-0-1/input-26-22-2:out\"},{\"id\":\"edge-2\",\"role\":\"source_dependency\",\"source\":\"model/group-18-0-1/group-27-17-3/input-12-22-4\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-477e6950b9bfeb1d\"],\"target\":\"model/group-18-0-1/group-27-17-3/linear-13-16-5\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-18-0-1/group-27-17-3/input-12-22-4:out\"},{\"id\":\"edge-3\",\"role\":\"source_dependency\",\"source\":\"model/group-18-0-1/group-27-17-3/input-12-22-4\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-c7765efd16c35321\"],\"target\":\"model/group-18-0-1/group-27-17-3/group-14-15-6/input-14-15-7\",\"targetPort\":\"in\",\"wire\":\"model/group-18-0-1/group-27-17-3/input-12-22-4:out\"},{\"id\":\"edge-4\",\"role\":\"source_dependency\",\"source\":\"model/group-18-0-1/group-27-17-3/group-14-15-6/input-14-15-7\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-c7765efd16c35321\"],\"target\":\"model/group-18-0-1/group-27-17-3/group-14-15-6/linear-14-15-8\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-18-0-1/group-27-17-3/group-14-15-6/input-14-15-7:out\"},{\"id\":\"edge-5\",\"role\":\"source_dependency\",\"source\":\"model/group-18-0-1/group-27-17-3/group-14-15-6/linear-14-15-8\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-c7765efd16c35321\"],\"target\":\"model/group-18-0-1/group-27-17-3/group-14-15-6/activation-14-15-9\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-18-0-1/group-27-17-3/group-14-15-6/linear-14-15-8:out\"},{\"id\":\"edge-6\",\"role\":\"source_dependency\",\"source\":\"model/group-18-0-1/group-27-17-3/group-14-15-6/activation-14-15-9\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-c7765efd16c35321\"],\"target\":\"model/group-18-0-1/group-27-17-3/group-14-15-6/output-14-15-10\",\"targetPort\":\"value\",\"wire\":\"model/group-18-0-1/group-27-17-3/group-14-15-6/activation-14-15-9:out\"},{\"id\":\"edge-7\",\"role\":\"source_dependency\",\"source\":\"model/group-18-0-1/group-27-17-3/linear-13-16-5\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-7861018eeefcf845\"],\"target\":\"model/group-18-0-1/group-27-17-3/multiply-15-19-11\",\"targetPort\":\"lhs\",\"wire\":\"model/group-18-0-1/group-27-17-3/linear-13-16-5:out\"},{\"id\":\"edge-8\",\"role\":\"source_dependency\",\"source\":\"model/group-18-0-1/group-27-17-3/group-14-15-6/output-14-15-10\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-7861018eeefcf845\"],\"target\":\"model/group-18-0-1/group-27-17-3/multiply-15-19-11\",\"targetPort\":\"rhs\",\"wire\":\"model/group-18-0-1/group-27-17-3/group-14-15-6/output-14-15-10:out\"},{\"id\":\"edge-9\",\"role\":\"source_dependency\",\"source\":\"model/group-18-0-1/group-27-17-3/input-12-22-4\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-23c1ff29ca69da1c\"],\"target\":\"model/group-18-0-1/group-27-17-3/add-15-15-12\",\"targetPort\":\"lhs\",\"wire\":\"model/group-18-0-1/group-27-17-3/input-12-22-4:out\"},{\"id\":\"edge-10\",\"role\":\"source_dependency\",\"source\":\"model/group-18-0-1/group-27-17-3/multiply-15-19-11\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-23c1ff29ca69da1c\"],\"target\":\"model/group-18-0-1/group-27-17-3/add-15-15-12\",\"targetPort\":\"rhs\",\"wire\":\"model/group-18-0-1/group-27-17-3/multiply-15-19-11:out\"},{\"id\":\"edge-11\",\"role\":\"source_dependency\",\"source\":\"model/group-18-0-1/group-27-17-3/add-15-15-12\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-e21eab0ecfaccb48\"],\"target\":\"model/group-18-0-1/group-27-17-3/output-15-8-13\",\"targetPort\":\"value\",\"wire\":\"model/group-18-0-1/group-27-17-3/add-15-15-12:out\"},{\"id\":\"edge-12\",\"role\":\"source_dependency\",\"source\":\"model/group-18-0-1/group-27-17-3/output-15-8-13\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-d20363c6e8f603e8\"],\"target\":\"model/group-18-0-1/linear-28-15-14\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-18-0-1/group-27-17-3/output-15-8-13:out\"},{\"id\":\"edge-13\",\"role\":\"source_dependency\",\"source\":\"model/group-18-0-1/input-26-22-2\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-6354086ed762d205\"],\"target\":\"model/group-18-0-1/linear-29-16-15\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-18-0-1/input-26-22-2:out\"},{\"id\":\"edge-14\",\"role\":\"source_dependency\",\"source\":\"model/group-18-0-1/linear-28-15-14\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-a7c2a7a6738425fc\"],\"target\":\"model/group-18-0-1/add-30-25-16\",\"targetPort\":\"lhs\",\"wire\":\"model/group-18-0-1/linear-28-15-14:out\"},{\"id\":\"edge-15\",\"role\":\"source_dependency\",\"source\":\"model/group-18-0-1/linear-29-16-15\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-a7c2a7a6738425fc\"],\"target\":\"model/group-18-0-1/add-30-25-16\",\"targetPort\":\"rhs\",\"wire\":\"model/group-18-0-1/linear-29-16-15:out\"},{\"id\":\"edge-16\",\"role\":\"source_dependency\",\"source\":\"model/group-18-0-1/add-30-25-16\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-d7bc53dfe9ca19e2\"],\"target\":\"model/group-18-0-1/normalization-30-15-17\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-18-0-1/add-30-25-16:out\"},{\"id\":\"edge-17\",\"role\":\"source_dependency\",\"source\":\"model/group-18-0-1/normalization-30-15-17\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-c277b672e927c5d7\"],\"target\":\"model/group-18-0-1/output-30-8-18\",\"targetPort\":\"value\",\"wire\":\"model/group-18-0-1/normalization-30-15-17:out\"}],\"entry\":\"novel_model:RiverNet\",\"instances\":{\"novel_model:RiverNet\":[\"model/group-18-0-1\"],\"novel_model:RiverNet.block\":[\"model/group-18-0-1/group-27-17-3\"],\"novel_model:RiverNet.block.gate\":[\"model/group-18-0-1/group-27-17-3/group-14-15-6\"],\"novel_model:RiverNet.block.gate.0\":[\"model/group-18-0-1/group-27-17-3/group-14-15-6/linear-14-15-8\"],\"novel_model:RiverNet.block.gate.1\":[\"model/group-18-0-1/group-27-17-3/group-14-15-6/activation-14-15-9\"],\"novel_model:RiverNet.block.value\":[\"model/group-18-0-1/group-27-17-3/linear-13-16-5\"],\"novel_model:RiverNet.norm\":[\"model/group-18-0-1/normalization-30-15-17\"],\"novel_model:RiverNet.shared\":[\"model/group-18-0-1/linear-28-15-14\",\"model/group-18-0-1/linear-29-16-15\"]},\"modelExecuted\":false,\"nodes\":[{\"certainty\":\"static\",\"constructor\":\"novel_model:RiverNet\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"class RiverNet(nn.Module):\\n\\n    def __init__(self, width=16):\\n        super().__init__()\\n        self.block = LanternUnit(width)\\n        self.shared = nn.Linear(width, width)\\n        self.readout = self.shared\\n        self.norm = nn.LayerNorm(width)\\n\\n    def forward(self, features):\\n        hidden = self.block(features)\\n        left = self.shared(hidden)\\n        right = self.readout(features)\\n        return self.norm(left + right)\",\"id\":\"model/group-18-0-1\",\"instance\":\"novel_model:RiverNet\",\"kind\":\"group\",\"label\":\"RiverNet\",\"moduleType\":\"RiverNet\",\"parent\":null,\"source_evidence\":[\"e-490987e0be6e46a7\"]},{\"expression\":\"features\",\"id\":\"model/group-18-0-1/input-26-22-2\",\"kind\":\"input\",\"label\":\"features\",\"parent\":\"model/group-18-0-1\",\"source_evidence\":[\"e-44be4f856f748f20\"]},{\"certainty\":\"static\",\"constructor\":\"LanternUnit(width)\",\"constructorArgs\":[16],\"constructorKwargs\":{},\"expression\":\"self.block(features)\",\"id\":\"model/group-18-0-1/group-27-17-3\",\"instance\":\"novel_model:RiverNet.block\",\"kind\":\"group\",\"label\":\"LanternUnit\",\"moduleType\":\"LanternUnit\",\"parent\":\"model/group-18-0-1\",\"source_evidence\":[\"e-1b75c7757beb06ab\"]},{\"expression\":\"x\",\"id\":\"model/group-18-0-1/group-27-17-3/input-12-22-4\",\"kind\":\"input\",\"label\":\"x\",\"parent\":\"model/group-18-0-1/group-27-17-3\",\"source_evidence\":[\"e-8ade08b48a1eb1cc\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Linear(width, width)\",\"constructorArgs\":[16,16],\"constructorKwargs\":{},\"expression\":\"self.value(x)\",\"id\":\"model/group-18-0-1/group-27-17-3/linear-13-16-5\",\"instance\":\"novel_model:RiverNet.block.value\",\"kind\":\"linear\",\"label\":\"Linear\",\"moduleType\":\"Linear\",\"parent\":\"model/group-18-0-1/group-27-17-3\",\"source_evidence\":[\"e-477e6950b9bfeb1d\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Sequential(nn.Linear(width, width), nn.Sigmoid())\",\"constructorArgs\":[{\"unresolved\":\"nn.Linear(width, width)\"},{\"unresolved\":\"nn.Sigmoid()\"}],\"constructorKwargs\":{},\"expression\":\"self.gate(x)\",\"id\":\"model/group-18-0-1/group-27-17-3/group-14-15-6\",\"instance\":\"novel_model:RiverNet.block.gate\",\"kind\":\"group\",\"label\":\"Sequential\",\"moduleType\":\"Sequential\",\"parent\":\"model/group-18-0-1/group-27-17-3\",\"source_evidence\":[\"e-c7765efd16c35321\"]},{\"expression\":\"self.gate(x)\",\"id\":\"model/group-18-0-1/group-27-17-3/group-14-15-6/input-14-15-7\",\"kind\":\"input\",\"label\":\"Sequential input\",\"parent\":\"model/group-18-0-1/group-27-17-3/group-14-15-6\",\"source_evidence\":[\"e-c7765efd16c35321\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Linear(width, width)\",\"constructorArgs\":[16,16],\"constructorKwargs\":{},\"expression\":\"self.gate(x)\",\"id\":\"model/group-18-0-1/group-27-17-3/group-14-15-6/linear-14-15-8\",\"instance\":\"novel_model:RiverNet.block.gate.0\",\"kind\":\"linear\",\"label\":\"Linear\",\"moduleType\":\"Linear\",\"parent\":\"model/group-18-0-1/group-27-17-3/group-14-15-6\",\"source_evidence\":[\"e-c7765efd16c35321\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Sigmoid()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.gate(x)\",\"id\":\"model/group-18-0-1/group-27-17-3/group-14-15-6/activation-14-15-9\",\"instance\":\"novel_model:RiverNet.block.gate.1\",\"kind\":\"activation\",\"label\":\"Sigmoid\",\"moduleType\":\"Sigmoid\",\"parent\":\"model/group-18-0-1/group-27-17-3/group-14-15-6\",\"source_evidence\":[\"e-c7765efd16c35321\"]},{\"expression\":\"self.gate(x)\",\"id\":\"model/group-18-0-1/group-27-17-3/group-14-15-6/output-14-15-10\",\"kind\":\"output\",\"label\":\"Sequential output\",\"parent\":\"model/group-18-0-1/group-27-17-3/group-14-15-6\",\"source_evidence\":[\"e-c7765efd16c35321\"]},{\"certainty\":\"syntax\",\"expression\":\"value * gate\",\"id\":\"model/group-18-0-1/group-27-17-3/multiply-15-19-11\",\"kind\":\"multiply\",\"label\":\"value * gate\",\"parent\":\"model/group-18-0-1/group-27-17-3\",\"source_evidence\":[\"e-7861018eeefcf845\"]},{\"certainty\":\"syntax\",\"expression\":\"x + value * gate\",\"id\":\"model/group-18-0-1/group-27-17-3/add-15-15-12\",\"kind\":\"add\",\"label\":\"x + value * gate\",\"parent\":\"model/group-18-0-1/group-27-17-3\",\"source_evidence\":[\"e-23c1ff29ca69da1c\"]},{\"expression\":\"return x + value * gate\",\"id\":\"model/group-18-0-1/group-27-17-3/output-15-8-13\",\"kind\":\"output\",\"label\":\"return\",\"parent\":\"model/group-18-0-1/group-27-17-3\",\"source_evidence\":[\"e-e21eab0ecfaccb48\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Linear(width, width)\",\"constructorArgs\":[16,16],\"constructorKwargs\":{},\"expression\":\"self.shared(hidden)\",\"id\":\"model/group-18-0-1/linear-28-15-14\",\"instance\":\"novel_model:RiverNet.shared\",\"kind\":\"linear\",\"label\":\"Linear\",\"moduleType\":\"Linear\",\"parent\":\"model/group-18-0-1\",\"source_evidence\":[\"e-d20363c6e8f603e8\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Linear(width, width)\",\"constructorArgs\":[16,16],\"constructorKwargs\":{},\"expression\":\"self.readout(features)\",\"id\":\"model/group-18-0-1/linear-29-16-15\",\"instance\":\"novel_model:RiverNet.shared\",\"kind\":\"linear\",\"label\":\"Linear\",\"moduleType\":\"Linear\",\"parent\":\"model/group-18-0-1\",\"source_evidence\":[\"e-6354086ed762d205\"]},{\"certainty\":\"syntax\",\"expression\":\"left + right\",\"id\":\"model/group-18-0-1/add-30-25-16\",\"kind\":\"add\",\"label\":\"left + right\",\"parent\":\"model/group-18-0-1\",\"source_evidence\":[\"e-a7c2a7a6738425fc\"]},{\"certainty\":\"static\",\"constructor\":\"nn.LayerNorm(width)\",\"constructorArgs\":[16],\"constructorKwargs\":{},\"expression\":\"self.norm(left + right)\",\"id\":\"model/group-18-0-1/normalization-30-15-17\",\"instance\":\"novel_model:RiverNet.norm\",\"kind\":\"normalization\",\"label\":\"LayerNorm\",\"moduleType\":\"LayerNorm\",\"parent\":\"model/group-18-0-1\",\"source_evidence\":[\"e-d7bc53dfe9ca19e2\"]},{\"expression\":\"return self.norm(left + right)\",\"id\":\"model/group-18-0-1/output-30-8-18\",\"kind\":\"output\",\"label\":\"return\",\"parent\":\"model/group-18-0-1\",\"source_evidence\":[\"e-c277b672e927c5d7\"]}],\"registrySha256\":\"9c153d45ae26c27b1f5da8becde63af92eb51883b8e8ad1b00860151802f7e5f\",\"schema\":\"summary-source-ir/1\",\"shapePolicy\":\"No tensor dimensions or execution path inferred\"}",
+  "irSha256": "87be9c23cc93ad74628b90e1f2093e7f810334ef6f35fce3237a4809c0ffe3bf",
+  "evidence": {
+    "e-490987e0be6e46a7": {
+      "file": "novel_model.py",
+      "line": 18,
+      "endLine": 30,
+      "column": 0,
+      "endColumn": 38,
+      "expression": "class RiverNet(nn.Module):\n    def __init__(self, width=16):\n        super().__init__()\n        self.block = LanternUnit(width)\n        self.shared = nn.Linear(width, width)\n        self.readout = self.shared\n        self.norm = nn.LayerNorm(width)\n\n    def forward(self, features):\n        hidden = self.block(features)\n        left = self.shared(hidden)\n        right = self.readout(features)\n        return self.norm(left + right)"
+    },
+    "e-6c4f865ad12fc2fb": {
+      "file": "novel_model.py",
+      "line": 21,
+      "endLine": 21,
+      "column": 21,
+      "endColumn": 39,
+      "expression": "LanternUnit(width)"
+    },
+    "e-7aaa3b9c97f84347": {
+      "file": "novel_model.py",
+      "line": 22,
+      "endLine": 22,
+      "column": 22,
+      "endColumn": 45,
+      "expression": "nn.Linear(width, width)"
+    },
+    "e-599c8d62a6a52647": {
+      "file": "novel_model.py",
+      "line": 24,
+      "endLine": 24,
+      "column": 20,
+      "endColumn": 39,
+      "expression": "nn.LayerNorm(width)"
+    },
+    "e-44be4f856f748f20": {
+      "file": "novel_model.py",
+      "line": 26,
+      "endLine": 26,
+      "column": 22,
+      "endColumn": 30,
+      "expression": "features"
+    },
+    "e-1b75c7757beb06ab": {
+      "file": "novel_model.py",
+      "line": 27,
+      "endLine": 27,
+      "column": 17,
+      "endColumn": 37,
+      "expression": "self.block(features)"
+    },
+    "e-f902ac55bcb1df52": {
+      "file": "novel_model.py",
+      "line": 9,
+      "endLine": 9,
+      "column": 21,
+      "endColumn": 44,
+      "expression": "nn.Linear(width, width)"
+    },
+    "e-7bdbb17d11fe128d": {
+      "file": "novel_model.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 20,
+      "endColumn": 72,
+      "expression": "nn.Sequential(nn.Linear(width, width), nn.Sigmoid())"
+    },
+    "e-e401f5e8045b6dc7": {
+      "file": "novel_model.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 34,
+      "endColumn": 57,
+      "expression": "nn.Linear(width, width)"
+    },
+    "e-672ead3b6153d00f": {
+      "file": "novel_model.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 59,
+      "endColumn": 71,
+      "expression": "nn.Sigmoid()"
+    },
+    "e-8ade08b48a1eb1cc": {
+      "file": "novel_model.py",
+      "line": 12,
+      "endLine": 12,
+      "column": 22,
+      "endColumn": 23,
+      "expression": "x"
+    },
+    "e-477e6950b9bfeb1d": {
+      "file": "novel_model.py",
+      "line": 13,
+      "endLine": 13,
+      "column": 16,
+      "endColumn": 29,
+      "expression": "self.value(x)"
+    },
+    "e-c7765efd16c35321": {
+      "file": "novel_model.py",
+      "line": 14,
+      "endLine": 14,
+      "column": 15,
+      "endColumn": 27,
+      "expression": "self.gate(x)"
+    },
+    "e-7861018eeefcf845": {
+      "file": "novel_model.py",
+      "line": 15,
+      "endLine": 15,
+      "column": 19,
+      "endColumn": 31,
+      "expression": "value * gate"
+    },
+    "e-23c1ff29ca69da1c": {
+      "file": "novel_model.py",
+      "line": 15,
+      "endLine": 15,
+      "column": 15,
+      "endColumn": 31,
+      "expression": "x + value * gate"
+    },
+    "e-e21eab0ecfaccb48": {
+      "file": "novel_model.py",
+      "line": 15,
+      "endLine": 15,
+      "column": 8,
+      "endColumn": 31,
+      "expression": "return x + value * gate"
+    },
+    "e-d20363c6e8f603e8": {
+      "file": "novel_model.py",
+      "line": 28,
+      "endLine": 28,
+      "column": 15,
+      "endColumn": 34,
+      "expression": "self.shared(hidden)"
+    },
+    "e-6354086ed762d205": {
+      "file": "novel_model.py",
+      "line": 29,
+      "endLine": 29,
+      "column": 16,
+      "endColumn": 38,
+      "expression": "self.readout(features)"
+    },
+    "e-a7c2a7a6738425fc": {
+      "file": "novel_model.py",
+      "line": 30,
+      "endLine": 30,
+      "column": 25,
+      "endColumn": 37,
+      "expression": "left + right"
+    },
+    "e-d7bc53dfe9ca19e2": {
+      "file": "novel_model.py",
+      "line": 30,
+      "endLine": 30,
+      "column": 15,
+      "endColumn": 38,
+      "expression": "self.norm(left + right)"
+    },
+    "e-c277b672e927c5d7": {
+      "file": "novel_model.py",
+      "line": 30,
+      "endLine": 30,
+      "column": 8,
+      "endColumn": 38,
+      "expression": "return self.norm(left + right)"
+    }
+  },
+  "diagnostics": [],
+  "config": {},
+  "adapterVersion": 1
+}

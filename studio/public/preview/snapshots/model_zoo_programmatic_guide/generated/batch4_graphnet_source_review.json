@@ -1,0 +1,32 @@
+{
+  "model": "graphnet",
+  "nodes": 28,
+  "edges": 38,
+  "adapter_checks": [
+    "required fixed adjacency, aggregation and returned-value nodes",
+    "MNIST784 scalar pixel nodes",
+    "actual unsquared-distance kernel and .01 threshold",
+    "symmetric degree normalization with source epsilon",
+    "constructor-only registered non-learnable A buffer",
+    "fixed buffer broadcast reads A directly and B from input shape",
+    "independent pixel values and fixed adjacency operands",
+    "bmm A@X before flatten, without arithmetic row average",
+    "only whole-image bias-free784->10 Linear is learnable",
+    "actual logits and class probabilities returned as tuple",
+    "dead unsqueeze excluded without invented GCN or neural graph edges"
+  ],
+  "independent_source_checks": {
+    "unsquared_distance_kernel": true,
+    "precise_threshold_degree_epsilon": true,
+    "constructor_registered_nonlearnable_buffer": true,
+    "fixed_buffer_is_external_not_pixel_value": true,
+    "B_shape_source_separate_from_A": true,
+    "expand_reads_self_A_directly_not_dead_unsqueeze": true,
+    "bmm_then_flatten": true,
+    "whole_image_no_bias_Linear": true,
+    "only_fc_learnable": true,
+    "actual_logits_and_probas_tuple": true,
+    "retained_A_for_symmetric_normalization": true
+  },
+  "status": "passed; source/adapter/IR/docs reviewed; no model execution"
+}

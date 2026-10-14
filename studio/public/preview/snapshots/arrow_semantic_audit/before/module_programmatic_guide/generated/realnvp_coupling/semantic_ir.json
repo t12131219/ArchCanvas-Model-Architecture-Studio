@@ -1,0 +1,702 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "realnvp_coupling",
+  "profile": {
+    "num_inputs": 4,
+    "num_hidden": 8,
+    "num_cond_inputs": null,
+    "mask": [
+      1,
+      0,
+      1,
+      0
+    ],
+    "mask_storage": "ordinary_tensor_attribute",
+    "mode": "direct",
+    "affine_order": "scale_then_shift",
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "One CouplingLayer direct profile; optional condition concat and inverse are excluded.",
+    "source_contracts": [
+      [
+        "CouplingLayer.forward",
+        "self.scale_net(masked_inputs) * (1 - mask)"
+      ],
+      [
+        "CouplingLayer.forward",
+        "inputs * s + t"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "ikostrikov/pytorch-flows",
+    "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+    "snapshot": "c0ebb6c1af0b9d8f0b8140bbc16c5cf7122408fa79a5b25da427fac8d15d657a"
+  },
+  "nodes": [
+    {
+      "id": "realnvp_coupling.root",
+      "label": "RealNVP / masked coupling",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.__init__",
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "realnvp_coupling.x",
+          "realnvp_coupling.mask"
+        ],
+        [
+          "realnvp_coupling.body"
+        ],
+        [
+          "realnvp_coupling.y",
+          "realnvp_coupling.ld"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.x",
+      "label": "Input x",
+      "kind": "input",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parent": "realnvp_coupling.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.mask",
+      "label": "Fixed mask [1,0,1,0]",
+      "kind": "input",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.__init__"
+      ],
+      "shape": "[4]",
+      "detail": [],
+      "storage_kind": "ordinary_tensor_attribute",
+      "learnable": false,
+      "parent": "realnvp_coupling.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.body",
+      "label": "RealNVP module",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.__init__",
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "realnvp_coupling.masked"
+        ],
+        [
+          "realnvp_coupling.snet",
+          "realnvp_coupling.tnet"
+        ],
+        [
+          "realnvp_coupling.scale",
+          "realnvp_coupling.det"
+        ],
+        [
+          "realnvp_coupling.affine"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "realnvp_coupling.root",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.masked",
+      "label": "Condition from retained entries",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "realnvp_coupling.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.maskedop",
+      "label": "inputs * mask",
+      "kind": "multiply",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "inputs * mask",
+      "parent": "realnvp_coupling.masked",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.snet",
+      "label": "Independent scale network",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "realnvp_coupling.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.smlp",
+      "label": "Linear4->8->8->4 / Tanh",
+      "kind": "linear",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.__init__",
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parameters": [
+        "scale_net.0",
+        "scale_net.2",
+        "scale_net.4"
+      ],
+      "activation": "Tanh",
+      "parent": "realnvp_coupling.snet",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.smask",
+      "label": "log_s * (1-mask)",
+      "kind": "multiply",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "self.scale_net(masked_inputs) * (1 - mask)",
+      "parent": "realnvp_coupling.snet",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mask"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.tnet",
+      "label": "Independent translation network",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "realnvp_coupling.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.tmlp",
+      "label": "Linear4->8->8->4 / ReLU",
+      "kind": "linear",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.__init__",
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parameters": [
+        "translate_net.0",
+        "translate_net.2",
+        "translate_net.4"
+      ],
+      "activation": "ReLU",
+      "parent": "realnvp_coupling.tnet",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.tmask",
+      "label": "t * (1-mask)",
+      "kind": "multiply",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "self.translate_net(masked_inputs) * (1 - mask)",
+      "parent": "realnvp_coupling.tnet",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mask"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.scale",
+      "label": "Positive scale",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "realnvp_coupling.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.exp",
+      "label": "exp(log_s)",
+      "kind": "tensor",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "torch.exp(log_s)",
+      "parent": "realnvp_coupling.scale",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.affine",
+      "label": "Scale then shift",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "realnvp_coupling.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "scale",
+        "t"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.mul",
+      "label": "inputs * s + t",
+      "kind": "multiply",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "inputs * s + t",
+      "affine_order": "scale_then_shift",
+      "parent": "realnvp_coupling.affine",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.det",
+      "label": "Changed-entry logdet",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "realnvp_coupling.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.sum",
+      "label": "log_s.sum(-1,keepdim=True)",
+      "kind": "density",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "expression": "log_s.sum(-1, keepdim=True)",
+      "parent": "realnvp_coupling.det",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.y",
+      "label": "Masked affine output",
+      "kind": "output",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parent": "realnvp_coupling.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "realnvp_coupling.ld",
+      "label": "Logdet per example",
+      "kind": "output",
+      "source": [
+        "density-flow-modules/flows.py::CouplingLayer.forward"
+      ],
+      "shape": "[B,1]",
+      "detail": [],
+      "parent": "realnvp_coupling.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "realnvp_coupling.masked:in->realnvp_coupling.maskedop:in:boundary",
+      "src": "realnvp_coupling.masked",
+      "dst": "realnvp_coupling.maskedop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "realnvp_coupling.maskedop:out->realnvp_coupling.masked:out:boundary",
+      "src": "realnvp_coupling.maskedop",
+      "dst": "realnvp_coupling.masked",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "realnvp_coupling.snet:in->realnvp_coupling.smlp:in:boundary",
+      "src": "realnvp_coupling.snet",
+      "dst": "realnvp_coupling.smlp",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "realnvp_coupling.smlp:out->realnvp_coupling.smask:in:tensor",
+      "src": "realnvp_coupling.smlp",
+      "dst": "realnvp_coupling.smask",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "realnvp_coupling.smask:out->realnvp_coupling.snet:out:boundary",
+      "src": "realnvp_coupling.smask",
+      "dst": "realnvp_coupling.snet",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "realnvp_coupling.tnet:in->realnvp_coupling.tmlp:in:boundary",
+      "src": "realnvp_coupling.tnet",
+      "dst": "realnvp_coupling.tmlp",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "realnvp_coupling.tmlp:out->realnvp_coupling.tmask:in:tensor",
+      "src": "realnvp_coupling.tmlp",
+      "dst": "realnvp_coupling.tmask",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "realnvp_coupling.tmask:out->realnvp_coupling.tnet:out:boundary",
+      "src": "realnvp_coupling.tmask",
+      "dst": "realnvp_coupling.tnet",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "realnvp_coupling.scale:in->realnvp_coupling.exp:in:boundary",
+      "src": "realnvp_coupling.scale",
+      "dst": "realnvp_coupling.exp",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "realnvp_coupling.exp:out->realnvp_coupling.scale:out:boundary",
+      "src": "realnvp_coupling.exp",
+      "dst": "realnvp_coupling.scale",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "realnvp_coupling.affine:in->realnvp_coupling.mul:in:boundary",
+      "src": "realnvp_coupling.affine",
+      "dst": "realnvp_coupling.mul",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "realnvp_coupling.mul:out->realnvp_coupling.affine:out:boundary",
+      "src": "realnvp_coupling.mul",
+      "dst": "realnvp_coupling.affine",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "realnvp_coupling.det:in->realnvp_coupling.sum:in:boundary",
+      "src": "realnvp_coupling.det",
+      "dst": "realnvp_coupling.sum",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "realnvp_coupling.sum:out->realnvp_coupling.det:out:boundary",
+      "src": "realnvp_coupling.sum",
+      "dst": "realnvp_coupling.det",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "realnvp_coupling.x:out->realnvp_coupling.masked:in:tensor",
+      "src": "realnvp_coupling.x",
+      "dst": "realnvp_coupling.masked",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "realnvp_coupling.mask:out->realnvp_coupling.masked:in:tensor",
+      "src": "realnvp_coupling.mask",
+      "dst": "realnvp_coupling.masked",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "realnvp_coupling.masked:out->realnvp_coupling.snet:in:tensor",
+      "src": "realnvp_coupling.masked",
+      "dst": "realnvp_coupling.snet",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "realnvp_coupling.masked:out->realnvp_coupling.tnet:in:tensor",
+      "src": "realnvp_coupling.masked",
+      "dst": "realnvp_coupling.tnet",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "realnvp_coupling.snet:out->realnvp_coupling.scale:in:tensor",
+      "src": "realnvp_coupling.snet",
+      "dst": "realnvp_coupling.scale",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "realnvp_coupling.snet:out->realnvp_coupling.det:in:tensor",
+      "src": "realnvp_coupling.snet",
+      "dst": "realnvp_coupling.det",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "realnvp_coupling.scale:out->realnvp_coupling.affine:scale:tensor",
+      "src": "realnvp_coupling.scale",
+      "dst": "realnvp_coupling.affine",
+      "src_port": "out",
+      "dst_port": "scale",
+      "role": "tensor"
+    },
+    {
+      "id": "realnvp_coupling.tnet:out->realnvp_coupling.affine:t:tensor",
+      "src": "realnvp_coupling.tnet",
+      "dst": "realnvp_coupling.affine",
+      "src_port": "out",
+      "dst_port": "t",
+      "role": "tensor"
+    },
+    {
+      "id": "realnvp_coupling.x:out->realnvp_coupling.affine:in:retained_value",
+      "src": "realnvp_coupling.x",
+      "dst": "realnvp_coupling.affine",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "retained_value"
+    },
+    {
+      "id": "realnvp_coupling.affine:out->realnvp_coupling.y:in:tensor",
+      "src": "realnvp_coupling.affine",
+      "dst": "realnvp_coupling.y",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "realnvp_coupling.det:out->realnvp_coupling.ld:in:tensor",
+      "src": "realnvp_coupling.det",
+      "dst": "realnvp_coupling.ld",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "realnvp_coupling.mask:out->realnvp_coupling.smask:mask:fixed_mask",
+      "src": "realnvp_coupling.mask",
+      "dst": "realnvp_coupling.smask",
+      "src_port": "out",
+      "dst_port": "mask",
+      "role": "fixed_mask"
+    },
+    {
+      "id": "realnvp_coupling.mask:out->realnvp_coupling.tmask:mask:fixed_mask",
+      "src": "realnvp_coupling.mask",
+      "dst": "realnvp_coupling.tmask",
+      "src_port": "out",
+      "dst_port": "mask",
+      "role": "fixed_mask"
+    }
+  ],
+  "facts": [
+    "Source mask is an ordinary tensor attribute, not a registered buffer. Selected mask retains entries 0 and 2.",
+    "The two MLPs are independent. Their outputs are masked with 1-mask, which makes the retained entries identity.",
+    "This implementation uses exp(log_s) and x*s+t, unlike the Glow sigmoid and shift-then-scale form.",
+    "Inner init(m) is defined but never applied; do not claim orthogonal initialization."
+  ],
+  "corrections": [
+    "Do not share the scale/translation parameters or reorder affine operations."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

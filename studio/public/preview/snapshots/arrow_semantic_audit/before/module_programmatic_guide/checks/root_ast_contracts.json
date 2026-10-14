@@ -1,0 +1,425 @@
+{
+  "glow_actnorm": {
+    "source": "glow-modules/model.py",
+    "symbols": [
+      "ActNorm.__init__",
+      "ActNorm.initialize",
+      "ActNorm.forward",
+      "ActNorm.reverse"
+    ],
+    "expressions": [
+      [
+        "ActNorm.forward",
+        "self.scale * (input + self.loc)"
+      ],
+      [
+        "ActNorm.forward",
+        "height * width * torch.sum(log_abs)"
+      ],
+      [
+        "ActNorm.initialize",
+        "1 / (std + 1e-6)"
+      ]
+    ]
+  },
+  "glow_invconv": {
+    "source": "glow-modules/model.py",
+    "symbols": [
+      "InvConv2d.__init__",
+      "InvConv2d.forward",
+      "InvConv2d.reverse"
+    ],
+    "expressions": [
+      [
+        "InvConv2d.forward",
+        "height * width * torch.slogdet(self.weight.squeeze().double())[1].float()"
+      ],
+      [
+        "InvConv2d.forward",
+        "F.conv2d(input, self.weight)"
+      ]
+    ]
+  },
+  "glow_invconv_lu": {
+    "source": "glow-modules/model.py",
+    "symbols": [
+      "InvConv2dLU.__init__",
+      "InvConv2dLU.forward",
+      "InvConv2dLU.reverse",
+      "InvConv2dLU.calc_weight"
+    ],
+    "expressions": [
+      [
+        "InvConv2dLU.forward",
+        "height * width * torch.sum(self.w_s)"
+      ],
+      [
+        "InvConv2dLU.forward",
+        "F.conv2d(input, weight)"
+      ]
+    ]
+  },
+  "zero_conv": {
+    "source": "glow-modules/model.py",
+    "symbols": [
+      "ZeroConv2d.__init__",
+      "ZeroConv2d.forward"
+    ],
+    "expressions": [
+      [
+        "ZeroConv2d.forward",
+        "F.pad(input, [1, 1, 1, 1], value=1)"
+      ],
+      [
+        "ZeroConv2d.forward",
+        "out * torch.exp(self.scale * 3)"
+      ]
+    ]
+  },
+  "glow_affine_coupling": {
+    "source": "glow-modules/model.py",
+    "symbols": [
+      "AffineCoupling.__init__",
+      "AffineCoupling.forward",
+      "AffineCoupling.reverse",
+      "ZeroConv2d.__init__",
+      "ZeroConv2d.forward"
+    ],
+    "expressions": [
+      [
+        "AffineCoupling.forward",
+        "(in_b + t) * s"
+      ],
+      [
+        "AffineCoupling.forward",
+        "F.sigmoid(log_s + 2)"
+      ]
+    ]
+  },
+  "glow_additive_coupling": {
+    "source": "glow-modules/model.py",
+    "symbols": [
+      "AffineCoupling.__init__",
+      "AffineCoupling.forward",
+      "AffineCoupling.reverse",
+      "ZeroConv2d.__init__",
+      "ZeroConv2d.forward"
+    ],
+    "expressions": [
+      [
+        "AffineCoupling.forward",
+        "in_b + net_out"
+      ]
+    ]
+  },
+  "glow_squeeze": {
+    "source": "glow-modules/model.py",
+    "symbols": [
+      "Block.forward"
+    ],
+    "expressions": [
+      [
+        "Block.forward",
+        "squeezed.permute(0, 1, 3, 5, 2, 4)"
+      ],
+      [
+        "Block.forward",
+        "squeezed.contiguous().view(b_size, n_channel * 4, height // 2, width // 2)"
+      ]
+    ]
+  },
+  "glow_split_prior": {
+    "source": "glow-modules/model.py",
+    "symbols": [
+      "Block.__init__",
+      "Block.forward",
+      "ZeroConv2d.__init__",
+      "ZeroConv2d.forward",
+      "gaussian_log_p"
+    ],
+    "expressions": [
+      [
+        "Block.forward",
+        "self.prior(out).chunk(2, 1)"
+      ],
+      [
+        "gaussian_log_p",
+        "-0.5 * log(2 * pi) - log_sd - 0.5 * (x - mean) ** 2 / torch.exp(2 * log_sd)"
+      ]
+    ]
+  },
+  "masked_linear": {
+    "source": "density-flow-modules/flows.py",
+    "symbols": [
+      "MaskedLinear.__init__",
+      "MaskedLinear.forward",
+      "get_mask"
+    ],
+    "expressions": [
+      [
+        "MaskedLinear.forward",
+        "F.linear(inputs, self.linear.weight * self.mask, self.linear.bias)"
+      ],
+      [
+        "MaskedLinear.__init__",
+        "nn.Linear(cond_in_features, out_features, bias=False)"
+      ]
+    ]
+  },
+  "made_affine": {
+    "source": "density-flow-modules/flows.py",
+    "symbols": [
+      "MADE.__init__",
+      "MADE.forward",
+      "MaskedLinear.__init__",
+      "MaskedLinear.forward",
+      "get_mask"
+    ],
+    "expressions": [
+      [
+        "MADE.forward",
+        "(inputs - m) * torch.exp(-a)"
+      ],
+      [
+        "MADE.forward",
+        "-a.sum(-1, keepdim=True)"
+      ]
+    ]
+  },
+  "made_split": {
+    "source": "density-flow-modules/flows.py",
+    "symbols": [
+      "MADESplit.__init__",
+      "MADESplit.forward",
+      "MaskedLinear.__init__",
+      "MaskedLinear.forward",
+      "get_mask"
+    ],
+    "expressions": [
+      [
+        "MADESplit.forward",
+        "(inputs - m) * torch.exp(-a)"
+      ],
+      [
+        "MADESplit.forward",
+        "-a.sum(-1, keepdim=True)"
+      ]
+    ]
+  },
+  "flow_batchnorm": {
+    "source": "density-flow-modules/flows.py",
+    "symbols": [
+      "BatchNormFlow.__init__",
+      "BatchNormFlow.forward"
+    ],
+    "expressions": [
+      [
+        "BatchNormFlow.forward",
+        "(inputs - self.batch_mean).pow(2).mean(0) + self.eps"
+      ],
+      [
+        "BatchNormFlow.forward",
+        "torch.exp(self.log_gamma) * x_hat + self.beta"
+      ]
+    ]
+  },
+  "realnvp_coupling": {
+    "source": "density-flow-modules/flows.py",
+    "symbols": [
+      "CouplingLayer.__init__",
+      "CouplingLayer.forward"
+    ],
+    "expressions": [
+      [
+        "CouplingLayer.forward",
+        "self.scale_net(masked_inputs) * (1 - mask)"
+      ],
+      [
+        "CouplingLayer.forward",
+        "inputs * s + t"
+      ]
+    ]
+  },
+  "sigmoid_bijector": {
+    "source": "density-flow-modules/flows.py",
+    "symbols": [
+      "Sigmoid.forward",
+      "Logit.forward"
+    ],
+    "expressions": [
+      [
+        "Sigmoid.forward",
+        "torch.log(s(inputs) * (1 - s(inputs))).sum(-1, keepdim=True)"
+      ],
+      [
+        "Logit.forward",
+        "super(Logit, self).forward(inputs, 'inverse')"
+      ]
+    ]
+  },
+  "spectral_norm_linear": {
+    "source": "biggan-modules/layers.py",
+    "symbols": [
+      "SN.__init__",
+      "SN.W_",
+      "SNLinear.__init__",
+      "SNLinear.forward",
+      "power_iteration",
+      "gram_schmidt",
+      "proj"
+    ],
+    "expressions": [
+      [
+        "SN.W_",
+        "self.weight / svs[0]"
+      ],
+      [
+        "SNLinear.forward",
+        "F.linear(x, self.W_(), self.bias)"
+      ],
+      [
+        "power_iteration",
+        "torch.squeeze(torch.matmul(torch.matmul(v, W.t()), u.t()))"
+      ]
+    ]
+  },
+  "manual_fused_bn": {
+    "source": "biggan-modules/layers.py",
+    "symbols": [
+      "manual_bn",
+      "fused_bn"
+    ],
+    "expressions": [
+      [
+        "manual_bn",
+        "m2 - m ** 2"
+      ],
+      [
+        "fused_bn",
+        "x * scale - shift"
+      ],
+      [
+        "manual_bn",
+        "torch.mean(float_x, [0, 2, 3], keepdim=True)"
+      ]
+    ]
+  },
+  "conditional_bn": {
+    "source": "biggan-modules/layers.py",
+    "symbols": [
+      "ccbn.__init__",
+      "ccbn.forward"
+    ],
+    "expressions": [
+      [
+        "ccbn.forward",
+        "(1 + self.gain(y)).view(y.size(0), -1, 1, 1)"
+      ],
+      [
+        "ccbn.forward",
+        "F.batch_norm(x, self.stored_mean, self.stored_var, None, None, self.training, 0.1, self.eps)"
+      ],
+      [
+        "ccbn.forward",
+        "out * gain + bias"
+      ]
+    ]
+  },
+  "nonlocal_attention": {
+    "source": "biggan-modules/layers.py",
+    "symbols": [
+      "Attention.__init__",
+      "Attention.forward",
+      "SNConv2d.__init__",
+      "SNConv2d.forward"
+    ],
+    "expressions": [
+      [
+        "Attention.forward",
+        "F.softmax(torch.bmm(theta.transpose(1, 2), phi), -1)"
+      ],
+      [
+        "Attention.forward",
+        "self.gamma * o + x"
+      ]
+    ]
+  },
+  "coral_head": {
+    "source": "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORAL_cement.py",
+    "symbols": [
+      "CoralLayer.__init__",
+      "CoralLayer.forward"
+    ],
+    "expressions": [
+      [
+        "CoralLayer.__init__",
+        "torch.nn.Linear(self.size_in, 1, bias=False)"
+      ],
+      [
+        "CoralLayer.forward",
+        "self.coral_weights(x) + self.coral_bias"
+      ]
+    ]
+  },
+  "corn_decoder": {
+    "source": "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORN_cement.py",
+    "symbols": [
+      "__module__",
+      "MLP.__init__",
+      "MLP.forward"
+    ],
+    "expressions": [
+      [
+        "__module__",
+        "torch.sigmoid(logits)"
+      ],
+      [
+        "__module__",
+        "torch.cumprod(probas, dim=1)"
+      ]
+    ]
+  },
+  "flow_sequential": {
+    "source": "density-flow-modules/flows.py",
+    "symbols": [
+      "FlowSequential.forward",
+      "Sigmoid.forward",
+      "Reverse.__init__",
+      "Reverse.forward"
+    ],
+    "expressions": [
+      [
+        "FlowSequential.forward",
+        "torch.zeros(inputs.size(0), 1, device=inputs.device)"
+      ],
+      [
+        "FlowSequential.forward",
+        "module(inputs, cond_inputs, mode)"
+      ],
+      [
+        "FlowSequential.forward",
+        "reversed(self._modules.values())"
+      ]
+    ]
+  },
+  "autoregressive_mask": {
+    "source": "density-flow-modules/flows.py",
+    "symbols": [
+      "get_mask"
+    ],
+    "expressions": [
+      [
+        "get_mask",
+        "torch.arange(in_features) % (in_flow_features - 1)"
+      ],
+      [
+        "get_mask",
+        "torch.arange(out_features) % in_flow_features - 1"
+      ],
+      [
+        "get_mask",
+        "(out_degrees.unsqueeze(-1) >= in_degrees.unsqueeze(0)).float()"
+      ]
+    ]
+  }
+}

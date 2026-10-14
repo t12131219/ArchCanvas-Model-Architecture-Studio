@@ -1,0 +1,904 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "nonlocal_attention",
+  "profile": {
+    "ch": 32,
+    "input_shape": [
+      "B",
+      32,
+      8,
+      8
+    ],
+    "which_conv": "SNConv2d default",
+    "theta_positions": 64,
+    "phi_positions": 16,
+    "g_positions": 16,
+    "softmax_dim": -1,
+    "gamma_initial": 0.0,
+    "attention_scaling": null,
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "One BigGAN Attention module; SNConv2d is a normalized-weight call boundary, see separate SNLinear mechanism.",
+    "source_contracts": [
+      [
+        "Attention.forward",
+        "F.softmax(torch.bmm(theta.transpose(1, 2), phi), -1)"
+      ],
+      [
+        "Attention.forward",
+        "self.gamma * o + x"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "ajbrock/BigGAN-PyTorch",
+    "commit": "98459431a5d618d644d54cd1e9fceb1e5045648d",
+    "snapshot": "bcb65449b0e95aa5867f78a42d97c40578083152549d64d9cb4b1601d7388218"
+  },
+  "nodes": [
+    {
+      "id": "nonlocal_attention.root",
+      "label": "Non-local 2D attention / pooled keys-values",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::Attention.__init__",
+        "biggan-modules/layers.py::Attention.forward",
+        "biggan-modules/layers.py::SNConv2d.__init__",
+        "biggan-modules/layers.py::SNConv2d.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "nonlocal_attention.x"
+        ],
+        [
+          "nonlocal_attention.body"
+        ],
+        [
+          "nonlocal_attention.y"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.x",
+      "label": "Feature map x",
+      "kind": "input",
+      "source": [
+        "biggan-modules/layers.py::Attention.forward"
+      ],
+      "shape": "[B,32,8,8]",
+      "detail": [],
+      "parent": "nonlocal_attention.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.body",
+      "label": "Non-local 2D attention module",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::Attention.__init__",
+        "biggan-modules/layers.py::Attention.forward",
+        "biggan-modules/layers.py::SNConv2d.__init__",
+        "biggan-modules/layers.py::SNConv2d.forward"
+      ],
+      "shape": "[B,32,8,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "nonlocal_attention.theta",
+          "nonlocal_attention.phi",
+          "nonlocal_attention.g"
+        ],
+        [
+          "nonlocal_attention.beta"
+        ],
+        [
+          "nonlocal_attention.aggregate"
+        ],
+        [
+          "nonlocal_attention.residual"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "nonlocal_attention.root",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.theta",
+      "label": "Full-resolution theta",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::Attention.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "nonlocal_attention.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.theta_conv",
+      "label": "SNConv1x1 32 -> 4",
+      "kind": "conv2d",
+      "source": [
+        "biggan-modules/layers.py::Attention.__init__",
+        "biggan-modules/layers.py::Attention.forward",
+        "biggan-modules/layers.py::SNConv2d.forward"
+      ],
+      "shape": "[B,4,8,8]",
+      "detail": [],
+      "parameters": [
+        "theta.weight"
+      ],
+      "bias": false,
+      "module_identity": "theta",
+      "parent": "nonlocal_attention.theta",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.theta_view",
+      "label": "view B,4,64",
+      "kind": "tensor",
+      "source": [
+        "biggan-modules/layers.py::Attention.forward"
+      ],
+      "shape": "[B,4,64]",
+      "detail": [],
+      "expression": "theta.view(-1, self.ch // 8, x.shape[2] * x.shape[3])",
+      "parent": "nonlocal_attention.theta",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.phi",
+      "label": "Pooled phi",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::Attention.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "nonlocal_attention.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.phi_conv",
+      "label": "SNConv1x1 32 -> 4",
+      "kind": "conv2d",
+      "source": [
+        "biggan-modules/layers.py::Attention.__init__",
+        "biggan-modules/layers.py::Attention.forward",
+        "biggan-modules/layers.py::SNConv2d.forward"
+      ],
+      "shape": "[B,4,8,8]",
+      "detail": [],
+      "parameters": [
+        "phi.weight"
+      ],
+      "bias": false,
+      "module_identity": "phi",
+      "parent": "nonlocal_attention.phi",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.phi_pool",
+      "label": "MaxPool2x2; view B,4,16",
+      "kind": "tensor",
+      "source": [
+        "biggan-modules/layers.py::Attention.forward"
+      ],
+      "shape": "[B,4,16]",
+      "detail": [],
+      "expression": "F.max_pool2d(self.phi(x), [2, 2])",
+      "pool_size": [
+        2,
+        2
+      ],
+      "parent": "nonlocal_attention.phi",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.g",
+      "label": "Pooled values g",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::Attention.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "nonlocal_attention.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.g_conv",
+      "label": "SNConv1x1 32 -> 16",
+      "kind": "conv2d",
+      "source": [
+        "biggan-modules/layers.py::Attention.__init__",
+        "biggan-modules/layers.py::Attention.forward",
+        "biggan-modules/layers.py::SNConv2d.forward"
+      ],
+      "shape": "[B,16,8,8]",
+      "detail": [],
+      "parameters": [
+        "g.weight"
+      ],
+      "bias": false,
+      "module_identity": "g",
+      "parent": "nonlocal_attention.g",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.g_pool",
+      "label": "MaxPool2x2; view B,16,16",
+      "kind": "tensor",
+      "source": [
+        "biggan-modules/layers.py::Attention.forward"
+      ],
+      "shape": "[B,16,16]",
+      "detail": [],
+      "expression": "F.max_pool2d(self.g(x), [2, 2])",
+      "pool_size": [
+        2,
+        2
+      ],
+      "parent": "nonlocal_attention.g",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.beta",
+      "label": "Spatial similarity",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::Attention.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "port_bindings": {
+        "theta": {
+          "node": "nonlocal_attention.score",
+          "port": "theta"
+        },
+        "phi": {
+          "node": "nonlocal_attention.score",
+          "port": "phi"
+        }
+      },
+      "port_binding_evidence": {
+        "theta": {
+          "source": [
+            "biggan-modules/layers.py::Attention.forward"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        },
+        "phi": {
+          "source": [
+            "biggan-modules/layers.py::Attention.forward"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        }
+      },
+      "parent": "nonlocal_attention.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "theta",
+        "phi"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.score",
+      "label": "theta.T @ phi",
+      "kind": "matmul",
+      "source": [
+        "biggan-modules/layers.py::Attention.forward"
+      ],
+      "shape": "[B,64,16]",
+      "detail": [],
+      "expression": "torch.bmm(theta.transpose(1, 2), phi)",
+      "parent": "nonlocal_attention.beta",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "theta",
+        "phi"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.softmax",
+      "label": "Softmax over pooled positions",
+      "kind": "softmax",
+      "source": [
+        "biggan-modules/layers.py::Attention.forward"
+      ],
+      "shape": "[B,64,16]",
+      "detail": [],
+      "expression": "F.softmax(torch.bmm(theta.transpose(1, 2), phi), -1)",
+      "dim": -1,
+      "parent": "nonlocal_attention.beta",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.aggregate",
+      "label": "Attend and restore space",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::Attention.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "port_bindings": {
+        "beta": {
+          "node": "nonlocal_attention.bmm",
+          "port": "beta"
+        },
+        "values": {
+          "node": "nonlocal_attention.bmm",
+          "port": "values"
+        }
+      },
+      "port_binding_evidence": {
+        "beta": {
+          "source": [
+            "biggan-modules/layers.py::Attention.forward"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        },
+        "values": {
+          "source": [
+            "biggan-modules/layers.py::Attention.forward"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        }
+      },
+      "parent": "nonlocal_attention.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "beta",
+        "values"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.bmm",
+      "label": "g @ beta.T",
+      "kind": "matmul",
+      "source": [
+        "biggan-modules/layers.py::Attention.forward"
+      ],
+      "shape": "[B,16,64]",
+      "detail": [],
+      "expression": "torch.bmm(g, beta.transpose(1, 2))",
+      "parent": "nonlocal_attention.aggregate",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "beta",
+        "values"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.view",
+      "label": "view B,16,8,8",
+      "kind": "tensor",
+      "source": [
+        "biggan-modules/layers.py::Attention.forward"
+      ],
+      "shape": "[B,16,8,8]",
+      "detail": [],
+      "parent": "nonlocal_attention.aggregate",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.o_conv",
+      "label": "SNConv1x1 16 -> 32",
+      "kind": "conv2d",
+      "source": [
+        "biggan-modules/layers.py::Attention.__init__",
+        "biggan-modules/layers.py::Attention.forward",
+        "biggan-modules/layers.py::SNConv2d.forward"
+      ],
+      "shape": "[B,32,8,8]",
+      "detail": [],
+      "parameters": [
+        "o.weight"
+      ],
+      "module_identity": "o",
+      "bias": false,
+      "parent": "nonlocal_attention.aggregate",
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.residual",
+      "label": "Learned residual gain",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::Attention.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "nonlocal_attention.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.gain",
+      "label": "gamma * o",
+      "kind": "multiply",
+      "source": [
+        "biggan-modules/layers.py::Attention.__init__",
+        "biggan-modules/layers.py::Attention.forward"
+      ],
+      "shape": "[B,32,8,8]",
+      "detail": [],
+      "expression": "self.gamma * o",
+      "parameters": [
+        "gamma"
+      ],
+      "initial_gamma": 0.0,
+      "parent": "nonlocal_attention.residual",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.add",
+      "label": "gamma*o + x",
+      "kind": "add",
+      "source": [
+        "biggan-modules/layers.py::Attention.forward"
+      ],
+      "shape": "[B,32,8,8]",
+      "detail": [],
+      "expression": "self.gamma * o + x",
+      "parent": "nonlocal_attention.residual",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "x"
+      ]
+    },
+    {
+      "id": "nonlocal_attention.y",
+      "label": "Residual attention output",
+      "kind": "output",
+      "source": [
+        "biggan-modules/layers.py::Attention.forward"
+      ],
+      "shape": "[B,32,8,8]",
+      "detail": [],
+      "parent": "nonlocal_attention.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "nonlocal_attention.theta:in->nonlocal_attention.theta_conv:in:boundary",
+      "src": "nonlocal_attention.theta",
+      "dst": "nonlocal_attention.theta_conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "nonlocal_attention.theta_conv:out->nonlocal_attention.theta_view:in:tensor",
+      "src": "nonlocal_attention.theta_conv",
+      "dst": "nonlocal_attention.theta_view",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nonlocal_attention.theta_view:out->nonlocal_attention.theta:out:boundary",
+      "src": "nonlocal_attention.theta_view",
+      "dst": "nonlocal_attention.theta",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "nonlocal_attention.phi:in->nonlocal_attention.phi_conv:in:boundary",
+      "src": "nonlocal_attention.phi",
+      "dst": "nonlocal_attention.phi_conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "nonlocal_attention.phi_conv:out->nonlocal_attention.phi_pool:in:tensor",
+      "src": "nonlocal_attention.phi_conv",
+      "dst": "nonlocal_attention.phi_pool",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nonlocal_attention.phi_pool:out->nonlocal_attention.phi:out:boundary",
+      "src": "nonlocal_attention.phi_pool",
+      "dst": "nonlocal_attention.phi",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "nonlocal_attention.g:in->nonlocal_attention.g_conv:in:boundary",
+      "src": "nonlocal_attention.g",
+      "dst": "nonlocal_attention.g_conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "nonlocal_attention.g_conv:out->nonlocal_attention.g_pool:in:tensor",
+      "src": "nonlocal_attention.g_conv",
+      "dst": "nonlocal_attention.g_pool",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nonlocal_attention.g_pool:out->nonlocal_attention.g:out:boundary",
+      "src": "nonlocal_attention.g_pool",
+      "dst": "nonlocal_attention.g",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "nonlocal_attention.beta:in->nonlocal_attention.score:in:boundary",
+      "src": "nonlocal_attention.beta",
+      "dst": "nonlocal_attention.score",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "nonlocal_attention.score:out->nonlocal_attention.softmax:in:tensor",
+      "src": "nonlocal_attention.score",
+      "dst": "nonlocal_attention.softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nonlocal_attention.softmax:out->nonlocal_attention.beta:out:boundary",
+      "src": "nonlocal_attention.softmax",
+      "dst": "nonlocal_attention.beta",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "nonlocal_attention.aggregate:in->nonlocal_attention.bmm:in:boundary",
+      "src": "nonlocal_attention.aggregate",
+      "dst": "nonlocal_attention.bmm",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "nonlocal_attention.bmm:out->nonlocal_attention.view:in:tensor",
+      "src": "nonlocal_attention.bmm",
+      "dst": "nonlocal_attention.view",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nonlocal_attention.view:out->nonlocal_attention.o_conv:in:tensor",
+      "src": "nonlocal_attention.view",
+      "dst": "nonlocal_attention.o_conv",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nonlocal_attention.o_conv:out->nonlocal_attention.aggregate:out:boundary",
+      "src": "nonlocal_attention.o_conv",
+      "dst": "nonlocal_attention.aggregate",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "nonlocal_attention.residual:in->nonlocal_attention.gain:in:boundary",
+      "src": "nonlocal_attention.residual",
+      "dst": "nonlocal_attention.gain",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "nonlocal_attention.gain:out->nonlocal_attention.add:in:tensor",
+      "src": "nonlocal_attention.gain",
+      "dst": "nonlocal_attention.add",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nonlocal_attention.add:out->nonlocal_attention.residual:out:boundary",
+      "src": "nonlocal_attention.add",
+      "dst": "nonlocal_attention.residual",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "nonlocal_attention.x:out->nonlocal_attention.theta:in:tensor",
+      "src": "nonlocal_attention.x",
+      "dst": "nonlocal_attention.theta",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nonlocal_attention.x:out->nonlocal_attention.phi:in:tensor",
+      "src": "nonlocal_attention.x",
+      "dst": "nonlocal_attention.phi",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nonlocal_attention.x:out->nonlocal_attention.g:in:tensor",
+      "src": "nonlocal_attention.x",
+      "dst": "nonlocal_attention.g",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nonlocal_attention.theta:out->nonlocal_attention.beta:theta:tensor",
+      "src": "nonlocal_attention.theta",
+      "dst": "nonlocal_attention.beta",
+      "src_port": "out",
+      "dst_port": "theta",
+      "role": "tensor"
+    },
+    {
+      "id": "nonlocal_attention.phi:out->nonlocal_attention.beta:phi:tensor",
+      "src": "nonlocal_attention.phi",
+      "dst": "nonlocal_attention.beta",
+      "src_port": "out",
+      "dst_port": "phi",
+      "role": "tensor"
+    },
+    {
+      "id": "nonlocal_attention.beta:out->nonlocal_attention.aggregate:beta:tensor",
+      "src": "nonlocal_attention.beta",
+      "dst": "nonlocal_attention.aggregate",
+      "src_port": "out",
+      "dst_port": "beta",
+      "role": "tensor"
+    },
+    {
+      "id": "nonlocal_attention.g:out->nonlocal_attention.aggregate:values:tensor",
+      "src": "nonlocal_attention.g",
+      "dst": "nonlocal_attention.aggregate",
+      "src_port": "out",
+      "dst_port": "values",
+      "role": "tensor"
+    },
+    {
+      "id": "nonlocal_attention.aggregate:out->nonlocal_attention.residual:in:tensor",
+      "src": "nonlocal_attention.aggregate",
+      "dst": "nonlocal_attention.residual",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nonlocal_attention.x:out->nonlocal_attention.add:x:retained_value",
+      "src": "nonlocal_attention.x",
+      "dst": "nonlocal_attention.add",
+      "src_port": "out",
+      "dst_port": "x",
+      "role": "retained_value"
+    },
+    {
+      "id": "nonlocal_attention.residual:out->nonlocal_attention.y:in:tensor",
+      "src": "nonlocal_attention.residual",
+      "dst": "nonlocal_attention.y",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "nonlocal_attention.x:shape->nonlocal_attention.theta_view:shape:shape_dependency",
+      "src": "nonlocal_attention.x",
+      "dst": "nonlocal_attention.theta_view",
+      "src_port": "shape",
+      "dst_port": "shape",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "nonlocal_attention.x:shape->nonlocal_attention.phi_pool:shape:shape_dependency",
+      "src": "nonlocal_attention.x",
+      "dst": "nonlocal_attention.phi_pool",
+      "src_port": "shape",
+      "dst_port": "shape",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "nonlocal_attention.x:shape->nonlocal_attention.g_pool:shape:shape_dependency",
+      "src": "nonlocal_attention.x",
+      "dst": "nonlocal_attention.g_pool",
+      "src_port": "shape",
+      "dst_port": "shape",
+      "role": "shape_dependency"
+    },
+    {
+      "id": "nonlocal_attention.x:shape->nonlocal_attention.view:shape:shape_dependency",
+      "src": "nonlocal_attention.x",
+      "dst": "nonlocal_attention.view",
+      "src_port": "shape",
+      "dst_port": "shape",
+      "role": "shape_dependency"
+    }
+  ],
+  "facts": [
+    "Theta remains full-resolution; phi and g use max pooling and therefore have four times fewer spatial positions.",
+    "Softmax normalizes the last pooled-position axis. No 1/sqrt(d) scale or positional embedding appears.",
+    "theta,phi,g,o weights are four independent instances; gamma is a learned scalar initialized zero.",
+    "Source y argument is unused. It is not an additional condition input in this attention view."
+  ],
+  "corrections": [
+    "Do not label this standard full-resolution Transformer Q/K/V attention or permanently zero residual."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

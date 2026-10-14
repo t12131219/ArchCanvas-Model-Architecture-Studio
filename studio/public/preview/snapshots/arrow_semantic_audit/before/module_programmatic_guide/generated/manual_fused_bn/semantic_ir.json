@@ -1,0 +1,579 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "manual_fused_bn",
+  "profile": {
+    "channels": 8,
+    "epsilon": 1e-05,
+    "return_mean_var": false,
+    "gain_provided": true,
+    "bias_provided": true,
+    "variance": "E[x²]-E[x]²",
+    "clamp": false,
+    "parameters": [],
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "manual_bn calling fused_bn; gain/bias supplied by caller, no running-statistics module.",
+    "source_contracts": [
+      [
+        "manual_bn",
+        "m2 - m ** 2"
+      ],
+      [
+        "fused_bn",
+        "x * scale - shift"
+      ],
+      [
+        "manual_bn",
+        "torch.mean(float_x, [0, 2, 3], keepdim=True)"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "ajbrock/BigGAN-PyTorch",
+    "commit": "98459431a5d618d644d54cd1e9fceb1e5045648d",
+    "snapshot": "bcb65449b0e95aa5867f78a42d97c40578083152549d64d9cb4b1601d7388218"
+  },
+  "nodes": [
+    {
+      "id": "manual_fused_bn.root",
+      "label": "Manual / fused BatchNorm arithmetic",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::manual_bn",
+        "biggan-modules/layers.py::fused_bn"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "manual_fused_bn.x",
+          "manual_fused_bn.gain"
+        ],
+        [
+          "manual_fused_bn.body"
+        ],
+        [
+          "manual_fused_bn.y"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "manual_fused_bn.x",
+      "label": "Feature tensor x",
+      "kind": "input",
+      "source": [
+        "biggan-modules/layers.py::manual_bn"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "parent": "manual_fused_bn.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "manual_fused_bn.gain",
+      "label": "Provided gain / bias",
+      "kind": "input",
+      "source": [
+        "biggan-modules/layers.py::manual_bn"
+      ],
+      "shape": "[1,8,1,1]",
+      "detail": [],
+      "argument_origin": "caller-supplied; not locally registered",
+      "parent": "manual_fused_bn.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "gain",
+        "bias"
+      ]
+    },
+    {
+      "id": "manual_fused_bn.body",
+      "label": "Manual module",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::manual_bn",
+        "biggan-modules/layers.py::fused_bn"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "manual_fused_bn.stats"
+        ],
+        [
+          "manual_fused_bn.scale"
+        ],
+        [
+          "manual_fused_bn.shift"
+        ],
+        [
+          "manual_fused_bn.affine"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "manual_fused_bn.root",
+      "source_evidence": [
+        "E002",
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "manual_fused_bn.stats",
+      "label": "Statistics from float32 x",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::manual_bn"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "manual_fused_bn.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "var",
+        "mean"
+      ]
+    },
+    {
+      "id": "manual_fused_bn.cast",
+      "label": "x.float()",
+      "kind": "tensor",
+      "source": [
+        "biggan-modules/layers.py::manual_bn"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "expression": "x.float()",
+      "dtype": "float32",
+      "parent": "manual_fused_bn.stats",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "manual_fused_bn.moments",
+      "label": "m=E[x]; m2=E[x^2]",
+      "kind": "statistics",
+      "source": [
+        "biggan-modules/layers.py::manual_bn"
+      ],
+      "shape": "each [1,8,1,1]",
+      "detail": [],
+      "expressions": [
+        "torch.mean(float_x, [0, 2, 3], keepdim=True)",
+        "torch.mean(float_x ** 2, [0, 2, 3], keepdim=True)"
+      ],
+      "axes": [
+        0,
+        2,
+        3
+      ],
+      "keepdim": true,
+      "parent": "manual_fused_bn.stats",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "manual_fused_bn.variance",
+      "label": "var=m2-m^2; cast back",
+      "kind": "statistics",
+      "source": [
+        "biggan-modules/layers.py::manual_bn"
+      ],
+      "shape": "[1,8,1,1]",
+      "detail": [],
+      "expression": "m2 - m ** 2",
+      "clamp": false,
+      "dtype": "same as x",
+      "parent": "manual_fused_bn.stats",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "manual_fused_bn.scale",
+      "label": "Fuse gain into scale",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::manual_bn"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "manual_fused_bn.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "gain"
+      ]
+    },
+    {
+      "id": "manual_fused_bn.rsqrt",
+      "label": "rsqrt(var+eps)",
+      "kind": "norm",
+      "source": [
+        "biggan-modules/layers.py::fused_bn"
+      ],
+      "shape": "[1,8,1,1]",
+      "detail": [],
+      "expression": "torch.rsqrt(var + eps)",
+      "epsilon": 1e-05,
+      "parent": "manual_fused_bn.scale",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "manual_fused_bn.gainop",
+      "label": "scale *= gain",
+      "kind": "multiply",
+      "source": [
+        "biggan-modules/layers.py::fused_bn"
+      ],
+      "shape": "[1,8,1,1]",
+      "detail": [],
+      "expression": "scale * gain",
+      "parent": "manual_fused_bn.scale",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "manual_fused_bn.shift",
+      "label": "Fuse bias into shift",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::manual_bn"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "manual_fused_bn.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mean",
+        "scale",
+        "bias"
+      ]
+    },
+    {
+      "id": "manual_fused_bn.shiftop",
+      "label": "shift = mean*scale - bias",
+      "kind": "subtract",
+      "source": [
+        "biggan-modules/layers.py::fused_bn"
+      ],
+      "shape": "[1,8,1,1]",
+      "detail": [],
+      "expression": "shift - bias",
+      "expanded_formula": "mean*scale-bias",
+      "parent": "manual_fused_bn.shift",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "manual_fused_bn.affine",
+      "label": "Apply fused arithmetic",
+      "kind": "group",
+      "source": [
+        "biggan-modules/layers.py::manual_bn"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "manual_fused_bn.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "scale",
+        "shift"
+      ]
+    },
+    {
+      "id": "manual_fused_bn.out",
+      "label": "x*scale - shift",
+      "kind": "multiply",
+      "source": [
+        "biggan-modules/layers.py::fused_bn"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "expression": "x * scale - shift",
+      "parent": "manual_fused_bn.affine",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "manual_fused_bn.y",
+      "label": "Normalized affine output",
+      "kind": "output",
+      "source": [
+        "biggan-modules/layers.py::manual_bn"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "parent": "manual_fused_bn.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "manual_fused_bn.stats:in->manual_fused_bn.cast:in:boundary",
+      "src": "manual_fused_bn.stats",
+      "dst": "manual_fused_bn.cast",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "manual_fused_bn.cast:out->manual_fused_bn.moments:in:tensor",
+      "src": "manual_fused_bn.cast",
+      "dst": "manual_fused_bn.moments",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "manual_fused_bn.moments:out->manual_fused_bn.variance:in:tensor",
+      "src": "manual_fused_bn.moments",
+      "dst": "manual_fused_bn.variance",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "manual_fused_bn.variance:out->manual_fused_bn.stats:out:boundary",
+      "src": "manual_fused_bn.variance",
+      "dst": "manual_fused_bn.stats",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "manual_fused_bn.scale:in->manual_fused_bn.rsqrt:in:boundary",
+      "src": "manual_fused_bn.scale",
+      "dst": "manual_fused_bn.rsqrt",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "manual_fused_bn.rsqrt:out->manual_fused_bn.gainop:in:tensor",
+      "src": "manual_fused_bn.rsqrt",
+      "dst": "manual_fused_bn.gainop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "manual_fused_bn.gainop:out->manual_fused_bn.scale:out:boundary",
+      "src": "manual_fused_bn.gainop",
+      "dst": "manual_fused_bn.scale",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "manual_fused_bn.shift:in->manual_fused_bn.shiftop:in:boundary",
+      "src": "manual_fused_bn.shift",
+      "dst": "manual_fused_bn.shiftop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "manual_fused_bn.shiftop:out->manual_fused_bn.shift:out:boundary",
+      "src": "manual_fused_bn.shiftop",
+      "dst": "manual_fused_bn.shift",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "manual_fused_bn.affine:in->manual_fused_bn.out:in:boundary",
+      "src": "manual_fused_bn.affine",
+      "dst": "manual_fused_bn.out",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "manual_fused_bn.out:out->manual_fused_bn.affine:out:boundary",
+      "src": "manual_fused_bn.out",
+      "dst": "manual_fused_bn.affine",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "manual_fused_bn.x:out->manual_fused_bn.stats:in:tensor",
+      "src": "manual_fused_bn.x",
+      "dst": "manual_fused_bn.stats",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "manual_fused_bn.stats:var->manual_fused_bn.scale:in:tensor",
+      "src": "manual_fused_bn.stats",
+      "dst": "manual_fused_bn.scale",
+      "src_port": "var",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "manual_fused_bn.gain:gain->manual_fused_bn.scale:gain:tensor",
+      "src": "manual_fused_bn.gain",
+      "dst": "manual_fused_bn.scale",
+      "src_port": "gain",
+      "dst_port": "gain",
+      "role": "tensor"
+    },
+    {
+      "id": "manual_fused_bn.stats:mean->manual_fused_bn.shift:mean:tensor",
+      "src": "manual_fused_bn.stats",
+      "dst": "manual_fused_bn.shift",
+      "src_port": "mean",
+      "dst_port": "mean",
+      "role": "tensor"
+    },
+    {
+      "id": "manual_fused_bn.scale:out->manual_fused_bn.shift:scale:tensor",
+      "src": "manual_fused_bn.scale",
+      "dst": "manual_fused_bn.shift",
+      "src_port": "out",
+      "dst_port": "scale",
+      "role": "tensor"
+    },
+    {
+      "id": "manual_fused_bn.gain:bias->manual_fused_bn.shift:bias:tensor",
+      "src": "manual_fused_bn.gain",
+      "dst": "manual_fused_bn.shift",
+      "src_port": "bias",
+      "dst_port": "bias",
+      "role": "tensor"
+    },
+    {
+      "id": "manual_fused_bn.scale:out->manual_fused_bn.affine:scale:tensor",
+      "src": "manual_fused_bn.scale",
+      "dst": "manual_fused_bn.affine",
+      "src_port": "out",
+      "dst_port": "scale",
+      "role": "tensor"
+    },
+    {
+      "id": "manual_fused_bn.shift:out->manual_fused_bn.affine:shift:tensor",
+      "src": "manual_fused_bn.shift",
+      "dst": "manual_fused_bn.affine",
+      "src_port": "out",
+      "dst_port": "shift",
+      "role": "tensor"
+    },
+    {
+      "id": "manual_fused_bn.x:out->manual_fused_bn.affine:in:retained_value",
+      "src": "manual_fused_bn.x",
+      "dst": "manual_fused_bn.affine",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "retained_value"
+    },
+    {
+      "id": "manual_fused_bn.affine:out->manual_fused_bn.y:in:tensor",
+      "src": "manual_fused_bn.affine",
+      "dst": "manual_fused_bn.y",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Statistics are accumulated in float32, then mean and variance are cast to the original dtype.",
+    "The source uses E[x²]-E[x]² without clamping. Both moment reductions read the same input; their glyph is a compound statistics operation.",
+    "gain and bias are input arguments, not parameters declared by these functions."
+  ],
+  "corrections": [
+    "Do not add running EMA or locally learned gain/bias to this function-only subgraph."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

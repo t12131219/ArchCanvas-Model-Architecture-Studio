@@ -1,0 +1,27 @@
+{
+  "channels": 8,
+  "parameters": [
+    "weight"
+  ],
+  "buffers": [],
+  "lu": false,
+  "kernel_size": [
+    1,
+    1
+  ],
+  "logdet_shape": "scalar",
+  "shape_origin": "declared example; statically inferred, not observed",
+  "drawing_scope": "InvConv2d only; initialization is state provenance, not a repeated forward QR/LU.",
+  "source_contracts": [
+    [
+      "InvConv2d.forward",
+      "height * width * torch.slogdet(self.weight.squeeze().double())[1].float()"
+    ],
+    [
+      "InvConv2d.forward",
+      "F.conv2d(input, self.weight)"
+    ]
+  ],
+  "model_executed": false,
+  "artifact_scope": "module"
+}

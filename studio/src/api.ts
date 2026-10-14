@@ -2,6 +2,8 @@ import { canvasSavePayload } from './canvasPersistence.ts';
 import type { Architecture, CanvasDocument, HistoryState, ParameterOrigin, Scene } from './core';
 import type { AuthoredDraft, DraftCatalog } from './authoring';
 import type { CustomModulePreview } from './customModules';
+import type { PreviewExportBinding } from './previewPublication.ts';
+import type { PreviewSourceBundle, PreviewSourceRequest } from './previewInterop';
 
 export type GeneratedDraft = { draft: AuthoredDraft; presentationDraft?: AuthoredDraft; draftDigest: string; source: string; entry: string; architecture: Architecture; nodeBindings: Record<string, string>; containerBindings?: Record<string, string>; edgeBindings?: Record<string, string[]>; verification: Record<string, unknown> };
 export type ImportedSourceDraft = { draft: AuthoredDraft; sourceNodeBindings: Record<string, string>; sceneNodeBindings: Record<string, string>; provenanceDigest: string; verification: string };
@@ -67,6 +69,9 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
   return result as T;
 }
 export const api = {
+  previewAnalyze: (value: PreviewSourceRequest) => request<PreviewSourceBundle>('/preview/analyze', { method: 'POST', body: JSON.stringify(value) }),
+  previewEditSource: (value: PreviewSourceRequest) => mutation<Architecture>('/preview/edit-source', { files: value.files, entry: value.entry }),
+  projectPreview: (project: string, sourceDigest?: string, irDigest?: string) => mutation<PreviewSourceBundle>(`/projects/${encodeURIComponent(project)}/preview`, { ...(sourceDigest ? { baseSourceDigest: sourceDigest } : {}), ...(irDigest ? { baseIrDigest: irDigest } : {}) }),
   previewCustomModule: (value: { source: string; entry: string; label: string; constructorValues: Record<string, unknown> }) => mutation<CustomModulePreview>('/authoring/custom-modules/preview', value),
   importSourceDraft: async (document: CanvasDocument, scene: Scene) => {
     const { sourceEditingProjection } = await import('./sourceEditingClient.ts');
@@ -107,4 +112,5 @@ export const api = {
   commit: (project: string, transaction: Transaction) => mutation<Transaction>(`/projects/${encodeURIComponent(project)}/transactions/${transaction.id}/commit`, { approvalId: transaction.approvalId }),
   discard: (project: string, id: string) => mutation<Transaction>(`/projects/${encodeURIComponent(project)}/transactions/${id}/discard`, {}),
   export: (document: CanvasDocument, format: string, dpi: number, options?: { nodeId?: string; widthMm?: number }) => mutation<ExportArtifact>('/exports', { document, format, dpi, ...(options ? { options } : {}) }),
+  previewExport: (svg: string, format: string, dpi: number, widthMm: number, binding: PreviewExportBinding) => mutation<ExportArtifact>('/preview/exports', { svg, format, dpi, widthMm, binding }),
 };

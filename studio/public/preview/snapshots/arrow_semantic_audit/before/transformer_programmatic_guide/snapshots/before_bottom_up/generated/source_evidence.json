@@ -1,0 +1,259 @@
+{
+  "origin": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+  "sha256": "322b523bb2c142d35888a2ab8283f83fa979fc1c44deedaca2852719762c6dba",
+  "parser": "ast.parse; no source imports or execution",
+  "symbols": {
+    "clones": {
+      "symbol": "clones",
+      "start": 23,
+      "end": 25,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "def clones(module: nn.Module, n: int) -> nn.ModuleList:\n    \"\"\"Create N independent copies of a module.\"\"\"\n    return nn.ModuleList([copy.deepcopy(module) for _ in range(n)])"
+    },
+    "make_causal_mask": {
+      "symbol": "make_causal_mask",
+      "start": 28,
+      "end": 38,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "def make_causal_mask(seq_len: int, device=None) -> Tensor:\n    \"\"\"\n    Return a boolean causal mask of shape [seq_len, seq_len].\n\n    True means \"masked / not allowed to attend\".\n    Position i cannot attend to positions j > i.\n    \"\"\"\n    return torch.triu(\n        torch.ones(seq_len, seq_len, dtype=torch.bool, device=device),\n        diagonal=1,\n    )"
+    },
+    "scaled_dot_product_attention": {
+      "symbol": "scaled_dot_product_attention",
+      "start": 41,
+      "end": 101,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "def scaled_dot_product_attention(\n    q: Tensor,\n    k: Tensor,\n    v: Tensor,\n    attn_mask: Optional[Tensor] = None,\n    key_padding_mask: Optional[Tensor] = None,\n    dropout: Optional[nn.Dropout] = None,\n) -> tuple[Tensor, Tensor]:\n    \"\"\"\n    Scaled Dot-Product Attention.\n\n    Shapes:\n        q: [B, H, Tq, Dh]\n        k: [B, H, Tk, Dh]\n        v: [B, H, Tk, Dh]\n\n        attn_mask:\n            [Tq, Tk] or [B, Tq, Tk] or [B, H, Tq, Tk]\n            bool tensor; True means masked.\n\n        key_padding_mask:\n            [B, Tk]\n            bool tensor; True means padding / masked.\n\n    Returns:\n        output: [B, H, Tq, Dh]\n        attention_weights: [B, H, Tq, Tk]\n    \"\"\"\n    d_k = q.size(-1)\n    scores = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(d_k)\n\n    if attn_mask is not None:\n        attn_mask = attn_mask.to(dtype=torch.bool, device=scores.device)\n\n        if attn_mask.dim() == 2:\n            attn_mask = attn_mask.unsqueeze(0).unsqueeze(0)   # [1,1,Tq,Tk]\n        elif attn_mask.dim() == 3:\n            attn_mask = attn_mask.unsqueeze(1)                # [B,1,Tq,Tk]\n        elif attn_mask.dim() != 4:\n            raise ValueError(\"attn_mask must have 2, 3, or 4 dimensions.\")\n\n        scores = scores.masked_fill(attn_mask, float(\"-inf\"))\n\n    if key_padding_mask is not None:\n        key_padding_mask = key_padding_mask.to(\n            dtype=torch.bool, device=scores.device\n        )\n        # [B, Tk] -> [B, 1, 1, Tk]\n        padding = key_padding_mask.unsqueeze(1).unsqueeze(1)\n        scores = scores.masked_fill(padding, float(\"-inf\"))\n\n    attention_weights = torch.softmax(scores, dim=-1)\n\n    # Guard against a fully-masked row producing NaNs.\n    attention_weights = torch.nan_to_num(attention_weights, nan=0.0)\n\n    if dropout is not None:\n        attention_weights = dropout(attention_weights)\n\n    output = torch.matmul(attention_weights, v)\n    return output, attention_weights"
+    },
+    "MultiHeadAttention": {
+      "symbol": "MultiHeadAttention",
+      "start": 104,
+      "end": 174,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "class MultiHeadAttention(nn.Module):\n    \"\"\"\n    Multi-Head Attention from the original Transformer.\n\n    MultiHead(Q,K,V) = Concat(head_1, ..., head_h) W^O\n    head_i = Attention(Q W_i^Q, K W_i^K, V W_i^V)\n    \"\"\"\n\n    def __init__(self, d_model: int = 512, num_heads: int = 8, dropout: float = 0.1):\n        super().__init__()\n\n        if d_model % num_heads != 0:\n            raise ValueError(\"d_model must be divisible by num_heads.\")\n\n        self.d_model = d_model\n        self.num_heads = num_heads\n        self.d_head = d_model // num_heads\n\n        self.w_q = nn.Linear(d_model, d_model)\n        self.w_k = nn.Linear(d_model, d_model)\n        self.w_v = nn.Linear(d_model, d_model)\n        self.w_o = nn.Linear(d_model, d_model)\n\n        self.attn_dropout = nn.Dropout(dropout)\n\n    def _split_heads(self, x: Tensor) -> Tensor:\n        # [B, T, D] -> [B, H, T, Dh]\n        b, t, _ = x.shape\n        return (\n            x.view(b, t, self.num_heads, self.d_head)\n            .transpose(1, 2)\n            .contiguous()\n        )\n\n    def _combine_heads(self, x: Tensor) -> Tensor:\n        # [B, H, T, Dh] -> [B, T, D]\n        b, h, t, dh = x.shape\n        return (\n            x.transpose(1, 2)\n            .contiguous()\n            .view(b, t, h * dh)\n        )\n\n    def forward(\n        self,\n        query: Tensor,\n        key: Tensor,\n        value: Tensor,\n        attn_mask: Optional[Tensor] = None,\n        key_padding_mask: Optional[Tensor] = None,\n        need_weights: bool = False,\n    ):\n        q = self._split_heads(self.w_q(query))\n        k = self._split_heads(self.w_k(key))\n        v = self._split_heads(self.w_v(value))\n\n        x, weights = scaled_dot_product_attention(\n            q=q,\n            k=k,\n            v=v,\n            attn_mask=attn_mask,\n            key_padding_mask=key_padding_mask,\n            dropout=self.attn_dropout,\n        )\n\n        x = self._combine_heads(x)\n        x = self.w_o(x)\n\n        if need_weights:\n            return x, weights\n        return x"
+    },
+    "MultiHeadAttention.__init__": {
+      "symbol": "MultiHeadAttention.__init__",
+      "start": 112,
+      "end": 127,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def __init__(self, d_model: int = 512, num_heads: int = 8, dropout: float = 0.1):\n        super().__init__()\n\n        if d_model % num_heads != 0:\n            raise ValueError(\"d_model must be divisible by num_heads.\")\n\n        self.d_model = d_model\n        self.num_heads = num_heads\n        self.d_head = d_model // num_heads\n\n        self.w_q = nn.Linear(d_model, d_model)\n        self.w_k = nn.Linear(d_model, d_model)\n        self.w_v = nn.Linear(d_model, d_model)\n        self.w_o = nn.Linear(d_model, d_model)\n\n        self.attn_dropout = nn.Dropout(dropout)"
+    },
+    "MultiHeadAttention._split_heads": {
+      "symbol": "MultiHeadAttention._split_heads",
+      "start": 129,
+      "end": 136,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def _split_heads(self, x: Tensor) -> Tensor:\n        # [B, T, D] -> [B, H, T, Dh]\n        b, t, _ = x.shape\n        return (\n            x.view(b, t, self.num_heads, self.d_head)\n            .transpose(1, 2)\n            .contiguous()\n        )"
+    },
+    "MultiHeadAttention._combine_heads": {
+      "symbol": "MultiHeadAttention._combine_heads",
+      "start": 138,
+      "end": 145,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def _combine_heads(self, x: Tensor) -> Tensor:\n        # [B, H, T, Dh] -> [B, T, D]\n        b, h, t, dh = x.shape\n        return (\n            x.transpose(1, 2)\n            .contiguous()\n            .view(b, t, h * dh)\n        )"
+    },
+    "MultiHeadAttention.forward": {
+      "symbol": "MultiHeadAttention.forward",
+      "start": 147,
+      "end": 174,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def forward(\n        self,\n        query: Tensor,\n        key: Tensor,\n        value: Tensor,\n        attn_mask: Optional[Tensor] = None,\n        key_padding_mask: Optional[Tensor] = None,\n        need_weights: bool = False,\n    ):\n        q = self._split_heads(self.w_q(query))\n        k = self._split_heads(self.w_k(key))\n        v = self._split_heads(self.w_v(value))\n\n        x, weights = scaled_dot_product_attention(\n            q=q,\n            k=k,\n            v=v,\n            attn_mask=attn_mask,\n            key_padding_mask=key_padding_mask,\n            dropout=self.attn_dropout,\n        )\n\n        x = self._combine_heads(x)\n        x = self.w_o(x)\n\n        if need_weights:\n            return x, weights\n        return x"
+    },
+    "PositionwiseFeedForward": {
+      "symbol": "PositionwiseFeedForward",
+      "start": 177,
+      "end": 194,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "class PositionwiseFeedForward(nn.Module):\n    \"\"\"\n    FFN(x) = max(0, x W1 + b1) W2 + b2\n\n    Original base Transformer:\n        d_model = 512\n        d_ff    = 2048\n    \"\"\"\n\n    def __init__(self, d_model: int = 512, d_ff: int = 2048, dropout: float = 0.1):\n        super().__init__()\n        self.linear1 = nn.Linear(d_model, d_ff)\n        self.linear2 = nn.Linear(d_ff, d_model)\n        self.dropout = nn.Dropout(dropout)\n        self.activation = nn.ReLU()\n\n    def forward(self, x: Tensor) -> Tensor:\n        return self.linear2(self.dropout(self.activation(self.linear1(x))))"
+    },
+    "PositionwiseFeedForward.__init__": {
+      "symbol": "PositionwiseFeedForward.__init__",
+      "start": 186,
+      "end": 191,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def __init__(self, d_model: int = 512, d_ff: int = 2048, dropout: float = 0.1):\n        super().__init__()\n        self.linear1 = nn.Linear(d_model, d_ff)\n        self.linear2 = nn.Linear(d_ff, d_model)\n        self.dropout = nn.Dropout(dropout)\n        self.activation = nn.ReLU()"
+    },
+    "PositionwiseFeedForward.forward": {
+      "symbol": "PositionwiseFeedForward.forward",
+      "start": 193,
+      "end": 194,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def forward(self, x: Tensor) -> Tensor:\n        return self.linear2(self.dropout(self.activation(self.linear1(x))))"
+    },
+    "PositionalEncoding": {
+      "symbol": "PositionalEncoding",
+      "start": 197,
+      "end": 233,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "class PositionalEncoding(nn.Module):\n    \"\"\"\n    Fixed sinusoidal positional encoding from the original paper.\n\n    PE(pos, 2i)   = sin(pos / 10000^(2i/d_model))\n    PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model))\n    \"\"\"\n\n    def __init__(\n        self,\n        d_model: int = 512,\n        dropout: float = 0.1,\n        max_len: int = 5000,\n    ):\n        super().__init__()\n        self.dropout = nn.Dropout(dropout)\n\n        position = torch.arange(max_len, dtype=torch.float32).unsqueeze(1)\n        div_term = torch.exp(\n            torch.arange(0, d_model, 2, dtype=torch.float32)\n            * (-math.log(10000.0) / d_model)\n        )\n\n        pe = torch.zeros(max_len, d_model, dtype=torch.float32)\n        pe[:, 0::2] = torch.sin(position * div_term)\n\n        # Handles odd d_model as well.\n        if d_model > 1:\n            pe[:, 1::2] = torch.cos(\n                position * div_term[: pe[:, 1::2].shape[1]]\n            )\n\n        self.register_buffer(\"pe\", pe.unsqueeze(0), persistent=False)  # [1,L,D]\n\n    def forward(self, x: Tensor) -> Tensor:\n        x = x + self.pe[:, : x.size(1)].to(dtype=x.dtype)\n        return self.dropout(x)"
+    },
+    "PositionalEncoding.__init__": {
+      "symbol": "PositionalEncoding.__init__",
+      "start": 205,
+      "end": 229,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def __init__(\n        self,\n        d_model: int = 512,\n        dropout: float = 0.1,\n        max_len: int = 5000,\n    ):\n        super().__init__()\n        self.dropout = nn.Dropout(dropout)\n\n        position = torch.arange(max_len, dtype=torch.float32).unsqueeze(1)\n        div_term = torch.exp(\n            torch.arange(0, d_model, 2, dtype=torch.float32)\n            * (-math.log(10000.0) / d_model)\n        )\n\n        pe = torch.zeros(max_len, d_model, dtype=torch.float32)\n        pe[:, 0::2] = torch.sin(position * div_term)\n\n        # Handles odd d_model as well.\n        if d_model > 1:\n            pe[:, 1::2] = torch.cos(\n                position * div_term[: pe[:, 1::2].shape[1]]\n            )\n\n        self.register_buffer(\"pe\", pe.unsqueeze(0), persistent=False)  # [1,L,D]"
+    },
+    "PositionalEncoding.forward": {
+      "symbol": "PositionalEncoding.forward",
+      "start": 231,
+      "end": 233,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def forward(self, x: Tensor) -> Tensor:\n        x = x + self.pe[:, : x.size(1)].to(dtype=x.dtype)\n        return self.dropout(x)"
+    },
+    "TokenEmbedding": {
+      "symbol": "TokenEmbedding",
+      "start": 236,
+      "end": 245,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "class TokenEmbedding(nn.Module):\n    \"\"\"Embedding multiplied by sqrt(d_model), as in the original paper.\"\"\"\n\n    def __init__(self, vocab_size: int, d_model: int):\n        super().__init__()\n        self.d_model = d_model\n        self.embedding = nn.Embedding(vocab_size, d_model)\n\n    def forward(self, token_ids: Tensor) -> Tensor:\n        return self.embedding(token_ids) * math.sqrt(self.d_model)"
+    },
+    "TokenEmbedding.__init__": {
+      "symbol": "TokenEmbedding.__init__",
+      "start": 239,
+      "end": 242,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def __init__(self, vocab_size: int, d_model: int):\n        super().__init__()\n        self.d_model = d_model\n        self.embedding = nn.Embedding(vocab_size, d_model)"
+    },
+    "TokenEmbedding.forward": {
+      "symbol": "TokenEmbedding.forward",
+      "start": 244,
+      "end": 245,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def forward(self, token_ids: Tensor) -> Tensor:\n        return self.embedding(token_ids) * math.sqrt(self.d_model)"
+    },
+    "EncoderLayer": {
+      "symbol": "EncoderLayer",
+      "start": 248,
+      "end": 288,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "class EncoderLayer(nn.Module):\n    \"\"\"\n    Original encoder layer:\n\n        x -> Self-Attention -> Add & Norm\n          -> Feed Forward   -> Add & Norm\n    \"\"\"\n\n    def __init__(\n        self,\n        d_model: int = 512,\n        num_heads: int = 8,\n        d_ff: int = 2048,\n        dropout: float = 0.1,\n    ):\n        super().__init__()\n        self.self_attn = MultiHeadAttention(d_model, num_heads, dropout)\n        self.ffn = PositionwiseFeedForward(d_model, d_ff, dropout)\n\n        self.norm1 = nn.LayerNorm(d_model)\n        self.norm2 = nn.LayerNorm(d_model)\n\n        self.dropout1 = nn.Dropout(dropout)\n        self.dropout2 = nn.Dropout(dropout)\n\n    def forward(\n        self,\n        x: Tensor,\n        src_key_padding_mask: Optional[Tensor] = None,\n    ) -> Tensor:\n        attn_out = self.self_attn(\n            query=x,\n            key=x,\n            value=x,\n            key_padding_mask=src_key_padding_mask,\n        )\n        x = self.norm1(x + self.dropout1(attn_out))\n\n        ffn_out = self.ffn(x)\n        x = self.norm2(x + self.dropout2(ffn_out))\n        return x"
+    },
+    "EncoderLayer.__init__": {
+      "symbol": "EncoderLayer.__init__",
+      "start": 256,
+      "end": 271,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def __init__(\n        self,\n        d_model: int = 512,\n        num_heads: int = 8,\n        d_ff: int = 2048,\n        dropout: float = 0.1,\n    ):\n        super().__init__()\n        self.self_attn = MultiHeadAttention(d_model, num_heads, dropout)\n        self.ffn = PositionwiseFeedForward(d_model, d_ff, dropout)\n\n        self.norm1 = nn.LayerNorm(d_model)\n        self.norm2 = nn.LayerNorm(d_model)\n\n        self.dropout1 = nn.Dropout(dropout)\n        self.dropout2 = nn.Dropout(dropout)"
+    },
+    "EncoderLayer.forward": {
+      "symbol": "EncoderLayer.forward",
+      "start": 273,
+      "end": 288,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def forward(\n        self,\n        x: Tensor,\n        src_key_padding_mask: Optional[Tensor] = None,\n    ) -> Tensor:\n        attn_out = self.self_attn(\n            query=x,\n            key=x,\n            value=x,\n            key_padding_mask=src_key_padding_mask,\n        )\n        x = self.norm1(x + self.dropout1(attn_out))\n\n        ffn_out = self.ffn(x)\n        x = self.norm2(x + self.dropout2(ffn_out))\n        return x"
+    },
+    "Encoder": {
+      "symbol": "Encoder",
+      "start": 291,
+      "end": 303,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "class Encoder(nn.Module):\n    def __init__(self, layer: EncoderLayer, num_layers: int = 6):\n        super().__init__()\n        self.layers = clones(layer, num_layers)\n\n    def forward(\n        self,\n        x: Tensor,\n        src_key_padding_mask: Optional[Tensor] = None,\n    ) -> Tensor:\n        for layer in self.layers:\n            x = layer(x, src_key_padding_mask=src_key_padding_mask)\n        return x"
+    },
+    "Encoder.__init__": {
+      "symbol": "Encoder.__init__",
+      "start": 292,
+      "end": 294,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def __init__(self, layer: EncoderLayer, num_layers: int = 6):\n        super().__init__()\n        self.layers = clones(layer, num_layers)"
+    },
+    "Encoder.forward": {
+      "symbol": "Encoder.forward",
+      "start": 296,
+      "end": 303,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def forward(\n        self,\n        x: Tensor,\n        src_key_padding_mask: Optional[Tensor] = None,\n    ) -> Tensor:\n        for layer in self.layers:\n            x = layer(x, src_key_padding_mask=src_key_padding_mask)\n        return x"
+    },
+    "DecoderLayer": {
+      "symbol": "DecoderLayer",
+      "start": 306,
+      "end": 366,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "class DecoderLayer(nn.Module):\n    \"\"\"\n    Original decoder layer:\n\n        x -> Masked Self-Attention -> Add & Norm\n          -> Cross-Attention       -> Add & Norm\n          -> Feed Forward          -> Add & Norm\n    \"\"\"\n\n    def __init__(\n        self,\n        d_model: int = 512,\n        num_heads: int = 8,\n        d_ff: int = 2048,\n        dropout: float = 0.1,\n    ):\n        super().__init__()\n\n        self.self_attn = MultiHeadAttention(d_model, num_heads, dropout)\n        self.cross_attn = MultiHeadAttention(d_model, num_heads, dropout)\n        self.ffn = PositionwiseFeedForward(d_model, d_ff, dropout)\n\n        self.norm1 = nn.LayerNorm(d_model)\n        self.norm2 = nn.LayerNorm(d_model)\n        self.norm3 = nn.LayerNorm(d_model)\n\n        self.dropout1 = nn.Dropout(dropout)\n        self.dropout2 = nn.Dropout(dropout)\n        self.dropout3 = nn.Dropout(dropout)\n\n    def forward(\n        self,\n        x: Tensor,\n        memory: Tensor,\n        tgt_mask: Optional[Tensor] = None,\n        tgt_key_padding_mask: Optional[Tensor] = None,\n        memory_key_padding_mask: Optional[Tensor] = None,\n    ) -> Tensor:\n        # 1) Masked decoder self-attention\n        self_attn_out = self.self_attn(\n            query=x,\n            key=x,\n            value=x,\n            attn_mask=tgt_mask,\n            key_padding_mask=tgt_key_padding_mask,\n        )\n        x = self.norm1(x + self.dropout1(self_attn_out))\n\n        # 2) Encoder-decoder cross-attention\n        cross_attn_out = self.cross_attn(\n            query=x,\n            key=memory,\n            value=memory,\n            key_padding_mask=memory_key_padding_mask,\n        )\n        x = self.norm2(x + self.dropout2(cross_attn_out))\n\n        # 3) Position-wise FFN\n        ffn_out = self.ffn(x)\n        x = self.norm3(x + self.dropout3(ffn_out))\n        return x"
+    },
+    "DecoderLayer.__init__": {
+      "symbol": "DecoderLayer.__init__",
+      "start": 315,
+      "end": 334,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def __init__(\n        self,\n        d_model: int = 512,\n        num_heads: int = 8,\n        d_ff: int = 2048,\n        dropout: float = 0.1,\n    ):\n        super().__init__()\n\n        self.self_attn = MultiHeadAttention(d_model, num_heads, dropout)\n        self.cross_attn = MultiHeadAttention(d_model, num_heads, dropout)\n        self.ffn = PositionwiseFeedForward(d_model, d_ff, dropout)\n\n        self.norm1 = nn.LayerNorm(d_model)\n        self.norm2 = nn.LayerNorm(d_model)\n        self.norm3 = nn.LayerNorm(d_model)\n\n        self.dropout1 = nn.Dropout(dropout)\n        self.dropout2 = nn.Dropout(dropout)\n        self.dropout3 = nn.Dropout(dropout)"
+    },
+    "DecoderLayer.forward": {
+      "symbol": "DecoderLayer.forward",
+      "start": 336,
+      "end": 366,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def forward(\n        self,\n        x: Tensor,\n        memory: Tensor,\n        tgt_mask: Optional[Tensor] = None,\n        tgt_key_padding_mask: Optional[Tensor] = None,\n        memory_key_padding_mask: Optional[Tensor] = None,\n    ) -> Tensor:\n        # 1) Masked decoder self-attention\n        self_attn_out = self.self_attn(\n            query=x,\n            key=x,\n            value=x,\n            attn_mask=tgt_mask,\n            key_padding_mask=tgt_key_padding_mask,\n        )\n        x = self.norm1(x + self.dropout1(self_attn_out))\n\n        # 2) Encoder-decoder cross-attention\n        cross_attn_out = self.cross_attn(\n            query=x,\n            key=memory,\n            value=memory,\n            key_padding_mask=memory_key_padding_mask,\n        )\n        x = self.norm2(x + self.dropout2(cross_attn_out))\n\n        # 3) Position-wise FFN\n        ffn_out = self.ffn(x)\n        x = self.norm3(x + self.dropout3(ffn_out))\n        return x"
+    },
+    "Decoder": {
+      "symbol": "Decoder",
+      "start": 369,
+      "end": 390,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "class Decoder(nn.Module):\n    def __init__(self, layer: DecoderLayer, num_layers: int = 6):\n        super().__init__()\n        self.layers = clones(layer, num_layers)\n\n    def forward(\n        self,\n        x: Tensor,\n        memory: Tensor,\n        tgt_mask: Optional[Tensor] = None,\n        tgt_key_padding_mask: Optional[Tensor] = None,\n        memory_key_padding_mask: Optional[Tensor] = None,\n    ) -> Tensor:\n        for layer in self.layers:\n            x = layer(\n                x=x,\n                memory=memory,\n                tgt_mask=tgt_mask,\n                tgt_key_padding_mask=tgt_key_padding_mask,\n                memory_key_padding_mask=memory_key_padding_mask,\n            )\n        return x"
+    },
+    "Decoder.__init__": {
+      "symbol": "Decoder.__init__",
+      "start": 370,
+      "end": 372,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def __init__(self, layer: DecoderLayer, num_layers: int = 6):\n        super().__init__()\n        self.layers = clones(layer, num_layers)"
+    },
+    "Decoder.forward": {
+      "symbol": "Decoder.forward",
+      "start": 374,
+      "end": 390,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def forward(\n        self,\n        x: Tensor,\n        memory: Tensor,\n        tgt_mask: Optional[Tensor] = None,\n        tgt_key_padding_mask: Optional[Tensor] = None,\n        memory_key_padding_mask: Optional[Tensor] = None,\n    ) -> Tensor:\n        for layer in self.layers:\n            x = layer(\n                x=x,\n                memory=memory,\n                tgt_mask=tgt_mask,\n                tgt_key_padding_mask=tgt_key_padding_mask,\n                memory_key_padding_mask=memory_key_padding_mask,\n            )\n        return x"
+    },
+    "Transformer": {
+      "symbol": "Transformer",
+      "start": 393,
+      "end": 499,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "class Transformer(nn.Module):\n    \"\"\"\n    Full encoder-decoder Transformer.\n\n    Default dimensions correspond to Transformer-Base in the 2017 paper:\n        N = 6\n        d_model = 512\n        d_ff = 2048\n        h = 8\n        dropout = 0.1\n    \"\"\"\n\n    def __init__(\n        self,\n        src_vocab_size: int,\n        tgt_vocab_size: int,\n        d_model: int = 512,\n        num_heads: int = 8,\n        num_encoder_layers: int = 6,\n        num_decoder_layers: int = 6,\n        d_ff: int = 2048,\n        dropout: float = 0.1,\n        max_len: int = 5000,\n        tie_tgt_embedding_and_generator: bool = False,\n    ):\n        super().__init__()\n\n        self.src_embedding = TokenEmbedding(src_vocab_size, d_model)\n        self.tgt_embedding = TokenEmbedding(tgt_vocab_size, d_model)\n        self.position = PositionalEncoding(d_model, dropout, max_len)\n\n        encoder_layer = EncoderLayer(d_model, num_heads, d_ff, dropout)\n        decoder_layer = DecoderLayer(d_model, num_heads, d_ff, dropout)\n\n        self.encoder = Encoder(encoder_layer, num_encoder_layers)\n        self.decoder = Decoder(decoder_layer, num_decoder_layers)\n\n        self.generator = nn.Linear(d_model, tgt_vocab_size, bias=False)\n\n        if tie_tgt_embedding_and_generator:\n            if self.generator.weight.shape != self.tgt_embedding.embedding.weight.shape:\n                raise ValueError(\"Target embedding and generator shapes do not match.\")\n            self.generator.weight = self.tgt_embedding.embedding.weight\n\n        self._reset_parameters()\n\n    def _reset_parameters(self):\n        # Xavier initialization for matrix parameters.\n        for p in self.parameters():\n            if p.dim() > 1:\n                nn.init.xavier_uniform_(p)\n\n    def encode(\n        self,\n        src: Tensor,\n        src_key_padding_mask: Optional[Tensor] = None,\n    ) -> Tensor:\n        x = self.position(self.src_embedding(src))\n        return self.encoder(x, src_key_padding_mask)\n\n    def decode(\n        self,\n        tgt: Tensor,\n        memory: Tensor,\n        tgt_mask: Optional[Tensor] = None,\n        tgt_key_padding_mask: Optional[Tensor] = None,\n        memory_key_padding_mask: Optional[Tensor] = None,\n    ) -> Tensor:\n        x = self.position(self.tgt_embedding(tgt))\n        return self.decoder(\n            x=x,\n            memory=memory,\n            tgt_mask=tgt_mask,\n            tgt_key_padding_mask=tgt_key_padding_mask,\n            memory_key_padding_mask=memory_key_padding_mask,\n        )\n\n    def forward(\n        self,\n        src: Tensor,\n        tgt: Tensor,\n        src_key_padding_mask: Optional[Tensor] = None,\n        tgt_key_padding_mask: Optional[Tensor] = None,\n        tgt_mask: Optional[Tensor] = None,\n    ) -> Tensor:\n        \"\"\"\n        Args:\n            src: [B, S]\n            tgt: [B, T]\n            src_key_padding_mask: [B, S], True at PAD positions\n            tgt_key_padding_mask: [B, T], True at PAD positions\n            tgt_mask: [T, T], True where attention is forbidden\n\n        Returns:\n            logits: [B, T, tgt_vocab_size]\n        \"\"\"\n        memory = self.encode(src, src_key_padding_mask)\n\n        decoder_out = self.decode(\n            tgt=tgt,\n            memory=memory,\n            tgt_mask=tgt_mask,\n            tgt_key_padding_mask=tgt_key_padding_mask,\n            memory_key_padding_mask=src_key_padding_mask,\n        )\n\n        return self.generator(decoder_out)"
+    },
+    "Transformer.__init__": {
+      "symbol": "Transformer.__init__",
+      "start": 405,
+      "end": 437,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def __init__(\n        self,\n        src_vocab_size: int,\n        tgt_vocab_size: int,\n        d_model: int = 512,\n        num_heads: int = 8,\n        num_encoder_layers: int = 6,\n        num_decoder_layers: int = 6,\n        d_ff: int = 2048,\n        dropout: float = 0.1,\n        max_len: int = 5000,\n        tie_tgt_embedding_and_generator: bool = False,\n    ):\n        super().__init__()\n\n        self.src_embedding = TokenEmbedding(src_vocab_size, d_model)\n        self.tgt_embedding = TokenEmbedding(tgt_vocab_size, d_model)\n        self.position = PositionalEncoding(d_model, dropout, max_len)\n\n        encoder_layer = EncoderLayer(d_model, num_heads, d_ff, dropout)\n        decoder_layer = DecoderLayer(d_model, num_heads, d_ff, dropout)\n\n        self.encoder = Encoder(encoder_layer, num_encoder_layers)\n        self.decoder = Decoder(decoder_layer, num_decoder_layers)\n\n        self.generator = nn.Linear(d_model, tgt_vocab_size, bias=False)\n\n        if tie_tgt_embedding_and_generator:\n            if self.generator.weight.shape != self.tgt_embedding.embedding.weight.shape:\n                raise ValueError(\"Target embedding and generator shapes do not match.\")\n            self.generator.weight = self.tgt_embedding.embedding.weight\n\n        self._reset_parameters()"
+    },
+    "Transformer._reset_parameters": {
+      "symbol": "Transformer._reset_parameters",
+      "start": 439,
+      "end": 443,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def _reset_parameters(self):\n        # Xavier initialization for matrix parameters.\n        for p in self.parameters():\n            if p.dim() > 1:\n                nn.init.xavier_uniform_(p)"
+    },
+    "Transformer.encode": {
+      "symbol": "Transformer.encode",
+      "start": 445,
+      "end": 451,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def encode(\n        self,\n        src: Tensor,\n        src_key_padding_mask: Optional[Tensor] = None,\n    ) -> Tensor:\n        x = self.position(self.src_embedding(src))\n        return self.encoder(x, src_key_padding_mask)"
+    },
+    "Transformer.decode": {
+      "symbol": "Transformer.decode",
+      "start": 453,
+      "end": 468,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def decode(\n        self,\n        tgt: Tensor,\n        memory: Tensor,\n        tgt_mask: Optional[Tensor] = None,\n        tgt_key_padding_mask: Optional[Tensor] = None,\n        memory_key_padding_mask: Optional[Tensor] = None,\n    ) -> Tensor:\n        x = self.position(self.tgt_embedding(tgt))\n        return self.decoder(\n            x=x,\n            memory=memory,\n            tgt_mask=tgt_mask,\n            tgt_key_padding_mask=tgt_key_padding_mask,\n            memory_key_padding_mask=memory_key_padding_mask,\n        )"
+    },
+    "Transformer.forward": {
+      "symbol": "Transformer.forward",
+      "start": 470,
+      "end": 499,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "    def forward(\n        self,\n        src: Tensor,\n        tgt: Tensor,\n        src_key_padding_mask: Optional[Tensor] = None,\n        tgt_key_padding_mask: Optional[Tensor] = None,\n        tgt_mask: Optional[Tensor] = None,\n    ) -> Tensor:\n        \"\"\"\n        Args:\n            src: [B, S]\n            tgt: [B, T]\n            src_key_padding_mask: [B, S], True at PAD positions\n            tgt_key_padding_mask: [B, T], True at PAD positions\n            tgt_mask: [T, T], True where attention is forbidden\n\n        Returns:\n            logits: [B, T, tgt_vocab_size]\n        \"\"\"\n        memory = self.encode(src, src_key_padding_mask)\n\n        decoder_out = self.decode(\n            tgt=tgt,\n            memory=memory,\n            tgt_mask=tgt_mask,\n            tgt_key_padding_mask=tgt_key_padding_mask,\n            memory_key_padding_mask=src_key_padding_mask,\n        )\n\n        return self.generator(decoder_out)"
+    },
+    "greedy_decode": {
+      "symbol": "greedy_decode",
+      "start": 503,
+      "end": 553,
+      "source": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/transformer_programmatic_guide/sources/pytorch_transformer_original/transformer.py",
+      "snippet": "def greedy_decode(\n    model: Transformer,\n    src: Tensor,\n    bos_id: int,\n    eos_id: int,\n    max_new_tokens: int,\n    pad_id: Optional[int] = None,\n) -> Tensor:\n    \"\"\"\n    Minimal greedy autoregressive decoder.\n\n    This is intentionally simple and does not implement KV caching.\n    \"\"\"\n    model.eval()\n\n    if pad_id is None:\n        src_padding_mask = None\n    else:\n        src_padding_mask = src.eq(pad_id)\n\n    memory = model.encode(src, src_padding_mask)\n\n    ys = torch.full(\n        (src.size(0), 1),\n        bos_id,\n        dtype=torch.long,\n        device=src.device,\n    )\n\n    finished = torch.zeros(src.size(0), dtype=torch.bool, device=src.device)\n\n    for _ in range(max_new_tokens):\n        causal_mask = make_causal_mask(ys.size(1), device=ys.device)\n\n        decoder_out = model.decode(\n            tgt=ys,\n            memory=memory,\n            tgt_mask=causal_mask,\n            memory_key_padding_mask=src_padding_mask,\n        )\n\n        next_token_logits = model.generator(decoder_out[:, -1, :])\n        next_token = next_token_logits.argmax(dim=-1)\n\n        ys = torch.cat([ys, next_token.unsqueeze(1)], dim=1)\n\n        finished |= next_token.eq(eos_id)\n        if finished.all():\n            break\n\n    return ys"
+    }
+  }
+}

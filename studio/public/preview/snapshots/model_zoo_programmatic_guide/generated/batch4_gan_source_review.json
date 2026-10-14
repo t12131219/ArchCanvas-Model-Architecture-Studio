@@ -1,0 +1,447 @@
+{
+  "schema": "model-zoo-independent-source-review/1",
+  "reviewer": "zoo_cnn_resnet",
+  "status": "passed",
+  "selected_scope": "fixed upstream notebook train caller forward-data dependencies; losses and updates recorded as source facts outside diagram operators",
+  "model_execution": false,
+  "source_commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+  "models": {
+    "convgan": {
+      "independent_checks": [
+        "Caller noise interval read independently from uniform_ literal",
+        "ConvTranspose formula: (7-1)*2-2*1+3=13, then25,27,28",
+        "Conv2d floor spatial28->14->7 (->4 for WGAN)",
+        "Flatten width32*7*7=1568 or32*4*4=512",
+        "Three source call sites use one discriminator instance",
+        "D Linear d_for_g default biasTrue",
+        "D d_for_g actual global model receiver",
+        "D Linear d_real default biasTrue",
+        "D d_real actual global model receiver",
+        "D Linear d_fake default biasTrue",
+        "D d_fake actual global model receiver",
+        "Only D fake path detaches; G objective permits gradient through D",
+        "Same previously generated fake values reused after G step",
+        "Actual selected caller loss expression",
+        "BCE targets or Wasserstein signs match caller",
+        "Caller optimizer type and learning-rate literals",
+        "One D update or5critic loops with whole-param clamp[-.01,.01], no GP",
+        "Shared D call-site BN nodes plus actual G BN1d/3BN2d",
+        "Default affine/running-buffer BN in selected train caller",
+        "Explicit source LeakyReLU slope.0001/inplaceTrue",
+        "All source Conv/ConvTranspose have biasFalse"
+      ],
+      "source_checks": {
+        "files": 3,
+        "symbols": 9,
+        "nodes": 71,
+        "edges": 87,
+        "original_notebooks": 1,
+        "repository": "https://github.com/rasbt/deeplearning-models",
+        "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3"
+      },
+      "guard_count": 36,
+      "ir_nodes": 71,
+      "source_file": "deeplearning-models-batch4/pytorch_ipynb/gan/gan-conv.py",
+      "source_commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+      "profile": {
+        "task": "MNIST adversarial generation",
+        "mode": "train caller forward paths",
+        "latent_dim": 100,
+        "noise_distribution": "uniform",
+        "noise_range": [
+          -1.0,
+          1.0
+        ],
+        "batch_size_setting": 128,
+        "conditioning": false,
+        "generator_channels": [
+          64,
+          32,
+          16,
+          8,
+          1
+        ],
+        "generator_spatial": [
+          7,
+          13,
+          25,
+          27,
+          28
+        ],
+        "generator_output_range": [
+          -1,
+          1
+        ],
+        "discriminator_channels": [
+          1,
+          8,
+          32
+        ],
+        "discriminator_spatial": [
+          28,
+          14,
+          7
+        ],
+        "discriminator_conv_stages": 2,
+        "discriminator_linear_input": 1568,
+        "discriminator_sigmoid": false,
+        "discriminator_output": "binary_logit",
+        "discriminator_receiver": "global model.discriminator",
+        "discriminator_call_site_count": 3,
+        "discriminator_invocations_per_batch": 3,
+        "discriminator_instance_count": 1,
+        "selected_entries": [
+          "GAN.generator_forward",
+          "GAN.discriminator_forward"
+        ],
+        "joint_forward_defined": false,
+        "generator_objective_detached": false,
+        "discriminator_fake_detached": true,
+        "fake_reused_after_generator_step": true,
+        "loss": "binary_cross_entropy_with_logits",
+        "valid_target": 1,
+        "fake_target": 0,
+        "optimizer": "Adam",
+        "learning_rate": 0.0001,
+        "discriminator_iterations": 1,
+        "weight_clipping": null,
+        "gradient_penalty": false,
+        "model_executed": false,
+        "symbolic_shapes": true
+      },
+      "source_findings": [
+        {
+          "topic": "entry and global receiver",
+          "source_lines": [
+            137,
+            143
+          ],
+          "finding": "GAN has generator_forward/discriminator_forward, no forward override; D reads global model.discriminator and returns view(-1)"
+        },
+        {
+          "topic": "generator module geometry",
+          "source_lines": [
+            93,
+            117
+          ],
+          "finding": "Linear100->3136/biasFalse, BN1d3136, LeakyReLU slope.0001, reshape64x7x7; four transposed convolution(k,s,p)=(3,2,1)/(3,2,1)/(3,1,0)/(2,1,0), spatial7->13->25->27->28, Tanh after final convolution"
+        },
+        {
+          "topic": "discriminator module geometry",
+          "source_lines": [
+            119,
+            134
+          ],
+          "finding": "Two Conv1->8->32/k3s2p1,28->14->7; both biasFalse/BN/LeakyReLU.0001; Flatten1568 then Linear1568->1 default biasTrue; Sigmoid commented"
+        },
+        {
+          "topic": "caller input and gradients",
+          "source_lines": [
+            183,
+            227
+          ],
+          "finding": "Train caller normalizes real [-1,1], z Uniform[-1,1), G objective D(fake) no detach, D real separate, D fake same generated view.detach; G optimizer step occurs before D update"
+        },
+        {
+          "topic": "caller objective",
+          "source_lines": [
+            193,
+            231
+          ],
+          "finding": "valid1/fake0; BCEWithLogits; Dloss=.5(real+fake); Adam lr1e-4 for each model; one D step and no weight clamp or gradient penalty"
+        }
+      ],
+      "adapter_sha256": "f845c60c0979bba2836c23baee9a70378383cbe0ea81404234c873091aee4ecf",
+      "documentation": {
+        "path": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/model_zoo_programmatic_guide/docs/ConvGAN.md",
+        "sha256": "dbaa0e3c1a712ae6724096fac83eb934f2e8c59acaca8183cb2e19456f5c70b2",
+        "review": "passed",
+        "checks": [
+          "real caller/data-scope boundaries vs no joint forward",
+          "global D receiver without silent repair",
+          "three call sites vs three or eleven per-batch calls",
+          "exact latent interval and image/feature dimensions",
+          "Sequential identities, BN/bias/slope/train mode",
+          "fake-only caller detach and G-before-D fake reuse",
+          "real normalization and size-only class targets",
+          "actual BCE or signed Wasserstein objective with .5 D coefficient",
+          "Adam vs RMSprop and correct loop/clamp behavior",
+          "whole-parameter clamp includes BN affine but excludes running buffers",
+          "source/IR/visual folding and static/no execution boundary"
+        ]
+      },
+      "independent_exports": [
+        {
+          "view": "overview",
+          "canvas": [
+            2022,
+            949
+          ],
+          "status": "passed",
+          "export_consistency": "independent SVG/XML + source/IR comparison"
+        },
+        {
+          "view": "modules",
+          "canvas": [
+            2214,
+            2006
+          ],
+          "status": "passed",
+          "export_consistency": "independent SVG/XML + source/IR comparison"
+        },
+        {
+          "view": "detailed",
+          "canvas": [
+            2342,
+            3739
+          ],
+          "status": "passed",
+          "export_consistency": "independent SVG/XML + source/IR comparison"
+        }
+      ],
+      "actual_d_calls_per_batch": 3,
+      "last_change_check": {
+        "status": "passed",
+        "scope": "disambiguated call-site and per-batch invocation counts",
+        "call_site_count": 3,
+        "invocations_per_batch": 3,
+        "guard_count": 36,
+        "removed_field": "discriminator_call_count",
+        "documentation_consistency": "Docs already distinguish3call sites from3 or11 invocations; no documentation or geometry change"
+      }
+    },
+    "dcwgan": {
+      "independent_checks": [
+        "Caller noise interval read independently from uniform_ literal",
+        "ConvTranspose formula: (7-1)*2-2*1+3=13, then25,27,28",
+        "Conv2d floor spatial28->14->7 (->4 for WGAN)",
+        "Flatten width32*7*7=1568 or32*4*4=512",
+        "Three source call sites use one discriminator instance",
+        "D Linear d_for_g default biasTrue",
+        "D d_for_g actual global model receiver",
+        "D Linear d_real default biasTrue",
+        "D d_real actual global model receiver",
+        "D Linear d_fake default biasTrue",
+        "D d_fake actual global model receiver",
+        "Only D fake path detaches; G objective permits gradient through D",
+        "Same previously generated fake values reused after G step",
+        "Actual selected caller loss expression",
+        "BCE targets or Wasserstein signs match caller",
+        "Caller optimizer type and learning-rate literals",
+        "One D update or5critic loops with whole-param clamp[-.01,.01], no GP",
+        "Shared D call-site BN nodes plus actual G BN1d/3BN2d",
+        "Default affine/running-buffer BN in selected train caller",
+        "Explicit source LeakyReLU slope.0001/inplaceTrue",
+        "All source Conv/ConvTranspose have biasFalse"
+      ],
+      "source_checks": {
+        "files": 3,
+        "symbols": 10,
+        "nodes": 83,
+        "edges": 102,
+        "original_notebooks": 1,
+        "repository": "https://github.com/rasbt/deeplearning-models",
+        "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3"
+      },
+      "guard_count": 42,
+      "ir_nodes": 83,
+      "source_file": "deeplearning-models-batch4/pytorch_ipynb/gan/dc-wgan-1.py",
+      "source_commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+      "profile": {
+        "task": "MNIST adversarial generation",
+        "mode": "train caller forward paths",
+        "latent_dim": 100,
+        "noise_distribution": "uniform",
+        "noise_range": [
+          0.0,
+          1.0
+        ],
+        "batch_size_setting": 128,
+        "conditioning": false,
+        "generator_channels": [
+          64,
+          32,
+          16,
+          8,
+          1
+        ],
+        "generator_spatial": [
+          7,
+          13,
+          25,
+          27,
+          28
+        ],
+        "generator_output_range": [
+          -1,
+          1
+        ],
+        "discriminator_channels": [
+          1,
+          8,
+          16,
+          32
+        ],
+        "discriminator_spatial": [
+          28,
+          14,
+          7,
+          4
+        ],
+        "discriminator_conv_stages": 3,
+        "discriminator_linear_input": 512,
+        "discriminator_sigmoid": false,
+        "discriminator_output": "critic_score",
+        "discriminator_receiver": "global model.discriminator",
+        "discriminator_call_site_count": 3,
+        "discriminator_invocations_per_batch": 11,
+        "discriminator_instance_count": 1,
+        "selected_entries": [
+          "GAN.generator_forward",
+          "GAN.discriminator_forward"
+        ],
+        "joint_forward_defined": false,
+        "generator_objective_detached": false,
+        "discriminator_fake_detached": true,
+        "fake_reused_after_generator_step": true,
+        "loss": "mean(y_true*y_pred)",
+        "valid_target": -1,
+        "fake_target": 1,
+        "optimizer": "RMSprop",
+        "learning_rate": 5e-05,
+        "discriminator_iterations": 5,
+        "weight_clipping": 0.01,
+        "gradient_penalty": false,
+        "model_executed": false,
+        "symbolic_shapes": true
+      },
+      "source_findings": [
+        {
+          "topic": "entry and global receiver",
+          "source_lines": [
+            149,
+            155
+          ],
+          "finding": "GAN has two separate entry methods, no joint forward; D reads global model.discriminator and returns raw score[B]"
+        },
+        {
+          "topic": "generator module geometry",
+          "source_lines": [
+            100,
+            124
+          ],
+          "finding": "Same exact G architecture as ConvGAN: Linear100->3136,4ConvTranspose,4BN total, LeakyReLU.0001, spatial7->13->25->27->28, Tanh"
+        },
+        {
+          "topic": "critic module geometry",
+          "source_lines": [
+            126,
+            146
+          ],
+          "finding": "Three Conv1->8->16->32/k3s2p1, spatial28->14->7->4, Flatten512/Linear512->1; convbiasFalse,linearbiasTrue; no Sigmoid"
+        },
+        {
+          "topic": "caller sampling and call sites",
+          "source_lines": [
+            195,
+            252
+          ],
+          "finding": "Train caller z Uniform[0,1), G score call no detach, real/fake critic call sites inside range5; same generated image.detach reused after G step; 3 call sites but11 actual critic invocations per batch"
+        },
+        {
+          "topic": "Wasserstein loss signs",
+          "source_lines": [
+            90,
+            91,
+            210,
+            211,
+            232,
+            250,
+            257,
+            259
+          ],
+          "finding": "mean(y_true*y_pred),valid-1/fake+1; G loss=-mean(C(fake)),C loss=.5[-mean(C(real))+mean(C(fake))]"
+        },
+        {
+          "topic": "optimizers and whole-parameter clipping",
+          "source_lines": [
+            186,
+            187,
+            244,
+            263,
+            266,
+            267
+          ],
+          "finding": "RMSprop lr5e-5; five critic updates each followed by clamp[-.01,.01] of every discriminator parameter, including BN affine and Linear bias; no gradient penalty"
+        }
+      ],
+      "adapter_sha256": "3a772639f0e9fcac6f743de98c22756fb919135d34f6cfcbd8dad387d2a6ef88",
+      "documentation": {
+        "path": "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/model_zoo_programmatic_guide/docs/DCWGAN.md",
+        "sha256": "70ebf4a1b20466235fd3493ca9e7ac73256d7072547e33a4fa425cf3453c49be",
+        "review": "passed",
+        "checks": [
+          "real caller/data-scope boundaries vs no joint forward",
+          "global D receiver without silent repair",
+          "three call sites vs three or eleven per-batch calls",
+          "exact latent interval and image/feature dimensions",
+          "Sequential identities, BN/bias/slope/train mode",
+          "fake-only caller detach and G-before-D fake reuse",
+          "real normalization and size-only class targets",
+          "actual BCE or signed Wasserstein objective with .5 D coefficient",
+          "Adam vs RMSprop and correct loop/clamp behavior",
+          "whole-parameter clamp includes BN affine but excludes running buffers",
+          "source/IR/visual folding and static/no execution boundary"
+        ]
+      },
+      "independent_exports": [
+        {
+          "view": "overview",
+          "canvas": [
+            2022,
+            949
+          ],
+          "status": "passed",
+          "export_consistency": "independent SVG/XML + source/IR comparison"
+        },
+        {
+          "view": "modules",
+          "canvas": [
+            2214,
+            2006
+          ],
+          "status": "passed",
+          "export_consistency": "independent SVG/XML + source/IR comparison"
+        },
+        {
+          "view": "detailed",
+          "canvas": [
+            2342,
+            3868
+          ],
+          "status": "passed",
+          "export_consistency": "independent SVG/XML + source/IR comparison"
+        }
+      ],
+      "actual_d_calls_per_batch": 11,
+      "last_change_check": {
+        "status": "passed",
+        "scope": "disambiguated call-site and per-batch invocation counts",
+        "call_site_count": 3,
+        "invocations_per_batch": 11,
+        "guard_count": 42,
+        "removed_field": "discriminator_call_count",
+        "documentation_consistency": "Docs already distinguish3call sites from3 or11 invocations; no documentation or geometry change"
+      }
+    }
+  },
+  "findings": [],
+  "remaining": [],
+  "models_changed": false,
+  "reviewed_files": [
+    "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/model_zoo_programmatic_guide/adapters/convgan.py",
+    "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/model_zoo_programmatic_guide/adapters/dcwgan.py",
+    "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/model_zoo_programmatic_guide/docs/ConvGAN.md",
+    "/home/fzg/PycharmProjects/ArchCanvas/Constraint relationship of architecture diagram/model_zoo_programmatic_guide/docs/DCWGAN.md"
+  ]
+}

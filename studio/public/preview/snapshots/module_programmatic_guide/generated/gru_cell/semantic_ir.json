@@ -1,0 +1,800 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "gru_cell",
+  "profile": {
+    "input_size": 16,
+    "hidden_size": 16,
+    "reset_after_affine": true,
+    "return_tuple": false,
+    "kernel_origin": "supplementary PyTorch benchmark; not rasbt notebook kernel",
+    "label": "One step / I=H=16 / reset after recurrent affine / supplied parameters",
+    "mode": "reviewed static selected module profile",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "pytorch/pytorch",
+    "commit": "a8d6afb511a69687bbb2b7e88a3cf67917e1697e",
+    "snapshot": "c792f152fe79d547f576dbbc3ff5295b8f6a8dc0e3812f8d5ec2d3ddf6ccc3e6"
+  },
+  "nodes": [
+    {
+      "id": "gru_cell.root",
+      "label": "GRUCell / explicit reset-update gates",
+      "kind": "group",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "gru.x",
+          "gru.h",
+          "gru.params"
+        ],
+        [
+          "gru.body"
+        ],
+        [
+          "gru.output"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.x",
+      "label": "Current input x",
+      "kind": "input",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "gru_cell.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.h",
+      "label": "Previous hidden h",
+      "kind": "input",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "gru_cell.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.params",
+      "label": "Caller weights / biases",
+      "kind": "input",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "W_ih,W_hh:[48,16]; b:[48]",
+      "detail": [],
+      "registered_in_function": false,
+      "parent": "gru_cell.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.body",
+      "label": "GRU / one functional step",
+      "kind": "group",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "gru.gi",
+          "gru.gh"
+        ],
+        [
+          "gru.ci",
+          "gru.ch"
+        ],
+        [
+          "gru.reset",
+          "gru.update"
+        ],
+        [
+          "gru.rhn"
+        ],
+        [
+          "gru.candidate"
+        ],
+        [
+          "gru.delta"
+        ],
+        [
+          "gru.zdelta"
+        ],
+        [
+          "gru.hy"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": "gru_cell.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.gi",
+      "label": "Input affine: x W_ih^T + b_ih",
+      "kind": "linear",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,48]",
+      "detail": [],
+      "parameters": [
+        "w_ih",
+        "b_ih"
+      ],
+      "parameter_origin": "caller-supplied Tensor arguments",
+      "expression": "torch.mm(input, w_ih.t()) + b_ih",
+      "parent": "gru.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input",
+        "parameters"
+      ]
+    },
+    {
+      "id": "gru.gh",
+      "label": "Hidden affine: h W_hh^T + b_hh",
+      "kind": "linear",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,48]",
+      "detail": [],
+      "parameters": [
+        "w_hh",
+        "b_hh"
+      ],
+      "parameter_origin": "caller-supplied Tensor arguments",
+      "expression": "torch.mm(hidden, w_hh.t()) + b_hh",
+      "parent": "gru.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "hidden",
+        "parameters"
+      ]
+    },
+    {
+      "id": "gru.ci",
+      "label": "Chunk input affine / r,z,n",
+      "kind": "tensor",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "chunk_dim": 1,
+      "fields": [
+        "i_r",
+        "i_i",
+        "i_n"
+      ],
+      "parent": "gru.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "i_r",
+        "i_i",
+        "i_n"
+      ]
+    },
+    {
+      "id": "gru.ch",
+      "label": "Chunk hidden affine / r,z,n",
+      "kind": "tensor",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "chunk_dim": 1,
+      "fields": [
+        "h_r",
+        "h_i",
+        "h_n"
+      ],
+      "parent": "gru.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "h_r",
+        "h_i",
+        "h_n"
+      ]
+    },
+    {
+      "id": "gru.reset",
+      "label": "Reset gate r",
+      "kind": "group",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "gru.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.r_add",
+      "label": "i_r + h_r",
+      "kind": "add",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "gru.reset",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input_r",
+        "hidden_r"
+      ]
+    },
+    {
+      "id": "gru.r",
+      "label": "Sigmoid reset gate",
+      "kind": "sigmoid",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "gru.reset",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.update",
+      "label": "Update gate z / source inputgate",
+      "kind": "group",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "gru.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.z_add",
+      "label": "i_i + h_i",
+      "kind": "add",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "gru.update",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input_z",
+        "hidden_z"
+      ]
+    },
+    {
+      "id": "gru.z",
+      "label": "Sigmoid update gate",
+      "kind": "sigmoid",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "gru.update",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.rhn",
+      "label": "r * h_n / bias already included",
+      "kind": "multiply",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "ordered_operands": [
+        "resetgate",
+        "h_n"
+      ],
+      "parent": "gru.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "hidden_n",
+        "reset"
+      ]
+    },
+    {
+      "id": "gru.candidate",
+      "label": "Candidate n",
+      "kind": "group",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "gru.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.n_add",
+      "label": "i_n + r * h_n",
+      "kind": "add",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "gru.candidate",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input_n",
+        "recurrent_n"
+      ]
+    },
+    {
+      "id": "gru.n",
+      "label": "Tanh candidate",
+      "kind": "tanh",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "expression": "torch.tanh(i_n + resetgate * h_n)",
+      "parent": "gru.candidate",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "gru.delta",
+      "label": "h_previous - n",
+      "kind": "subtract",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "gru.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "hidden",
+        "candidate"
+      ]
+    },
+    {
+      "id": "gru.zdelta",
+      "label": "z * (h_previous - n)",
+      "kind": "multiply",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "parent": "gru.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "update",
+        "delta"
+      ]
+    },
+    {
+      "id": "gru.hy",
+      "label": "n + z * (h_previous - n)",
+      "kind": "add",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "expression": "newgate + inputgate * (hidden - newgate)",
+      "parent": "gru.body",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "candidate",
+        "retained_delta"
+      ]
+    },
+    {
+      "id": "gru.output",
+      "label": "Next hidden hy / one tensor",
+      "kind": "output",
+      "source": [
+        "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell"
+      ],
+      "shape": "[B,16]",
+      "detail": [],
+      "return_fields": [
+        "hy"
+      ],
+      "parent": "gru_cell.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "hy"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "gru.reset:in->gru.r_add:in:boundary",
+      "src": "gru.reset",
+      "dst": "gru.r_add",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.r_add:out->gru.r:in:tensor",
+      "src": "gru.r_add",
+      "dst": "gru.r",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.r:out->gru.reset:out:boundary",
+      "src": "gru.r",
+      "dst": "gru.reset",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.update:in->gru.z_add:in:boundary",
+      "src": "gru.update",
+      "dst": "gru.z_add",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.z_add:out->gru.z:in:tensor",
+      "src": "gru.z_add",
+      "dst": "gru.z",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.z:out->gru.update:out:boundary",
+      "src": "gru.z",
+      "dst": "gru.update",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.candidate:in->gru.n_add:in:boundary",
+      "src": "gru.candidate",
+      "dst": "gru.n_add",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.n_add:out->gru.n:in:tensor",
+      "src": "gru.n_add",
+      "dst": "gru.n",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.n:out->gru.candidate:out:boundary",
+      "src": "gru.n",
+      "dst": "gru.candidate",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "gru.x:out->gru.gi:input:tensor",
+      "src": "gru.x",
+      "dst": "gru.gi",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.h:out->gru.gh:hidden:tensor",
+      "src": "gru.h",
+      "dst": "gru.gh",
+      "src_port": "out",
+      "dst_port": "hidden",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.params:out->gru.gi:parameters:tensor",
+      "src": "gru.params",
+      "dst": "gru.gi",
+      "src_port": "out",
+      "dst_port": "parameters",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.params:out->gru.gh:parameters:tensor",
+      "src": "gru.params",
+      "dst": "gru.gh",
+      "src_port": "out",
+      "dst_port": "parameters",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.gi:out->gru.ci:in:tensor",
+      "src": "gru.gi",
+      "dst": "gru.ci",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.gh:out->gru.ch:in:tensor",
+      "src": "gru.gh",
+      "dst": "gru.ch",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.ci:i_r->gru.r_add:input_r:tensor",
+      "src": "gru.ci",
+      "dst": "gru.r_add",
+      "src_port": "i_r",
+      "dst_port": "input_r",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.ch:h_r->gru.r_add:hidden_r:tensor",
+      "src": "gru.ch",
+      "dst": "gru.r_add",
+      "src_port": "h_r",
+      "dst_port": "hidden_r",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.ci:i_i->gru.z_add:input_z:tensor",
+      "src": "gru.ci",
+      "dst": "gru.z_add",
+      "src_port": "i_i",
+      "dst_port": "input_z",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.ch:h_i->gru.z_add:hidden_z:tensor",
+      "src": "gru.ch",
+      "dst": "gru.z_add",
+      "src_port": "h_i",
+      "dst_port": "hidden_z",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.ch:h_n->gru.rhn:hidden_n:tensor",
+      "src": "gru.ch",
+      "dst": "gru.rhn",
+      "src_port": "h_n",
+      "dst_port": "hidden_n",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.ci:i_n->gru.n_add:input_n:tensor",
+      "src": "gru.ci",
+      "dst": "gru.n_add",
+      "src_port": "i_n",
+      "dst_port": "input_n",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.r:out->gru.rhn:reset:tensor",
+      "src": "gru.r",
+      "dst": "gru.rhn",
+      "src_port": "out",
+      "dst_port": "reset",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.rhn:out->gru.n_add:recurrent_n:tensor",
+      "src": "gru.rhn",
+      "dst": "gru.n_add",
+      "src_port": "out",
+      "dst_port": "recurrent_n",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.h:out->gru.delta:hidden:tensor",
+      "src": "gru.h",
+      "dst": "gru.delta",
+      "src_port": "out",
+      "dst_port": "hidden",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.n:out->gru.delta:candidate:tensor",
+      "src": "gru.n",
+      "dst": "gru.delta",
+      "src_port": "out",
+      "dst_port": "candidate",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.z:out->gru.zdelta:update:tensor",
+      "src": "gru.z",
+      "dst": "gru.zdelta",
+      "src_port": "out",
+      "dst_port": "update",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.delta:out->gru.zdelta:delta:tensor",
+      "src": "gru.delta",
+      "dst": "gru.zdelta",
+      "src_port": "out",
+      "dst_port": "delta",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.n:out->gru.hy:candidate:tensor",
+      "src": "gru.n",
+      "dst": "gru.hy",
+      "src_port": "out",
+      "dst_port": "candidate",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.zdelta:out->gru.hy:retained_delta:tensor",
+      "src": "gru.zdelta",
+      "dst": "gru.hy",
+      "src_port": "out",
+      "dst_port": "retained_delta",
+      "role": "tensor"
+    },
+    {
+      "id": "gru.hy:out->gru.output:hy:tensor",
+      "src": "gru.hy",
+      "dst": "gru.output",
+      "src_port": "out",
+      "dst_port": "hy",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "The rasbt GRU model previously had an opaque nn.GRU boundary; this separately sourced benchmark function exposes a concrete GRU step.",
+    "gi and gh each include their own bias before chunk(3,1); reset multiplies the complete h_n affine slice, including b_hh.",
+    "The source inputgate is the standard update z. hy is n + z*(hidden-n); z retains old state.",
+    "Weights and biases are Tensor arguments; this function does not register Parameters or prove the caller uses this implementation."
+  ],
+  "corrections": [
+    "Do not reset hidden before W_hh; do not swap reset/update gates; do not invent an LSTM cell state.",
+    "Do not present the supplementary benchmark as the kernel extracted from the directory-listed rasbt notebook."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

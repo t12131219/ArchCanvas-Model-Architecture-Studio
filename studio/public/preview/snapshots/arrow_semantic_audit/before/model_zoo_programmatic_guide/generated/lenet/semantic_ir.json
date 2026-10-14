@@ -1,0 +1,825 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "lenet",
+  "profile": {
+    "task": "MNIST classification",
+    "mode": "eval",
+    "input_channels": 1,
+    "input_size": [
+      32,
+      32
+    ],
+    "num_classes": 10,
+    "grayscale": true,
+    "conv_channels": [
+      6,
+      16
+    ],
+    "conv_kernel": 5,
+    "pooling": "MaxPool2d(2)",
+    "activation": "Tanh",
+    "classifier": [
+      400,
+      120,
+      84,
+      10
+    ],
+    "output": "(logits, probas)",
+    "config_source": "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py notebook cells 8, 10, 13"
+  },
+  "source": {
+    "repository": "rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "591a881d04226e9e2e62669938cda2c197e2cf38e37f65e52864fa5070e08200"
+  },
+  "nodes": [
+    {
+      "id": "lenet.model",
+      "label": "LeNet5 · MNIST",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5"
+      ],
+      "shape": "2 x [B,10]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.input",
+      "label": "MNIST image",
+      "kind": "input",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,1,32,32]",
+      "detail": [
+        "caller resizes original MNIST 28x28 to 32x32",
+        "grayscale=True"
+      ],
+      "parent": "lenet.model",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.features",
+      "label": "Convolutional features",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.__init__",
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,16,5,5]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "lenet.model",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.conv_stage1",
+      "label": "Conv / Tanh / Pool · 1",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.__init__",
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,6,14,14]",
+      "detail": [
+        "logical group: features.0 / .1 / .2"
+      ],
+      "mode": "chain",
+      "parent": "lenet.features",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.conv1",
+      "label": "Conv2d 1 -> 6",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.__init__",
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,6,28,28]",
+      "detail": [
+        "kernel=5; stride=1; padding=0; bias=True"
+      ],
+      "parameter": "features.0",
+      "parent": "lenet.conv_stage1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.tanh1",
+      "label": "Tanh",
+      "kind": "tanh",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.__init__",
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,6,28,28]",
+      "detail": [],
+      "parent": "lenet.conv_stage1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.pool1",
+      "label": "MaxPool2d",
+      "kind": "max_pool2d",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.__init__",
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,6,14,14]",
+      "detail": [
+        "kernel=2; default stride=2"
+      ],
+      "parent": "lenet.conv_stage1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.conv_stage2",
+      "label": "Conv / Tanh / Pool · 2",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.__init__",
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,16,5,5]",
+      "detail": [
+        "logical group: features.3 / .4 / .5"
+      ],
+      "mode": "chain",
+      "parent": "lenet.features",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.conv2",
+      "label": "Conv2d 6 -> 16",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.__init__",
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,16,10,10]",
+      "detail": [
+        "kernel=5; stride=1; padding=0; bias=True"
+      ],
+      "parameter": "features.3",
+      "parent": "lenet.conv_stage2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.tanh2",
+      "label": "Tanh",
+      "kind": "tanh",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.__init__",
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,16,10,10]",
+      "detail": [],
+      "parent": "lenet.conv_stage2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.pool2",
+      "label": "MaxPool2d",
+      "kind": "max_pool2d",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.__init__",
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,16,5,5]",
+      "detail": [
+        "kernel=2; default stride=2"
+      ],
+      "parent": "lenet.conv_stage2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.flatten",
+      "label": "Flatten features",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,400]",
+      "detail": [
+        "torch.flatten(x, 1); preserve batch axis"
+      ],
+      "parent": "lenet.model",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.classifier",
+      "label": "Fully connected classifier",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.__init__",
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "logits: [B,10]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "lenet.model",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.hidden1",
+      "label": "Linear / Tanh · 1",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.__init__",
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,120]",
+      "detail": [
+        "logical group: classifier.0 / .1"
+      ],
+      "mode": "chain",
+      "parent": "lenet.classifier",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.fc1",
+      "label": "Linear 400 -> 120",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.__init__",
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,120]",
+      "detail": [
+        "16 * 5 * 5 = 400"
+      ],
+      "parameter": "classifier.0",
+      "parent": "lenet.hidden1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.tanh3",
+      "label": "Tanh",
+      "kind": "tanh",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.__init__",
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,120]",
+      "detail": [],
+      "parent": "lenet.hidden1",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.hidden2",
+      "label": "Linear / Tanh · 2",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.__init__",
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,84]",
+      "detail": [
+        "logical group: classifier.2 / .3"
+      ],
+      "mode": "chain",
+      "parent": "lenet.classifier",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.fc2",
+      "label": "Linear 120 -> 84",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.__init__",
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,84]",
+      "detail": [],
+      "parameter": "classifier.2",
+      "parent": "lenet.hidden2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.tanh4",
+      "label": "Tanh",
+      "kind": "tanh",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.__init__",
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,84]",
+      "detail": [],
+      "parent": "lenet.hidden2",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.fc3",
+      "label": "Linear 84 -> 10",
+      "kind": "linear",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.__init__",
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,10]",
+      "detail": [
+        "raw class logits; no activation here"
+      ],
+      "parameter": "classifier.4",
+      "parent": "lenet.classifier",
+      "source_evidence": [
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.returns",
+      "label": "Return logits / probabilities",
+      "kind": "group",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "(logits, probas)",
+      "detail": [
+        "same logits tensor to both branches"
+      ],
+      "dispatch": false,
+      "mode": "parallel",
+      "parent": "lenet.model",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]"
+      ]
+    },
+    {
+      "id": "lenet.logits",
+      "label": "Logits",
+      "kind": "identity",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,10]",
+      "detail": [
+        "return original classifier output; used by cross_entropy"
+      ],
+      "parent": "lenet.returns",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.softmax",
+      "label": "Softmax",
+      "kind": "softmax",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "[B,10]",
+      "detail": [
+        "F.softmax(logits, dim=1); returned as probas"
+      ],
+      "parent": "lenet.returns",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "lenet.output",
+      "label": "Forward return tuple",
+      "kind": "output",
+      "source": [
+        "deeplearning-models/pytorch_ipynb/cnn/cnn-lenet5-mnist.py::LeNet5.forward"
+      ],
+      "shape": "2 x [B,10]",
+      "detail": [
+        "return logits, probas; Softmax belongs to forward"
+      ],
+      "parent": "lenet.model",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "lenet.conv_stage1:in->lenet.conv1:in:boundary",
+      "src": "lenet.conv_stage1",
+      "dst": "lenet.conv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "lenet.conv1:out->lenet.tanh1:in:tensor",
+      "src": "lenet.conv1",
+      "dst": "lenet.tanh1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lenet.tanh1:out->lenet.pool1:in:tensor",
+      "src": "lenet.tanh1",
+      "dst": "lenet.pool1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lenet.pool1:out->lenet.conv_stage1:out:boundary",
+      "src": "lenet.pool1",
+      "dst": "lenet.conv_stage1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "lenet.conv_stage2:in->lenet.conv2:in:boundary",
+      "src": "lenet.conv_stage2",
+      "dst": "lenet.conv2",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "lenet.conv2:out->lenet.tanh2:in:tensor",
+      "src": "lenet.conv2",
+      "dst": "lenet.tanh2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lenet.tanh2:out->lenet.pool2:in:tensor",
+      "src": "lenet.tanh2",
+      "dst": "lenet.pool2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lenet.pool2:out->lenet.conv_stage2:out:boundary",
+      "src": "lenet.pool2",
+      "dst": "lenet.conv_stage2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "lenet.features:in->lenet.conv_stage1:in:boundary",
+      "src": "lenet.features",
+      "dst": "lenet.conv_stage1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "lenet.conv_stage1:out->lenet.conv_stage2:in:tensor",
+      "src": "lenet.conv_stage1",
+      "dst": "lenet.conv_stage2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lenet.conv_stage2:out->lenet.features:out:boundary",
+      "src": "lenet.conv_stage2",
+      "dst": "lenet.features",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "lenet.hidden1:in->lenet.fc1:in:boundary",
+      "src": "lenet.hidden1",
+      "dst": "lenet.fc1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "lenet.fc1:out->lenet.tanh3:in:tensor",
+      "src": "lenet.fc1",
+      "dst": "lenet.tanh3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lenet.tanh3:out->lenet.hidden1:out:boundary",
+      "src": "lenet.tanh3",
+      "dst": "lenet.hidden1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "lenet.hidden2:in->lenet.fc2:in:boundary",
+      "src": "lenet.hidden2",
+      "dst": "lenet.fc2",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "lenet.fc2:out->lenet.tanh4:in:tensor",
+      "src": "lenet.fc2",
+      "dst": "lenet.tanh4",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lenet.tanh4:out->lenet.hidden2:out:boundary",
+      "src": "lenet.tanh4",
+      "dst": "lenet.hidden2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "lenet.classifier:in->lenet.hidden1:in:boundary",
+      "src": "lenet.classifier",
+      "dst": "lenet.hidden1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "lenet.hidden1:out->lenet.hidden2:in:tensor",
+      "src": "lenet.hidden1",
+      "dst": "lenet.hidden2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lenet.hidden2:out->lenet.fc3:in:tensor",
+      "src": "lenet.hidden2",
+      "dst": "lenet.fc3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lenet.fc3:out->lenet.classifier:out:boundary",
+      "src": "lenet.fc3",
+      "dst": "lenet.classifier",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "lenet.returns:in->lenet.logits:in:fork",
+      "src": "lenet.returns",
+      "dst": "lenet.logits",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "lenet.logits:out->lenet.returns:item[0]:tuple_collection",
+      "src": "lenet.logits",
+      "dst": "lenet.returns",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "lenet.returns:in->lenet.softmax:in:fork",
+      "src": "lenet.returns",
+      "dst": "lenet.softmax",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "lenet.softmax:out->lenet.returns:item[1]:tuple_collection",
+      "src": "lenet.softmax",
+      "dst": "lenet.returns",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "lenet.model:in->lenet.input:in:boundary",
+      "src": "lenet.model",
+      "dst": "lenet.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "lenet.input:out->lenet.features:in:tensor",
+      "src": "lenet.input",
+      "dst": "lenet.features",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lenet.features:out->lenet.flatten:in:tensor",
+      "src": "lenet.features",
+      "dst": "lenet.flatten",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lenet.flatten:out->lenet.classifier:in:tensor",
+      "src": "lenet.flatten",
+      "dst": "lenet.classifier",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lenet.classifier:out->lenet.returns:in:tensor",
+      "src": "lenet.classifier",
+      "dst": "lenet.returns",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lenet.returns:out->lenet.output:in:tensor",
+      "src": "lenet.returns",
+      "dst": "lenet.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "lenet.output:out->lenet.model:out:boundary",
+      "src": "lenet.output",
+      "dst": "lenet.model",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    }
+  ],
+  "facts": [
+    "The caller resizes MNIST to 32x32 and constructs LeNet5(NUM_CLASSES, GRAYSCALE), with NUM_CLASSES=10 and GRAYSCALE=True.",
+    "Both convolutions have kernel 5, stride 1, padding 0; spatial sizes are 32 -> 28 -> 14 -> 10 -> 5.",
+    "This source uses Tanh and MaxPool2d, not ReLU or the average subsampling in the original LeNet-5 paper.",
+    "The classifier receives 16*5*5=400 flattened features, then applies Linear 400->120->84->10 with two Tanh operations.",
+    "forward computes Softmax(dim=1) and returns both raw logits and probabilities; cross_entropy consumes the logits branch.",
+    "All five parameterized layers have separate parameter identities. Equal colors denote operator families, never weight sharing."
+  ],
+  "corrections": [
+    "No supplied model-specific reference PNG exists for this source; the layout is constructed from the reviewed implementation.",
+    "Do not substitute the paper's average pooling, C5 convolution, or partial connection scheme for this simpler nn.Sequential implementation.",
+    "The model input is 32x32 after caller-side resizing, not native 28x28 MNIST; drawing 28x28 would invalidate the fixed 400-feature classifier.",
+    "Softmax is a real forward operator in this notebook and the logits branch is retained; it is not merely explanatory decoration."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

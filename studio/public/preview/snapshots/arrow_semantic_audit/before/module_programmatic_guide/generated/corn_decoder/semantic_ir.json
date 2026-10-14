@@ -1,0 +1,286 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "corn_decoder",
+  "profile": {
+    "num_classes": 5,
+    "thresholds": 4,
+    "scope": "Notebook caller cell",
+    "parameters": [],
+    "output": "tail probabilities",
+    "threshold_dim": 1,
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "Notebook caller sigmoid and cumprod subgraph only; not a custom nn.Module, not the MLP or external loss.",
+    "source_contracts": [
+      [
+        "__module__",
+        "torch.sigmoid(logits)"
+      ],
+      [
+        "__module__",
+        "torch.cumprod(probas, dim=1)"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "1b7951bb30c86874ac96a00da3997d89358549d13b69f591b461b39770900612"
+  },
+  "nodes": [
+    {
+      "id": "corn_decoder.root",
+      "label": "CORN probability decoder",
+      "kind": "group",
+      "source": [
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORN_cement.py::__module__",
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORN_cement.py::MLP.__init__",
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORN_cement.py::MLP.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "corn_decoder.x"
+        ],
+        [
+          "corn_decoder.body"
+        ],
+        [
+          "corn_decoder.y"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E003",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "corn_decoder.x",
+      "label": "Logits from omitted MLP.fc",
+      "kind": "input",
+      "source": [
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORN_cement.py::__module__"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "scope_boundary": "caller logits; ordinary Linear has 4 independent output rows",
+      "parent": "corn_decoder.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "corn_decoder.body",
+      "label": "CORN module",
+      "kind": "group",
+      "source": [
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORN_cement.py::__module__",
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORN_cement.py::MLP.__init__",
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORN_cement.py::MLP.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "corn_decoder.conditional"
+        ],
+        [
+          "corn_decoder.cumulative"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "corn_decoder.root",
+      "source_evidence": [
+        "E003",
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "corn_decoder.conditional",
+      "label": "Convert logits to conditionals",
+      "kind": "group",
+      "source": [
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORN_cement.py::__module__"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "corn_decoder.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "corn_decoder.sigmoid",
+      "label": "torch.sigmoid(logits)",
+      "kind": "sigmoid",
+      "source": [
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORN_cement.py::__module__"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "torch.sigmoid(logits)",
+      "parameters": [],
+      "parent": "corn_decoder.conditional",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "corn_decoder.cumulative",
+      "label": "Ordered cumulative product",
+      "kind": "group",
+      "source": [
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORN_cement.py::__module__"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "corn_decoder.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "corn_decoder.cumprod",
+      "label": "cumprod(probas,dim=1)",
+      "kind": "tensor",
+      "source": [
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORN_cement.py::__module__"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "torch.cumprod(probas, dim=1)",
+      "dim": 1,
+      "operation": "cumulative_product",
+      "parent": "corn_decoder.cumulative",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "corn_decoder.y",
+      "label": "Cumulative tail probabilities",
+      "kind": "output",
+      "source": [
+        "rasbt-ordinal-modules/pytorch_ipynb/ordinal/CORN_cement.py::__module__"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parent": "corn_decoder.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "corn_decoder.conditional:in->corn_decoder.sigmoid:in:boundary",
+      "src": "corn_decoder.conditional",
+      "dst": "corn_decoder.sigmoid",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "corn_decoder.sigmoid:out->corn_decoder.conditional:out:boundary",
+      "src": "corn_decoder.sigmoid",
+      "dst": "corn_decoder.conditional",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "corn_decoder.cumulative:in->corn_decoder.cumprod:in:boundary",
+      "src": "corn_decoder.cumulative",
+      "dst": "corn_decoder.cumprod",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "corn_decoder.cumprod:out->corn_decoder.cumulative:out:boundary",
+      "src": "corn_decoder.cumprod",
+      "dst": "corn_decoder.cumulative",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "corn_decoder.x:out->corn_decoder.conditional:in:tensor",
+      "src": "corn_decoder.x",
+      "dst": "corn_decoder.conditional",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "corn_decoder.conditional:out->corn_decoder.cumulative:in:tensor",
+      "src": "corn_decoder.conditional",
+      "dst": "corn_decoder.cumulative",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "corn_decoder.cumulative:out->corn_decoder.y:in:tensor",
+      "src": "corn_decoder.cumulative",
+      "dst": "corn_decoder.y",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "MLP.fc is an ordinary K-1-output Linear. Its logits enter this separate caller decoding block.",
+    "The j-th tail probability is the product of conditional probabilities through threshold j; sigmoid alone is insufficient.",
+    "Evidence uses Notebook module scope and preserved cell mappings, rather than inventing a CORNDecoder class."
+  ],
+  "corrections": [
+    "Do not share all output score weights as in CORAL or replace cumprod by Softmax/sum."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

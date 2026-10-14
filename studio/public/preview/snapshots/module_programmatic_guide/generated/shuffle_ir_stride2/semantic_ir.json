@@ -1,0 +1,841 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "shuffle_ir_stride2",
+  "profile": {
+    "scope": "One ShuffleNetV2 InvertedResidual only",
+    "constructor": "InvertedResidual(24,48,stride=2)",
+    "inp": 24,
+    "oup": 48,
+    "stride": 2,
+    "branch_features": 24,
+    "branch1_called": true,
+    "split_called": false,
+    "input_shape": "[B,24,16,16]",
+    "output_shape": "[B,48,8,8]",
+    "shape_origin": "explicit static module profile; not observed",
+    "mode": "caller train/eval; not executed",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "pytorch/vision",
+    "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+    "snapshot": "66209ff0a5fcaf22d0c55fcc2b008aa29f50dec4f265cbd902de8482ed44f5bd"
+  },
+  "nodes": [
+    {
+      "id": "shuffle_ir_stride2.root",
+      "label": "ShuffleNetV2 stride2/downsample / module",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,48,8,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.input",
+      "label": "Module input",
+      "kind": "input",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,24,16,16]",
+      "detail": [],
+      "learnable": false,
+      "parent": "shuffle_ir_stride2.root",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.module",
+      "label": "ShuffleNetV2 InvertedResidual",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,48,8,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "shuffle_ir_stride2.root",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.branches",
+      "label": "Same x to both downsample paths",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "2 learned paths",
+      "detail": [],
+      "collection_type": "tuple",
+      "literal_tuple": true,
+      "dispatch": false,
+      "mode": "parallel",
+      "parent": "shuffle_ir_stride2.module",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "item[0]",
+        "item[1]"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.branch1",
+      "label": "Learned branch1",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.depthwise_conv"
+      ],
+      "shape": "[B,24,8,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "shuffle_ir_stride2.branches",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.b1.dw",
+      "label": "Depthwise Conv3 / C=24",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.depthwise_conv"
+      ],
+      "shape": "[B,24,8,8]",
+      "detail": [
+        "groups=24; stride=2; bias=False"
+      ],
+      "parameter": "branch1.0",
+      "instance_identity": "shuffle_ir_stride2.branch1.0",
+      "learnable": true,
+      "in_channels": 24,
+      "out_channels": 24,
+      "kernel_size": 3,
+      "stride": 2,
+      "padding": 1,
+      "dilation": 1,
+      "groups": 24,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "shuffle_ir_stride2.branch1",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.b1.bn1",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,24,8,8]",
+      "detail": [],
+      "parameter": "branch1.1",
+      "instance_identity": "shuffle_ir_stride2.branch1.1",
+      "learnable": true,
+      "num_features": 24,
+      "eps": 1e-05,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "shuffle_ir_stride2.branch1",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.b1.project",
+      "label": "Conv 1 / 24→24",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.depthwise_conv"
+      ],
+      "shape": "[B,24,8,8]",
+      "detail": [],
+      "parameter": "branch1.2",
+      "instance_identity": "shuffle_ir_stride2.branch1.2",
+      "learnable": true,
+      "in_channels": 24,
+      "out_channels": 24,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "shuffle_ir_stride2.branch1",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.b1.bn2",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,24,8,8]",
+      "detail": [],
+      "parameter": "branch1.3",
+      "instance_identity": "shuffle_ir_stride2.branch1.3",
+      "learnable": true,
+      "num_features": 24,
+      "eps": 1e-05,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "shuffle_ir_stride2.branch1",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.b1.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,24,8,8]",
+      "detail": [],
+      "inplace": true,
+      "learnable": false,
+      "parent": "shuffle_ir_stride2.branch1",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.branch2",
+      "label": "Learned branch2",
+      "kind": "group",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.depthwise_conv"
+      ],
+      "shape": "[B,24,8,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "shuffle_ir_stride2.branches",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.b2.conv1",
+      "label": "Conv 1 / 24→24",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.depthwise_conv"
+      ],
+      "shape": "[B,24,16,16]",
+      "detail": [],
+      "parameter": "branch2.0",
+      "instance_identity": "shuffle_ir_stride2.branch2.0",
+      "learnable": true,
+      "in_channels": 24,
+      "out_channels": 24,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "shuffle_ir_stride2.branch2",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.b2.bn1",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,24,16,16]",
+      "detail": [],
+      "parameter": "branch2.1",
+      "instance_identity": "shuffle_ir_stride2.branch2.1",
+      "learnable": true,
+      "num_features": 24,
+      "eps": 1e-05,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "shuffle_ir_stride2.branch2",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.b2.relu1",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,24,16,16]",
+      "detail": [],
+      "inplace": true,
+      "learnable": false,
+      "parent": "shuffle_ir_stride2.branch2",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.b2.dw",
+      "label": "Depthwise Conv3 / C=24",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.depthwise_conv"
+      ],
+      "shape": "[B,24,8,8]",
+      "detail": [
+        "groups=24; stride=2; bias=False"
+      ],
+      "parameter": "branch2.3",
+      "instance_identity": "shuffle_ir_stride2.branch2.3",
+      "learnable": true,
+      "in_channels": 24,
+      "out_channels": 24,
+      "kernel_size": 3,
+      "stride": 2,
+      "padding": 1,
+      "dilation": 1,
+      "groups": 24,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "shuffle_ir_stride2.branch2",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.b2.bn2",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,24,8,8]",
+      "detail": [],
+      "parameter": "branch2.4",
+      "instance_identity": "shuffle_ir_stride2.branch2.4",
+      "learnable": true,
+      "num_features": 24,
+      "eps": 1e-05,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "shuffle_ir_stride2.branch2",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.b2.project",
+      "label": "Conv 1 / 24→24",
+      "kind": "conv",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.depthwise_conv"
+      ],
+      "shape": "[B,24,8,8]",
+      "detail": [],
+      "parameter": "branch2.5",
+      "instance_identity": "shuffle_ir_stride2.branch2.5",
+      "learnable": true,
+      "in_channels": 24,
+      "out_channels": 24,
+      "kernel_size": 1,
+      "stride": 1,
+      "padding": 0,
+      "dilation": 1,
+      "groups": 1,
+      "bias": false,
+      "source_operation": "nn.Conv2d",
+      "parent": "shuffle_ir_stride2.branch2",
+      "source_evidence": [
+        "E002",
+        "E004",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.b2.bn3",
+      "label": "BatchNorm",
+      "kind": "batch_norm2d",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,24,8,8]",
+      "detail": [],
+      "parameter": "branch2.6",
+      "instance_identity": "shuffle_ir_stride2.branch2.6",
+      "learnable": true,
+      "num_features": 24,
+      "eps": 1e-05,
+      "momentum": 0.1,
+      "affine": true,
+      "track_running_stats": true,
+      "parent": "shuffle_ir_stride2.branch2",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.b2.relu2",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,24,8,8]",
+      "detail": [],
+      "inplace": true,
+      "learnable": false,
+      "parent": "shuffle_ir_stride2.branch2",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.concat",
+      "label": "Concat channel dim=1",
+      "kind": "concat",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,48,8,8]",
+      "detail": [],
+      "dim": 1,
+      "ordered_branches": [
+        "branch1(x)",
+        "branch2(x)"
+      ],
+      "parent": "shuffle_ir_stride2.module",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.shuffle",
+      "label": "channel_shuffle / groups=2",
+      "kind": "channel_shuffle",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::channel_shuffle"
+      ],
+      "shape": "[B,48,8,8]",
+      "detail": [],
+      "groups": 2,
+      "learnable": false,
+      "reviewed_source_boundary": true,
+      "parent": "shuffle_ir_stride2.module",
+      "source_evidence": [
+        "E004",
+        "E005"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "shuffle_ir_stride2.output",
+      "label": "Module output",
+      "kind": "output",
+      "source": [
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.__init__",
+        "torchvision-v0.9.0-modules/torchvision/models/shufflenetv2.py::InvertedResidual.forward"
+      ],
+      "shape": "[B,48,8,8]",
+      "detail": [],
+      "learnable": false,
+      "parent": "shuffle_ir_stride2.root",
+      "source_evidence": [
+        "E002",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "shuffle_ir_stride2.branch1:in->shuffle_ir_stride2.b1.dw:in:boundary",
+      "src": "shuffle_ir_stride2.branch1",
+      "dst": "shuffle_ir_stride2.b1.dw",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "shuffle_ir_stride2.b1.dw:out->shuffle_ir_stride2.b1.bn1:in:tensor",
+      "src": "shuffle_ir_stride2.b1.dw",
+      "dst": "shuffle_ir_stride2.b1.bn1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle_ir_stride2.b1.bn1:out->shuffle_ir_stride2.b1.project:in:tensor",
+      "src": "shuffle_ir_stride2.b1.bn1",
+      "dst": "shuffle_ir_stride2.b1.project",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle_ir_stride2.b1.project:out->shuffle_ir_stride2.b1.bn2:in:tensor",
+      "src": "shuffle_ir_stride2.b1.project",
+      "dst": "shuffle_ir_stride2.b1.bn2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle_ir_stride2.b1.bn2:out->shuffle_ir_stride2.b1.relu:in:tensor",
+      "src": "shuffle_ir_stride2.b1.bn2",
+      "dst": "shuffle_ir_stride2.b1.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle_ir_stride2.b1.relu:out->shuffle_ir_stride2.branch1:out:boundary",
+      "src": "shuffle_ir_stride2.b1.relu",
+      "dst": "shuffle_ir_stride2.branch1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "shuffle_ir_stride2.branch2:in->shuffle_ir_stride2.b2.conv1:in:boundary",
+      "src": "shuffle_ir_stride2.branch2",
+      "dst": "shuffle_ir_stride2.b2.conv1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "shuffle_ir_stride2.b2.conv1:out->shuffle_ir_stride2.b2.bn1:in:tensor",
+      "src": "shuffle_ir_stride2.b2.conv1",
+      "dst": "shuffle_ir_stride2.b2.bn1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle_ir_stride2.b2.bn1:out->shuffle_ir_stride2.b2.relu1:in:tensor",
+      "src": "shuffle_ir_stride2.b2.bn1",
+      "dst": "shuffle_ir_stride2.b2.relu1",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle_ir_stride2.b2.relu1:out->shuffle_ir_stride2.b2.dw:in:tensor",
+      "src": "shuffle_ir_stride2.b2.relu1",
+      "dst": "shuffle_ir_stride2.b2.dw",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle_ir_stride2.b2.dw:out->shuffle_ir_stride2.b2.bn2:in:tensor",
+      "src": "shuffle_ir_stride2.b2.dw",
+      "dst": "shuffle_ir_stride2.b2.bn2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle_ir_stride2.b2.bn2:out->shuffle_ir_stride2.b2.project:in:tensor",
+      "src": "shuffle_ir_stride2.b2.bn2",
+      "dst": "shuffle_ir_stride2.b2.project",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle_ir_stride2.b2.project:out->shuffle_ir_stride2.b2.bn3:in:tensor",
+      "src": "shuffle_ir_stride2.b2.project",
+      "dst": "shuffle_ir_stride2.b2.bn3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle_ir_stride2.b2.bn3:out->shuffle_ir_stride2.b2.relu2:in:tensor",
+      "src": "shuffle_ir_stride2.b2.bn3",
+      "dst": "shuffle_ir_stride2.b2.relu2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle_ir_stride2.b2.relu2:out->shuffle_ir_stride2.branch2:out:boundary",
+      "src": "shuffle_ir_stride2.b2.relu2",
+      "dst": "shuffle_ir_stride2.branch2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "shuffle_ir_stride2.branches:in->shuffle_ir_stride2.branch1:in:fork",
+      "src": "shuffle_ir_stride2.branches",
+      "dst": "shuffle_ir_stride2.branch1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "shuffle_ir_stride2.branch1:out->shuffle_ir_stride2.branches:item[0]:tuple_collection",
+      "src": "shuffle_ir_stride2.branch1",
+      "dst": "shuffle_ir_stride2.branches",
+      "src_port": "out",
+      "dst_port": "item[0]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "shuffle_ir_stride2.branches:in->shuffle_ir_stride2.branch2:in:fork",
+      "src": "shuffle_ir_stride2.branches",
+      "dst": "shuffle_ir_stride2.branch2",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "fork"
+    },
+    {
+      "id": "shuffle_ir_stride2.branch2:out->shuffle_ir_stride2.branches:item[1]:tuple_collection",
+      "src": "shuffle_ir_stride2.branch2",
+      "dst": "shuffle_ir_stride2.branches",
+      "src_port": "out",
+      "dst_port": "item[1]",
+      "role": "tuple_collection"
+    },
+    {
+      "id": "shuffle_ir_stride2.module:in->shuffle_ir_stride2.branches:in:boundary",
+      "src": "shuffle_ir_stride2.module",
+      "dst": "shuffle_ir_stride2.branches",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "shuffle_ir_stride2.branches:out->shuffle_ir_stride2.concat:in:tensor",
+      "src": "shuffle_ir_stride2.branches",
+      "dst": "shuffle_ir_stride2.concat",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle_ir_stride2.concat:out->shuffle_ir_stride2.shuffle:in:tensor",
+      "src": "shuffle_ir_stride2.concat",
+      "dst": "shuffle_ir_stride2.shuffle",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle_ir_stride2.shuffle:out->shuffle_ir_stride2.module:out:boundary",
+      "src": "shuffle_ir_stride2.shuffle",
+      "dst": "shuffle_ir_stride2.module",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "shuffle_ir_stride2.root:in->shuffle_ir_stride2.input:in:boundary",
+      "src": "shuffle_ir_stride2.root",
+      "dst": "shuffle_ir_stride2.input",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "shuffle_ir_stride2.input:out->shuffle_ir_stride2.module:in:tensor",
+      "src": "shuffle_ir_stride2.input",
+      "dst": "shuffle_ir_stride2.module",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle_ir_stride2.module:out->shuffle_ir_stride2.output:in:tensor",
+      "src": "shuffle_ir_stride2.module",
+      "dst": "shuffle_ir_stride2.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "shuffle_ir_stride2.output:out->shuffle_ir_stride2.root:out:boundary",
+      "src": "shuffle_ir_stride2.output",
+      "dst": "shuffle_ir_stride2.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    }
+  ],
+  "facts": [
+    "stride1 splits channels: retained x1 and learned branch2(x2) are distinct operands.",
+    "stride>1 uses two independently learned paths on the same full x; no chunk operation.",
+    "Depthwise groups equal input channels, all Conv biasFalse, BN/ReLU preserve source Sequential indices.",
+    "Channel Concat precedes one groups2 shuffle call; shuffle has no weights and its internals are separately covered."
+  ],
+  "corrections": [
+    "This is not MobileNet inverted residual: no residual Add or expansion-ratio skip.",
+    "An empty branch1 constructor at stride1 is never called; retain x1 directly."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

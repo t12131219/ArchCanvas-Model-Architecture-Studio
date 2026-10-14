@@ -1,0 +1,647 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2972" height="3593" viewBox="0 0 2972 3593">
+<defs xmlns="http://www.w3.org/2000/svg"><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348" /></marker></defs>
+
+<rect xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" fill="white" />
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="source-binding">{"model": "lstmcell", "source_snapshot_sha256": "e1da4f557911834356e07d9ef80995589ed30de16ae2931fab98679a90f4de1c", "repository": "https://github.com/pytorch/pytorch", "commit": "a8d6afb511a69687bbb2b7e88a3cf67917e1697e", "semantic_ir_sha256": "f295d57addb785f66ab0c45c160c4f4a289468b2a1dd2f6ba3ee9ae16d2ee368", "view": 2}</metadata>
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="diagram-style">{"name": "transformer-paper-model-zoo", "version": 1, "font": "DejaVu Sans, Arial, sans-serif", "text": "#172336", "line": "#263348", "palette": {"root": "#ffffff", "group": "#ffffff", "inner": "#fffaf6", "layer": "#ffffff", "encoder": "#e7f5fe", "decoder": "#fff0f5", "embedding": "#f8d4e1", "input": "#f8d4e1", "output": "#dfdff8", "attention": "#ffddb3", "ffn": "#c8ebfb", "mixing": "#c8ebfb", "conv": "#c8ebfb", "pool": "#d6f0df", "norm": "#fff6bd", "concat": "#fff6bd", "linear": "#dfdff8", "softmax": "#c9f1cd", "sampling": "#c9f1cd", "recurrent": "#ffddb3", "decomposition": "#d6f0df", "tensor": "#cdeaf8", "activation": "#f3f5f7", "control": "#f3f5f7"}, "typography": {"title": 30, "subtitle": 16, "module": 22, "inner": 20, "operator": 20, "shape": 16, "detail": 14, "evidence": 12, "footer": 14, "line_height": 1.18}, "fill_width_nodes": [], "visual_roles": {"lstmcell.initial_c": "input", "lstmcell.initial_h": "input", "lstmcell.return": "output", "lstmcell.root": "root", "lstmcell.sequence": "input", "lstmcell.stack": "tensor", "lstmcell.step0": "recurrent", "lstmcell.step0.affine": "inner", "lstmcell.step0.affine_add": "norm", "lstmcell.step0.b_hh": "norm", "lstmcell.step0.b_ih": "norm", "lstmcell.step0.cell_update": "inner", "lstmcell.step0.chunk": "tensor", "lstmcell.step0.cx": "tensor", "lstmcell.step0.cy": "norm", "lstmcell.step0.f": "softmax", "lstmcell.step0.forget_mul": "norm", "lstmcell.step0.g": "activation", "lstmcell.step0.gates": "inner", "lstmcell.step0.h_mm": "linear", "lstmcell.step0.hidden_update": "inner", "lstmcell.step0.hx": "tensor", "lstmcell.step0.hy": "norm", "lstmcell.step0.i": "softmax", "lstmcell.step0.input_mul": "norm", "lstmcell.step0.o": "softmax", "lstmcell.step0.return": "output", "lstmcell.step0.tanh_c": "activation", "lstmcell.step0.x": "input", "lstmcell.step0.x_mm": "linear", "lstmcell.step1": "recurrent", "lstmcell.step1.affine": "inner", "lstmcell.step1.affine_add": "norm", "lstmcell.step1.b_hh": "norm", "lstmcell.step1.b_ih": "norm", "lstmcell.step1.cell_update": "inner", "lstmcell.step1.chunk": "tensor", "lstmcell.step1.cx": "tensor", "lstmcell.step1.cy": "norm", "lstmcell.step1.f": "softmax", "lstmcell.step1.forget_mul": "norm", "lstmcell.step1.g": "activation", "lstmcell.step1.gates": "inner", "lstmcell.step1.h_mm": "linear", "lstmcell.step1.hidden_update": "inner", "lstmcell.step1.hx": "tensor", "lstmcell.step1.hy": "norm", "lstmcell.step1.i": "softmax", "lstmcell.step1.input_mul": "norm", "lstmcell.step1.o": "softmax", "lstmcell.step1.return": "output", "lstmcell.step1.tanh_c": "activation", "lstmcell.step1.x": "input", "lstmcell.step1.x_mm": "linear", "lstmcell.step2": "recurrent", "lstmcell.step2.affine": "inner", "lstmcell.step2.affine_add": "norm", "lstmcell.step2.b_hh": "norm", "lstmcell.step2.b_ih": "norm", "lstmcell.step2.cell_update": "inner", "lstmcell.step2.chunk": "tensor", "lstmcell.step2.cx": "tensor", "lstmcell.step2.cy": "norm", "lstmcell.step2.f": "softmax", "lstmcell.step2.forget_mul": "norm", "lstmcell.step2.g": "activation", "lstmcell.step2.gates": "inner", "lstmcell.step2.h_mm": "linear", "lstmcell.step2.hidden_update": "inner", "lstmcell.step2.hx": "tensor", "lstmcell.step2.hy": "norm", "lstmcell.step2.i": "softmax", "lstmcell.step2.input_mul": "norm", "lstmcell.step2.o": "softmax", "lstmcell.step2.return": "output", "lstmcell.step2.tanh_c": "activation", "lstmcell.step2.x": "input", "lstmcell.step2.x_mm": "linear", "lstmcell.unbind": "tensor", "lstmcell.x0": "input", "lstmcell.x1": "input", "lstmcell.x2": "input"}, "semantics": "presentation aliases only; color does not imply mathematical equivalence or parameter sharing"}</metadata>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1486.0" dy="0">LSTM (explicit gates, shared time steps)  |  Operators &amp; tensor flow</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1486.0" dy="0">Official PyTorch explicit cell / I=8 H=16 T=3 / same weights across time  /  read bottom to top</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.root" data-visual-role="root"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:222 LSTMLayer.__init__; pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:227 LSTMLayer.forward; parameter=not asserted; </title><rect x="420.0" y="98" width="2132" height="3213" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="437.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="437.0" dy="0">One LSTMLayer / three shared time steps</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2535.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2535.0" dy="0">T=3, one layer, one direction</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2539.0" y="160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2539.0" dy="0">E005,E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.sequence" data-visual-role="input" data-glyph-kind="tensor-grid"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:227 LSTMLayer.forward; parameter=not asserted; </title><rect x="1450.0" y="3228.5" width="72" height="32" rx="0" fill="#f8d4e1" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="1462.0" x2="1462.0" y1="3228.5" y2="3260.5" stroke="#263348" stroke-width=".6" /><line x1="1474.0" x2="1474.0" y1="3228.5" y2="3260.5" stroke="#263348" stroke-width=".6" /><line x1="1486.0" x2="1486.0" y1="3228.5" y2="3260.5" stroke="#263348" stroke-width=".6" /><line x1="1498.0" x2="1498.0" y1="3228.5" y2="3260.5" stroke="#263348" stroke-width=".6" /><line x1="1510.0" x2="1510.0" y1="3228.5" y2="3260.5" stroke="#263348" stroke-width=".6" /><line x1="1450.0" x2="1522.0" y1="3239.1666666666665" y2="3239.1666666666665" stroke="#263348" stroke-width=".6" /><line x1="1450.0" x2="1522.0" y1="3249.8333333333335" y2="3249.8333333333335" stroke="#263348" stroke-width=".6" /><text x="1440.0" y="3241.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="1440.0" dy="0">Sequence</tspan><tspan x="1440.0" dy="16.52">input X</tspan></text><text x="1532.0" y="3241.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1532.0" dy="0">[T=3,B,I=</tspan><tspan x="1532.0" dy="16.52">8]</tspan></text><text x="1532.0" y="3282.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1532.0" dy="0">E006</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.unbind" data-visual-role="tensor"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:227 LSTMLayer.forward; parameter=not asserted; </title><rect x="1356.0" y="3047.0" width="260" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="3074.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1486.0" dy="0">Unbind time axis</tspan>
+<tspan x="1486.0" dy="23.599999999999998">0</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="3122.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1486.0" dy="0">3 tensors [B,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1603.0" y="3142.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1603.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.x0" data-visual-role="input" data-glyph-kind="tensor-grid"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:227 LSTMLayer.forward; parameter=not asserted; </title><rect x="581.0" y="2938.5" width="72" height="32" rx="0" fill="#f8d4e1" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="593.0" x2="593.0" y1="2938.5" y2="2970.5" stroke="#263348" stroke-width=".6" /><line x1="605.0" x2="605.0" y1="2938.5" y2="2970.5" stroke="#263348" stroke-width=".6" /><line x1="617.0" x2="617.0" y1="2938.5" y2="2970.5" stroke="#263348" stroke-width=".6" /><line x1="629.0" x2="629.0" y1="2938.5" y2="2970.5" stroke="#263348" stroke-width=".6" /><line x1="641.0" x2="641.0" y1="2938.5" y2="2970.5" stroke="#263348" stroke-width=".6" /><line x1="581.0" x2="653.0" y1="2949.1666666666665" y2="2949.1666666666665" stroke="#263348" stroke-width=".6" /><line x1="581.0" x2="653.0" y1="2959.8333333333335" y2="2959.8333333333335" stroke="#263348" stroke-width=".6" /><text x="571.0" y="2951.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="571.0" dy="0">Select</tspan><tspan x="571.0" dy="16.52">x_0</tspan></text><text x="663.0" y="2959.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="663.0" dy="0">[B,8]</tspan></text><text x="663.0" y="2992.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="663.0" dy="0">E006</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.x1" data-visual-role="input" data-glyph-kind="tensor-grid"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:227 LSTMLayer.forward; parameter=not asserted; </title><rect x="1450.0" y="2938.5" width="72" height="32" rx="0" fill="#f8d4e1" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="1462.0" x2="1462.0" y1="2938.5" y2="2970.5" stroke="#263348" stroke-width=".6" /><line x1="1474.0" x2="1474.0" y1="2938.5" y2="2970.5" stroke="#263348" stroke-width=".6" /><line x1="1486.0" x2="1486.0" y1="2938.5" y2="2970.5" stroke="#263348" stroke-width=".6" /><line x1="1498.0" x2="1498.0" y1="2938.5" y2="2970.5" stroke="#263348" stroke-width=".6" /><line x1="1510.0" x2="1510.0" y1="2938.5" y2="2970.5" stroke="#263348" stroke-width=".6" /><line x1="1450.0" x2="1522.0" y1="2949.1666666666665" y2="2949.1666666666665" stroke="#263348" stroke-width=".6" /><line x1="1450.0" x2="1522.0" y1="2959.8333333333335" y2="2959.8333333333335" stroke="#263348" stroke-width=".6" /><text x="1440.0" y="2951.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="1440.0" dy="0">Select</tspan><tspan x="1440.0" dy="16.52">x_1</tspan></text><text x="1532.0" y="2959.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1532.0" dy="0">[B,8]</tspan></text><text x="1532.0" y="2992.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1532.0" dy="0">E006</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.x2" data-visual-role="input" data-glyph-kind="tensor-grid"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:227 LSTMLayer.forward; parameter=not asserted; </title><rect x="2319.0" y="2938.5" width="72" height="32" rx="0" fill="#f8d4e1" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="2331.0" x2="2331.0" y1="2938.5" y2="2970.5" stroke="#263348" stroke-width=".6" /><line x1="2343.0" x2="2343.0" y1="2938.5" y2="2970.5" stroke="#263348" stroke-width=".6" /><line x1="2355.0" x2="2355.0" y1="2938.5" y2="2970.5" stroke="#263348" stroke-width=".6" /><line x1="2367.0" x2="2367.0" y1="2938.5" y2="2970.5" stroke="#263348" stroke-width=".6" /><line x1="2379.0" x2="2379.0" y1="2938.5" y2="2970.5" stroke="#263348" stroke-width=".6" /><line x1="2319.0" x2="2391.0" y1="2949.1666666666665" y2="2949.1666666666665" stroke="#263348" stroke-width=".6" /><line x1="2319.0" x2="2391.0" y1="2959.8333333333335" y2="2959.8333333333335" stroke="#263348" stroke-width=".6" /><text x="2309.0" y="2951.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="2309.0" dy="0">Select</tspan><tspan x="2309.0" dy="16.52">x_2</tspan></text><text x="2401.0" y="2959.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="2401.0" dy="0">[B,8]</tspan></text><text x="2401.0" y="2992.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="2401.0" dy="0">E006</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step0" data-visual-role="recurrent"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:227 LSTMLayer.forward; pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=cell; Same self.cell instance and same four parameter tensors at every time step</title><rect x="452.0" y="1638.0" width="330" height="115" rx="10" fill="#ffddb3" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="617.0" y="1665.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="617.0" dy="0">LSTM cell / time 0</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="617.0" y="1689.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="617.0" dy="0">(output h, state(h,c))</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="617.0" y="1708.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="617.0" dy="0">Same self.cell instance and same</tspan>
+<tspan x="617.0" dy="16.52">four parameter tensors at every</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="769.0" y="1743.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="769.0" dy="0">E006,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1" data-visual-role="recurrent"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:227 LSTMLayer.forward; pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=cell; Same self.cell instance and same four parameter tensors at every time step</title><rect x="830.0" y="529.0" width="1312" height="2333" rx="10" fill="#ffddb3" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="847.0" y="559.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="847.0" dy="0">LSTM cell / time 1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2125.0" y="559.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2125.0" dy="0">(output h, state(h,c))</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2129.0" y="591.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2129.0" dy="0">E006,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.x" data-visual-role="input" data-glyph-kind="tensor-grid"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:227 LSTMLayer.forward; pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=not asserted; </title><rect x="1142.0" y="2767.5" width="72" height="32" rx="0" fill="#f8d4e1" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="1154.0" x2="1154.0" y1="2767.5" y2="2799.5" stroke="#263348" stroke-width=".6" /><line x1="1166.0" x2="1166.0" y1="2767.5" y2="2799.5" stroke="#263348" stroke-width=".6" /><line x1="1178.0" x2="1178.0" y1="2767.5" y2="2799.5" stroke="#263348" stroke-width=".6" /><line x1="1190.0" x2="1190.0" y1="2767.5" y2="2799.5" stroke="#263348" stroke-width=".6" /><line x1="1202.0" x2="1202.0" y1="2767.5" y2="2799.5" stroke="#263348" stroke-width=".6" /><line x1="1142.0" x2="1214.0" y1="2778.1666666666665" y2="2778.1666666666665" stroke="#263348" stroke-width=".6" /><line x1="1142.0" x2="1214.0" y1="2788.8333333333335" y2="2788.8333333333335" stroke="#263348" stroke-width=".6" /><text x="1132.0" y="2788.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="1132.0" dy="0">Input x_1</tspan></text><text x="1224.0" y="2788.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1224.0" dy="0">[B,8]</tspan></text><text x="1224.0" y="2821.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1224.0" dy="0">E006,E003</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.hx" data-visual-role="tensor"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=not asserted; </title><rect x="1356.0" y="2731.0" width="260" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="2758.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1486.0" dy="0">Previous hidden</tspan>
+<tspan x="1486.0" dy="23.599999999999998">h_0</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="2806.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1486.0" dy="0">[B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1603.0" y="2826.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1603.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.cx" data-visual-role="tensor"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=not asserted; </title><rect x="1664.0" y="2743.0" width="260" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1794.0" y="2770.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1794.0" dy="0">Previous cell c_0</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1794.0" y="2794.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1794.0" dy="0">[B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1911.0" y="2814.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1911.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.affine" data-visual-role="inner"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:123 LSTMCell.__init__; pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=cell; Two matrices store all four gate row slices; source does not concatenate x and h</title><rect x="1170.0" y="2012.0" width="632" height="667" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1187.0" y="2042.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1187.0" dy="0">Fused four-gate</tspan>
+<tspan x="1187.0" dy="23.599999999999998">affine</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1785.0" y="2042.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1785.0" dy="0">gates: [B,4H=64]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1789.0" y="2089.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1789.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.x_mm" data-visual-role="linear"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:123 LSTMCell.__init__; pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=cell.weight_ih; </title><rect x="1202.0" y="2572.0" width="260" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1332.0" y="2599.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1332.0" dy="0">MatMul x W_ih^T</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1332.0" y="2623.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1332.0" dy="0">[B,64]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1449.0" y="2643.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1449.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.h_mm" data-visual-role="linear"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:123 LSTMCell.__init__; pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=cell.weight_hh; </title><rect x="1510.0" y="2572.0" width="260" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1640.0" y="2599.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1640.0" dy="0">MatMul h W_hh^T</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1640.0" y="2623.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1640.0" dy="0">[B,64]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1757.0" y="2643.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1757.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.b_ih" data-visual-role="norm"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:123 LSTMCell.__init__; pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=cell.bias_ih; </title><rect x="1356.0" y="2415.0" width="260" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="2442.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1486.0" dy="0">Add input bias</tspan>
+<tspan x="1486.0" dy="23.599999999999998">b_ih</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="2490.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1486.0" dy="0">[B,64]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1603.0" y="2510.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1603.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.affine_add" data-visual-role="norm" data-glyph-kind="binary-circle"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=not asserted; </title><circle cx="1486.0" cy="2310.5" r="16.0" fill="white" stroke="#263348" stroke-width="2" data-glyph-outline="circle" /><text x="1486.0" y="2317.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="400" text-anchor="middle" fill="#172336" data-glyph-symbol="add"><tspan x="1486.0" dy="0">+</tspan></text><text x="1514.0" y="2279.98" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1514.0" dy="0">Add hidden</tspan><tspan x="1514.0" dy="16.52">projection</tspan></text><text x="1514.0" y="2336.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="11" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1514.0" dy="0">[B,64]</tspan></text><text x="1514.0" y="2360.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1514.0" dy="0">E003</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.b_hh" data-visual-role="norm"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:123 LSTMCell.__init__; pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=cell.bias_hh; </title><rect x="1356.0" y="2101.0" width="260" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="2128.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1486.0" dy="0">Add hidden bias</tspan>
+<tspan x="1486.0" dy="23.599999999999998">b_hh</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="2176.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1486.0" dy="0">[B,64]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1603.0" y="2196.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1603.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.chunk" data-visual-role="tensor"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=not asserted; </title><rect x="1356.0" y="1855.0" width="260" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="1882.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1486.0" dy="0">Chunk gates: i /</tspan>
+<tspan x="1486.0" dy="23.599999999999998">f / g / o</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="1930.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1486.0" dy="0">4 x [B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1603.0" y="1950.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1603.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.gates" data-visual-role="inner"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=not asserted; i/f/o use sigmoid; candidate g uses tanh; slices belong to the same fused matrices</title><rect x="862.0" y="1598.0" width="1248" height="205" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="879.0" y="1628.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="879.0" dy="0">Four distinct gate slices</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2093.0" y="1628.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="2093.0" dy="0">i, f, g, o: [B,H]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2097.0" y="1660.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2097.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.i" data-visual-role="softmax"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=cell four fused parameters; i rows [0:16]; </title><rect x="894.0" y="1672.0" width="260" height="105" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1024.0" y="1699.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1024.0" dy="0">Input gate i:</tspan>
+<tspan x="1024.0" dy="23.599999999999998">Sigmoid</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1024.0" y="1747.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1024.0" dy="0">[B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1141.0" y="1767.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1141.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.f" data-visual-role="softmax"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=cell four fused parameters; f rows [16:32]; </title><rect x="1202.0" y="1672.0" width="260" height="105" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1332.0" y="1699.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1332.0" dy="0">Forget gate f:</tspan>
+<tspan x="1332.0" dy="23.599999999999998">Sigmoid</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1332.0" y="1747.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1332.0" dy="0">[B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1449.0" y="1767.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1449.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.g" data-visual-role="activation"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=cell four fused parameters; g rows [32:48]; </title><rect x="1510.0" y="1684.0" width="260" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1640.0" y="1711.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1640.0" dy="0">Candidate g: Tanh</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1640.0" y="1735.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1640.0" dy="0">[B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1757.0" y="1755.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1757.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.o" data-visual-role="softmax"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=cell four fused parameters; o rows [48:64]; </title><rect x="1818.0" y="1672.0" width="260" height="105" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1948.0" y="1699.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1948.0" dy="0">Output gate o:</tspan>
+<tspan x="1948.0" dy="23.599999999999998">Sigmoid</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1948.0" y="1747.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1948.0" dy="0">[B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2065.0" y="1767.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2065.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.cell_update" data-visual-role="inner"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=not asserted; </title><rect x="1170.0" y="1184.0" width="632" height="362" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1187.0" y="1214.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1187.0" dy="0">Cell state update</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1785.0" y="1214.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1785.0" dy="0">c_t = f*c_prev + i*g</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1789.0" y="1246.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1789.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.forget_mul" data-visual-role="norm" data-glyph-kind="binary-circle"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=not asserted; </title><circle cx="1332.0" cy="1467.5" r="16.0" fill="white" stroke="#263348" stroke-width="2" data-glyph-outline="circle" /><text x="1332.0" y="1474.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="400" text-anchor="middle" fill="#172336" data-glyph-symbol="multiply"><tspan x="1332.0" dy="0">×</tspan></text><text x="1360.0" y="1420.46" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1360.0" dy="0">Multiply f</tspan><tspan x="1360.0" dy="16.52">* previous</tspan><tspan x="1360.0" dy="16.52">c</tspan></text><text x="1360.0" y="1493.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="11" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1360.0" dy="0">[B,16]</tspan></text><text x="1360.0" y="1517.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1360.0" dy="0">E003</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.input_mul" data-visual-role="norm" data-glyph-kind="binary-circle"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=not asserted; </title><circle cx="1640.0" cy="1467.5" r="16.0" fill="white" stroke="#263348" stroke-width="2" data-glyph-outline="circle" /><text x="1640.0" y="1474.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="400" text-anchor="middle" fill="#172336" data-glyph-symbol="multiply"><tspan x="1640.0" dy="0">×</tspan></text><text x="1668.0" y="1403.94" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1668.0" dy="0">Multiply i</tspan><tspan x="1668.0" dy="16.52">*</tspan><tspan x="1668.0" dy="16.52">candidate</tspan><tspan x="1668.0" dy="16.52">g</tspan></text><text x="1668.0" y="1493.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="11" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1668.0" dy="0">[B,16]</tspan></text><text x="1668.0" y="1517.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1668.0" dy="0">E003</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.cy" data-visual-role="norm"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=not asserted; </title><rect x="1356.0" y="1258.0" width="260" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="1285.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1486.0" dy="0">Add terms -&gt; cell</tspan>
+<tspan x="1486.0" dy="23.599999999999998">c_1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="1333.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1486.0" dy="0">[B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1603.0" y="1353.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1603.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.hidden_update" data-visual-role="inner"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=not asserted; </title><rect x="1324.0" y="755.0" width="324" height="377" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1341.0" y="785.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1341.0" dy="0">Hidden</tspan>
+<tspan x="1341.0" dy="23.599999999999998">state</tspan>
+<tspan x="1341.0" dy="23.599999999999998">update</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1631.0" y="785.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1631.0" dy="0">h_t =</tspan>
+<tspan x="1631.0" dy="18.88">o*tanh(c_t)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1635.0" y="856.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1635.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.tanh_c" data-visual-role="activation"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=not asserted; </title><rect x="1356.0" y="1025.0" width="260" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="1052.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1486.0" dy="0">Tanh updated cell</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="1076.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1486.0" dy="0">[B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1603.0" y="1096.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1603.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.hy" data-visual-role="norm"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=not asserted; </title><rect x="1356.0" y="868.0" width="260" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="895.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1486.0" dy="0">Multiply o *</tspan>
+<tspan x="1486.0" dy="23.599999999999998">tanh(c) -&gt; h_1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="943.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1486.0" dy="0">[B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1603.0" y="963.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1603.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step1.return" data-visual-role="output"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=not asserted; </title><rect x="1356.0" y="603.0" width="260" height="100" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="630.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1486.0" dy="0">Return h, (h, c)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="654.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1486.0" dy="0">h: [B,16]; state: 2</tspan>
+<tspan x="1486.0" dy="18.88">tensors</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1603.0" y="693.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1603.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.step2" data-visual-role="recurrent"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:227 LSTMLayer.forward; pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:133 LSTMCell.forward; parameter=cell; Same self.cell instance and same four parameter tensors at every time step</title><rect x="2190.0" y="1638.0" width="330" height="115" rx="10" fill="#ffddb3" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2355.0" y="1665.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="2355.0" dy="0">LSTM cell / time 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2355.0" y="1689.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2355.0" dy="0">(output h, state(h,c))</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2355.0" y="1708.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="2355.0" dy="0">Same self.cell instance and same</tspan>
+<tspan x="2355.0" dy="16.52">four parameter tensors at every</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2507.0" y="1743.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2507.0" dy="0">E006,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.stack" data-visual-role="tensor"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:227 LSTMLayer.forward; parameter=not asserted; </title><rect x="1356.0" y="372.0" width="260" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="399.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1486.0" dy="0">Stack all time</tspan>
+<tspan x="1486.0" dy="23.599999999999998">outputs</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="447.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1486.0" dy="0">[3,B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1603.0" y="467.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1603.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.return" data-visual-role="output"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:227 LSTMLayer.forward; parameter=not asserted; </title><rect x="1356.0" y="172.0" width="260" height="148" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="199.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1486.0" dy="0">Layer return:</tspan>
+<tspan x="1486.0" dy="23.599999999999998">sequence, final</tspan>
+<tspan x="1486.0" dy="23.599999999999998">state</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="271.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1486.0" dy="0">[3,B,16],</tspan>
+<tspan x="1486.0" dy="18.88">([B,16],[B,16])</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1603.0" y="310.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1603.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.initial_h" data-visual-role="input"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:227 LSTMLayer.forward; parameter=not asserted; </title><rect x="25" y="1745.5" width="260" height="105" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="155.0" y="1772.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="155.0" dy="0">External initial</tspan>
+<tspan x="155.0" dy="23.599999999999998">hidden</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="155.0" y="1820.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="155.0" dy="0">[B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="272" y="1840.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="272" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="lstmcell.initial_c" data-visual-role="input"><title>pytorch-lstmcell-v2.5.1/benchmarks/fastrnns/custom_lstms.py:227 LSTMLayer.forward; parameter=not asserted; </title><rect x="25" y="1874.5" width="260" height="105" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="155.0" y="1901.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="155.0" dy="0">External initial</tspan>
+<tspan x="155.0" dy="23.599999999999998">cell</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="155.0" y="1949.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="155.0" dy="0">[B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="272" y="1969.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="272" dy="0">E006</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0001" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.x_mm&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.x&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.x_mm&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.x:out-&gt;lstmcell.step1.x_mm:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.x_mm:in&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.x:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.x&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1178.0,2767.5 L 1178.0,2697.0 L 1332.0,2697.0 L 1332.0,2653.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.x:out -&gt; lstmcell.step1.x_mm:in; visible lstmcell.step1.x:out -&gt; lstmcell.step1.x_mm:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0002" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.h_mm&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.hx&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.h_mm&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.hx:out-&gt;lstmcell.step1.h_mm:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.h_mm:in&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.hx:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.hx&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1486.0,2731.0 L 1486.0,2697.0 L 1640.0,2697.0 L 1640.0,2653.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.hx:out -&gt; lstmcell.step1.h_mm:in; visible lstmcell.step1.hx:out -&gt; lstmcell.step1.h_mm:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0003" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.b_ih&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.x_mm&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.b_ih&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.x_mm:out-&gt;lstmcell.step1.b_ih:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.b_ih:in&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.x_mm:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.x_mm&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1332.0,2572.0 L 1332.0,2544.0 L 1486.0,2544.0 L 1486.0,2520.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.x_mm:out -&gt; lstmcell.step1.b_ih:in; visible lstmcell.step1.x_mm:out -&gt; lstmcell.step1.b_ih:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0004" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.affine_add&quot;, &quot;dst_port&quot;: &quot;x_affine&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.b_ih&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.affine_add&quot;, &quot;port&quot;: &quot;x_affine&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.b_ih:out-&gt;lstmcell.step1.affine_add:x_affine:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.affine_add:right.aux0&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.b_ih:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.b_ih&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1486.0,2415.0 L 1486.0,2326.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.b_ih:out -&gt; lstmcell.step1.affine_add:x_affine; visible lstmcell.step1.b_ih:out -&gt; lstmcell.step1.affine_add:x_affine; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0005" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.affine_add&quot;, &quot;dst_port&quot;: &quot;h_affine&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.h_mm&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.affine_add&quot;, &quot;port&quot;: &quot;h_affine&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.h_mm:out-&gt;lstmcell.step1.affine_add:h_affine:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.affine_add:right.aux1&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.h_mm:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.h_mm&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1640.0,2572.0 L 1640.0,2310.5 L 1502.0,2310.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.h_mm:out -&gt; lstmcell.step1.affine_add:h_affine; visible lstmcell.step1.h_mm:out -&gt; lstmcell.step1.affine_add:h_affine; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0006" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.b_hh&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.affine_add&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.b_hh&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.affine_add:out-&gt;lstmcell.step1.b_hh:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.b_hh:in&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.affine_add:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.affine_add&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1486.0,2294.5 L 1486.0,2206.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.affine_add:out -&gt; lstmcell.step1.b_hh:in; visible lstmcell.step1.affine_add:out -&gt; lstmcell.step1.b_hh:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0007" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.chunk&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.b_hh&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.chunk&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.b_hh:out-&gt;lstmcell.step1.chunk:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.chunk:in&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.b_hh:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.b_hh&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1486.0,2101.0 L 1486.0,1960.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.b_hh:out -&gt; lstmcell.step1.chunk:in; visible lstmcell.step1.b_hh:out -&gt; lstmcell.step1.chunk:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0008" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.i&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;gate_slice&quot;, &quot;src&quot;: &quot;lstmcell.step1.chunk&quot;, &quot;src_port&quot;: &quot;item[0]&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.i&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.chunk:item[0]-&gt;lstmcell.step1.i:in:gate_slice&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.i:in&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.chunk:right.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.chunk&quot;, &quot;port&quot;: &quot;item[0]&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1616.0,1871.5 L 1640.0,1871.5 L 1640.0,1817.5 L 1024.0,1817.5 L 1024.0,1777.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.chunk:item[0] -&gt; lstmcell.step1.i:in; visible lstmcell.step1.chunk:item[0] -&gt; lstmcell.step1.i:in; i</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0009" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.f&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;gate_slice&quot;, &quot;src&quot;: &quot;lstmcell.step1.chunk&quot;, &quot;src_port&quot;: &quot;item[1]&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.f&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.chunk:item[1]-&gt;lstmcell.step1.f:in:gate_slice&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.f:in&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.chunk:right.aux1&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.chunk&quot;, &quot;port&quot;: &quot;item[1]&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1616.0,1895.5 L 1642.0,1895.5 L 1642.0,1821.0 L 1332.0,1821.0 L 1332.0,1777.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.chunk:item[1] -&gt; lstmcell.step1.f:in; visible lstmcell.step1.chunk:item[1] -&gt; lstmcell.step1.f:in; f</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0010" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.g&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;gate_slice&quot;, &quot;src&quot;: &quot;lstmcell.step1.chunk&quot;, &quot;src_port&quot;: &quot;item[2]&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.g&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.chunk:item[2]-&gt;lstmcell.step1.g:in:gate_slice&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.g:in&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.chunk:right.aux2&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.chunk&quot;, &quot;port&quot;: &quot;item[2]&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1616.0,1919.5 L 1646.0,1919.5 L 1646.0,1789.0 L 1640.0,1789.0 L 1640.0,1765.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.chunk:item[2] -&gt; lstmcell.step1.g:in; visible lstmcell.step1.chunk:item[2] -&gt; lstmcell.step1.g:in; g</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0011" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.o&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;gate_slice&quot;, &quot;src&quot;: &quot;lstmcell.step1.chunk&quot;, &quot;src_port&quot;: &quot;item[3]&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.o&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.chunk:item[3]-&gt;lstmcell.step1.o:in:gate_slice&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.o:in&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.chunk:right.aux3&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.chunk&quot;, &quot;port&quot;: &quot;item[3]&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1616.0,1943.5 L 1948.0,1943.5 L 1948.0,1777.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.chunk:item[3] -&gt; lstmcell.step1.o:in; visible lstmcell.step1.chunk:item[3] -&gt; lstmcell.step1.o:in; o</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0012" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.forget_mul&quot;, &quot;dst_port&quot;: &quot;f&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.f&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.forget_mul&quot;, &quot;port&quot;: &quot;f&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.f:out-&gt;lstmcell.step1.forget_mul:f:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.forget_mul:right.aux0&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.f:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.f&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1332.0,1672.0 L 1332.0,1483.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.f:out -&gt; lstmcell.step1.forget_mul:f; visible lstmcell.step1.f:out -&gt; lstmcell.step1.forget_mul:f; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0013" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.forget_mul&quot;, &quot;dst_port&quot;: &quot;previous_c&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.cx&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.forget_mul&quot;, &quot;port&quot;: &quot;previous_c&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.cx:out-&gt;lstmcell.step1.forget_mul:previous_c:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.forget_mul:right.aux1&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.cx:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.cx&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1794.0,2743.0 L 1794.0,2685.0 L 2128.0,2685.0 L 2128.0,1501.5 L 1408.24,1501.5 L 1408.24,1467.5 L 1348.0,1467.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.cx:out -&gt; lstmcell.step1.forget_mul:previous_c; visible lstmcell.step1.cx:out -&gt; lstmcell.step1.forget_mul:previous_c; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0014" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.input_mul&quot;, &quot;dst_port&quot;: &quot;i&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.i&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.input_mul&quot;, &quot;port&quot;: &quot;i&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.i:out-&gt;lstmcell.step1.input_mul:i:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.input_mul:right.aux0&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.i:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.i&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1024.0,1672.0 L 1024.0,1637.0 L 1306.0,1637.0 L 1306.0,1433.5 L 1349.0,1433.5 L 1349.0,1467.02 L 1600.0,1467.02 L 1600.0,1467.5 L 1624.0,1467.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.i:out -&gt; lstmcell.step1.input_mul:i; visible lstmcell.step1.i:out -&gt; lstmcell.step1.input_mul:i; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0015" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.input_mul&quot;, &quot;dst_port&quot;: &quot;g&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.g&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.input_mul&quot;, &quot;port&quot;: &quot;g&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.g:out-&gt;lstmcell.step1.input_mul:g:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.input_mul:right.aux1&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.g:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.g&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1640.0,1684.0 L 1640.0,1483.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.g:out -&gt; lstmcell.step1.input_mul:g; visible lstmcell.step1.g:out -&gt; lstmcell.step1.input_mul:g; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0016" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.cy&quot;, &quot;dst_port&quot;: &quot;retained&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.forget_mul&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.cy&quot;, &quot;port&quot;: &quot;retained&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.forget_mul:out-&gt;lstmcell.step1.cy:retained:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.cy:right.aux0&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.forget_mul:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.forget_mul&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1332.0,1451.5 L 1332.0,1378.94 L 1640.0,1378.94 L 1640.0,1286.5 L 1616.0,1286.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.forget_mul:out -&gt; lstmcell.step1.cy:retained; visible lstmcell.step1.forget_mul:out -&gt; lstmcell.step1.cy:retained; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0017" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.cy&quot;, &quot;dst_port&quot;: &quot;new&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.input_mul&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.cy&quot;, &quot;port&quot;: &quot;new&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.input_mul:out-&gt;lstmcell.step1.cy:new:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.cy:right.aux1&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.input_mul:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.input_mul&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1640.0,1451.5 L 1640.0,1378.94 L 1642.0,1378.94 L 1642.0,1310.5 L 1616.0,1310.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.input_mul:out -&gt; lstmcell.step1.cy:new; visible lstmcell.step1.input_mul:out -&gt; lstmcell.step1.cy:new; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0018" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.tanh_c&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.cy&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.tanh_c&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.cy:out-&gt;lstmcell.step1.tanh_c:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.tanh_c:in&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.cy:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.cy&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1486.0,1258.0 L 1486.0,1106.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.cy:out -&gt; lstmcell.step1.tanh_c:in; visible lstmcell.step1.cy:out -&gt; lstmcell.step1.tanh_c:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0019" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.hy&quot;, &quot;dst_port&quot;: &quot;tanh_c&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.tanh_c&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.hy&quot;, &quot;port&quot;: &quot;tanh_c&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.tanh_c:out-&gt;lstmcell.step1.hy:tanh_c:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.hy:right.aux0&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.tanh_c:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.tanh_c&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1486.0,1025.0 L 1486.0,991.0 L 1640.0,991.0 L 1640.0,896.5 L 1616.0,896.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.tanh_c:out -&gt; lstmcell.step1.hy:tanh_c; visible lstmcell.step1.tanh_c:out -&gt; lstmcell.step1.hy:tanh_c; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0020" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.hy&quot;, &quot;dst_port&quot;: &quot;o&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.o&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.hy&quot;, &quot;port&quot;: &quot;o&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.o:out-&gt;lstmcell.step1.hy:o:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.hy:right.aux1&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.o:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.o&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1948.0,1672.0 L 1948.0,1634.0 L 1820.0,1634.0 L 1820.0,920.5 L 1616.0,920.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.o:out -&gt; lstmcell.step1.hy:o; visible lstmcell.step1.o:out -&gt; lstmcell.step1.hy:o; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0021" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.return&quot;, &quot;dst_port&quot;: &quot;output_hidden&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.hy&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.return&quot;, &quot;port&quot;: &quot;output_hidden&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.hy:out-&gt;lstmcell.step1.return:output_hidden:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.return:right.aux0&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.hy:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.hy&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1486.0,868.0 L 1486.0,721.0 L 1640.0,721.0 L 1640.0,629.0 L 1616.0,629.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.hy:out -&gt; lstmcell.step1.return:output_hidden; visible lstmcell.step1.hy:out -&gt; lstmcell.step1.return:output_hidden; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0022" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.return&quot;, &quot;dst_port&quot;: &quot;state_hidden&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.hy&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.return&quot;, &quot;port&quot;: &quot;state_hidden&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.hy:out-&gt;lstmcell.step1.return:state_hidden:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.return:right.aux1&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.hy:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.hy&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1486.0,868.0 L 1486.0,721.0 L 1640.0,721.0 L 1640.0,653.0 L 1616.0,653.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.hy:out -&gt; lstmcell.step1.return:state_hidden; visible lstmcell.step1.hy:out -&gt; lstmcell.step1.return:state_hidden; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0023" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.return&quot;, &quot;dst_port&quot;: &quot;state_cell&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.step1.cy&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.return&quot;, &quot;port&quot;: &quot;state_cell&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.cy:out-&gt;lstmcell.step1.return:state_cell:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.return:right.aux2&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.cy:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.cy&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1486.0,1258.0 L 1486.0,1150.0 L 1658.0,1150.0 L 1658.0,677.0 L 1616.0,677.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.cy:out -&gt; lstmcell.step1.return:state_cell; visible lstmcell.step1.cy:out -&gt; lstmcell.step1.return:state_cell; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0024" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.unbind&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.sequence&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.unbind&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.sequence:out-&gt;lstmcell.unbind:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.unbind:in&quot;, &quot;rendered_src&quot;: &quot;lstmcell.sequence:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.sequence&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1486.0,3228.5 L 1486.0,3152.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.sequence:out -&gt; lstmcell.unbind:in; visible lstmcell.sequence:out -&gt; lstmcell.unbind:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0025" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.x0&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;time_slice&quot;, &quot;src&quot;: &quot;lstmcell.unbind&quot;, &quot;src_port&quot;: &quot;item[0]&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.x0&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.unbind:item[0]-&gt;lstmcell.x0:in:time_slice&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.x0:in&quot;, &quot;rendered_src&quot;: &quot;lstmcell.unbind:right.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.unbind&quot;, &quot;port&quot;: &quot;item[0]&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1616.0,3075.5 L 1640.0,3075.5 L 1640.0,3004.62 L 617.0,3004.62 L 617.0,2970.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.unbind:item[0] -&gt; lstmcell.x0:in; visible lstmcell.unbind:item[0] -&gt; lstmcell.x0:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0026" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step0.x&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.x0&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;canonical_node&quot;: &quot;lstmcell.step0.x&quot;, &quot;canonical_port&quot;: &quot;in&quot;, &quot;node&quot;: &quot;lstmcell.step0&quot;, &quot;port&quot;: &quot;input&quot;, &quot;projection&quot;: &quot;folded&quot;}, &quot;edge_id&quot;: &quot;lstmcell.x0:out-&gt;lstmcell.step0.x:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step0:right.aux0&quot;, &quot;rendered_src&quot;: &quot;lstmcell.x0:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.x0&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 617.0,2938.5 L 617.0,1768.16 L 806.0,1768.16 L 806.0,1659.5 L 782.0,1659.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.x0:out -&gt; lstmcell.step0.x:in; visible lstmcell.x0:out -&gt; lstmcell.step0:input; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0027" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.stack&quot;, &quot;dst_port&quot;: &quot;item[0]&quot;, &quot;role&quot;: &quot;sequence_output&quot;, &quot;src&quot;: &quot;lstmcell.step0.hy&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.stack&quot;, &quot;port&quot;: &quot;item[0]&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step0.hy:out-&gt;lstmcell.stack:item[0]:sequence_output&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.stack:right.aux0&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step0:right.aux1&quot;, &quot;source&quot;: {&quot;canonical_node&quot;: &quot;lstmcell.step0.hy&quot;, &quot;canonical_port&quot;: &quot;out&quot;, &quot;node&quot;: &quot;lstmcell.step0&quot;, &quot;port&quot;: &quot;lstmcell.step0.hy:out&quot;, &quot;projection&quot;: &quot;folded&quot;}}" d="M 782.0,1683.5 L 818.0,1683.5 L 818.0,495.0 L 1640.0,495.0 L 1640.0,400.5 L 1616.0,400.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step0.hy:out -&gt; lstmcell.stack:item[0]; visible lstmcell.step0:lstmcell.step0.hy:out -&gt; lstmcell.stack:item[0]; h_0</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0028" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.x1&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;time_slice&quot;, &quot;src&quot;: &quot;lstmcell.unbind&quot;, &quot;src_port&quot;: &quot;item[1]&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.x1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.unbind:item[1]-&gt;lstmcell.x1:in:time_slice&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.x1:in&quot;, &quot;rendered_src&quot;: &quot;lstmcell.unbind:right.aux1&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.unbind&quot;, &quot;port&quot;: &quot;item[1]&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1616.0,3099.5 L 1642.0,3099.5 L 1642.0,2973.02 L 1523.6,2973.02 L 1523.6,2994.5 L 1486.0,2994.5 L 1486.0,2970.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.unbind:item[1] -&gt; lstmcell.x1:in; visible lstmcell.unbind:item[1] -&gt; lstmcell.x1:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0029" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.x&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.x1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.x&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.x1:out-&gt;lstmcell.step1.x:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.x:in&quot;, &quot;rendered_src&quot;: &quot;lstmcell.x1:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.x1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1486.0,2938.5 L 1486.0,2880.0 L 1178.0,2880.0 L 1178.0,2799.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.x1:out -&gt; lstmcell.step1.x:in; visible lstmcell.x1:out -&gt; lstmcell.step1.x:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0030" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.stack&quot;, &quot;dst_port&quot;: &quot;item[1]&quot;, &quot;role&quot;: &quot;sequence_output&quot;, &quot;src&quot;: &quot;lstmcell.step1.hy&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.stack&quot;, &quot;port&quot;: &quot;item[1]&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.hy:out-&gt;lstmcell.stack:item[1]:sequence_output&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.stack:right.aux1&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.hy:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.hy&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1486.0,868.0 L 1486.0,721.0 L 1642.0,721.0 L 1642.0,424.5 L 1616.0,424.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.hy:out -&gt; lstmcell.stack:item[1]; visible lstmcell.step1.hy:out -&gt; lstmcell.stack:item[1]; h_1</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0031" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.hx&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;recurrent_state&quot;, &quot;src&quot;: &quot;lstmcell.step0.hy&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.hx&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step0.hy:out-&gt;lstmcell.step1.hx:in:recurrent_state&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.hx:left&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step0:right.aux2&quot;, &quot;source&quot;: {&quot;canonical_node&quot;: &quot;lstmcell.step0.hy&quot;, &quot;canonical_port&quot;: &quot;state[0]&quot;, &quot;node&quot;: &quot;lstmcell.step0&quot;, &quot;port&quot;: &quot;lstmcell.step0.hy:state[0]&quot;, &quot;projection&quot;: &quot;folded&quot;}}" d="M 782.0,1707.5 L 842.6,1707.5 L 842.6,2731.0 L 1332.0,2731.0 L 1332.0,2783.5 L 1356.0,2783.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step0.hy:out -&gt; lstmcell.step1.hx:in; visible lstmcell.step0:lstmcell.step0.hy:state[0] -&gt; lstmcell.step1.hx:in; h_0</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0032" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step1.cx&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;recurrent_state&quot;, &quot;src&quot;: &quot;lstmcell.step0.cy&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.step1.cx&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step0.cy:out-&gt;lstmcell.step1.cx:in:recurrent_state&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step1.cx:left&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step0:right.aux3&quot;, &quot;source&quot;: {&quot;canonical_node&quot;: &quot;lstmcell.step0.cy&quot;, &quot;canonical_port&quot;: &quot;state[1]&quot;, &quot;node&quot;: &quot;lstmcell.step0&quot;, &quot;port&quot;: &quot;lstmcell.step0.cy:state[1]&quot;, &quot;projection&quot;: &quot;folded&quot;}}" d="M 782.0,1731.5 L 818.0,1731.5 L 818.0,2854.0 L 1640.0,2854.0 L 1640.0,2783.5 L 1664.0,2783.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step0.cy:out -&gt; lstmcell.step1.cx:in; visible lstmcell.step0:lstmcell.step0.cy:state[1] -&gt; lstmcell.step1.cx:in; c_0</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0033" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.x2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;time_slice&quot;, &quot;src&quot;: &quot;lstmcell.unbind&quot;, &quot;src_port&quot;: &quot;item[2]&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.x2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.unbind:item[2]-&gt;lstmcell.x2:in:time_slice&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.x2:in&quot;, &quot;rendered_src&quot;: &quot;lstmcell.unbind:right.aux2&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.unbind&quot;, &quot;port&quot;: &quot;item[2]&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1616.0,3123.5 L 2355.0,3123.5 L 2355.0,2970.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.unbind:item[2] -&gt; lstmcell.x2:in; visible lstmcell.unbind:item[2] -&gt; lstmcell.x2:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0034" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step2.x&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.x2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;canonical_node&quot;: &quot;lstmcell.step2.x&quot;, &quot;canonical_port&quot;: &quot;in&quot;, &quot;node&quot;: &quot;lstmcell.step2&quot;, &quot;port&quot;: &quot;input&quot;, &quot;projection&quot;: &quot;folded&quot;}, &quot;edge_id&quot;: &quot;lstmcell.x2:out-&gt;lstmcell.step2.x:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step2:right.aux0&quot;, &quot;rendered_src&quot;: &quot;lstmcell.x2:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.x2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 2355.0,2938.5 L 2355.0,1765.0 L 2544.0,1765.0 L 2544.0,1671.5 L 2520.0,1671.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.x2:out -&gt; lstmcell.step2.x:in; visible lstmcell.x2:out -&gt; lstmcell.step2:input; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0035" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.stack&quot;, &quot;dst_port&quot;: &quot;item[2]&quot;, &quot;role&quot;: &quot;sequence_output&quot;, &quot;src&quot;: &quot;lstmcell.step2.hy&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.stack&quot;, &quot;port&quot;: &quot;item[2]&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step2.hy:out-&gt;lstmcell.stack:item[2]:sequence_output&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.stack:right.aux2&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step2:right.aux1&quot;, &quot;source&quot;: {&quot;canonical_node&quot;: &quot;lstmcell.step2.hy&quot;, &quot;canonical_port&quot;: &quot;out&quot;, &quot;node&quot;: &quot;lstmcell.step2&quot;, &quot;port&quot;: &quot;lstmcell.step2.hy:out&quot;, &quot;projection&quot;: &quot;folded&quot;}}" d="M 2520.0,1695.5 L 2570.0,1695.5 L 2570.0,448.5 L 1616.0,448.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step2.hy:out -&gt; lstmcell.stack:item[2]; visible lstmcell.step2:lstmcell.step2.hy:out -&gt; lstmcell.stack:item[2]; h_2</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0036" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step2.hx&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;recurrent_state&quot;, &quot;src&quot;: &quot;lstmcell.step1.hy&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;canonical_node&quot;: &quot;lstmcell.step2.hx&quot;, &quot;canonical_port&quot;: &quot;in&quot;, &quot;node&quot;: &quot;lstmcell.step2&quot;, &quot;port&quot;: &quot;previous_hidden&quot;, &quot;projection&quot;: &quot;folded&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.hy:out-&gt;lstmcell.step2.hx:in:recurrent_state&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step2:left.aux0&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.hy:right.aux2&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.hy&quot;, &quot;port&quot;: &quot;state[0]&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1616.0,944.5 L 2166.0,944.5 L 2166.0,1683.5 L 2190.0,1683.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.hy:out -&gt; lstmcell.step2.hx:in; visible lstmcell.step1.hy:state[0] -&gt; lstmcell.step2:previous_hidden; h_1</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0037" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step2.cx&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;recurrent_state&quot;, &quot;src&quot;: &quot;lstmcell.step1.cy&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;canonical_node&quot;: &quot;lstmcell.step2.cx&quot;, &quot;canonical_port&quot;: &quot;in&quot;, &quot;node&quot;: &quot;lstmcell.step2&quot;, &quot;port&quot;: &quot;previous_cell&quot;, &quot;projection&quot;: &quot;folded&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step1.cy:out-&gt;lstmcell.step2.cx:in:recurrent_state&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step2:left.aux1&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step1.cy:right.aux2&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.step1.cy&quot;, &quot;port&quot;: &quot;state[1]&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1616.0,1334.5 L 2160.0,1334.5 L 2160.0,1707.5 L 2190.0,1707.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step1.cy:out -&gt; lstmcell.step2.cx:in; visible lstmcell.step1.cy:state[1] -&gt; lstmcell.step2:previous_cell; c_1</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0038" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.return&quot;, &quot;dst_port&quot;: &quot;output_sequence&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;lstmcell.stack&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.return&quot;, &quot;port&quot;: &quot;output_sequence&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.stack:out-&gt;lstmcell.return:output_sequence:tensor&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.return:right.aux0&quot;, &quot;rendered_src&quot;: &quot;lstmcell.stack:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.stack&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1486.0,372.0 L 1486.0,338.0 L 1640.0,338.0 L 1640.0,222.0 L 1616.0,222.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.stack:out -&gt; lstmcell.return:output_sequence; visible lstmcell.stack:out -&gt; lstmcell.return:output_sequence; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0039" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.return&quot;, &quot;dst_port&quot;: &quot;final_hidden&quot;, &quot;role&quot;: &quot;final_state&quot;, &quot;src&quot;: &quot;lstmcell.step2.hy&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.return&quot;, &quot;port&quot;: &quot;final_hidden&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step2.hy:out-&gt;lstmcell.return:final_hidden:final_state&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.return:right.aux1&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step2:right.aux1&quot;, &quot;source&quot;: {&quot;canonical_node&quot;: &quot;lstmcell.step2.hy&quot;, &quot;canonical_port&quot;: &quot;out&quot;, &quot;node&quot;: &quot;lstmcell.step2&quot;, &quot;port&quot;: &quot;lstmcell.step2.hy:out&quot;, &quot;projection&quot;: &quot;folded&quot;}}" d="M 2520.0,1695.5 L 2570.0,1695.5 L 2570.0,246.0 L 1616.0,246.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step2.hy:out -&gt; lstmcell.return:final_hidden; visible lstmcell.step2:lstmcell.step2.hy:out -&gt; lstmcell.return:final_hidden; final h</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0040" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.return&quot;, &quot;dst_port&quot;: &quot;final_cell&quot;, &quot;role&quot;: &quot;final_state&quot;, &quot;src&quot;: &quot;lstmcell.step2.cy&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;lstmcell.return&quot;, &quot;port&quot;: &quot;final_cell&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;lstmcell.step2.cy:out-&gt;lstmcell.return:final_cell:final_state&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.return:right.aux2&quot;, &quot;rendered_src&quot;: &quot;lstmcell.step2:right.aux2&quot;, &quot;source&quot;: {&quot;canonical_node&quot;: &quot;lstmcell.step2.cy&quot;, &quot;canonical_port&quot;: &quot;out&quot;, &quot;node&quot;: &quot;lstmcell.step2&quot;, &quot;port&quot;: &quot;lstmcell.step2.cy:out&quot;, &quot;projection&quot;: &quot;folded&quot;}}" d="M 2520.0,1719.5 L 2582.0,1719.5 L 2582.0,270.0 L 1616.0,270.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.step2.cy:out -&gt; lstmcell.return:final_cell; visible lstmcell.step2:lstmcell.step2.cy:out -&gt; lstmcell.return:final_cell; final c</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0041" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step0.hx&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;initial_state&quot;, &quot;src&quot;: &quot;lstmcell.initial_h&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;canonical_node&quot;: &quot;lstmcell.step0.hx&quot;, &quot;canonical_port&quot;: &quot;in&quot;, &quot;node&quot;: &quot;lstmcell.step0&quot;, &quot;port&quot;: &quot;previous_hidden&quot;, &quot;projection&quot;: &quot;folded&quot;}, &quot;edge_id&quot;: &quot;lstmcell.initial_h:out-&gt;lstmcell.step0.hx:in:initial_state&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step0:left.aux0&quot;, &quot;rendered_src&quot;: &quot;lstmcell.initial_h:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.initial_h&quot;, &quot;port&quot;: &quot;state[0]&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 285,1798.0 L 428.0,1798.0 L 428.0,1683.5 L 452.0,1683.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.initial_h:out -&gt; lstmcell.step0.hx:in; visible lstmcell.initial_h:state[0] -&gt; lstmcell.step0:previous_hidden; h_init</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0042" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;lstmcell.step0.cx&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;initial_state&quot;, &quot;src&quot;: &quot;lstmcell.initial_c&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;canonical_node&quot;: &quot;lstmcell.step0.cx&quot;, &quot;canonical_port&quot;: &quot;in&quot;, &quot;node&quot;: &quot;lstmcell.step0&quot;, &quot;port&quot;: &quot;previous_cell&quot;, &quot;projection&quot;: &quot;folded&quot;}, &quot;edge_id&quot;: &quot;lstmcell.initial_c:out-&gt;lstmcell.step0.cx:in:initial_state&quot;, &quot;rendered_dst&quot;: &quot;lstmcell.step0:left.aux1&quot;, &quot;rendered_src&quot;: &quot;lstmcell.initial_c:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;lstmcell.initial_c&quot;, &quot;port&quot;: &quot;state[1]&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 285,1927.0 L 402.0,1927.0 L 402.0,1707.5 L 452.0,1707.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>lstmcell.initial_c:out -&gt; lstmcell.step0.cx:in; visible lstmcell.initial_c:state[1] -&gt; lstmcell.step0:previous_cell; c_init</title></path>
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-1" data-follow-edge="route-0008" x="1332.0" y="1835.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle" fill="#536477">
+<tspan x="1332.0" dy="0">i</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-2" data-follow-edge="route-0009" x="1487.0" y="1813.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle" fill="#536477">
+<tspan x="1487.0" dy="0">f</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-3" data-follow-edge="route-0010" x="1654.0" y="1854.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start" fill="#536477">
+<tspan x="1654.0" dy="0">g</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-4" data-follow-edge="route-0011" x="1782.0" y="1935.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle" fill="#536477">
+<tspan x="1782.0" dy="0">o</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-5" data-follow-edge="route-0027" x="826.0" y="1089.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start" fill="#536477">
+<tspan x="826.0" dy="0">h_0</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-6" data-follow-edge="route-0030" x="1650.0" y="572.75" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start" fill="#536477">
+<tspan x="1650.0" dy="0">h_1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-7" data-follow-edge="route-0031" x="850.6" y="2219.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start" fill="#536477">
+<tspan x="850.6" dy="0">h_0</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-8" data-follow-edge="route-0032" x="810.0" y="2292.75" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end" fill="#536477">
+<tspan x="810.0" dy="0">c_0</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-9" data-follow-edge="route-0035" x="2562.0" y="1072.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end" fill="#536477">
+<tspan x="2562.0" dy="0">h_2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-10" data-follow-edge="route-0036" x="2174.0" y="1314.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start" fill="#536477">
+<tspan x="2174.0" dy="0">h_1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-11" data-follow-edge="route-0037" x="1888.0" y="1326.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle" fill="#536477">
+<tspan x="1888.0" dy="0">c_1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-12" data-follow-edge="route-0039" x="2562.0" y="970.75" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end" fill="#536477">
+<tspan x="2562.0" dy="0">final h</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-13" data-follow-edge="route-0040" x="2590.0" y="994.75" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start" fill="#536477">
+<tspan x="2590.0" dy="0">final c</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-14" data-follow-edge="route-0041" x="356.5" y="1790.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle" fill="#536477">
+<tspan x="356.5" dy="0">h_init</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-15" data-follow-edge="route-0042" x="410.0" y="1817.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start" fill="#536477">
+<tspan x="410.0" dy="0">c_init</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="941.0" y="3348" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="964.0" y="3361" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="964.0" dy="0">Input / State</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1126.0" y="3348" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1149.0" y="3361" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1149.0" dy="0">Gate affine</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1311.0" y="3348" width="16" height="16" rx="3" fill="#c9f1cd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1334.0" y="3361" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1334.0" dy="0">Sigmoid gate</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1496.0" y="3348" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1519.0" y="3361" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1519.0" dy="0">Tanh</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1681.0" y="3348" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1704.0" y="3361" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1704.0" dy="0">Multiply / Add</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1866.0" y="3348" width="16" height="16" rx="3" fill="#ffddb3" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1889.0" y="3361" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1889.0" dy="0">Shared cell</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="3389" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1486.0" dy="0">B batch; I=8; H=16; T=3 chosen input; columns advance time left to right</tspan>
+<tspan x="1486.0" dy="16.52">i/f/o Sigmoid; g Tanh; yellow blocks explicit elementwise Multiply/Add</tspan>
+<tspan x="1486.0" dy="16.52">One self.cell instance, four fused parameter tensors; center cell expands; neighbor cells fold</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="3493" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1486.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="3523" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1486.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1486.0" y="3548" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1486.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+
+</svg>

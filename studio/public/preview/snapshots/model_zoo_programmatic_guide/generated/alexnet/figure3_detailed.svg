@@ -1,0 +1,606 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1386" height="4060" viewBox="0 0 1386 4060">
+<defs xmlns="http://www.w3.org/2000/svg"><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348" /></marker></defs>
+
+<rect xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" fill="white" />
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="source-binding">{"model": "alexnet", "source_snapshot_sha256": "d72c614d79563c7756290b44770a5262b15bfc58e12c9844311724d2862bc09c", "repository": "rasbt/deeplearning-models", "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3", "semantic_ir_sha256": "a033a7b10d1d34790e70d52e77e276a601edd722fad90e2f7f9dd3174fb376d0", "view": 2}</metadata>
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="diagram-style">{"name": "transformer-paper-model-zoo", "version": 1, "font": "DejaVu Sans, Arial, sans-serif", "text": "#172336", "line": "#263348", "palette": {"root": "#ffffff", "group": "#ffffff", "inner": "#fffaf6", "layer": "#ffffff", "encoder": "#e7f5fe", "decoder": "#fff0f5", "embedding": "#f8d4e1", "input": "#f8d4e1", "output": "#dfdff8", "attention": "#ffddb3", "ffn": "#c8ebfb", "mixing": "#c8ebfb", "conv": "#c8ebfb", "pool": "#d6f0df", "norm": "#fff6bd", "concat": "#fff6bd", "linear": "#dfdff8", "softmax": "#c9f1cd", "sampling": "#c9f1cd", "recurrent": "#ffddb3", "decomposition": "#d6f0df", "tensor": "#cdeaf8", "activation": "#f3f5f7", "control": "#f3f5f7"}, "typography": {"title": 30, "subtitle": 16, "module": 22, "inner": 20, "operator": 20, "shape": 16, "detail": 14, "evidence": 12, "footer": 14, "line_height": 1.18}, "fill_width_nodes": ["alex.adaptive_pool", "alex.classifier", "alex.conv_stage1", "alex.conv_stage2", "alex.conv_stage3", "alex.conv_stage4", "alex.conv_stage5", "alex.features", "alex.flatten", "alex.hidden1", "alex.hidden2"], "visual_roles": {"alex.adaptive_pool": "pool", "alex.classifier": "ffn", "alex.conv_stage1": "conv", "alex.conv_stage1.conv": "conv", "alex.conv_stage1.pool": "pool", "alex.conv_stage1.relu": "activation", "alex.conv_stage2": "conv", "alex.conv_stage2.conv": "conv", "alex.conv_stage2.pool": "pool", "alex.conv_stage2.relu": "activation", "alex.conv_stage3": "conv", "alex.conv_stage3.conv": "conv", "alex.conv_stage3.relu": "activation", "alex.conv_stage4": "conv", "alex.conv_stage4.conv": "conv", "alex.conv_stage4.relu": "activation", "alex.conv_stage5": "conv", "alex.conv_stage5.conv": "conv", "alex.conv_stage5.pool": "pool", "alex.conv_stage5.relu": "activation", "alex.fc3": "linear", "alex.features": "encoder", "alex.flatten": "tensor", "alex.hidden1": "ffn", "alex.hidden1.dropout": "control", "alex.hidden1.linear": "linear", "alex.hidden1.relu": "activation", "alex.hidden2": "ffn", "alex.hidden2.dropout": "control", "alex.hidden2.linear": "linear", "alex.hidden2.relu": "activation", "alex.input": "input", "alex.model": "root", "alex.output": "output", "alex.unused_softmax": "softmax"}, "semantics": "presentation aliases only; color does not imply mathematical equivalence or parameter sharing"}</metadata>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">AlexNet (grouped CIFAR-10)  |  Operators &amp; tensor flow</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">CIFAR-10 · Crop64 · Conv2-5 groups=2 · eval · logits only  /  read bottom to top</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.model" data-visual-role="root"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:129 AlexNet; parameter=not asserted; </title><rect x="432.0" y="98" width="522" height="3680" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="449.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="449.0" dy="0">Grouped AlexNet</tspan>
+<tspan x="449.0" dy="25.959999999999997">· CIFAR-10</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="937.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="937.0" dy="0">logits: [B,10]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="941.0" y="177" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="941.0" dy="0">E001</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.input" data-visual-role="input" data-glyph-kind="tensor-grid"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; caller Resize70 then Crop64; original CIFAR-10 is 32x32</title><rect x="657.0" y="3695.5" width="72" height="32" rx="0" fill="#f8d4e1" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="669.0" x2="669.0" y1="3695.5" y2="3727.5" stroke="#263348" stroke-width=".6" /><line x1="681.0" x2="681.0" y1="3695.5" y2="3727.5" stroke="#263348" stroke-width=".6" /><line x1="693.0" x2="693.0" y1="3695.5" y2="3727.5" stroke="#263348" stroke-width=".6" /><line x1="705.0" x2="705.0" y1="3695.5" y2="3727.5" stroke="#263348" stroke-width=".6" /><line x1="717.0" x2="717.0" y1="3695.5" y2="3727.5" stroke="#263348" stroke-width=".6" /><line x1="657.0" x2="729.0" y1="3706.1666666666665" y2="3706.1666666666665" stroke="#263348" stroke-width=".6" /><line x1="657.0" x2="729.0" y1="3716.8333333333335" y2="3716.8333333333335" stroke="#263348" stroke-width=".6" /><text x="647.0" y="3708.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="647.0" dy="0">CIFAR-10</tspan><tspan x="647.0" dy="16.52">image</tspan></text><text x="739.0" y="3716.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="739.0" dy="0">[B,3,64,64]</tspan></text><text x="739.0" y="3749" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="739.0" dy="0">E003</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.features" data-visual-role="encoder"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; conv2 through conv5 use groups=2</title><rect x="464.0" y="1590" width="458" height="2057" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="481.0" y="1620" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="481.0" dy="0">Conv</tspan>
+<tspan x="481.0" dy="28.32">features · 5</tspan>
+<tspan x="481.0" dy="28.32">stages</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="905.0" y="1620" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="905.0" dy="0">[B,256,1,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="909.0" y="1700" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="909.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage1" data-visual-role="conv"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; logical grouping of contiguous features Sequential items | ReLU is features.1</title><rect x="496.0" y="3230" width="394" height="391" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="513.0" y="3260" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="513.0" dy="0">Conv stage 1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="873.0" y="3260" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="873.0" dy="0">[B,64,7,7]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="877.0" y="3292" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="877.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage1.conv" data-visual-role="conv"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=features.0; kernel=11; stride=4; padding=2; groups=1 | bias=True; grouped channels stay inside this single Conv2d</title><rect x="528.0" y="3514" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="3541" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">Conv2d 3 -&gt; 64</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="3565" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,64,15,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="3585" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage1.relu" data-visual-role="activation"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; inplace=True</title><rect x="528.0" y="3409" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="3436" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">ReLU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="3460" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,64,15,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="3480" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage1.pool" data-visual-role="pool"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; padding=0; ceil_mode=False; features.2</title><rect x="528.0" y="3304" width="330" height="81" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="3331" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">MaxPool2d 3x3 / 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="3355" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,64,7,7]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="3375" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage2" data-visual-role="conv"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; logical grouping of contiguous features Sequential items | ReLU is features.4</title><rect x="496.0" y="2798" width="394" height="408" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="513.0" y="2828" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="513.0" dy="0">Conv stage 2</tspan>
+<tspan x="513.0" dy="25.959999999999997">· groups=2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="873.0" y="2828" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="873.0" dy="0">[B,192,3,3]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="877.0" y="2877" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="877.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage2.conv" data-visual-role="conv"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=features.3; kernel=5; stride=1; padding=2; groups=2 | bias=True; grouped channels stay inside this single Conv2d</title><rect x="528.0" y="3099" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="3126" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">Conv2d 64 -&gt; 192</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="3150" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,192,7,7]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="3170" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage2.relu" data-visual-role="activation"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; inplace=True</title><rect x="528.0" y="2994" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="3021" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">ReLU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="3045" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,192,7,7]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="3065" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage2.pool" data-visual-role="pool"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; padding=0; ceil_mode=False; features.5</title><rect x="528.0" y="2889" width="330" height="81" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="2916" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">MaxPool2d 3x3 / 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="2940" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,192,3,3]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="2960" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage3" data-visual-role="conv"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; logical grouping of contiguous features Sequential items | ReLU is features.7</title><rect x="496.0" y="2471" width="394" height="303" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="513.0" y="2501" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="513.0" dy="0">Conv stage 3</tspan>
+<tspan x="513.0" dy="25.959999999999997">· groups=2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="873.0" y="2501" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="873.0" dy="0">[B,384,3,3]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="877.0" y="2550" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="877.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage3.conv" data-visual-role="conv"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=features.6; kernel=3; stride=1; padding=1; groups=2 | bias=True; grouped channels stay inside this single Conv2d</title><rect x="528.0" y="2667" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="2694" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">Conv2d 192 -&gt; 384</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="2718" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,384,3,3]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="2738" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage3.relu" data-visual-role="activation"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; inplace=True</title><rect x="528.0" y="2562" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="2589" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">ReLU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="2613" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,384,3,3]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="2633" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage4" data-visual-role="conv"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; logical grouping of contiguous features Sequential items | ReLU is features.9</title><rect x="496.0" y="2144" width="394" height="303" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="513.0" y="2174" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="513.0" dy="0">Conv stage 4</tspan>
+<tspan x="513.0" dy="25.959999999999997">· groups=2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="873.0" y="2174" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="873.0" dy="0">[B,256,3,3]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="877.0" y="2223" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="877.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage4.conv" data-visual-role="conv"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=features.8; kernel=3; stride=1; padding=1; groups=2 | bias=True; grouped channels stay inside this single Conv2d</title><rect x="528.0" y="2340" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="2367" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">Conv2d 384 -&gt; 256</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="2391" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,256,3,3]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="2411" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage4.relu" data-visual-role="activation"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; inplace=True</title><rect x="528.0" y="2235" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="2262" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">ReLU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="2286" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,256,3,3]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="2306" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage5" data-visual-role="conv"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; logical grouping of contiguous features Sequential items | ReLU is features.11</title><rect x="496.0" y="1712" width="394" height="408" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="513.0" y="1742" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="513.0" dy="0">Conv stage 5</tspan>
+<tspan x="513.0" dy="25.959999999999997">· groups=2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="873.0" y="1742" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="873.0" dy="0">[B,256,1,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="877.0" y="1791" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="877.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage5.conv" data-visual-role="conv"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=features.10; kernel=3; stride=1; padding=1; groups=2 | bias=True; grouped channels stay inside this single Conv2d</title><rect x="528.0" y="2013" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="2040" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">Conv2d 256 -&gt; 256</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="2064" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,256,3,3]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="2084" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage5.relu" data-visual-role="activation"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; inplace=True</title><rect x="528.0" y="1908" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="1935" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">ReLU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="1959" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,256,3,3]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="1979" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.conv_stage5.pool" data-visual-role="pool"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; padding=0; ceil_mode=False; features.12</title><rect x="528.0" y="1803" width="330" height="81" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="1830" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">MaxPool2d 3x3 / 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="1854" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,256,1,1]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="1874" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.adaptive_pool" data-visual-role="pool"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; actual input here is 1x1; adaptive bins produce 6x6 | this is not a fixed pooling kernel</title><rect x="464.0" y="1485" width="458" height="81" rx="10" fill="#d6f0df" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="1512" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">AdaptiveAvgPool2d 6x6</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="1536" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,256,6,6]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="909.0" y="1556" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="909.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.flatten" data-visual-role="tensor"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; x.view(x.size(0),256*6*6); preserve batch axis</title><rect x="464.0" y="1380" width="458" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="1407" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">Flatten spatial features</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="1431" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,9216]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="909.0" y="1451" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="909.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.classifier" data-visual-role="ffn"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; </title><rect x="464.0" y="294" width="458" height="1062" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="481.0" y="324" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="481.0" dy="0">Classifier</tspan>
+<tspan x="481.0" dy="25.959999999999997">head</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="905.0" y="324" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="905.0" dy="0">logits: [B,10]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="909.0" y="373" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="909.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.hidden1" data-visual-role="ffn"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; </title><rect x="496.0" y="922" width="394" height="408" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="513.0" y="952" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="513.0" dy="0">Hidden</tspan>
+<tspan x="513.0" dy="25.959999999999997">classifier 1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="873.0" y="952" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="873.0" dy="0">[B,4096]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="877.0" y="1001" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="877.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.hidden1.dropout" data-visual-role="control"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; classifier.0; identity in selected eval mode | train mode randomly zeroes activations and rescales survivors</title><rect x="528.0" y="1223" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="1250" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">Dropout 0.5</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="1274" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,9216]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="1294" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.hidden1.linear" data-visual-role="linear"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=classifier.1; </title><rect x="528.0" y="1118" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="1145" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">Linear 9216 -&gt; 4096</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="1169" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,4096]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="1189" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.hidden1.relu" data-visual-role="activation"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; inplace=True; classifier.2</title><rect x="528.0" y="1013" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="1040" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">ReLU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="1064" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,4096]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="1084" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.hidden2" data-visual-role="ffn"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; </title><rect x="496.0" y="490" width="394" height="408" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="513.0" y="520" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="513.0" dy="0">Hidden</tspan>
+<tspan x="513.0" dy="25.959999999999997">classifier 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="873.0" y="520" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="873.0" dy="0">[B,4096]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="877.0" y="569" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="877.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.hidden2.dropout" data-visual-role="control"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; classifier.3; identity in selected eval mode | train mode randomly zeroes activations and rescales survivors</title><rect x="528.0" y="791" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="818" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">Dropout 0.5</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="842" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,4096]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="862" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.hidden2.linear" data-visual-role="linear"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=classifier.4; </title><rect x="528.0" y="686" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="713" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">Linear 4096 -&gt; 4096</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="737" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,4096]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="757" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.hidden2.relu" data-visual-role="activation"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; inplace=True; classifier.5</title><rect x="528.0" y="581" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="608" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">ReLU</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="632" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">[B,4096]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="652" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.fc3" data-visual-role="linear"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:131 AlexNet.__init__; deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=classifier.6; </title><rect x="528.0" y="385" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="412" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="693.0" dy="0">Linear 4096 -&gt; 10</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="436" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">logits: [B,10]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="845.0" y="456" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="845.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.output" data-visual-role="output" data-glyph-kind="tensor-grid"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; return logits only; probabilities are computed but not returned</title><rect x="657.0" y="213.5" width="72" height="32" rx="0" fill="#dfdff8" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="669.0" x2="669.0" y1="213.5" y2="245.5" stroke="#263348" stroke-width=".6" /><line x1="681.0" x2="681.0" y1="213.5" y2="245.5" stroke="#263348" stroke-width=".6" /><line x1="693.0" x2="693.0" y1="213.5" y2="245.5" stroke="#263348" stroke-width=".6" /><line x1="705.0" x2="705.0" y1="213.5" y2="245.5" stroke="#263348" stroke-width=".6" /><line x1="717.0" x2="717.0" y1="213.5" y2="245.5" stroke="#263348" stroke-width=".6" /><line x1="657.0" x2="729.0" y1="224.16666666666666" y2="224.16666666666666" stroke="#263348" stroke-width=".6" /><line x1="657.0" x2="729.0" y1="234.83333333333334" y2="234.83333333333334" stroke="#263348" stroke-width=".6" /><text x="647.0" y="226.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="647.0" dy="0">Returned</tspan><tspan x="647.0" dy="16.52">logits</tspan></text><text x="739.0" y="234.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="739.0" dy="0">[B,10]</tspan></text><text x="739.0" y="267" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="739.0" dy="0">E003</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="alex.unused_softmax" data-visual-role="softmax"><title>deeplearning-models-batch2/pytorch_ipynb/cnn/cnn-alexnet-cifar10-grouped.py:163 AlexNet.forward; parameter=not asserted; F.softmax(logits,dim=1) is executed | local probas is unused; no edge to forward return</title><rect x="25" y="772.5" width="330" height="105" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="190.0" y="799.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="190.0" dy="0">Computed Softmax ·</tspan>
+<tspan x="190.0" dy="23.599999999999998">unused</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="190.0" y="847.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="190.0" dy="0">probas: [B,10]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="342" y="867.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="342" dy="0">E003</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0001" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.conv_stage1.relu&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.conv_stage1.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.conv_stage1.relu&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;alex.conv_stage1.conv:out-&gt;alex.conv_stage1.relu:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.conv_stage1.relu:in&quot;, &quot;rendered_src&quot;: &quot;alex.conv_stage1.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.conv_stage1.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 693.0,3514 L 693.0,3490" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.conv_stage1.conv:out -&gt; alex.conv_stage1.relu:in; visible alex.conv_stage1.conv:out -&gt; alex.conv_stage1.relu:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0002" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.conv_stage1.pool&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.conv_stage1.relu&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.conv_stage1.pool&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;alex.conv_stage1.relu:out-&gt;alex.conv_stage1.pool:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.conv_stage1.pool:in&quot;, &quot;rendered_src&quot;: &quot;alex.conv_stage1.relu:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.conv_stage1.relu&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 693.0,3409 L 693.0,3385" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.conv_stage1.relu:out -&gt; alex.conv_stage1.pool:in; visible alex.conv_stage1.relu:out -&gt; alex.conv_stage1.pool:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0003" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.conv_stage2.relu&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.conv_stage2.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.conv_stage2.relu&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;alex.conv_stage2.conv:out-&gt;alex.conv_stage2.relu:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.conv_stage2.relu:in&quot;, &quot;rendered_src&quot;: &quot;alex.conv_stage2.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.conv_stage2.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 693.0,3099 L 693.0,3075" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.conv_stage2.conv:out -&gt; alex.conv_stage2.relu:in; visible alex.conv_stage2.conv:out -&gt; alex.conv_stage2.relu:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0004" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.conv_stage2.pool&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.conv_stage2.relu&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.conv_stage2.pool&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;alex.conv_stage2.relu:out-&gt;alex.conv_stage2.pool:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.conv_stage2.pool:in&quot;, &quot;rendered_src&quot;: &quot;alex.conv_stage2.relu:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.conv_stage2.relu&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 693.0,2994 L 693.0,2970" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.conv_stage2.relu:out -&gt; alex.conv_stage2.pool:in; visible alex.conv_stage2.relu:out -&gt; alex.conv_stage2.pool:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0005" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.conv_stage3.relu&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.conv_stage3.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.conv_stage3.relu&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;alex.conv_stage3.conv:out-&gt;alex.conv_stage3.relu:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.conv_stage3.relu:in&quot;, &quot;rendered_src&quot;: &quot;alex.conv_stage3.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.conv_stage3.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 693.0,2667 L 693.0,2643" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.conv_stage3.conv:out -&gt; alex.conv_stage3.relu:in; visible alex.conv_stage3.conv:out -&gt; alex.conv_stage3.relu:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0006" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.conv_stage4.relu&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.conv_stage4.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.conv_stage4.relu&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;alex.conv_stage4.conv:out-&gt;alex.conv_stage4.relu:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.conv_stage4.relu:in&quot;, &quot;rendered_src&quot;: &quot;alex.conv_stage4.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.conv_stage4.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 693.0,2340 L 693.0,2316" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.conv_stage4.conv:out -&gt; alex.conv_stage4.relu:in; visible alex.conv_stage4.conv:out -&gt; alex.conv_stage4.relu:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0007" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.conv_stage5.relu&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.conv_stage5.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.conv_stage5.relu&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;alex.conv_stage5.conv:out-&gt;alex.conv_stage5.relu:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.conv_stage5.relu:in&quot;, &quot;rendered_src&quot;: &quot;alex.conv_stage5.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.conv_stage5.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 693.0,2013 L 693.0,1989" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.conv_stage5.conv:out -&gt; alex.conv_stage5.relu:in; visible alex.conv_stage5.conv:out -&gt; alex.conv_stage5.relu:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0008" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.conv_stage5.pool&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.conv_stage5.relu&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.conv_stage5.pool&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;alex.conv_stage5.relu:out-&gt;alex.conv_stage5.pool:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.conv_stage5.pool:in&quot;, &quot;rendered_src&quot;: &quot;alex.conv_stage5.relu:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.conv_stage5.relu&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 693.0,1908 L 693.0,1884" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.conv_stage5.relu:out -&gt; alex.conv_stage5.pool:in; visible alex.conv_stage5.relu:out -&gt; alex.conv_stage5.pool:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0009" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.conv_stage2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.conv_stage1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.conv_stage2.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;alex.conv_stage2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;alex.conv_stage1:out-&gt;alex.conv_stage2:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.conv_stage2.conv:in&quot;, &quot;rendered_src&quot;: &quot;alex.conv_stage1.pool:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.conv_stage1.pool&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;alex.conv_stage1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 693.0,3304 L 693.0,3180" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.conv_stage1:out -&gt; alex.conv_stage2:in; visible alex.conv_stage1.pool:out -&gt; alex.conv_stage2.conv:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0010" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.conv_stage3&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.conv_stage2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.conv_stage3.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;alex.conv_stage3&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;alex.conv_stage2:out-&gt;alex.conv_stage3:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.conv_stage3.conv:in&quot;, &quot;rendered_src&quot;: &quot;alex.conv_stage2.pool:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.conv_stage2.pool&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;alex.conv_stage2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 693.0,2889 L 693.0,2748" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.conv_stage2:out -&gt; alex.conv_stage3:in; visible alex.conv_stage2.pool:out -&gt; alex.conv_stage3.conv:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0011" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.conv_stage4&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.conv_stage3&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.conv_stage4.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;alex.conv_stage4&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;alex.conv_stage3:out-&gt;alex.conv_stage4:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.conv_stage4.conv:in&quot;, &quot;rendered_src&quot;: &quot;alex.conv_stage3.relu:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.conv_stage3.relu&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;alex.conv_stage3&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 693.0,2562 L 693.0,2421" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.conv_stage3:out -&gt; alex.conv_stage4:in; visible alex.conv_stage3.relu:out -&gt; alex.conv_stage4.conv:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0012" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.conv_stage5&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.conv_stage4&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.conv_stage5.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;alex.conv_stage5&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;alex.conv_stage4:out-&gt;alex.conv_stage5:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.conv_stage5.conv:in&quot;, &quot;rendered_src&quot;: &quot;alex.conv_stage4.relu:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.conv_stage4.relu&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;alex.conv_stage4&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 693.0,2235 L 693.0,2094" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.conv_stage4:out -&gt; alex.conv_stage5:in; visible alex.conv_stage4.relu:out -&gt; alex.conv_stage5.conv:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0013" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.hidden1.linear&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.hidden1.dropout&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.hidden1.linear&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;alex.hidden1.dropout:out-&gt;alex.hidden1.linear:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.hidden1.linear:in&quot;, &quot;rendered_src&quot;: &quot;alex.hidden1.dropout:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.hidden1.dropout&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 693.0,1223 L 693.0,1199" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.hidden1.dropout:out -&gt; alex.hidden1.linear:in; visible alex.hidden1.dropout:out -&gt; alex.hidden1.linear:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0014" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.hidden1.relu&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.hidden1.linear&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.hidden1.relu&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;alex.hidden1.linear:out-&gt;alex.hidden1.relu:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.hidden1.relu:in&quot;, &quot;rendered_src&quot;: &quot;alex.hidden1.linear:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.hidden1.linear&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 693.0,1118 L 693.0,1094" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.hidden1.linear:out -&gt; alex.hidden1.relu:in; visible alex.hidden1.linear:out -&gt; alex.hidden1.relu:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0015" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.hidden2.linear&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.hidden2.dropout&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.hidden2.linear&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;alex.hidden2.dropout:out-&gt;alex.hidden2.linear:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.hidden2.linear:in&quot;, &quot;rendered_src&quot;: &quot;alex.hidden2.dropout:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.hidden2.dropout&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 693.0,791 L 693.0,767" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.hidden2.dropout:out -&gt; alex.hidden2.linear:in; visible alex.hidden2.dropout:out -&gt; alex.hidden2.linear:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0016" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.hidden2.relu&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.hidden2.linear&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.hidden2.relu&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;alex.hidden2.linear:out-&gt;alex.hidden2.relu:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.hidden2.relu:in&quot;, &quot;rendered_src&quot;: &quot;alex.hidden2.linear:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.hidden2.linear&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 693.0,686 L 693.0,662" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.hidden2.linear:out -&gt; alex.hidden2.relu:in; visible alex.hidden2.linear:out -&gt; alex.hidden2.relu:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0017" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.hidden2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.hidden1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.hidden2.dropout&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;alex.hidden2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;alex.hidden1:out-&gt;alex.hidden2:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.hidden2.dropout:in&quot;, &quot;rendered_src&quot;: &quot;alex.hidden1.relu:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.hidden1.relu&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;alex.hidden1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 693.0,1013 L 693.0,872" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.hidden1:out -&gt; alex.hidden2:in; visible alex.hidden1.relu:out -&gt; alex.hidden2.dropout:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0018" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.fc3&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.hidden2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.fc3&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;alex.hidden2:out-&gt;alex.fc3:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.fc3:in&quot;, &quot;rendered_src&quot;: &quot;alex.hidden2.relu:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.hidden2.relu&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;alex.hidden2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 693.0,581 L 693.0,466" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.hidden2:out -&gt; alex.fc3:in; visible alex.hidden2.relu:out -&gt; alex.fc3:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0019" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.features&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.input&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.conv_stage1.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;alex.features&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}, {&quot;node&quot;: &quot;alex.conv_stage1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;alex.input:out-&gt;alex.features:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.conv_stage1.conv:in&quot;, &quot;rendered_src&quot;: &quot;alex.input:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.input&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 693.0,3695.5 L 693.0,3595" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.input:out -&gt; alex.features:in; visible alex.input:out -&gt; alex.conv_stage1.conv:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0020" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.adaptive_pool&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.features&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.adaptive_pool&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;alex.features:out-&gt;alex.adaptive_pool:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.adaptive_pool:in&quot;, &quot;rendered_src&quot;: &quot;alex.conv_stage5.pool:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.conv_stage5.pool&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;alex.features&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}, {&quot;node&quot;: &quot;alex.conv_stage5&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 693.0,1803 L 693.0,1566" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.features:out -&gt; alex.adaptive_pool:in; visible alex.conv_stage5.pool:out -&gt; alex.adaptive_pool:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0021" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.flatten&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.adaptive_pool&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.flatten&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;alex.adaptive_pool:out-&gt;alex.flatten:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.flatten:in&quot;, &quot;rendered_src&quot;: &quot;alex.adaptive_pool:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.adaptive_pool&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 693.0,1485 L 693.0,1461" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.adaptive_pool:out -&gt; alex.flatten:in; visible alex.adaptive_pool:out -&gt; alex.flatten:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0022" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.classifier&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.flatten&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.hidden1.dropout&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;alex.classifier&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}, {&quot;node&quot;: &quot;alex.hidden1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;alex.flatten:out-&gt;alex.classifier:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.hidden1.dropout:in&quot;, &quot;rendered_src&quot;: &quot;alex.flatten:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.flatten&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 693.0,1380 L 693.0,1304" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.flatten:out -&gt; alex.classifier:in; visible alex.flatten:out -&gt; alex.hidden1.dropout:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0023" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.output&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;alex.classifier&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.output&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;alex.classifier:out-&gt;alex.output:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;alex.output:in&quot;, &quot;rendered_src&quot;: &quot;alex.fc3:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.fc3&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;alex.classifier&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 693.0,385 L 693.0,245.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>alex.classifier:out -&gt; alex.output:in; visible alex.fc3:out -&gt; alex.output:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0024" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;alex.unused_softmax&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;computed_unused&quot;, &quot;src&quot;: &quot;alex.classifier&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;alex.unused_softmax&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;alex.classifier:out-&gt;alex.unused_softmax:in:computed_unused&quot;, &quot;rendered_dst&quot;: &quot;alex.unused_softmax:right&quot;, &quot;rendered_src&quot;: &quot;alex.fc3:left&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;alex.fc3&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;alex.classifier&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 528.0,425.5 L 379,425.5 L 379,825.0 L 355,825.0" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>alex.classifier:out -&gt; alex.unused_softmax:in; visible alex.fc3:out -&gt; alex.unused_softmax:in; logits · no return use</title></path>
+
+<text xmlns="http://www.w3.org/2000/svg" data-edge-label-id="edge-caption-1" data-follow-edge="route-0024" x="372" y="625.25" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end" fill="#536477">
+<tspan x="372" dy="0">logits · no return</tspan>
+<tspan x="372" dy="15.34">use</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="148.0" y="3815" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="171.0" y="3828" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="171.0" dy="0">Input / Embed</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="333.0" y="3815" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="356.0" y="3828" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="356.0" dy="0">Conv / MLP</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="518.0" y="3815" width="16" height="16" rx="3" fill="#d6f0df" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="541.0" y="3828" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="541.0" dy="0">Pool</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="703.0" y="3815" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="726.0" y="3828" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="726.0" dy="0">Norm / Add / Cat</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="888.0" y="3815" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="911.0" y="3828" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="911.0" dy="0">Linear / Output</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1073.0" y="3815" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1096.0" y="3828" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1096.0" dy="0">Activation</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="610.5" y="3845" width="16" height="16" rx="3" fill="#c9f1cd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="633.5" y="3858" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="633.5" dy="0">Prob. / Sample</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="3886" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">B batch; image layout [B,C,H,W]</tspan>
+<tspan x="693.0" dy="16.52">input pink / Conv blue / Linear and return purple / ReLU gray / Softmax green</tspan>
+<tspan x="693.0" dy="16.52">groups=2 stays inside each Conv2d; same color is not weight sharing</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="3960" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="3990" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="693.0" y="4015" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="693.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+
+</svg>

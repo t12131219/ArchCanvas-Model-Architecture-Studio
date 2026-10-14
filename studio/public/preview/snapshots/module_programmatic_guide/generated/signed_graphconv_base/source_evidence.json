@@ -1,0 +1,50 @@
+{
+  "source_project": "signed-gcn-modules",
+  "repository": "benedekrozemberczki/SGCN",
+  "commit": "c01e930c02968ea5b0eb72f1fe93eaab99e46eea",
+  "source_snapshot_sha256": "2796e2641cff6ac05598686c4f66c26abf749de03ccc8b3b11074555460c3261",
+  "entry": "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolutionBase.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "signed-gcn-modules/LICENSE": {
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "lines": 674,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/benedekrozemberczki/SGCN/c01e930c02968ea5b0eb72f1fe93eaab99e46eea/LICENSE",
+      "derived_from": null
+    },
+    "signed-gcn-modules/src/signedsageconvolution.py": {
+      "sha256": "8e3a517d2da7df362a393af5f933fc028cb041317b0181f2bebe745e40812c61",
+      "lines": 162,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/benedekrozemberczki/SGCN/c01e930c02968ea5b0eb72f1fe93eaab99e46eea/src/signedsageconvolution.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolution.__init__": {
+      "path": "signed-gcn-modules/src/signedsageconvolution.py",
+      "symbol": "SignedSAGEConvolution.__init__",
+      "start": 65,
+      "end": 84,
+      "snippet": "    def __init__(self,\n                 in_channels,\n                 out_channels,\n                 norm=True,\n                 norm_embed=True,\n                 bias=True):\n        super(SignedSAGEConvolution, self).__init__()\n\n        self.in_channels = in_channels\n        self.out_channels = out_channels\n        self.norm = norm\n        self.norm_embed = norm_embed\n        self.weight = Parameter(torch.Tensor(self.in_channels, out_channels))\n\n        if bias:\n            self.bias = Parameter(torch.Tensor(out_channels))\n        else:\n            self.register_parameter(\"bias\", None)\n\n        self.reset_parameters()",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolutionBase.forward": {
+      "path": "signed-gcn-modules/src/signedsageconvolution.py",
+      "symbol": "SignedSAGEConvolutionBase.forward",
+      "start": 104,
+      "end": 125,
+      "snippet": "    def forward(self, x, edge_index):\n        \"\"\"\n        Forward propagation pass with features an indices.\n        :param x: Feature matrix.\n        :param edge_index: Indices.\n        \"\"\"\n        edge_index, _ = remove_self_loops(edge_index, None)\n        row, col = edge_index\n\n        if self.norm:\n            out = scatter_mean(x[col], row, dim=0, dim_size=x.size(0))\n        else:\n            out = scatter_add(x[col], row, dim=0, dim_size=x.size(0))\n\n        out = torch.cat((out, x), 1)\n        out = torch.matmul(out, self.weight)\n\n        if self.bias is not None:\n            out = out + self.bias\n        if self.norm_embed:\n            out = F.normalize(out, p=2, dim=-1)\n        return out",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "signed-gcn-modules/LICENSE"
+  ]
+}

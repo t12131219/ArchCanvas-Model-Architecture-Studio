@@ -1,0 +1,77 @@
+{
+  "source_project": "qanet-attention-sequence",
+  "repository": "hengruo/QANet-pytorch",
+  "commit": "04605e21172b3a5e8b0e2b7a869f2e55ef02e8fb",
+  "source_snapshot_sha256": "79d81102b7e6c62d55f716a9cc42851511040a7192e9d6d56e7c6e642d04b259",
+  "entry": "qanet-attention-sequence/models.py::CQAttention.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "qanet-attention-sequence/LICENSE": {
+      "sha256": "489c7c63a35ba907e5149b5ba1aa596b06387921031f41a8680b9ed66b076b4e",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/hengruo/QANet-pytorch/04605e21172b3a5e8b0e2b7a869f2e55ef02e8fb/LICENSE",
+      "derived_from": null
+    },
+    "qanet-attention-sequence/config.py": {
+      "sha256": "1eac5d0ca6a1b37fb0650f1f4dd946d840dcb50e0eb57afcaca8f62ded2744fb",
+      "lines": 67,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/hengruo/QANet-pytorch/04605e21172b3a5e8b0e2b7a869f2e55ef02e8fb/config.py",
+      "derived_from": null
+    },
+    "qanet-attention-sequence/models.py": {
+      "sha256": "5d8b7f6b5921f84ab83a0034c7dbfa2430079054defe1677db34461f6646ef4e",
+      "lines": 299,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/hengruo/QANet-pytorch/04605e21172b3a5e8b0e2b7a869f2e55ef02e8fb/models.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "qanet-attention-sequence/config.py::__module__": {
+      "path": "qanet-attention-sequence/config.py",
+      "symbol": "__module__",
+      "start": 1,
+      "end": 67,
+      "snippet": "import os\n\nhome = os.path.expanduser(\".\")\ntrain_file = os.path.join(home, \"data\", \"squad\", \"train-v1.1.json\")\ndev_file = os.path.join(home, \"data\", \"squad\", \"dev-v1.1.json\")\ntest_file = os.path.join(home, \"data\", \"squad\", \"dev-v1.1.json\")\nglove_word_file = os.path.join(home, \"data\", \"glove\", \"glove.840B.300d.txt\")\n\ntarget_dir = \"data\"\nevent_dir = \"log\"\nsave_dir = \"model\"\nanswer_dir = \"log\"\ntrain_record_file = os.path.join(target_dir, \"train.npz\")\ndev_record_file = os.path.join(target_dir, \"dev.npz\")\ntest_record_file = os.path.join(target_dir, \"test.npz\")\nword_emb_file = os.path.join(target_dir, \"word_emb.json\")\nchar_emb_file = os.path.join(target_dir, \"char_emb.json\")\ntrain_eval_file = os.path.join(target_dir, \"train_eval.json\")\ndev_eval_file = os.path.join(target_dir, \"dev_eval.json\")\ntest_eval_file = os.path.join(target_dir, \"test_eval.json\")\ndev_meta_file = os.path.join(target_dir, \"dev_meta.json\")\ntest_meta_file = os.path.join(target_dir, \"test_meta.json\")\nword2idx_file = os.path.join(target_dir, \"word2idx.json\")\nchar2idx_file = os.path.join(target_dir, \"char2idx.json\")\nanswer_file = os.path.join(answer_dir, \"answer.json\")\n\nglove_char_size = 94 #Corpus size for Glove\nglove_word_size = int(2.2e6) #Corpus size for Glove\nglove_dim = 300 #Embedding dimension for Glove\nchar_dim = 64 #Embedding dimension for char\n\npara_limit = 400 #Limit length for paragraph\nques_limit = 50 #Limit length for question\nans_limit = 30 #Limit length for answers\nchar_limit = 16 #Limit length for character\nword_count_limit = -1 #Min count for word\nchar_count_limit = -1 #Min count for char\n\ncapacity = 15000 #Batch size of dataset shuffle\nnum_threads = 4 #Number of threads in input pipeline\nis_bucket = False #build bucket batch iterator or not\nbucket_range = [40, 401, 40] #the range of bucket\n\nbatch_size = 8 #Batch size\nnum_steps = 60000 #Number of steps\ncheckpoint = 200 #checkpoint to save and evaluate the model\nperiod = 100 #period to save batch loss\nval_num_batches = 150 #Number of batches to evaluate the model\ntest_num_batches = 150 #Number of batches to evaluate the model\ndropout = 0.1 #Dropout prob across the layers\ndropout_char = 0.05 #Dropout prob across the layers\ngrad_clip = 5.0 #Global Norm gradient clipping rate\nlearning_rate = 0.001 #Learning rate\nlr_warm_up_num = 1000 #Number of warm-up steps of learning rate\nema_decay = 0.9999 #Exponential moving average decay\nbeta1 = 0.8 #Beta 1\nbeta2 = 0.999 #Beta 2\nearly_stop = 10 #Checkpoints for early stop\nd_model = 96 #Dimension of connectors of each layer\nnum_heads = 8 #Number of heads in multi-head attention\n\n# Extensions (Uncomment corresponding line in download.sh to download the required data)\nglove_char_file = os.path.join(home, \"data\", \"glove\", \"glove.840B.300d-char.txt\")\npretrained_char = False #Whether to use pretrained char embedding\n\nfasttext_file = os.path.join(home, \"data\", \"fasttext\", \"wiki-news-300d-1M.vec\")\nfasttext = False #Whether to use fasttext",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "qanet-attention-sequence/models.py::mask_logits": {
+      "path": "qanet-attention-sequence/models.py",
+      "symbol": "mask_logits",
+      "start": 21,
+      "end": 22,
+      "snippet": "def mask_logits(target, mask):\n    return target * (1-mask) + mask * (-1e30)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "qanet-attention-sequence/models.py::CQAttention.__init__": {
+      "path": "qanet-attention-sequence/models.py",
+      "symbol": "CQAttention.__init__",
+      "start": 212,
+      "end": 217,
+      "snippet": "    def __init__(self):\n        super().__init__()\n        w = torch.empty(d_model * 3)\n        lim = 1 / d_model\n        nn.init.uniform_(w, -math.sqrt(lim), math.sqrt(lim))\n        self.w = nn.Parameter(w)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "qanet-attention-sequence/models.py::CQAttention.forward": {
+      "path": "qanet-attention-sequence/models.py",
+      "symbol": "CQAttention.forward",
+      "start": 219,
+      "end": 238,
+      "snippet": "    def forward(self, C, Q, cmask, qmask):\n        ss = []\n        C = C.transpose(1, 2)\n        Q = Q.transpose(1, 2)\n        cmask = cmask.unsqueeze(2)\n        qmask = qmask.unsqueeze(1)\n        \n        shape = (C.size(0), C.size(1), Q.size(1), C.size(2))\n        Ct = C.unsqueeze(2).expand(shape)\n        Qt = Q.unsqueeze(1).expand(shape)\n        CQ = torch.mul(Ct, Qt)\n        S = torch.cat([Ct, Qt, CQ], dim=3)\n        S = torch.matmul(S, self.w)\n        S1 = F.softmax(mask_logits(S, qmask), dim=2)\n        S2 = F.softmax(mask_logits(S, cmask), dim=1)\n        A = torch.bmm(S1, Q)\n        B = torch.bmm(torch.bmm(S1, S2.transpose(1, 2)), C)\n        out = torch.cat([C, A, torch.mul(C, A), torch.mul(C, B)], dim=2)\n        out = F.dropout(out, p=dropout, training=self.training)\n        return out.transpose(1, 2)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "qanet-attention-sequence/LICENSE"
+  ]
+}

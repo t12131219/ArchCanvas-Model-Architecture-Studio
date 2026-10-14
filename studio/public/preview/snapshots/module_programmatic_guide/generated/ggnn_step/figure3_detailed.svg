@@ -1,0 +1,511 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1654" height="3007" viewBox="0 0 1654 3007">
+<defs xmlns="http://www.w3.org/2000/svg"><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348" /></marker></defs>
+
+<rect xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" fill="white" />
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="source-binding">{"model": "ggnn_step", "source_snapshot_sha256": "daea4b2fa353b1212185c1c04d807d65bc34e63c121945cc955d0371399a3122", "repository": "JamesChuanggg/ggnn.pytorch", "commit": "0c7897fe9b05e9b4f9a963ff55bd3ad917ea734e", "semantic_ir_sha256": "7179c899514413bbc2919b9954e448257f03048ca645ef36016b136a03b35a05", "view": 2}</metadata>
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="diagram-style">{"name": "transformer-paper-model-zoo", "version": 1, "font": "DejaVu Sans, Arial, sans-serif", "text": "#172336", "line": "#263348", "palette": {"root": "#ffffff", "group": "#ffffff", "inner": "#fffaf6", "layer": "#ffffff", "encoder": "#e7f5fe", "decoder": "#fff0f5", "embedding": "#f8d4e1", "input": "#f8d4e1", "output": "#dfdff8", "attention": "#ffddb3", "ffn": "#c8ebfb", "mixing": "#c8ebfb", "conv": "#c8ebfb", "pool": "#d6f0df", "norm": "#fff6bd", "concat": "#fff6bd", "linear": "#dfdff8", "softmax": "#c9f1cd", "sampling": "#c9f1cd", "recurrent": "#ffddb3", "decomposition": "#d6f0df", "tensor": "#cdeaf8", "activation": "#f3f5f7", "control": "#f3f5f7"}, "typography": {"title": 30, "subtitle": 16, "module": 22, "inner": 20, "operator": 20, "shape": 16, "detail": 14, "evidence": 12, "footer": 14, "line_height": 1.18}, "fill_width_nodes": [], "visual_roles": {"ggnn_step.adj": "control", "ggnn_step.ain": "mixing", "ggnn_step.aout": "mixing", "ggnn_step.blend": "norm", "ggnn_step.candidate": "inner", "ggnn_step.candidate.linear": "linear", "ggnn_step.candidate.tanh": "softmax", "ggnn_step.cat": "concat", "ggnn_step.incoming": "inner", "ggnn_step.incoming.linear": "linear", "ggnn_step.incoming.pack": "tensor", "ggnn_step.joined": "concat", "ggnn_step.module": "encoder", "ggnn_step.outgoing": "inner", "ggnn_step.outgoing.linear": "linear", "ggnn_step.outgoing.pack": "tensor", "ggnn_step.output": "output", "ggnn_step.reset": "inner", "ggnn_step.reset.linear": "linear", "ggnn_step.reset.sigmoid": "softmax", "ggnn_step.reset_state": "tensor", "ggnn_step.root": "root", "ggnn_step.split": "tensor", "ggnn_step.state": "input", "ggnn_step.update": "inner", "ggnn_step.update.linear": "linear", "ggnn_step.update.sigmoid": "softmax"}, "semantics": "presentation aliases only; color does not imply mathematical equivalence or parameter sharing"}</metadata>
+
+<text xmlns="http://www.w3.org/2000/svg" x="827.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="827.0" dy="0">GGNN typed-edge propagation step  |  Operators &amp; tensor flow</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="827.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="827.0" dy="0">module only / reviewed fixed source / independent operands  /  read bottom to top</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.root" data-visual-role="root"><title>ggnn-modules/model.py:106 GGNN.forward; parameter=not asserted; </title><rect x="230.0" y="98" width="1194" height="2627" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="247.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="247.0" dy="0">GGNN typed-edge propagation step /</tspan>
+<tspan x="247.0" dy="25.959999999999997">module only</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1407.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1407.0" dy="0">[B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1411.0" y="177" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1411.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.state" data-visual-role="input"><title>ggnn-modules/model.py:106 GGNN.forward; parameter=not asserted; </title><rect x="553.0" y="2594.0" width="250" height="105" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="678.0" y="2621.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="678.0" dy="0">Current node</tspan>
+<tspan x="678.0" dy="23.599999999999998">state H_t</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="678.0" y="2669.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="678.0" dy="0">[B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="790.0" y="2689.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="790.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.adj" data-visual-role="control"><title>ggnn-modules/model.py:106 GGNN.forward; parameter=not asserted; </title><rect x="851.0" y="2594.0" width="250" height="105" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="976.0" y="2621.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="976.0" dy="0">Directed typed</tspan>
+<tspan x="976.0" dy="23.599999999999998">adjacency A</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="976.0" y="2669.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="976.0" dy="0">[B,4,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1088.0" y="2689.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1088.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.module" data-visual-role="encoder"><title>ggnn-modules/model.py:106 GGNN.forward; parameter=not asserted; </title><rect x="262.0" y="366.0" width="1130" height="2156" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="279.0" y="396.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="279.0" dy="0">GGNN typed-edge propagation</tspan>
+<tspan x="279.0" dy="28.32">step / operators</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1375.0" y="396.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1375.0" dy="0">[B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1379.0" y="448.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1379.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.incoming" data-visual-role="inner"><title>ggnn-modules/model.py:66 GGNN.__init__; ggnn-modules/model.py:106 GGNN.forward; parameter=not asserted; </title><rect x="294.0" y="2147.0" width="334" height="349" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="311.0" y="2177.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="311.0" dy="0">Incoming</tspan>
+<tspan x="311.0" dy="23.599999999999998">type maps</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="611.0" y="2177.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="611.0" dy="0">[B,8,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="615.0" y="2224.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="615.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.incoming.linear" data-visual-role="linear"><title>ggnn-modules/model.py:66 GGNN.__init__; ggnn-modules/model.py:106 GGNN.forward; parameter=not asserted; </title><rect x="326.0" y="2365.0" width="270" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="461.0" y="2392.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="461.0" dy="0">Two distinct</tspan>
+<tspan x="461.0" dy="23.599999999999998">Linear 8 -&gt; 8</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="461.0" y="2440.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="461.0" dy="0">2 x [B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="583.0" y="2460.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="583.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.incoming.pack" data-visual-role="tensor"><title>ggnn-modules/model.py:66 GGNN.__init__; ggnn-modules/model.py:106 GGNN.forward; parameter=not asserted; </title><rect x="326.0" y="2236.0" width="270" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="461.0" y="2263.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="461.0" dy="0">Stack / transpose</tspan>
+<tspan x="461.0" dy="23.599999999999998">/ view T*N</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="461.0" y="2311.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="461.0" dy="0">[B,8,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="583.0" y="2331.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="583.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.outgoing" data-visual-role="inner"><title>ggnn-modules/model.py:66 GGNN.__init__; ggnn-modules/model.py:106 GGNN.forward; parameter=not asserted; </title><rect x="692.0" y="2147.0" width="334" height="349" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="709.0" y="2177.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="709.0" dy="0">Outgoing</tspan>
+<tspan x="709.0" dy="23.599999999999998">type maps</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1009.0" y="2177.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1009.0" dy="0">[B,8,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1013.0" y="2224.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1013.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.outgoing.linear" data-visual-role="linear"><title>ggnn-modules/model.py:66 GGNN.__init__; ggnn-modules/model.py:106 GGNN.forward; parameter=not asserted; </title><rect x="724.0" y="2365.0" width="270" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="859.0" y="2392.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="859.0" dy="0">Two distinct</tspan>
+<tspan x="859.0" dy="23.599999999999998">Linear 8 -&gt; 8</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="859.0" y="2440.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="859.0" dy="0">2 x [B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="981.0" y="2460.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="981.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.outgoing.pack" data-visual-role="tensor"><title>ggnn-modules/model.py:66 GGNN.__init__; ggnn-modules/model.py:106 GGNN.forward; parameter=not asserted; </title><rect x="724.0" y="2236.0" width="270" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="859.0" y="2263.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="859.0" dy="0">Stack / transpose</tspan>
+<tspan x="859.0" dy="23.599999999999998">/ view T*N</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="859.0" y="2311.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="859.0" dy="0">[B,8,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="981.0" y="2331.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="981.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.split" data-visual-role="tensor"><title>ggnn-modules/model.py:42 Propogator.forward; parameter=not asserted; </title><rect x="1090.0" y="2269.0" width="270" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1225.0" y="2296.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1225.0" dy="0">Slice incoming /</tspan>
+<tspan x="1225.0" dy="23.599999999999998">outgoing blocks</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1225.0" y="2344.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1225.0" dy="0">2 x [B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1347.0" y="2364.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1347.0" dy="0">E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.ain" data-visual-role="mixing"><title>ggnn-modules/model.py:42 Propogator.forward; parameter=not asserted; </title><rect x="525.0" y="1982.0" width="270" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="660.0" y="2009.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="660.0" dy="0">BMM A_in @ states</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="660.0" y="2033.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="660.0" dy="0">[B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="782.0" y="2053.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="782.0" dy="0">E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.aout" data-visual-role="mixing"><title>ggnn-modules/model.py:42 Propogator.forward; parameter=not asserted; </title><rect x="859.0" y="1970.0" width="270" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="994.0" y="1997.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="994.0" dy="0">BMM A_out @</tspan>
+<tspan x="994.0" dy="23.599999999999998">states</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="994.0" y="2045.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="994.0" dy="0">[B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1116.0" y="2065.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1116.0" dy="0">E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.cat" data-visual-role="concat"><title>ggnn-modules/model.py:42 Propogator.forward; parameter=not asserted; </title><rect x="692.0" y="1793.0" width="270" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="827.0" y="1820.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="827.0" dy="0">Concat messages +</tspan>
+<tspan x="827.0" dy="23.599999999999998">current state</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="827.0" y="1868.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="827.0" dy="0">[B,4,24]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="949.0" y="1888.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="949.0" dy="0">E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.reset" data-visual-role="inner"><title>ggnn-modules/model.py:23 Propogator.__init__; ggnn-modules/model.py:42 Propogator.forward; parameter=not asserted; </title><rect x="461.0" y="1435.0" width="334" height="286" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="478.0" y="1465.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="478.0" dy="0">Reset gate</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="778.0" y="1465.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="778.0" dy="0">[B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="782.0" y="1497.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="782.0" dy="0">E004,E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.reset.linear" data-visual-role="linear"><title>ggnn-modules/model.py:23 Propogator.__init__; ggnn-modules/model.py:42 Propogator.forward; parameter=propogator.reset_gate.0; </title><rect x="493.0" y="1614.0" width="270" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="628.0" y="1641.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="628.0" dy="0">Linear 24 -&gt; 8</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="628.0" y="1665.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="628.0" dy="0">[B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="750.0" y="1685.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="750.0" dy="0">E004,E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.reset.sigmoid" data-visual-role="softmax"><title>ggnn-modules/model.py:23 Propogator.__init__; ggnn-modules/model.py:42 Propogator.forward; parameter=not asserted; </title><rect x="493.0" y="1509.0" width="270" height="81" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="628.0" y="1536.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="628.0" dy="0">Sigmoid</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="628.0" y="1560.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="628.0" dy="0">[B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="750.0" y="1580.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="750.0" dy="0">E004,E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.update" data-visual-role="inner"><title>ggnn-modules/model.py:23 Propogator.__init__; ggnn-modules/model.py:42 Propogator.forward; parameter=not asserted; </title><rect x="859.0" y="1435.0" width="334" height="286" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="876.0" y="1465.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="876.0" dy="0">Update gate</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1176.0" y="1465.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1176.0" dy="0">[B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1180.0" y="1497.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1180.0" dy="0">E004,E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.update.linear" data-visual-role="linear"><title>ggnn-modules/model.py:23 Propogator.__init__; ggnn-modules/model.py:42 Propogator.forward; parameter=propogator.update_gate.0; </title><rect x="891.0" y="1614.0" width="270" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1026.0" y="1641.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1026.0" dy="0">Linear 24 -&gt; 8</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1026.0" y="1665.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1026.0" dy="0">[B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1148.0" y="1685.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1148.0" dy="0">E004,E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.update.sigmoid" data-visual-role="softmax"><title>ggnn-modules/model.py:23 Propogator.__init__; ggnn-modules/model.py:42 Propogator.forward; parameter=not asserted; </title><rect x="891.0" y="1509.0" width="270" height="81" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1026.0" y="1536.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1026.0" dy="0">Sigmoid</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1026.0" y="1560.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1026.0" dy="0">[B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1148.0" y="1580.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1148.0" dy="0">E004,E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.reset_state" data-visual-role="tensor" data-glyph-kind="binary-circle"><title>ggnn-modules/model.py:42 Propogator.forward; parameter=not asserted; </title><circle cx="827.0" cy="1310.5" r="16.0" fill="white" stroke="#263348" stroke-width="2" data-glyph-outline="circle" /><text x="827.0" y="1317.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="400" text-anchor="middle" fill="#172336" data-glyph-symbol="multiply"><tspan x="827.0" dy="0">×</tspan></text><text x="855.0" y="1263.46" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="855.0" dy="0">r * SAME</tspan><tspan x="855.0" dy="16.52">current</tspan><tspan x="855.0" dy="16.52">state</tspan></text><text x="855.0" y="1336.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="11" font-weight="400" text-anchor="start" fill="#172336"><tspan x="855.0" dy="0">[B,4,8]</tspan></text><text x="855.0" y="1360.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="855.0" dy="0">E005</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.joined" data-visual-role="concat"><title>ggnn-modules/model.py:42 Propogator.forward; parameter=not asserted; </title><rect x="692.0" y="1081.0" width="270" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="827.0" y="1108.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="827.0" dy="0">Concat messages +</tspan>
+<tspan x="827.0" dy="23.599999999999998">reset state</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="827.0" y="1156.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="827.0" dy="0">[B,4,24]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="949.0" y="1176.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="949.0" dy="0">E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.candidate" data-visual-role="inner"><title>ggnn-modules/model.py:23 Propogator.__init__; ggnn-modules/model.py:42 Propogator.forward; parameter=not asserted; </title><rect x="660.0" y="661.0" width="334" height="348" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="677.0" y="691.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="677.0" dy="0">Candidate</tspan>
+<tspan x="677.0" dy="23.599999999999998">transform /</tspan>
+<tspan x="677.0" dy="23.599999999999998">source</tspan>
+<tspan x="677.0" dy="23.599999999999998">tansform</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="977.0" y="691.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="977.0" dy="0">[B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="981.0" y="785.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="981.0" dy="0">E004,E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.candidate.linear" data-visual-role="linear"><title>ggnn-modules/model.py:23 Propogator.__init__; ggnn-modules/model.py:42 Propogator.forward; parameter=propogator.tansform.0; </title><rect x="692.0" y="902.0" width="270" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="827.0" y="929.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="827.0" dy="0">Linear 24 -&gt; 8</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="827.0" y="953.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="827.0" dy="0">[B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="949.0" y="973.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="949.0" dy="0">E004,E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.candidate.tanh" data-visual-role="softmax"><title>ggnn-modules/model.py:23 Propogator.__init__; ggnn-modules/model.py:42 Propogator.forward; parameter=not asserted; </title><rect x="692.0" y="797.0" width="270" height="81" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="827.0" y="824.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="827.0" dy="0">Tanh candidate</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="827.0" y="848.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="827.0" dy="0">[B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="949.0" y="868.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="949.0" dy="0">E004,E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.blend" data-visual-role="norm"><title>ggnn-modules/model.py:42 Propogator.forward; parameter=not asserted; </title><rect x="692.0" y="460.0" width="270" height="129" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="827.0" y="487.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="827.0" dy="0">GRU-style</tspan>
+<tspan x="827.0" dy="23.599999999999998">complementary</tspan>
+<tspan x="827.0" dy="23.599999999999998">blend</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="827.0" y="559.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="827.0" dy="0">[B,4,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="949.0" y="579.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="949.0" dy="0">E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="ggnn_step.output" data-visual-role="output" data-glyph-kind="tensor-grid"><title>ggnn-modules/model.py:42 Propogator.forward; parameter=not asserted; </title><rect x="791.0" y="225.5" width="72" height="32" rx="0" fill="#dfdff8" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="803.0" x2="803.0" y1="225.5" y2="257.5" stroke="#263348" stroke-width=".6" /><line x1="815.0" x2="815.0" y1="225.5" y2="257.5" stroke="#263348" stroke-width=".6" /><line x1="827.0" x2="827.0" y1="225.5" y2="257.5" stroke="#263348" stroke-width=".6" /><line x1="839.0" x2="839.0" y1="225.5" y2="257.5" stroke="#263348" stroke-width=".6" /><line x1="851.0" x2="851.0" y1="225.5" y2="257.5" stroke="#263348" stroke-width=".6" /><line x1="791.0" x2="863.0" y1="236.16666666666666" y2="236.16666666666666" stroke="#263348" stroke-width=".6" /><line x1="791.0" x2="863.0" y1="246.83333333333334" y2="246.83333333333334" stroke="#263348" stroke-width=".6" /><text x="781.0" y="230.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="781.0" dy="0">Selected</tspan><tspan x="781.0" dy="16.52">module</tspan><tspan x="781.0" dy="16.52">output</tspan></text><text x="873.0" y="246.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="873.0" dy="0">[B,4,8]</tspan></text><text x="873.0" y="291.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="873.0" dy="0">E005</tspan></text></g>
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0001" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.incoming.pack&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.incoming.linear&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.incoming.pack&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.incoming.linear:out-&gt;ggnn_step.incoming.pack:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.incoming.pack:in&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.incoming.linear:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.incoming.linear&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 461.0,2365.0 L 461.0,2341.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.incoming.linear:out -&gt; ggnn_step.incoming.pack:in; visible ggnn_step.incoming.linear:out -&gt; ggnn_step.incoming.pack:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0002" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.outgoing.pack&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.outgoing.linear&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.outgoing.pack&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.outgoing.linear:out-&gt;ggnn_step.outgoing.pack:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.outgoing.pack:in&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.outgoing.linear:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.outgoing.linear&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 859.0,2365.0 L 859.0,2341.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.outgoing.linear:out -&gt; ggnn_step.outgoing.pack:in; visible ggnn_step.outgoing.linear:out -&gt; ggnn_step.outgoing.pack:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0003" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.reset.sigmoid&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.reset.linear&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.reset.sigmoid&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.reset.linear:out-&gt;ggnn_step.reset.sigmoid:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.reset.sigmoid:in&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.reset.linear:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.reset.linear&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 628.0,1614.0 L 628.0,1590.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.reset.linear:out -&gt; ggnn_step.reset.sigmoid:in; visible ggnn_step.reset.linear:out -&gt; ggnn_step.reset.sigmoid:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0004" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.update.sigmoid&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.update.linear&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.update.sigmoid&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.update.linear:out-&gt;ggnn_step.update.sigmoid:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.update.sigmoid:in&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.update.linear:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.update.linear&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1026.0,1614.0 L 1026.0,1590.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.update.linear:out -&gt; ggnn_step.update.sigmoid:in; visible ggnn_step.update.linear:out -&gt; ggnn_step.update.sigmoid:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0005" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.candidate.tanh&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.candidate.linear&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.candidate.tanh&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.candidate.linear:out-&gt;ggnn_step.candidate.tanh:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.candidate.tanh:in&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.candidate.linear:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.candidate.linear&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 827.0,902.0 L 827.0,878.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.candidate.linear:out -&gt; ggnn_step.candidate.tanh:in; visible ggnn_step.candidate.linear:out -&gt; ggnn_step.candidate.tanh:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0006" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.incoming.linear&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.state&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.incoming.linear&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.state:out-&gt;ggnn_step.incoming.linear:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.incoming.linear:in&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.state:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.state&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 678.0,2594.0 L 678.0,2514.0 L 461.0,2514.0 L 461.0,2470.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.state:out -&gt; ggnn_step.incoming.linear:in; visible ggnn_step.state:out -&gt; ggnn_step.incoming.linear:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0007" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.outgoing.linear&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.state&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.outgoing.linear&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.state:out-&gt;ggnn_step.outgoing.linear:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.outgoing.linear:in&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.state:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.state&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 678.0,2594.0 L 678.0,2514.0 L 859.0,2514.0 L 859.0,2470.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.state:out -&gt; ggnn_step.outgoing.linear:in; visible ggnn_step.state:out -&gt; ggnn_step.outgoing.linear:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0008" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.split&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;topology&quot;, &quot;src&quot;: &quot;ggnn_step.adj&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.split&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.adj:out-&gt;ggnn_step.split:in:topology&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.split:in&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.adj:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.adj&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 976.0,2594.0 L 976.0,2514.0 L 1225.0,2514.0 L 1225.0,2374.0" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>ggnn_step.adj:out -&gt; ggnn_step.split:in; visible ggnn_step.adj:out -&gt; ggnn_step.split:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0009" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.ain&quot;, &quot;dst_port&quot;: &quot;states&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.incoming.pack&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.ain&quot;, &quot;port&quot;: &quot;states&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.incoming.pack:out-&gt;ggnn_step.ain:states:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.ain:right.aux0&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.incoming.pack:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.incoming.pack&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 461.0,2236.0 L 461.0,2078.16 L 819.0,2078.16 L 819.0,2010.5 L 795.0,2010.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.incoming.pack:out -&gt; ggnn_step.ain:states; visible ggnn_step.incoming.pack:out -&gt; ggnn_step.ain:states; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0010" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.aout&quot;, &quot;dst_port&quot;: &quot;states&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.outgoing.pack&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.aout&quot;, &quot;port&quot;: &quot;states&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.outgoing.pack:out-&gt;ggnn_step.aout:states:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.aout:right.aux0&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.outgoing.pack:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.outgoing.pack&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 859.0,2236.0 L 859.0,2090.16 L 1153.0,2090.16 L 1153.0,2010.5 L 1129.0,2010.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.outgoing.pack:out -&gt; ggnn_step.aout:states; visible ggnn_step.outgoing.pack:out -&gt; ggnn_step.aout:states; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0011" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.ain&quot;, &quot;dst_port&quot;: &quot;A_in&quot;, &quot;role&quot;: &quot;topology&quot;, &quot;src&quot;: &quot;ggnn_step.split&quot;, &quot;src_port&quot;: &quot;A_in&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.ain&quot;, &quot;port&quot;: &quot;A_in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.split:A_in-&gt;ggnn_step.ain:A_in:topology&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.ain:right.aux1&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.split:right.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.split&quot;, &quot;port&quot;: &quot;A_in&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1360.0,2309.5 L 1384.0,2309.5 L 1384.0,2093.0 L 821.0,2093.0 L 821.0,2034.5 L 795.0,2034.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>ggnn_step.split:A_in -&gt; ggnn_step.ain:A_in; visible ggnn_step.split:A_in -&gt; ggnn_step.ain:A_in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0012" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.aout&quot;, &quot;dst_port&quot;: &quot;A_out&quot;, &quot;role&quot;: &quot;topology&quot;, &quot;src&quot;: &quot;ggnn_step.split&quot;, &quot;src_port&quot;: &quot;A_out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.aout&quot;, &quot;port&quot;: &quot;A_out&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.split:A_out-&gt;ggnn_step.aout:A_out:topology&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.aout:right.aux1&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.split:right.aux1&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.split&quot;, &quot;port&quot;: &quot;A_out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1360.0,2333.5 L 1410.0,2333.5 L 1410.0,2034.5 L 1129.0,2034.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>ggnn_step.split:A_out -&gt; ggnn_step.aout:A_out; visible ggnn_step.split:A_out -&gt; ggnn_step.aout:A_out; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0013" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.cat&quot;, &quot;dst_port&quot;: &quot;a_in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.ain&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.cat&quot;, &quot;port&quot;: &quot;a_in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.ain:out-&gt;ggnn_step.cat:a_in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.cat:right.aux0&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.ain:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.ain&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 660.0,1982.0 L 660.0,1916.0 L 986.0,1916.0 L 986.0,1821.5 L 962.0,1821.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.ain:out -&gt; ggnn_step.cat:a_in; visible ggnn_step.ain:out -&gt; ggnn_step.cat:a_in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0014" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.cat&quot;, &quot;dst_port&quot;: &quot;a_out&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.aout&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.cat&quot;, &quot;port&quot;: &quot;a_out&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.aout:out-&gt;ggnn_step.cat:a_out:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.cat:right.aux1&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.aout:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.aout&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 994.0,1970.0 L 994.0,1845.5 L 962.0,1845.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.aout:out -&gt; ggnn_step.cat:a_out; visible ggnn_step.aout:out -&gt; ggnn_step.cat:a_out; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0015" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.cat&quot;, &quot;dst_port&quot;: &quot;current&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;ggnn_step.state&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.cat&quot;, &quot;port&quot;: &quot;current&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.state:out-&gt;ggnn_step.cat:current:retained_value&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.cat:right.aux2&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.state:left.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.state&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 553.0,2634.5 L 529.0,2634.5 L 529.0,2582.0 L 1636,2582.0 L 1636,1869.5 L 962.0,1869.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.state:out -&gt; ggnn_step.cat:current; visible ggnn_step.state:out -&gt; ggnn_step.cat:current; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0016" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.reset.linear&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.cat&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.reset.linear&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.cat:out-&gt;ggnn_step.reset.linear:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.reset.linear:in&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.cat:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.cat&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 827.0,1793.0 L 827.0,1739.0 L 628.0,1739.0 L 628.0,1695.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.cat:out -&gt; ggnn_step.reset.linear:in; visible ggnn_step.cat:out -&gt; ggnn_step.reset.linear:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0017" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.update.linear&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.cat&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.update.linear&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.cat:out-&gt;ggnn_step.update.linear:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.update.linear:in&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.cat:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.cat&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 827.0,1793.0 L 827.0,1739.0 L 1026.0,1739.0 L 1026.0,1695.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.cat:out -&gt; ggnn_step.update.linear:in; visible ggnn_step.cat:out -&gt; ggnn_step.update.linear:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0018" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.reset_state&quot;, &quot;dst_port&quot;: &quot;r&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.reset.sigmoid&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.reset_state&quot;, &quot;port&quot;: &quot;r&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.reset.sigmoid:out-&gt;ggnn_step.reset_state:r:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.reset_state:right.aux0&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.reset.sigmoid:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.reset.sigmoid&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 628.0,1509.0 L 628.0,1310.5 L 811.0,1310.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.reset.sigmoid:out -&gt; ggnn_step.reset_state:r; visible ggnn_step.reset.sigmoid:out -&gt; ggnn_step.reset_state:r; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0019" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.reset_state&quot;, &quot;dst_port&quot;: &quot;state&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;ggnn_step.state&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.reset_state&quot;, &quot;port&quot;: &quot;state&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.state:out-&gt;ggnn_step.reset_state:state:retained_value&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.reset_state:right.aux1&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.state:left.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.state&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 553.0,2634.5 L 529.0,2634.5 L 529.0,2514.0 L 640.0,2514.0 L 640.0,2081.0 L 489.0,2081.0 L 489.0,1751.0 L 824.4,1751.0 L 824.4,1350.5 L 827.0,1350.5 L 827.0,1326.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.state:out -&gt; ggnn_step.reset_state:state; visible ggnn_step.state:out -&gt; ggnn_step.reset_state:state; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0020" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.joined&quot;, &quot;dst_port&quot;: &quot;a_in&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;ggnn_step.ain&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.joined&quot;, &quot;port&quot;: &quot;a_in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.ain:out-&gt;ggnn_step.joined:a_in:retained_value&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.joined:right.aux0&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.ain:left&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.ain&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 525.0,2022.5 L 501.0,2022.5 L 501.0,1966.0 L 865.0,1966.0 L 865.0,1958.0 L 1648,1958.0 L 1648,1109.5 L 962.0,1109.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.ain:out -&gt; ggnn_step.joined:a_in; visible ggnn_step.ain:out -&gt; ggnn_step.joined:a_in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0021" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.joined&quot;, &quot;dst_port&quot;: &quot;a_out&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;ggnn_step.aout&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.joined&quot;, &quot;port&quot;: &quot;a_out&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.aout:out-&gt;ggnn_step.joined:a_out:retained_value&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.joined:right.aux1&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.aout:left&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.aout&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 859.0,2022.5 L 835.0,2022.5 L 835.0,1954.0 L 1624,1954.0 L 1624,1133.5 L 962.0,1133.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.aout:out -&gt; ggnn_step.joined:a_out; visible ggnn_step.aout:out -&gt; ggnn_step.joined:a_out; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0022" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.joined&quot;, &quot;dst_port&quot;: &quot;reset_state&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.reset_state&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.joined&quot;, &quot;port&quot;: &quot;reset_state&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.reset_state:out-&gt;ggnn_step.joined:reset_state:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.joined:right.aux2&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.reset_state:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.reset_state&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 827.0,1294.5 L 827.0,1204.0 L 986.0,1204.0 L 986.0,1157.5 L 962.0,1157.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.reset_state:out -&gt; ggnn_step.joined:reset_state; visible ggnn_step.reset_state:out -&gt; ggnn_step.joined:reset_state; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0023" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.candidate.linear&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.joined&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.candidate.linear&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.joined:out-&gt;ggnn_step.candidate.linear:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.candidate.linear:in&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.joined:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.joined&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 827.0,1081.0 L 827.0,983.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.joined:out -&gt; ggnn_step.candidate.linear:in; visible ggnn_step.joined:out -&gt; ggnn_step.candidate.linear:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0024" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.blend&quot;, &quot;dst_port&quot;: &quot;z&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;ggnn_step.update.sigmoid&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.blend&quot;, &quot;port&quot;: &quot;z&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.update.sigmoid:out-&gt;ggnn_step.blend:z:retained_value&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.blend:right.aux0&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.update.sigmoid:left&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.update.sigmoid&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 891.0,1549.5 L 867.0,1549.5 L 867.0,1497.0 L 1102.04,1497.0 L 1102.04,1479.6 L 1612,1479.6 L 1612,1310.5 L 1636,1310.5 L 1636,1097.5 L 1648,1097.5 L 1648,500.5 L 962.0,500.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.update.sigmoid:out -&gt; ggnn_step.blend:z; visible ggnn_step.update.sigmoid:out -&gt; ggnn_step.blend:z; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0025" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.blend&quot;, &quot;dst_port&quot;: &quot;state&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;ggnn_step.state&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.blend&quot;, &quot;port&quot;: &quot;state&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.state:out-&gt;ggnn_step.blend:state:retained_value&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.blend:right.aux1&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.state:left.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.state&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 553.0,2634.5 L 529.0,2634.5 L 529.0,2582.0 L 1648,2582.0 L 1648,1964.0 L 1636,1964.0 L 1636,1322.5 L 1600,1322.5 L 1600,1310.5 L 1612,1310.5 L 1612,1097.5 L 1636,1097.5 L 1636,524.5 L 962.0,524.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.state:out -&gt; ggnn_step.blend:state; visible ggnn_step.state:out -&gt; ggnn_step.blend:state; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0026" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.blend&quot;, &quot;dst_port&quot;: &quot;candidate&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.candidate.tanh&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.blend&quot;, &quot;port&quot;: &quot;candidate&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.candidate.tanh:out-&gt;ggnn_step.blend:candidate:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.blend:right.aux2&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.candidate.tanh:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.candidate.tanh&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 827.0,797.0 L 827.0,607.0 L 986.0,607.0 L 986.0,548.5 L 962.0,548.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.candidate.tanh:out -&gt; ggnn_step.blend:candidate; visible ggnn_step.candidate.tanh:out -&gt; ggnn_step.blend:candidate; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0027" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.output&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;ggnn_step.blend&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.output&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.blend:out-&gt;ggnn_step.output:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.output:in&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.blend:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.blend&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 827.0,460.0 L 827.0,257.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>ggnn_step.blend:out -&gt; ggnn_step.output:in; visible ggnn_step.blend:out -&gt; ggnn_step.output:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0028" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;ggnn_step.state&quot;, &quot;dst_port&quot;: &quot;next_iteration&quot;, &quot;role&quot;: &quot;loop_recurrence&quot;, &quot;src&quot;: &quot;ggnn_step.blend&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;ggnn_step.state&quot;, &quot;port&quot;: &quot;next_iteration&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;ggnn_step.blend:out-&gt;ggnn_step.state:next_iteration:loop_recurrence&quot;, &quot;rendered_dst&quot;: &quot;ggnn_step.state:left.aux1&quot;, &quot;rendered_src&quot;: &quot;ggnn_step.blend:left&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;ggnn_step.blend&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 692.0,524.5 L 276.0,524.5 L 276.0,2658.5 L 553.0,2658.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>ggnn_step.blend:out -&gt; ggnn_step.state:next_iteration; visible ggnn_step.blend:out -&gt; ggnn_step.state:next_iteration; </title></path>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="282.0" y="2762" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="305.0" y="2775" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="305.0" dy="0">Inputs</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="467.0" y="2762" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="490.0" y="2775" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="490.0" dy="0">Propagation</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="652.0" y="2762" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="675.0" y="2775" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="675.0" dy="0">Parameters</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="837.0" y="2762" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="860.0" y="2775" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="860.0" dy="0">Add / norm</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1022.0" y="2762" width="16" height="16" rx="3" fill="#cdeaf8" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1045.0" y="2775" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1045.0" dy="0">Tensor ops</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1207.0" y="2762" width="16" height="16" rx="3" fill="#c9f1cd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1230.0" y="2775" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1230.0" dy="0">Gates</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="652.0" y="2792" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="675.0" y="2805" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="675.0" dy="0">Topology</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="837.0" y="2792" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="860.0" y="2805" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="860.0" dy="0">Output</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="827.0" y="2833" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="827.0" dy="0">Read bottom to top; all module internals follow the same direction.</tspan>
+<tspan x="827.0" dy="16.52">Same operator color does not imply shared weights; instance/parameter identities are preserved in IR.</tspan>
+<tspan x="827.0" dy="16.52">Solid edges carry values; dashed edges carry topology, shape or loop state. Library kernels stay opaque.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="827.0" y="2907" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="827.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="827.0" y="2937" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="827.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="827.0" y="2962" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="827.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+
+</svg>

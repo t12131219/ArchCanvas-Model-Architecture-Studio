@@ -1,0 +1,731 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2100" height="4482" viewBox="0 0 2100 4482">
+<defs xmlns="http://www.w3.org/2000/svg"><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348" /></marker></defs>
+
+<rect xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" fill="white" />
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="source-binding">{"model": "convvae", "source_snapshot_sha256": "a1cb8ca6e3b3489daf1e2276769302cabd9a1ed9055ae534ae06aec90929c946", "repository": "https://github.com/rasbt/deeplearning-models", "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3", "semantic_ir_sha256": "cb227c71f2ad70d6b27b9b3f2dd4a97f18ed9c29bea54060f94543e03916d58f", "view": 2}</metadata>
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="diagram-style">{"name": "transformer-paper-model-zoo", "version": 1, "font": "DejaVu Sans, Arial, sans-serif", "text": "#172336", "line": "#263348", "palette": {"root": "#ffffff", "group": "#ffffff", "inner": "#fffaf6", "layer": "#ffffff", "encoder": "#e7f5fe", "decoder": "#fff0f5", "embedding": "#f8d4e1", "input": "#f8d4e1", "output": "#dfdff8", "attention": "#ffddb3", "ffn": "#c8ebfb", "mixing": "#c8ebfb", "conv": "#c8ebfb", "pool": "#d6f0df", "norm": "#fff6bd", "concat": "#fff6bd", "linear": "#dfdff8", "softmax": "#c9f1cd", "sampling": "#c9f1cd", "recurrent": "#ffddb3", "decomposition": "#d6f0df", "tensor": "#cdeaf8", "activation": "#f3f5f7", "control": "#f3f5f7"}, "typography": {"title": 30, "subtitle": 16, "module": 22, "inner": 20, "operator": 20, "shape": 16, "detail": 14, "evidence": 12, "footer": 14, "line_height": 1.18}, "fill_width_nodes": ["convvae.dec1", "convvae.dec2", "convvae.dec3", "convvae.decoder", "convvae.enc1", "convvae.enc2", "convvae.enc3", "convvae.encoder", "convvae.forward", "convvae.latent_projection", "convvae.posterior", "convvae.sampling"], "visual_roles": {"convvae.dec1": "conv", "convvae.dec1.activation": "activation", "convvae.dec1.conv": "conv", "convvae.dec2": "conv", "convvae.dec2.activation": "activation", "convvae.dec2.conv": "conv", "convvae.dec3": "conv", "convvae.dec3.activation": "activation", "convvae.dec3.conv": "conv", "convvae.decoder": "decoder", "convvae.decoder_linear": "linear", "convvae.decoder_view": "tensor", "convvae.enc1": "conv", "convvae.enc1.activation": "activation", "convvae.enc1.conv": "conv", "convvae.enc2": "conv", "convvae.enc2.activation": "activation", "convvae.enc2.conv": "conv", "convvae.enc3": "conv", "convvae.enc3.activation": "activation", "convvae.enc3.conv": "conv", "convvae.encoder": "encoder", "convvae.encoder_return": "output", "convvae.epsilon": "sampling", "convvae.forward": "group", "convvae.half_logvar": "tensor", "convvae.input": "input", "convvae.labels": "input", "convvae.latent_projection": "ffn", "convvae.logvar": "linear", "convvae.logvar_head": "inner", "convvae.logvar_view": "tensor", "convvae.mean_head": "inner", "convvae.mean_view": "tensor", "convvae.mu": "linear", "convvae.noise_product": "norm", "convvae.posterior": "ffn", "convvae.retain_mu": "tensor", "convvae.return": "output", "convvae.root": "root", "convvae.sample_args": "inner", "convvae.sampling": "sampling", "convvae.scaled_noise": "inner", "convvae.select_z": "tensor", "convvae.sigmoid": "softmax", "convvae.std": "activation", "convvae.z": "norm"}, "semantics": "presentation aliases only; color does not imply mathematical equivalence or parameter sharing"}</metadata>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Convolutional VAE  |  Operators &amp; tensor flow</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">MNIST 28x28 / latent=15 / 1 image channel / stochastic forward  /  read bottom to top</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.root" data-visual-role="root"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:72 ConvVariationalAutoencoder; parameter=not asserted; </title><rect x="504.0" y="98" width="1092" height="4102" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="521.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="521.0" dy="0">ConvVAE / MNIST</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1579.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1579.0" dy="0">image -&gt; tuple</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1583.0" y="160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1583.0" dy="0">E001</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.input" data-visual-role="input" data-glyph-kind="tensor-grid"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:186 ConvVariationalAutoencoder.forward; parameter=not asserted; Caller ToTensor scales pixels to [0,1]; input is not flattened</title><rect x="1014.0" y="4117.5" width="72" height="32" rx="0" fill="#f8d4e1" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="1026.0" x2="1026.0" y1="4117.5" y2="4149.5" stroke="#263348" stroke-width=".6" /><line x1="1038.0" x2="1038.0" y1="4117.5" y2="4149.5" stroke="#263348" stroke-width=".6" /><line x1="1050.0" x2="1050.0" y1="4117.5" y2="4149.5" stroke="#263348" stroke-width=".6" /><line x1="1062.0" x2="1062.0" y1="4117.5" y2="4149.5" stroke="#263348" stroke-width=".6" /><line x1="1074.0" x2="1074.0" y1="4117.5" y2="4149.5" stroke="#263348" stroke-width=".6" /><line x1="1014.0" x2="1086.0" y1="4128.166666666667" y2="4128.166666666667" stroke="#263348" stroke-width=".6" /><line x1="1014.0" x2="1086.0" y1="4138.833333333333" y2="4138.833333333333" stroke="#263348" stroke-width=".6" /><text x="1004.0" y="4122.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="1004.0" dy="0">MNIST</tspan><tspan x="1004.0" dy="16.52">grayscale</tspan><tspan x="1004.0" dy="16.52">image</tspan></text><text x="1096.0" y="4138.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1096.0" dy="0">[B,1,28,28]</tspan></text><text x="1096.0" y="4171" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1096.0" dy="0">E005</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.forward" data-visual-role="group"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:186 ConvVariationalAutoencoder.forward; parameter=not asserted; </title><rect x="536.0" y="172" width="1028" height="3897" rx="10" fill="#ffffff" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="553.0" y="202" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="553.0" dy="0">Model forward</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1547.0" y="202" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1547.0" dy="0">four-tensor tuple</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1551.0" y="234" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1551.0" dy="0">E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.encoder" data-visual-role="encoder"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:148 ConvVariationalAutoencoder.encoder; parameter=not asserted; </title><rect x="568.0" y="1816" width="964" height="2227" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="585.0" y="1846" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="585.0" dy="0">Convolutional encoder</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1515.0" y="1846" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1515.0" dy="0">(mu,logvar,z): [B,15] x 3</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1519.0" y="1878" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1519.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.enc1" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:148 ConvVariationalAutoencoder.encoder; parameter=enc_conv_1; </title><rect x="600.0" y="3731" width="900" height="286" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="617.0" y="3761" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="617.0" dy="0">Encode stage 1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1483.0" y="3761" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1483.0" dy="0">[B,16,12,12]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1487.0" y="3793" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1487.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.enc1.conv" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:148 ConvVariationalAutoencoder.encoder; parameter=enc_conv_1; kernel=6; stride=2; padding=0; default bias=True</title><rect x="885.0" y="3910" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="3937" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Conv2d 1 -&gt; 16</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="3961" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,16,12,12]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="3981" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.enc1.activation" data-visual-role="activation"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:148 ConvVariationalAutoencoder.encoder; parameter=not asserted; F.leaky_relu(x); slope from API default | Also applied after the final decoder convolution</title><rect x="885.0" y="3805" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="3832" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">LeakyReLU 0.01</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="3856" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,16,12,12]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="3876" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.enc2" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:148 ConvVariationalAutoencoder.encoder; parameter=enc_conv_2; </title><rect x="600.0" y="3626" width="900" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="3653" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Encode stage 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="3677" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,32,5,5]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1487.0" y="3697" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1487.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.enc3" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:148 ConvVariationalAutoencoder.encoder; parameter=enc_conv_3; </title><rect x="600.0" y="3316" width="900" height="286" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="617.0" y="3346" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="617.0" dy="0">Encode stage 3</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1483.0" y="3346" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1483.0" dy="0">[B,64,2,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1487.0" y="3378" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1487.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.enc3.conv" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:148 ConvVariationalAutoencoder.encoder; parameter=enc_conv_3; kernel=2; stride=2; padding=0; default bias=True</title><rect x="885.0" y="3495" width="330" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="3522" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Conv2d 32 -&gt; 64</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="3546" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,64,2,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="3566" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.enc3.activation" data-visual-role="activation"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:148 ConvVariationalAutoencoder.encoder; parameter=not asserted; F.leaky_relu(x); slope from API default | Also applied after the final decoder convolution</title><rect x="885.0" y="3390" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="3417" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">LeakyReLU 0.01</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="3441" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,64,2,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="3461" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.posterior" data-visual-role="ffn"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:148 ConvVariationalAutoencoder.encoder; parameter=not asserted; Logical head-result group; no source tuple is created at this point</title><rect x="600.0" y="2843" width="900" height="449" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="617.0" y="2873" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="617.0" dy="0">Independent posterior heads</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1483.0" y="2873" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1483.0" dy="0">mu + logvar results</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1487.0" y="2905" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1487.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.mean_head" data-visual-role="inner"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:148 ConvVariationalAutoencoder.encoder; parameter=z_mean; </title><rect x="632.0" y="2932" width="394" height="286" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="649.0" y="2962" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="649.0" dy="0">Mean head</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1009.0" y="2962" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1009.0" dy="0">[B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1013.0" y="2994" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1013.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.mean_view" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:148 ConvVariationalAutoencoder.encoder; parameter=not asserted; A separate x.view(-1,64*2*2) expression appears for each head</title><rect x="664.0" y="3111" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="829.0" y="3138" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="829.0" dy="0">View 64x2x2 -&gt; 256</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="829.0" y="3162" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="829.0" dy="0">[B,256]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="981.0" y="3182" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="981.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.mu" data-visual-role="linear"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:148 ConvVariationalAutoencoder.encoder; parameter=z_mean; No activation after the posterior head</title><rect x="664.0" y="3006" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="829.0" y="3033" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="829.0" dy="0">Linear 256 -&gt; 15</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="829.0" y="3057" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="829.0" dy="0">mu: [B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="981.0" y="3077" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="981.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.logvar_head" data-visual-role="inner"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:148 ConvVariationalAutoencoder.encoder; parameter=z_log_var; </title><rect x="1074.0" y="2917" width="394" height="301" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1091.0" y="2947" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1091.0" dy="0">Log-variance</tspan>
+<tspan x="1091.0" dy="23.599999999999998">head</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1451.0" y="2947" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1451.0" dy="0">[B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1455.0" y="2994" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1455.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.logvar_view" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:148 ConvVariationalAutoencoder.encoder; parameter=not asserted; A separate x.view(-1,64*2*2) expression appears for each head</title><rect x="1106.0" y="3111" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1271.0" y="3138" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1271.0" dy="0">View 64x2x2 -&gt; 256</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1271.0" y="3162" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1271.0" dy="0">[B,256]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1423.0" y="3182" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1423.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.logvar" data-visual-role="linear"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:148 ConvVariationalAutoencoder.encoder; parameter=z_log_var; No activation after the posterior head</title><rect x="1106.0" y="3006" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1271.0" y="3033" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1271.0" dy="0">Linear 256 -&gt; 15</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1271.0" y="3057" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1271.0" dy="0">logvar: [B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1423.0" y="3077" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1423.0" dy="0">E002,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.sampling" data-visual-role="sampling"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:140 ConvVariationalAutoencoder.reparameterize; parameter=not asserted; No training/eval conditional; sampling always runs</title><rect x="600.0" y="1995" width="900" height="824" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="617.0" y="2025" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="617.0" dy="0">Reparameterization / single</tspan>
+<tspan x="617.0" dy="25.959999999999997">latent</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1483.0" y="2025" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1483.0" dy="0">z: [B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1487.0" y="2074" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1487.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.sample_args" data-visual-role="inner"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:140 ConvVariationalAutoencoder.reparameterize; parameter=not asserted; </title><rect x="632.0" y="2191" width="836" height="602" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="649.0" y="2221" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="649.0" dy="0">Mean / scaled-noise operands</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1451.0" y="2221" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1451.0" dy="0">mu + noise operands</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1455.0" y="2253" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1455.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.retain_mu" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:140 ConvVariationalAutoencoder.reparameterize; parameter=not asserted; </title><rect x="664.0" y="2638" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="829.0" y="2665" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="829.0" dy="0">Retain mu values</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="829.0" y="2689" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="829.0" dy="0">[B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="981.0" y="2709" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="981.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.scaled_noise" data-visual-role="inner"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:140 ConvVariationalAutoencoder.reparameterize; parameter=not asserted; </title><rect x="1042.0" y="2265" width="394" height="454" rx="8" fill="#fffaf6" stroke="#263348" stroke-width="1.6" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1059.0" y="2295" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1059.0" dy="0">Scale</tspan>
+<tspan x="1059.0" dy="23.599999999999998">Gaussian</tspan>
+<tspan x="1059.0" dy="23.599999999999998">noise</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1419.0" y="2295" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1419.0" dy="0">std * epsilon:</tspan>
+<tspan x="1419.0" dy="18.88">[B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1423.0" y="2366" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1423.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.half_logvar" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:140 ConvVariationalAutoencoder.reparameterize; parameter=not asserted; </title><rect x="1074.0" y="2612" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1239.0" y="2639" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1239.0" dy="0">Divide logvar by 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1239.0" y="2663" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1239.0" dy="0">[B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1391.0" y="2683" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1391.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.std" data-visual-role="activation"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:140 ConvVariationalAutoencoder.reparameterize; parameter=not asserted; </title><rect x="1074.0" y="2507" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1239.0" y="2534" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1239.0" dy="0">exp(logvar / 2)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1239.0" y="2558" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1239.0" dy="0">std: [B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1391.0" y="2578" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1391.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.noise_product" data-visual-role="norm"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:140 ConvVariationalAutoencoder.reparameterize; parameter=not asserted; Elementwise product; independent internal noise enters epsilon port</title><rect x="1074.0" y="2378" width="330" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1239.0" y="2405" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1239.0" dy="0">Multiply std times</tspan>
+<tspan x="1239.0" dy="23.599999999999998">epsilon</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1239.0" y="2453" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1239.0" dy="0">[B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1391.0" y="2473" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1391.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.z" data-visual-role="norm"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:140 ConvVariationalAutoencoder.reparameterize; parameter=not asserted; </title><rect x="885.0" y="2086" width="330" height="81" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="2113" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Add mu + std * epsilon</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="2137" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">z: [B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="2157" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E006</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.encoder_return" data-visual-role="output"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:148 ConvVariationalAutoencoder.encoder; parameter=not asserted; Actual encoder return tuple; no feature concatenation</title><rect x="885.0" y="1890" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="1917" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Return (mu, logvar, z)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="1941" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">3 tensors [B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="1961" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.select_z" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:186 ConvVariationalAutoencoder.forward; parameter=not asserted; Decoder receives only encoded, plus targets in conditional variant</title><rect x="885.0" y="1687" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="1714" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Select encoded z from</tspan>
+<tspan x="1050.0" dy="23.599999999999998">tuple</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="1762" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="1782" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.decoder" data-visual-role="decoder"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:167 ConvVariationalAutoencoder.decoder; parameter=not asserted; </title><rect x="568.0" y="375" width="964" height="1288" rx="18" fill="#fff0f5" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="585.0" y="405" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="585.0" dy="0">Convolutional decoder</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1515.0" y="405" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1515.0" dy="0">decoded: [B,1,28,28]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1519.0" y="437" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1519.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.latent_projection" data-visual-role="ffn"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:167 ConvVariationalAutoencoder.decoder; parameter=not asserted; </title><rect x="600.0" y="1327" width="900" height="310" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="617.0" y="1357" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="617.0" dy="0">Latent projection + reshape</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1483.0" y="1357" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1483.0" dy="0">[B,64,2,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1487.0" y="1389" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1487.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.decoder_linear" data-visual-role="linear"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:167 ConvVariationalAutoencoder.decoder; parameter=dec_linear_1; </title><rect x="885.0" y="1530" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="1557" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Linear 15 -&gt; 256</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="1581" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,256]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="1601" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.decoder_view" data-visual-role="tensor"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:167 ConvVariationalAutoencoder.decoder; parameter=not asserted; x.view(-1,64,2,2)</title><rect x="885.0" y="1401" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="1428" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">View as 64x2x2 feature</tspan>
+<tspan x="1050.0" dy="23.599999999999998">map</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="1476" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,64,2,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="1496" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.dec1" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:167 ConvVariationalAutoencoder.decoder; parameter=dec_deconv_1; </title><rect x="600.0" y="993" width="900" height="310" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="617.0" y="1023" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="617.0" dy="0">Decode stage 1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1483.0" y="1023" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1483.0" dy="0">[B,32,4,4]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1487.0" y="1055" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1487.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.dec1.conv" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:167 ConvVariationalAutoencoder.decoder; parameter=dec_deconv_1; kernel=2; stride=2; padding=0; default bias=True</title><rect x="885.0" y="1172" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="1199" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">ConvTranspose2d 64 -&gt;</tspan>
+<tspan x="1050.0" dy="23.599999999999998">32</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="1247" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,32,4,4]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="1267" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.dec1.activation" data-visual-role="activation"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:167 ConvVariationalAutoencoder.decoder; parameter=not asserted; F.leaky_relu(x); slope from API default | Also applied after the final decoder convolution</title><rect x="885.0" y="1067" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="1094" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">LeakyReLU 0.01</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="1118" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,32,4,4]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="1138" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.dec2" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:167 ConvVariationalAutoencoder.decoder; parameter=dec_deconv_2; </title><rect x="600.0" y="888" width="900" height="81" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="915" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Decode stage 2</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="939" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,16,11,11]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1487.0" y="959" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1487.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.dec3" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:167 ConvVariationalAutoencoder.decoder; parameter=dec_deconv_3; </title><rect x="600.0" y="554" width="900" height="310" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="617.0" y="584" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="617.0" dy="0">Decode stage 3</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1483.0" y="584" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1483.0" dy="0">[B,1,28,28]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1487.0" y="616" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1487.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.dec3.conv" data-visual-role="conv"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:74 ConvVariationalAutoencoder.__init__; deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:167 ConvVariationalAutoencoder.decoder; parameter=dec_deconv_3; kernel=6; stride=3; padding=4; default bias=True</title><rect x="885.0" y="733" width="330" height="105" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="760" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">ConvTranspose2d 16 -&gt;</tspan>
+<tspan x="1050.0" dy="23.599999999999998">1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="808" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,1,28,28]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="828" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E002,E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.dec3.activation" data-visual-role="activation"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:167 ConvVariationalAutoencoder.decoder; parameter=not asserted; F.leaky_relu(x); slope from API default | Also applied after the final decoder convolution</title><rect x="885.0" y="628" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="655" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">LeakyReLU 0.01</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="679" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,1,28,28]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="699" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.sigmoid" data-visual-role="softmax"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:167 ConvVariationalAutoencoder.decoder; parameter=not asserted; Follows final LeakyReLU, not the raw final convolution</title><rect x="885.0" y="449" width="330" height="81" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="476" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Sigmoid decoded pixels</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="500" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,1,28,28]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="520" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E003</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.return" data-visual-role="output"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:186 ConvVariationalAutoencoder.forward; parameter=not asserted; Actual four-field forward return; no image-only implicit output</title><rect x="885.0" y="246" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="273" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1050.0" dy="0">Return (mu, logvar, z,</tspan>
+<tspan x="1050.0" dy="23.599999999999998">decoded)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="321" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">[B,15] x 3; [B,1,28,28]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1202.0" y="341" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1202.0" dy="0">E005</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="convvae.epsilon" data-visual-role="sampling"><title>deeplearning-models-batch3/pytorch_ipynb/autoencoder/ae-conv-var.py:140 ConvVariationalAutoencoder.reparameterize; parameter=not asserted; torch.randn(z_mu.size(0),z_mu.size(1)).to(device) | Created inside reparameterize in train and eval</title><rect x="1745" y="2480.5" width="330" height="105" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1910.0" y="2507.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1910.0" dy="0">Internal Gaussian</tspan>
+<tspan x="1910.0" dy="23.599999999999998">epsilon</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1910.0" y="2555.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1910.0" dy="0">[B,15]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2062" y="2575.5" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2062" dy="0">E006</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0001" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.enc1.activation&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.enc1.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.enc1.activation&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.enc1.conv:out-&gt;convvae.enc1.activation:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.enc1.activation:in&quot;, &quot;rendered_src&quot;: &quot;convvae.enc1.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.enc1.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,3910 L 1050.0,3886" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.enc1.conv:out -&gt; convvae.enc1.activation:in; visible convvae.enc1.conv:out -&gt; convvae.enc1.activation:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0002" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.enc3.activation&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.enc3.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.enc3.activation&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.enc3.conv:out-&gt;convvae.enc3.activation:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.enc3.activation:in&quot;, &quot;rendered_src&quot;: &quot;convvae.enc3.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.enc3.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,3495 L 1050.0,3471" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.enc3.conv:out -&gt; convvae.enc3.activation:in; visible convvae.enc3.conv:out -&gt; convvae.enc3.activation:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0003" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.mu&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.mean_view&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.mu&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.mean_view:out-&gt;convvae.mu:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.mu:in&quot;, &quot;rendered_src&quot;: &quot;convvae.mean_view:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.mean_view&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 829.0,3111 L 829.0,3087" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.mean_view:out -&gt; convvae.mu:in; visible convvae.mean_view:out -&gt; convvae.mu:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0004" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.logvar&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.logvar_view&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.logvar&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.logvar_view:out-&gt;convvae.logvar:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.logvar:in&quot;, &quot;rendered_src&quot;: &quot;convvae.logvar_view:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.logvar_view&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1271.0,3111 L 1271.0,3087" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.logvar_view:out -&gt; convvae.logvar:in; visible convvae.logvar_view:out -&gt; convvae.logvar:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0005" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.mean_head&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;value_operand&quot;, &quot;src&quot;: &quot;convvae.enc3.activation&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.mean_view&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;convvae.mean_head&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;convvae.enc3.activation:out-&gt;convvae.mean_head:in:value_operand&quot;, &quot;rendered_dst&quot;: &quot;convvae.mean_view:in&quot;, &quot;rendered_src&quot;: &quot;convvae.enc3.activation:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.enc3.activation&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,3390 L 1050.0,3216 L 829.0,3216 L 829.0,3192" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.enc3.activation:out -&gt; convvae.mean_head:in; visible convvae.enc3.activation:out -&gt; convvae.mean_view:in; value_operand</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0006" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.logvar_head&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;value_operand&quot;, &quot;src&quot;: &quot;convvae.enc3.activation&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.logvar_view&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;convvae.logvar_head&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;convvae.enc3.activation:out-&gt;convvae.logvar_head:in:value_operand&quot;, &quot;rendered_dst&quot;: &quot;convvae.logvar_view:in&quot;, &quot;rendered_src&quot;: &quot;convvae.enc3.activation:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.enc3.activation&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,3390 L 1050.0,3216 L 1271.0,3216 L 1271.0,3192" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.enc3.activation:out -&gt; convvae.logvar_head:in; visible convvae.enc3.activation:out -&gt; convvae.logvar_view:in; value_operand</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0007" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.std&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.half_logvar&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.std&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.half_logvar:out-&gt;convvae.std:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.std:in&quot;, &quot;rendered_src&quot;: &quot;convvae.half_logvar:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.half_logvar&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1239.0,2612 L 1239.0,2588" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.half_logvar:out -&gt; convvae.std:in; visible convvae.half_logvar:out -&gt; convvae.std:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0008" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.noise_product&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.std&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.noise_product&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.std:out-&gt;convvae.noise_product:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.noise_product:in&quot;, &quot;rendered_src&quot;: &quot;convvae.std:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.std&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1239.0,2507 L 1239.0,2483" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.std:out -&gt; convvae.noise_product:in; visible convvae.std:out -&gt; convvae.noise_product:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0009" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.retain_mu&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;value_operand&quot;, &quot;src&quot;: &quot;convvae.mu&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.retain_mu&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.mu:out-&gt;convvae.retain_mu:in:value_operand&quot;, &quot;rendered_dst&quot;: &quot;convvae.retain_mu:in&quot;, &quot;rendered_src&quot;: &quot;convvae.mu:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.mu&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 829.0,3006 L 829.0,2882 L 989.4,2882 L 989.4,2743 L 829.0,2743 L 829.0,2719" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.mu:out -&gt; convvae.retain_mu:in; visible convvae.mu:out -&gt; convvae.retain_mu:in; value_operand</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0010" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.scaled_noise&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;value_operand&quot;, &quot;src&quot;: &quot;convvae.logvar&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.half_logvar&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;convvae.scaled_noise&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;convvae.logvar:out-&gt;convvae.scaled_noise:in:value_operand&quot;, &quot;rendered_dst&quot;: &quot;convvae.half_logvar:in&quot;, &quot;rendered_src&quot;: &quot;convvae.logvar:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.logvar&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1271.0,3006 L 1271.0,2717 L 1239.0,2717 L 1239.0,2693" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.logvar:out -&gt; convvae.scaled_noise:in; visible convvae.logvar:out -&gt; convvae.half_logvar:in; value_operand</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0011" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.z&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.sample_args&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.z&quot;, &quot;port&quot;: &quot;operand[0]&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.sample_args:out-&gt;convvae.z:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.z:right.aux0&quot;, &quot;rendered_src&quot;: &quot;convvae.retain_mu:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.retain_mu&quot;, &quot;operand&quot;: 0, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;convvae.sample_args&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;declared-interface&quot;}]}}" d="M 994.0,2678.5 L 1038.0,2678.5 L 1038.0,2170.16 L 1239.0,2170.16 L 1239.0,2102.5 L 1215.0,2102.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.sample_args:out -&gt; convvae.z:in; visible convvae.retain_mu:out -&gt; convvae.z:operand[0]; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0012" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.z&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.sample_args&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.z&quot;, &quot;port&quot;: &quot;operand[1]&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.sample_args:out-&gt;convvae.z:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.z:right.aux1&quot;, &quot;rendered_src&quot;: &quot;convvae.noise_product:right.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.noise_product&quot;, &quot;operand&quot;: 1, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;convvae.sample_args&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;declared-interface&quot;}]}}" d="M 1404.0,2418.5 L 1428.0,2418.5 L 1428.0,2264 L 1250.8,2264 L 1250.8,2126.5 L 1215.0,2126.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.sample_args:out -&gt; convvae.z:in; visible convvae.noise_product:out -&gt; convvae.z:operand[1]; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0013" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.enc2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.enc1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.enc2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.enc1:out-&gt;convvae.enc2:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.enc2:in&quot;, &quot;rendered_src&quot;: &quot;convvae.enc1.activation:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.enc1.activation&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;convvae.enc1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1050.0,3805 L 1050.0,3707" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.enc1:out -&gt; convvae.enc2:in; visible convvae.enc1.activation:out -&gt; convvae.enc2:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0014" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.enc3&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.enc2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.enc3.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;convvae.enc3&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;convvae.enc2:out-&gt;convvae.enc3:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.enc3.conv:in&quot;, &quot;rendered_src&quot;: &quot;convvae.enc2:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.enc2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,3626 L 1050.0,3576" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.enc2:out -&gt; convvae.enc3:in; visible convvae.enc2:out -&gt; convvae.enc3.conv:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0015" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.encoder_return&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.sampling&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.encoder_return&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.sampling:out-&gt;convvae.encoder_return:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.encoder_return:in&quot;, &quot;rendered_src&quot;: &quot;convvae.z:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.z&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;convvae.sampling&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;declared-interface&quot;}]}}" d="M 1050.0,2086 L 1050.0,1971" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.sampling:out -&gt; convvae.encoder_return:in; visible convvae.z:out -&gt; convvae.encoder_return:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0016" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.decoder_view&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.decoder_linear&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.decoder_view&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.decoder_linear:out-&gt;convvae.decoder_view:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.decoder_view:in&quot;, &quot;rendered_src&quot;: &quot;convvae.decoder_linear:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.decoder_linear&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,1530 L 1050.0,1506" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.decoder_linear:out -&gt; convvae.decoder_view:in; visible convvae.decoder_linear:out -&gt; convvae.decoder_view:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0017" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.dec1.activation&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.dec1.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.dec1.activation&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.dec1.conv:out-&gt;convvae.dec1.activation:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.dec1.activation:in&quot;, &quot;rendered_src&quot;: &quot;convvae.dec1.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.dec1.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,1172 L 1050.0,1148" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.dec1.conv:out -&gt; convvae.dec1.activation:in; visible convvae.dec1.conv:out -&gt; convvae.dec1.activation:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0018" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.dec3.activation&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.dec3.conv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.dec3.activation&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.dec3.conv:out-&gt;convvae.dec3.activation:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.dec3.activation:in&quot;, &quot;rendered_src&quot;: &quot;convvae.dec3.conv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.dec3.conv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,733 L 1050.0,709" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.dec3.conv:out -&gt; convvae.dec3.activation:in; visible convvae.dec3.conv:out -&gt; convvae.dec3.activation:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0019" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.dec1&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.latent_projection&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.dec1.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;convvae.dec1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;convvae.latent_projection:out-&gt;convvae.dec1:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.dec1.conv:in&quot;, &quot;rendered_src&quot;: &quot;convvae.decoder_view:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.decoder_view&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;convvae.latent_projection&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1050.0,1401 L 1050.0,1277" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.latent_projection:out -&gt; convvae.dec1:in; visible convvae.decoder_view:out -&gt; convvae.dec1.conv:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0020" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.dec2&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.dec1&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.dec2&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.dec1:out-&gt;convvae.dec2:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.dec2:in&quot;, &quot;rendered_src&quot;: &quot;convvae.dec1.activation:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.dec1.activation&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;convvae.dec1&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1050.0,1067 L 1050.0,969" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.dec1:out -&gt; convvae.dec2:in; visible convvae.dec1.activation:out -&gt; convvae.dec2:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0021" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.dec3&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.dec2&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.dec3.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;convvae.dec3&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;convvae.dec2:out-&gt;convvae.dec3:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.dec3.conv:in&quot;, &quot;rendered_src&quot;: &quot;convvae.dec2:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.dec2&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,888 L 1050.0,838" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.dec2:out -&gt; convvae.dec3:in; visible convvae.dec2:out -&gt; convvae.dec3.conv:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0022" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.sigmoid&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.dec3&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.sigmoid&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.dec3:out-&gt;convvae.sigmoid:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.sigmoid:in&quot;, &quot;rendered_src&quot;: &quot;convvae.dec3.activation:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.dec3.activation&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;convvae.dec3&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1050.0,628 L 1050.0,530" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.dec3:out -&gt; convvae.sigmoid:in; visible convvae.dec3.activation:out -&gt; convvae.sigmoid:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0023" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.select_z&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.encoder&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.select_z&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.encoder:out-&gt;convvae.select_z:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.select_z:in&quot;, &quot;rendered_src&quot;: &quot;convvae.z:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.z&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;convvae.encoder&quot;, &quot;port&quot;: &quot;encoded&quot;, &quot;rule&quot;: &quot;declared-interface&quot;}]}}" d="M 1050.0,2086 L 1050.0,1974.16 L 1225.28,1974.16 L 1225.28,1819 L 1050.0,1819 L 1050.0,1792" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.encoder:out -&gt; convvae.select_z:in; visible convvae.z:out -&gt; convvae.select_z:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0024" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.decoder&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.select_z&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.decoder_linear&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;convvae.decoder&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}, {&quot;node&quot;: &quot;convvae.latent_projection&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;convvae.select_z:out-&gt;convvae.decoder:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.decoder_linear:in&quot;, &quot;rendered_src&quot;: &quot;convvae.select_z:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.select_z&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,1687 L 1050.0,1611" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.select_z:out -&gt; convvae.decoder:in; visible convvae.select_z:out -&gt; convvae.decoder_linear:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0025" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.return&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.decoder&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.return&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.decoder:out-&gt;convvae.return:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.return:in&quot;, &quot;rendered_src&quot;: &quot;convvae.sigmoid:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.sigmoid&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;convvae.decoder&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1050.0,449 L 1050.0,351" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.decoder:out -&gt; convvae.return:in; visible convvae.sigmoid:out -&gt; convvae.return:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0026" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.forward&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;convvae.input&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.enc1.conv&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;convvae.forward&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}, {&quot;node&quot;: &quot;convvae.encoder&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}, {&quot;node&quot;: &quot;convvae.enc1&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;convvae.input:out-&gt;convvae.forward:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;convvae.enc1.conv:in&quot;, &quot;rendered_src&quot;: &quot;convvae.input:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.input&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1050.0,4117.5 L 1050.0,3991" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>convvae.input:out -&gt; convvae.forward:in; visible convvae.input:out -&gt; convvae.enc1.conv:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0027" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.noise_product&quot;, &quot;dst_port&quot;: &quot;epsilon&quot;, &quot;role&quot;: &quot;random_sample&quot;, &quot;src&quot;: &quot;convvae.epsilon&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.noise_product&quot;, &quot;port&quot;: &quot;epsilon&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.epsilon:out-&gt;convvae.noise_product:epsilon:random_sample&quot;, &quot;rendered_dst&quot;: &quot;convvae.noise_product:right.aux1&quot;, &quot;rendered_src&quot;: &quot;convvae.epsilon:left.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.epsilon&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1745,2521.0 L 1428.0,2521.0 L 1428.0,2442.5 L 1404.0,2442.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>convvae.epsilon:out -&gt; convvae.noise_product:epsilon; visible convvae.epsilon:out -&gt; convvae.noise_product:epsilon; epsilon</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0028" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.epsilon&quot;, &quot;dst_port&quot;: &quot;shape&quot;, &quot;role&quot;: &quot;shape_dependency&quot;, &quot;src&quot;: &quot;convvae.mu&quot;, &quot;src_port&quot;: &quot;shape&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.epsilon&quot;, &quot;port&quot;: &quot;shape&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.mu:shape-&gt;convvae.epsilon:shape:shape_dependency&quot;, &quot;rendered_dst&quot;: &quot;convvae.epsilon:left.aux1&quot;, &quot;rendered_src&quot;: &quot;convvae.mu:right.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.mu&quot;, &quot;port&quot;: &quot;shape&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 994.0,3034.5 L 1062.0,3034.5 L 1062.0,2825 L 1721,2825 L 1721,2545.0 L 1745,2545.0" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>convvae.mu:shape -&gt; convvae.epsilon:shape; visible convvae.mu:shape -&gt; convvae.epsilon:shape; mu B,latent / shape only</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0029" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.encoder_return&quot;, &quot;dst_port&quot;: &quot;mu&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;convvae.mu&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.encoder_return&quot;, &quot;port&quot;: &quot;mu&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.mu:out-&gt;convvae.encoder_return:mu:retained_value&quot;, &quot;rendered_dst&quot;: &quot;convvae.encoder_return:right.aux0&quot;, &quot;rendered_src&quot;: &quot;convvae.mu:right.aux1&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.mu&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 994.0,3058.5 L 1062.0,3058.5 L 1062.0,2916 L 2093,2916 L 2093,1918.5 L 1215.0,1918.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>convvae.mu:out -&gt; convvae.encoder_return:mu; visible convvae.mu:out -&gt; convvae.encoder_return:mu; mu</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0030" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.return&quot;, &quot;dst_port&quot;: &quot;mu&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;convvae.mu&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.return&quot;, &quot;port&quot;: &quot;mu&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.mu:out-&gt;convvae.return:mu:retained_value&quot;, &quot;rendered_dst&quot;: &quot;convvae.return:right.aux0&quot;, &quot;rendered_src&quot;: &quot;convvae.mu:right.aux1&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.mu&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 994.0,3058.5 L 1062.0,3058.5 L 1062.0,2916 L 2093,2916 L 2093,274.5 L 1215.0,274.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>convvae.mu:out -&gt; convvae.return:mu; visible convvae.mu:out -&gt; convvae.return:mu; mu</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0031" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.encoder_return&quot;, &quot;dst_port&quot;: &quot;logvar&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;convvae.logvar&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.encoder_return&quot;, &quot;port&quot;: &quot;logvar&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.logvar:out-&gt;convvae.encoder_return:logvar:retained_value&quot;, &quot;rendered_dst&quot;: &quot;convvae.encoder_return:right.aux1&quot;, &quot;rendered_src&quot;: &quot;convvae.logvar:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.logvar&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1436.0,3046.5 L 2082,3046.5 L 2082,1942.5 L 1215.0,1942.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>convvae.logvar:out -&gt; convvae.encoder_return:logvar; visible convvae.logvar:out -&gt; convvae.encoder_return:logvar; logvar</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0032" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.return&quot;, &quot;dst_port&quot;: &quot;logvar&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;convvae.logvar&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.return&quot;, &quot;port&quot;: &quot;logvar&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.logvar:out-&gt;convvae.return:logvar:retained_value&quot;, &quot;rendered_dst&quot;: &quot;convvae.return:right.aux1&quot;, &quot;rendered_src&quot;: &quot;convvae.logvar:right&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.logvar&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1436.0,3046.5 L 2082,3046.5 L 2082,298.5 L 1215.0,298.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>convvae.logvar:out -&gt; convvae.return:logvar; visible convvae.logvar:out -&gt; convvae.return:logvar; logvar</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0033" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;convvae.return&quot;, &quot;dst_port&quot;: &quot;encoded&quot;, &quot;role&quot;: &quot;retained_value&quot;, &quot;src&quot;: &quot;convvae.z&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;convvae.return&quot;, &quot;port&quot;: &quot;encoded&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;convvae.z:out-&gt;convvae.return:encoded:retained_value&quot;, &quot;rendered_dst&quot;: &quot;convvae.return:right.aux2&quot;, &quot;rendered_src&quot;: &quot;convvae.z:right.aux2&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;convvae.z&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1215.0,2150.5 L 2081,2150.5 L 2081,322.5 L 1215.0,322.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>convvae.z:out -&gt; convvae.return:encoded; visible convvae.z:out -&gt; convvae.return:encoded; encoded z</title></path>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="505.0" y="4237" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="528.0" y="4250" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="528.0" dy="0">Input / Embed</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="690.0" y="4237" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="713.0" y="4250" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="713.0" dy="0">Conv / MLP</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="875.0" y="4237" width="16" height="16" rx="3" fill="#d6f0df" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="898.0" y="4250" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="898.0" dy="0">Pool</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1060.0" y="4237" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1083.0" y="4250" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1083.0" dy="0">Norm / Add / Cat</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1245.0" y="4237" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1268.0" y="4250" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1268.0" dy="0">Linear / Output</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1430.0" y="4237" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1453.0" y="4250" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1453.0" dy="0">Activation</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="967.5" y="4267" width="16" height="16" rx="3" fill="#c9f1cd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="990.5" y="4280" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="990.5" dy="0">Prob. / Sample</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="4308" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">B batch; image [B,1,28,28]; one latent vector per example</tspan>
+<tspan x="1050.0" dy="16.52">mu/logvar/z each [B,15]; decoder output [B,1,28,28]</tspan>
+<tspan x="1050.0" dy="16.52">Internal Gaussian sampling always runs; no deterministic eval branch</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="4382" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="4412" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1050.0" y="4437" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1050.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+
+</svg>

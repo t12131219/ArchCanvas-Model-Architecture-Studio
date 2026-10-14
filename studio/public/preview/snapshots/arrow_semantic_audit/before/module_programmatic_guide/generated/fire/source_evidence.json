@@ -1,0 +1,60 @@
+{
+  "source_project": "torchvision-v0.9.0-vision-extended",
+  "repository": "pytorch/vision",
+  "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+  "source_snapshot_sha256": "88b7578cd40309142e6f3aa152438e3ee450fcfd4e242f61cb3919c3efab888f",
+  "entry": "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "torchvision-v0.9.0-vision-extended/LICENSE": {
+      "sha256": "6502f676851cfe25f8af75531dfb32375b7325b73c37e7b43741fa422893e71d",
+      "lines": 29,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/LICENSE",
+      "derived_from": null
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py": {
+      "sha256": "5e0f49b08d9d3671d07c136a04d6b87abceda29292f47e2333585c72133aa337",
+      "lines": 147,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/torchvision/models/squeezenet.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py",
+      "symbol": "Fire",
+      "start": 15,
+      "end": 40,
+      "snippet": "class Fire(nn.Module):\n\n    def __init__(\n        self,\n        inplanes: int,\n        squeeze_planes: int,\n        expand1x1_planes: int,\n        expand3x3_planes: int\n    ) -> None:\n        super(Fire, self).__init__()\n        self.inplanes = inplanes\n        self.squeeze = nn.Conv2d(inplanes, squeeze_planes, kernel_size=1)\n        self.squeeze_activation = nn.ReLU(inplace=True)\n        self.expand1x1 = nn.Conv2d(squeeze_planes, expand1x1_planes,\n                                   kernel_size=1)\n        self.expand1x1_activation = nn.ReLU(inplace=True)\n        self.expand3x3 = nn.Conv2d(squeeze_planes, expand3x3_planes,\n                                   kernel_size=3, padding=1)\n        self.expand3x3_activation = nn.ReLU(inplace=True)\n\n    def forward(self, x: torch.Tensor) -> torch.Tensor:\n        x = self.squeeze_activation(self.squeeze(x))\n        return torch.cat([\n            self.expand1x1_activation(self.expand1x1(x)),\n            self.expand3x3_activation(self.expand3x3(x))\n        ], 1)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.__init__": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py",
+      "symbol": "Fire.__init__",
+      "start": 17,
+      "end": 33,
+      "snippet": "    def __init__(\n        self,\n        inplanes: int,\n        squeeze_planes: int,\n        expand1x1_planes: int,\n        expand3x3_planes: int\n    ) -> None:\n        super(Fire, self).__init__()\n        self.inplanes = inplanes\n        self.squeeze = nn.Conv2d(inplanes, squeeze_planes, kernel_size=1)\n        self.squeeze_activation = nn.ReLU(inplace=True)\n        self.expand1x1 = nn.Conv2d(squeeze_planes, expand1x1_planes,\n                                   kernel_size=1)\n        self.expand1x1_activation = nn.ReLU(inplace=True)\n        self.expand3x3 = nn.Conv2d(squeeze_planes, expand3x3_planes,\n                                   kernel_size=3, padding=1)\n        self.expand3x3_activation = nn.ReLU(inplace=True)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py::Fire.forward": {
+      "path": "torchvision-v0.9.0-vision-extended/torchvision/models/squeezenet.py",
+      "symbol": "Fire.forward",
+      "start": 35,
+      "end": 40,
+      "snippet": "    def forward(self, x: torch.Tensor) -> torch.Tensor:\n        x = self.squeeze_activation(self.squeeze(x))\n        return torch.cat([\n            self.expand1x1_activation(self.expand1x1(x)),\n            self.expand3x3_activation(self.expand3x3(x))\n        ], 1)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "torchvision-v0.9.0-vision-extended/LICENSE"
+  ]
+}

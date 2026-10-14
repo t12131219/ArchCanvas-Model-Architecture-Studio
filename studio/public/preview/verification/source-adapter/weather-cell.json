@@ -1,0 +1,147 @@
+{
+  "schema": "summary-source-adapter/1",
+  "id": "source-d8df3b4217ef4735",
+  "title": "WeatherCell",
+  "entry": "conditional_model:WeatherCell",
+  "files": [
+    {
+      "path": "conditional_model.py",
+      "sha256": "46ff67a9e57a6bd0c6107378eebeda7f6a83a634417faa318517f89228e6a923",
+      "text": "\"\"\"An input-dependent branch stays explicit rather than becoming a guessed path.\"\"\"\nfrom torch import nn\n\n\nclass WeatherCell(nn.Module):\n    def forward(self, signal):\n        if signal.sum() > 0:\n            state = signal + 1\n        else:\n            state = signal * 2\n        return state\n"
+    }
+  ],
+  "sourceSha256": "ac0845d28c87549407bacc8f59a316ee198aa88e67a539e880421da7fee42340",
+  "ir": {
+    "schema": "summary-source-ir/1",
+    "entry": "conditional_model:WeatherCell",
+    "nodes": [
+      {
+        "id": "model/group-5-0-1",
+        "parent": null,
+        "kind": "group",
+        "label": "WeatherCell",
+        "source_evidence": [
+          "e-1f39e177aa9d53cb"
+        ],
+        "expression": "class WeatherCell(nn.Module):\n\n    def forward(self, signal):\n        if signal.sum() > 0:\n            state = signal + 1\n        else:\n            state = signal * 2\n        return state",
+        "instance": "conditional_model:WeatherCell",
+        "certainty": "static",
+        "constructor": "conditional_model:WeatherCell",
+        "moduleType": "WeatherCell",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-5-0-1/input-6-22-2",
+        "parent": "model/group-5-0-1",
+        "kind": "input",
+        "label": "signal",
+        "source_evidence": [
+          "e-360196a0b60a2048"
+        ],
+        "expression": "signal"
+      },
+      {
+        "id": "model/group-5-0-1/opaque-7-8-3",
+        "parent": "model/group-5-0-1",
+        "kind": "opaque",
+        "label": "待解析 · Module",
+        "source_evidence": [
+          "e-6a4e71b1184821f6"
+        ],
+        "expression": "if signal.sum() > 0:\n    state = signal + 1\nelse:\n    state = signal * 2\nreturn state",
+        "certainty": "opaque"
+      },
+      {
+        "id": "model/group-5-0-1/output-11-8-4",
+        "parent": "model/group-5-0-1",
+        "kind": "output",
+        "label": "return",
+        "source_evidence": [
+          "e-ee33c646d685c551"
+        ],
+        "expression": "return state"
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-1",
+        "source": "model/group-5-0-1/input-6-22-2",
+        "target": "model/group-5-0-1/opaque-7-8-3",
+        "sourcePort": "out",
+        "targetPort": "dependency[0]",
+        "wire": "model/group-5-0-1/input-6-22-2:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-6a4e71b1184821f6"
+        ]
+      },
+      {
+        "id": "edge-2",
+        "source": "model/group-5-0-1/opaque-7-8-3",
+        "target": "model/group-5-0-1/output-11-8-4",
+        "sourcePort": "out",
+        "targetPort": "value",
+        "wire": "model/group-5-0-1/opaque-7-8-3:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-ee33c646d685c551"
+        ]
+      }
+    ],
+    "instances": {
+      "conditional_model:WeatherCell": [
+        "model/group-5-0-1"
+      ]
+    },
+    "analysis": "static-source-dependencies",
+    "modelExecuted": false,
+    "shapePolicy": "No tensor dimensions or execution path inferred",
+    "registrySha256": "9c153d45ae26c27b1f5da8becde63af92eb51883b8e8ad1b00860151802f7e5f"
+  },
+  "canonicalIR": "{\"analysis\":\"static-source-dependencies\",\"edges\":[{\"id\":\"edge-1\",\"role\":\"source_dependency\",\"source\":\"model/group-5-0-1/input-6-22-2\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-6a4e71b1184821f6\"],\"target\":\"model/group-5-0-1/opaque-7-8-3\",\"targetPort\":\"dependency[0]\",\"wire\":\"model/group-5-0-1/input-6-22-2:out\"},{\"id\":\"edge-2\",\"role\":\"source_dependency\",\"source\":\"model/group-5-0-1/opaque-7-8-3\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-ee33c646d685c551\"],\"target\":\"model/group-5-0-1/output-11-8-4\",\"targetPort\":\"value\",\"wire\":\"model/group-5-0-1/opaque-7-8-3:out\"}],\"entry\":\"conditional_model:WeatherCell\",\"instances\":{\"conditional_model:WeatherCell\":[\"model/group-5-0-1\"]},\"modelExecuted\":false,\"nodes\":[{\"certainty\":\"static\",\"constructor\":\"conditional_model:WeatherCell\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"class WeatherCell(nn.Module):\\n\\n    def forward(self, signal):\\n        if signal.sum() > 0:\\n            state = signal + 1\\n        else:\\n            state = signal * 2\\n        return state\",\"id\":\"model/group-5-0-1\",\"instance\":\"conditional_model:WeatherCell\",\"kind\":\"group\",\"label\":\"WeatherCell\",\"moduleType\":\"WeatherCell\",\"parent\":null,\"source_evidence\":[\"e-1f39e177aa9d53cb\"]},{\"expression\":\"signal\",\"id\":\"model/group-5-0-1/input-6-22-2\",\"kind\":\"input\",\"label\":\"signal\",\"parent\":\"model/group-5-0-1\",\"source_evidence\":[\"e-360196a0b60a2048\"]},{\"certainty\":\"opaque\",\"expression\":\"if signal.sum() > 0:\\n    state = signal + 1\\nelse:\\n    state = signal * 2\\nreturn state\",\"id\":\"model/group-5-0-1/opaque-7-8-3\",\"kind\":\"opaque\",\"label\":\"待解析 · Module\",\"parent\":\"model/group-5-0-1\",\"source_evidence\":[\"e-6a4e71b1184821f6\"]},{\"expression\":\"return state\",\"id\":\"model/group-5-0-1/output-11-8-4\",\"kind\":\"output\",\"label\":\"return\",\"parent\":\"model/group-5-0-1\",\"source_evidence\":[\"e-ee33c646d685c551\"]}],\"registrySha256\":\"9c153d45ae26c27b1f5da8becde63af92eb51883b8e8ad1b00860151802f7e5f\",\"schema\":\"summary-source-ir/1\",\"shapePolicy\":\"No tensor dimensions or execution path inferred\"}",
+  "irSha256": "ea0270f7db7d9e193287b98135bbe4c72fe3d53f42561e77d08994f6e2c25f1f",
+  "evidence": {
+    "e-1f39e177aa9d53cb": {
+      "file": "conditional_model.py",
+      "line": 5,
+      "endLine": 11,
+      "column": 0,
+      "endColumn": 20,
+      "expression": "class WeatherCell(nn.Module):\n    def forward(self, signal):\n        if signal.sum() > 0:\n            state = signal + 1\n        else:\n            state = signal * 2\n        return state"
+    },
+    "e-360196a0b60a2048": {
+      "file": "conditional_model.py",
+      "line": 6,
+      "endLine": 6,
+      "column": 22,
+      "endColumn": 28,
+      "expression": "signal"
+    },
+    "e-6a4e71b1184821f6": {
+      "file": "conditional_model.py",
+      "line": 7,
+      "endLine": 11,
+      "column": 8,
+      "endColumn": 20,
+      "expression": "if signal.sum() > 0:\n            state = signal + 1\n        else:\n            state = signal * 2\n        return state"
+    },
+    "e-ee33c646d685c551": {
+      "file": "conditional_model.py",
+      "line": 11,
+      "endLine": 11,
+      "column": 8,
+      "endColumn": 20,
+      "expression": "return state"
+    }
+  },
+  "diagnostics": [
+    {
+      "node": "model/group-5-0-1/opaque-7-8-3",
+      "evidence": "e-6a4e71b1184821f6",
+      "message": "动态控制流或副作用；此后计算整体保留，不猜测执行路径。"
+    }
+  ],
+  "config": {},
+  "adapterVersion": 1
+}

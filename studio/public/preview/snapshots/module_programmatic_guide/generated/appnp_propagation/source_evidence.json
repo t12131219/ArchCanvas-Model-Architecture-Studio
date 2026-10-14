@@ -1,0 +1,40 @@
+{
+  "source_project": "appnp-modules",
+  "repository": "benedekrozemberczki/APPNP",
+  "commit": "338d98980ee8748e652630dd422341ef8b2a354a",
+  "source_snapshot_sha256": "a26a0aa75b2bc72b4e8a18bc84a4db7f3ffe1beddef97181a20a300d75295eb0",
+  "entry": "appnp-modules/src/appnp_layer.py::APPNPModel.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "appnp-modules/LICENSE": {
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "lines": 674,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/benedekrozemberczki/APPNP/338d98980ee8748e652630dd422341ef8b2a354a/LICENSE",
+      "derived_from": null
+    },
+    "appnp-modules/src/appnp_layer.py": {
+      "sha256": "eb092e7b2d4589984ba8c8e5c7e1eba2fda55da51af7b6ae3622e04aa0eff65b",
+      "lines": 182,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/benedekrozemberczki/APPNP/338d98980ee8748e652630dd422341ef8b2a354a/src/appnp_layer.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "appnp-modules/src/appnp_layer.py::APPNPModel.forward": {
+      "path": "appnp-modules/src/appnp_layer.py",
+      "symbol": "APPNPModel.forward",
+      "start": 138,
+      "end": 182,
+      "snippet": "    def forward(self, feature_indices, feature_values):\n        \"\"\"\n        Making a forward propagation pass.\n        :param feature_indices: Feature indices for feature matrix.\n        :param feature_values: Values in the feature matrix.\n        :return self.predictions: Predicted class label log softmaxes.\n        \"\"\"\n        feature_values = torch.nn.functional.dropout(feature_values,\n                                                     p=self.args.dropout,\n                                                     training=self.training)\n\n        latent_features_1 = self.layer_1(feature_indices, feature_values)\n\n        latent_features_1 = torch.nn.functional.relu(latent_features_1)\n\n        latent_features_1 = torch.nn.functional.dropout(latent_features_1,\n                                                        p=self.args.dropout,\n                                                        training=self.training)\n\n        latent_features_2 = self.layer_2(latent_features_1)\n        if self.args.model == \"exact\":\n            self.predictions = torch.nn.functional.dropout(self.propagator,\n                                                           p=self.args.dropout,\n                                                           training=self.training)\n\n            self.predictions = torch.mm(self.predictions, latent_features_2)\n        else:\n            localized_predictions = latent_features_2\n            edge_weights = torch.nn.functional.dropout(self.edge_weights,\n                                                       p=self.args.dropout,\n                                                       training=self.training)\n\n            for iteration in range(self.args.iterations):\n\n                new_features = spmm(index=self.edge_indices,\n                                    value=edge_weights,\n                                    n=localized_predictions.shape[0],\n                                    m=localized_predictions.shape[0],\n                                    matrix=localized_predictions)\n\n                localized_predictions = (1-self.args.alpha)*new_features\n                localized_predictions = localized_predictions + self.args.alpha*latent_features_2\n            self.predictions = localized_predictions\n        self.predictions = torch.nn.functional.log_softmax(self.predictions, dim=1)\n        return self.predictions",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "appnp-modules/LICENSE"
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "source_project": "glow-modules",
+  "repository": "rosinality/glow-pytorch",
+  "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+  "source_snapshot_sha256": "1d5cf48ba47a5ecf7ea7059a37c9d1584a95871f52d5022f76b59cc51138d2ce",
+  "entry": "glow-modules/model.py::Block.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "glow-modules/LICENSE": {
+      "sha256": "225b2842279abe5023f2642f82ca1bdc6653b801b8a354b4cbf5229d846a2f3c",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/rosinality/glow-pytorch/97081ff115a694cf04aeedbd58447f33d242c879/LICENSE",
+      "derived_from": null
+    },
+    "glow-modules/model.py": {
+      "sha256": "a12fd292b1df6ea0a45c24e1ab6b21e385a4a03717118916b6aeee84dc3fe518",
+      "lines": 372,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/rosinality/glow-pytorch/97081ff115a694cf04aeedbd58447f33d242c879/model.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "glow-modules/model.py::Block.forward": {
+      "path": "glow-modules/model.py",
+      "symbol": "Block.forward",
+      "start": 271,
+      "end": 296,
+      "snippet": "    def forward(self, input):\n        b_size, n_channel, height, width = input.shape\n        squeezed = input.view(b_size, n_channel, height // 2, 2, width // 2, 2)\n        squeezed = squeezed.permute(0, 1, 3, 5, 2, 4)\n        out = squeezed.contiguous().view(b_size, n_channel * 4, height // 2, width // 2)\n\n        logdet = 0\n\n        for flow in self.flows:\n            out, det = flow(out)\n            logdet = logdet + det\n\n        if self.split:\n            out, z_new = out.chunk(2, 1)\n            mean, log_sd = self.prior(out).chunk(2, 1)\n            log_p = gaussian_log_p(z_new, mean, log_sd)\n            log_p = log_p.view(b_size, -1).sum(1)\n\n        else:\n            zero = torch.zeros_like(out)\n            mean, log_sd = self.prior(zero).chunk(2, 1)\n            log_p = gaussian_log_p(out, mean, log_sd)\n            log_p = log_p.view(b_size, -1).sum(1)\n            z_new = out\n\n        return out, logdet, log_p, z_new",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "glow-modules/LICENSE"
+  ]
+}

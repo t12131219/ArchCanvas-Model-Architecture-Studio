@@ -1,0 +1,1633 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "dcgan",
+  "profile": {
+    "task": "CelebA adversarial image generation",
+    "mode": "selected training-mode generator scoring call",
+    "diagram_scope": "caller composition: fake_images = generator_forward(z); discriminator_forward(fake_images)",
+    "source_entrypoints": [
+      "DCGAN.generator_forward",
+      "DCGAN.discriminator_forward"
+    ],
+    "no_unified_forward": true,
+    "real_image_call_in_main_graph": false,
+    "gradient_detach": false,
+    "latent_dim": 100,
+    "num_maps_gen": 64,
+    "num_maps_dis": 64,
+    "image_size": [
+      64,
+      64,
+      3
+    ],
+    "image_layout": "NCHW",
+    "batch_size_setting": 128,
+    "generator_channels": [
+      100,
+      512,
+      256,
+      128,
+      64,
+      3
+    ],
+    "generator_spatial": [
+      1,
+      4,
+      8,
+      16,
+      32,
+      64
+    ],
+    "discriminator_channels": [
+      3,
+      64,
+      128,
+      256,
+      512,
+      1
+    ],
+    "discriminator_spatial": [
+      64,
+      32,
+      16,
+      8,
+      4,
+      1
+    ],
+    "generator_batchnorm_count": 4,
+    "discriminator_batchnorm_count": 3,
+    "generator_conv_bias": false,
+    "discriminator_conv_bias": [
+      true,
+      false,
+      false,
+      false,
+      true
+    ],
+    "discriminator_global_receiver": "model",
+    "global_model_alias_assumption": "module global model is the same selected constructed DCGAN instance",
+    "source_discriminator_uses_self": false,
+    "output": "[B,1,1,1] score; caller flatten is outside methods",
+    "output_range": "G Tanh [-1,1]; D Sigmoid [0,1]",
+    "caller_notebook_cells": [
+      9,
+      16,
+      21,
+      25
+    ],
+    "training_losses_in_graph": false,
+    "model_executed": false
+  },
+  "source": {
+    "repository": "rasbt/deeplearning-models",
+    "commit": "59beda3aa25337e576564f1c18c6edd26f9f30e3",
+    "snapshot": "d72c614d79563c7756290b44770a5262b15bfc58e12c9844311724d2862bc09c"
+  },
+  "nodes": [
+    {
+      "id": "dcgan.root",
+      "label": "DCGAN / selected G-to-D caller path",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "caller composition, not DCGAN.forward",
+      "detail": [],
+      "diagram_scope": "caller composition: selected fake-image scoring for generator update",
+      "no_unified_forward": true,
+      "source_entrypoints": [
+        "DCGAN.generator_forward",
+        "DCGAN.discriminator_forward"
+      ],
+      "mode": "chain",
+      "parent": null,
+      "source_evidence": [
+        "E006",
+        "E008",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.noise",
+      "label": "Caller latent noise z",
+      "kind": "input",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,100,1,1]",
+      "detail": [
+        "LATENT_DIM=100; notebook caller creates torch.randn tensors",
+        "batch_size setting 128; B kept symbolic"
+      ],
+      "origin": "caller random_vec",
+      "stochastic": true,
+      "caller_notebook_cells": [
+        25
+      ],
+      "parent": "dcgan.root",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.scoring",
+      "label": "Caller: score generated image",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "z -> fake image -> score",
+      "detail": [
+        "two explicit method calls composed by notebook caller; no DCGAN.forward exists",
+        "not a complete training or loss graph"
+      ],
+      "diagram_scope": "caller composition",
+      "caller_notebook_cells": [
+        25
+      ],
+      "source_entrypoints": [
+        "DCGAN.generator_forward",
+        "DCGAN.discriminator_forward"
+      ],
+      "mode": "chain",
+      "parent": "dcgan.root",
+      "source_evidence": [
+        "E008",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.generator",
+      "label": "Entry 1: G(z)",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "fake image: [B,3,64,64]",
+      "detail": [
+        "five independently parameterized transposed convolutions",
+        "generator_forward returns self.generator(z)"
+      ],
+      "parameter_scope": "generator",
+      "entrypoint": "DCGAN.generator_forward",
+      "mode": "chain",
+      "parent": "dcgan.scoring",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g1",
+      "label": "G stage 1 / 4x4",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [],
+      "parameter_scope": "generator.0",
+      "mode": "chain",
+      "parent": "dcgan.generator",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g1.conv",
+      "label": "ConvTranspose2d 100 -> 512",
+      "kind": "conv_transpose2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "kernel=4; stride=1; padding=0; bias=False"
+      ],
+      "parameter": "generator.0",
+      "kernel_size": 4,
+      "stride": 1,
+      "padding": 0,
+      "bias": false,
+      "parent": "dcgan.g1",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g1.bn",
+      "label": "BatchNorm2d 512",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "selected training call uses batch statistics"
+      ],
+      "parameter": "generator.1",
+      "parent": "dcgan.g1",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g1.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "dcgan.g1",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g2",
+      "label": "G stage 2 / 8x8",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [],
+      "parameter_scope": "generator.3",
+      "mode": "chain",
+      "parent": "dcgan.generator",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g2.conv",
+      "label": "ConvTranspose2d 512 -> 256",
+      "kind": "conv_transpose2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [
+        "kernel=4; stride=2; padding=1; bias=False"
+      ],
+      "parameter": "generator.3",
+      "kernel_size": 4,
+      "stride": 2,
+      "padding": 1,
+      "bias": false,
+      "parent": "dcgan.g2",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g2.bn",
+      "label": "BatchNorm2d 256",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [
+        "selected training call uses batch statistics"
+      ],
+      "parameter": "generator.4",
+      "parent": "dcgan.g2",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g2.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "dcgan.g2",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g3",
+      "label": "G stage 3 / 16x16",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,128,16,16]",
+      "detail": [],
+      "parameter_scope": "generator.6",
+      "mode": "chain",
+      "parent": "dcgan.generator",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g3.conv",
+      "label": "ConvTranspose2d 256 -> 128",
+      "kind": "conv_transpose2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,128,16,16]",
+      "detail": [
+        "kernel=4; stride=2; padding=1; bias=False"
+      ],
+      "parameter": "generator.6",
+      "kernel_size": 4,
+      "stride": 2,
+      "padding": 1,
+      "bias": false,
+      "parent": "dcgan.g3",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g3.bn",
+      "label": "BatchNorm2d 128",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,128,16,16]",
+      "detail": [
+        "selected training call uses batch statistics"
+      ],
+      "parameter": "generator.7",
+      "parent": "dcgan.g3",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g3.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,128,16,16]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "dcgan.g3",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g4",
+      "label": "G stage 4 / 32x32",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "parameter_scope": "generator.9",
+      "mode": "chain",
+      "parent": "dcgan.generator",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g4.conv",
+      "label": "ConvTranspose2d 128 -> 64",
+      "kind": "conv_transpose2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [
+        "kernel=4; stride=2; padding=1; bias=False"
+      ],
+      "parameter": "generator.9",
+      "kernel_size": 4,
+      "stride": 2,
+      "padding": 1,
+      "bias": false,
+      "parent": "dcgan.g4",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g4.bn",
+      "label": "BatchNorm2d 64",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [
+        "selected training call uses batch statistics"
+      ],
+      "parameter": "generator.10",
+      "parent": "dcgan.g4",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g4.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [
+        "inplace=True"
+      ],
+      "parent": "dcgan.g4",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g5",
+      "label": "G stage 5 / 64x64",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,3,64,64]",
+      "detail": [],
+      "parameter_scope": "generator.12",
+      "mode": "chain",
+      "parent": "dcgan.generator",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g5.conv",
+      "label": "ConvTranspose2d 64 -> 3",
+      "kind": "conv_transpose2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,3,64,64]",
+      "detail": [
+        "kernel=4; stride=2; padding=1; bias=False"
+      ],
+      "parameter": "generator.12",
+      "kernel_size": 4,
+      "stride": 2,
+      "padding": 1,
+      "bias": false,
+      "parent": "dcgan.g5",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.g5.tanh",
+      "label": "Tanh image output",
+      "kind": "tanh",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,3,64,64]",
+      "detail": [
+        "output range [-1,1] matches normalized real images"
+      ],
+      "parent": "dcgan.g5",
+      "source_evidence": [
+        "E006",
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.fake",
+      "label": "Retain fake image / no detach",
+      "kind": "tensor",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.generator_forward"
+      ],
+      "shape": "[B,3,64,64]",
+      "detail": [
+        "selected generator update call passes fake_images to D without detach",
+        "this label denotes the method result / caller boundary, not another operator"
+      ],
+      "boundary": "caller",
+      "gradient_detach": false,
+      "producer": "DCGAN.generator_forward",
+      "parent": "dcgan.scoring",
+      "source_evidence": [
+        "E008"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.discriminator",
+      "label": "Entry 2: D(img)",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "score: [B,1,1,1]",
+      "detail": [
+        "source calls global model.discriminator(img), not self.discriminator(img)",
+        "selected notebook global model aliases the constructed DCGAN instance"
+      ],
+      "parameter_scope": "global model.discriminator",
+      "entrypoint": "DCGAN.discriminator_forward",
+      "global_receiver": "model",
+      "receiver_assumption": "notebook global model is selected DCGAN instance",
+      "mode": "chain",
+      "parent": "dcgan.scoring",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d1",
+      "label": "D stage 1 / 32x32",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [],
+      "parameter_scope": "discriminator.0",
+      "mode": "chain",
+      "parent": "dcgan.discriminator",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d1.conv",
+      "label": "Conv2d 3 -> 64",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [
+        "kernel=4; stride=2; padding=1; bias=True"
+      ],
+      "parameter": "discriminator.0",
+      "kernel_size": 4,
+      "stride": 2,
+      "padding": 1,
+      "bias": true,
+      "parent": "dcgan.d1",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d1.leaky",
+      "label": "LeakyReLU 0.2",
+      "kind": "leaky_relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,64,32,32]",
+      "detail": [
+        "inplace=True"
+      ],
+      "negative_slope": 0.2,
+      "parent": "dcgan.d1",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d2",
+      "label": "D stage 2 / 16x16",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,128,16,16]",
+      "detail": [],
+      "parameter_scope": "discriminator.2",
+      "mode": "chain",
+      "parent": "dcgan.discriminator",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d2.conv",
+      "label": "Conv2d 64 -> 128",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,128,16,16]",
+      "detail": [
+        "kernel=4; stride=2; padding=1; bias=False"
+      ],
+      "parameter": "discriminator.2",
+      "kernel_size": 4,
+      "stride": 2,
+      "padding": 1,
+      "bias": false,
+      "parent": "dcgan.d2",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d2.bn",
+      "label": "BatchNorm2d 128",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,128,16,16]",
+      "detail": [
+        "selected training call uses batch statistics"
+      ],
+      "parameter": "discriminator.3",
+      "parent": "dcgan.d2",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d2.leaky",
+      "label": "LeakyReLU 0.2",
+      "kind": "leaky_relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,128,16,16]",
+      "detail": [
+        "inplace=True"
+      ],
+      "negative_slope": 0.2,
+      "parent": "dcgan.d2",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d3",
+      "label": "D stage 3 / 8x8",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [],
+      "parameter_scope": "discriminator.5",
+      "mode": "chain",
+      "parent": "dcgan.discriminator",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d3.conv",
+      "label": "Conv2d 128 -> 256",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [
+        "kernel=4; stride=2; padding=1; bias=False"
+      ],
+      "parameter": "discriminator.5",
+      "kernel_size": 4,
+      "stride": 2,
+      "padding": 1,
+      "bias": false,
+      "parent": "dcgan.d3",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d3.bn",
+      "label": "BatchNorm2d 256",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [
+        "selected training call uses batch statistics"
+      ],
+      "parameter": "discriminator.6",
+      "parent": "dcgan.d3",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d3.leaky",
+      "label": "LeakyReLU 0.2",
+      "kind": "leaky_relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,256,8,8]",
+      "detail": [
+        "inplace=True"
+      ],
+      "negative_slope": 0.2,
+      "parent": "dcgan.d3",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d4",
+      "label": "D stage 4 / 4x4",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [],
+      "parameter_scope": "discriminator.8",
+      "mode": "chain",
+      "parent": "dcgan.discriminator",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d4.conv",
+      "label": "Conv2d 256 -> 512",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "kernel=4; stride=2; padding=1; bias=False"
+      ],
+      "parameter": "discriminator.8",
+      "kernel_size": 4,
+      "stride": 2,
+      "padding": 1,
+      "bias": false,
+      "parent": "dcgan.d4",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d4.bn",
+      "label": "BatchNorm2d 512",
+      "kind": "batch_norm2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "selected training call uses batch statistics"
+      ],
+      "parameter": "discriminator.9",
+      "parent": "dcgan.d4",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d4.leaky",
+      "label": "LeakyReLU 0.2",
+      "kind": "leaky_relu",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,512,4,4]",
+      "detail": [
+        "inplace=True"
+      ],
+      "negative_slope": 0.2,
+      "parent": "dcgan.d4",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d5",
+      "label": "D stage 5 / 1x1",
+      "kind": "group",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,1,1,1]",
+      "detail": [],
+      "parameter_scope": "discriminator.11",
+      "mode": "chain",
+      "parent": "dcgan.discriminator",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d5.conv",
+      "label": "Conv2d 512 -> 1",
+      "kind": "conv2d",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,1,1,1]",
+      "detail": [
+        "kernel=4; stride=1; padding=0; bias=True"
+      ],
+      "parameter": "discriminator.11",
+      "kernel_size": 4,
+      "stride": 1,
+      "padding": 0,
+      "bias": true,
+      "parent": "dcgan.d5",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.d5.sigmoid",
+      "label": "Sigmoid score",
+      "kind": "sigmoid",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.__init__",
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "score: [B,1,1,1]",
+      "detail": [
+        "probability-like binary real/fake score; not class Softmax"
+      ],
+      "parent": "dcgan.d5",
+      "source_evidence": [
+        "E006",
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "dcgan.score",
+      "label": "Returned discriminator score",
+      "kind": "output",
+      "source": [
+        "deeplearning-models-batch2/pytorch_ipynb/gan/dcgan-celeba.py::DCGAN.discriminator_forward"
+      ],
+      "shape": "[B,1,1,1]",
+      "detail": [
+        "discriminator_forward returns pred without flattening",
+        "caller .view(-1), BCELoss and optimizers are outside this drawing"
+      ],
+      "parent": "dcgan.root",
+      "source_evidence": [
+        "E007"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "dcgan.g1:in->dcgan.g1.conv:in:boundary",
+      "src": "dcgan.g1",
+      "dst": "dcgan.g1.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.g1.conv:out->dcgan.g1.bn:in:tensor",
+      "src": "dcgan.g1.conv",
+      "dst": "dcgan.g1.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.g1.bn:out->dcgan.g1.relu:in:tensor",
+      "src": "dcgan.g1.bn",
+      "dst": "dcgan.g1.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.g1.relu:out->dcgan.g1:out:boundary",
+      "src": "dcgan.g1.relu",
+      "dst": "dcgan.g1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.g2:in->dcgan.g2.conv:in:boundary",
+      "src": "dcgan.g2",
+      "dst": "dcgan.g2.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.g2.conv:out->dcgan.g2.bn:in:tensor",
+      "src": "dcgan.g2.conv",
+      "dst": "dcgan.g2.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.g2.bn:out->dcgan.g2.relu:in:tensor",
+      "src": "dcgan.g2.bn",
+      "dst": "dcgan.g2.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.g2.relu:out->dcgan.g2:out:boundary",
+      "src": "dcgan.g2.relu",
+      "dst": "dcgan.g2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.g3:in->dcgan.g3.conv:in:boundary",
+      "src": "dcgan.g3",
+      "dst": "dcgan.g3.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.g3.conv:out->dcgan.g3.bn:in:tensor",
+      "src": "dcgan.g3.conv",
+      "dst": "dcgan.g3.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.g3.bn:out->dcgan.g3.relu:in:tensor",
+      "src": "dcgan.g3.bn",
+      "dst": "dcgan.g3.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.g3.relu:out->dcgan.g3:out:boundary",
+      "src": "dcgan.g3.relu",
+      "dst": "dcgan.g3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.g4:in->dcgan.g4.conv:in:boundary",
+      "src": "dcgan.g4",
+      "dst": "dcgan.g4.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.g4.conv:out->dcgan.g4.bn:in:tensor",
+      "src": "dcgan.g4.conv",
+      "dst": "dcgan.g4.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.g4.bn:out->dcgan.g4.relu:in:tensor",
+      "src": "dcgan.g4.bn",
+      "dst": "dcgan.g4.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.g4.relu:out->dcgan.g4:out:boundary",
+      "src": "dcgan.g4.relu",
+      "dst": "dcgan.g4",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.g5:in->dcgan.g5.conv:in:boundary",
+      "src": "dcgan.g5",
+      "dst": "dcgan.g5.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.g5.conv:out->dcgan.g5.tanh:in:tensor",
+      "src": "dcgan.g5.conv",
+      "dst": "dcgan.g5.tanh",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.g5.tanh:out->dcgan.g5:out:boundary",
+      "src": "dcgan.g5.tanh",
+      "dst": "dcgan.g5",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.generator:in->dcgan.g1:in:boundary",
+      "src": "dcgan.generator",
+      "dst": "dcgan.g1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.g1:out->dcgan.g2:in:tensor",
+      "src": "dcgan.g1",
+      "dst": "dcgan.g2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.g2:out->dcgan.g3:in:tensor",
+      "src": "dcgan.g2",
+      "dst": "dcgan.g3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.g3:out->dcgan.g4:in:tensor",
+      "src": "dcgan.g3",
+      "dst": "dcgan.g4",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.g4:out->dcgan.g5:in:tensor",
+      "src": "dcgan.g4",
+      "dst": "dcgan.g5",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.g5:out->dcgan.generator:out:boundary",
+      "src": "dcgan.g5",
+      "dst": "dcgan.generator",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.d1:in->dcgan.d1.conv:in:boundary",
+      "src": "dcgan.d1",
+      "dst": "dcgan.d1.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.d1.conv:out->dcgan.d1.leaky:in:tensor",
+      "src": "dcgan.d1.conv",
+      "dst": "dcgan.d1.leaky",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.d1.leaky:out->dcgan.d1:out:boundary",
+      "src": "dcgan.d1.leaky",
+      "dst": "dcgan.d1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.d2:in->dcgan.d2.conv:in:boundary",
+      "src": "dcgan.d2",
+      "dst": "dcgan.d2.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.d2.conv:out->dcgan.d2.bn:in:tensor",
+      "src": "dcgan.d2.conv",
+      "dst": "dcgan.d2.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.d2.bn:out->dcgan.d2.leaky:in:tensor",
+      "src": "dcgan.d2.bn",
+      "dst": "dcgan.d2.leaky",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.d2.leaky:out->dcgan.d2:out:boundary",
+      "src": "dcgan.d2.leaky",
+      "dst": "dcgan.d2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.d3:in->dcgan.d3.conv:in:boundary",
+      "src": "dcgan.d3",
+      "dst": "dcgan.d3.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.d3.conv:out->dcgan.d3.bn:in:tensor",
+      "src": "dcgan.d3.conv",
+      "dst": "dcgan.d3.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.d3.bn:out->dcgan.d3.leaky:in:tensor",
+      "src": "dcgan.d3.bn",
+      "dst": "dcgan.d3.leaky",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.d3.leaky:out->dcgan.d3:out:boundary",
+      "src": "dcgan.d3.leaky",
+      "dst": "dcgan.d3",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.d4:in->dcgan.d4.conv:in:boundary",
+      "src": "dcgan.d4",
+      "dst": "dcgan.d4.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.d4.conv:out->dcgan.d4.bn:in:tensor",
+      "src": "dcgan.d4.conv",
+      "dst": "dcgan.d4.bn",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.d4.bn:out->dcgan.d4.leaky:in:tensor",
+      "src": "dcgan.d4.bn",
+      "dst": "dcgan.d4.leaky",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.d4.leaky:out->dcgan.d4:out:boundary",
+      "src": "dcgan.d4.leaky",
+      "dst": "dcgan.d4",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.d5:in->dcgan.d5.conv:in:boundary",
+      "src": "dcgan.d5",
+      "dst": "dcgan.d5.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.d5.conv:out->dcgan.d5.sigmoid:in:tensor",
+      "src": "dcgan.d5.conv",
+      "dst": "dcgan.d5.sigmoid",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.d5.sigmoid:out->dcgan.d5:out:boundary",
+      "src": "dcgan.d5.sigmoid",
+      "dst": "dcgan.d5",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.discriminator:in->dcgan.d1:in:boundary",
+      "src": "dcgan.discriminator",
+      "dst": "dcgan.d1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.d1:out->dcgan.d2:in:tensor",
+      "src": "dcgan.d1",
+      "dst": "dcgan.d2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.d2:out->dcgan.d3:in:tensor",
+      "src": "dcgan.d2",
+      "dst": "dcgan.d3",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.d3:out->dcgan.d4:in:tensor",
+      "src": "dcgan.d3",
+      "dst": "dcgan.d4",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.d4:out->dcgan.d5:in:tensor",
+      "src": "dcgan.d4",
+      "dst": "dcgan.d5",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.d5:out->dcgan.discriminator:out:boundary",
+      "src": "dcgan.d5",
+      "dst": "dcgan.discriminator",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.scoring:in->dcgan.generator:in:boundary",
+      "src": "dcgan.scoring",
+      "dst": "dcgan.generator",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.generator:out->dcgan.fake:in:tensor",
+      "src": "dcgan.generator",
+      "dst": "dcgan.fake",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.fake:out->dcgan.discriminator:in:tensor",
+      "src": "dcgan.fake",
+      "dst": "dcgan.discriminator",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.discriminator:out->dcgan.scoring:out:boundary",
+      "src": "dcgan.discriminator",
+      "dst": "dcgan.scoring",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.root:in->dcgan.noise:in:boundary",
+      "src": "dcgan.root",
+      "dst": "dcgan.noise",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "dcgan.noise:out->dcgan.scoring:in:tensor",
+      "src": "dcgan.noise",
+      "dst": "dcgan.scoring",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.scoring:out->dcgan.score:in:tensor",
+      "src": "dcgan.scoring",
+      "dst": "dcgan.score",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "dcgan.score:out->dcgan.root:out:boundary",
+      "src": "dcgan.score",
+      "dst": "dcgan.root",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    }
+  ],
+  "facts": [
+    "DCGAN defines generator_forward and discriminator_forward but has no forward method.",
+    "The graph is the notebook caller composition for scoring generated images in a generator update, not a fabricated DCGAN.forward.",
+    "discriminator_forward calls the module global model.discriminator(img); the selected notebook global model is assumed to alias the constructed DCGAN instance.",
+    "Generator has five ConvTranspose2d layers, four BatchNorm2d layers, four ReLU calls and a final Tanh.",
+    "Generator channels/spatial sizes are 100@1 -> 512@4 -> 256@8 -> 128@16 -> 64@32 -> 3@64.",
+    "Every generator convolution has bias=False; the first is kernel4/stride1/padding0, the others kernel4/stride2/padding1.",
+    "Discriminator has five Conv2d layers, three BatchNorm2d layers, four LeakyReLU(0.2) calls and a final Sigmoid.",
+    "Discriminator channels/spatial sizes are 3@64 -> 64@32 -> 128@16 -> 256@8 -> 512@4 -> 1@1.",
+    "Discriminator first/last Conv2d use default bias=True; middle three set bias=False. No BN follows first/last Conv2d.",
+    "The selected generator update scores fake_images without detach. The separate discriminator update scores real_images and fake_images.detach().",
+    "Real-image and fake-image calls share the same selected discriminator parameters; they are alternative calls, not a Concat/Add of images.",
+    "The method returns [B,1,1,1]; the caller .view(-1), BCELoss labels and optimizer steps are outside this graph.",
+    "BatchNorm uses training batch statistics in the selected call; a monitoring generator-only call is a different scope.",
+    "Intermediate same-family stages are folded in detailed view; the IR retains every parameterized/functional module call."
+  ],
+  "corrections": [
+    "Do not draw a single DCGAN.forward: this class exposes two custom entry methods, composed only by the notebook caller.",
+    "Keep the source global model.discriminator receiver visible; do not silently rewrite it to self.discriminator.",
+    "Do not fuse real and generated images into one simultaneous dataflow input; real scoring is a separate call.",
+    "Do not place detach on the selected generator update path; detach appears on the fake branch of the discriminator update.",
+    "Generator output uses Tanh and discriminator output uses Sigmoid; they are different activation/range semantics.",
+    "Respect the asymmetry in BatchNorm and convolution bias placement; textbook defaults are not a substitute for this constructor.",
+    "No model-specific reference PNG is supplied; source structure is rendered with the shared Transformer theme."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations"
+}

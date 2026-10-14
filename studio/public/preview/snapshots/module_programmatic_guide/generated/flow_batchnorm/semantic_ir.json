@@ -1,0 +1,687 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "flow_batchnorm",
+  "profile": {
+    "num_inputs": 4,
+    "mode": "direct",
+    "training": true,
+    "momentum": 0.0,
+    "epsilon": 1e-05,
+    "parameters": [
+      "log_gamma",
+      "beta"
+    ],
+    "buffers": [
+      "running_mean",
+      "running_var"
+    ],
+    "det_shape": [
+      1
+    ],
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "BatchNormFlow direct training profile. Evaluation reads running statistics; inverse training requires saved batch statistics.",
+    "source_contracts": [
+      [
+        "BatchNormFlow.forward",
+        "(inputs - self.batch_mean).pow(2).mean(0) + self.eps"
+      ],
+      [
+        "BatchNormFlow.forward",
+        "torch.exp(self.log_gamma) * x_hat + self.beta"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "ikostrikov/pytorch-flows",
+    "commit": "bf12ed91b86867b38d74982f5e2d44c248604df9",
+    "snapshot": "c0ebb6c1af0b9d8f0b8140bbc16c5cf7122408fa79a5b25da427fac8d15d657a"
+  },
+  "nodes": [
+    {
+      "id": "flow_batchnorm.root",
+      "label": "BatchNormFlow / affine + logdet",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::BatchNormFlow.__init__",
+        "density-flow-modules/flows.py::BatchNormFlow.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "flow_batchnorm.x"
+        ],
+        [
+          "flow_batchnorm.body"
+        ],
+        [
+          "flow_batchnorm.y",
+          "flow_batchnorm.ld"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "flow_batchnorm.x",
+      "label": "Batch input x",
+      "kind": "input",
+      "source": [
+        "density-flow-modules/flows.py::BatchNormFlow.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parent": "flow_batchnorm.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "flow_batchnorm.body",
+      "label": "BatchNormFlow module",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::BatchNormFlow.__init__",
+        "density-flow-modules/flows.py::BatchNormFlow.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "flow_batchnorm.stats"
+        ],
+        [
+          "flow_batchnorm.normalize",
+          "flow_batchnorm.running",
+          "flow_batchnorm.det"
+        ],
+        [
+          "flow_batchnorm.affine"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "flow_batchnorm.root",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "flow_batchnorm.stats",
+      "label": "Training statistics",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::BatchNormFlow.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "port_bindings": {
+        "mean": {
+          "node": "flow_batchnorm.mean",
+          "port": "out"
+        },
+        "var": {
+          "node": "flow_batchnorm.var",
+          "port": "out"
+        }
+      },
+      "port_binding_evidence": {
+        "mean": {
+          "source": [
+            "density-flow-modules/flows.py::BatchNormFlow.forward"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        },
+        "var": {
+          "source": [
+            "density-flow-modules/flows.py::BatchNormFlow.forward"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        }
+      },
+      "parent": "flow_batchnorm.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mean",
+        "var"
+      ]
+    },
+    {
+      "id": "flow_batchnorm.mean",
+      "label": "mean over batch",
+      "kind": "statistics",
+      "source": [
+        "density-flow-modules/flows.py::BatchNormFlow.forward"
+      ],
+      "shape": "[4]",
+      "detail": [],
+      "expression": "inputs.mean(0)",
+      "axes": [
+        0
+      ],
+      "parent": "flow_batchnorm.stats",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "flow_batchnorm.var",
+      "label": "mean((x-mean)^2) + eps",
+      "kind": "statistics",
+      "source": [
+        "density-flow-modules/flows.py::BatchNormFlow.forward"
+      ],
+      "shape": "[4]",
+      "detail": [],
+      "expression": "(inputs - self.batch_mean).pow(2).mean(0) + self.eps",
+      "epsilon": 1e-05,
+      "biased": true,
+      "parent": "flow_batchnorm.stats",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "flow_batchnorm.running",
+      "label": "Update persistent statistics",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::BatchNormFlow.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "port_bindings": {
+        "mean": {
+          "node": "flow_batchnorm.ema",
+          "port": "mean"
+        },
+        "var": {
+          "node": "flow_batchnorm.ema",
+          "port": "var"
+        }
+      },
+      "port_binding_evidence": {
+        "mean": {
+          "source": [
+            "density-flow-modules/flows.py::BatchNormFlow.__init__",
+            "density-flow-modules/flows.py::BatchNormFlow.forward"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        },
+        "var": {
+          "source": [
+            "density-flow-modules/flows.py::BatchNormFlow.__init__",
+            "density-flow-modules/flows.py::BatchNormFlow.forward"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        }
+      },
+      "parent": "flow_batchnorm.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mean",
+        "var"
+      ]
+    },
+    {
+      "id": "flow_batchnorm.ema",
+      "label": "old*m + batch*(1-m)",
+      "kind": "control",
+      "source": [
+        "density-flow-modules/flows.py::BatchNormFlow.__init__",
+        "density-flow-modules/flows.py::BatchNormFlow.forward"
+      ],
+      "shape": "[4]",
+      "detail": [],
+      "buffers": [
+        "running_mean",
+        "running_var"
+      ],
+      "momentum": 0.0,
+      "old_weight": 0.0,
+      "new_weight": 1.0,
+      "parent": "flow_batchnorm.running",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mean",
+        "var"
+      ]
+    },
+    {
+      "id": "flow_batchnorm.normalize",
+      "label": "Standardize current batch",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::BatchNormFlow.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "port_bindings": {
+        "mean": {
+          "node": "flow_batchnorm.norm",
+          "port": "mean"
+        },
+        "var": {
+          "node": "flow_batchnorm.norm",
+          "port": "var"
+        }
+      },
+      "port_binding_evidence": {
+        "mean": {
+          "source": [
+            "density-flow-modules/flows.py::BatchNormFlow.forward"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        },
+        "var": {
+          "source": [
+            "density-flow-modules/flows.py::BatchNormFlow.forward"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        }
+      },
+      "parent": "flow_batchnorm.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mean",
+        "var"
+      ]
+    },
+    {
+      "id": "flow_batchnorm.norm",
+      "label": "(inputs-mean) / sqrt(var)",
+      "kind": "norm",
+      "source": [
+        "density-flow-modules/flows.py::BatchNormFlow.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "(inputs - mean) / var.sqrt()",
+      "parent": "flow_batchnorm.normalize",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "mean",
+        "var"
+      ]
+    },
+    {
+      "id": "flow_batchnorm.affine",
+      "label": "Learned logscale / shift",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::BatchNormFlow.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "flow_batchnorm.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "flow_batchnorm.out",
+      "label": "exp(log_gamma)*x_hat + beta",
+      "kind": "multiply",
+      "source": [
+        "density-flow-modules/flows.py::BatchNormFlow.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "expression": "torch.exp(self.log_gamma) * x_hat + self.beta",
+      "parameters": [
+        "log_gamma",
+        "beta"
+      ],
+      "parent": "flow_batchnorm.affine",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "flow_batchnorm.det",
+      "label": "Jacobian contribution",
+      "kind": "group",
+      "source": [
+        "density-flow-modules/flows.py::BatchNormFlow.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "port_bindings": {
+        "var": {
+          "node": "flow_batchnorm.detop",
+          "port": "var"
+        }
+      },
+      "port_binding_evidence": {
+        "var": {
+          "source": [
+            "density-flow-modules/flows.py::BatchNormFlow.forward"
+          ],
+          "reason": "Reviewed source operand/result; target AST symbol is carried by the child."
+        }
+      },
+      "parent": "flow_batchnorm.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "var"
+      ]
+    },
+    {
+      "id": "flow_batchnorm.detop",
+      "label": "sum(log_gamma - .5*log(var))",
+      "kind": "density",
+      "source": [
+        "density-flow-modules/flows.py::BatchNormFlow.forward"
+      ],
+      "shape": "[1]",
+      "detail": [],
+      "expression": "(self.log_gamma - 0.5 * torch.log(var)).sum(-1, keepdim=True)",
+      "parameters": [
+        "log_gamma"
+      ],
+      "parent": "flow_batchnorm.det",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "var"
+      ]
+    },
+    {
+      "id": "flow_batchnorm.y",
+      "label": "Normalized affine y",
+      "kind": "output",
+      "source": [
+        "density-flow-modules/flows.py::BatchNormFlow.forward"
+      ],
+      "shape": "[B,4]",
+      "detail": [],
+      "parent": "flow_batchnorm.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "flow_batchnorm.ld",
+      "label": "Logdet / length-one tensor",
+      "kind": "output",
+      "source": [
+        "density-flow-modules/flows.py::BatchNormFlow.forward"
+      ],
+      "shape": "[1]",
+      "detail": [],
+      "parent": "flow_batchnorm.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "flow_batchnorm.stats:in->flow_batchnorm.mean:in:boundary",
+      "src": "flow_batchnorm.stats",
+      "dst": "flow_batchnorm.mean",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_batchnorm.mean:out->flow_batchnorm.var:in:tensor",
+      "src": "flow_batchnorm.mean",
+      "dst": "flow_batchnorm.var",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "flow_batchnorm.var:out->flow_batchnorm.stats:out:boundary",
+      "src": "flow_batchnorm.var",
+      "dst": "flow_batchnorm.stats",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_batchnorm.running:in->flow_batchnorm.ema:in:boundary",
+      "src": "flow_batchnorm.running",
+      "dst": "flow_batchnorm.ema",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_batchnorm.ema:out->flow_batchnorm.running:out:boundary",
+      "src": "flow_batchnorm.ema",
+      "dst": "flow_batchnorm.running",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_batchnorm.normalize:in->flow_batchnorm.norm:in:boundary",
+      "src": "flow_batchnorm.normalize",
+      "dst": "flow_batchnorm.norm",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_batchnorm.norm:out->flow_batchnorm.normalize:out:boundary",
+      "src": "flow_batchnorm.norm",
+      "dst": "flow_batchnorm.normalize",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_batchnorm.affine:in->flow_batchnorm.out:in:boundary",
+      "src": "flow_batchnorm.affine",
+      "dst": "flow_batchnorm.out",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_batchnorm.out:out->flow_batchnorm.affine:out:boundary",
+      "src": "flow_batchnorm.out",
+      "dst": "flow_batchnorm.affine",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_batchnorm.det:in->flow_batchnorm.detop:in:boundary",
+      "src": "flow_batchnorm.det",
+      "dst": "flow_batchnorm.detop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_batchnorm.detop:out->flow_batchnorm.det:out:boundary",
+      "src": "flow_batchnorm.detop",
+      "dst": "flow_batchnorm.det",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "flow_batchnorm.x:out->flow_batchnorm.stats:in:tensor",
+      "src": "flow_batchnorm.x",
+      "dst": "flow_batchnorm.stats",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "flow_batchnorm.x:out->flow_batchnorm.normalize:in:tensor",
+      "src": "flow_batchnorm.x",
+      "dst": "flow_batchnorm.normalize",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "flow_batchnorm.normalize:out->flow_batchnorm.affine:in:tensor",
+      "src": "flow_batchnorm.normalize",
+      "dst": "flow_batchnorm.affine",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "flow_batchnorm.affine:out->flow_batchnorm.y:in:tensor",
+      "src": "flow_batchnorm.affine",
+      "dst": "flow_batchnorm.y",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "flow_batchnorm.det:out->flow_batchnorm.ld:in:tensor",
+      "src": "flow_batchnorm.det",
+      "dst": "flow_batchnorm.ld",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "flow_batchnorm.x:out->flow_batchnorm.var:input:tensor",
+      "src": "flow_batchnorm.x",
+      "dst": "flow_batchnorm.var",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "flow_batchnorm.stats:mean->flow_batchnorm.normalize:mean:statistics",
+      "src": "flow_batchnorm.stats",
+      "dst": "flow_batchnorm.normalize",
+      "src_port": "mean",
+      "dst_port": "mean",
+      "role": "statistics"
+    },
+    {
+      "id": "flow_batchnorm.stats:var->flow_batchnorm.normalize:var:statistics",
+      "src": "flow_batchnorm.stats",
+      "dst": "flow_batchnorm.normalize",
+      "src_port": "var",
+      "dst_port": "var",
+      "role": "statistics"
+    },
+    {
+      "id": "flow_batchnorm.stats:mean->flow_batchnorm.running:mean:state_update",
+      "src": "flow_batchnorm.stats",
+      "dst": "flow_batchnorm.running",
+      "src_port": "mean",
+      "dst_port": "mean",
+      "role": "state_update"
+    },
+    {
+      "id": "flow_batchnorm.stats:var->flow_batchnorm.running:var:state_update",
+      "src": "flow_batchnorm.stats",
+      "dst": "flow_batchnorm.running",
+      "src_port": "var",
+      "dst_port": "var",
+      "role": "state_update"
+    },
+    {
+      "id": "flow_batchnorm.stats:var->flow_batchnorm.det:var:statistics",
+      "src": "flow_batchnorm.stats",
+      "dst": "flow_batchnorm.det",
+      "src_port": "var",
+      "dst_port": "var",
+      "role": "statistics"
+    }
+  ],
+  "facts": [
+    "Mean/variance are vectors of length D. Source returns determinant shape [1], broadcastable across B.",
+    "Variance uses biased mean squared deviations and adds eps before sqrt; momentum weights the old value, unlike common PyTorch momentum naming.",
+    "State-update arrows indicate mutation; they are not the input used to normalize this batch.",
+    "Mean and variance have separate source producers and consumer ports; the variance glyph does not output a mean_var bundle."
+  ],
+  "corrections": [
+    "Do not invent unbiased variance or per-example [B,1] determinant as the literal source return."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

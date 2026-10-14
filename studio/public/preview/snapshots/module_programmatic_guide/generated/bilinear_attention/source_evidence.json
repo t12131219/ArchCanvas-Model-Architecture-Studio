@@ -1,0 +1,104 @@
+{
+  "source_project": "ban-modules",
+  "repository": "jnhwkim/ban-vqa",
+  "commit": "ef4cc36d63f6b31344301ac1bd91afd807d132e5",
+  "source_snapshot_sha256": "a5191c9c4202d0077f095d63d65623fc13dc06628d644f21a8b4ba18fe69a443",
+  "entry": "ban-modules/attention.py::BiAttention.forward_all",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "ban-modules/LICENSE": {
+      "sha256": "f406a188239e65814d868c5ab002feffd0b59ee5031ea95af2cd5dcce39b339f",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/jnhwkim/ban-vqa/ef4cc36d63f6b31344301ac1bd91afd807d132e5/LICENSE",
+      "derived_from": null
+    },
+    "ban-modules/attention.py": {
+      "sha256": "da2acf00a83fb5bb0c72f73fd90d2c2200bfdc3c001689d344b529c81c02ff93",
+      "lines": 44,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/jnhwkim/ban-vqa/ef4cc36d63f6b31344301ac1bd91afd807d132e5/attention.py",
+      "derived_from": null
+    },
+    "ban-modules/bc.py": {
+      "sha256": "f3996f891abbef9b5a15248ac1cbe8282b6d604ce25c0446356b76ad6fd4ae4a",
+      "lines": 78,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/jnhwkim/ban-vqa/ef4cc36d63f6b31344301ac1bd91afd807d132e5/bc.py",
+      "derived_from": null
+    },
+    "ban-modules/fc.py": {
+      "sha256": "bf3d9b607505765c3e539397ef4b67e7272040d71b192c3adf6726cc0803a654",
+      "lines": 43,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/jnhwkim/ban-vqa/ef4cc36d63f6b31344301ac1bd91afd807d132e5/fc.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "ban-modules/attention.py::BiAttention.__init__": {
+      "path": "ban-modules/attention.py",
+      "symbol": "BiAttention.__init__",
+      "start": 16,
+      "end": 21,
+      "snippet": "    def __init__(self, x_dim, y_dim, z_dim, glimpse, dropout=[.2,.5]):\n        super(BiAttention, self).__init__()\n\n        self.glimpse = glimpse\n        self.logits = weight_norm(BCNet(x_dim, y_dim, z_dim, glimpse, dropout=dropout, k=3), \\\n            name='h_mat', dim=None)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "ban-modules/attention.py::BiAttention.forward_all": {
+      "path": "ban-modules/attention.py",
+      "symbol": "BiAttention.forward_all",
+      "start": 31,
+      "end": 44,
+      "snippet": "    def forward_all(self, v, q, v_mask=True, logit=False, mask_with=-float('inf')):\n        v_num = v.size(1)\n        q_num = q.size(1)\n        logits = self.logits(v,q) # b x g x v x q\n\n        if v_mask:\n            mask = (0 == v.abs().sum(2)).unsqueeze(1).unsqueeze(3).expand(logits.size())\n            logits.data.masked_fill_(mask.data, mask_with)\n\n        if not logit:\n            p = nn.functional.softmax(logits.view(-1, self.glimpse, v_num * q_num), 2)\n            return p.view(-1, self.glimpse, v_num, q_num), logits\n\n        return logits",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "ban-modules/bc.py::BCNet.__init__": {
+      "path": "ban-modules/bc.py",
+      "symbol": "BCNet.__init__",
+      "start": 19,
+      "end": 39,
+      "snippet": "    def __init__(self, v_dim, q_dim, h_dim, h_out, act='ReLU', dropout=[.2,.5], k=3):\n        super(BCNet, self).__init__()\n        \n        self.c = 32\n        self.k = k\n        self.v_dim = v_dim; self.q_dim = q_dim\n        self.h_dim = h_dim; self.h_out = h_out\n\n        self.v_net = FCNet([v_dim, h_dim * self.k], act=act, dropout=dropout[0])\n        self.q_net = FCNet([q_dim, h_dim * self.k], act=act, dropout=dropout[0])\n        self.dropout = nn.Dropout(dropout[1]) # attention\n        if 1 < k:\n            self.p_net = nn.AvgPool1d(self.k, stride=self.k)\n        \n        if None == h_out:\n            pass\n        elif h_out <= self.c:\n            self.h_mat = nn.Parameter(torch.Tensor(1, h_out, 1, h_dim * self.k).normal_())\n            self.h_bias = nn.Parameter(torch.Tensor(1, h_out, 1, 1).normal_())\n        else:\n            self.h_net = weight_norm(nn.Linear(h_dim * self.k, h_out), dim=None)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "ban-modules/bc.py::BCNet.forward": {
+      "path": "ban-modules/bc.py",
+      "symbol": "BCNet.forward",
+      "start": 41,
+      "end": 62,
+      "snippet": "    def forward(self, v, q):\n        if None == self.h_out:\n            v_ = self.v_net(v)\n            q_ = self.q_net(q)\n            logits = torch.einsum('bvk,bqk->bvqk', (v_, q_))\n            return logits\n\n        # low-rank bilinear pooling using einsum\n        elif self.h_out <= self.c:\n            v_ = self.dropout(self.v_net(v))\n            q_ = self.q_net(q)\n            logits = torch.einsum('xhyk,bvk,bqk->bhvq', (self.h_mat, v_, q_)) + self.h_bias\n            return logits # b x h_out x v x q\n\n        # batch outer product, linear projection\n        # memory efficient but slow computation\n        else: \n            v_ = self.dropout(self.v_net(v)).transpose(1,2).unsqueeze(3)\n            q_ = self.q_net(q).transpose(1,2).unsqueeze(2)\n            d_ = torch.matmul(v_, q_) # b x h_dim x v x q\n            logits = self.h_net(d_.transpose(1,2).transpose(2,3)) # b x v x q x h_out\n            return logits.transpose(2,3).transpose(1,2) # b x h_out x v x q",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "ban-modules/fc.py::FCNet.__init__": {
+      "path": "ban-modules/fc.py",
+      "symbol": "FCNet.__init__",
+      "start": 13,
+      "end": 31,
+      "snippet": "    def __init__(self, dims, act='ReLU', dropout=0):\n        super(FCNet, self).__init__()\n\n        layers = []\n        for i in range(len(dims)-2):\n            in_dim = dims[i]\n            out_dim = dims[i+1]\n            if 0 < dropout:\n                layers.append(nn.Dropout(dropout))\n            layers.append(weight_norm(nn.Linear(in_dim, out_dim), dim=None))\n            if ''!=act:\n                layers.append(getattr(nn, act)())\n        if 0 < dropout:\n            layers.append(nn.Dropout(dropout))\n        layers.append(weight_norm(nn.Linear(dims[-2], dims[-1]), dim=None))\n        if ''!=act:\n            layers.append(getattr(nn, act)())\n\n        self.main = nn.Sequential(*layers)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E005"
+    },
+    "ban-modules/fc.py::FCNet.forward": {
+      "path": "ban-modules/fc.py",
+      "symbol": "FCNet.forward",
+      "start": 33,
+      "end": 34,
+      "snippet": "    def forward(self, x):\n        return self.main(x)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E006"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "ban-modules/LICENSE"
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "authority": "Prototype verification only; CUA UI actions and Node test output, not REA runtime evidence",
+  "checks": [
+    {
+      "check": "move obstacle keeps current edge paths",
+      "status": "passed",
+      "sources": [
+        "initial.json",
+        "moved-before-apply.json"
+      ],
+      "detail": "O1 node changed; all 11 edge display paths unchanged until Apply"
+    },
+    {
+      "check": "Apply reroutes and keeps nodes",
+      "status": "passed",
+      "sources": [
+        "moved-before-apply.json",
+        "moved-after-apply.json"
+      ],
+      "detail": "3 of 11 display paths changed; all node positions remained unchanged"
+    },
+    {
+      "check": "selected scope only changes selected new edge",
+      "status": "passed",
+      "sources": [
+        "created-connection.json",
+        "selected-edge-routed.json"
+      ],
+      "detail": "11 existing edges remained unchanged; new edge was rerouted"
+    },
+    {
+      "check": "arrow change preserves route geometry",
+      "status": "passed",
+      "sources": [
+        "arrow-target-raw.json",
+        "arrow-both-raw.json"
+      ],
+      "detail": "Uncropped route geometry unchanged on all edges; e4 arrow count 1 to 2"
+    },
+    {
+      "check": "undo redo arrow style",
+      "status": "passed",
+      "sources": [
+        "undo-arrow.json",
+        "redo-arrow.json"
+      ],
+      "detail": "arrow counts restored to 1 then 2"
+    },
+    {
+      "check": "endpoint reconnect reroutes one edge",
+      "status": "passed",
+      "sources": [
+        "rewired-before-apply.json",
+        "rewired-after-apply.json"
+      ],
+      "detail": "e9 changed target from E to G via pointer drag; selected scope applies"
+    },
+    {
+      "check": "manual waypoint is retained by route",
+      "status": "passed",
+      "sources": [
+        "bend-edited.json",
+        "bend-preserved.json"
+      ],
+      "detail": "waypoint near (650.73,483.49) appears on orthogonal path"
+    },
+    {
+      "check": "curved style produces Q commands",
+      "status": "passed",
+      "sources": [
+        "curved.json"
+      ],
+      "detail": "independent reconstruction uses quadratic corner smoothing; this differs from source render sampling"
+    },
+    {
+      "check": "geometry oracle tests",
+      "status": "passed",
+      "sources": [
+        "router-test-output.txt"
+      ],
+      "detail": "13 named geometry tests including captured 13-edge overlap regression and source/target reversal regressions"
+    },
+    {
+      "check": "port-to-port drag creates fixed connection",
+      "status": "passed",
+      "sources": [
+        "port-drag-dom.txt",
+        "prototype-port-drag.png"
+      ],
+      "detail": "Pointer drag F-right to G-left created e101; Apply retained right fixed source and left fixed target"
+    },
+    {
+      "check": "SVG download delivery",
+      "status": "unverified",
+      "detail": "Download wait timed out. Export button and serializer implementation exist; no downloaded artifact asserted."
+    },
+    {
+      "check": "endpoint turns have no retraced spurs",
+      "status": "passed",
+      "sources": [
+        "turn-spur-fixed.json",
+        "turn-spur-fixed.png",
+        "router-test-output.txt"
+      ],
+      "detail": "Source moved to approximately (271,449), Apply routed all 11 edges; independent check of raw SVG polylines found no collinear immediate reversals"
+    },
+    {
+      "check": "captured layout has no collinear shared wires",
+      "status": "passed",
+      "sources": [
+        "overlap-user-state.json",
+        "overlap-fixture.json",
+        "overlap-fixed.json",
+        "overlap-fixed.png"
+      ],
+      "detail": "13 edges successfully routed; 39.26 px and 14 px shared middle segments eliminated; independent browser SVG check found zero collinear overlaps"
+    }
+  ]
+}

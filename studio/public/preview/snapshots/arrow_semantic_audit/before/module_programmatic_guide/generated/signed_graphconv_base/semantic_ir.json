@@ -1,0 +1,422 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "signed_graphconv_base",
+  "profile": {
+    "feature_dim": 8,
+    "in_channels": 16,
+    "out_channels": 4,
+    "norm": true,
+    "norm_embed": true,
+    "bias": true,
+    "self_loops": "remove only",
+    "add_self_loops": false,
+    "selected_configuration": "explicit static module profile; not a runtime observation",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "benedekrozemberczki/SGCN",
+    "commit": "c01e930c02968ea5b0eb72f1fe93eaab99e46eea",
+    "snapshot": "2796e2641cff6ac05598686c4f66c26abf749de03ccc8b3b11074555460c3261"
+  },
+  "nodes": [
+    {
+      "id": "signed_graphconv_base.root",
+      "label": "Signed graph first-layer convolution / module only",
+      "kind": "group",
+      "source": [
+        "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolutionBase.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "signed_graphconv_base.x",
+          "signed_graphconv_base.edges",
+          "signed_graphconv_base.weight",
+          "signed_graphconv_base.bias"
+        ],
+        [
+          "signed_graphconv_base.module"
+        ],
+        [
+          "signed_graphconv_base.output"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "signed_graphconv_base.x",
+      "label": "Node features x",
+      "kind": "input",
+      "source": [
+        "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolutionBase.forward"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "parent": "signed_graphconv_base.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "signed_graphconv_base.edges",
+      "label": "Supplied single edge set",
+      "kind": "control",
+      "source": [
+        "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolutionBase.forward"
+      ],
+      "shape": "[2,E]",
+      "detail": [],
+      "parent": "signed_graphconv_base.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "signed_graphconv_base.weight",
+      "label": "Owned weight W",
+      "kind": "parameter",
+      "source": [
+        "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolution.__init__"
+      ],
+      "shape": "[16,4]",
+      "detail": [],
+      "parameter": "weight",
+      "parent": "signed_graphconv_base.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "signed_graphconv_base.bias",
+      "label": "Owned bias b",
+      "kind": "parameter",
+      "source": [
+        "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolution.__init__"
+      ],
+      "shape": "[4]",
+      "detail": [],
+      "parameter": "bias",
+      "parent": "signed_graphconv_base.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "signed_graphconv_base.module",
+      "label": "Signed graph first-layer convolution / operators",
+      "kind": "group",
+      "source": [
+        "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolutionBase.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "signed_graphconv_base.remove"
+        ],
+        [
+          "signed_graphconv_base.mean"
+        ],
+        [
+          "signed_graphconv_base.concat"
+        ],
+        [
+          "signed_graphconv_base.project"
+        ],
+        [
+          "signed_graphconv_base.biasadd"
+        ],
+        [
+          "signed_graphconv_base.normalize"
+        ]
+      ],
+      "rank_gap": 72,
+      "column_gap": 64,
+      "parent": "signed_graphconv_base.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "signed_graphconv_base.remove",
+      "label": "REMOVE self loops only",
+      "kind": "control",
+      "source": [
+        "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolutionBase.forward"
+      ],
+      "shape": "[2,E_without_self]",
+      "detail": [],
+      "remove_self_loops": true,
+      "add_self_loops": false,
+      "parent": "signed_graphconv_base.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "edges"
+      ]
+    },
+    {
+      "id": "signed_graphconv_base.mean",
+      "label": "Mean of neighbors without self",
+      "kind": "mean",
+      "source": [
+        "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolutionBase.forward"
+      ],
+      "shape": "[N,8]",
+      "detail": [],
+      "source_state": "x",
+      "reduction": "mean",
+      "opaque_scatter": true,
+      "parent": "signed_graphconv_base.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "edges",
+        "features"
+      ]
+    },
+    {
+      "id": "signed_graphconv_base.concat",
+      "label": "Concat NEIGHBOR then SELF",
+      "kind": "cat",
+      "source": [
+        "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolutionBase.forward"
+      ],
+      "shape": "[N,16]",
+      "detail": [],
+      "ordered_operands": [
+        "neighbor_mean",
+        "x"
+      ],
+      "dim": 1,
+      "parent": "signed_graphconv_base.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "neighbors",
+        "self"
+      ]
+    },
+    {
+      "id": "signed_graphconv_base.project",
+      "label": "Concatenated features @ W",
+      "kind": "matmul",
+      "source": [
+        "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolutionBase.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "parent": "signed_graphconv_base.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "features",
+        "W"
+      ]
+    },
+    {
+      "id": "signed_graphconv_base.biasadd",
+      "label": "Add owned bias",
+      "kind": "add",
+      "source": [
+        "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolutionBase.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "parent": "signed_graphconv_base.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "features",
+        "bias"
+      ]
+    },
+    {
+      "id": "signed_graphconv_base.normalize",
+      "label": "L2 normalize each node",
+      "kind": "normalize",
+      "source": [
+        "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolutionBase.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "p": 2,
+      "dim": -1,
+      "parent": "signed_graphconv_base.module",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "signed_graphconv_base.output",
+      "label": "Selected module output",
+      "kind": "output",
+      "source": [
+        "signed-gcn-modules/src/signedsageconvolution.py::SignedSAGEConvolutionBase.forward"
+      ],
+      "shape": "[N,4]",
+      "detail": [],
+      "parent": "signed_graphconv_base.root",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "signed_graphconv_base.edges:out->signed_graphconv_base.remove:edges:topology",
+      "src": "signed_graphconv_base.edges",
+      "dst": "signed_graphconv_base.remove",
+      "src_port": "out",
+      "dst_port": "edges",
+      "role": "topology"
+    },
+    {
+      "id": "signed_graphconv_base.remove:out->signed_graphconv_base.mean:edges:topology",
+      "src": "signed_graphconv_base.remove",
+      "dst": "signed_graphconv_base.mean",
+      "src_port": "out",
+      "dst_port": "edges",
+      "role": "topology"
+    },
+    {
+      "id": "signed_graphconv_base.x:out->signed_graphconv_base.mean:features:tensor",
+      "src": "signed_graphconv_base.x",
+      "dst": "signed_graphconv_base.mean",
+      "src_port": "out",
+      "dst_port": "features",
+      "role": "tensor"
+    },
+    {
+      "id": "signed_graphconv_base.mean:out->signed_graphconv_base.concat:neighbors:tensor",
+      "src": "signed_graphconv_base.mean",
+      "dst": "signed_graphconv_base.concat",
+      "src_port": "out",
+      "dst_port": "neighbors",
+      "role": "tensor"
+    },
+    {
+      "id": "signed_graphconv_base.x:out->signed_graphconv_base.concat:self:retained_value",
+      "src": "signed_graphconv_base.x",
+      "dst": "signed_graphconv_base.concat",
+      "src_port": "out",
+      "dst_port": "self",
+      "role": "retained_value"
+    },
+    {
+      "id": "signed_graphconv_base.concat:out->signed_graphconv_base.project:features:tensor",
+      "src": "signed_graphconv_base.concat",
+      "dst": "signed_graphconv_base.project",
+      "src_port": "out",
+      "dst_port": "features",
+      "role": "tensor"
+    },
+    {
+      "id": "signed_graphconv_base.weight:out->signed_graphconv_base.project:W:parameter_operand",
+      "src": "signed_graphconv_base.weight",
+      "dst": "signed_graphconv_base.project",
+      "src_port": "out",
+      "dst_port": "W",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "signed_graphconv_base.project:out->signed_graphconv_base.biasadd:features:tensor",
+      "src": "signed_graphconv_base.project",
+      "dst": "signed_graphconv_base.biasadd",
+      "src_port": "out",
+      "dst_port": "features",
+      "role": "tensor"
+    },
+    {
+      "id": "signed_graphconv_base.bias:out->signed_graphconv_base.biasadd:bias:parameter_operand",
+      "src": "signed_graphconv_base.bias",
+      "dst": "signed_graphconv_base.biasadd",
+      "src_port": "out",
+      "dst_port": "bias",
+      "role": "parameter_operand"
+    },
+    {
+      "id": "signed_graphconv_base.biasadd:out->signed_graphconv_base.normalize:in:tensor",
+      "src": "signed_graphconv_base.biasadd",
+      "dst": "signed_graphconv_base.normalize",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "signed_graphconv_base.normalize:out->signed_graphconv_base.output:in:tensor",
+      "src": "signed_graphconv_base.normalize",
+      "dst": "signed_graphconv_base.output",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Base layer removes self loops, aggregates one feature state over one edge set, and concatenates neighbor mean then original x.",
+    "There is no add_self_loops call in Base forward. This is a real semantic difference from the Deep signed layer.",
+    "Owned weight[16,4], bias[4] and final L2 normalization are selected; outside caller may instantiate separate Base layers for different edge types.",
+    "Graph ranks only allocate space. Explicit edges supply real operands; no upstream code is imported or executed."
+  ],
+  "corrections": [
+    "Do not copy the Deep two-state/three-operand structure or add self loops absent from this module."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

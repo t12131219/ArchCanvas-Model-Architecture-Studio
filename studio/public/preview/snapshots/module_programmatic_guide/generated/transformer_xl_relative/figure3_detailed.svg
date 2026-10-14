@@ -1,0 +1,614 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2366" height="4831" viewBox="0 0 2366 4831">
+<defs xmlns="http://www.w3.org/2000/svg"><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#263348" /></marker></defs>
+
+<rect xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" fill="white" />
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="source-binding">{"model": "transformer_xl_relative", "source_snapshot_sha256": "7636308c1d47cacc643fe001e71f31da745c7a23e46b83c12eb12e4c44313381", "repository": "kimiyoung/transformer-xl", "commit": "44781ed21dbaec88b280f74d9ae2877f52b492a5", "semantic_ir_sha256": "d55abf8005fb0077688fcc6cb54ea3c783c86861f2e16d9ca4b101e381f0719d", "view": 2}</metadata>
+
+<metadata xmlns="http://www.w3.org/2000/svg" id="diagram-style">{"name": "transformer-paper-model-zoo", "version": 1, "font": "DejaVu Sans, Arial, sans-serif", "text": "#172336", "line": "#263348", "palette": {"root": "#ffffff", "group": "#ffffff", "inner": "#fffaf6", "layer": "#ffffff", "encoder": "#e7f5fe", "decoder": "#fff0f5", "embedding": "#f8d4e1", "input": "#f8d4e1", "output": "#dfdff8", "attention": "#ffddb3", "ffn": "#c8ebfb", "mixing": "#c8ebfb", "conv": "#c8ebfb", "pool": "#d6f0df", "norm": "#fff6bd", "concat": "#fff6bd", "linear": "#dfdff8", "softmax": "#c9f1cd", "sampling": "#c9f1cd", "recurrent": "#ffddb3", "decomposition": "#d6f0df", "tensor": "#cdeaf8", "activation": "#f3f5f7", "control": "#f3f5f7"}, "typography": {"title": 30, "subtitle": 16, "module": 22, "inner": 20, "operator": 20, "shape": 16, "detail": 14, "evidence": 12, "footer": 14, "line_height": 1.18}, "fill_width_nodes": [], "visual_roles": {"transformer_xl_relative.root": "root", "txl.ac": "tensor", "txl.aggregate": "tensor", "txl.bd": "tensor", "txl.biases": "input", "txl.body": "encoder", "txl.cat": "norm", "txl.dropatt": "control", "txl.external_mask": "input", "txl.k": "tensor", "txl.mask": "control", "txl.memory": "input", "txl.merge": "tensor", "txl.norm": "norm", "txl.odrop": "control", "txl.olinear": "linear", "txl.output": "output", "txl.pad": "norm", "txl.position": "input", "txl.q": "tensor", "txl.qkv": "linear", "txl.r": "ffn", "txl.residual": "norm", "txl.rlinear": "linear", "txl.rr": "norm", "txl.rview": "tensor", "txl.rw": "norm", "txl.scale": "tensor", "txl.score": "norm", "txl.shift": "attention", "txl.shift_slice": "tensor", "txl.shift_view": "tensor", "txl.softmax": "softmax", "txl.split": "tensor", "txl.tail": "ffn", "txl.v": "tensor", "txl.w": "input", "txl.zero": "tensor"}, "semantics": "presentation aliases only; color does not imply mathematical equivalence or parameter sharing"}</metadata>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="37" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">Transformer-XL relative attention  |  Operators &amp; tensor flow</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="65" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">Relative AC+shift(BD) / memory4,current3 / heads2x8 / post-norm / eval  /  read bottom to top</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="transformer_xl_relative.root" data-visual-role="root"><title>transformer-xl-relative/pytorch/mem_transformer.py:144 RelMultiHeadAttn.__init__; transformer-xl-relative/pytorch/mem_transformer.py:213 RelPartialLearnableMultiHeadAttn.__init__; transformer-xl-relative/pytorch/mem_transformer.py:194 RelMultiHeadAttn._rel_shift; transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="230.0" y="98" width="1906" height="4451" rx="18" fill="#ffffff" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="247.0" y="128" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="247.0" dy="0">Transformer-XL relative attention</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="2123.0" y="160" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="2123.0" dy="0">E001 +3</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.w" data-visual-role="input" data-glyph-kind="tensor-grid"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="391.0" y="4454.5" width="72" height="32" rx="0" fill="#f8d4e1" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="403.0" x2="403.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="415.0" x2="415.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="427.0" x2="427.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="439.0" x2="439.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="451.0" x2="451.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="391.0" x2="463.0" y1="4465.166666666667" y2="4465.166666666667" stroke="#263348" stroke-width=".6" /><line x1="391.0" x2="463.0" y1="4475.833333333333" y2="4475.833333333333" stroke="#263348" stroke-width=".6" /><text x="381.0" y="4467.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="381.0" dy="0">Current</tspan><tspan x="381.0" dy="16.52">sequence w</tspan></text><text x="473.0" y="4475.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="473.0" dy="0">[3,B,16]</tspan></text><text x="473.0" y="4508.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="473.0" dy="0">E004</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.memory" data-visual-role="input" data-glyph-kind="tensor-grid"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="769.0" y="4454.5" width="72" height="32" rx="0" fill="#f8d4e1" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="781.0" x2="781.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="793.0" x2="793.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="805.0" x2="805.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="817.0" x2="817.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="829.0" x2="829.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="769.0" x2="841.0" y1="4465.166666666667" y2="4465.166666666667" stroke="#263348" stroke-width=".6" /><line x1="769.0" x2="841.0" y1="4475.833333333333" y2="4475.833333333333" stroke="#263348" stroke-width=".6" /><text x="759.0" y="4459.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="759.0" dy="0">Caller memory</tspan><tspan x="759.0" dy="16.52">/ fixed</tspan><tspan x="759.0" dy="16.52">branch</tspan></text><text x="851.0" y="4475.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="851.0" dy="0">[4,B,16]</tspan></text><text x="851.0" y="4520.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="851.0" dy="0">E004</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.position" data-visual-role="input" data-glyph-kind="tensor-grid"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="1147.0" y="4454.5" width="72" height="32" rx="0" fill="#f8d4e1" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="1159.0" x2="1159.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="1171.0" x2="1171.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="1183.0" x2="1183.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="1195.0" x2="1195.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="1207.0" x2="1207.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="1147.0" x2="1219.0" y1="4465.166666666667" y2="4465.166666666667" stroke="#263348" stroke-width=".6" /><line x1="1147.0" x2="1219.0" y1="4475.833333333333" y2="4475.833333333333" stroke="#263348" stroke-width=".6" /><text x="1137.0" y="4459.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="1137.0" dy="0">Supplied</tspan><tspan x="1137.0" dy="16.52">relative</tspan><tspan x="1137.0" dy="16.52">encoding r</tspan></text><text x="1229.0" y="4475.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1229.0" dy="0">[7,16]</tspan></text><text x="1229.0" y="4520.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1229.0" dy="0">E004</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.biases" data-visual-role="input"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="1396.0" y="4418.0" width="330" height="105" rx="10" fill="#f8d4e1" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1561.0" y="4445.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1561.0" dy="0">Caller content /</tspan>
+<tspan x="1561.0" dy="23.599999999999998">relative biases</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1561.0" y="4493.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1561.0" dy="0">r_w_bias,r_r_bias:[2,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1713.0" y="4513.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1713.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.external_mask" data-visual-role="input" data-glyph-kind="tensor-grid"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="1903.0" y="4454.5" width="72" height="32" rx="0" fill="#f8d4e1" stroke="#263348" stroke-width="1.4" data-glyph-outline="rectangle" /><line x1="1915.0" x2="1915.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="1927.0" x2="1927.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="1939.0" x2="1939.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="1951.0" x2="1951.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="1963.0" x2="1963.0" y1="4454.5" y2="4486.5" stroke="#263348" stroke-width=".6" /><line x1="1903.0" x2="1975.0" y1="4465.166666666667" y2="4465.166666666667" stroke="#263348" stroke-width=".6" /><line x1="1903.0" x2="1975.0" y1="4475.833333333333" y2="4475.833333333333" stroke="#263348" stroke-width=".6" /><text x="1893.0" y="4459.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="700" text-anchor="end" fill="#172336"><tspan x="1893.0" dy="0">Caller 3D</tspan><tspan x="1893.0" dy="16.52">attention</tspan><tspan x="1893.0" dy="16.52">mask</tspan></text><text x="1985.0" y="4475.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1985.0" dy="0">[3,7,B]</tspan></text><text x="1985.0" y="4520.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1985.0" dy="0">E004</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.body" data-visual-role="encoder"><title>transformer-xl-relative/pytorch/mem_transformer.py:144 RelMultiHeadAttn.__init__; transformer-xl-relative/pytorch/mem_transformer.py:213 RelPartialLearnableMultiHeadAttn.__init__; transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; transformer-xl-relative/pytorch/mem_transformer.py:194 RelMultiHeadAttn._rel_shift; parameter=not asserted; </title><rect x="608.0" y="341.0" width="1150" height="4013" rx="18" fill="#e7f5fe" stroke="#263348" stroke-width="2.5" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="625.0" y="371.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="625.0" dy="0">Relative attention / memory</tspan>
+<tspan x="625.0" dy="28.32">branch</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1741.0" y="371.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1741.0" dy="0">[3,B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1745.0" y="423.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1745.0" dy="0">E001 +3</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.cat" data-visual-role="norm"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="797.0" y="4087.0" width="330" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="962.0" y="4114.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="962.0" dy="0">Concat [memory,</tspan>
+<tspan x="962.0" dy="23.599999999999998">current w] / time</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="962.0" y="4162.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="962.0" dy="0">[7,B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1114.0" y="4182.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1114.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.r" data-visual-role="ffn"><title>transformer-xl-relative/pytorch/mem_transformer.py:213 RelPartialLearnableMultiHeadAttn.__init__; transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="1175.0" y="3951.0" width="394" height="377" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1192.0" y="3981.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1192.0" dy="0">Relative-</tspan>
+<tspan x="1192.0" dy="25.959999999999997">position</tspan>
+<tspan x="1192.0" dy="25.959999999999997">projection</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1552.0" y="3981.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1552.0" dy="0">[7,2,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1556.0" y="4056.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1556.0" dy="0">E003,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.rlinear" data-visual-role="linear"><title>transformer-xl-relative/pytorch/mem_transformer.py:213 RelPartialLearnableMultiHeadAttn.__init__; transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=r_net; </title><rect x="1207.0" y="4197.0" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1372.0" y="4224.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1372.0" dy="0">Position Linear16 -&gt;</tspan>
+<tspan x="1372.0" dy="23.599999999999998">16</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1372.0" y="4272.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1372.0" dy="0">[7,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1524.0" y="4292.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1524.0" dy="0">E003,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.rview" data-visual-role="tensor"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="1207.0" y="4068.0" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1372.0" y="4095.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1372.0" dy="0">View relative heads /</tspan>
+<tspan x="1372.0" dy="23.599999999999998">no batch</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1372.0" y="4143.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1372.0" dy="0">[7,2,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1524.0" y="4163.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1524.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.qkv" data-visual-role="linear"><title>transformer-xl-relative/pytorch/mem_transformer.py:144 RelMultiHeadAttn.__init__; transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=qkv_net; </title><rect x="1018.0" y="3782.0" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="3809.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">Joint QKV Linear16 -&gt;</tspan>
+<tspan x="1183.0" dy="23.599999999999998">48</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="3857.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[7,B,48]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1335.0" y="3877.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E001,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.split" data-visual-role="tensor"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="1018.0" y="3613.0" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="3640.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">Chunk Q_all,K,V / last</tspan>
+<tspan x="1183.0" dy="23.599999999999998">axis</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="3688.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">each:[7,B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1335.0" y="3708.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.q" data-visual-role="tensor"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="640.0" y="3444.0" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="805.0" y="3471.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="805.0" dy="0">Keep last3 Q + view</tspan>
+<tspan x="805.0" dy="23.599999999999998">heads</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="805.0" y="3519.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="805.0" dy="0">[3,B,2,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="957.0" y="3539.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="957.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.k" data-visual-role="tensor"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="1018.0" y="3444.0" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="3471.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">View memory + current</tspan>
+<tspan x="1183.0" dy="23.599999999999998">K heads</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="3519.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[7,B,2,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1335.0" y="3539.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.v" data-visual-role="tensor"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="1396.0" y="3444.0" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1561.0" y="3471.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1561.0" dy="0">View memory + current</tspan>
+<tspan x="1561.0" dy="23.599999999999998">V heads</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1561.0" y="3519.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1561.0" dy="0">[7,B,2,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1713.0" y="3539.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1713.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.rw" data-visual-role="norm" data-glyph-kind="binary-circle"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><circle cx="994.0" cy="3327.5" r="16.0" fill="white" stroke="#263348" stroke-width="2" data-glyph-outline="circle" /><text x="994.0" y="3334.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="400" text-anchor="middle" fill="#172336" data-glyph-symbol="add"><tspan x="994.0" dy="0">+</tspan></text><text x="1022.0" y="3296.98" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1022.0" dy="0">Q + external</tspan><tspan x="1022.0" dy="16.52">content bias</tspan></text><text x="1022.0" y="3353.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="11" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1022.0" dy="0">[3,B,2,8]</tspan></text><text x="1022.0" y="3377.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1022.0" dy="0">E004</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.rr" data-visual-role="norm" data-glyph-kind="binary-circle"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><circle cx="1372.0" cy="3327.5" r="16.0" fill="white" stroke="#263348" stroke-width="2" data-glyph-outline="circle" /><text x="1372.0" y="3334.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="400" text-anchor="middle" fill="#172336" data-glyph-symbol="add"><tspan x="1372.0" dy="0">+</tspan></text><text x="1400.0" y="3296.98" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1400.0" dy="0">Q + external</tspan><tspan x="1400.0" dy="16.52">relative bias</tspan></text><text x="1400.0" y="3353.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="11" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1400.0" dy="0">[3,B,2,8]</tspan></text><text x="1400.0" y="3377.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1400.0" dy="0">E004</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.ac" data-visual-role="tensor"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="829.0" y="3106.0" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="994.0" y="3133.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="994.0" dy="0">Content score AC /</tspan>
+<tspan x="994.0" dy="23.599999999999998">einsum</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="994.0" y="3181.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="994.0" dy="0">[3,7,B,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1146.0" y="3201.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1146.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.bd" data-visual-role="tensor"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="1207.0" y="3106.0" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1372.0" y="3133.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1372.0" dy="0">Relative score BD /</tspan>
+<tspan x="1372.0" dy="23.599999999999998">einsum</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1372.0" y="3181.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1372.0" dy="0">[3,7,B,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1524.0" y="3201.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1524.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.shift" data-visual-role="attention"><title>transformer-xl-relative/pytorch/mem_transformer.py:194 RelMultiHeadAttn._rel_shift; parameter=not asserted; </title><rect x="986.0" y="2285.0" width="394" height="757" rx="10" fill="#ffddb3" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1003.0" y="2315.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1003.0" dy="0">Relative</tspan>
+<tspan x="1003.0" dy="25.959999999999997">shift /</tspan>
+<tspan x="1003.0" dy="25.959999999999997">source</tspan>
+<tspan x="1003.0" dy="25.959999999999997">helper</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1363.0" y="2315.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1363.0" dy="0">[3,7,B,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1367.0" y="2416.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1367.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.zero" data-visual-role="tensor"><title>transformer-xl-relative/pytorch/mem_transformer.py:194 RelMultiHeadAttn._rel_shift; parameter=not asserted; </title><rect x="1018.0" y="2911.0" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="2938.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">Zeros from BD</tspan>
+<tspan x="1183.0" dy="23.599999999999998">shape/device/dtype</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="2986.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[3,1,B,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1335.0" y="3006.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.pad" data-visual-role="norm"><title>transformer-xl-relative/pytorch/mem_transformer.py:194 RelMultiHeadAttn._rel_shift; parameter=not asserted; </title><rect x="1018.0" y="2742.0" width="330" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="2769.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">Prepend zero column /</tspan>
+<tspan x="1183.0" dy="23.599999999999998">dim1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="2817.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[3,8,B,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1335.0" y="2837.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.shift_view" data-visual-role="tensor"><title>transformer-xl-relative/pytorch/mem_transformer.py:194 RelMultiHeadAttn._rel_shift; parameter=not asserted; </title><rect x="1018.0" y="2597.0" width="330" height="81" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="2624.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">View [K+1,T,B,heads]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="2648.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[8,3,B,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1335.0" y="2668.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.shift_slice" data-visual-role="tensor"><title>transformer-xl-relative/pytorch/mem_transformer.py:194 RelMultiHeadAttn._rel_shift; parameter=not asserted; </title><rect x="1018.0" y="2428.0" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="2455.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">Drop first row +</tspan>
+<tspan x="1183.0" dy="23.599999999999998">view_as(BD)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="2503.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[3,7,B,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1335.0" y="2523.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E002</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.score" data-visual-role="norm" data-glyph-kind="binary-circle"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><circle cx="1183.0" cy="2180.5" r="16.0" fill="white" stroke="#263348" stroke-width="2" data-glyph-outline="circle" /><text x="1183.0" y="2187.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="400" text-anchor="middle" fill="#172336" data-glyph-symbol="add"><tspan x="1183.0" dy="0">+</tspan></text><text x="1211.0" y="2149.98" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1211.0" dy="0">AC + shifted</tspan><tspan x="1211.0" dy="16.52">BD</tspan></text><text x="1211.0" y="2206.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="11" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1211.0" dy="0">[3,7,B,2]</tspan></text><text x="1211.0" y="2222.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1211.0" dy="0">E004</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.scale" data-visual-role="tensor"><title>transformer-xl-relative/pytorch/mem_transformer.py:144 RelMultiHeadAttn.__init__; transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="1018.0" y="1971.0" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="1998.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">Multiply by 1 /</tspan>
+<tspan x="1183.0" dy="23.599999999999998">sqrt(d_head8)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="2046.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[3,7,B,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1335.0" y="2066.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E001,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.mask" data-visual-role="control"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="1018.0" y="1826.0" width="330" height="81" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="1853.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">3D mask / True -&gt; -inf</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="1877.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[3,7,B,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1335.0" y="1897.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.softmax" data-visual-role="softmax"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="1018.0" y="1657.0" width="330" height="105" rx="10" fill="#c9f1cd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="1684.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">Softmax on key-time</tspan>
+<tspan x="1183.0" dy="23.599999999999998">axis1</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="1732.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[3,7,B,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1335.0" y="1752.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.dropatt" data-visual-role="control"><title>transformer-xl-relative/pytorch/mem_transformer.py:144 RelMultiHeadAttn.__init__; transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="1018.0" y="1488.0" width="330" height="105" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="1515.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">Attention Dropout .1 /</tspan>
+<tspan x="1183.0" dy="23.599999999999998">eval</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="1563.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[3,7,B,2]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1335.0" y="1583.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E001,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.aggregate" data-visual-role="tensor"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="1018.0" y="1319.0" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="1346.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">einsum(prob,</tspan>
+<tspan x="1183.0" dy="23.599999999999998">memory+current V)</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="1394.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[3,B,2,8]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1335.0" y="1414.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.tail" data-visual-role="ffn"><title>transformer-xl-relative/pytorch/mem_transformer.py:144 RelMultiHeadAttn.__init__; transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="986.0" y="773.0" width="394" height="482" rx="10" fill="#c8ebfb" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1003.0" y="803.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#172336">
+<tspan x="1003.0" dy="0">Head merge</tspan>
+<tspan x="1003.0" dy="25.959999999999997">and output</tspan>
+<tspan x="1003.0" dy="25.959999999999997">projection</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1363.0" y="803.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="end" fill="#344155">
+<tspan x="1363.0" dy="0">[3,B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1367.0" y="878.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1367.0" dy="0">E001,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.merge" data-visual-role="tensor"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="1018.0" y="1124.0" width="330" height="105" rx="10" fill="#cdeaf8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="1151.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">Contiguous + merge</tspan>
+<tspan x="1183.0" dy="23.599999999999998">heads</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="1199.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[3,B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1335.0" y="1219.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.olinear" data-visual-role="linear"><title>transformer-xl-relative/pytorch/mem_transformer.py:144 RelMultiHeadAttn.__init__; transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=o_net; </title><rect x="1018.0" y="1019.0" width="330" height="81" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="1046.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">Output Linear16 -&gt; 16</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="1070.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[3,B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1335.0" y="1090.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E001,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.odrop" data-visual-role="control"><title>transformer-xl-relative/pytorch/mem_transformer.py:144 RelMultiHeadAttn.__init__; transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="1018.0" y="890.0" width="330" height="105" rx="10" fill="#f3f5f7" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="917.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">Output Dropout .1 /</tspan>
+<tspan x="1183.0" dy="23.599999999999998">eval</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="965.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[3,B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1335.0" y="985.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E001,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.residual" data-visual-role="norm" data-glyph-kind="binary-circle"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><circle cx="1183.0" cy="656.5" r="16.0" fill="white" stroke="#263348" stroke-width="2" data-glyph-outline="circle" /><text x="1183.0" y="663.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="400" text-anchor="middle" fill="#172336" data-glyph-symbol="add"><tspan x="1183.0" dy="0">+</tspan></text><text x="1211.0" y="609.46" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1211.0" dy="0">Original</tspan><tspan x="1211.0" dy="16.52">current w +</tspan><tspan x="1211.0" dy="16.52">attention out</tspan></text><text x="1211.0" y="682.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="11" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1211.0" dy="0">[3,B,16]</tspan></text><text x="1211.0" y="706.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="9" font-weight="400" text-anchor="start" fill="#172336"><tspan x="1211.0" dy="0">E004</tspan></text></g>
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.norm" data-visual-role="norm"><title>transformer-xl-relative/pytorch/mem_transformer.py:144 RelMultiHeadAttn.__init__; transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=layer_norm; </title><rect x="1018.0" y="435.0" width="330" height="105" rx="10" fill="#fff6bd" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="462.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">Post LayerNorm16 /</tspan>
+<tspan x="1183.0" dy="23.599999999999998">library</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="510.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[3,B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1335.0" y="530.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E001,E004</tspan>
+</text>
+
+<g xmlns="http://www.w3.org/2000/svg" data-node-id="txl.output" data-visual-role="output"><title>transformer-xl-relative/pytorch/mem_transformer.py:218 RelPartialLearnableMultiHeadAttn.forward; parameter=not asserted; </title><rect x="1018.0" y="172.0" width="330" height="105" rx="10" fill="#dfdff8" stroke="#263348" stroke-width="2" /></g>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="199.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="20" font-weight="400" text-anchor="middle" fill="#172336">
+<tspan x="1183.0" dy="0">Return normalized</tspan>
+<tspan x="1183.0" dy="23.599999999999998">current output</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="247.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">[3,B,16]</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1335.0" y="267.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#526170">
+<tspan x="1335.0" dy="0">E004</tspan>
+</text>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0001" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.rview&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.rlinear&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.rview&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.rlinear:out-&gt;txl.rview:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.rview:in&quot;, &quot;rendered_src&quot;: &quot;txl.rlinear:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.rlinear&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1372.0,4197.0 L 1372.0,4173.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.rlinear:out -&gt; txl.rview:in; visible txl.rlinear:out -&gt; txl.rview:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0002" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.olinear&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.merge&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.olinear&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.merge:out-&gt;txl.olinear:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.olinear:in&quot;, &quot;rendered_src&quot;: &quot;txl.merge:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.merge&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1183.0,1124.0 L 1183.0,1100.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.merge:out -&gt; txl.olinear:in; visible txl.merge:out -&gt; txl.olinear:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0003" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.odrop&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.olinear&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.odrop&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.olinear:out-&gt;txl.odrop:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.odrop:in&quot;, &quot;rendered_src&quot;: &quot;txl.olinear:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.olinear&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1183.0,1019.0 L 1183.0,995.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.olinear:out -&gt; txl.odrop:in; visible txl.olinear:out -&gt; txl.odrop:in; tensor</title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0004" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.cat&quot;, &quot;dst_port&quot;: &quot;memory&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.memory&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.cat&quot;, &quot;port&quot;: &quot;memory&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.memory:out-&gt;txl.cat:memory:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.cat:right.aux0&quot;, &quot;rendered_src&quot;: &quot;txl.memory:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.memory&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 805.0,4454.5 L 805.0,4209.0 L 1151.0,4209.0 L 1151.0,4127.5 L 1127.0,4127.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.memory:out -&gt; txl.cat:memory; visible txl.memory:out -&gt; txl.cat:memory; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0005" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.cat&quot;, &quot;dst_port&quot;: &quot;current&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.w&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.cat&quot;, &quot;port&quot;: &quot;current&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.w:out-&gt;txl.cat:current:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.cat:right.aux1&quot;, &quot;rendered_src&quot;: &quot;txl.w:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.w&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 427.0,4454.5 L 427.0,4210.0 L 1157.0,4210.0 L 1157.0,4151.5 L 1127.0,4151.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.w:out -&gt; txl.cat:current; visible txl.w:out -&gt; txl.cat:current; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0006" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.qkv&quot;, &quot;dst_port&quot;: &quot;input&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.cat&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.qkv&quot;, &quot;port&quot;: &quot;input&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.cat:out-&gt;txl.qkv:input:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.qkv:right&quot;, &quot;rendered_src&quot;: &quot;txl.cat:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.cat&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 962.0,4087.0 L 962.0,3905.0 L 1372.0,3905.0 L 1372.0,3834.5 L 1348.0,3834.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.cat:out -&gt; txl.qkv:input; visible txl.cat:out -&gt; txl.qkv:input; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0007" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.split&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.qkv&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.split&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.qkv:out-&gt;txl.split:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.split:in&quot;, &quot;rendered_src&quot;: &quot;txl.qkv:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.qkv&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1183.0,3782.0 L 1183.0,3718.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.qkv:out -&gt; txl.split:in; visible txl.qkv:out -&gt; txl.split:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0008" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.r&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.position&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.rlinear&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;txl.r&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;txl.position:out-&gt;txl.r:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.rlinear:in&quot;, &quot;rendered_src&quot;: &quot;txl.position:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.position&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1183.0,4454.5 L 1183.0,4346.0 L 1372.0,4346.0 L 1372.0,4302.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.position:out -&gt; txl.r:in; visible txl.position:out -&gt; txl.rlinear:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0009" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.rw&quot;, &quot;dst_port&quot;: &quot;query&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.q&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.rw&quot;, &quot;port&quot;: &quot;query&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.q:out-&gt;txl.rw:query:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.rw:right.aux0&quot;, &quot;rendered_src&quot;: &quot;txl.q:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.q&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 805.0,3444.0 L 805.0,3327.5 L 978.0,3327.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.q:out -&gt; txl.rw:query; visible txl.q:out -&gt; txl.rw:query; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0010" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.rr&quot;, &quot;dst_port&quot;: &quot;query&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.q&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.rr&quot;, &quot;port&quot;: &quot;query&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.q:out-&gt;txl.rr:query:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.rr:right.aux0&quot;, &quot;rendered_src&quot;: &quot;txl.q:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.q&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 805.0,3444.0 L 805.0,3361.5 L 1332.0,3361.5 L 1332.0,3327.5 L 1356.0,3327.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.q:out -&gt; txl.rr:query; visible txl.q:out -&gt; txl.rr:query; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0011" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.ac&quot;, &quot;dst_port&quot;: &quot;query&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.rw&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.ac&quot;, &quot;port&quot;: &quot;query&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.rw:out-&gt;txl.ac:query:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.ac:right.aux0&quot;, &quot;rendered_src&quot;: &quot;txl.rw:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.rw&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 994.0,3311.5 L 994.0,3229.0 L 1183.0,3229.0 L 1183.0,3146.5 L 1159.0,3146.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.rw:out -&gt; txl.ac:query; visible txl.rw:out -&gt; txl.ac:query; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0012" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.ac&quot;, &quot;dst_port&quot;: &quot;key&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.k&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.ac&quot;, &quot;port&quot;: &quot;key&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.k:out-&gt;txl.ac:key:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.ac:right.aux1&quot;, &quot;rendered_src&quot;: &quot;txl.k:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.k&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1183.0,3444.0 L 1183.0,3410.0 L 1189.0,3410.0 L 1189.0,3170.5 L 1159.0,3170.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.k:out -&gt; txl.ac:key; visible txl.k:out -&gt; txl.ac:key; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0013" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.bd&quot;, &quot;dst_port&quot;: &quot;query&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.rr&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.bd&quot;, &quot;port&quot;: &quot;query&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.rr:out-&gt;txl.bd:query:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.bd:right.aux0&quot;, &quot;rendered_src&quot;: &quot;txl.rr:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.rr&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1372.0,3311.5 L 1372.0,3229.0 L 1561.0,3229.0 L 1561.0,3146.5 L 1537.0,3146.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.rr:out -&gt; txl.bd:query; visible txl.rr:out -&gt; txl.bd:query; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0014" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.bd&quot;, &quot;dst_port&quot;: &quot;position_key&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.r&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.bd&quot;, &quot;port&quot;: &quot;position_key&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.r:out-&gt;txl.bd:position_key:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.bd:right.aux1&quot;, &quot;rendered_src&quot;: &quot;txl.rview:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.rview&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;txl.r&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1372.0,4068.0 L 1372.0,3905.0 L 1384.0,3905.0 L 1384.0,3410.0 L 1563.0,3410.0 L 1563.0,3170.5 L 1537.0,3170.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.r:out -&gt; txl.bd:position_key; visible txl.rview:out -&gt; txl.bd:position_key; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0015" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.pad&quot;, &quot;dst_port&quot;: &quot;relative_scores&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.bd&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.pad&quot;, &quot;port&quot;: &quot;relative_scores&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.bd:out-&gt;txl.pad:relative_scores:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.pad:right.aux0&quot;, &quot;rendered_src&quot;: &quot;txl.bd:out.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.bd&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1372.0,3106.0 L 1372.0,2782.5 L 1348.0,2782.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.bd:out -&gt; txl.pad:relative_scores; visible txl.bd:out -&gt; txl.pad:relative_scores; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0016" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.pad&quot;, &quot;dst_port&quot;: &quot;zeros&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.zero&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.pad&quot;, &quot;port&quot;: &quot;zeros&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.zero:out-&gt;txl.pad:zeros:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.pad:right.aux1&quot;, &quot;rendered_src&quot;: &quot;txl.zero:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.zero&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1183.0,2911.0 L 1183.0,2865.0 L 1396.0,2865.0 L 1396.0,2806.5 L 1348.0,2806.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.zero:out -&gt; txl.pad:zeros; visible txl.zero:out -&gt; txl.pad:zeros; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0017" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.shift_view&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.pad&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.shift_view&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.pad:out-&gt;txl.shift_view:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.shift_view:in&quot;, &quot;rendered_src&quot;: &quot;txl.pad:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.pad&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1183.0,2742.0 L 1183.0,2678.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.pad:out -&gt; txl.shift_view:in; visible txl.pad:out -&gt; txl.shift_view:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0018" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.shift_slice&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.shift_view&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.shift_slice&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.shift_view:out-&gt;txl.shift_slice:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.shift_slice:in&quot;, &quot;rendered_src&quot;: &quot;txl.shift_view:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.shift_view&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1183.0,2597.0 L 1183.0,2533.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.shift_view:out -&gt; txl.shift_slice:in; visible txl.shift_view:out -&gt; txl.shift_slice:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0019" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.score&quot;, &quot;dst_port&quot;: &quot;content&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.ac&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.score&quot;, &quot;port&quot;: &quot;content&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.ac:out-&gt;txl.score:content:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.score:right.aux0&quot;, &quot;rendered_src&quot;: &quot;txl.ac:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.ac&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 994.0,3106.0 L 994.0,3060.0 L 974.0,3060.0 L 974.0,2180.5 L 1167.0,2180.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.ac:out -&gt; txl.score:content; visible txl.ac:out -&gt; txl.score:content; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0020" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.score&quot;, &quot;dst_port&quot;: &quot;relative&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.shift&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.score&quot;, &quot;port&quot;: &quot;relative&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.shift:out-&gt;txl.score:relative:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.score:right.aux1&quot;, &quot;rendered_src&quot;: &quot;txl.shift_slice:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.shift_slice&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;txl.shift&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;declared-interface&quot;}]}}" d="M 1183.0,2428.0 L 1183.0,2196.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.shift:out -&gt; txl.score:relative; visible txl.shift_slice:out -&gt; txl.score:relative; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0021" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.scale&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.score&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.scale&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.score:out-&gt;txl.scale:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.scale:in&quot;, &quot;rendered_src&quot;: &quot;txl.score:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.score&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1183.0,2164.5 L 1183.0,2076.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.score:out -&gt; txl.scale:in; visible txl.score:out -&gt; txl.scale:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0022" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.mask&quot;, &quot;dst_port&quot;: &quot;scores&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.scale&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.mask&quot;, &quot;port&quot;: &quot;scores&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.scale:out-&gt;txl.mask:scores:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.mask:right.aux0&quot;, &quot;rendered_src&quot;: &quot;txl.scale:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.scale&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1183.0,1971.0 L 1183.0,1925.0 L 1372.0,1925.0 L 1372.0,1854.5 L 1348.0,1854.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.scale:out -&gt; txl.mask:scores; visible txl.scale:out -&gt; txl.mask:scores; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0023" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.mask&quot;, &quot;dst_port&quot;: &quot;mask&quot;, &quot;role&quot;: &quot;mask&quot;, &quot;src&quot;: &quot;txl.external_mask&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.mask&quot;, &quot;port&quot;: &quot;mask&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.external_mask:out-&gt;txl.mask:mask:mask&quot;, &quot;rendered_dst&quot;: &quot;txl.mask:right.aux1&quot;, &quot;rendered_src&quot;: &quot;txl.external_mask:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.external_mask&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1939.0,4454.5 L 1939.0,1878.5 L 1348.0,1878.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>txl.external_mask:out -&gt; txl.mask:mask; visible txl.external_mask:out -&gt; txl.mask:mask; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0024" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.softmax&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.mask&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.softmax&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.mask:out-&gt;txl.softmax:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.softmax:in&quot;, &quot;rendered_src&quot;: &quot;txl.mask:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.mask&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1183.0,1826.0 L 1183.0,1762.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.mask:out -&gt; txl.softmax:in; visible txl.mask:out -&gt; txl.softmax:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0025" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.dropatt&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.softmax&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.dropatt&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.softmax:out-&gt;txl.dropatt:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.dropatt:in&quot;, &quot;rendered_src&quot;: &quot;txl.softmax:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.softmax&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1183.0,1657.0 L 1183.0,1593.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.softmax:out -&gt; txl.dropatt:in; visible txl.softmax:out -&gt; txl.dropatt:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0026" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.aggregate&quot;, &quot;dst_port&quot;: &quot;probability&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.dropatt&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.aggregate&quot;, &quot;port&quot;: &quot;probability&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.dropatt:out-&gt;txl.aggregate:probability:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.aggregate:right.aux0&quot;, &quot;rendered_src&quot;: &quot;txl.dropatt:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.dropatt&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1183.0,1488.0 L 1183.0,1442.0 L 1372.0,1442.0 L 1372.0,1359.5 L 1348.0,1359.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.dropatt:out -&gt; txl.aggregate:probability; visible txl.dropatt:out -&gt; txl.aggregate:probability; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0027" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.aggregate&quot;, &quot;dst_port&quot;: &quot;values&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.v&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.aggregate&quot;, &quot;port&quot;: &quot;values&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.v:out-&gt;txl.aggregate:values:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.aggregate:right.aux1&quot;, &quot;rendered_src&quot;: &quot;txl.v:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.v&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1561.0,3444.0 L 1561.0,3420.0 L 1567.0,3420.0 L 1567.0,1383.5 L 1348.0,1383.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.v:out -&gt; txl.aggregate:values; visible txl.v:out -&gt; txl.aggregate:values; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0028" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.tail&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.aggregate&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.merge&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;txl.tail&quot;, &quot;port&quot;: &quot;in&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}, &quot;edge_id&quot;: &quot;txl.aggregate:out-&gt;txl.tail:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.merge:in&quot;, &quot;rendered_src&quot;: &quot;txl.aggregate:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.aggregate&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1183.0,1319.0 L 1183.0,1229.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.aggregate:out -&gt; txl.tail:in; visible txl.aggregate:out -&gt; txl.merge:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0029" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.residual&quot;, &quot;dst_port&quot;: &quot;attention_out&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.tail&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.residual&quot;, &quot;port&quot;: &quot;attention_out&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.tail:out-&gt;txl.residual:attention_out:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.residual:right.aux0&quot;, &quot;rendered_src&quot;: &quot;txl.odrop:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.odrop&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;, &quot;via&quot;: [{&quot;node&quot;: &quot;txl.tail&quot;, &quot;port&quot;: &quot;out&quot;, &quot;rule&quot;: &quot;IR-boundary&quot;}]}}" d="M 1183.0,890.0 L 1183.0,672.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.tail:out -&gt; txl.residual:attention_out; visible txl.odrop:out -&gt; txl.residual:attention_out; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0030" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.residual&quot;, &quot;dst_port&quot;: &quot;current&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.w&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.residual&quot;, &quot;port&quot;: &quot;current&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.w:out-&gt;txl.residual:current:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.residual:right.aux1&quot;, &quot;rendered_src&quot;: &quot;txl.w:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.w&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 427.0,4454.5 L 427.0,656.5 L 1167.0,656.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.w:out -&gt; txl.residual:current; visible txl.w:out -&gt; txl.residual:current; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0031" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.norm&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.residual&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.norm&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.residual:out-&gt;txl.norm:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.norm:in&quot;, &quot;rendered_src&quot;: &quot;txl.residual:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.residual&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1183.0,640.5 L 1183.0,540.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.residual:out -&gt; txl.norm:in; visible txl.residual:out -&gt; txl.norm:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0032" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.output&quot;, &quot;dst_port&quot;: &quot;output&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.norm&quot;, &quot;src_port&quot;: &quot;out&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.output&quot;, &quot;port&quot;: &quot;output&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.norm:out-&gt;txl.output:output:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.output:right&quot;, &quot;rendered_src&quot;: &quot;txl.norm:out&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.norm&quot;, &quot;port&quot;: &quot;out&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1183.0,435.0 L 1183.0,295.0 L 1372.0,295.0 L 1372.0,224.5 L 1348.0,224.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.norm:out -&gt; txl.output:output; visible txl.norm:out -&gt; txl.output:output; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0033" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.zero&quot;, &quot;dst_port&quot;: &quot;shape&quot;, &quot;role&quot;: &quot;shape_dependency&quot;, &quot;src&quot;: &quot;txl.bd&quot;, &quot;src_port&quot;: &quot;shape&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.zero&quot;, &quot;port&quot;: &quot;shape&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.bd:shape-&gt;txl.zero:shape:shape_dependency&quot;, &quot;rendered_dst&quot;: &quot;txl.zero:right&quot;, &quot;rendered_src&quot;: &quot;txl.bd:out.aux1&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.bd&quot;, &quot;port&quot;: &quot;shape&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1396.0,3106.0 L 1396.0,2963.5 L 1348.0,2963.5" fill="none" stroke="#536477" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7 5" marker-end="url(#arrow)"><title>txl.bd:shape -&gt; txl.zero:shape; visible txl.bd:shape -&gt; txl.zero:shape; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0034" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.q&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.split&quot;, &quot;src_port&quot;: &quot;w_head_q&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.q&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.split:w_head_q-&gt;txl.q:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.q:in&quot;, &quot;rendered_src&quot;: &quot;txl.split:right.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.split&quot;, &quot;port&quot;: &quot;w_head_q&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1348.0,3641.5 L 1372.0,3641.5 L 1372.0,3573.0 L 805.0,3573.0 L 805.0,3549.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.split:w_head_q -&gt; txl.q:in; visible txl.split:w_head_q -&gt; txl.q:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0035" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.k&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.split&quot;, &quot;src_port&quot;: &quot;w_head_k&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.k&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.split:w_head_k-&gt;txl.k:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.k:in&quot;, &quot;rendered_src&quot;: &quot;txl.split:right.aux1&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.split&quot;, &quot;port&quot;: &quot;w_head_k&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1348.0,3665.5 L 1374.0,3665.5 L 1374.0,3585.0 L 1183.0,3585.0 L 1183.0,3549.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.split:w_head_k -&gt; txl.k:in; visible txl.split:w_head_k -&gt; txl.k:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0036" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.v&quot;, &quot;dst_port&quot;: &quot;in&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.split&quot;, &quot;src_port&quot;: &quot;w_head_v&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.v&quot;, &quot;port&quot;: &quot;in&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.split:w_head_v-&gt;txl.v:in:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.v:in&quot;, &quot;rendered_src&quot;: &quot;txl.split:right.aux2&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.split&quot;, &quot;port&quot;: &quot;w_head_v&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1348.0,3689.5 L 1561.0,3689.5 L 1561.0,3549.0" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.split:w_head_v -&gt; txl.v:in; visible txl.split:w_head_v -&gt; txl.v:in; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0037" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.rw&quot;, &quot;dst_port&quot;: &quot;bias&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.biases&quot;, &quot;src_port&quot;: &quot;r_w_bias&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.rw&quot;, &quot;port&quot;: &quot;bias&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.biases:r_w_bias-&gt;txl.rw:bias:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.rw:right.aux1&quot;, &quot;rendered_src&quot;: &quot;txl.biases:right.aux0&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.biases&quot;, &quot;port&quot;: &quot;r_w_bias&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1726.0,4458.5 L 1750.0,4458.5 L 1750.0,3389.62 L 994.0,3389.62 L 994.0,3343.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.biases:r_w_bias -&gt; txl.rw:bias; visible txl.biases:r_w_bias -&gt; txl.rw:bias; </title></path>
+
+<path xmlns="http://www.w3.org/2000/svg" data-route-id="route-0038" data-endpoint-binding="{&quot;canonical&quot;: {&quot;dst&quot;: &quot;txl.rr&quot;, &quot;dst_port&quot;: &quot;bias&quot;, &quot;role&quot;: &quot;tensor&quot;, &quot;src&quot;: &quot;txl.biases&quot;, &quot;src_port&quot;: &quot;r_r_bias&quot;}, &quot;destination&quot;: {&quot;node&quot;: &quot;txl.rr&quot;, &quot;port&quot;: &quot;bias&quot;, &quot;projection&quot;: &quot;exact&quot;}, &quot;edge_id&quot;: &quot;txl.biases:r_r_bias-&gt;txl.rr:bias:tensor&quot;, &quot;rendered_dst&quot;: &quot;txl.rr:right.aux1&quot;, &quot;rendered_src&quot;: &quot;txl.biases:right.aux1&quot;, &quot;source&quot;: {&quot;node&quot;: &quot;txl.biases&quot;, &quot;port&quot;: &quot;r_r_bias&quot;, &quot;projection&quot;: &quot;exact&quot;}}" d="M 1726.0,4482.5 L 1776.0,4482.5 L 1776.0,3361.5 L 1374.0,3361.5 L 1374.0,3367.5 L 1372.0,3367.5 L 1372.0,3343.5" fill="none" stroke="#263348" stroke-width="2.2" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"><title>txl.biases:r_r_bias -&gt; txl.rr:bias; visible txl.biases:r_r_bias -&gt; txl.rr:bias; </title></path>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="638.0" y="4586" width="16" height="16" rx="3" fill="#f8d4e1" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="661.0" y="4599" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="661.0" dy="0">Inputs</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="823.0" y="4586" width="16" height="16" rx="3" fill="#ffddb3" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="846.0" y="4599" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="846.0" dy="0">Gate / attention</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1008.0" y="4586" width="16" height="16" rx="3" fill="#c8ebfb" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1031.0" y="4599" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1031.0" dy="0">Conv / transforms</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1193.0" y="4586" width="16" height="16" rx="3" fill="#fff6bd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1216.0" y="4599" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1216.0" dy="0">Add / norm / concat</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1378.0" y="4586" width="16" height="16" rx="3" fill="#c9f1cd" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1401.0" y="4599" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1401.0" dy="0">Gates / Softmax</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1563.0" y="4586" width="16" height="16" rx="3" fill="#dfdff8" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1586.0" y="4599" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1586.0" dy="0">Linear / outputs</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1008.0" y="4616" width="16" height="16" rx="3" fill="#cdeaf8" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1031.0" y="4629" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1031.0" dy="0">Tensor operations</tspan>
+</text>
+
+<rect xmlns="http://www.w3.org/2000/svg" x="1193.0" y="4616" width="16" height="16" rx="3" fill="#f3f5f7" stroke="#263348" />
+
+<text xmlns="http://www.w3.org/2000/svg" x="1216.0" y="4629" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#172336">
+<tspan x="1216.0" dy="0">ReLU / Dropout</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="4657" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">Current T3; memoryM4; K7; two heads width8; external relative encodings and separate biases.</tspan>
+<tspan x="1183.0" dy="16.52">Content score AC and shifted relative score BD are separate source branches.</tspan>
+<tspan x="1183.0" dy="16.52">Caller memory is consumed; output contains current positions only; no memory update is drawn.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="4731" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">Reviewed static source + selected profile. Repeated groups are templates; shapes are not runtime observations.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="4761" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">E### = source span; dashed = side / shape dependencies; fork/join roles are typed in IR; no implicit sum.</tspan>
+</text>
+
+<text xmlns="http://www.w3.org/2000/svg" x="1183.0" y="4786" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="400" text-anchor="middle" fill="#344155">
+<tspan x="1183.0" dy="0">Repeated colors encode operation roles. Shared weights and independent instances are recorded in semantic_ir.json.</tspan>
+</text>
+
+</svg>

@@ -1,0 +1,485 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "glow_invconv_lu",
+  "profile": {
+    "channels": 8,
+    "parameters": [
+      "w_l",
+      "w_s",
+      "w_u"
+    ],
+    "buffers": [
+      "w_p",
+      "u_mask",
+      "l_mask",
+      "s_sign",
+      "l_eye"
+    ],
+    "lu": true,
+    "kernel_size": [
+      1,
+      1
+    ],
+    "logdet_shape": "scalar",
+    "shape_origin": "declared example; statically inferred, not observed",
+    "drawing_scope": "InvConv2dLU only; initialization is state provenance, not a repeated forward QR/LU.",
+    "source_contracts": [
+      [
+        "InvConv2dLU.forward",
+        "height * width * torch.sum(self.w_s)"
+      ],
+      [
+        "InvConv2dLU.forward",
+        "F.conv2d(input, weight)"
+      ]
+    ],
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "rosinality/glow-pytorch",
+    "commit": "97081ff115a694cf04aeedbd58447f33d242c879",
+    "snapshot": "1d5cf48ba47a5ecf7ea7059a37c9d1584a95871f52d5022f76b59cc51138d2ce"
+  },
+  "nodes": [
+    {
+      "id": "glow_invconv_lu.root",
+      "label": "LU invertible 1x1 convolution",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::InvConv2dLU.__init__",
+        "glow-modules/model.py::InvConv2dLU.forward",
+        "glow-modules/model.py::InvConv2dLU.reverse",
+        "glow-modules/model.py::InvConv2dLU.calc_weight"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "glow_invconv_lu.x",
+          "glow_invconv_lu.p"
+        ],
+        [
+          "glow_invconv_lu.body"
+        ],
+        [
+          "glow_invconv_lu.y",
+          "glow_invconv_lu.ld"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E003",
+        "E004",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv_lu.x",
+      "label": "Input x",
+      "kind": "input",
+      "source": [
+        "glow-modules/model.py::InvConv2dLU.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "parent": "glow_invconv_lu.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "glow_invconv_lu.p",
+      "label": "Weight state",
+      "kind": "input",
+      "source": [
+        "glow-modules/model.py::InvConv2dLU.__init__"
+      ],
+      "shape": "C=8",
+      "detail": [],
+      "parameters": [
+        "w_l",
+        "w_s",
+        "w_u"
+      ],
+      "buffers": [
+        "w_p",
+        "u_mask",
+        "l_mask",
+        "s_sign",
+        "l_eye"
+      ],
+      "parent": "glow_invconv_lu.root",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv_lu.body",
+      "label": "LU invertible 1x1 convolution module",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::InvConv2dLU.__init__",
+        "glow-modules/model.py::InvConv2dLU.forward",
+        "glow-modules/model.py::InvConv2dLU.reverse",
+        "glow-modules/model.py::InvConv2dLU.calc_weight"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "glow_invconv_lu.weight"
+        ],
+        [
+          "glow_invconv_lu.conv",
+          "glow_invconv_lu.det"
+        ]
+      ],
+      "rank_gap": 76,
+      "column_gap": 58,
+      "parent": "glow_invconv_lu.root",
+      "source_evidence": [
+        "E001",
+        "E003",
+        "E004",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv_lu.weight",
+      "label": "Weight materialization",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::InvConv2dLU.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "glow_invconv_lu.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv_lu.factors",
+      "label": "Read L/U/logdiag + fixed buffers",
+      "kind": "tensor",
+      "source": [
+        "glow-modules/model.py::InvConv2dLU.__init__"
+      ],
+      "shape": "[8,8]",
+      "detail": [],
+      "parameters": [
+        "w_l",
+        "w_s",
+        "w_u"
+      ],
+      "buffers": [
+        "w_p",
+        "u_mask",
+        "l_mask",
+        "s_sign",
+        "l_eye"
+      ],
+      "parent": "glow_invconv_lu.weight",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv_lu.reconstruct",
+      "label": "P @ L @ U; unsqueeze",
+      "kind": "matmul",
+      "source": [
+        "glow-modules/model.py::InvConv2dLU.calc_weight"
+      ],
+      "shape": "[8,8,1,1]",
+      "detail": [],
+      "expression": "self.w_p @ (self.w_l * self.l_mask + self.l_eye) @ (self.w_u * self.u_mask + torch.diag(self.s_sign * torch.exp(self.w_s)))",
+      "lower": "w_l*l_mask+l_eye",
+      "upper": "w_u*u_mask+diag(s_sign*exp(w_s))",
+      "parent": "glow_invconv_lu.weight",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv_lu.conv",
+      "label": "Channel mixing",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::InvConv2dLU.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "glow_invconv_lu.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv_lu.convop",
+      "label": "F.conv2d / 1x1",
+      "kind": "conv2d",
+      "source": [
+        "glow-modules/model.py::InvConv2dLU.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "kernel_size": [
+        1,
+        1
+      ],
+      "bias": false,
+      "expression": "F.conv2d(input, weight)",
+      "parent": "glow_invconv_lu.conv",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv_lu.det",
+      "label": "Determinant branch",
+      "kind": "group",
+      "source": [
+        "glow-modules/model.py::InvConv2dLU.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "chain",
+      "parent": "glow_invconv_lu.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv_lu.detop",
+      "label": "H*W * sum(logdiag)",
+      "kind": "density",
+      "source": [
+        "glow-modules/model.py::InvConv2dLU.forward"
+      ],
+      "shape": "scalar",
+      "detail": [],
+      "expression": "height * width * torch.sum(self.w_s)",
+      "spatial_factor": 64,
+      "parent": "glow_invconv_lu.det",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "shape"
+      ]
+    },
+    {
+      "id": "glow_invconv_lu.y",
+      "label": "Convolved y",
+      "kind": "output",
+      "source": [
+        "glow-modules/model.py::InvConv2dLU.forward"
+      ],
+      "shape": "[B,8,8,8]",
+      "detail": [],
+      "parent": "glow_invconv_lu.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "glow_invconv_lu.ld",
+      "label": "Log determinant",
+      "kind": "output",
+      "source": [
+        "glow-modules/model.py::InvConv2dLU.forward"
+      ],
+      "shape": "scalar",
+      "detail": [],
+      "parent": "glow_invconv_lu.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "glow_invconv_lu.weight:in->glow_invconv_lu.factors:in:boundary",
+      "src": "glow_invconv_lu.weight",
+      "dst": "glow_invconv_lu.factors",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_invconv_lu.factors:out->glow_invconv_lu.reconstruct:in:tensor",
+      "src": "glow_invconv_lu.factors",
+      "dst": "glow_invconv_lu.reconstruct",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_invconv_lu.reconstruct:out->glow_invconv_lu.weight:out:boundary",
+      "src": "glow_invconv_lu.reconstruct",
+      "dst": "glow_invconv_lu.weight",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_invconv_lu.conv:in->glow_invconv_lu.convop:in:boundary",
+      "src": "glow_invconv_lu.conv",
+      "dst": "glow_invconv_lu.convop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_invconv_lu.convop:out->glow_invconv_lu.conv:out:boundary",
+      "src": "glow_invconv_lu.convop",
+      "dst": "glow_invconv_lu.conv",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_invconv_lu.det:in->glow_invconv_lu.detop:in:boundary",
+      "src": "glow_invconv_lu.det",
+      "dst": "glow_invconv_lu.detop",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_invconv_lu.detop:out->glow_invconv_lu.det:out:boundary",
+      "src": "glow_invconv_lu.detop",
+      "dst": "glow_invconv_lu.det",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "glow_invconv_lu.p:out->glow_invconv_lu.weight:in:tensor",
+      "src": "glow_invconv_lu.p",
+      "dst": "glow_invconv_lu.weight",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_invconv_lu.weight:out->glow_invconv_lu.conv:in:weight",
+      "src": "glow_invconv_lu.weight",
+      "dst": "glow_invconv_lu.conv",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "weight"
+    },
+    {
+      "id": "glow_invconv_lu.x:out->glow_invconv_lu.conv:in:tensor",
+      "src": "glow_invconv_lu.x",
+      "dst": "glow_invconv_lu.conv",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_invconv_lu.p:out->glow_invconv_lu.det:in:weight",
+      "src": "glow_invconv_lu.p",
+      "dst": "glow_invconv_lu.det",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "weight"
+    },
+    {
+      "id": "glow_invconv_lu.conv:out->glow_invconv_lu.y:in:tensor",
+      "src": "glow_invconv_lu.conv",
+      "dst": "glow_invconv_lu.y",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_invconv_lu.det:out->glow_invconv_lu.ld:in:tensor",
+      "src": "glow_invconv_lu.det",
+      "dst": "glow_invconv_lu.ld",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "glow_invconv_lu.x:shape->glow_invconv_lu.detop:shape:shape_dependency",
+      "src": "glow_invconv_lu.x",
+      "dst": "glow_invconv_lu.detop",
+      "src_port": "shape",
+      "dst_port": "shape",
+      "role": "shape_dependency"
+    }
+  ],
+  "facts": [
+    "The 1x1 weight is square and mixes channels at each pixel; determinant scales by H*W.",
+    "LU source learns strict-triangular factors and log absolute diagonal; permutation, masks, signs and identity are buffers.",
+    "Reverse uses an explicit matrix inverse, outside the selected forward view."
+  ],
+  "corrections": [
+    "No attention, spatial kernel3 or extra bias is present.",
+    "Do not count fixed LU buffers as learned parameters."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

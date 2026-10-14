@@ -1,0 +1,796 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "seq2seq_additive_attention",
+  "profile": {
+    "mode_selected": "bahdanau",
+    "query_size": 12,
+    "key_size": 16,
+    "value_size": 20,
+    "output_size": 12,
+    "batch_first": true,
+    "normalize": false,
+    "weight_norm": false,
+    "query_transform": true,
+    "output_transform": true,
+    "dropout": 0.1,
+    "training": false,
+    "single_query": false,
+    "values_argument": "explicit",
+    "label": "Bahdanau / query12,key16,value20 / mask / eval / post-drop weights",
+    "mode": "reviewed static selected module profile",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "eladhoffer/seq2seq.pytorch",
+    "commit": "769c9995594ea0059075280f49a86ac4dace28bd",
+    "snapshot": "a3d8bcbbd352fd75f2ce3ff8561ae9eb0a5ae95ba5abf215fd4ffdb010ba6bc8"
+  },
+  "nodes": [
+    {
+      "id": "seq2seq_additive_attention.root",
+      "label": "Bahdanau attention / query-key-value roles",
+      "kind": "group",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.__init__",
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.set_mask",
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.calc_score",
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "addatt.input_q",
+          "addatt.input_k",
+          "addatt.input_v",
+          "addatt.input_mask"
+        ],
+        [
+          "addatt.body"
+        ],
+        [
+          "addatt.output"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E004",
+        "E002",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "addatt.input_q",
+      "label": "Query / original width12",
+      "kind": "input",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,3,12]",
+      "detail": [],
+      "parent": "seq2seq_additive_attention.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "addatt.input_k",
+      "label": "Keys / width16",
+      "kind": "input",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,8,16]",
+      "detail": [],
+      "parent": "seq2seq_additive_attention.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "addatt.input_v",
+      "label": "Explicit values / width20",
+      "kind": "input",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,8,20]",
+      "detail": [],
+      "parent": "seq2seq_additive_attention.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "addatt.input_mask",
+      "label": "Key mask / selected",
+      "kind": "input",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.set_mask"
+      ],
+      "shape": "[B,8]",
+      "detail": [],
+      "True_means": "blocked",
+      "parent": "seq2seq_additive_attention.root",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "addatt.body",
+      "label": "Additive scoring / explicit values",
+      "kind": "group",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.__init__",
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.forward",
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.calc_score"
+      ],
+      "shape": "[B,3,12]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "addatt.query"
+        ],
+        [
+          "addatt.qexpand",
+          "addatt.kexpand"
+        ],
+        [
+          "addatt.add"
+        ],
+        [
+          "addatt.scoring"
+        ],
+        [
+          "addatt.mask"
+        ],
+        [
+          "addatt.softmax"
+        ],
+        [
+          "addatt.drop"
+        ],
+        [
+          "addatt.context"
+        ],
+        [
+          "addatt.concat"
+        ],
+        [
+          "addatt.fusion"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": "seq2seq_additive_attention.root",
+      "source_evidence": [
+        "E001",
+        "E003",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "addatt.query",
+      "label": "Query Linear12 -> key width16",
+      "kind": "linear",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.__init__",
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,3,16]",
+      "detail": [],
+      "parameter": "linear_q",
+      "bias": true,
+      "parent": "addatt.body",
+      "source_evidence": [
+        "E001",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "addatt.qexpand",
+      "label": "Unsqueeze + expand query over keys",
+      "kind": "tensor",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.calc_score"
+      ],
+      "shape": "[B,3,8,16]",
+      "detail": [],
+      "unsqueeze_dim": 2,
+      "parent": "addatt.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "addatt.kexpand",
+      "label": "Unsqueeze + expand keys over queries",
+      "kind": "tensor",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.calc_score"
+      ],
+      "shape": "[B,3,8,16]",
+      "detail": [],
+      "unsqueeze_dim": 1,
+      "parent": "addatt.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "addatt.add",
+      "label": "Projected query + key",
+      "kind": "add",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.calc_score"
+      ],
+      "shape": "[B,3,8,16]",
+      "detail": [],
+      "parent": "addatt.body",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "query",
+        "keys"
+      ]
+    },
+    {
+      "id": "addatt.scoring",
+      "label": "Bahdanau scalar scorer",
+      "kind": "group",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.__init__",
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.calc_score"
+      ],
+      "shape": "[B,3,8]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "addatt.body",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "addatt.flat",
+      "label": "View paired query-key rows",
+      "kind": "tensor",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.calc_score"
+      ],
+      "shape": "[B*3*8,16]",
+      "detail": [],
+      "parent": "addatt.scoring",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "addatt.tanh",
+      "label": "Tanh pair sum",
+      "kind": "tanh",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.calc_score"
+      ],
+      "shape": "[B*3*8,16]",
+      "detail": [],
+      "parent": "addatt.scoring",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "addatt.linear",
+      "label": "Score Linear16 -> 1",
+      "kind": "linear",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.__init__",
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.calc_score"
+      ],
+      "shape": "[B*3*8,1]",
+      "detail": [],
+      "parameter": "linear_att",
+      "bias": true,
+      "weight_norm": false,
+      "parent": "addatt.scoring",
+      "source_evidence": [
+        "E001",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "addatt.reshape",
+      "label": "View scores B,query,key",
+      "kind": "tensor",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.calc_score"
+      ],
+      "shape": "[B,3,8]",
+      "detail": [],
+      "parent": "addatt.scoring",
+      "source_evidence": [
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "addatt.mask",
+      "label": "Expand key mask / fill -1e12",
+      "kind": "mask",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.forward",
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.set_mask"
+      ],
+      "shape": "[B,3,8]",
+      "detail": [],
+      "fill": -1000000000000.0,
+      "mask_expansion": "unsqueeze(1).expand(b,t_q,t_k)",
+      "parent": "addatt.body",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "scores",
+        "mask"
+      ]
+    },
+    {
+      "id": "addatt.softmax",
+      "label": "Softmax over key positions",
+      "kind": "softmax",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,3,8]",
+      "detail": [],
+      "dim": 2,
+      "parent": "addatt.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "addatt.drop",
+      "label": "Attention Dropout p=.1 / eval",
+      "kind": "dropout",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.__init__",
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,3,8]",
+      "detail": [],
+      "p": 0.1,
+      "training": false,
+      "parent": "addatt.body",
+      "source_evidence": [
+        "E001",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "addatt.context",
+      "label": "bmm(post-drop weights, values)",
+      "kind": "bmm",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,3,20]",
+      "detail": [],
+      "keys_equal_values": false,
+      "parent": "addatt.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "weights",
+        "values"
+      ]
+    },
+    {
+      "id": "addatt.concat",
+      "label": "Concat [original query, context]",
+      "kind": "concat",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,3,32]",
+      "detail": [],
+      "dim": 2,
+      "ordered_operands": [
+        "query",
+        "context"
+      ],
+      "parent": "addatt.body",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "query",
+        "context"
+      ]
+    },
+    {
+      "id": "addatt.fusion",
+      "label": "Output fusion",
+      "kind": "group",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.__init__",
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,3,12]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "addatt.body",
+      "source_evidence": [
+        "E001",
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "addatt.outlinear",
+      "label": "Output Linear32 -> 12",
+      "kind": "linear",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.__init__"
+      ],
+      "shape": "[B,3,12]",
+      "detail": [],
+      "parameter": "linear_out",
+      "bias": true,
+      "weight_norm": false,
+      "parent": "addatt.fusion",
+      "source_evidence": [
+        "E001"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "addatt.outtanh",
+      "label": "Tanh output",
+      "kind": "tanh",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,3,12]",
+      "detail": [],
+      "parent": "addatt.fusion",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "addatt.output",
+      "label": "Return context, post-drop weights",
+      "kind": "output",
+      "source": [
+        "seq2seq-additive-sequence/seq2seq/models/modules/attention.py::AttentionLayer.forward"
+      ],
+      "shape": "[B,3,12]; [B,3,8]",
+      "detail": [],
+      "return_fields": [
+        "context",
+        "scores_normalized"
+      ],
+      "weight_origin": "post_dropout",
+      "parent": "seq2seq_additive_attention.root",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "context",
+        "weights"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "addatt.scoring:in->addatt.flat:in:boundary",
+      "src": "addatt.scoring",
+      "dst": "addatt.flat",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "addatt.flat:out->addatt.tanh:in:tensor",
+      "src": "addatt.flat",
+      "dst": "addatt.tanh",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.tanh:out->addatt.linear:in:tensor",
+      "src": "addatt.tanh",
+      "dst": "addatt.linear",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.linear:out->addatt.reshape:in:tensor",
+      "src": "addatt.linear",
+      "dst": "addatt.reshape",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.reshape:out->addatt.scoring:out:boundary",
+      "src": "addatt.reshape",
+      "dst": "addatt.scoring",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "addatt.fusion:in->addatt.outlinear:in:boundary",
+      "src": "addatt.fusion",
+      "dst": "addatt.outlinear",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "addatt.outlinear:out->addatt.outtanh:in:tensor",
+      "src": "addatt.outlinear",
+      "dst": "addatt.outtanh",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.outtanh:out->addatt.fusion:out:boundary",
+      "src": "addatt.outtanh",
+      "dst": "addatt.fusion",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "addatt.input_q:out->addatt.query:input:tensor",
+      "src": "addatt.input_q",
+      "dst": "addatt.query",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.query:out->addatt.qexpand:input:tensor",
+      "src": "addatt.query",
+      "dst": "addatt.qexpand",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.input_k:out->addatt.kexpand:input:tensor",
+      "src": "addatt.input_k",
+      "dst": "addatt.kexpand",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.qexpand:out->addatt.add:query:tensor",
+      "src": "addatt.qexpand",
+      "dst": "addatt.add",
+      "src_port": "out",
+      "dst_port": "query",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.kexpand:out->addatt.add:keys:tensor",
+      "src": "addatt.kexpand",
+      "dst": "addatt.add",
+      "src_port": "out",
+      "dst_port": "keys",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.add:out->addatt.scoring:in:tensor",
+      "src": "addatt.add",
+      "dst": "addatt.scoring",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.scoring:out->addatt.mask:scores:tensor",
+      "src": "addatt.scoring",
+      "dst": "addatt.mask",
+      "src_port": "out",
+      "dst_port": "scores",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.input_mask:out->addatt.mask:mask:mask",
+      "src": "addatt.input_mask",
+      "dst": "addatt.mask",
+      "src_port": "out",
+      "dst_port": "mask",
+      "role": "mask"
+    },
+    {
+      "id": "addatt.mask:out->addatt.softmax:in:tensor",
+      "src": "addatt.mask",
+      "dst": "addatt.softmax",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.softmax:out->addatt.drop:in:tensor",
+      "src": "addatt.softmax",
+      "dst": "addatt.drop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.drop:out->addatt.context:weights:tensor",
+      "src": "addatt.drop",
+      "dst": "addatt.context",
+      "src_port": "out",
+      "dst_port": "weights",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.input_v:out->addatt.context:values:tensor",
+      "src": "addatt.input_v",
+      "dst": "addatt.context",
+      "src_port": "out",
+      "dst_port": "values",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.input_q:out->addatt.concat:query:tensor",
+      "src": "addatt.input_q",
+      "dst": "addatt.concat",
+      "src_port": "out",
+      "dst_port": "query",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.context:out->addatt.concat:context:tensor",
+      "src": "addatt.context",
+      "dst": "addatt.concat",
+      "src_port": "out",
+      "dst_port": "context",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.concat:out->addatt.fusion:in:tensor",
+      "src": "addatt.concat",
+      "dst": "addatt.fusion",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.fusion:out->addatt.output:context:tensor",
+      "src": "addatt.fusion",
+      "dst": "addatt.output",
+      "src_port": "out",
+      "dst_port": "context",
+      "role": "tensor"
+    },
+    {
+      "id": "addatt.drop:out->addatt.output:weights:tensor",
+      "src": "addatt.drop",
+      "dst": "addatt.output",
+      "src_port": "out",
+      "dst_port": "weights",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "linear_q projects queries to key width; keys are not projected by a separate K Linear in this selected source branch.",
+    "Query/key tensors expand to all pairs, add, Tanh, and linear_att produce scalar additive scores.",
+    "normalize=False and weight_norm=False explicitly select ordinary biased score/output linears.",
+    "A supplied key mask expands over queries and uses finite-1e12, then Softmax(dim2) and attention Dropout.",
+    "Values are explicitly distinct inputs; when values=None the source alternatively reuses keys.",
+    "Output fusion concatenates original query before weighted context; returned weights come after Dropout, even though selected eval makes it identity."
+  ],
+  "corrections": [
+    "Do not replace additive scoring with dot or add K/V projections absent from this branch.",
+    "Do not silently use keys as explicit values; do not return pre-dropout weights or swap concat operands."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

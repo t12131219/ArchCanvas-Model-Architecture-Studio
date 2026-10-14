@@ -1,0 +1,22 @@
+{
+  "task": "IMDB binary sentiment classification",
+  "mode": "batch evaluation",
+  "vocabulary_size": "V=len(TEXT.vocab)",
+  "vocabulary_max_size_setting": 20000,
+  "embedding_dim": 128,
+  "hidden_dim": 256,
+  "output_dim": 1,
+  "num_layers": 1,
+  "bidirectional": false,
+  "batch_first": false,
+  "default_bias": true,
+  "default_dropout": 0,
+  "batch_size_setting": 128,
+  "input_layout": "[T,B]",
+  "lengths_layout": "[B]",
+  "output_layout": "[B] logits from RNN.forward",
+  "packing": "sorted within batch, pack_padded_sequence",
+  "caller_output": "sigmoid probabilities, then threshold p>0.5 labels",
+  "training_loss": "binary_cross_entropy_with_logits outside forward",
+  "lstm_internals": "opaque PyTorch library implementation"
+}

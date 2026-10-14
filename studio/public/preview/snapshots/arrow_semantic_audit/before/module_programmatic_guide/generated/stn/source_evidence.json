@@ -1,0 +1,50 @@
+{
+  "source_project": "pytorch-tutorials-stn",
+  "repository": "pytorch/tutorials",
+  "commit": "ce8d551d11baebcf8064be3caba7b28a4d84a15d",
+  "source_snapshot_sha256": "66714505e40795e84cd7cbb187313080db88e81582c7b8611ac19ec1145bbab3",
+  "entry": "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "pytorch-tutorials-stn/LICENSE": {
+      "sha256": "5703fcbe2d5dfcc48d486d26e4b9d2e48255c24602e1bd0270b60b8978116f86",
+      "lines": 29,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/tutorials/ce8d551d11baebcf8064be3caba7b28a4d84a15d/LICENSE",
+      "derived_from": null
+    },
+    "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py": {
+      "sha256": "b797fef3a76e0765ccf1c9b45b45bbf48d34e7d1cb47139f08c8001981d0b362",
+      "lines": 257,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/tutorials/ce8d551d11baebcf8064be3caba7b28a4d84a15d/intermediate_source/spatial_transformer_tutorial.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.__init__": {
+      "path": "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py",
+      "symbol": "Net.__init__",
+      "start": 94,
+      "end": 121,
+      "snippet": "    def __init__(self):\n        super(Net, self).__init__()\n        self.conv1 = nn.Conv2d(1, 10, kernel_size=5)\n        self.conv2 = nn.Conv2d(10, 20, kernel_size=5)\n        self.conv2_drop = nn.Dropout2d()\n        self.fc1 = nn.Linear(320, 50)\n        self.fc2 = nn.Linear(50, 10)\n\n        # Spatial transformer localization-network\n        self.localization = nn.Sequential(\n            nn.Conv2d(1, 8, kernel_size=7),\n            nn.MaxPool2d(2, stride=2),\n            nn.ReLU(True),\n            nn.Conv2d(8, 10, kernel_size=5),\n            nn.MaxPool2d(2, stride=2),\n            nn.ReLU(True)\n        )\n\n        # Regressor for the 3 * 2 affine matrix\n        self.fc_loc = nn.Sequential(\n            nn.Linear(10 * 3 * 3, 32),\n            nn.ReLU(True),\n            nn.Linear(32, 3 * 2)\n        )\n\n        # Initialize the weights/bias with identity transformation\n        self.fc_loc[2].weight.data.zero_()\n        self.fc_loc[2].bias.data.copy_(torch.tensor([1, 0, 0, 0, 1, 0], dtype=torch.float))",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py::Net.stn": {
+      "path": "pytorch-tutorials-stn/intermediate_source/spatial_transformer_tutorial.py",
+      "symbol": "Net.stn",
+      "start": 124,
+      "end": 133,
+      "snippet": "    def stn(self, x):\n        xs = self.localization(x)\n        xs = xs.view(-1, 10 * 3 * 3)\n        theta = self.fc_loc(xs)\n        theta = theta.view(-1, 2, 3)\n\n        grid = F.affine_grid(theta, x.size())\n        x = F.grid_sample(x, grid)\n\n        return x",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "pytorch-tutorials-stn/LICENSE"
+  ]
+}

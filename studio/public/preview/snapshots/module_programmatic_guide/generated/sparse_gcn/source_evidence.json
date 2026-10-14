@@ -1,0 +1,50 @@
+{
+  "source_project": "pygcn-modules",
+  "repository": "tkipf/pygcn",
+  "commit": "1600b5b748b3976413d1e307540ccc62605b4d6d",
+  "source_snapshot_sha256": "7bd4964ddcd5307bf07c2f8e5c6937f751472b5f84577faca8c6dee6b067e0eb",
+  "entry": "pygcn-modules/pygcn/layers.py::GraphConvolution.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "pygcn-modules/LICENCE": {
+      "sha256": "e84a9264b1745813abd23c3bf585e311bcafb34bc9020d34589ef51ff3058d54",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/tkipf/pygcn/1600b5b748b3976413d1e307540ccc62605b4d6d/LICENCE",
+      "derived_from": null
+    },
+    "pygcn-modules/pygcn/layers.py": {
+      "sha256": "c041cdae240d603452d98de5311efca191cc11db37f865c18c237653eff202b2",
+      "lines": 42,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/tkipf/pygcn/1600b5b748b3976413d1e307540ccc62605b4d6d/pygcn/layers.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "pygcn-modules/pygcn/layers.py::GraphConvolution.__init__": {
+      "path": "pygcn-modules/pygcn/layers.py",
+      "symbol": "GraphConvolution.__init__",
+      "start": 14,
+      "end": 23,
+      "snippet": "    def __init__(self, in_features, out_features, bias=True):\n        super(GraphConvolution, self).__init__()\n        self.in_features = in_features\n        self.out_features = out_features\n        self.weight = Parameter(torch.FloatTensor(in_features, out_features))\n        if bias:\n            self.bias = Parameter(torch.FloatTensor(out_features))\n        else:\n            self.register_parameter('bias', None)\n        self.reset_parameters()",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "pygcn-modules/pygcn/layers.py::GraphConvolution.forward": {
+      "path": "pygcn-modules/pygcn/layers.py",
+      "symbol": "GraphConvolution.forward",
+      "start": 31,
+      "end": 37,
+      "snippet": "    def forward(self, input, adj):\n        support = torch.mm(input, self.weight)\n        output = torch.spmm(adj, support)\n        if self.bias is not None:\n            return output + self.bias\n        else:\n            return output",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "pygcn-modules/LICENCE"
+  ]
+}

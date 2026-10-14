@@ -1,0 +1,110 @@
+{
+  "source_project": "torchvision-v0.9.0-modules",
+  "repository": "pytorch/vision",
+  "commit": "01dfa8ea81972bb74b52dc01e6a1b43b26b62020",
+  "source_snapshot_sha256": "66209ff0a5fcaf22d0c55fcc2b008aa29f50dec4f265cbd902de8482ed44f5bd",
+  "entry": "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionA",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "torchvision-v0.9.0-modules/LICENSE": {
+      "sha256": "6502f676851cfe25f8af75531dfb32375b7325b73c37e7b43741fa422893e71d",
+      "lines": 29,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/LICENSE",
+      "derived_from": null
+    },
+    "torchvision-v0.9.0-modules/torchvision/models/inception.py": {
+      "sha256": "bed2e45c0ea37d0e9caa966b009fdfaa7750098b8c783456da470dea7cb3fa31",
+      "lines": 478,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/pytorch/vision/01dfa8ea81972bb74b52dc01e6a1b43b26b62020/torchvision/models/inception.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "torchvision-v0.9.0-modules/torchvision/models/inception.py::Inception3.__init__": {
+      "path": "torchvision-v0.9.0-modules/torchvision/models/inception.py",
+      "symbol": "Inception3.__init__",
+      "start": 65,
+      "end": 131,
+      "snippet": "    def __init__(\n        self,\n        num_classes: int = 1000,\n        aux_logits: bool = True,\n        transform_input: bool = False,\n        inception_blocks: Optional[List[Callable[..., nn.Module]]] = None,\n        init_weights: Optional[bool] = None\n    ) -> None:\n        super(Inception3, self).__init__()\n        if inception_blocks is None:\n            inception_blocks = [\n                BasicConv2d, InceptionA, InceptionB, InceptionC,\n                InceptionD, InceptionE, InceptionAux\n            ]\n        if init_weights is None:\n            warnings.warn('The default weight initialization of inception_v3 will be changed in future releases of '\n                          'torchvision. If you wish to keep the old behavior (which leads to long initialization times'\n                          ' due to scipy/scipy#11299), please set init_weights=True.', FutureWarning)\n            init_weights = True\n        assert len(inception_blocks) == 7\n        conv_block = inception_blocks[0]\n        inception_a = inception_blocks[1]\n        inception_b = inception_blocks[2]\n        inception_c = inception_blocks[3]\n        inception_d = inception_blocks[4]\n        inception_e = inception_blocks[5]\n        inception_aux = inception_blocks[6]\n\n        self.aux_logits = aux_logits\n        self.transform_input = transform_input\n        self.Conv2d_1a_3x3 = conv_block(3, 32, kernel_size=3, stride=2)\n        self.Conv2d_2a_3x3 = conv_block(32, 32, kernel_size=3)\n        self.Conv2d_2b_3x3 = conv_block(32, 64, kernel_size=3, padding=1)\n        self.maxpool1 = nn.MaxPool2d(kernel_size=3, stride=2)\n        self.Conv2d_3b_1x1 = conv_block(64, 80, kernel_size=1)\n        self.Conv2d_4a_3x3 = conv_block(80, 192, kernel_size=3)\n        self.maxpool2 = nn.MaxPool2d(kernel_size=3, stride=2)\n        self.Mixed_5b = inception_a(192, pool_features=32)\n        self.Mixed_5c = inception_a(256, pool_features=64)\n        self.Mixed_5d = inception_a(288, pool_features=64)\n        self.Mixed_6a = inception_b(288)\n        self.Mixed_6b = inception_c(768, channels_7x7=128)\n        self.Mixed_6c = inception_c(768, channels_7x7=160)\n        self.Mixed_6d = inception_c(768, channels_7x7=160)\n        self.Mixed_6e = inception_c(768, channels_7x7=192)\n        self.AuxLogits: Optional[nn.Module] = None\n        if aux_logits:\n            self.AuxLogits = inception_aux(768, num_classes)\n        self.Mixed_7a = inception_d(768)\n        self.Mixed_7b = inception_e(1280)\n        self.Mixed_7c = inception_e(2048)\n        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))\n        self.dropout = nn.Dropout()\n        self.fc = nn.Linear(2048, num_classes)\n        if init_weights:\n            for m in self.modules():\n                if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):\n                    import scipy.stats as stats\n                    stddev = m.stddev if hasattr(m, 'stddev') else 0.1\n                    X = stats.truncnorm(-2, 2, scale=stddev)\n                    values = torch.as_tensor(X.rvs(m.weight.numel()), dtype=m.weight.dtype)\n                    values = values.view(m.weight.size())\n                    with torch.no_grad():\n                        m.weight.copy_(values)\n                elif isinstance(m, nn.BatchNorm2d):\n                    nn.init.constant_(m.weight, 1)\n                    nn.init.constant_(m.bias, 0)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    },
+    "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionA": {
+      "path": "torchvision-v0.9.0-modules/torchvision/models/inception.py",
+      "symbol": "InceptionA",
+      "start": 214,
+      "end": 254,
+      "snippet": "class InceptionA(nn.Module):\n\n    def __init__(\n        self,\n        in_channels: int,\n        pool_features: int,\n        conv_block: Optional[Callable[..., nn.Module]] = None\n    ) -> None:\n        super(InceptionA, self).__init__()\n        if conv_block is None:\n            conv_block = BasicConv2d\n        self.branch1x1 = conv_block(in_channels, 64, kernel_size=1)\n\n        self.branch5x5_1 = conv_block(in_channels, 48, kernel_size=1)\n        self.branch5x5_2 = conv_block(48, 64, kernel_size=5, padding=2)\n\n        self.branch3x3dbl_1 = conv_block(in_channels, 64, kernel_size=1)\n        self.branch3x3dbl_2 = conv_block(64, 96, kernel_size=3, padding=1)\n        self.branch3x3dbl_3 = conv_block(96, 96, kernel_size=3, padding=1)\n\n        self.branch_pool = conv_block(in_channels, pool_features, kernel_size=1)\n\n    def _forward(self, x: Tensor) -> List[Tensor]:\n        branch1x1 = self.branch1x1(x)\n\n        branch5x5 = self.branch5x5_1(x)\n        branch5x5 = self.branch5x5_2(branch5x5)\n\n        branch3x3dbl = self.branch3x3dbl_1(x)\n        branch3x3dbl = self.branch3x3dbl_2(branch3x3dbl)\n        branch3x3dbl = self.branch3x3dbl_3(branch3x3dbl)\n\n        branch_pool = F.avg_pool2d(x, kernel_size=3, stride=1, padding=1)\n        branch_pool = self.branch_pool(branch_pool)\n\n        outputs = [branch1x1, branch5x5, branch3x3dbl, branch_pool]\n        return outputs\n\n    def forward(self, x: Tensor) -> Tensor:\n        outputs = self._forward(x)\n        return torch.cat(outputs, 1)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E005"
+    },
+    "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionA.__init__": {
+      "path": "torchvision-v0.9.0-modules/torchvision/models/inception.py",
+      "symbol": "InceptionA.__init__",
+      "start": 216,
+      "end": 234,
+      "snippet": "    def __init__(\n        self,\n        in_channels: int,\n        pool_features: int,\n        conv_block: Optional[Callable[..., nn.Module]] = None\n    ) -> None:\n        super(InceptionA, self).__init__()\n        if conv_block is None:\n            conv_block = BasicConv2d\n        self.branch1x1 = conv_block(in_channels, 64, kernel_size=1)\n\n        self.branch5x5_1 = conv_block(in_channels, 48, kernel_size=1)\n        self.branch5x5_2 = conv_block(48, 64, kernel_size=5, padding=2)\n\n        self.branch3x3dbl_1 = conv_block(in_channels, 64, kernel_size=1)\n        self.branch3x3dbl_2 = conv_block(64, 96, kernel_size=3, padding=1)\n        self.branch3x3dbl_3 = conv_block(96, 96, kernel_size=3, padding=1)\n\n        self.branch_pool = conv_block(in_channels, pool_features, kernel_size=1)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E006"
+    },
+    "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionA._forward": {
+      "path": "torchvision-v0.9.0-modules/torchvision/models/inception.py",
+      "symbol": "InceptionA._forward",
+      "start": 236,
+      "end": 250,
+      "snippet": "    def _forward(self, x: Tensor) -> List[Tensor]:\n        branch1x1 = self.branch1x1(x)\n\n        branch5x5 = self.branch5x5_1(x)\n        branch5x5 = self.branch5x5_2(branch5x5)\n\n        branch3x3dbl = self.branch3x3dbl_1(x)\n        branch3x3dbl = self.branch3x3dbl_2(branch3x3dbl)\n        branch3x3dbl = self.branch3x3dbl_3(branch3x3dbl)\n\n        branch_pool = F.avg_pool2d(x, kernel_size=3, stride=1, padding=1)\n        branch_pool = self.branch_pool(branch_pool)\n\n        outputs = [branch1x1, branch5x5, branch3x3dbl, branch_pool]\n        return outputs",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E007"
+    },
+    "torchvision-v0.9.0-modules/torchvision/models/inception.py::InceptionA.forward": {
+      "path": "torchvision-v0.9.0-modules/torchvision/models/inception.py",
+      "symbol": "InceptionA.forward",
+      "start": 252,
+      "end": 254,
+      "snippet": "    def forward(self, x: Tensor) -> Tensor:\n        outputs = self._forward(x)\n        return torch.cat(outputs, 1)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E008"
+    },
+    "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d": {
+      "path": "torchvision-v0.9.0-modules/torchvision/models/inception.py",
+      "symbol": "BasicConv2d",
+      "start": 463,
+      "end": 478,
+      "snippet": "class BasicConv2d(nn.Module):\n\n    def __init__(\n        self,\n        in_channels: int,\n        out_channels: int,\n        **kwargs: Any\n    ) -> None:\n        super(BasicConv2d, self).__init__()\n        self.conv = nn.Conv2d(in_channels, out_channels, bias=False, **kwargs)\n        self.bn = nn.BatchNorm2d(out_channels, eps=0.001)\n\n    def forward(self, x: Tensor) -> Tensor:\n        x = self.conv(x)\n        x = self.bn(x)\n        return F.relu(x, inplace=True)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.__init__": {
+      "path": "torchvision-v0.9.0-modules/torchvision/models/inception.py",
+      "symbol": "BasicConv2d.__init__",
+      "start": 465,
+      "end": 473,
+      "snippet": "    def __init__(\n        self,\n        in_channels: int,\n        out_channels: int,\n        **kwargs: Any\n    ) -> None:\n        super(BasicConv2d, self).__init__()\n        self.conv = nn.Conv2d(in_channels, out_channels, bias=False, **kwargs)\n        self.bn = nn.BatchNorm2d(out_channels, eps=0.001)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "torchvision-v0.9.0-modules/torchvision/models/inception.py::BasicConv2d.forward": {
+      "path": "torchvision-v0.9.0-modules/torchvision/models/inception.py",
+      "symbol": "BasicConv2d.forward",
+      "start": 475,
+      "end": 478,
+      "snippet": "    def forward(self, x: Tensor) -> Tensor:\n        x = self.conv(x)\n        x = self.bn(x)\n        return F.relu(x, inplace=True)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "torchvision-v0.9.0-modules/LICENSE"
+  ]
+}

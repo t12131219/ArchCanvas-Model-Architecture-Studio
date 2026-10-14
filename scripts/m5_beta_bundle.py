@@ -50,8 +50,41 @@ LIFECYCLE_FILES = (
     "docs/evidence/m5-beta2-preflight-transformer-v1/receipt.json",
 )
 VERSION = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+")
-MAX_BYTES = 500 * 1024 * 1024
-OPTIONAL_EVIDENCE_FILES = ("docs/evidence/m5-host-availability-v1.json",)
+# The recursive preview carries its source-bound current/historical catalog.
+# Keep both archive limits explicit and bounded while accommodating that data.
+MAX_BYTES = 768 * 1024 * 1024
+MAX_FILES = 20_000
+OPTIONAL_EVIDENCE_FILES = (
+    "docs/evidence/m5-host-availability-v1.json",
+    "docs/preview-migration.md",
+    "docs/preview-migration-validation.json",
+    "docs/evidence/preview-migration-20261014/backend-regression.log",
+    "docs/evidence/preview-migration-20261014/frontend-regression.log",
+    "docs/evidence/preview-migration-20261014/http-assets.json",
+    "docs/evidence/preview-migration-20261014/engine-regression.log",
+    "docs/evidence/preview-migration-20261014/engine-regression.json",
+    "docs/evidence/preview-migration-20261014/draft-constraints-final.log",
+    "docs/evidence/preview-migration-20261014/ui-verification.json",
+    "docs/evidence/preview-migration-20261014/ui-export-pdf-receipt.json",
+    "docs/evidence/preview-migration-20261014/ui-export-png-receipt.json",
+    "docs/evidence/preview-migration-20261014/ui-preview.jpg",
+    "docs/evidence/preview-migration-20261014/preview-bridge-smoke.json",
+    "docs/evidence/preview-migration-20261014/preview-bridge-final-dist.json",
+    "docs/evidence/preview-migration-20261014/formal-catalog-smoke.json",
+    "docs/evidence/preview-migration-20261014/formal-panel-smoke.json",
+    "docs/evidence/preview-migration-20261014/formal-draft-edge-smoke.json",
+    "docs/evidence/preview-migration-20261014/formal-routing-persist-smoke.json",
+    "docs/evidence/preview-migration-20261014/formal-catalog-smoke.mjs",
+    "docs/evidence/preview-migration-20261014/formal-panel-smoke.mjs",
+    "docs/evidence/preview-migration-20261014/formal-draft-edge-smoke.mjs",
+    "docs/evidence/preview-migration-20261014/formal-routing-persist-smoke.mjs",
+    "docs/evidence/preview-migration-20261014/vendor-integrity.json",
+    "docs/evidence/preview-migration-20261014/frontend-final-targeted.log",
+    "docs/evidence/preview-migration-20261014/frontend-final-build.log",
+    "docs/evidence/preview-migration-20261014/focus-final-change.json",
+    "studio/scripts/vendor-summary-preview.py",
+    "studio/scripts/test-preview-bridge.mjs",
+)
 
 
 def required_release_files(version: str) -> set[str]:
@@ -69,6 +102,12 @@ def digest(data: bytes) -> str:
 
 def encode(value: object) -> bytes:
     return (json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+
+
+def validate_bundle_budget(total_bytes: int, file_count: int) -> None:
+    """Count all archive payload bytes and regular files, including its manifest."""
+    if total_bytes > MAX_BYTES or file_count > MAX_FILES:
+        raise ValueError("bundle exceeds bounded size or file count")
 
 
 def valid_relative(path_text: str) -> bool:
@@ -189,7 +228,9 @@ def pack(root: Path, output: Path, version: str | None = None) -> dict:
         raise ValueError("bundle version must match release manifest version")
     if output.exists():
         raise ValueError(f"refusing to replace an existing bundle: {output}")
-    contents = {path.relative_to(root).as_posix(): path.read_bytes() for path in source_paths(root)}
+    paths = source_paths(root)
+    validate_bundle_budget(sum(path.stat().st_size for path in paths), len(paths) + 1)
+    contents = {path.relative_to(root).as_posix(): path.read_bytes() for path in paths}
     # Older frozen bundles retain their original inventories. New checkouts
     # bind every helper imported by the current runtime/export entry points.
     for name in CURRENT_HELPERS:
@@ -203,6 +244,8 @@ def pack(root: Path, output: Path, version: str | None = None) -> dict:
         "releaseManifestSha256": digest(contents["docs/evidence/m5-beta-release-manifest.json"]),
         "files": [{"path": name, "sha256": digest(data), "bytes": len(data)} for name, data in contents.items()],
     }
+    encoded_manifest = encode(manifest)
+    validate_bundle_budget(sum(len(data) for data in contents.values()) + len(encoded_manifest), len(contents) + 1)
     # Reject mixed snapshots if an editor changed an input while it was read.
     for name, data in contents.items():
         if (root / name).read_bytes() != data:
@@ -211,7 +254,7 @@ def pack(root: Path, output: Path, version: str | None = None) -> dict:
     with output.open("xb") as raw:
         with gzip.GzipFile(fileobj=raw, mode="wb", filename="", mtime=0) as compressed:
             with tarfile.open(fileobj=compressed, mode="w") as archive:
-                for name, data in {**contents, BUNDLE_MANIFEST: encode(manifest)}.items():
+                for name, data in {**contents, BUNDLE_MANIFEST: encoded_manifest}.items():
                     info = tarfile.TarInfo(f"archcanvas-{bundle_version}/{name}")
                     info.size, info.mode, info.mtime = len(data), 0o644, 0
                     archive.addfile(info, io.BytesIO(data))
@@ -241,6 +284,7 @@ def validate_bundle_metadata(manifest: dict) -> None:
             raise ValueError("invalid bundle inventory path")
         if not re.fullmatch(r"[0-9a-f]{64}", str(row["sha256"])) or type(row["bytes"]) is not int or row["bytes"] < 0:
             raise ValueError("invalid bundle hash or byte count")
+    validate_bundle_budget(sum(row["bytes"] for row in rows), len(rows) + 1)
     if len({row["path"] for row in rows}) != len(rows):
         raise ValueError("duplicate bundle inventory row")
     names = {row["path"] for row in rows} | {BUNDLE_MANIFEST}
@@ -307,8 +351,7 @@ def read_bundle(bundle: Path) -> tuple[dict, dict[str, bytes]]:
             if name in contents:
                 raise ValueError(f"duplicate archive path: {name}")
             total += member.size
-            if total > MAX_BYTES or len(contents) >= 5000:
-                raise ValueError("bundle exceeds bounded size or file count")
+            validate_bundle_budget(total, len(contents) + 1)
             reader = archive.extractfile(member)
             if reader is None:
                 raise ValueError(f"unreadable archive file: {name}")

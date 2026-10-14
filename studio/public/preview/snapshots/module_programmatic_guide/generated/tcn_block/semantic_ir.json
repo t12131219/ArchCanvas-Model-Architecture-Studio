@@ -1,0 +1,640 @@
+{
+  "schema": "model-zoo-semantic-ir/1",
+  "model": "tcn_block",
+  "profile": {
+    "n_inputs": 16,
+    "n_outputs": 32,
+    "kernel_size": 3,
+    "dilation": 2,
+    "padding": 4,
+    "stride": 1,
+    "dropout": 0.2,
+    "training": false,
+    "input_shape": [
+      "B",
+      16,
+      16
+    ],
+    "output_shape": [
+      "B",
+      32,
+      16
+    ],
+    "label": "16->32 channels / k3,d2,p4 / right Chomp4 / eval example",
+    "mode": "reviewed static selected module profile",
+    "model_executed": false,
+    "artifact_scope": "module"
+  },
+  "source": {
+    "repository": "locuslab/TCN",
+    "commit": "2f8c2b817050206397458dfd1f5a25ce8a32fe65",
+    "snapshot": "08772997da994207b0813df7dda75e740c672efc4bfb378b3a47a60ec6909b55"
+  },
+  "nodes": [
+    {
+      "id": "tcn_block.root",
+      "label": "TCN TemporalBlock / causal residual",
+      "kind": "group",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::Chomp1d.__init__",
+        "tcn-sequence/TCN/tcn.py::Chomp1d.forward",
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.__init__",
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.init_weights",
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.forward"
+      ],
+      "shape": "",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "tcn.input"
+        ],
+        [
+          "tcn.body"
+        ],
+        [
+          "tcn.output"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": null,
+      "source_evidence": [
+        "E001",
+        "E002",
+        "E003",
+        "E005",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tcn.input",
+      "label": "Input causal sequence",
+      "kind": "input",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.forward"
+      ],
+      "shape": "[B,16,16]",
+      "detail": [],
+      "parent": "tcn_block.root",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tcn.body",
+      "label": "TemporalBlock / projected shortcut",
+      "kind": "group",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.__init__",
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.forward"
+      ],
+      "shape": "[B,16,16] -> [B,32,16]",
+      "detail": [],
+      "mode": "graph",
+      "ranks": [
+        [
+          "tcn.main",
+          "tcn.projection"
+        ],
+        [
+          "tcn.add"
+        ],
+        [
+          "tcn.relu"
+        ]
+      ],
+      "rank_gap": 64,
+      "column_gap": 48,
+      "parent": "tcn_block.root",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tcn.main",
+      "label": "net / two convolution stages",
+      "kind": "group",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.__init__",
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.forward"
+      ],
+      "shape": "[B,32,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tcn.body",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tcn.stage1",
+      "label": "Causal Conv stage 1",
+      "kind": "group",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.__init__",
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.forward",
+        "tcn-sequence/TCN/tcn.py::Chomp1d.forward"
+      ],
+      "shape": "[B,32,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tcn.main",
+      "source_evidence": [
+        "E003",
+        "E004",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tcn.stage1.conv",
+      "label": "Weight-norm Conv3 / dilation2",
+      "kind": "conv1d",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.__init__"
+      ],
+      "shape": "[B,32,20]",
+      "detail": [],
+      "parameter": "conv1",
+      "parameters": [
+        "conv1.weight_g",
+        "conv1.weight_v",
+        "conv1.bias"
+      ],
+      "in_channels": 16,
+      "out_channels": 32,
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 4,
+      "dilation": 2,
+      "bias": true,
+      "weight_norm": true,
+      "parent": "tcn.stage1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tcn.stage1.chomp",
+      "label": "Chomp right4 + contiguous",
+      "kind": "tensor",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.__init__",
+        "tcn-sequence/TCN/tcn.py::Chomp1d.forward"
+      ],
+      "shape": "[B,32,16]",
+      "detail": [],
+      "expression": "x[:, :, :-self.chomp_size].contiguous()",
+      "chomp_size": 4,
+      "crop_side": "right",
+      "parent": "tcn.stage1",
+      "source_evidence": [
+        "E003",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tcn.stage1.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.__init__"
+      ],
+      "shape": "[B,32,16]",
+      "detail": [],
+      "inplace": false,
+      "parent": "tcn.stage1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tcn.stage1.drop",
+      "label": "Dropout p=.2 / eval identity",
+      "kind": "dropout",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.__init__"
+      ],
+      "shape": "[B,32,16]",
+      "detail": [],
+      "p": 0.2,
+      "training": false,
+      "parent": "tcn.stage1",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tcn.stage2",
+      "label": "Causal Conv stage 2",
+      "kind": "group",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.__init__",
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.forward",
+        "tcn-sequence/TCN/tcn.py::Chomp1d.forward"
+      ],
+      "shape": "[B,32,16]",
+      "detail": [],
+      "mode": "chain",
+      "parent": "tcn.main",
+      "source_evidence": [
+        "E003",
+        "E004",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tcn.stage2.conv",
+      "label": "Weight-norm Conv3 / dilation2",
+      "kind": "conv1d",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.__init__"
+      ],
+      "shape": "[B,32,20]",
+      "detail": [],
+      "parameter": "conv2",
+      "parameters": [
+        "conv2.weight_g",
+        "conv2.weight_v",
+        "conv2.bias"
+      ],
+      "in_channels": 32,
+      "out_channels": 32,
+      "kernel_size": 3,
+      "stride": 1,
+      "padding": 4,
+      "dilation": 2,
+      "bias": true,
+      "weight_norm": true,
+      "parent": "tcn.stage2",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tcn.stage2.chomp",
+      "label": "Chomp right4 + contiguous",
+      "kind": "tensor",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.__init__",
+        "tcn-sequence/TCN/tcn.py::Chomp1d.forward"
+      ],
+      "shape": "[B,32,16]",
+      "detail": [],
+      "expression": "x[:, :, :-self.chomp_size].contiguous()",
+      "chomp_size": 4,
+      "crop_side": "right",
+      "parent": "tcn.stage2",
+      "source_evidence": [
+        "E003",
+        "E002"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tcn.stage2.relu",
+      "label": "ReLU",
+      "kind": "relu",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.__init__"
+      ],
+      "shape": "[B,32,16]",
+      "detail": [],
+      "inplace": false,
+      "parent": "tcn.stage2",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tcn.stage2.drop",
+      "label": "Dropout p=.2 / eval identity",
+      "kind": "dropout",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.__init__"
+      ],
+      "shape": "[B,32,16]",
+      "detail": [],
+      "p": 0.2,
+      "training": false,
+      "parent": "tcn.stage2",
+      "source_evidence": [
+        "E003"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tcn.projection",
+      "label": "Residual Conv1 / 16 -> 32",
+      "kind": "conv1d",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.__init__",
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.forward"
+      ],
+      "shape": "[B,32,16]",
+      "detail": [],
+      "parameter": "downsample",
+      "parameters": [
+        "downsample.weight",
+        "downsample.bias"
+      ],
+      "kernel_size": 1,
+      "bias": true,
+      "in_channels": 16,
+      "out_channels": 32,
+      "parent": "tcn.body",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "input"
+      ]
+    },
+    {
+      "id": "tcn.add",
+      "label": "Main out + projected residual",
+      "kind": "add",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.forward"
+      ],
+      "shape": "[B,32,16]",
+      "detail": [],
+      "expression": "out + res",
+      "parent": "tcn.body",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "main",
+        "residual"
+      ]
+    },
+    {
+      "id": "tcn.relu",
+      "label": "Final ReLU after residual sum",
+      "kind": "relu",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.__init__",
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.forward"
+      ],
+      "shape": "[B,32,16]",
+      "detail": [],
+      "parent": "tcn.body",
+      "source_evidence": [
+        "E003",
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out"
+      ]
+    },
+    {
+      "id": "tcn.output",
+      "label": "TemporalBlock output",
+      "kind": "output",
+      "source": [
+        "tcn-sequence/TCN/tcn.py::TemporalBlock.forward"
+      ],
+      "shape": "[B,32,16]",
+      "detail": [],
+      "parent": "tcn_block.root",
+      "source_evidence": [
+        "E004"
+      ],
+      "ports": [
+        "in",
+        "out",
+        "output"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "tcn.stage1:in->tcn.stage1.conv:in:boundary",
+      "src": "tcn.stage1",
+      "dst": "tcn.stage1.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tcn.stage1.conv:out->tcn.stage1.chomp:in:tensor",
+      "src": "tcn.stage1.conv",
+      "dst": "tcn.stage1.chomp",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tcn.stage1.chomp:out->tcn.stage1.relu:in:tensor",
+      "src": "tcn.stage1.chomp",
+      "dst": "tcn.stage1.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tcn.stage1.relu:out->tcn.stage1.drop:in:tensor",
+      "src": "tcn.stage1.relu",
+      "dst": "tcn.stage1.drop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tcn.stage1.drop:out->tcn.stage1:out:boundary",
+      "src": "tcn.stage1.drop",
+      "dst": "tcn.stage1",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tcn.stage2:in->tcn.stage2.conv:in:boundary",
+      "src": "tcn.stage2",
+      "dst": "tcn.stage2.conv",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tcn.stage2.conv:out->tcn.stage2.chomp:in:tensor",
+      "src": "tcn.stage2.conv",
+      "dst": "tcn.stage2.chomp",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tcn.stage2.chomp:out->tcn.stage2.relu:in:tensor",
+      "src": "tcn.stage2.chomp",
+      "dst": "tcn.stage2.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tcn.stage2.relu:out->tcn.stage2.drop:in:tensor",
+      "src": "tcn.stage2.relu",
+      "dst": "tcn.stage2.drop",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tcn.stage2.drop:out->tcn.stage2:out:boundary",
+      "src": "tcn.stage2.drop",
+      "dst": "tcn.stage2",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tcn.main:in->tcn.stage1:in:boundary",
+      "src": "tcn.main",
+      "dst": "tcn.stage1",
+      "src_port": "in",
+      "dst_port": "in",
+      "role": "boundary"
+    },
+    {
+      "id": "tcn.stage1:out->tcn.stage2:in:tensor",
+      "src": "tcn.stage1",
+      "dst": "tcn.stage2",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tcn.stage2:out->tcn.main:out:boundary",
+      "src": "tcn.stage2",
+      "dst": "tcn.main",
+      "src_port": "out",
+      "dst_port": "out",
+      "role": "boundary"
+    },
+    {
+      "id": "tcn.input:out->tcn.main:in:tensor",
+      "src": "tcn.input",
+      "dst": "tcn.main",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tcn.input:out->tcn.projection:input:tensor",
+      "src": "tcn.input",
+      "dst": "tcn.projection",
+      "src_port": "out",
+      "dst_port": "input",
+      "role": "tensor"
+    },
+    {
+      "id": "tcn.main:out->tcn.add:main:tensor",
+      "src": "tcn.main",
+      "dst": "tcn.add",
+      "src_port": "out",
+      "dst_port": "main",
+      "role": "tensor"
+    },
+    {
+      "id": "tcn.projection:out->tcn.add:residual:tensor",
+      "src": "tcn.projection",
+      "dst": "tcn.add",
+      "src_port": "out",
+      "dst_port": "residual",
+      "role": "tensor"
+    },
+    {
+      "id": "tcn.add:out->tcn.relu:in:tensor",
+      "src": "tcn.add",
+      "dst": "tcn.relu",
+      "src_port": "out",
+      "dst_port": "in",
+      "role": "tensor"
+    },
+    {
+      "id": "tcn.relu:out->tcn.output:output:tensor",
+      "src": "tcn.relu",
+      "dst": "tcn.output",
+      "src_port": "out",
+      "dst_port": "output",
+      "role": "tensor"
+    }
+  ],
+  "facts": [
+    "Two independent legacy weight_norm Conv1d instances expand length16 to20; each right Chomp4 restores16 and removes future-padding positions.",
+    "Both stages execute Conv, Chomp.contiguous, ReLU, Dropout; the selected eval profile preserves the source Dropout nodes with identity behavior.",
+    "Channel widths differ, so downsample is a learned1x1 Conv; identity shortcut is the source alternative when widths match.",
+    "TemporalConvNet defines dilation=2**i and padding=(k-1)*dilation; this module selects a valid d2/k3 example, not a complete stack.",
+    "weight_norm exposes weight_g and weight_v plus bias; this caller source does not expand the library reparameterization."
+  ],
+  "corrections": [
+    "Do not put dilation2 into a stride; do not crop left or crop before convolution.",
+    "Do not add final Dropout after Add; final source operation is ReLU."
+  ],
+  "semantics": "reviewed static adapter; selected profile; explicit tuple/boundary edges, not runtime observations",
+  "artifact_scope": "module"
+}

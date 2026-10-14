@@ -13,6 +13,7 @@ import uuid
 from pathlib import Path
 
 from archcanvas_python import analyze_project
+from archcanvas_publication import export_svg
 
 IDENTITY = re.compile(r"[a-f0-9]{32}\Z")
 
@@ -144,3 +145,42 @@ class Workspace:
         if name not in mimes or not (directory / name).is_file():
             raise ValueError("Export artifact not found.")
         return (directory / name).read_bytes(), mimes[name]
+
+    def export_preview(self, svg: str, format: str, dpi: int, width_mm: float, binding: dict) -> dict:
+        """Persist the validated current recursive preview, preserving geometry.
+
+        The browser provides its preview source identity and exact rendered SVG.
+        Its identity is recorded as a declaration, never as server-verified IR.
+        Publication conversion independently validates SVG resources/attributes
+        and physical output size, with no browser or model execution.
+        """
+        if not isinstance(binding, dict) or set(binding) - {"caseId", "sourceDigest", "irDigest", "revision"} or "caseId" not in binding:
+            raise ValueError("Preview binding requires caseId and optional sourceDigest, irDigest and revision only.")
+        if not isinstance(binding["caseId"], str) or not 1 <= len(binding["caseId"]) <= 500:
+            raise ValueError("Preview caseId must be non-empty text within 500 characters.")
+        for field in ("sourceDigest", "irDigest"):
+            if field in binding and (not isinstance(binding[field], str) or not re.fullmatch(r"[a-f0-9]{64}", binding[field])):
+                raise ValueError(f"Preview {field} must be an exact SHA256 hexadecimal digest.")
+        if "revision" in binding and (type(binding["revision"]) is not int or binding["revision"] < 0):
+            raise ValueError("Preview revision must be a non-negative integer.")
+        result = export_svg(svg, format, width_mm, dpi)
+        identity = uuid.uuid4().hex
+        directory = self.location("exports", identity)
+        directory.mkdir(mode=0o700)
+        receipt = {
+            **result["receipt"],
+            "documentId": binding["caseId"],
+            **binding,
+            "previewSvgDigest": hashlib.sha256(svg.encode("utf-8")).hexdigest(),
+            "sourceIdentityOrigin": "browser-declared-preview-binding",
+            "sourceBindingVerified": False,
+            "exportScope": {"kind": "preview", "caseId": binding["caseId"]},
+        }
+        try:
+            (directory / "preview.svg").write_text(svg, encoding="utf-8")
+            (directory / f"figure.{format}").write_bytes(result["data"])
+            (directory / f"figure.{format}.receipt.json").write_text(json.dumps(receipt, ensure_ascii=False, allow_nan=False), encoding="utf-8")
+            return {"id": identity, "format": format, "url": f"/api/exports/{identity}/figure.{format}", "receiptUrl": f"/api/exports/{identity}/receipt", "receipt": receipt}
+        except Exception:
+            shutil.rmtree(directory)
+            raise

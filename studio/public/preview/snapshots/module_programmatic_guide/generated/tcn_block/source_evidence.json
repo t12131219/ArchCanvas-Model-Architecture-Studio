@@ -1,0 +1,80 @@
+{
+  "source_project": "tcn-sequence",
+  "repository": "locuslab/TCN",
+  "commit": "2f8c2b817050206397458dfd1f5a25ce8a32fe65",
+  "source_snapshot_sha256": "08772997da994207b0813df7dda75e740c672efc4bfb378b3a47a60ec6909b55",
+  "entry": "tcn-sequence/TCN/tcn.py::TemporalBlock.forward",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "tcn-sequence/LICENSE": {
+      "sha256": "7b9a89cb975f5891f02be043c0ca5c9b9d6c43ced216c2d508f0f7e4380a6cbd",
+      "lines": 21,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/locuslab/TCN/2f8c2b817050206397458dfd1f5a25ce8a32fe65/LICENSE",
+      "derived_from": null
+    },
+    "tcn-sequence/TCN/tcn.py": {
+      "sha256": "f93c67de970f4c9e1a96a7d2bed1df89c521faf6ca94e36455267605b1ad585f",
+      "lines": 63,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/locuslab/TCN/2f8c2b817050206397458dfd1f5a25ce8a32fe65/TCN/tcn.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "tcn-sequence/TCN/tcn.py::Chomp1d.__init__": {
+      "path": "tcn-sequence/TCN/tcn.py",
+      "symbol": "Chomp1d.__init__",
+      "start": 7,
+      "end": 9,
+      "snippet": "    def __init__(self, chomp_size):\n        super(Chomp1d, self).__init__()\n        self.chomp_size = chomp_size",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    },
+    "tcn-sequence/TCN/tcn.py::Chomp1d.forward": {
+      "path": "tcn-sequence/TCN/tcn.py",
+      "symbol": "Chomp1d.forward",
+      "start": 11,
+      "end": 12,
+      "snippet": "    def forward(self, x):\n        return x[:, :, :-self.chomp_size].contiguous()",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E002"
+    },
+    "tcn-sequence/TCN/tcn.py::TemporalBlock.__init__": {
+      "path": "tcn-sequence/TCN/tcn.py",
+      "symbol": "TemporalBlock.__init__",
+      "start": 16,
+      "end": 34,
+      "snippet": "    def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, padding, dropout=0.2):\n        super(TemporalBlock, self).__init__()\n        self.conv1 = weight_norm(nn.Conv1d(n_inputs, n_outputs, kernel_size,\n                                           stride=stride, padding=padding, dilation=dilation))\n        self.chomp1 = Chomp1d(padding)\n        self.relu1 = nn.ReLU()\n        self.dropout1 = nn.Dropout(dropout)\n\n        self.conv2 = weight_norm(nn.Conv1d(n_outputs, n_outputs, kernel_size,\n                                           stride=stride, padding=padding, dilation=dilation))\n        self.chomp2 = Chomp1d(padding)\n        self.relu2 = nn.ReLU()\n        self.dropout2 = nn.Dropout(dropout)\n\n        self.net = nn.Sequential(self.conv1, self.chomp1, self.relu1, self.dropout1,\n                                 self.conv2, self.chomp2, self.relu2, self.dropout2)\n        self.downsample = nn.Conv1d(n_inputs, n_outputs, 1) if n_inputs != n_outputs else None\n        self.relu = nn.ReLU()\n        self.init_weights()",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E003"
+    },
+    "tcn-sequence/TCN/tcn.py::TemporalBlock.init_weights": {
+      "path": "tcn-sequence/TCN/tcn.py",
+      "symbol": "TemporalBlock.init_weights",
+      "start": 36,
+      "end": 40,
+      "snippet": "    def init_weights(self):\n        self.conv1.weight.data.normal_(0, 0.01)\n        self.conv2.weight.data.normal_(0, 0.01)\n        if self.downsample is not None:\n            self.downsample.weight.data.normal_(0, 0.01)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E005"
+    },
+    "tcn-sequence/TCN/tcn.py::TemporalBlock.forward": {
+      "path": "tcn-sequence/TCN/tcn.py",
+      "symbol": "TemporalBlock.forward",
+      "start": 42,
+      "end": 45,
+      "snippet": "    def forward(self, x):\n        out = self.net(x)\n        res = x if self.downsample is None else self.downsample(x)\n        return self.relu(out + res)",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E004"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "tcn-sequence/LICENSE"
+  ]
+}

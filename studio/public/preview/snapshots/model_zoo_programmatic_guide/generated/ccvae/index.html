@@ -1,0 +1,69 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>Conditional ConvVAE 源码架构图</title><style>body{font-family:DejaVu Sans,Arial,sans-serif;background:#edf0f5;color:#172336;margin:24px}main{max-width:1600px;margin:auto}section{background:white;padding:24px;margin-top:24px;border-radius:12px}img{width:100%;height:auto}a{color:#315479}nav{position:sticky;top:0;background:#edf0f5;padding:16px 0}pre{white-space:pre-wrap}</style><main><h1>Conditional ConvVAE</h1><p>https://github.com/rasbt/deeplearning-models @ 59beda3aa253</p><nav><a href="../index.html">模型总览</a> · <a href="#overview">概览</a> · <a href="#modules">模块</a> · <a href="#detailed">详细</a> · <a href="source_map.md">逐节点源码映射</a> · <a href="source_evidence.json">源码证据</a> · <a href="semantic_ir.json">语义 IR</a> · <a href="layout_checks.json">检查</a></nav><details><summary>选定配置与边界</summary><pre>{
+  &quot;task&quot;: &quot;MNIST conditioned augmented reconstruction&quot;,
+  &quot;mode&quot;: &quot;forward with stochastic sampling in train and eval&quot;,
+  &quot;latent_dim&quot;: 50,
+  &quot;latent_levels&quot;: 1,
+  &quot;num_classes&quot;: 10,
+  &quot;input_shape&quot;: [
+    &quot;B&quot;,
+    1,
+    28,
+    28
+  ],
+  &quot;encoder_input_channels&quot;: 11,
+  &quot;encoder_channels&quot;: [
+    16,
+    32,
+    64
+  ],
+  &quot;encoder_spatial&quot;: [
+    28,
+    12,
+    5,
+    2
+  ],
+  &quot;decoder_channels&quot;: [
+    64,
+    32,
+    16,
+    11
+  ],
+  &quot;decoder_spatial&quot;: [
+    2,
+    4,
+    11,
+    28
+  ],
+  &quot;decoder_convtranspose&quot;: [
+    {
+      &quot;kernel&quot;: 2,
+      &quot;stride&quot;: 2,
+      &quot;padding&quot;: 0
+    },
+    {
+      &quot;kernel&quot;: 4,
+      &quot;stride&quot;: 3,
+      &quot;padding&quot;: 1
+    },
+    {
+      &quot;kernel&quot;: 6,
+      &quot;stride&quot;: 3,
+      &quot;padding&quot;: 4
+    }
+  ],
+  &quot;decoder_linear_input&quot;: 60,
+  &quot;decoder_output_channels&quot;: 11,
+  &quot;negative_slope&quot;: 0.01,
+  &quot;batch_size_setting&quot;: 128,
+  &quot;training_sampling_gate&quot;: false,
+  &quot;num_features_argument_used&quot;: false,
+  &quot;conditional&quot;: true,
+  &quot;output_tuple&quot;: [
+    &quot;mu&quot;,
+    &quot;logvar&quot;,
+    &quot;z&quot;,
+    &quot;decoded&quot;
+  ],
+  &quot;symbolic_shapes&quot;: true,
+  &quot;model_executed&quot;: false
+}</pre></details><section id="overview"><h2>概览</h2><p><a href="figure1_overview.svg">SVG</a> · <a href="layout_overview.json">布局记录</a></p><img src="figure1_overview.svg" alt="overview"></section><section id="modules"><h2>模块</h2><p><a href="figure2_modules.svg">SVG</a> · <a href="layout_modules.json">布局记录</a></p><img src="figure2_modules.svg" alt="modules"></section><section id="detailed"><h2>详细</h2><p><a href="figure3_detailed.svg">SVG</a> · <a href="layout_detailed.json">布局记录</a></p><img src="figure3_detailed.svg" alt="detailed"></section></main></html>

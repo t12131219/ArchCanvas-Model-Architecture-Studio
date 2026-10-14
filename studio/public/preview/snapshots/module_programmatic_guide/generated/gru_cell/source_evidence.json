@@ -1,0 +1,40 @@
+{
+  "source_project": "pytorch-sequence-kernels-v2.5.1",
+  "repository": "pytorch/pytorch",
+  "commit": "a8d6afb511a69687bbb2b7e88a3cf67917e1697e",
+  "source_snapshot_sha256": "c792f152fe79d547f576dbbc3ff5295b8f6a8dc0e3812f8d5ec2d3ddf6ccc3e6",
+  "entry": "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell",
+  "mode": "static AST + reviewed explicit adapter; notebook/model code never executed",
+  "files": {
+    "pytorch-sequence-kernels-v2.5.1/LICENSE": {
+      "sha256": "47a26beb94e3f6b333a3677fc85d546f1fdfd2f0b3686c26d2fb5b10e0134165",
+      "lines": 80,
+      "configuration_reference": false,
+      "url": "https://raw.githubusercontent.com/pytorch/pytorch/a8d6afb511a69687bbb2b7e88a3cf67917e1697e/LICENSE",
+      "derived_from": null
+    },
+    "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py": {
+      "sha256": "24388bd5f879cdf4f4d1485e03067b19a3691d9ad2f098d6c5c2ad4ba2b96603",
+      "lines": 141,
+      "configuration_reference": true,
+      "url": "https://raw.githubusercontent.com/pytorch/pytorch/a8d6afb511a69687bbb2b7e88a3cf67917e1697e/benchmarks/fastrnns/cells.py",
+      "derived_from": null
+    }
+  },
+  "symbols": {
+    "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py::gru_cell": {
+      "path": "pytorch-sequence-kernels-v2.5.1/benchmarks/fastrnns/cells.py",
+      "symbol": "gru_cell",
+      "start": 118,
+      "end": 129,
+      "snippet": "def gru_cell(input, hidden, w_ih, w_hh, b_ih, b_hh):\n    gi = torch.mm(input, w_ih.t()) + b_ih\n    gh = torch.mm(hidden, w_hh.t()) + b_hh\n    i_r, i_i, i_n = gi.chunk(3, 1)\n    h_r, h_i, h_n = gh.chunk(3, 1)\n\n    resetgate = torch.sigmoid(i_r + h_r)\n    inputgate = torch.sigmoid(i_i + h_i)\n    newgate = torch.tanh(i_n + resetgate * h_n)\n    hy = newgate + inputgate * (hidden - newgate)\n\n    return hy",
+      "notebook_cells": [],
+      "original_notebook": null,
+      "evidence_id": "E001"
+    }
+  },
+  "notebook_origins": {},
+  "license_files": [
+    "pytorch-sequence-kernels-v2.5.1/LICENSE"
+  ]
+}
