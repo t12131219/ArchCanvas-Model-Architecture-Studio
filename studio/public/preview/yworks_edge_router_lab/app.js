@@ -4,7 +4,8 @@
   const catalog=window.SummaryCatalog,R=window.EdgeRouterLabRouting,E=window.SummaryEngine,C=window.SummaryConstraints,M=window.SummaryInteractionMode,F=window.SummaryRecursive,svg=$('graph');
   const names={module_programmatic_guide:'模块 · 76 案例',model_zoo_programmatic_guide:'Model Zoo · 完整模型',timeseries_programmatic_guide:'时序模型',transformer_programmatic_guide:'Transformer 与残差',pytorch_transformer_original:'PyTorch 原始架构',arrow_semantic_audit:'箭头审查与展开视图',yworks_edge_router_lab:'Edge Router 实验',source_adapter:'用户源码 · 静态适配'};
   const importedPackages=new Map(),importedSources=new Map(),A=window.SummarySourceAdapter;
-  let studioBridge=null,startupPromise=null,catalogSources=null;
+  const studioCanvas=new URLSearchParams(location.search).get('surface')==='canvas';
+  let studioBridge=null,startupPromise=null,catalogSources=null,canvasGridVisible=true;
   const sourceAssets=new Map();
   let current=null,view=null,graph=null,original=null,tool='select',selectedNodes=new Set(),selectedEdges=new Set(),selectedAnnotation=null;
   // Every model is edited as one detailed graph. The compact source views are
@@ -28,19 +29,22 @@
     $('recursiveStatus').textContent=`递归图：已展开 ${opened} 个模块 · 显示 ${graph.nodes.filter(n=>!n.junction).length}/${total} 个节点`;
     $('collapseAll').disabled=busy||!!drag||!opened;$('expandAll').disabled=busy||!!drag||graph.nodes.length===a.detail.nodes.length;
   }
-  async function changeFrontier(operation){
-    if(busy||drag||!graph)return;save();const before=E.clone(graph),start=performance.now();busy=true;
-    try{const candidate=operation(E.clone(graph));if(!candidate){history.pop();return;}
+  async function changeFrontier(transition,propagateError=false){
+    if(busy||drag||!graph)return;const before=graph,start=performance.now();busy=true;let committed=false,validation=null;
+    try{
       render({presentationOnly:true});$('dirtyBadge').textContent='正在展开与整理边界连接…';
-      const result=await runGraphTask({task:'frontier',graph:candidate,options:options()});if(!result.ok)throw new Error(result.error);
+      studioBridge?.state();
+      const result=await runGraphTask({task:'frontier',graph:before,transition,options:options()});if(!result.ok)throw new Error(result.error);if(result.unchanged)return;
+      history.push(before);if(history.length>30)history.shift();future=[];
       graph=result.graph;syncUnifiedState();selectedNodes=new Set([...selectedNodes].filter(id=>node(id)));selectedEdges.clear();ghost=[];dirty=true;
-      metrics={routed:result.routed||0,time:Math.round(performance.now()-start)};render({validation:result.validation});persist();
+      metrics={routed:result.routed||0,time:Math.round(performance.now()-start)};validation=result.validation;committed=true;
+      svg.setAttribute('data-frontier-ms',metrics.time);svg.setAttribute('data-frontier-worker-ms',JSON.stringify(result.timing||{}));
       toast('展开状态与局部布局已保存；可继续选择内部模块。');
-    }catch(error){graph=before;history.pop();toast('展开未提交：'+error.message);}finally{busy=false;render();}
+    }catch(error){graph=before;toast('展开未提交：'+error.message);if(propagateError)throw error;}finally{busy=false;render(committed?{validation}:{presentationOnly:true});if(committed)persist();studioBridge?.state();}
   }
-  const toggleUnifiedNode=(id,force)=>changeFrontier(g=>F.toggle(g,id,force));
-  const collapseUnifiedAll=()=>changeFrontier(g=>F.all(g,false));
-  const expandUnifiedAll=()=>changeFrontier(g=>F.all(g,true));
+  const toggleUnifiedNode=(id,force)=>changeFrontier({type:'toggle',id,expanded:force});
+  const collapseUnifiedAll=()=>changeFrontier({type:'all',expanded:false});
+  const expandUnifiedAll=()=>changeFrontier({type:'all',expanded:true});
   function restoreSourceBaseline(){} // Recursive receipts derive from registered source snapshots.
   const stageScale=()=>$('stage').clientWidth/camera.w;
   const point=event=>{const p=svg.createSVGPoint();p.x=event.clientX;p.y=event.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());};
@@ -93,30 +97,34 @@
     }
   }
   function asset(descriptor,c){if(importedSources.has(c.id))return Promise.resolve(importedSources.get(c.id)[descriptor.key]);return new Promise((resolve,reject)=>{const id=c.id+':'+descriptor.key;if(window.SummaryCaseData?.[id])return resolve(window.SummaryCaseData[id]);const script=document.createElement('script');script.src='../'+descriptor.asset;script.onload=()=>resolve(window.SummaryCaseData[id]);script.onerror=()=>reject(new Error('无法读取 '+descriptor.asset));document.head.append(script);});}
-  async function openCase(c,v){
-    if(busy){toast('正在重新布线，完成后可切换示例。');return;}
-    flushPersist();const token=++loadToken;current=c;view={key:'unified',label:'递归图'};
+  async function openCase(c,v,restore){
+    if(busy||drag){toast('正在处理图操作，完成后可切换示例。');return false;}
+    flushPersist();const token=++loadToken,modelKey=c.id+':unified';let committed=false,validation=null;busy=true;
+    render({presentationOnly:true});studioBridge?.state();
     try{
-      const descriptors=new Map(c.views.map(d=>[d.key,d])),builtin=!!v.builtin;
+      const builtin=!!v.builtin;
       const sources=builtin?{overview:lab()}:Object.fromEntries(await Promise.all(c.views.map(async d=>[d.key,await asset(d,c)])));
-      if(token!==loadToken)return;
-      unifiedSources=Object.fromEntries(Object.entries(sources).map(([k,g])=>[k,C.initialize(E.clone(g))]));
-      const base=F.build(F.create(unifiedSources));
-      const initial=F.route(base);if(initial.failed)throw new Error('初始递归图存在无法布线的边界连接');
-      original=E.clone(base);let saved=sessions.get(key());
-      if(!saved){const stored=await window.SummaryRecursiveStorage.get(key());if(token!==loadToken)return;if(stored?.version===5&&stored.ir===(base.irSha256||null))saved={graph:stored.graph,history:[],future:[],dirty:stored.dirty};}
-      if(!saved)try{const disk=JSON.parse(localStorage.getItem('summary-merge:'+key()));if(disk?.version===4&&disk.ir===(base.irSha256||null))saved={graph:disk.graph,history:[],future:[],dirty:disk.dirty};
-        else if(disk?.version){localStorage.setItem('summary-merge:archived:'+key()+':'+Date.now(),JSON.stringify(disk));toast('早期递归草稿已保留归档，当前使用新的递归文档。');}
+      if(token!==loadToken)return false;
+      const nextSources=Object.fromEntries(Object.entries(sources).map(([k,g])=>[k,C.initialize(E.clone(g))]));
+      const initial=await runGraphTask({task:'frontier',graph:F.build(F.create(nextSources)),options:{}});
+      if(!initial.ok||initial.failed)throw new Error(initial.error||'初始递归图存在无法布线的边界连接');
+      const base=initial.graph;let saved=restore||sessions.get(modelKey);
+      if(!saved){const stored=await window.SummaryRecursiveStorage.get(modelKey);if(token!==loadToken)return false;if(stored?.version===5&&stored.ir===(base.irSha256||null))saved={graph:stored.graph,history:[],future:[],dirty:stored.dirty};}
+      if(!saved)try{const disk=JSON.parse(localStorage.getItem('summary-merge:'+modelKey));if(disk?.version===4&&disk.ir===(base.irSha256||null))saved={graph:disk.graph,history:[],future:[],dirty:disk.dirty};
+        else if(disk?.version){localStorage.setItem('summary-merge:archived:'+modelKey+':'+Date.now(),JSON.stringify(disk));toast('早期递归草稿已保留归档，当前使用新的递归文档。');}
       }catch(_){}
-      graph=E.clone(saved?.graph||base);
-      if(saved){graph.recursive.authority=E.clone(base.recursive.authority);const prior=graph;graph=F.upgrade(graph);if(graph!==prior){const updated=F.route(graph);if(updated.failed)throw new Error('保存的展开图无法恢复合法连接');saved.history=[];saved.future=[];}if(!C.validateSource(graph).ok){
-        const archiveKey='summary-merge:archived:'+key()+':'+Date.now();localStorage.setItem(archiveKey,JSON.stringify(saved));graph=E.clone(base);saved=null;toast('旧草稿不符合当前层级契约，已保留归档。');}}
+      let nextGraph=E.clone(saved?.graph||base);validation=initial.validation;
+      if(saved){nextGraph.recursive.authority=E.clone(base.recursive.authority);const prior=nextGraph;nextGraph=F.upgrade(nextGraph);if(nextGraph!==prior){const updated=await runGraphTask({task:'frontier',graph:nextGraph,options:{}});if(!updated.ok||updated.failed)throw new Error(updated.error||'保存的展开图无法恢复合法连接');nextGraph=updated.graph;validation=updated.validation;saved={...saved,history:[],future:[]};}else {const checked=await runGraphTask({task:'validate',graph:nextGraph});if(!checked.ok)throw new Error(checked.error);validation=checked.validation;}if(!validation.source.ok||!validation.layout.ok||invalidSourceRoutes(nextGraph,validation)){
+        const archiveKey='summary-merge:archived:'+modelKey+':'+Date.now();localStorage.setItem(archiveKey,JSON.stringify(saved));nextGraph=E.clone(base);validation=initial.validation;saved=null;toast('旧草稿不符合当前层级或连接契约，已保留归档。');}}
+      const evidencePath=catalogSources?.cases?.[c.id]?.evidence;if(evidencePath)try{await sourceAsset(evidencePath,true);}catch(error){console.warn('Case evidence:',error.message);}if(token!==loadToken)return false;
+      // Publish case identity, source authority and graph together. Loading
+      // never lends the old graph a new persistence key or editable source.
+      current=c;view={key:'unified',label:'递归图'};unifiedSources=nextSources;original=E.clone(base);graph=nextGraph;committed=true;
       syncUnifiedState();history=saved?.history||[];future=saved?.future||[];dirty=saved?.dirty||false;ghost=[];selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;connection=null;drag=null;metrics={routed:0,time:0};
       $('routingStyle').value='orthogonal';$('keepBends').checked=false;$('showPorts').checked=c.id==='routing-lab';$('clearance').value=c.id==='routing-lab'?14:6;$('clearanceValue').value=$('clearance').value+' px';
       $('modelTitle').textContent=c.title;$('modelCollection').textContent=names[c.collection]||c.collection;$('modelOrigin').textContent=(c.historical?'历史快照 / ':'')+c.origin;
       
       const data=unifiedSources.overview||Object.values(unifiedSources)[0];
-      const evidencePath=catalogSources?.cases?.[c.id]?.evidence;if(evidencePath)try{await sourceAsset(evidencePath,true);}catch(error){console.warn('Case evidence:',error.message);}if(token!==loadToken)return false;
       const docs=Object.entries(data.sourceDocs||{}).map(([name,url])=>[name==='source_map.md'?'源码映射':name==='source_evidence.json'?'源码证据':'案例说明',url]);
       $('sourceLinks').innerHTML=[['原始 SVG',data.source],['布局与接口',data.layoutSource],['语义 IR',data.irSource],...docs,['原始案例',c.sourceIndex]].filter(([,url])=>url&&!(c.id==='pytorch-original'&&url.endsWith('index.html'))).map(([name,url])=>`<a href="../${esc(url)}" target="_blank">${name} ↗</a>`).join('');
       $('sourceFacts').innerHTML=data.sourceFacts?.length?'<ul>'+data.sourceFacts.map(f=>'<li>'+esc(f)+'</li>').join('')+'</ul>':'<p>保留原始图元、层次和连接映射。点击容器逐级展开，视觉编辑可撤销，源模型未执行。</p>';
@@ -125,8 +133,9 @@
       if(imported){$('sourceLinks').innerHTML='<button id="downloadAdapterIR">下载统一 IR</button><button id="downloadAdapterBundle">下载源码与证据包</button>';$('downloadAdapterIR').onclick=()=>download(JSON.stringify(imported.ir,null,2),'application/json',c.title+'-source-ir.json');$('downloadAdapterBundle').onclick=()=>download(JSON.stringify(imported,null,2),'application/json',c.title+'-source-adapter.json');
         $('sourceFacts').innerHTML+='<details><summary>源码证据与待解析区域</summary>'+Object.values(imported.evidence).slice(0,60).map(e=>`<p>${esc(e.file)}:${e.line}–${e.endLine}</p><pre>${esc(e.expression)}</pre>`).join('')+'</details>';}
       const url=new URL(location.href);url.searchParams.set('case',c.id);url.searchParams.delete('view');window.history.replaceState(null,'',url);
-      renderCatalog();fit();render();persist();studioBridge?.state();return true;
-    }catch(error){toast(error.message);$('modelTitle').textContent='示例加载失败';return false;}
+      renderCatalog();fit();return true;
+    }catch(error){toast('示例未切换：'+error.message);if(!graph)$('modelTitle').textContent='示例加载失败';return false;}
+    finally{busy=false;render(committed?{validation}:{presentationOnly:true});if(committed)persist();studioBridge?.state();}
   }
   function cameraUpdate(){svg.setAttribute('viewBox',`${camera.x} ${camera.y} ${camera.w} ${camera.h}`);$('zoomLabel').textContent=Math.round(stageScale()*100)+'%';}
   function fit(widthOnly=false){if(!graph)return;const ratio=$('stage').clientWidth/$('stage').clientHeight,w=graph.canvas[0],h=graph.canvas[1];camera=widthOnly?{x:0,y:0,w,h:w/ratio}:w/h>ratio?{x:0,y:(h-w/ratio)/2,w,h:w/ratio}:{x:(w-h*ratio)/2,y:0,w:h*ratio,h};cameraUpdate();}
@@ -138,6 +147,10 @@
     const layer=$('handleLayer'),handle=Math.min(28,5/scale);layer.replaceChildren();
     for(const id of selectedNodes){const n=node(id);if(!n||n.junction)continue;
       layer.append(element('rect',{x:n.x-4,y:n.y-4,width:n.w+8,height:n.h+8,rx:9,fill:'none',stroke:'#d99160','stroke-width':2/scale,'stroke-dasharray':`${4/scale} ${3/scale}`,'pointer-events':'none','data-editor-only':'selection'}));
+      if(window.ArchCanvasStudioPresentation.state(graph).nodes[n.id]?.pinned){
+        const badge=element('g',{transform:`translate(${n.x+6} ${n.y+6})`,'pointer-events':'none','data-editor-only':'pin','data-pinned-node':n.id});
+        badge.append(element('title',{},'已固定：禁止直接拖动和排列；仍随父容器移动与递归布局更新。'),element('rect',{width:22,height:20,rx:4,fill:'#fff8e9',stroke:'#bd8a39','stroke-width':1/scale}),element('path',{d:'M 7 9 V 6 A 4 4 0 0 1 15 6 V 9 M 6 9 H 16 V 17 H 6 Z',fill:'none',stroke:'#916620','stroke-width':1.4/scale}));layer.append(badge);
+      }
     }
     if($('showPorts').checked)for(const n of graph.nodes){if(n.junction||!unifiedVisible().has(n.id))continue;
       const ports=current.id==='routing-lab'?['left','right','top','bottom'].map(side=>({fixed:{side,fraction:.5},p:R.port(n,side),field:side})):graph.edges.flatMap(e=>[['source','fixedSource'],['target','fixedTarget']].filter(([side])=>e[side]===n.id).map(([side])=>({fixed:window.SummaryPhysicalPorts.active(e,side)||{side:E.endpoint(graph,e,side).side,fraction:E.endpoint(graph,e,side).fraction},p:E.endpoint(graph,e,side),field:e.binding?.[side==='source'?'src':'dst']||'视觉草稿'})));
@@ -171,9 +184,12 @@
     for(const n of visibleNodes){if(n.junction)continue;let v=scene.nodes.get(n.id);
       if(!v){const g=element('g',{class:'scene-node','data-render-instance':++epoch}),content=element('g'),hit=element('rect',{rx:8});g.append(content,hit);v={g,content,hit};scene.nodes.set(n.id,v);$(n.expanded?'frameLayer':'nodeLayer').append(g);}
       setAttrs(v.g,{'data-node-id':n.id,'data-parent':n.parent||'','data-expanded':String(!!n.expanded),'data-recursive-children':unifiedChildren(n.id).length,'data-unified-expanded':String(!!unifiedState?.expandedIds?.includes(n.id)),'data-unified-collapsed':String(unifiedHasChildren(n.id)&&!unifiedState?.expandedIds?.includes(n.id)),'data-visual-binding':JSON.stringify(n.visualBinding||{}),'aria-label':`节点 ${n.id} ${label(n)}`});
-      $(n.expanded?'frameLayer':'nodeLayer').append(v.g);
+      const ownerLayer=$(n.expanded?'frameLayer':'nodeLayer');
+      // Preserve native click targets and stacking order on selection-only
+      // renders. Reparent only when a module changes between node and frame.
+      if(v.g.parentNode!==ownerLayer)ownerLayer.append(v.g);
       setAttrs(v.content,{transform:`translate(${n.x-n.base[0]} ${n.y-n.base[1]})`});if(v.html!==n.html){v.content.innerHTML=n.html;v.html=n.html;}if(n.expanded||graph.recursive?.state?.studioPresentation?.nodes?.[n.id]?.width){const rect=v.content.querySelector('rect');if(rect){rect.setAttribute('width',n.w);rect.setAttribute('height',n.h);}}applyStudioPresentation(n,v);
-      setAttrs(v.hit,{x:n.x,y:n.y,width:n.w,height:n.h,class:n.expanded?'frame-hit':'node-hit'});v.g.onpointerdown=ev=>nodeDown(ev,n);v.g.ondblclick=ev=>{if(unifiedHasChildren(n.id)){ev.preventDefault();ev.stopPropagation();toggleUnifiedNode(n.id);}};
+      setAttrs(v.hit,{x:n.x,y:n.y,width:n.w,height:n.h,class:n.expanded?'frame-hit':'node-hit'});v.g.onpointerdown=ev=>nodeDown(ev,n);v.g.ondblclick=ev=>{if(!busy&&!drag&&tool==='select'&&unifiedHasChildren(n.id)){ev.preventDefault();ev.stopPropagation();toggleUnifiedNode(n.id);}};
       if(unifiedHasChildren(n.id)){if(!v.toggle){v.toggle=element('g',{class:'expansion-control',role:'button',tabindex:'0'});v.toggle.append(element('rect',{width:22,height:22,rx:5,fill:'#fff',stroke:'#198e90'}),element('text',{x:11,y:16,'text-anchor':'middle','font-size':18,fill:'#198e90'}));v.g.append(v.toggle);}setAttrs(v.toggle,{transform:`translate(${n.x+n.w-28} ${n.y+5})`,'aria-label':`${n.expanded?'收起':'展开'} ${label(n)}`});v.toggle.querySelector('text').textContent=n.expanded?'−':'＋';v.toggle.onpointerdown=ev=>ev.stopPropagation();v.toggle.onclick=ev=>{ev.preventDefault();ev.stopPropagation();toggleUnifiedNode(n.id);};v.toggle.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();toggleUnifiedNode(n.id);}};}else if(v.toggle){v.toggle.remove();v.toggle=null;}
       if($('showObstacles').checked&&n.routingObstacle!==false){const b=R.expand(n,+$('clearance').value);let obstacle=scene.obstacles.get(n.id);if(!obstacle){obstacle=element('rect',{fill:'none',stroke:'#c9925680','pointer-events':'none'});scene.obstacles.set(n.id,obstacle);$('obstacleLayer').append(obstacle);}setAttrs(obstacle,{x:b.x,y:b.y,width:b.w,height:b.h,'stroke-width':1/scale,'stroke-dasharray':`${4/scale} ${4/scale}`});}
     }
@@ -215,19 +231,28 @@
   }
   function renderInspector(interactive=false){const box=$('selectionInfo');studioBridge?.selection(studioSelection());
       if(selectedEdges.size===1){const e=graph.edges.find(e=>selectedEdges.has(e.id));const validation=scene.checks.get(e.id)||C.validate(graph,e,e.route);box.innerHTML=`<p class="eyebrow">SELECTED EDGE</p><h3>${esc(e.id)}</h3><div class="prop">源端 <code>${esc(e.source)}</code></div><div class="prop">目标端 <code>${esc(e.target)}</code></div><div class="prop">端口 <code>${esc(E.endpoint(graph,e,'source').side||'auto')} → ${esc(E.endpoint(graph,e,'target').side||'auto')}</code></div><div class="prop">途经点 <code>${e.waypoints.length}</code></div><p class="micro">${e.draft?'本页编辑草稿':'导入的原图连接'} · ${esc(e.role||'tensor')}</p><pre>${esc(scene.edges.get(e.id)?.path||E.path(E.displayed(graph,e),e.style,graph,e))}</pre><details><summary>容器接口与边界</summary><pre>${esc(JSON.stringify({gates:e.contract?.gates,originalSource:e.contract?.source,originalTarget:e.contract?.target,validation,reason:e.reason||null},null,2))}</pre></details><details><summary>原始语义映射</summary><pre>${esc(JSON.stringify(e.binding,null,2))}</pre></details><button class="secondary" id="releasePorts">释放固定端口</button><button class="secondary" id="clearBends">清除手动折点</button><button class="secondary" id="deleteEdge">删除这条边</button>`;$('arrowStyle').value=e.arrow;
-      $('releasePorts').onclick=()=>{save();delete e.fixedSource;delete e.fixedTarget;delete e.physicalSource;delete e.physicalTarget;e.draft=true;delete e.contract;C.initialize(graph);dirty=true;render();persist();toast('已释放物理端口；原始语义映射保留在检查器。');};
-      $('clearBends').onclick=()=>{save();e.waypoints=[];dirty=true;render();persist();};$('deleteEdge').onclick=()=>{save();graph.sourceDraftOperations=graph.sourceDraftOperations||[];graph.sourceDraftOperations.push({kind:'remove-connection',id:e.id,binding:E.clone(e.binding)});graph.edges=graph.edges.filter(x=>x!==e);selectedEdges.clear();dirty=true;render();persist();};
-    }else if(selectedNodes.size===1){const n=node([...selectedNodes][0]),canExpand=unifiedHasChildren(n.id),isOpen=unifiedState?.expandedIds?.includes(n.id);box.innerHTML=`<p class="eyebrow">SELECTED NODE</p><h3>${esc(label(n))}</h3><div class="prop">位置 <code>${Math.round(n.x)}, ${Math.round(n.y)}</code></div><div class="prop">尺寸 <code>${Math.round(n.w)} × ${Math.round(n.h)}</code></div><div class="prop">所属容器 <code>${esc(n.parent||"画布")}</code></div>${canExpand?`<button class="secondary" id="toggleSelectedNode">${isOpen?'收起子图':'展开子图'} · ${unifiedChildren(n.id).length} 个直接节点</button>`:''}<p class="micro">${canExpand?(isOpen?'已展开；可继续选择内部容器。':'可逐级展开；双击节点也可切换。'):(n.expanded?'展开的容器；移动时携带可见子节点。':'移动时同步更新所属文字与局部连线。')}</p><details><summary>源码 / IR 节点</summary><pre>${esc(JSON.stringify(n.semantic,null,2))}</pre></details>`;if(canExpand)$('toggleSelectedNode').onclick=()=>toggleUnifiedNode(n.id);
+      $('releasePorts').onclick=()=>{if(busy||drag)return;save();delete e.fixedSource;delete e.fixedTarget;delete e.physicalSource;delete e.physicalTarget;e.draft=true;delete e.contract;C.initialize(graph);dirty=true;render();persist();toast('已释放物理端口；原始语义映射保留在检查器。');};
+      $('clearBends').onclick=()=>{if(busy||drag)return;save();e.waypoints=[];dirty=true;render();persist();};$('deleteEdge').onclick=()=>{if(busy||drag)return;save();graph.sourceDraftOperations=graph.sourceDraftOperations||[];graph.sourceDraftOperations.push({kind:'remove-connection',id:e.id,binding:E.clone(e.binding)});graph.edges=graph.edges.filter(x=>x!==e);selectedEdges.clear();dirty=true;render();persist();};
+    }else if(selectedNodes.size===1){const n=node([...selectedNodes][0]),canExpand=unifiedHasChildren(n.id),isOpen=unifiedState?.expandedIds?.includes(n.id),pinned=!!window.ArchCanvasStudioPresentation.state(graph).nodes[n.id]?.pinned;box.innerHTML=`<p class="eyebrow">SELECTED NODE</p><h3>${esc(label(n))}</h3><div class="prop">位置 <code>${Math.round(n.x)}, ${Math.round(n.y)}</code></div><div class="prop">尺寸 <code>${Math.round(n.w)} × ${Math.round(n.h)}</code></div><div class="prop">所属容器 <code>${esc(n.parent||"画布")}</code></div><div class="prop">直接移动 <code>${pinned?'已固定':'未固定'}</code></div><p class="micro">固定阻止直接拖动和排列；子节点仍随父容器移动，递归展开也会更新布局。</p>${canExpand?`<button class="secondary" id="toggleSelectedNode">${isOpen?'收起子图':'展开子图'} · ${unifiedChildren(n.id).length} 个直接节点</button>`:''}<p class="micro">${canExpand?(isOpen?'已展开；可继续选择内部容器。':'可逐级展开；双击节点也可切换。'):(n.expanded?'展开的容器；移动时携带可见子节点。':'移动时同步更新所属文字与局部连线。')}</p><details><summary>源码 / IR 节点</summary><pre>${esc(JSON.stringify(n.semantic,null,2))}</pre></details>`;if(canExpand)$('toggleSelectedNode').onclick=()=>toggleUnifiedNode(n.id);
     }else box.innerHTML=`<p class="micro">${selectedNodes.size||selectedEdges.size?`已选 ${selectedNodes.size} 个节点 / ${selectedEdges.size} 条边`:'点击节点或连接，检查图元、端口和源码映射。'}<br>Shift + 点击可多选。</p>`;
   }
   function nearestSide(n,p){const sides=[['left',Math.abs(p.x-n.x),(p.y-n.y)/n.h],['right',Math.abs(p.x-n.x-n.w),(p.y-n.y)/n.h],['top',Math.abs(p.y-n.y),(p.x-n.x)/n.w],['bottom',Math.abs(p.y-n.y-n.h),(p.x-n.x)/n.w]],b=sides.sort((a,b)=>a[1]-b[1])[0];return{side:b[0],fraction:Math.max(.02,Math.min(.98,b[2]))};}
   function hitNode(p){const visible=unifiedVisible();return graph.nodes.filter(n=>!n.junction&&visible.has(n.id)&&p.x>=n.x-4&&p.x<=n.x+n.w+4&&p.y>=n.y-4&&p.y<=n.y+n.h+4).sort((a,b)=>a.w*a.h-b.w*b.h)[0];}
-  function begin(ev,item){if(busy||ev.button!==0)return;ev.stopPropagation();ev.preventDefault();drag={...item,start:point(ev),last:point(ev),clientX:ev.clientX,clientY:ev.clientY,saved:false};svg.setPointerCapture(ev.pointerId);}
+  function begin(ev,item){if(busy||(ev.button!==0&&!(item.kind==='pan'&&ev.button===1)))return;ev.stopPropagation();ev.preventDefault();drag={...item,start:point(ev),last:point(ev),clientX:ev.clientX,clientY:ev.clientY,saved:false};svg.classList.toggle('is-panning',item.kind==='pan');svg.setPointerCapture(ev.pointerId);studioBridge?.state();}
+  function restoreGesture(gesture){graph=gesture.before;history=gesture.history;future=gesture.future;dirty=gesture.dirty;}
+  function unchangedGesture(gesture){
+    const near=(a,b)=>Math.abs(a-b)<1e-5,samePoints=(a,b)=>a?.length===b?.length&&a.every((p,i)=>near(p.x,b[i].x)&&near(p.y,b[i].y));
+    if(gesture.kind==='node'){const a=gesture.before.nodes.find(n=>n.id===gesture.node.id),b=node(gesture.node.id);return a&&b&&near(a.x,b.x)&&near(a.y,b.y);}
+    if(gesture.kind==='studio-annotation'){const P=window.ArchCanvasStudioPresentation,a=P.state(gesture.before).annotations[gesture.annotation],b=P.state(graph).annotations[gesture.annotation];return a&&b&&near(a.x,b.x)&&near(a.y,b.y);}
+    if(gesture.kind==='route-label'){const a=gesture.before.routeLabels.find(a=>a.id===gesture.label.id);return JSON.stringify(a?.anchor)===JSON.stringify(gesture.label.anchor);}
+    if(gesture.kind==='bend'){const a=gesture.before.edges.find(e=>e.id===gesture.edge.id),b=gesture.edge;return a&&samePoints(a.route,b.route)&&samePoints(a.waypoints,b.waypoints);}
+    return false;
+  }
   function selectEdge(e,additive=false){selectedAnnotation=null;if(!additive){selectedEdges.clear();selectedNodes.clear();}if(additive&&selectedEdges.has(e.id))selectedEdges.delete(e.id);else selectedEdges.add(e.id);}
   function nodeDown(ev,n){if(busy||ev.button!==0)return;ev.stopPropagation();if(tool==='pan'){begin(ev,{kind:'pan',camera:{...camera}});return;}selectedAnnotation=null;
     if(tool==='connect'){if(!connection){connection={node:n,fixed:null};selectedNodes=new Set([n.id]);selectedEdges.clear();toast('选择目标节点，或从端口拖动连接。');}else completeConnection(n,nearestSide(n,point(ev)));render();return;}
     if(ev.shiftKey){selectedNodes.has(n.id)?selectedNodes.delete(n.id):selectedNodes.add(n.id);render({presentationOnly:true});return;}
-    selectedNodes=new Set([n.id]);selectedEdges.clear();if(!window.ArchCanvasStudioPresentation?.state(graph).nodes[n.id]?.pinned)begin(ev,{kind:'node',node:n});render({presentationOnly:true});
+    selectedNodes=new Set([n.id]);selectedEdges.clear();if(!window.ArchCanvasStudioPresentation?.state(graph).nodes[n.id]?.pinned)begin(ev,{kind:'node',node:n});else toast('已固定直接移动；点击工具栏解锁后可拖动。该节点仍随父容器移动。');render({presentationOnly:true});
   }
   function edgeDown(ev,e){if(busy||ev.button!==0)return;ev.stopPropagation();if(tool==='pan'){begin(ev,{kind:'pan',camera:{...camera}});return;}
     if(tool==='bend'&&selectedEdges.has(e.id)){save();const p=point(ev);let closest=Infinity,index=1;for(let i=1;i<e.route.length;i++){const a=e.route[i-1],b=e.route[i],den=(b.x-a.x)**2+(b.y-a.y)**2,t=den?Math.max(0,Math.min(1,((p.x-a.x)*(b.x-a.x)+(p.y-a.y)*(b.y-a.y))/den)):0,d=Math.hypot(p.x-a.x-(b.x-a.x)*t,p.y-a.y-(b.y-a.y)*t);if(d<closest){closest=d;index=i;}}e.route.splice(index,0,{x:p.x,y:p.y});e.waypoints.push({x:p.x,y:p.y});e.style='orthogonal';dirty=true;toast('已添加折点；启用保留途经点后 Apply。');persist();}
@@ -241,12 +266,23 @@
     selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;selectedAnnotation=annotation.id;connection=null;
     begin(ev,{kind:'studio-annotation',annotation:annotation.id});render({presentationOnly:true});
   }
-  svg.addEventListener('pointerdown',ev=>{if(ev.button!==0)return;if(tool==='pan'||ev.button===1){begin(ev,{kind:'pan',camera:{...camera}});return;}if(busy)return;if(ev.target===svg||ev.target.closest('#annotationLayer')){selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;connection=null;render({presentationOnly:true});}});
+  // Capture before node, label, handle and expansion-control handlers so the
+  // Studio's middle-button pan works over every part of the canvas.
+  svg.addEventListener('pointerdown',ev=>{if(ev.button!==1)return;ev.preventDefault();ev.stopImmediatePropagation();if(!graph||busy||drag)return;begin(ev,{kind:'pan',camera:{...camera}});},true);
+  svg.addEventListener('auxclick',ev=>{if(ev.button===1)ev.preventDefault();});
+  // Node gestures capture the pointer on the SVG. Browsers can consequently
+  // retarget the real double-click to the SVG rather than the node group.
+  svg.addEventListener('dblclick',ev=>{
+    if(ev.target!==svg||ev.defaultPrevented||!graph||busy||drag||tool!=='select')return;
+    const n=hitNode(point(ev));if(!n||!unifiedHasChildren(n.id))return;
+    ev.preventDefault();ev.stopPropagation();toggleUnifiedNode(n.id);
+  });
+  svg.addEventListener('pointerdown',ev=>{if(ev.button!==0)return;if(tool==='pan'){begin(ev,{kind:'pan',camera:{...camera}});return;}if(busy)return;if(ev.target===svg||ev.target.closest('#annotationLayer')){selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;connection=null;render({presentationOnly:true});}});
   function processDragPoint(p){
     if(!drag)return;
     if(Math.hypot(p.x-drag.last.x,p.y-drag.last.y)<.01)return;
     const frameStart=performance.now();
-    if((drag.kind==='node'||drag.kind==='bend'||drag.kind==='route-label'||drag.kind==='studio-annotation')&&!drag.saved){save();drag.saved=true;drag.before=history.at(-1);}
+    if((drag.kind==='node'||drag.kind==='bend'||drag.kind==='route-label'||drag.kind==='studio-annotation')&&!drag.saved){drag.history=history.slice();drag.future=future;drag.dirty=dirty;save();drag.saved=true;drag.before=history.at(-1);}
     if(drag.kind==='node'){
       const n=drag.node;
       if(interactionMode==='realtime'){
@@ -287,27 +323,34 @@
     if(kind==='connection'){if(n)completeConnection(n,nearestSide(n,p));else{connection=null;toast('连接取消：请释放在目标节点或端口上。');}}
     else if(kind==='endpoint'){if(n){save();E.reconnect(graph,drag.edge,drag.side,n.id,nearestSide(n,p));dirty=true;toast('端点已重接；Apply 更新这条路径。');}else toast('端点未落在节点上，保留原连接。');}
     if(kind==='route-label'&&drag.saved)toast('文字已吸附到所属连线；拖动模块与重新布线时自动跟随。');
+    if(drag.saved){
+      if(unchangedGesture(drag)){
+        restoreGesture(drag);drag=null;dragPoint=null;$('previewLayer').replaceChildren();if(svg.hasPointerCapture(ev.pointerId))svg.releasePointerCapture(ev.pointerId);
+        render();studioBridge?.state();return;
+      }
+    }
     if(kind==='node'&&drag.saved&&interactionMode==='realtime'){
       const gesture=drag,base=gesture.before;
       const validation=E.validateView(graph);
       const valid=validation.source.ok&&validation.layout.ok&&validation.edges.every(([,check])=>check.ok);
-      if(!valid){graph=E.clone(base);toast('实时移动已恢复：最终位置未通过完整约束校验。');}
+      if(!valid){restoreGesture(gesture);toast('实时移动已恢复：最终位置未通过完整约束校验。');}
       else {F.captureMove(base,graph,gesture.node.id);toast(graph.lastMove?.blocked?'此位置无法保留合法连接，已停留在上一合法位置。':'实时更新已提交：节点、箭头、所属文字与连接同步保存。');}
       drag=null;dragPoint=null;$('previewLayer').replaceChildren();if(svg.hasPointerCapture(ev.pointerId))svg.releasePointerCapture(ev.pointerId);
-      render({validation:valid?validation:null,validationOrigin:'main'});persist();return;
+      render({validation:valid?validation:null,validationOrigin:'main'});persist();studioBridge?.state();return;
     }
     if(kind==='node'&&drag.saved){
       const gesture=drag,base=gesture.before,old=base.nodes.find(n=>n.id===gesture.node.id),moved=node(gesture.node.id),dx=moved.x-old.x,dy=moved.y-old.y;
       drag=null;dragPoint=null;$('previewLayer').replaceChildren();if(svg.hasPointerCapture(ev.pointerId))svg.releasePointerCapture(ev.pointerId);
       busy=true;render({interactive:true});svg.setAttribute('data-interaction-phase','settling');$('dirtyBadge').textContent='正在整理连线…';
       let validation=null;try{const start=performance.now(),result=await runGraphTask({task:'move',graph:base,id:old.id,dx,dy,options:options()});if(!result.ok)throw new Error(result.error);
-        graph=result.graph;F.captureMove(base,graph,old.id);svg.setAttribute('data-move-ms',(performance.now()-start).toFixed(2));toast(graph.lastMove?.blocked?'此位置无法保留合法连接，已限制移动。':'节点、所属文字与连接已同步更新。');
-        validation=result.validation;
-      }catch(error){graph=E.clone(base);toast('移动已恢复：'+error.message);}finally{busy=false;render({validation});persist();}return;
+        const committed=result.graph.nodes.find(n=>n.id===old.id);
+        if(Math.abs(committed.x-old.x)<1e-5&&Math.abs(committed.y-old.y)<1e-5){restoreGesture(gesture);toast('此位置无法保留合法连接，已保留原位置。');}
+        else {graph=result.graph;F.captureMove(base,graph,old.id);svg.setAttribute('data-move-ms',(performance.now()-start).toFixed(2));toast(graph.lastMove?.blocked?'此位置无法保留合法连接，已限制移动。':'节点、所属文字与连接已同步更新。');validation=result.validation;}
+      }catch(error){restoreGesture(gesture);toast('移动已恢复：'+error.message);}finally{busy=false;render({validation});persist();studioBridge?.state();}return;
     }
-    const changed=drag.saved||kind==='connection'||kind==='endpoint';drag=null;$('previewLayer').replaceChildren();if(svg.hasPointerCapture(ev.pointerId))svg.releasePointerCapture(ev.pointerId);if(changed)persist();render({presentationOnly:!changed});
+    const changed=drag.saved||kind==='connection'||kind==='endpoint';drag=null;svg.classList.remove('is-panning');$('previewLayer').replaceChildren();if(svg.hasPointerCapture(ev.pointerId))svg.releasePointerCapture(ev.pointerId);if(changed)persist();render({presentationOnly:!changed});studioBridge?.state();
   });
-  svg.addEventListener('pointercancel',()=>{if(dragFrame)cancelAnimationFrame(dragFrame);dragFrame=0;dragPoint=null;if(drag?.saved){graph=E.clone(drag.before);history.pop();}drag=null;connection=null;$('previewLayer').replaceChildren();render();});
+  svg.addEventListener('pointercancel',()=>{if(dragFrame)cancelAnimationFrame(dragFrame);dragFrame=0;dragPoint=null;if(drag?.saved)restoreGesture(drag);drag=null;svg.classList.remove('is-panning');connection=null;$('previewLayer').replaceChildren();render();studioBridge?.state();});
   svg.addEventListener('wheel',ev=>{if(!graph)return;ev.preventDefault();zoom(ev.deltaY<0?1.15:1/1.15,point(ev));},{passive:false});
   function ensureWorker(){if(worker||location.protocol==='file:'||typeof Worker==='undefined')return worker;
     try{worker=new Worker('routing-worker.js');worker.onmessage=event=>{const resolve=pendingTasks.get(event.data.requestId);if(resolve){pendingTasks.delete(event.data.requestId);resolve(event.data);}};
@@ -316,7 +359,8 @@
   }
   async function runGraphTask(message){const active=ensureWorker();if(active){const result=await new Promise(resolve=>{const requestId=++workerId;pendingTasks.set(requestId,resolve);try{active.postMessage({...message,requestId});}catch(_){pendingTasks.delete(requestId);resolve(null);}});if(result)return result;}
     await new Promise(resolve=>setTimeout(resolve,0));const copy=E.clone(message.graph);
-    if(message.task==='frontier'){const result=F.route(copy,message.options),validation=E.validateView(copy);if(result.failed||!validation.source.ok||!validation.layout.ok||validation.edges.some(([,check])=>!check.ok))return {ok:false,error:[...validation.source.violations,...validation.layout.violations,...validation.edges.filter(([,v])=>!v.ok).map(([id,v])=>id+': '+v.violations.join(', '))].slice(0,4).join('; ')};return {ok:true,...result,validation};}
+    if(message.task==='frontier')return window.SummaryFrontierTask.run(copy,message.transition,message.options);
+    if(message.task==='validate')return {ok:true,graph:copy,validation:E.validateView(copy)};
     if(message.task==='move'){E.move(copy,message.id,message.dx,message.dy,message.options);const validation=E.validateView(copy);if(!validation.source.ok||!validation.layout.ok||validation.edges.some(([,check])=>!check.ok))return {ok:false,error:'移动后的图未通过完整校验'};return{ok:true,graph:copy,validation};}
     const result=E.routeBatch(copy,message.ids,message.options);return {ok:true,...result,validation:E.validateView(copy)};
   }
@@ -332,40 +376,44 @@
   for(const collection of Object.keys(names)){const o=document.createElement('option');o.value=collection;o.textContent=names[collection];$('collection').append(o);}
   $('coverage').textContent=`${catalog.counts.active} 当前案例 / ${catalog.counts.historical} 历史案例`;
   for(const id of ['search','collection','includeHistory'])$(id).addEventListener(id==='search'?'input':'change',renderCatalog);
-  for(const b of document.querySelectorAll('[data-tool]'))b.onclick=()=>{if(busy)return;tool=b.dataset.tool;connection=null;for(const x of document.querySelectorAll('[data-tool]'))x.classList.toggle('active',x===b);if(tool==='connect')$('showPorts').checked=true;render({presentationOnly:true});};
+  function selectTool(value){if(busy||drag)throw new Error('请先完成当前图操作。');if(!['select','connect','bend','pan'].includes(value)||(studioCanvas&&value==='pan'))throw new Error('该工具不可用；按住鼠标中键平移画布。');tool=value;connection=null;for(const x of document.querySelectorAll('[data-tool]'))x.classList.toggle('active',x.dataset.tool===tool);if(tool==='connect')$('showPorts').checked=true;svg.setAttribute('data-active-tool',tool);render({presentationOnly:true});studioBridge?.state();}
+  for(const b of document.querySelectorAll('[data-tool]'))b.onclick=()=>{if(busy||drag)return;selectTool(b.dataset.tool);};
   $('interactionMode').onchange=()=>setInteractionMode($('interactionMode').value);
   for(const id of ['showGhost','showObstacles','showPorts'])$(id).onchange=()=>render({presentationOnly:true});
   $('clearance').oninput=()=>{$('clearanceValue').value=$('clearance').value+' px';};$('applyLayout').onclick=apply;
-  $('setArrow').onclick=()=>{if(!selectedEdges.size){toast('先选择一条或多条边。');return;}save();for(const e of graph.edges)if(selectedEdges.has(e.id))e.arrow=$('arrowStyle').value;render();persist();toast('箭头已更新；路线模型保持不变。');};
-  $('undo').onclick=()=>{if(busy||!history.length)return;future.push(E.clone(graph));graph=history.pop();selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;dirty=true;ghost=[];render();persist();};
-  $('redo').onclick=()=>{if(busy||!future.length)return;history.push(E.clone(graph));graph=future.pop();selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;dirty=true;ghost=[];render();persist();};
-  $('reset').onclick=()=>{if(busy)return;save();graph=E.clone(original);syncUnifiedState();selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;ghost=[];dirty=false;fit();render();persist();toast('当前模型已恢复到最精简递归状态，仍可撤销。');};
+  $('setArrow').onclick=()=>{if(busy||drag)return;if(!selectedEdges.size){toast('先选择一条或多条边。');return;}save();for(const e of graph.edges)if(selectedEdges.has(e.id))e.arrow=$('arrowStyle').value;render();persist();toast('箭头已更新；路线模型保持不变。');};
+  $('undo').onclick=()=>{if(busy||drag||!history.length)return;future.push(E.clone(graph));graph=history.pop();selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;connection=null;dirty=true;ghost=[];render();persist();studioBridge?.state();};
+  $('redo').onclick=()=>{if(busy||drag||!future.length)return;history.push(E.clone(graph));graph=future.pop();selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;connection=null;dirty=true;ghost=[];render();persist();studioBridge?.state();};
+  $('reset').onclick=()=>{if(busy||drag)return;save();graph=E.clone(original);syncUnifiedState();selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;connection=null;ghost=[];dirty=false;fit();render();persist();studioBridge?.state();toast('当前模型已恢复到最精简递归状态，仍可撤销。');};
   $('collapseAll').onclick=collapseUnifiedAll;$('expandAll').onclick=expandUnifiedAll;
   $('fit').onclick=()=>{fit();render({cameraOnly:true});};$('fitWidth').onclick=()=>{fit(true);render({cameraOnly:true});};$('zoomIn').onclick=()=>zoom(1.3);$('zoomOut').onclick=()=>zoom(1/1.3);$('exportSvg').onclick=()=>download(studioSvg(),'image/svg+xml',current.title+'-unified.svg');
   $('exportJson').onclick=()=>{const text=JSON.stringify({schema:'summary-merge-recursive/1',case:current.id,view:view.key,interactionMode,graph,...(importedPackages.has(current.id)?{adapter:importedPackages.get(current.id)}:{})},null,2);
     if(importedPackages.has(current.id)){$('sourceExportText').value=text;$('sourceExportDialog').showModal();}else download(text,'application/json',current.id+'-'+view.key+'.json');};
   $('closeSourceExport').onclick=()=>$('sourceExportDialog').close();$('downloadSourceDocument').onclick=()=>download($('sourceExportText').value,'application/json',current.id+'-unified.json');
   const invalidSourceRoutes=(graph,validation)=>validation.edges.some(([id,v])=>!v.ok&&!graph.edges.find(e=>e.id===id)?.draft);
-  async function registerSource(bundle,edited){await A.verify(bundle);const sources=A.sources(bundle),preflight=F.build(F.create(sources)),routed=F.route(preflight),checked=E.validateView(preflight);
-    if(routed.failed||!checked.source.ok||!checked.layout.ok||checked.edges.some(([,v])=>!v.ok))throw new Error('适配结果未通过连接/布局校验，请查看源码适配支持范围。');
-    if(edited){const restored=E.clone(edited);if(!restored.recursive)throw new Error('编辑 JSON 缺少递归状态。');restored.recursive.authority=F.create(sources).authority;const result=E.validateView(restored);
+  async function registerSource(bundle,edited){await A.verify(bundle);const sources=A.sources(bundle),preflight=await runGraphTask({task:'frontier',graph:F.build(F.create(sources)),options:{}});
+    if(!preflight.ok||preflight.failed)throw new Error(preflight.error||'适配结果未通过连接/布局校验，请查看源码适配支持范围。');
+    if(edited){const restored=E.clone(edited);if(!restored.recursive)throw new Error('编辑 JSON 缺少递归状态。');restored.recursive.authority=F.create(sources).authority;const check=await runGraphTask({task:'validate',graph:restored});if(!check.ok)throw new Error(check.error);const result=check.validation;
       if(restored.irSha256!==bundle.irSha256||!result.source.ok||!result.layout.ok||invalidSourceRoutes(restored,result))throw new Error('编辑 JSON 与源码适配契约不一致。');}
     importedPackages.set(bundle.id,bundle);importedSources.set(bundle.id,sources);let c=catalog.cases.find(v=>v.id===bundle.id);
     if(!c){c={id:bundle.id,title:bundle.title,collection:'source_adapter',origin:bundle.entry,historical:false,views:[{key:'overview',label:'递归图'},{key:'detailed',label:'源码细节'}]};catalog.cases.push(c);}return c;
   }
   async function installSource(payload){
-    if(busy||drag)throw new Error('请先完成当前操作。');const bundle=payload.adapter||payload,c=await registerSource(bundle,payload.adapter&&payload.graph);
+    if(!payload||typeof payload!=='object')throw new Error('源码包格式无效。');
+    if(busy||drag)throw new Error('请先完成当前操作。');flushPersist();busy=true;render({presentationOnly:true});studioBridge?.state();
+    const bundle=payload.adapter||payload;let c,restored;
+    try{
+    c=await registerSource(bundle,payload.adapter&&payload.graph);
     // Restore a portable edited frontier only against fresh, verified authority.
-    if(payload.adapter&&payload.graph){const restored=E.clone(payload.graph);restored.recursive.authority=F.create(importedSources.get(c.id)).authority;const checked=E.validateView(restored);
-      if(restored.irSha256!==bundle.irSha256||!checked.source.ok||!checked.layout.ok||invalidSourceRoutes(restored,checked))throw new Error('编辑 JSON 与源码适配契约不一致。');
-      sessions.set(c.id+':unified',{graph:restored,history:[],future:[],dirty:true});}
+    if(payload.adapter&&payload.graph){restored=E.clone(payload.graph);restored.recursive.authority=F.create(importedSources.get(c.id)).authority;}
     await window.SummaryRecursiveStorage.put('source-adapter:bundle:'+c.id,bundle);await window.SummaryRecursiveStorage.put('source-adapter:index',[...importedPackages.keys()]);
-    $('collection').value='all';$('search').value='';$('sourceImportDialog').close();if(!await openCase(c,c.views[0]))throw new Error('源码包已验证，但递归视图加载失败。');toast(`已接入 ${c.title}：${bundle.ir.nodes.length} 个源码节点，${bundle.diagnostics.length} 个待解析区域。`);
+    }finally{busy=false;render({presentationOnly:true});studioBridge?.state();}
+    $('collection').value='all';$('search').value='';$('sourceImportDialog').close();if(!await openCase(c,c.views[0],restored?{graph:restored,history:[],future:[],dirty:true}:undefined))throw new Error('源码包已验证，但递归视图加载失败。');toast(`已接入 ${c.title}：${bundle.ir.nodes.length} 个源码节点，${bundle.diagnostics.length} 个待解析区域。`);
   }
   const sourceError=error=>{$('sourceImportStatus').textContent=error.message;toast(error.message);};
   function applyStudioPresentation(n,v){window.ArchCanvasStudioPresentation?.applyNode(graph,n,v);}
-  function studioDocument(){return graph&&current?{schema:'summary-merge-recursive/1',case:current.id,caseId:current.id,title:current.title,collection:current.collection,view:view.key,interactionMode,dirty,canUndo:!!history.length,canRedo:!!future.length,undo:history.length,redo:future.length,presentationVersion:1,sourceAvailable:!!(importedPackages.has(current.id)||catalogSources?.cases?.[current.id]?.available),selectedNodes:[...selectedNodes],selectedEdges:[...selectedEdges],selection:studioSelection(),graph:E.clone(graph),...(importedPackages.has(current.id)?{adapter:E.clone(importedPackages.get(current.id))}:{})}:null;}
-  function studioState(){const document=studioDocument();return {document,graph:document?.graph||null,case:current?{id:current.id,title:current.title,collection:current.collection,historical:!!current.historical}:null,bundle:document?.adapter||null,sourceAvailable:!!(document?.adapter||catalogSources?.cases?.[current?.id]?.available),dirty,busy,undo:history.length,redo:future.length,selectedNodes:[...selectedNodes],selectedEdges:[...selectedEdges],presentationVersion:1,selection:studioSelection(),camera:{...camera}};}
+  function studioDocument(){return graph&&current?{schema:'summary-merge-recursive/1',case:current.id,caseId:current.id,title:current.title,collection:current.collection,view:view.key,interactionMode,tool,showPorts:$('showPorts').checked,gridVisible:canvasGridVisible,dirty,busy:busy||!!drag,dragging:!!drag,canUndo:!!history.length,canRedo:!!future.length,undo:history.length,redo:future.length,presentationVersion:1,sourceAvailable:!!(importedPackages.has(current.id)||catalogSources?.cases?.[current.id]?.available),selectedNodes:[...selectedNodes],selectedEdges:[...selectedEdges],selection:studioSelection(),graph:E.clone(graph),...(importedPackages.has(current.id)?{adapter:E.clone(importedPackages.get(current.id))}:{})}:null;}
+  function studioState(){const document=studioDocument();return {document,graph:document?.graph||null,case:current?{id:current.id,title:current.title,collection:current.collection,historical:!!current.historical}:null,bundle:document?.adapter||null,sourceAvailable:!!(document?.adapter||catalogSources?.cases?.[current?.id]?.available),dirty,tool,showPorts:$('showPorts').checked,gridVisible:canvasGridVisible,busy:busy||!!drag,dragging:!!drag,undo:history.length,redo:future.length,selectedNodes:[...selectedNodes],selectedEdges:[...selectedEdges],presentationVersion:1,selection:studioSelection(),camera:{...camera}};}
   async function sourceAsset(path,json=false){
     const cacheKey=path+':'+json;if(sourceAssets.has(cacheKey))return sourceAssets.get(cacheKey);
     if(typeof path!=='string'||path.startsWith('/')||path.split('/').includes('..'))throw new Error('源码资源路径无效。');
@@ -381,7 +429,11 @@
   }
   function normalizeSourcePath(value){
     if(!value)return null;const files=importedPackages.get(current?.id)?.files||catalogSources?.cases?.[current?.id]?.files||[];
-    const match=files.find(f=>value===f.path||value.endsWith('/'+f.path)||value.endsWith('/'+f.path.split('/').at(-1)));
+    const aliases=f=>[f.path,f.originalPath].filter(Boolean);
+    const exact=files.find(f=>aliases(f).includes(value));
+    const suffix=files.filter(f=>aliases(f).some(path=>value.endsWith('/'+path)));
+    const basename=files.filter(f=>aliases(f).some(path=>value.endsWith('/'+path.split('/').at(-1))));
+    const match=exact||(suffix.length===1?suffix[0]:null)||(basename.length===1?basename[0]:null);
     return match?.path||value.replace(/^.*\/prototype\//,'');
   }
   function studioSelection(){
@@ -391,7 +443,7 @@
     const line=first?.line||first?.start,endLine=first?.endLine||first?.end||line;
     return {caseId:current?.id||null,nodeId:n?.id||null,annotationId:annotation?.id||null,annotation:annotation?E.clone(annotation):null,node:n?{id:n.id,label:label(n),parent:n.parent,semantic:E.clone(n.semantic||{}),x:n.x,y:n.y,w:n.w,h:n.h,expanded:!!n.expanded}:null,edge:e?{id:e.id,source:e.source,target:e.target,binding:E.clone(e.binding||{}),arrow:e.arrow,style:e.style,width:e.width,stroke:e.stroke,dashed:e.dashed}:null,nodeIds:[...selectedNodes],edgeIds:[...selectedEdges],selectedNodes:[...selectedNodes],selectedEdges:[...selectedEdges],sourcePath:path,line:line||null,span:line?{startLine:line,endLine,startColumn:first?.column||0,column:first?.column||0,endColumn:first?.endColumn||0,line,expression:first?.expression||first?.snippet}:null,evidence:E.clone(evidence)};
   }
-  function normalizedEntry(value){if(typeof value!=='string')return null;if(!value.includes('::'))return value;const [file,symbol]=value.split('::');return file.replace(/\.py$/,'').replaceAll('/','.')+':'+symbol.split('.')[0];}
+  function normalizedEntry(value){if(typeof value!=='string')return null;if(!value.includes('::'))return value;const [file,symbol]=value.split('::');return file.replace(/(?:\/__init__)?\.py$/,'').replaceAll('/','.')+':'+symbol.split('.')[0];}
   function normalizedEvidence(raw){const result={};for(const [id,e]of Object.entries(raw.symbols||raw)){if(!e||typeof e!=='object'||!Number.isFinite(e.line||e.start))continue;const file=normalizeSourcePath(e.file||e.path||e.source||raw.origin);if(!file)continue;const entry={file,line:e.line||e.start,endLine:e.endLine||e.end||e.line||e.start,expression:e.expression||e.snippet||'',column:e.column||0,endColumn:e.endColumn||0};result[e.evidence_id||id]=entry;}return result;}
   async function studioSource(){
     const caseId=current?.id;if(!caseId)return {message:'尚未加载模型。'};const document=studioDocument(),bundle=importedPackages.get(caseId);
@@ -405,9 +457,12 @@
   async function studioLoad(payload){
     if(payload?.schema!=='summary-merge-recursive/1'||payload.adapter)return installSource(payload);
     if(busy||drag)throw new Error('请先完成当前图操作。');const c=catalog.cases.find(c=>c.id===(payload.caseId||payload.case));if(!c||!payload.graph?.recursive)throw new Error('编辑 JSON 没有对应的案例或递归状态。');
-    const sources=c.views[0]?.builtin?{overview:lab()}:Object.fromEntries(await Promise.all(c.views.map(async descriptor=>[descriptor.key,await asset(descriptor,c)]))),base=F.build(F.create(sources));const restored=E.clone(payload.graph);restored.recursive.authority=E.clone(base.recursive.authority);const validation=E.validateView(restored);
-    if(restored.irSha256!==base.irSha256||!validation.source.ok||!validation.layout.ok||invalidSourceRoutes(restored,validation))throw new Error('编辑 JSON 与当前案例的源码契约不一致。');if(!await openCase(c,c.views[0]))throw new Error('原案例加载失败。');
-    graph=restored;history=[];future=[];dirty=!!payload.dirty;syncUnifiedState();fit();render({validation});persist();
+    flushPersist();busy=true;render({presentationOnly:true});studioBridge?.state();let restored;
+    try{
+      const sources=c.views[0]?.builtin?{overview:lab()}:Object.fromEntries(await Promise.all(c.views.map(async descriptor=>[descriptor.key,await asset(descriptor,c)]))),base=F.build(F.create(sources));restored=E.clone(payload.graph);restored.recursive.authority=E.clone(base.recursive.authority);const checked=await runGraphTask({task:'validate',graph:restored});if(!checked.ok)throw new Error(checked.error);const validation=checked.validation;
+      if(restored.irSha256!==base.irSha256||!validation.source.ok||!validation.layout.ok||invalidSourceRoutes(restored,validation))throw new Error('编辑 JSON 与当前案例的源码契约不一致。');
+    }finally{busy=false;render({presentationOnly:true});studioBridge?.state();}
+    if(!await openCase(c,c.views[0],{graph:restored,history:[],future:[],dirty:!!payload.dirty}))throw new Error('编辑 JSON 的递归视图加载失败。');
   }
   function sourceNodes(message){
     const all=graph?.recursive?.authority?.detail?.nodes||graph?.nodes||[];
@@ -427,11 +482,65 @@
       camera.x=annotation.x+(annotation.width||380)/2-camera.w/2;camera.y=annotation.y-camera.h/2;cameraUpdate();render({presentationOnly:true});studioBridge?.state();return;
     }
     const target=sourceNodes(message)[0];if(!target)throw new Error('当前预览没有匹配的源码图元。');selectedAnnotation=null;
-    if(!node(target.id)){const all=graph.recursive.authority.detail.nodes,ancestors=[];let item=target;while(item.parent){item=all.find(n=>n.id===item.parent);if(!item)break;ancestors.unshift(item.id);}await changeFrontier(g=>{for(const id of ancestors)g=F.toggle(g,id,true)||g;return g;});}
+    if(!node(target.id)){const all=graph.recursive.authority.detail.nodes,ancestors=[];let item=target;while(item.parent){item=all.find(n=>n.id===item.parent);if(!item)break;ancestors.unshift(item.id);}await changeFrontier({type:'expand',ids:ancestors,expanded:true});}
     const visible=node(target.id);if(!visible)throw new Error('图元尚未显示。');selectedNodes=new Set([target.id]);selectedEdges.clear();camera.x=visible.x+visible.w/2-camera.w/2;camera.y=visible.y+visible.h/2-camera.h/2;cameraUpdate();render({presentationOnly:true});studioBridge?.state();
+  }
+  function selectedLayoutNodes(){
+    if(!graph||busy||drag)throw new Error('请先完成当前图操作。');
+    const nodes=[...selectedNodes].map(id=>node(id));
+    if(!nodes.length)throw new Error('请先选择画布节点；按住 Shift 点击可多选。');
+    if(nodes.some(n=>!n||n.junction))throw new Error('请只选择可见模块或图元；分支连接点不能排列或固定。');
+    return nodes;
+  }
+  async function pinSelection(message){
+    const nodes=selectedLayoutNodes(),overlay=window.ArchCanvasStudioPresentation.state(graph);
+    if(message.pinned!==undefined&&typeof message.pinned!=='boolean')throw new Error('固定状态必须为布尔值。');
+    const pinned=message.pinned??!nodes.every(n=>overlay.nodes[n.id]?.pinned);
+    const ids=nodes.filter(n=>!!overlay.nodes[n.id]?.pinned!==pinned).map(n=>n.id);
+    if(!ids.length){toast(pinned?'所选节点已固定直接移动。':'所选节点已解锁。');return;}
+    await studioVisual({operations:[{type:'pin',ids,pinned}]});
+    toast(pinned?'已固定所选节点的直接移动；子节点仍随父容器移动与递归布局更新。':'已解锁所选节点，可拖动或排列。');
+  }
+  async function arrangeSelection(message){
+    const kinds=['left','hcenter','right','top','vcenter','bottom','distribute-x','distribute-y'],kind=message.kind;
+    if(!kinds.includes(kind))throw new Error('未知排列方式。');
+    const nodes=selectedLayoutNodes(),distribution=kind.startsWith('distribute-'),minimum=distribution?3:2;
+    if(nodes.length<minimum)throw new Error(distribution?'等距分布需要至少 3 个同级节点。':'对齐需要至少 2 个同级节点。');
+    if(new Set(nodes.map(n=>n.parent||null)).size!==1)throw new Error('请选择同一容器内的独立节点；父子节点和跨容器节点不能一起排列。');
+    const overlay=window.ArchCanvasStudioPresentation.state(graph),anchors=nodes.filter(n=>overlay.nodes[n.id]?.pinned),horizontal=['left','hcenter','right','distribute-x'].includes(kind),axis=horizontal?'x':'y',size=horizontal?'w':'h',epsilon=1e-5;
+    const targets=new Map();
+    if(distribution){
+      if(anchors.length)throw new Error('等距分布前请解锁所选固定节点。');
+      const ordered=nodes.slice().sort((a,b)=>a[axis]-b[axis]||a.id.localeCompare(b.id)),first=ordered[0],last=ordered.at(-1),total=ordered.reduce((sum,n)=>sum+n[size],0),gap=(last[axis]+last[size]-first[axis]-total)/(ordered.length-1);
+      if(gap<-epsilon)throw new Error('所选节点之间空间不足，无法保持不重叠的等距分布。');
+      let position=first[axis];for(const n of ordered){targets.set(n.id,position);position+=n[size]+Math.max(0,gap);}
+    }else{
+      const fraction=['hcenter','vcenter'].includes(kind) ? .5 : ['right','bottom'].includes(kind) ? 1 : 0,coordinate=n=>n[axis]+n[size]*fraction;
+      if(anchors.length>1&&anchors.some(n=>Math.abs(coordinate(n)-coordinate(anchors[0]))>epsilon))throw new Error('固定节点的对齐基准不同；请解锁部分节点后再排列。');
+      const low=Math.min(...nodes.map(n=>n[axis])),high=Math.max(...nodes.map(n=>n[axis]+n[size])),reference=anchors.length?coordinate(anchors[0]):fraction===0?low:fraction===1?high:(low+high)/2;
+      for(const n of nodes)if(!anchors.includes(n))targets.set(n.id,reference-n[size]*fraction);
+    }
+    const moving=nodes.filter(n=>targets.has(n.id)&&Math.abs(targets.get(n.id)-n[axis])>epsilon);
+    if(!moving.length){toast('所选节点已满足排列，无需调整。');return;}
+    const extent=graph.canvas[horizontal?0:1];
+    if(moving.some(n=>{const position=targets.get(n.id),low=position+Math.min(0,...(n.labelObstacles||[]).map(b=>b[axis])),high=position+Math.max(n[size],...(n.labelObstacles||[]).map(b=>b[axis]+b[size]));return low<-epsilon||high>extent+epsilon;}))throw new Error('排列会使图元或所属文字超出画布，请调整基准节点位置。');
+    // Vacate positions towards the outer edge first. The original engine then
+    // validates each move and the complete candidate as one atomic history step.
+    moving.sort((a,b)=>{
+      const negativeA=targets.get(a.id)<a[axis],negativeB=targets.get(b.id)<b[axis];
+      if(negativeA!==negativeB)return negativeA?-1:1;
+      return (negativeA?1:-1)*(a[axis]-b[axis])||a.id.localeCompare(b.id);
+    });
+    if(message.scope!==undefined&&!['current-frontier','all-frontiers'].includes(message.scope))throw new Error('移动范围无效。');
+    await studioVisual({operations:moving.map(n=>({type:'nodeLayout',id:n.id,position:{[axis]:targets.get(n.id)},scope:message.scope||'all-frontiers',exact:true}))});
+    toast(distribution?'已按节点间距等距分布；模型连接与源码保持绑定。':'已对齐所选节点；固定节点作为基准，模型连接与源码保持绑定。');
   }
   async function studioVisual(message){
     if(!graph||busy||drag)throw new Error('请先完成当前图操作。');if(!Array.isArray(message.operations)||!message.operations.length||message.operations.length>200)throw new Error('视觉操作清单无效。');
+    if(message.operations.every(op=>op.type==='expand'&&op.expanded===message.operations[0].expanded)){
+      for(const operation of message.operations)if(!graph.recursive.authority.detail.nodes.some(n=>n.id===operation.id))throw new Error('找不到预览图元：'+operation.id);
+      return changeFrontier({type:'expand',ids:message.operations.map(op=>op.id),expanded:!!message.operations[0].expanded},true);
+    }
     const before=E.clone(graph);let candidate=E.clone(graph),geometry=false;const P=window.ArchCanvasStudioPresentation,portOverrides={};
     for(const operation of message.operations){
       const all=candidate.recursive.authority.detail.nodes,n=all.find(n=>n.id===operation.id),visible=candidate.nodes.find(n=>n.id===operation.id),p=P.editable(candidate);
@@ -465,7 +574,7 @@
       else if(operation.type==='nodeLayout'){
         if(!visible)throw new Error('请先展开并显示要调整的图元。');const position=operation.position||{};
         if(p.nodes[n.id]?.pinned)throw new Error('图元已固定，请先解锁。');
-        if(position.x!==undefined||position.y!==undefined){const dx=position.x===undefined?0:position.x-visible.x,dy=position.y===undefined?0:position.y-visible.y;if(!Number.isFinite(dx)||!Number.isFinite(dy))throw new Error('坐标无效。');const prior=E.clone(candidate);E.move(candidate,n.id,dx,dy,options());if(candidate.lastMove?.blocked)throw new Error('位置受到节点、容器或连接约束。');if(operation.scope!=='current-frontier')F.captureMove(prior,candidate,n.id);}
+        if(position.x!==undefined||position.y!==undefined){const dx=position.x===undefined?0:position.x-visible.x,dy=position.y===undefined?0:position.y-visible.y;if(!Number.isFinite(dx)||!Number.isFinite(dy))throw new Error('坐标无效。');const prior=E.clone(candidate);E.move(candidate,n.id,dx,dy,options());if(candidate.lastMove?.blocked)throw new Error('位置受到节点、容器或连接约束。');if(operation.exact&&(position.x!==undefined&&Math.abs(visible.x-position.x)>1e-5||position.y!==undefined&&Math.abs(visible.y-position.y)>1e-5))throw new Error('容器边界限制了位置，排列未提交。');if(operation.scope!=='current-frontier')F.captureMove(prior,candidate,n.id);}
         for(const [field,key]of [['width','w'],['height','h']])if(position[field]!==undefined){const value=position[field];if(!Number.isFinite(value)||value<32||value>10000)throw new Error('图元尺寸无效。');if(visible.glyphPresentation&&value!==visible[key])throw new Error('源码运算符图元的尺寸受语义契约保护。');visible[key]=value;p.nodes[n.id]={...p.nodes[n.id],[field]:value};}
         geometry=true;
       }else if(operation.type==='move'){
@@ -502,13 +611,12 @@
       else if(operation.type==='page'){const page=operation.page||{};if(page.background!==undefined&&!P.color(page.background))throw new Error('页面颜色无效。');p.page={...p.page,...page};}
       else throw new Error('不支持的视觉操作：'+operation.type);
     }
-    busy=true;
+    busy=true;studioBridge?.state();let validation=null,committed=false;
     try{
-      if(geometry){const result=await runGraphTask({task:'frontier',graph:candidate,options:{...options(),portOverrides}});if(!result.ok)throw new Error(result.error||'图元布局未通过完整校验。');candidate=result.graph;}
-      const validation=E.validateView(candidate),invalidEdges=validation.edges.filter(([id,v])=>!v.ok&&(geometry||!candidate.edges.find(e=>e.id===id)?.draft));if(!validation.source.ok||!validation.layout.ok||invalidEdges.length)throw new Error([...validation.source.violations,...validation.layout.violations,...invalidEdges.map(([id])=>'连接无效 '+id)].slice(0,4).join('; '));
-      history.push(before);if(history.length>30)history.shift();future=[];graph=candidate;dirty=true;syncUnifiedState();render({validation});
-    }finally{busy=false;render();persist();}
-    studioBridge?.state();
+      if(geometry){const result=await runGraphTask({task:'frontier',graph:candidate,options:{...options(),portOverrides}});if(!result.ok)throw new Error(result.error||'图元布局未通过完整校验。');candidate=result.graph;validation=result.validation;}
+      validation=validation||E.validateView(candidate);const invalidEdges=validation.edges.filter(([id,v])=>!v.ok&&(geometry||!candidate.edges.find(e=>e.id===id)?.draft));if(!validation.source.ok||!validation.layout.ok||invalidEdges.length)throw new Error([...validation.source.violations,...validation.layout.violations,...invalidEdges.map(([id])=>'连接无效 '+id)].slice(0,4).join('; '));
+      history.push(before);if(history.length>30)history.shift();future=[];graph=candidate;dirty=true;syncUnifiedState();committed=true;
+    }finally{busy=false;render(committed?{validation}:{presentationOnly:true});if(committed)persist();studioBridge?.state();}
   }
   function studioSvg(message={}){
     if(!graph||busy||drag)throw new Error('请先完成当前图操作。');const out=svg.cloneNode(true),p=window.ArchCanvasStudioPresentation.state(graph);out.setAttribute('xmlns',NS);out.setAttribute('width',graph.canvas[0]);out.setAttribute('height',graph.canvas[1]);out.setAttribute('viewBox','0 0 '+graph.canvas.join(' '));out.removeAttribute('tabindex');
@@ -531,12 +639,13 @@
     if(command==='set-frontier'){const nodes=sourceNodes(message);if(!nodes.length)throw new Error('没有匹配的源码模块。');return studioVisual({operations:nodes.filter(n=>F.children(graph.recursive.authority,n.id).length).map(n=>({type:'expand',id:n.id,expanded:!!message.expanded}))});}
     if(command==='show-library'||command==='show-routing'){document.documentElement.classList.remove('studio-library-open','studio-routing-open');document.documentElement.classList.add(command==='show-library'?'studio-library-open':'studio-routing-open');return;}
     if(command==='show-import')return $('showSourceImport').click();if(command==='show-evidence')return $('showEvidence').click();
-    if(command==='undo'||command==='redo'){if(busy||drag)throw new Error('请先完成当前图操作。');$(command).click();studioBridge?.state();return;}
+    if(command==='undo'||command==='redo'||command==='reset'){if(busy||drag)throw new Error('请先完成当前图操作。');$(command).click();return;}
     if(command==='fit'){$('fit').click();return;}if(command==='zoom'){zoom(message.factor||1.3);return;}
-    if(['select-tool','connect-tool','pan-tool','bend-tool'].includes(command)){document.querySelector('[data-tool="'+command.replace('-tool','')+'"]').click();return;}
+    if(['select-tool','connect-tool','pan-tool','bend-tool'].includes(command)){selectTool(command.replace('-tool',''));return;}
     if(command==='show-ports'){$('showPorts').checked=message.visible??message.enabled??!$('showPorts').checked;render({presentationOnly:true});return;}
-    if(command==='grid'){$('gridEnabled').checked=message.visible??message.enabled??!$('gridEnabled').checked;$('stage').style.backgroundImage=$('gridEnabled').checked?'':'none';return;}
-    if(command==='apply-layout')return apply();if(command==='collapse-all')return collapseUnifiedAll();if(command==='expand-all')return expandUnifiedAll();
+    if(command==='grid'){canvasGridVisible=message.visible??message.enabled??!canvasGridVisible;$('stage').style.backgroundImage=canvasGridVisible?'':'none';return;}
+    if(command==='arrange-selection')return arrangeSelection(message);if(command==='pin-selection')return pinSelection(message);
+    if(command==='apply-layout')return apply();if(command==='collapse-all'||command==='expand-all'){if(busy||drag)throw new Error('请先完成当前图操作。');return changeFrontier({type:'all',expanded:command==='expand-all'},true);}
     throw new Error('不支持的预览命令：'+command);
   }
   $('showSourceImport').onclick=()=>$('sourceImportDialog').showModal();$('closeSourceImport').onclick=()=>$('sourceImportDialog').close();
@@ -552,13 +661,24 @@
     }catch(e){sourceError(e);}finally{button.disabled=false;}};
   function evidence(){const q=$('evidenceSearch').value.toLowerCase();$('evidenceList').innerHTML=catalog.evidence.filter(e=>e.title.toLowerCase().includes(q)).map(e=>`<a class="evidence-row" href="../${esc(e.path)}" target="_blank">${esc(e.title)} <small>${Math.round(e.bytes/1024)} KB</small></a>`).join('');}
   $('showEvidence').onclick=()=>{evidence();$('evidenceDialog').showModal();};$('closeEvidence').onclick=()=>$('evidenceDialog').close();$('evidenceSearch').oninput=evidence;
-  document.addEventListener('keydown',ev=>{if(ev.target.matches('input,select,textarea'))return;if((ev.ctrlKey||ev.metaKey)&&ev.key==='Enter'){ev.preventDefault();apply();}else if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='z'){ev.preventDefault();(ev.shiftKey?$('redo'):$('undo')).click();}else if(ev.key==='Escape'){connection=null;selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;render();}else if(ev.key==='Delete'&&selectedEdges.size){save();graph.sourceDraftOperations=graph.sourceDraftOperations||[];for(const e of graph.edges)if(selectedEdges.has(e.id))graph.sourceDraftOperations.push({kind:'remove-connection',id:e.id,binding:E.clone(e.binding)});graph.edges=graph.edges.filter(e=>!selectedEdges.has(e.id));selectedEdges.clear();dirty=true;render();persist();}});
-  window.addEventListener('beforeunload',()=>{if(drag?.saved)graph=E.clone(drag.before);drag=null;flushPersist();});window.addEventListener('resize',()=>{cameraUpdate();render({cameraOnly:true});});
+  document.addEventListener('keydown',ev=>{
+    const key=ev.key.toLowerCase(),modifier=ev.ctrlKey||ev.metaKey;
+    if(studioCanvas&&modifier&&key==='s'){ev.preventDefault();ev.stopPropagation();studioBridge?.emit('shortcut',{action:'save'});return;}
+    if(ev.target.closest('input,select,textarea,[contenteditable="true"]'))return;
+    if(modifier&&ev.key==='Enter'){ev.preventDefault();apply();}
+    else if(modifier&&key==='z'){ev.preventDefault();(ev.shiftKey?$('redo'):$('undo')).click();}
+    else if(modifier&&key==='y'){ev.preventDefault();$('redo').click();}
+    else if(!modifier&&!ev.altKey&&['v','c','b'].includes(key)){if(busy||drag)return;ev.preventDefault();selectTool({v:'select',c:'connect',b:'bend'}[key]);}
+    else if(!modifier&&!ev.altKey&&key==='f'){ev.preventDefault();$('fit').click();studioBridge?.state();}
+    else if(ev.key==='Escape'){connection=null;selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;render();}
+    else if(ev.key==='Delete'&&selectedEdges.size&&!busy&&!drag){save();graph.sourceDraftOperations=graph.sourceDraftOperations||[];for(const e of graph.edges)if(selectedEdges.has(e.id))graph.sourceDraftOperations.push({kind:'remove-connection',id:e.id,binding:E.clone(e.binding)});graph.edges=graph.edges.filter(e=>!selectedEdges.has(e.id));selectedEdges.clear();dirty=true;render();persist();studioBridge?.state();}
+  });
+  window.addEventListener('beforeunload',()=>{if(drag?.saved)restoreGesture(drag);drag=null;flushPersist();});window.addEventListener('resize',()=>{cameraUpdate();render({cameraOnly:true});});
   ensureWorker();
   updateInteractionModeUi();
   async function start(){try{catalogSources=await sourceAsset('data/catalog-sources.json',true);}catch(e){console.warn('Catalog source index:',e.message);}try{const ids=await window.SummaryRecursiveStorage.get('source-adapter:index')||[];for(const id of ids){try{const b=await window.SummaryRecursiveStorage.get('source-adapter:bundle:'+id);if(b)await registerSource(b);}catch(e){console.warn('Saved source adapter:',e.message);}}}catch(e){console.warn('Source adapter storage:',e.message);}
     const query=new URLSearchParams(location.search),chosen=catalog.cases.find(c=>c.id===query.get('case'))||catalog.cases.find(c=>c.collection==='transformer_programmatic_guide'&&c.title==='Transformer'&&!c.historical)||catalog.cases[0];
     if(chosen.historical)$('includeHistory').checked=true;renderCatalog();await openCase(chosen,chosen.views.find(v=>v.key===query.get('view'))||chosen.views[0]);studioBridge?.ready();}
-  studioBridge=window.ArchCanvasPreviewBridge?.create({started:()=>startupPromise,load:studioLoad,state:studioState,selection:studioSelection,source:studioSource,focus:studioFocus,command:studioCommand,svg:studioSvg,save:async()=>{if(busy||drag)throw new Error('请先完成当前图操作。');flushPersist();const document=studioDocument();if(document){const stored=E.clone(document.graph);delete stored.recursive.authority;await window.SummaryRecursiveStorage.put(key(),{version:5,ir:graph.irSha256||null,graph:stored,dirty});}},export:format=>format==='svg'?download(studioSvg(),'image/svg+xml',current.title+'-unified.svg'):$('exportJson').click()});
+  studioBridge=window.ArchCanvasPreviewBridge?.create({started:()=>startupPromise,isBusy:()=>busy||!!drag,load:studioLoad,state:studioState,selection:studioSelection,source:studioSource,focus:studioFocus,command:studioCommand,svg:studioSvg,save:async()=>{if(busy||drag)throw new Error('请先完成当前图操作。');flushPersist();const document=studioDocument();if(document){const stored=E.clone(document.graph);delete stored.recursive.authority;await window.SummaryRecursiveStorage.put(key(),{version:5,ir:graph.irSha256||null,graph:stored,dirty});}},export:format=>format==='svg'?download(studioSvg(),'image/svg+xml',current.title+'-unified.svg'):$('exportJson').click()});
   startupPromise=start();
 })();

@@ -1,0 +1,1 @@
+Exact copies of root receipts before the v16 build; hashes document the tested v15 bytes. Their original reference paths are intentionally retained as historical execution provenance. The separately archived matrices and classification contain working archive links.

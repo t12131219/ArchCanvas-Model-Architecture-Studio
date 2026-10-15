@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildScene, renderSvg } from '../src/core/index.ts';
 import { sourceNodeFacts } from '../src/core/nodeFacts.ts';
-import { isPreviewPanelDocument, previewPanelDocument } from '../src/previewPanelDocument.ts';
+import { isPreviewPanelDocument, previewMappingCoverage, previewNeedsPanelDocument, previewPanelDocument } from '../src/previewPanelDocument.ts';
 import { previewSelectionNodeIds } from '../src/previewInterop.ts';
+import { previewDocumentSyncOperations } from '../src/previewPresentation.ts';
 import type { RawPreviewSource } from '../src/previewInterop.ts';
 import type { PreviewSnapshot } from '../src/PreviewStudio.tsx';
 
@@ -52,4 +53,62 @@ test('panel geometry uses the preview parent frame and cannot mutate formal sour
   assert.deepEqual(document.layout.child, { x: 60, y: 80 }); assert.deepEqual(document.expandedIds, ['root']);
   assert.equal(document.sourceBindingDigest, 'preview-only:nested'); assert.equal(document.architecture.sourceDigest, document.sourceBindingDigest);
   assert.equal(document.architecture.nodes[1].evidence, 'opaque');
+});
+
+function registeredCase(id: string) {
+  const base = new URL('../public/preview/', import.meta.url);
+  const catalog = JSON.parse(readFileSync(new URL('data/catalog.json', base), 'utf8'));
+  const index = JSON.parse(readFileSync(new URL('data/catalog-sources.json', base), 'utf8')).cases;
+  const entry = catalog.cases.find((item: { id: string }) => item.id === id), descriptor = index[id];
+  const view = entry.views.filter((item: { json?: string }) => item.json).sort((a: { nodes: number }, b: { nodes: number }) => b.nodes - a.nodes)[0];
+  const graph = JSON.parse(readFileSync(new URL(view.json, base), 'utf8'));
+  const raw = descriptor.evidence ? JSON.parse(readFileSync(new URL(descriptor.evidence, base), 'utf8')) : {};
+  const evidence: NonNullable<RawPreviewSource['evidence']> = {};
+  for (const [key, item] of Object.entries(raw.symbols ?? raw) as [string, any][]) {
+    if (!item || typeof item !== 'object' || !(item.line ?? item.start)) continue;
+    const path = item.file ?? item.path ?? item.source ?? raw.origin;
+    const source = descriptor.files.find((file: { path: string; originalPath?: string }) => [file.path, file.originalPath].filter(Boolean).some(alias => path === alias || path?.endsWith('/' + alias)));
+    evidence[item.evidence_id ?? key] = { file: source?.path ?? path, line: item.line ?? item.start,
+      endLine: item.endLine ?? item.end ?? item.line ?? item.start, expression: item.expression ?? item.snippet ?? '' };
+  }
+  const source: RawPreviewSource = { schema: 'archcanvas-preview-source/1', caseId: id, entry: 'reviewed:Model',
+    files: Object.fromEntries(descriptor.files.map((file: { path: string; asset: string }) => [file.path, readFileSync(new URL(file.asset, base), 'utf8')])), evidence };
+  return { snapshot: { caseId: id, graph } as PreviewSnapshot, source };
+}
+
+test('actual notebook AlexNet and module diagrams retain all display actions when their formal parser coverage differs', () => {
+  for (const id of ['771109e666204fb7', '25a45edcfd7a974c']) {
+    const { snapshot, source } = registeredCase(id), before = previewPanelDocument(snapshot, source);
+    assert.ok(before.architecture.sources.length > 0); assert.ok(before.architecture.sources.every(file => file.path.endsWith('.py')));
+    assert.ok(before.architecture.nodes.some(node => node.source), 'registered reviewed source evidence remains inspectable');
+    const partial = { ...before.architecture, nodes: [] };
+    const coverage = previewMappingCoverage(snapshot, partial, source);
+    assert.equal(coverage.mapped, 0); assert.equal(coverage.unmapped.length, coverage.total);
+    assert.equal(previewNeedsPanelDocument(snapshot, partial, source), true);
+    assert.equal(previewNeedsPanelDocument(snapshot, before.architecture, source), false);
+    const after = structuredClone(before), target = before.architecture.nodes.find(node => node.children.length)!;
+    after.displayAliases[target.id] = 'Reviewed display'; after.nodeStyleOverrides[target.id] = { fill: '#deeee6', stroke: '#123456', glyph: 'opaque' };
+    after.pinnedObjects = [target.id]; after.layout[target.id].x += 20;
+    const edge = after.architecture.edges[0]; if (edge) after.edgeStyleOverrides[edge.id] = { stroke: '#654321', dashed: true, width: 3 };
+    const operations = previewDocumentSyncOperations(before, after, snapshot.graph, source);
+    const paint = operations.find(operation => operation.type === 'syncPresentation')!;
+    assert.deepEqual((paint.nodes as Record<string, unknown>)[target.id], { alias: 'Reviewed display', fill: '#deeee6', stroke: '#123456', glyph: 'opaque', pinned: true });
+    assert.ok(operations.some(operation => operation.type === 'nodeLayout' && operation.id === target.id));
+    if (edge) assert.deepEqual((paint.edges as Record<string, unknown>)[edge.id], { stroke: '#654321', dashed: true, width: 3 });
+    assert.deepEqual(after.architecture, before.architecture); assert.ok(after.architecture.nodes.every(node => node.evidence === 'opaque'));
+    assert.equal(after.sourceBindingDigest, `preview-only:${id}`);
+  }
+});
+
+test('mapping coverage treats reviewed aggregates sharing one formal source object as visual-only objects', () => {
+  const graph = { nodes: [{ id: 'reviewed-first', x: 0, y: 0, semantic: { id: 'reviewed-first', kind: 'linear', source_evidence: ['call'] } },
+    { id: 'reviewed-second', x: 250, y: 0, semantic: { id: 'reviewed-second', kind: 'linear', source_evidence: ['call'] } },
+    { id: 'junction', x: 100, y: 0, junction: true }], edges: [] };
+  const source: RawPreviewSource = { schema: 'archcanvas-preview-source/1', caseId: 'aggregate', entry: 'model:Model', files: { 'model.py': 'self.linear(x)' },
+    evidence: { call: { file: 'model.py', line: 1, endLine: 1, expression: 'self.linear(x)' } } };
+  const projected = previewPanelDocument({ caseId: 'aggregate', graph }, source);
+  const formal = { ...projected.architecture, nodes: [{ ...projected.architecture.nodes[0], id: 'formal-call', kind: 'Linear', category: 'linear' }] };
+  const coverage = previewMappingCoverage({ graph }, formal, source);
+  assert.equal(coverage.total, 2); assert.equal(coverage.mapped, 0); assert.deepEqual(coverage.shared, ['reviewed-first', 'reviewed-second']);
+  assert.equal(previewNeedsPanelDocument({ graph }, formal, source), true);
 });

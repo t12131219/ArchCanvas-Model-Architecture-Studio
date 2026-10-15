@@ -1,0 +1,11 @@
+--- frozen-v16-recursive-graph.js
++++ real-producer-recursive-graph.js
+@@ -156,7 +156,7 @@
+       for(const e of g.edges)for(const gate of e.contract?.gates||[])if(gate.frame===n.id&&['top','bottom'].includes(gate.side)&&Math.abs(C.gatePoint(ref,gate).x-sourceCenter)<EPS){
+         const key=JSON.stringify([e.source,C.wireIdentity(e,g),gate.side,gate.direction]),group=boundaryBranches.get(key)||[];group.push({e,gate});boundaryBranches.set(key,group);
+       }
+-      const alignedBoundary=[...boundaryBranches.values()].some(group=>new Set(group.map(({e})=>e.id)).size>1&&group.some(({e,gate})=>Math.abs((gate.direction==='exit'?e.route[0]:e.route.at(-1))?.x-sourceCenter)<EPS));
++      const alignedBoundary=[...boundaryBranches.values()].some(group=>new Set(group.map(({e})=>e.id)).size>1&&group.some(({e})=>e.source!==n.id)&&group.some(({e,gate})=>Math.abs((gate.direction==='exit'?e.route[0]:e.route.at(-1))?.x-sourceCenter)<EPS));
+       const spineOffsetX=alignedBoundary&&axes.length&&axes.every(x=>Math.abs(x-axes[0])<EPS)?axes[0]:undefined;
+       const local=doc.state.layouts[n.id]||{};
+       for(const b of built){const offset=local[b.node.id];if(offset){for(const k of b.items){k.x+=offset.x;k.y+=offset.y;}}}

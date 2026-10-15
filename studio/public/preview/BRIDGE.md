@@ -8,15 +8,22 @@ original prototype checkout. `vendor-manifest.json` records the original bytes;
 
 Open `yworks_edge_router_lab/index.html` to use the full standalone editor.
 The Studio embeds `index.html?embed=1&surface=canvas`. This surface shows the
-canvas and editing toolbar. The original catalog and routing controls remain
+canvas; tools, history, reset, save and export use the retained Studio toolbar.
+Middle-button dragging pans over nodes, connections, labels and empty canvas
+without changing the editing tool, selection or undo history. The original
+catalog and routing controls remain
 available as dismissible drawers, opened from the Studio's folded menus. Source
-import and evidence dialogs also retain their original controls.
+import and evidence dialogs also retain their original controls. The drawer
+retains the optional previous-route and obstacle overlays. Zoom buttons and
+fit-to-width remain on the canvas; full fit uses Studio's single top control.
 
 ## Message contract
 
 All messages use `{type: 'archcanvas:preview:<command>', requestId?, ...payload}`.
 The child accepts commands only from `window.parent` on the same origin, and
-sends replies to that exact origin. It serializes asynchronous commands.
+sends replies to that exact origin. It serializes idle mutations; snapshots,
+source reads and handshake replies can read committed state during a pending
+load. Mutations reject while a load or gesture is busy.
 Messages do not write Python source, change model parameters or approve edits.
 
 | Command | Payload | Reply |
@@ -33,16 +40,25 @@ Messages do not write Python source, change model parameters or approve edits.
 | `set-frontier` | `locations`/`sourceLocations`, `expanded` | `applied`, then `state` |
 | `show-library`, `show-routing` | none | opens original drawer |
 | `show-import`, `show-evidence` | none | opens original dialog |
-| `undo`, `redo`, `fit`, `apply-layout`, `collapse-all`, `expand-all` | none | invokes original operation |
+| `undo`, `redo`, `reset`, `fit`, `apply-layout`, `collapse-all`, `expand-all` | none | invokes original operation; reset restores the initial view and is undoable |
 | `zoom` | `factor` | updates camera |
-| `select-tool`, `connect-tool`, `bend-tool`, `pan-tool` | none | selects original editing tool |
-| `show-ports`, `grid` | optional `visible`/`enabled` | updates display setting |
+| `select-tool`, `connect-tool`, `bend-tool` | none | selects the tool and publishes the actual tool state |
+| `pan-tool` | none | available only on the standalone/non-canvas surface |
+| `show-ports`, `grid` | optional `visible`/`enabled` | updates port or canvas-grid display; the routing candidate-grid setting remains independent |
+| `arrange-selection` | `kind`: `left`, `hcenter`, `right`, `top`, `vcenter`, `bottom`, `distribute-x`, or `distribute-y`; optional `scope` | arranges actual selected visible sibling nodes as one validated undo step |
+| `pin-selection` | optional boolean `pinned` (otherwise toggles the selected set) | fixes or unlocks direct movement of the actual selected visible nodes |
 
 Replies retain `requestId`. Validation failures return `error` with `command`
 and `message`. Cases without model source return `source-unavailable`; the
 parent must retain their own identity and never reuse the previous model source.
 
 The child also publishes `selection` and `state` when users operate it directly.
+State and its document expose `tool`, `showPorts` and `gridVisible`; state also
+exposes `busy` (including an active gesture) and `dragging`. V/C/B choose tools
+and F fits the canvas from either toolbar focus context. Native Ctrl/Cmd+Z and
+redo shortcuts operate the child history once and publish the resulting counts.
+Ctrl/Cmd+S in the canvas surface emits `shortcut` with `{action: 'save'}` so the
+parent's unified save workflow performs both browser and Studio persistence.
 `selection` includes `caseId`, `nodeIds`, `edgeIds`, `selectedNodes`,
 `selectedEdges`, `node`, `edge`, `annotationId`, `annotation`, `sourcePath`, `line`, `span` and source evidence.
 Studio annotations support direct selection and dragging. One gesture adds one
@@ -91,6 +107,17 @@ port fields and producer/consumer bindings remain unchanged. When distinct
 semantic ports cannot share a requested position the batch fails; native
 per-edge port controls remain available. Formal port names are not guessed
 across different parser IRs.
+
+The toolbar arrangement commands use the preview's own selected node IDs and
+world coordinates, including nodes without a formal source mapping. Alignment
+requires two or more independent sibling nodes; equal-gap distribution requires
+three or more. Branch junctions, mixed containers, overlaps, and unreachable
+requested positions fail atomically. Alignment uses pinned nodes as anchors;
+conflicting pinned anchors and distribution with pinned nodes are rejected.
+An already satisfied arrangement or pin state does not add an undo step.
+Pinning blocks direct dragging and arrangement of that node. It still follows
+its parent container and recursive layout changes. Selected pinned nodes show
+an editor-only lock badge; badges and tooltips are absent from exported SVG.
 
 `syncPresentation` receives mapped `nodes` and `edges` dictionaries plus a full
 `title`, `legend`, `annotations` array and `page`. It replaces formal presentation
@@ -141,5 +168,82 @@ selects the development service. `--output` records the verification result.
 
 `studio/scripts/vendor-summary-preview.py --source <Summary_Merge> --target
 studio/public/preview` refreshes copied material and the source index. Existing
-customized `app.js`, `index.html` and `graph-engine.js` are retained. No vendoring tool or original
+customized `app.js`, `index.html`, `graph-engine.js`, `recursive-graph.js`,
+`router.js`, `semantic-constraints.js` and `routing-worker.js` are retained. The integration-only
+`frontier-task.js` is also included in the standalone build. No vendoring tool or original
 prototype source is needed for runtime or distribution builds.
+
+Recursive expansion runs as one isolated Worker transaction: the transition,
+frontier construction, routing and complete source/layout/edge validation finish
+before the committed graph and undo history change. Worker-unavailable fallback
+uses the same task helper. A no-op preserves both history stacks; a rejected
+transaction leaves the prior graph intact. The renderer reuses that validation
+instead of validating the graph again on the main thread. Studio projects the
+completed snapshot into its panels and editor document without replaying the
+legacy formal layout. The source authority remains immutable.
+
+Presentation version 18 rebuilds old cached frontiers on load while retaining
+the open tree, manual offsets, captions and visual drafts. Exact source views
+and mixed-depth layouts normalize shared stems and licensed interface lanes
+under the same constraints. Fully validated local route repairs are retained
+instead of being sent through a second visibility search.
+
+Expanded headings and glyph captions are route obstacles and validation
+invariants, including for drag, saved-state recovery and explicit routing.
+Mixed sibling columns retain centers explicitly shared by their source
+templates. External leaf helpers follow an unambiguous common recorded owner
+interface side when their current side is opposite; ambiguous interfaces and
+colliding placements retain their source layout. Manual offsets apply last.
+Mixed frontiers reserve frame corridors for the actual visible independent
+source-backed boundary wires; shared values consume one lane. Registered
+frontiers retain their original geometry.
+A content axis overrides asymmetric frame centering only for an explicitly
+recorded shared-value fanout across a centered boundary with an actual centered
+terminal from a genuine producer. A frame's own input proxy cannot authorize
+moving its outline. Single-wire pipelines and distinct tuple slots retain their
+recorded frame alignment; source names and case IDs never select the rule.
+Optional shortening and free-lane cleanup compare deduplicated contacts between
+independent wires, including touches at internal bends. Segment subdivisions
+do not change that count. Shared source values and licensed complete shared
+presentations remain excluded; port contracts govern coincident true terminals.
+Bounded blocker lanes and local doglegs retain licensed gate approaches.
+Optional shortening and parallel separation require complete source, port,
+gate, wire, caption, ordered waypoint and junction validation; they cannot add
+unrelated crossings or worsen crowded parallel lanes. The optional cleanup
+shares a graph-wide validation budget and caches its completed presentation.
+After all normal lane shifts and shortening, at most 16 short-band candidates reuse neighboring
+fixed value slots' terminal neighborhoods. A candidate must reduce crowding
+without increasing contacts, crossings, bends or path length; the same complete
+validation and waypoint guards apply. The number and total length of near-parallel
+runs cannot increase, and their minimum gap cannot decrease. The follow-up
+cannot interrupt the normal simplification of the same or a later wire.
+These candidates share the existing
+quality and validation budgets.
+Invalid source containment and independent values forced onto the same fixed
+target ray fail before route search. Visibility legs that attain a proven
+obstacle-free cost bound return without building a grid.
+Exact interior search legs share a bounded, route-local result cache keyed by
+obstacle geometry and signed headings (and legacy terminal exemptions).
+Coincident gate points retain their signed turn cost without constructing a grid.
+An expanded frame with a source-proven aligned operand axis retains that
+content axis when asymmetric routing margins change its outline. Node-move
+transactions reserve settled peer routes and validate the complete final graph,
+so an invalid temporary sibling route cannot block its own later repair.
+
+Explicit producer/port evidence gives shared wires one key across recorded
+views, retaining full return fields, tuple slots and call identities. Bare
+canonical names remain opaque. Licensed perimeter ports and bounded exterior
+candidates can resolve detours; independent values remain separate wires.
+Recursive automatic geometry settles on a completely validated legal path;
+explicit routing still optimizes path costs. Search caches wire-contact costs
+for a geometric link across its arrival headings.
+
+Catalog loads, source-adapter preflight and editing-JSON validation also run in
+the Worker. Case identity, source authority, persistence key and graph publish
+together after success. Invalid or cancelled node moves restore the complete
+gesture baseline and both history stacks. Selection renders preserve existing
+SVG parents so real browser clicks and double-clicks survive pointer capture.
+The bridge serves snapshots and source reads while a load is pending; other
+commands reject while busy instead of executing later against a different
+model. Stored graphs must satisfy source, layout and non-draft edge checks
+before publication; invalid saved data is archived without replacing authority.

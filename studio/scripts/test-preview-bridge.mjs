@@ -20,12 +20,28 @@ try {
   assert.ok(snapshot.graph.recursive.authority.detail.nodes.length > snapshot.graph.nodes.length);
   assert.equal(snapshot.sourceAvailable, true); checks.push('initial ready, full recursive authority and source availability');
   const frame = page.frame({ url: /index.html\?embed=1/ });
+  assert.equal(await frame.locator('.toolbar').isVisible(), false);
+  assert.equal(await frame.locator('#fit').isVisible(), false);
+  assert.equal(await frame.locator('#fitWidth').isVisible(), true);
+  const capabilities=(await command('ping')).capabilities;assert.ok(capabilities.includes('reset'));assert.equal(capabilities.includes('pan-tool'),false);
+  for(const [key,tool] of [['c','connect'],['b','bend'],['v','select']]){await frame.locator('#graph').press(key);const state=await command('snapshot');assert.equal(state.tool,tool);assert.equal(state.document.tool,tool);}
+  const controls=await command('snapshot'),routingGrid=await frame.locator('#gridEnabled').isChecked();
+  await command('show-ports',{visible:false});assert.equal((await command('snapshot')).showPorts,false);
+  await command('show-ports',{visible:true});assert.equal((await command('snapshot')).document.showPorts,true);
+  await command('show-ports',{visible:controls.showPorts});
+  await command('grid',{visible:false});assert.equal((await command('snapshot')).document.gridVisible,false);assert.equal(await frame.locator('#stage').evaluate(element=>getComputedStyle(element).backgroundImage),'none');assert.equal(await frame.locator('#gridEnabled').isChecked(),routingGrid);
+  await command('grid',{visible:true});assert.equal((await command('snapshot')).gridVisible,true);assert.equal(await frame.locator('#gridEnabled').isChecked(),routingGrid);
+  const savesBefore=await page.evaluate(()=>window.messages.filter(message=>message.type==='archcanvas:preview:shortcut'&&message.action==='save').length);
+  await frame.locator('#graph').press('Control+s');
+  assert.equal(await page.evaluate(()=>window.messages.filter(message=>message.type==='archcanvas:preview:shortcut'&&message.action==='save').length),savesBefore+1);
+  checks.push('single embedded toolbar ownership, synchronized V/C/B tools, parent save shortcut and independent canvas/routing grids');
   assert.equal(await frame.locator('.library').isVisible(), false);
   assert.equal(await frame.locator('.settings').isVisible(), false);
   await command('show-library'); assert.equal(await frame.locator('.library').isVisible(), true);
   await frame.locator('.library .studio-drawer-close').click(); assert.equal(await frame.locator('.library').isVisible(), false);
   await command('show-routing'); assert.equal(await frame.locator('.settings').isVisible(), true);
   assert.equal(await frame.locator('.settings .metrics').isVisible(), true); await frame.locator('.settings .studio-drawer-close').click();
+  assert.equal(await frame.locator('.settings .studio-display-controls #showGhost').count(),1);assert.equal(await frame.locator('.settings .studio-display-controls #showObstacles').count(),1);
   await command('show-evidence'); await frame.getByRole('button', { name: '当前模型源码、IR 与来源', exact: true }).click(); assert.equal(await frame.locator('#studioSourceContext .source-bar').isVisible(), true); await frame.locator('#studioSourceContext .dialog-head button').click(); await frame.locator('#closeEvidence').click(); checks.push('hidden catalog, routing metrics and source context retain controls');
   const catalogSource = await command('request-source');
   assert.match(catalogSource.source.entry, /:Transformer$/);
@@ -40,6 +56,17 @@ try {
   await assert.rejects(command('focus', { nodeId: 'nonexistent-node' }), /没有匹配/);
   assert.deepEqual((await command('snapshot')).selection, selectionBeforeEmpty);
   checks.push('symbol-keyed catalog evidence locates exact source lines and empty focus preserves selection');
+  await command('fit');await command('connect-tool');
+  for(const selector of ['[data-node-id] .node-hit','[data-edge-id] .wire-hit','#graph']){
+    const target=frame.locator(selector).first(),box=await target.boundingBox();assert.ok(box?.width>0&&box?.height>0);
+    const beforePan=await command('snapshot');
+    await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down({button:'middle'});
+    const duringPan=await command('snapshot');assert.equal(duringPan.busy,true);assert.equal(duringPan.dragging,true);
+    await page.mouse.move(box.x+box.width/2+40,box.y+box.height/2+25,{steps:5});await page.mouse.up({button:'middle'});
+    const afterPan=await command('snapshot');assert.notDeepEqual(afterPan.camera,beforePan.camera);assert.equal(afterPan.busy,false);assert.equal(afterPan.tool,'connect');assert.equal(afterPan.undo,beforePan.undo);assert.deepEqual(afterPan.selection,beforePan.selection);assert.deepEqual(afterPan.document.graph,beforePan.document.graph);
+  }
+  await frame.locator('#graph').press('f');await command('select-tool');
+  checks.push('middle-button pan across nodes, paths and background retains graph, source, selection, tool and undo history');
   const bundle = await page.evaluate(() => fetch('/preview/verification/source-adapter/river-net.json').then(response => response.json()));
   const loaded = await command('load', { bundle }); assert.equal(loaded.document.caseId, bundle.id);
   snapshot = (await command('snapshot')).document;
@@ -123,6 +150,11 @@ try {
   const tampered = structuredClone(saved.document); tampered.graph.nodes[0].semantic.kind = 'unreviewed';
   await assert.rejects(command('load', { bundle: tampered }), /契约/); assert.equal((await command('snapshot')).document.graph.recursive.state.studioPresentation.nodes[id].alias, '桥接显示名称'); checks.push('tampered source metadata in editing JSON rejects');
   await command('load', { bundle: catalogDocument }); assert.equal((await command('snapshot')).document.caseId, catalogDocument.caseId); checks.push('catalog editing JSON restores against independently loaded authority');
+  const resetId=(await command('snapshot')).document.graph.nodes.find(node=>!node.junction).id;
+  await command('visual',{operations:[{type:'alias',id:resetId,label:'恢复操作测试'}]});const beforeReset=await command('snapshot');
+  await command('reset');const resetState=await command('snapshot');assert.equal(resetState.undo,beforeReset.undo+1);assert.notEqual(resetState.document.graph.studioPresentation?.nodes?.[resetId]?.alias,'恢复操作测试');
+  await frame.locator('#graph').press('Control+z');const afterUndo=await command('snapshot');assert.equal(afterUndo.undo,beforeReset.undo);assert.equal(afterUndo.redo,1);assert.equal(afterUndo.document.graph.studioPresentation.nodes[resetId].alias,'恢复操作测试');
+  await frame.locator('#graph').press('Control+Shift+z');const afterRedo=await command('snapshot');assert.equal(afterRedo.undo,resetState.undo);assert.equal(afterRedo.redo,0);assert.notEqual(afterRedo.document.graph.studioPresentation?.nodes?.[resetId]?.alias,'恢复操作测试');checks.push('reset restores initial view and native undo/redo applies exactly one shared history step');
   const before = await page.evaluate(() => window.messages.length);
   await page.evaluate(() => document.querySelector('iframe').contentWindow.postMessage({ type: 'archcanvas:preview:visual', requestId: 'untrusted', operations: [{ type: 'alias', id: 'missing', label: 'ignored' }] }, '*'));
   // A same-origin parent message is authorized but its nonexistent target must fail.
@@ -133,6 +165,7 @@ try {
   await command('snapshot'); assert.equal(await page.evaluate(() => window.messages.some(message => message.requestId === 'wrong-source')), false); checks.push('non-parent sender is ignored');
   await command('show-library'); await frame.locator('button[data-case-id="routing-lab"]').click(); await frame.waitForFunction(() => document.querySelector('#modelTitle')?.textContent === 'Edge Router · 避障实验'); await frame.locator('.library .studio-drawer-close').click();
   const routing = (await command('snapshot')).document; assert.equal(routing.caseId, 'routing-lab'); assert.equal(routing.graph.nodes.length, 9); assert.equal(routing.graph.edges.length, 11); assert.equal(routing.sourceAvailable, false); await assert.rejects(command('request-source'), /路由实验|教学 SVG/); await command('save'); await command('load', { bundle: routing }); checks.push('source-free routing experiment loads, saves and restores without prior model source');
+  const standalone=await browser.newPage({viewport:{width:1500,height:1000}});standalone.on('pageerror',error=>errors.push(error.message));await standalone.goto(base+'/preview/yworks_edge_router_lab/index.html');await standalone.waitForFunction(()=>document.querySelector('#graph')?.getAttribute('data-source-constraint-valid')==='true');assert.equal(await standalone.locator('.toolbar').isVisible(),true);assert.equal(await standalone.locator('[data-tool="pan"]').isVisible(),true);await standalone.locator('[data-tool="pan"]').click();assert.equal(await standalone.locator('#graph').getAttribute('data-active-tool'),'pan');await standalone.close();checks.push('standalone prototype surface retains its original toolbar and pan tool');
   assert.deepEqual(errors, []);
   await fs.writeFile(output, JSON.stringify({ ok: true, checks, browserErrors: errors }, null, 2) + '\n');
   console.log(JSON.stringify({ ok: true, checks, output }));

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import shutil
@@ -17,7 +18,9 @@ from pathlib import Path
 EXCLUDED = {'.git', '.rollback', '__pycache__', '.pytest_cache', 'node_modules'}
 TREES = ('yworks_edge_router_lab', 'data', 'snapshots', 'verification')
 CUSTOMIZED = {'yworks_edge_router_lab/app.js', 'yworks_edge_router_lab/index.html',
-              'yworks_edge_router_lab/graph-engine.js', 'yworks_edge_router_lab/recursive-graph.js'}
+              'yworks_edge_router_lab/semantic-constraints.js',
+              'yworks_edge_router_lab/graph-engine.js', 'yworks_edge_router_lab/recursive-graph.js',
+              'yworks_edge_router_lab/router.js', 'yworks_edge_router_lab/routing-worker.js'}
 
 
 def digest(path: Path) -> str:
@@ -109,6 +112,21 @@ def main() -> None:
     catalog = json.loads((source / 'data/catalog.json').read_text())
     (target / 'data/catalog-sources.json').write_text(
         json.dumps(source_index(source, catalog), ensure_ascii=False, indent=2) + '\n')
+    # Publish independent, legal Python paths after the immutable snapshots.
+    # This keeps a future upstream refresh from reintroducing invalid entries.
+    for name in ('organize-preview-sources', 'convert-preview-notebooks'):
+        spec = importlib.util.spec_from_file_location(name.replace('-', '_'), Path(__file__).with_name(name + '.py'))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        if name == 'organize-preview-sources':
+            module.organize(target, source_index(source, catalog))
+        else:
+            report, outputs = module.build_plan(target)
+            for relative, data in outputs.items():
+                destination = target / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes(data)
+            (target / 'data/notebook-conversions.json').write_bytes(module.ledger_bytes(report))
     manifest = {'schema': 'archcanvas-preview-vendor/1',
                 'source': 'prototype/Summary_Merge',
                 'reason': 'User requested full preview replacement; assets vendored independently for portable builds.',
@@ -116,7 +134,8 @@ def main() -> None:
                 'totalBytes': sum(p['bytes'] for p in copied),
                 'excluded': sorted(EXCLUDED) + ['*.pyc', '*.pid'],
                 'customized': sorted(CUSTOMIZED),
-                'integration': ['yworks_edge_router_lab/studio-bridge.js', 'yworks_edge_router_lab/studio-presentation.js', 'yworks_edge_router_lab/studio-embed.css']}
+                'integration': ['yworks_edge_router_lab/studio-bridge.js', 'yworks_edge_router_lab/studio-presentation.js', 'yworks_edge_router_lab/studio-embed.css', 'yworks_edge_router_lab/frontier-task.js'],
+                'sourceAssets': ['data/catalog-sources.json', 'data/source-packages.json', 'data/notebook-conversions.json', 'sources/']}
     (target / 'vendor-manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
     print(json.dumps({'files': len(copied), 'bytes': manifest['totalBytes'],
                       'cases': catalog['counts'], 'target': str(target)}, ensure_ascii=False))

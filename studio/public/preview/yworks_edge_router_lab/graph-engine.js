@@ -189,34 +189,43 @@
       if(ids.has(e.source)||ids.has(e.target)||!C.validate(graph,e,e.route,context).ok||C.needsLaneRepair(graph,e,context))affected.push(e);
     }
     const opts={margin:6,stub:16,bendCost:40,crossingCost:180,overlapCost:2,edgeSpacing:12,sides:'any',preserve:true,...options};
-    const legal=(e,ps)=>C.validate(graph,e,ps,context).ok&&!overlapsWire(graph,e,ps);
+    const settled=new Set();let reserved=graph.edges;
+    // Moving one endpoint temporarily makes an affected sibling's old path
+    // diagonal or leaves its gate behind. That pending path cannot reserve
+    // a lane before its own repair. Valid and already settled peers remain
+    // obstacles; the complete graph is checked again before committing.
+    const legal=(e,ps)=>C.validate(graph,e,ps,context).ok&&!overlapsWire({...graph,edges:reserved},e,ps);
     for(const e of affected){
+      reserved=graph.edges.filter(v=>v===e||!affected.includes(v)||settled.has(v)||C.validate(graph,v,v.route,context).ok);
       const incident=ids.has(e.source)!==ids.has(e.target);
       if(incident&&e.portPolicy&&!e.contract.bus){
         // Reconsider legal but long routes too: dragging a PE across an Add
         // must change its physical side without changing the PE input field.
-        const prior=graph.edges.filter(v=>v!==e).map(v=>Object.assign(v.route.slice(),{wire:v.contract.wire}));
+        const prior=reserved.filter(v=>v!==e).map(v=>Object.assign(v.route.slice(),{wire:v.contract.wire}));
         const old=savedEdges.find(([v])=>v===e)[1].route;
         const shared=(e.portPolicy?.source.sharedStem||e.contract.sharedStem)&&repairCandidates(graph,e,old).find(ps=>legal(e,ps)&&!C.laneContacts(graph,e,ps,context).length);
-        if(shared){e.route=shared;graph.lastMove.rerouted++;continue;}
+        if(shared){e.route=shared;settled.add(e);graph.lastMove.rerouted++;continue;}
         const result=routeOne(graph,e,prior,{...opts,style:e.style,preserve:false},context);
-        if(result.ok&&legal(e,e.route)){graph.lastMove.rerouted++;continue;}
+        if(result.ok&&legal(e,e.route)){settled.add(e);graph.lastMove.rerouted++;continue;}
       }
-      if(legal(e,e.route)&&!C.needsLaneRepair(graph,e,context)){e.failed=false;delete e.reason;continue;}
+      if(legal(e,e.route)&&!C.needsLaneRepair(graph,e,context)){e.failed=false;delete e.reason;settled.add(e);continue;}
       if(e.contract.bus)return rollback('explicit branch skeleton cannot be disconnected');
       const old=savedEdges.find(([v])=>v===e)[1].route;
       const candidate=repairCandidates(graph,e,old).find(ps=>legal(e,ps)&&!C.laneContacts(graph,e,ps,context).length);
       if(candidate)e.route=candidate;
       else{
-        const prior=graph.edges.filter(v=>v!==e&&!affected.includes(v)).map(v=>Object.assign(v.route.slice(),{wire:v.contract.wire}));
+        const prior=reserved.filter(v=>v!==e).map(v=>Object.assign(v.route.slice(),{wire:v.contract.wire}));
         const result=routeOne(graph,e,prior,{...opts,style:e.style},context);
         if(!result.ok||!legal(e,e.route))return rollback(e.id+': '+(result.reason||'no legal local corridor'));
       }
-      e.failed=false;delete e.reason;graph.lastMove.rerouted++;
+      e.failed=false;delete e.reason;settled.add(e);graph.lastMove.rerouted++;
     }
     // Later repairs must not invalidate an earlier wire, gate or terminal.
+    reserved=graph.edges;
     if(affected.some(e=>!legal(e,e.route)))return rollback('local routes conflict');
-    if(!C.validateJunctions(graph).ok)return rollback('source tensor fork disconnected');
+    const complete=validateView(graph);
+    if(!complete.source.ok||!complete.layout.ok||complete.edges.some(([edgeId,check])=>!check.ok&&!graph.edges.find(e=>e.id===edgeId)?.draft))
+      return rollback(!complete.layout.junctions.ok?'source tensor fork disconnected':'complete moved graph is invalid');
     return ids;
   }
   // Pointer motion updates only presentation geometry. The authoritative

@@ -5,6 +5,7 @@
   function create(api){
     const embedded=root.parent!==root&&root.location.origin!=='null';
     let ready=false,selectionSignature='',queue=Promise.resolve();
+    const concurrentReads=new Set(['snapshot','request-source','ping','hello']);
     const query=new URLSearchParams(root.location.search);
     if(query.get('embed')==='1')document.documentElement.classList.add('studio-embedded');
     if(query.get('surface')==='canvas'){
@@ -17,6 +18,9 @@
       for(const selector of ['.source-bar','.facts']){const section=document.querySelector(selector);if(section)sourceContext.append(section);}document.body.append(sourceContext);
       const contextButton=document.createElement('button');contextButton.textContent='当前模型源码、IR 与来源';contextButton.onclick=()=>sourceContext.showModal();document.querySelector('#evidenceDialog .evidence-shortcuts')?.prepend(contextButton);
       const routing=document.querySelector('.settings');for(const selector of ['.metrics','.hint']){const section=document.querySelector(selector);if(section)routing?.append(section);}
+      const displayControls=document.createElement('details'),displaySummary=document.createElement('summary');displaySummary.textContent='画布辅助显示';displayControls.className='studio-display-controls';displayControls.append(displaySummary);
+      for(const id of ['showGhost','showObstacles']){const label=document.getElementById(id)?.closest('label');if(label){label.classList.add('check');displayControls.append(label);}}routing?.append(displayControls);
+      const hint=document.getElementById('interactionHint');if(hint)hint.textContent=hint.textContent.replace('平移工具拖动画布','按住鼠标中键平移画布');
       document.addEventListener('keydown',event=>{if(event.key==='Escape')close();});
     }
     function emit(name,payload={}){
@@ -42,6 +46,7 @@
       if(!capabilities().includes(command)&&command!=='hello')return;
       try{
         await api.started();
+        if(api.isBusy?.()&&!concurrentReads.has(command))throw new Error('请先完成当前图操作。');
         if(command==='ping'||command==='hello'){emit('ready',{requestId,version:1,capabilities:capabilities()});state();}
         else if(command==='load'){
           if(!message.bundle||typeof message.bundle!=='object')throw new Error('缺少源码适配包或编辑 JSON。');
@@ -56,10 +61,14 @@
         else {await api.command(command,message);emit('applied',{requestId,command,...api.state()});state();}
       }catch(error){emit('error',{requestId,command,message:error?.message||String(error)});}
     }
-    function capabilities(){return ['load','snapshot','request-source','focus','save','export-svg','export-json','svg','visual','presentation','set-frontier','show-library','show-routing','show-import','show-evidence','undo','redo','fit','zoom','select-tool','connect-tool','pan-tool','bend-tool','show-ports','grid','apply-layout','collapse-all','expand-all','ping'];}
+    function capabilities(){return ['load','snapshot','request-source','focus','save','export-svg','export-json','svg','visual','presentation','set-frontier','show-library','show-routing','show-import','show-evidence','undo','redo','reset','fit','zoom','select-tool','connect-tool',...(query.get('surface')==='canvas'?[]:['pan-tool']),'bend-tool','show-ports','grid','arrange-selection','pin-selection','apply-layout','collapse-all','expand-all','ping'];}
     root.addEventListener('message',event=>{
-      // Serialize async loads so an earlier request cannot overwrite a later model.
-      queue=queue.then(()=>receive(event)).catch(error=>emit('error',{message:error.message}));
+      // Read the committed state while a Worker is pending. Mutating commands
+      // reject while busy instead of silently running later on another model.
+      // Serialize idle mutations so an earlier load cannot overwrite a later one.
+      const command=typeof event.data?.type==='string'?event.data.type.slice(prefix.length):'';
+      if(concurrentReads.has(command)||api.isBusy?.())void receive(event);
+      else queue=queue.then(()=>receive(event)).catch(error=>emit('error',{message:error.message}));
     });
     return {emit,state,selection,source,ready(){ready=true;emit('ready',{version:1,capabilities:capabilities()});state();}};
   }

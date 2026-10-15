@@ -1,9 +1,10 @@
-importScripts('router.js','physical-ports.js','junction-markers.js','route-labels.js','source-contracts.js','semantic-constraints.js','graph-engine.js','recursive-graph.js');
+importScripts('router.js','physical-ports.js','junction-markers.js','route-labels.js','source-contracts.js','semantic-constraints.js','graph-engine.js','recursive-graph.js','frontier-task.js');
 const validateView=graph=>SummaryEngine.validateView(graph);
 self.onmessage = event => {
   const {requestId,task,graph,ids,options,id,dx,dy}=event.data;
   try{
-    if(task==='frontier'){const result=SummaryRecursive.route(graph,options),validation=validateView(graph);if(result.failed||!validation.source.ok||!validation.layout.ok||validation.edges.some(([,v])=>!v.ok))throw new Error([...validation.source.violations,...validation.layout.violations,...validation.edges.filter(([,v])=>!v.ok).map(([id,v])=>id+': '+v.violations.join(', '))].slice(0,4).join('; '));self.postMessage({requestId,ok:true,...result,validation});}
+    if(task==='frontier'){self.postMessage({requestId,...SummaryFrontierTask.run(graph,event.data.transition,options)});}
+    else if(task==='validate'){self.postMessage({requestId,ok:true,graph,validation:validateView(graph)});}
     else if(task==='move'){
       SummaryEngine.move(graph,id,dx,dy,options);
       const validation=validateView(graph),invalid=validation.edges.filter(([,check])=>!check.ok).map(([id])=>id);

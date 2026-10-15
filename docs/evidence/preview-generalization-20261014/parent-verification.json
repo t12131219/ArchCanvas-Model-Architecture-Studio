@@ -1,0 +1,67 @@
+{
+  "schema": "archcanvas-preview-general-parent-verification/1",
+  "verifiedAt": "2026-10-14T08:44:55.062546+00:00",
+  "scope": "Parent document projection, source ownership, native annotations and formal authoring presentation; no engine routing or browser timing claims",
+  "checks": [
+    {
+      "command": "node --experimental-strip-types --test --test-isolation=none tests/previewGeneralization.test.ts tests/previewApp.test.ts tests/previewSnapshotProjection.test.ts tests/previewPanelDocument.test.ts tests/previewInterop.test.ts tests/previewPresentation.test.ts",
+      "cwd": "studio",
+      "exitCode": 0,
+      "tests": 41,
+      "passed": 41,
+      "failed": 0,
+      "log": "parent-tests.log",
+      "logSha256": "447b74d69c9c75baabb1507049acbe0a4309c4d4c83e5fc730be373ccb5addde"
+    },
+    {
+      "command": "npx tsc --noEmit",
+      "cwd": "studio",
+      "exitCode": 0
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0
+    },
+    {
+      "command": "python3 -I -B studio/scripts/generate-preview-ast-fixture.py",
+      "exitCode": 0,
+      "receipt": "ast-multifile-fixture.json",
+      "sha256": "11ed4a16e4262736c4a9fbd217a17787ebfba4f7197b670427d1a94141b9ead2"
+    },
+    {
+      "command": "node --experimental-strip-types studio/scripts/benchmark-preview-generalization.ts",
+      "exitCode": 0,
+      "receipt": "parent-projection.json",
+      "sha256": "6c711ed4e3267437ed32cbdcba72a38d34e25be9459f7ae885cbdbb6130814de",
+      "scope": "CPU-only; excludes iframe, Worker, React paint and native event latency"
+    }
+  ],
+  "coverage": [
+    "Nine recorded case families incl source-free routing and two TimeMixer sizes",
+    "Real canonical Python source corpus hash checks and exact byte preservation",
+    "12/480-node recursive and nonrecursive multi-file shared-call/tuple fixtures",
+    "Actual isolated formal AST adapter and authoring projection; no torch import or model execution",
+    "Mixed expand/style transaction delegated once; rejected transaction retains parent history",
+    "Source A to B to A async generation race and busy ownership guards",
+    "480-node native annotation selection/buildScene trap, conflict inspection and stable move-below",
+    "Authoring alias/style handoff preserves source instance/call/return identities",
+    "No-op state leaves history and document references unchanged",
+    "Incomplete/ambiguous nested source spans remain opaque"
+  ],
+  "implementation": {
+    "studio/src/App.tsx": "a28b460bb4104379c096dcf2bb523eb57d901bce8aeaa308b5d9ffa919ff5bfa",
+    "studio/src/previewPanelDocument.ts": "6c424f7fe3bb52489c5b887346c45890dc720e32686cf2547d75378e1de403a1",
+    "studio/src/previewPresentation.ts": "a0c26179aa902c3dcc2f52f37cbe993c5907b6290d7a2814d65479f289780eca",
+    "studio/src/previewInterop.ts": "9e9ccccb4bac7b6f3e3dd00359f139b8fce25bcf145de2357c98111c10abd6f4",
+    "studio/tests/previewGeneralization.test.ts": "43aa345870bea035be207cc455992a02c4a32e8239ce4ad8b3f7cf3e2ed95351",
+    "studio/tests/previewGeneralizationFixtures.ts": "f0f0d596b87b2e2015bc955683e998f2d9e5f55f97afa18de3f4f8ad9eba6d86",
+    "studio/tests/previewApp.test.ts": "9c5821980006846501c6ea070cfa6d513e5430636ec04a1762a04f91818b4674",
+    "studio/tests/previewSnapshotProjection.test.ts": "47273a2ac3305ff157d68fd83d943b7ea4bc2ba6abf4d69d6edc609b8efc6a36",
+    "studio/tests/previewPanelDocument.test.ts": "b9877e918750fe620e9c4186b4d07026b080ec675f83e3b726a15285c4df4751",
+    "studio/tests/previewInterop.test.ts": "d92a42b8a73bd9adf404ecd009a3e33c08a0687f2383fc99173d2db797aeb542",
+    "studio/tests/previewPresentation.test.ts": "8e60d05d6e025c1e763f57fef828dfa52cf68d82019647732de9f416d60907c0",
+    "studio/scripts/benchmark-preview-generalization.ts": "975b8e99b25c2e98ed42333bcb89677940839e40e3afe89b1ed4c190dcf00e44",
+    "studio/scripts/generate-preview-ast-fixture.py": "7986bdf19c9a369ca047cb819cc091d8269dc7b43919447f0405bb81b4f0a6d5"
+  },
+  "engineEvidence": "Intentionally separate; final engine/browser byte freeze is coordinated by root"
+}

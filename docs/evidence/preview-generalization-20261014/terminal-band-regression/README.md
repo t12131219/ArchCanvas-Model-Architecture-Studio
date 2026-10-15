@@ -1,0 +1,11 @@
+# Terminal neighborhood follow-up regression
+
+The final isolated variant (recursive SHA `960311afc9155d3d9b27f9545a0b68dbfe62c535204f59250c71008480348cc0`) introduces a bounded follow-up to already crowded lanes. It proposes at most 16 alternatives for short interior bands from neighboring independent value slots attached to the same visible source/target. The proposals use the existing 14px terminal neighborhoods, shift at most 28px within the adjacent coordinates, preserve endpoints and ordered manual knots, and share the existing routing budgets. Source/gate/port/positive arrow-terminal/overlap/junction validators remain authoritative. Contacts and strict crossings cannot increase, crowding must decrease, and raw length and bend count cannot increase.
+
+The original parallel adjustment creates a 14px band beside a fixed target slot; its corner-removal pass cannot move that band. A valid 2px band was initially rejected because the small-step score added 40 despite unchanged length and bend count. The final variant uses raw length/bends for this candidate family and keeps all other guards.
+
+The complete TimeMixer mixed replay passes 24/24 stages. Three depth-3 stages keep the removal of three T touches and reduce the close parallel run from 14px to 2px, restoring the v14 crowding metric. Three depth-2 stages further reduce close parallel length by 15.5px. The original v16 and final variant keep identical length, bends and contacts in those depth-3 stages.
+
+`previewTerminalLanes.test.ts` has eight reflection/orientation cases with independent fixed value slots, a real source-container gate, positive target terminals, manually positioned peer knots, and clone stability; a ninth case rejects sliding across explicitly ordered terminal-band knots. The isolated variant passes all nine; original v16 fails the eight improvement cases while passing the manual protection case. Product bytes were not modified during this proof.
+
+Root's integrated v17 additionally charges the old peer-quality measurement against the existing 512-operation quality budget, matching the accounting used by the surrounding cleanup algorithm. Its final formal-runtime matrix is the acceptance evidence.

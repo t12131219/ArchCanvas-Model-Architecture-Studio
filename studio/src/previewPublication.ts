@@ -1,7 +1,7 @@
 import type { ExportArtifact } from './api.ts';
 
 export type PreviewExportBinding = { caseId: string; sourceDigest?: string; irDigest?: string; revision?: number };
-export type PreviewExportSource = { svg: (nodeId?: string) => Promise<string>; binding: PreviewExportBinding; detailChoices?: { nodeId: string; pathLabel: string }[] };
+export type PreviewExportSource = { svg: (nodeId?: string) => Promise<string>; binding: PreviewExportBinding; detailChoices?: { nodeId: string; pathLabel: string }[]; editingDocument?: string; sourcePackage?: string };
 export type PreviewPublicationMetrics = { widthMm: number; heightMm: number; minTextPt: number; nodeLabelPt: number; minMainLinePt: number;
   suggestedWidthFor7Pt: number; suggestedHeightFor7Pt: number };
 export type PreviewPublication = { svg: string; physical: PreviewPublicationMetrics; viewBox: [number, number, number, number] };

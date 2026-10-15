@@ -1,0 +1,66 @@
+--- v17-recursive-graph.js
++++ post-loop-recursive-graph.js
+@@ -505,7 +505,7 @@
+     if(!graph.junctionMarkers.length){const groups=new Map();for(const e of graph.edges){const key=e.source+'|'+e.contract.wire,es=groups.get(key)||[];es.push(e);groups.set(key,es);}for(const es of groups.values())if(es.length>1){const raw=graph.recursive.authority.detail.junctionMarkers?.find(m=>m.edges.some(id=>es.some(e=>e.projection.original===id))),owner=es[0].source;if(!raw)continue;const marker={...copy(raw),id:'recursive-fork:'+es[0].id,owner,edges:es.map(e=>e.id),original:[graph.nodes.find(n=>n.id===owner).base[0],graph.nodes.find(n=>n.id===owner).base[1]],fragments:[]};if(root.SummaryJunctionMarkers.point(graph,marker))graph.junctionMarkers.push(marker);}}
+   }
+   function peerRouteQuality(graph,e,points){
+-    let contacts=0,crossings=0,crowding=0;
++    let contacts=0,crossings=0,crowding=0,crowdedRuns=0,crowdedLength=0,minimumGap=null;
+     for(const other of graph.edges){
+       if(other===e||other.contract.wire===e.contract.wire||E.sharesPresentation(graph,{...e,route:points},other))continue;
+       contacts+=R.wireContacts(points,other.route).length;
+@@ -517,9 +517,9 @@
+         const vertical=Math.abs(a.x-b.x)<EPS,horizontal=Math.abs(a.y-b.y)<EPS;
+         if(!vertical&&!horizontal||(vertical?Math.abs(c.x-d.x)>=EPS:Math.abs(c.y-d.y)>=EPS))continue;
+         const axis=vertical?'x':'y',along=vertical?'y':'x',distance=Math.abs(a[axis]-c[axis]),overlap=Math.min(Math.max(a[along],b[along]),Math.max(c[along],d[along]))-Math.max(Math.min(a[along],b[along]),Math.min(c[along],d[along]));
+-        if(overlap>EPS&&distance<10-EPS)crowding+=overlap*(10-distance);
+-      }
+-    }return {contacts,crossings,crowding};
++        if(overlap>EPS&&distance<10-EPS){crowding+=overlap*(10-distance);crowdedRuns++;crowdedLength+=overlap;minimumGap=Math.min(minimumGap??Infinity,distance);}
++      }
++    }return {contacts,crossings,crowding,crowdedRuns,crowdedLength,minimumGap};
+   }
+   const qualityDoesNotRegress=(next,previous)=>next.contacts<=previous.contacts&&next.crossings<=previous.crossings&&next.crowding<=previous.crowding+EPS;
+   function separateWireLane(graph,e,points,context){
+@@ -709,18 +709,7 @@
+           if(!C.validate(graph,e,points,context).ok||C.laneContacts(graph,e,points,context).length||E.overlapsWire(graph,e,points))continue;
+           e.route=points;if(C.validateJunctions(graph).ok){index=parallelLaneIndex(graph);break;}e.route=before;
+         }
+-        // A lane shift can leave a short bend beside a fixed neighboring
+-        // value slot. Reuse that slot's existing terminal neighborhood in
+-        // one bounded follow-up, under the same exact guards and budgets.
+-        if(budget&&qualityBudget){
+-          qualityBudget--;
+-          const before=e.route,oldQuality=peerRouteQuality(graph,e,before),raw=terminalBandCandidates(graph,e).filter(points=>keepsWaypoints(e,points)).slice(0,qualityBudget);qualityBudget-=raw.length;
+-          const candidates=raw.map(points=>({points,quality:peerRouteQuality(graph,e,points)})).filter(v=>v.quality.crowding<oldQuality.crowding-EPS&&qualityDoesNotRegress(v.quality,oldQuality)&&v.points.length<=before.length&&length(v.points)<=length(before)+EPS).sort((a,b)=>a.quality.crowding-b.quality.crowding||score(a.points)-score(b.points));
+-          for(const {points}of candidates){if(!budget)break;budget--;
+-            if(!C.validate(graph,e,points,context).ok||C.laneContacts(graph,e,points,context).length||E.overlapsWire(graph,e,points))continue;
+-            e.route=points;if(C.validateJunctions(graph).ok){index=parallelLaneIndex(graph);break;}e.route=before;
+-          }
+-        }
++
+       }
+       for(let pass=0;pass<12;pass++){
+         if(!qualityBudget)break;qualityBudget--;
+@@ -742,6 +731,21 @@
+         }
+         if(!accepted)break;
+       }
++    }
++    for(const e of graph.edges){
++      if(!budget||!qualityBudget)break;
++      if(e.failed||e.route.length>24)continue;
++      // All normal lane shifts and shortening finish before this optional
++      // terminal cleanup, so it cannot interrupt a peer's simplification.
++        if(budget&&qualityBudget&&parallelLaneContacts(graph,e,e.route,index).length){
++          qualityBudget--;
++          const before=e.route,oldQuality=peerRouteQuality(graph,e,before),raw=terminalBandCandidates(graph,e).filter(points=>keepsWaypoints(e,points)).slice(0,qualityBudget);qualityBudget-=raw.length;
++          const candidates=raw.map(points=>({points,quality:peerRouteQuality(graph,e,points)})).filter(v=>v.quality.crowding<oldQuality.crowding-EPS&&qualityDoesNotRegress(v.quality,oldQuality)&&v.points.length<=before.length&&length(v.points)<=length(before)+EPS&&v.quality.crowdedRuns<=oldQuality.crowdedRuns&&v.quality.crowdedLength<=oldQuality.crowdedLength+EPS&&(oldQuality.minimumGap===null||v.quality.minimumGap===null||v.quality.minimumGap>=oldQuality.minimumGap-EPS)).sort((a,b)=>a.quality.crowding-b.quality.crowding||score(a.points)-score(b.points));
++          for(const {points}of candidates){if(!budget)break;budget--;
++            if(!C.validate(graph,e,points,context).ok||C.laneContacts(graph,e,points,context).length||E.overlapsWire(graph,e,points))continue;
++            e.route=points;if(C.validateJunctions(graph).ok){index=parallelLaneIndex(graph);break;}e.route=before;
++          }
++        }
+     }
+     // Record the completed graph, including untouched eligible edges when
+     // the global budget runs out. Reopening the same frontier is a no-op.

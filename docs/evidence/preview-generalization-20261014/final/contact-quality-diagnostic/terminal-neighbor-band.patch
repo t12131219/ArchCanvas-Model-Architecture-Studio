@@ -1,0 +1,41 @@
+--- studio/public/preview/yworks_edge_router_lab/recursive-graph.js
++++ studio/public/preview/yworks_edge_router_lab/recursive-graph.js
+@@ -669,6 +669,20 @@
+       }
+     }return [...candidates.values()];
+   }
++  function terminalBandCandidates(graph,e){
++    const ps=e.route,candidates=new Map();
++    for(let i=1;i<ps.length-2&&candidates.size<16;i++){
++      const a=ps[i],b=ps[i+1],axis=Math.abs(a.x-b.x)<EPS?'x':Math.abs(a.y-b.y)<EPS?'y':null;if(!axis||R.dist(a,b)>28)continue;
++      const low=Math.min(ps[i-1][axis],ps[i+2][axis]),high=Math.max(ps[i-1][axis],ps[i+2][axis]),coordinates=new Set();
++      for(const peer of graph.edges){if(peer===e||peer.contract.wire===e.contract.wire)continue;
++        const terminals=[];if(peer.target===e.target)terminals.push(peer.route.at(-1));if(peer.source===e.source)terminals.push(peer.route[0]);
++        for(const p of terminals)for(const delta of [-14,14]){const value=p[axis]+delta;if(value>low+EPS&&value<high-EPS&&Math.abs(value-a[axis])<=28&&Math.abs(value-a[axis])>EPS)coordinates.add(value);}
++      }
++      for(const value of [...coordinates].sort((x,y)=>Math.abs(x-a[axis])-Math.abs(y-a[axis])||x-y)){
++        const points=R.simplify(ps.map((p,index)=>index===i||index===i+1?{...p,[axis]:value}:p));candidates.set(JSON.stringify(points),points);if(candidates.size>=16)break;
++      }
++    }return [...candidates.values()];
++  }
+   function polishShortLanes(graph,context,keepsWaypoints,preserved,preserve){
+     // This receipt is only an optional presentation-cleanup cache. Include
+     // every peer lane, label, gate and manual knot: a local shortcut's
+@@ -693,6 +707,17 @@
+           if(!budget)break;budget--;
+           if(!C.validate(graph,e,points,context).ok||C.laneContacts(graph,e,points,context).length||E.overlapsWire(graph,e,points))continue;
+           e.route=points;if(C.validateJunctions(graph).ok){index=parallelLaneIndex(graph);break;}e.route=before;
++        }
++        // A lane shift can leave a short bend beside a fixed neighboring
++        // value slot. Reuse that slot's existing terminal neighborhood in
++        // one bounded follow-up, under the same exact guards and budgets.
++        if(budget&&qualityBudget){
++          const before=e.route,oldQuality=peerRouteQuality(graph,e,before),raw=terminalBandCandidates(graph,e).filter(points=>keepsWaypoints(e,points)).slice(0,qualityBudget);qualityBudget-=raw.length;
++          const candidates=raw.map(points=>({points,quality:peerRouteQuality(graph,e,points)})).filter(v=>v.quality.crowding<oldQuality.crowding-EPS&&qualityDoesNotRegress(v.quality,oldQuality)&&v.points.length<=before.length&&length(v.points)<=length(before)+EPS).sort((a,b)=>a.quality.crowding-b.quality.crowding||score(a.points)-score(b.points));
++          for(const {points}of candidates){if(!budget)break;budget--;
++            if(!C.validate(graph,e,points,context).ok||C.laneContacts(graph,e,points,context).length||E.overlapsWire(graph,e,points))continue;
++            e.route=points;if(C.validateJunctions(graph).ok){index=parallelLaneIndex(graph);break;}e.route=before;
++          }
+         }
+       }
+       for(let pass=0;pass<12;pass++){

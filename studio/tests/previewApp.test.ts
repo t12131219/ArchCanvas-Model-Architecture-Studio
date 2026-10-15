@@ -27,6 +27,7 @@ function importHarness(formalSupported = true) {
     previewEngine: { current: { load: async () => { calls.push('preview-load'); }, snapshot: async () => snapshot } },
     openArchitecture: async () => { calls.push('open-formal'); },
     previewPanelDocument: () => ({ sourceBindingDigest: 'preview-only:new-case' }), createHistory: (document: unknown) => ({ document }),
+    previewNeedsPanelDocument: () => false,
     receivePreviewState: async () => { calls.push('sync'); }, setHistory() {}, setProjectId() {}, setStorageRevision() {}, setSavedVisualRevision() {},
     setBusy() {}, setPreviewConnecting() {}, setFailure: (value: string) => failures.push(value), setNotice: (value: string) => notices.push(value), setExampleId() {}, setImportOpen() {},
   };
@@ -88,4 +89,124 @@ test('actual hierarchy focus keeps unmatched catalog aggregates explicit and sen
   }) as unknown as (id: string) => void;
   focus('encoder'); assert.deepEqual(calls, []); assert.match(notices[0], /没有直接对应图元/);
   focus('matched'); assert.deepEqual(calls, [{ nodeId: 'preview-node' }]);
+});
+
+test('actual catalog binding keeps every reviewed display object editable and opens formal source only for model authoring', async () => {
+  for (const openEditor of [false, true]) {
+    const calls: string[] = [], historyRef = { current: null as any };
+    const source = { schema: 'archcanvas-preview-source/1', caseId: 'catalog', files: { 'model.py': 'original bytes' }, entry: 'model:Model' };
+    const env = { sourceFromResult: () => source, previewSource: { current: undefined },
+      rawPreviewSourceRequest: () => ({ files: source.files, entry: source.entry }), bundlePreviewRequest() {},
+      previewSequence: { current: 0 }, previewCase: { current: 'catalog' }, previewSnapshot: { current: { caseId: 'catalog', graph: {} } },
+      previewBoundSource: { current: '' }, historyRef,
+      api: { previewEditSource: async () => { calls.push('formal-parse'); return { sourceDigest: 'source', irDigest: 'ir' }; } },
+      previewNeedsPanelDocument: () => true, previewPanelDocument: () => ({ sourceBindingDigest: 'preview-only:catalog' }),
+      createHistory: (document: unknown) => ({ document }), setHistory() {}, setProjectId() {}, setStorageRevision() {}, setSavedVisualRevision() {},
+      setPreviewConnecting() {}, setExampleId() {}, setNotice() {},
+      openArchitecture: async () => { calls.push('formal-open'); historyRef.current = { document: {} }; }, receivePreviewState: async () => { calls.push('visual-sync'); },
+      continueModelAuthoring: async () => { calls.push('model-edit'); },
+    };
+    const bind = callback('bindPreviewSource', env) as unknown as (result: unknown, edit: boolean) => Promise<void>;
+    await bind({}, openEditor);
+    assert.deepEqual(calls, openEditor ? ['formal-parse', 'formal-open', 'visual-sync', 'model-edit'] : ['formal-parse', 'visual-sync']);
+    if (!openEditor) assert.equal(historyRef.current.document.sourceBindingDigest, 'preview-only:catalog');
+  }
+});
+
+test('actual unsupported catalog source retains read-only text and a safe display projection without an old mapping error', async () => {
+  const notices: string[] = [], historyRef = { current: null as any }, source = { schema: 'archcanvas-preview-source/1' };
+  const env = { sourceFromResult: () => source, previewSource: { current: undefined },
+    rawPreviewSourceRequest: () => { throw new Error('unsupported entry'); }, bundlePreviewRequest() {},
+    previewSequence: { current: 0 }, previewCase: { current: 'catalog' }, previewSnapshot: { current: { graph: {} } }, previewBoundSource: { current: '' }, historyRef,
+    previewPanelDocument: (_snapshot: unknown, actual: unknown) => ({ sourceBindingDigest: 'preview-only:catalog', actual }),
+    createHistory: (document: unknown) => ({ document }), setHistory() {}, setProjectId() {}, setStorageRevision() {}, setSavedVisualRevision() {},
+    setPreviewConnecting() {}, setSourceOpen() {}, receivePreviewState: async () => {}, setNotice: (notice: string) => notices.push(notice),
+  };
+  const bind = callback('bindPreviewSource', env) as unknown as (result: unknown, edit: boolean) => Promise<void>;
+  await bind({}, false);
+  assert.equal(historyRef.current.document.actual, source); assert.match(notices[0], /只读查看/);
+  await assert.rejects(() => bind({}, true), /unsupported entry/);
+});
+
+test('actual hierarchy expansion delegates one preview transaction without repeating the formal layout and ignores a stale rejection', async () => {
+  const previous = { document: { revision: 1, architecture: {} }, past: [], future: [] };
+  const historyRef = { current: previous }, loadSequence = { current: 1 }, sent: unknown[] = [], failures: string[] = [];
+  let fail!: (error: Error) => void;
+  const apply = callback('apply', {
+    useCallback: (value: unknown) => value, cancelGesture() {}, historyRef, loadSequence,
+    studioTelemetry: { beginInteraction() {}, endInteraction() {} }, readyPreview: () => true,
+    mapPreviewOperations: () => [{ type: 'expand', id: 'preview-attention', expanded: true }],
+    reduceHistory() { throw new Error('must not run a second layout engine'); },
+    previewEngine: { current: { visual: (operations: unknown) => { sent.push(operations); return new Promise((_resolve, reject) => { fail = reject; }); } } },
+    setHistory() { throw new Error('must await authoritative snapshot'); }, setNotice() {}, setFailure: (message: string) => failures.push(message),
+  }) as unknown as (operations: unknown[]) => void;
+  apply([{ type: 'expand', id: 'formal-attention', expanded: true }]);
+  assert.deepEqual(sent, [[{ type: 'expand', id: 'preview-attention', expanded: true }]]);
+  assert.equal(historyRef.current, previous);
+  loadSequence.current++; fail(new Error('old model rejected')); await Promise.resolve();
+  assert.deepEqual(failures, [''], 'a late error from a superseded source generation cannot replace the current status');
+});
+
+test('actual preview source check caches an immutable generation and rechecks either source or architecture replacement', () => {
+  const architecture = { entry: 'model:Model', sources: [{ path: 'model.py', content: 'original' }] };
+  const original = { files: { 'model.py': 'original' } }, replacement = { files: { 'model.py': 'changed' } };
+  const previewSource = { current: original }, previewSourceMatch = { current: null as unknown }, calls: unknown[] = [];
+  const matches = callback('currentPreviewSourceMatches', {
+    previewSource, previewSourceMatch,
+    previewSourceMatchesArchitecture: (source: typeof original, actual: typeof architecture) => {
+      calls.push([source, actual]); return source.files['model.py'] === actual.sources[0].content;
+    },
+  }) as unknown as (target: typeof architecture) => boolean;
+  assert.equal(matches(architecture), true); assert.equal(matches(architecture), true); assert.equal(calls.length, 1);
+  previewSource.current = replacement;
+  assert.equal(matches(architecture), false); assert.equal(calls.length, 2, 'a newly imported source cannot inherit an old byte-match result');
+  const changedArchitecture = { ...architecture, sources: [{ path: 'model.py', content: 'changed' }] };
+  assert.equal(matches(changedArchitecture), true); assert.equal(calls.length, 3, 'a formal source edit rechecks its new architecture');
+});
+
+test('actual mixed expansion and paint batch remains one engine transaction and preserves parent history on rejection', async () => {
+  const previous = { document: { revision: 3 }, past: [], future: [] }, historyRef = { current: previous }, calls: unknown[] = [], failures: string[] = [];
+  let reject!: (error: Error) => void;
+  const operations = [{ type: 'expand', id: 'branch-left', expanded: true }, { type: 'expand', id: 'branch-right', expanded: false }, { type: 'alias', id: 'child', label: 'Display' }];
+  const apply = callback('apply', {
+    useCallback: (value: unknown) => value, cancelGesture() {}, historyRef, loadSequence: { current: 5 },
+    studioTelemetry: { beginInteraction() {}, endInteraction() {} }, readyPreview: () => true, mapPreviewOperations: (batch: unknown[]) => batch,
+    reduceHistory() { throw Error('mixed expansion must not invoke a second layout'); },
+    previewEngine: { current: { visual: (batch: unknown[]) => { calls.push(batch); return new Promise((_done, fail) => { reject = fail; }); } } },
+    setHistory() { throw Error('must not publish before transaction succeeds'); }, setNotice() {}, setFailure: (message: string) => failures.push(message),
+  }) as unknown as (operations: unknown[]) => void;
+  apply(operations); assert.deepEqual(calls, [operations]); assert.equal(historyRef.current, previous);
+  reject(Error('layout rejected')); await Promise.resolve();
+  assert.equal(historyRef.current, previous); assert.match(failures.at(-1)!, /layout rejected/);
+});
+
+test('actual catalog source request rejects an old A response after an A to B to A switch and keeps busy snapshots on the old case', async () => {
+  const previewCase = { current: 'seed' }, previewSequence = { current: 0 }, loadSequence = { current: 0 }, historyRef = { current: { document: { id: 'seed', sourceBindingDigest: 'preview-only:seed' } } as any };
+  const deferred: { resolve: (result: unknown) => void }[] = [], bound: unknown[] = [], history: unknown[] = [];
+  const environment = {
+    previewSnapshot: { current: null }, synchronizePreviewNodeSelection() {}, setPreviewTool() {}, setPortEditing() {}, setGrid() {}, setPreviewBusy() {},
+    setPreviewDirty() {}, setPreviewUndo() {}, setPreviewRedo() {}, setPreviewVersion() {}, setSelection() {}, savedPreviewGraph: { current: null },
+    initialModelLoading: { current: false }, previewLoading: { current: false }, previewCase, previewSequence, loadSequence, previewBoundSource: { current: '' }, previewSource: { current: undefined },
+    setBusy() {}, setPreviewConnecting() {}, previewPanelDocument: (snapshot: any) => ({ id: snapshot.caseId, sourceBindingDigest: `preview-only:${snapshot.caseId}` }),
+    createHistory: (document: unknown) => ({ document, past: [], future: [] }), historyRef, setHistory: (next: unknown) => history.push(next), setExampleId() {}, setProjectId() {}, setNotice() {},
+    previewEngine: { current: { source: () => new Promise(resolve => { deferred.push({ resolve }); }) } },
+    bindPreviewSource: async (result: unknown) => { bound.push(result); }, synchronizingPreview: { current: false },
+    graphFromSnapshot: (snapshot: any) => snapshot.graph, previewGraphEdges: () => [],
+    enteringAuthoring: { current: false }, authoringOpen: false, previewCoverage: { current: null },
+    projectPreviewHistory: (before: unknown) => before,
+  };
+  const receive = callback('receivePreviewState', environment) as unknown as (snapshot: any) => Promise<void>;
+  const a1 = receive({ caseId: 'A', graph: { caseId: 'A', nodes: [] } });
+  const b = receive({ caseId: 'B', graph: { caseId: 'B', nodes: [] } });
+  const a2 = receive({ caseId: 'A', graph: { caseId: 'A', nodes: [] } });
+  deferred[0].resolve({ version: 'old-A' }); deferred[1].resolve({ version: 'B' }); await Promise.all([a1, b]);
+  assert.deepEqual(bound, [], 'same case ID cannot bypass the source generation guard');
+  deferred[2].resolve({ version: 'new-A' }); await a2;
+  assert.deepEqual(bound, [{ version: 'new-A' }]); assert.equal(historyRef.current.document.id, 'A');
+  const before = historyRef.current, count = history.length;
+  await receive({ caseId: 'A', busy: true, graph: { caseId: 'A', nodes: [] } });
+  assert.equal(historyRef.current, before); assert.equal(history.length, count, 'an old-case busy snapshot during loading must not create a new source document');
+  await receive({ caseId: 'B', busy: true, graph: { caseId: 'B', nodes: [] } });
+  assert.equal(previewCase.current, 'A'); assert.equal(deferred.length, 3);
+  assert.equal(historyRef.current, before, 'a busy candidate cannot claim a new model before commit');
 });

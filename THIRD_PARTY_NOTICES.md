@@ -12,6 +12,8 @@ The original `source_adapter/analyze.py` SHA256 was `4203423099ebe24d81a0d512e93
 
 Model-source snapshots retain their source-specific license/notice files, original headers and evidence alongside the relevant sources. Those assets include third-party model examples and libraries; this migration does not relicense them or assert that every file shares the Studio license. See their retained `LICENSE`, `COPYING` and `NOTICE` files under `studio/public/preview/snapshots`, and the individual source/evidence paths in the inventory. No commercial yFiles runtime is introduced: the vendored browser routing implementation is local JavaScript. The migration's new validation scope and limits are recorded in [preview-migration.md](docs/preview-migration.md).
 
+Preset Python sources are also organized under `studio/public/preview/sources/packages` with their declared licenses copied into each package, and Notebook code-cell derivatives under `sources/notebooks`. Python text and line positions are preserved; filenames may be normalized for static module resolution. Original paths, content hashes and licenses remain recorded in `data/source-packages.json`, `data/catalog-sources.json` and `data/notebook-conversions.json`. The Notebook derivatives retain the original code headers and do not introduce a new license. Original materials and evidence remain in `snapshots`; the new source audit is documented in [preview-sources.md](docs/preview-sources.md).
+
 ## react 19.3.0
 
 MIT License

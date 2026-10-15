@@ -99,6 +99,17 @@ test('instance identities distinguish Sequential children that share a single ca
   assert.deepEqual(previewSelectionNodeIds(arch, selection), ['second']);
 });
 
+test('reviewed catalog nodes use every evidence span and normalization aliases without matching display names', () => {
+  const arch = architecture(), norm = node('formal-norm', 'LayerNorm', 'norm', 6), sameSpan = node('other-norm', 'LayerNorm', 'norm', 6);
+  norm.label = 'source label'; sameSpan.label = 'Pretty label'; arch.nodes = [norm, sameSpan];
+  const adapted = bundle(); adapted.evidence!.outside = { file: 'helper.py', line: 1, endLine: 1, expression: 'helper' };
+  adapted.evidence!.norm = { file: 'models/net.py', line: 6, endLine: 6, expression: 'self.shared(features)' };
+  const selection = { node: { id: 'reviewed-norm', kind: 'normalization', label: 'Pretty label', source_evidence: ['outside', 'norm'] } };
+  assert.deepEqual(previewSelectionNodeIds(arch, selection, adapted), ['formal-norm', 'other-norm'], 'a matching alias cannot claim a unique source identity');
+  arch.nodes = [norm, node('linear', 'Linear', 'linear', 6)];
+  assert.deepEqual(previewSelectionNodeIds(arch, selection, adapted), ['formal-norm']);
+});
+
 test('preview selections follow live source and generated draft bindings without reviving removed objects', () => {
   const arch = architecture(), canvas = document(arch);
   const ref = (id: string): SourceDraftRef => ({ nodeId: id, sceneNodeId: id, kind: 'Linear', category: 'linear', evidence: 'source', portBindings: {}, originalParameters: {}, group: false });

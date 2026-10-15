@@ -28,22 +28,29 @@
     }
     return events.sort((a,b)=>a.order-b.order);
   }
-  function wireIdentity(edge){
+  function namedWire(value,edge,graph){
+    // The legacy src field is an endpoint only when its producer is the
+    // recorded edge source. Opaque IDs and colon-containing ports must not
+    // be guessed apart at their last delimiter.
+    if(typeof value!=='string'||!edge.source||graph?.nodes.some(n=>n.id===value))return value;
+    const prefix=edge.source+':';return value.startsWith(prefix)&&value.length>prefix.length?JSON.stringify([edge.source,value.slice(prefix.length)]):value;
+  }
+  function wireIdentity(edge,graph){
     const b=edge.binding||{};
     if(b.wire_identity)return JSON.stringify(b.wire_identity);
     if(b.endpoint_binding?.canonical)return JSON.stringify([b.endpoint_binding.canonical.src,b.endpoint_binding.canonical.src_port]);
-    if(b.canonical_src)return b.canonical_src;
+    if(b.canonical_src)return b.canonical_src_port?JSON.stringify([b.canonical_src,b.canonical_src_port]):b.canonical_src;
     if(b.semantic_src)return JSON.stringify([b.semantic_src,b.semantic_src_port||'out']);
     // Trace collections/forks are explicit visual buses, not implicit sums.
     if(['fork_bus','collection_bus'].includes(b.representation))return 'bus:'+JSON.stringify(b.semantic_trace||[]);
-    return b.src||edge.id;
+    return b.src?namedWire(b.src,edge,graph):edge.id;
   }
   function initialize(graph){
     for(const n of graph.nodes)if(n.junction&&!n.parent){const owners=graph.nodes.filter(v=>v.expanded&&inside({x:n.x,y:n.y},v));if(owners.length)n.parent=owners.sort((a,b)=>a.w*a.h-b.w*b.h)[0].id;}
     for(const e of graph.edges){if(e.contract)continue;
       const relation=new Set([...ancestors(graph,e.source),...ancestors(graph,e.target)]);
       const gates=graph.nodes.filter(n=>n.expanded).flatMap(n=>crossings(e.route,n)).filter(g=>relation.has(g.frame)&&(!e.draft||g.frame===e.source&&e.fixedSource||g.frame===e.target&&e.fixedTarget));
-      e.contract={version:1,gates,wire:wireIdentity(e),bus:['fork_bus','collection_bus'].includes(e.binding?.representation),
+      e.contract={version:1,gates,wire:wireIdentity(e,graph),bus:['fork_bus','collection_bus'].includes(e.binding?.representation),
         source:e.source,target:e.target,originalSourcePort:e.fixedSource,originalTargetPort:e.fixedTarget,
         minimumTerminal:Math.min(9,R.dist(e.route.at(-1)||{},e.route.at(-2)||{})),
         enforcePortApproach:!!(graph.irSha256||graph.caseId==='routing-lab'||e.draft)};
@@ -210,8 +217,8 @@
     if(e.style!=='octilinear'&&e.arrow!=='none'&&clean.length>=2&&R.dist(clean.at(-1),clean.at(-2))+EPS<(e.contract.minimumTerminal||0))violations.push('insufficient arrow terminal');
     for(const n of graph.nodes){
       if(n.junction)continue;
-      if(n.glyphPresentation)for(const box of n.labelObstacles||[]){const caption={x:n.x+box.x,y:n.y+box.y,w:box.w,h:box.h};
-        if(points.slice(1).some((p,i)=>R.intersectsRect(points[i],p,caption)))violations.push('route enters glyph caption '+n.id);
+      if(n.expanded||n.glyphPresentation)for(const box of n.labelObstacles||[]){const caption={x:n.x+box.x,y:n.y+box.y,w:box.w,h:box.h};
+        if(points.slice(1).some((p,i)=>R.intersectsRect(points[i],p,caption)))violations.push('route enters '+(n.glyphPresentation?'glyph caption ':'expanded heading ')+n.id);
       }
       if(!n.expanded){
         for(let i=1;i<points.length;i++)if(n.id!==e.source&&n.id!==e.target&&R.intersectsRect(points[i-1],points[i],n))violations.push('unrelated leaf '+n.id);

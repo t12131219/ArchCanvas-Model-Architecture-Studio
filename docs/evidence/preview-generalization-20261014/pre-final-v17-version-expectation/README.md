@@ -1,0 +1,1 @@
+The first v17 frontend run failed only the obsolete v16 literal in the cache-upgrade test (actual version 17). The migration assertions remain unchanged; the literal is updated to 17 and the complete targeted suite is rerun against identical runtime bytes.

@@ -15,6 +15,8 @@ export function PreviewExportDialog({ document, selectedId, capabilities, onClos
   const [format, setFormat] = useState(capabilities?.publicationExport.pdf ? 'pdf' : 'svg');
   const [busy, setBusy] = useState(false), [loading, setLoading] = useState(true), [error, setError] = useState('');
   const [publication, setPublication] = useState<PreviewPublication | null>(null), [artifact, setArtifact] = useState<ExportArtifact | null>(null);
+  const [documentDownloaded, setDocumentDownloaded] = useState(false);
+  const documentFormat = format === 'json' || format === 'source';
   const gate = useRef(new PreviewPublicationRequestGate()), renderSource = useRef(previewExport.svg);
   renderSource.current = previewExport.svg;
   const width = Number(widthInput), widthValid = widthInput.trim() !== '' && Number.isFinite(width) && width >= 25 && width <= 1000;
@@ -46,6 +48,13 @@ export function PreviewExportDialog({ document, selectedId, capabilities, onClos
   }, [cacheKey, storageKey]);
 
   async function generate() {
+    const json = format === 'source' ? previewExport.sourcePackage : previewExport.editingDocument;
+    if (documentFormat && json) {
+      const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+      const link = window.document.createElement('a'); link.href = url; link.download = `${document.title}-${format === 'source' ? 'source-adapter' : 'canvas'}.json`;
+      window.document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1500);
+      setDocumentDownloaded(true); return;
+    }
     if (!publication || !cacheKey || !widthValid || !heightValid) return;
     const ticket = gate.current.begin(), svg = publication.svg, key = cacheKey;
     setBusy(true); setError(''); setArtifact(null);
@@ -60,6 +69,7 @@ export function PreviewExportDialog({ document, selectedId, capabilities, onClos
 
   return <div className="modal-backdrop"><div className="export-modal" role="dialog" aria-modal="true" aria-labelledby="export-title"><div className="modal-heading"><div><div className="eyebrow">PUBLICATION EXPORT</div><h2 id="export-title">导出当前画布</h2></div><button className="tool" disabled={busy} onClick={onClose} aria-label="关闭导出"><Icon name="close" /></button></div>
     <p>{document.title} · 视觉版本 {previewExport.binding.revision ?? document.revision} · {document.pageSpec.preset === 'paper' ? '彩色' : '黑白'}</p>
+    {!documentFormat && <>
     <label className="field-label">导出范围<select className="field-select" aria-label="导出范围" value={effectiveScope} disabled={busy} onChange={event => { setScope(event.target.value as 'document' | 'detail'); setArtifact(null); }}><option value="document">整个当前画布</option><option value="detail" disabled={!detailAvailable}>已展开容器的详情页</option></select></label>
     {effectiveScope === 'detail' && <label className="field-label">详情容器<select className="field-select" aria-label="详情容器" value={effectiveDetailId} disabled={busy} onChange={event => { setDetailNodeId(event.target.value); setArtifact(null); }}>{choices.map((choice, index) => <option key={choice.nodeId} value={choice.nodeId}>{index + 1}. {choice.pathLabel}</option>)}</select></label>}
     {!detailAvailable && <p className="field-help">展开一个可见容器后，可生成保留当前内部排版的独立详情页。</p>}
@@ -70,12 +80,15 @@ export function PreviewExportDialog({ document, selectedId, capabilities, onClos
     {physical && !heightValid && <p className="error-text" role="alert">当前页高超过 5000 mm 导出上限，请减小页宽或调整范围。</p>}
     {loading && <p className="field-help" role="status">正在读取当前预览的真实 SVG…</p>}
     {publication && widthValid && <div aria-label={effectiveScope === 'detail' ? '详情页预览' : '整图预览'} style={{ maxHeight: 240, overflow: 'auto', border: '1px solid #dbe2ea', background: '#fff' }} dangerouslySetInnerHTML={{ __html: publication.svg }} />}
-    <div className="export-formats">{(['svg', 'pdf', 'png'] as const).map(value => <button disabled={busy || !available?.[value]} className={format === value ? 'active' : ''} key={value} onClick={() => { setFormat(value); setArtifact(null); }}>{value.toUpperCase()}<small>{value === 'png' ? '高分辨率位图' : '矢量输出'}</small></button>)}</div>
+    </>}
+    <div className="export-formats">{(['svg', 'pdf', 'png'] as const).map(value => <button disabled={busy || !available?.[value]} className={format === value ? 'active' : ''} key={value} onClick={() => { setFormat(value); setArtifact(null); setDocumentDownloaded(false); }}>{value.toUpperCase()}<small>{value === 'png' ? '高分辨率位图' : '矢量输出'}</small></button>)}{previewExport.editingDocument && <button disabled={busy} className={format === 'json' ? 'active' : ''} onClick={() => { setFormat('json'); setArtifact(null); setDocumentDownloaded(false); }}>编辑 JSON<small>完整画布文档</small></button>}{previewExport.sourcePackage && <button disabled={busy} className={format === 'source' ? 'active' : ''} onClick={() => { setFormat('source'); setArtifact(null); setDocumentDownloaded(false); }}>源码包<small>源码、IR 与证据</small></button>}</div>
+    {format === 'json' && <><p>保存完整画布的递归展开、布局、连接草稿、布线与样式；导入的模型同时保留源码适配包。通过“导入 Python 源码”中的 JSON 入口可恢复编辑。</p>{documentDownloaded && <p role="status">编辑 JSON 已下载。</p>}</>}
+    {format === 'source' && <><p>下载导入模型的原始源码、统一 IR 与来源证据，不包含后续视觉编辑。通过导入入口可重新打开模型。</p>{documentDownloaded && <p role="status">源码包已下载。</p>}</>}
     {format === 'png' && <label className="field-label">PNG 分辨率<select className="field-select" aria-label="导出 DPI" value={dpi} disabled={busy} onChange={event => { setDpi(Number(event.target.value)); setArtifact(null); }}>{[150, 300, 600].map(value => <option key={value} value={value}>{value} DPI</option>)}</select></label>}
-    <p className="field-help">预览和下载使用同一份真实 SVG，保留当前几何、显示名与样式。PDF 字体由本机解析；请在目标阅读器检查字体。</p>
-    {!available?.[format as 'svg'] && <p className="error-text">此格式在当前服务环境不可用。{available?.unavailableReason}</p>}
-    {error && <p className="error-text" role="alert">{error}</p>}
+    {!documentFormat && <p className="field-help">预览和下载使用同一份真实 SVG，保留当前几何、显示名与样式。PDF 字体由本机解析；请在目标阅读器检查字体。</p>}
+    {!documentFormat && !available?.[format as 'svg'] && <p className="error-text">此格式在当前服务环境不可用。{available?.unavailableReason}</p>}
+    {error && !documentFormat && <p className="error-text" role="alert">{error}</p>}
     {artifact && <div className="export-result"><b>文件已生成 · {artifact.format.toUpperCase()}</b><div><a href={artifact.url} target="_blank" rel="noreferrer">查看 {artifact.format.toUpperCase()}</a><a href={artifact.url} download={`${document.title}.${artifact.format}`}>下载文件</a><a href={artifact.receiptUrl} target="_blank" rel="noreferrer">查看导出收据</a></div><details><summary>尺寸、摘要与字体信息</summary><pre>{JSON.stringify(artifact.receipt, null, 2)}</pre></details></div>}
-    <div className="modal-actions"><button disabled={busy} onClick={onClose}>关闭</button><button className="primary" disabled={busy || loading || !publication || !widthValid || !heightValid || !available?.[format as 'svg']} onClick={() => void generate()}>{busy ? '正在生成…' : '生成文件'}</button></div>
+    <div className="modal-actions"><button disabled={busy} onClick={onClose}>关闭</button><button className="primary" disabled={documentFormat ? !(format === 'source' ? previewExport.sourcePackage : previewExport.editingDocument) : busy || loading || !publication || !widthValid || !heightValid || !available?.[format as 'svg']} onClick={() => void generate()}>{format === 'json' ? '下载编辑 JSON' : format === 'source' ? '下载源码包' : busy ? '正在生成…' : '生成文件'}</button></div>
   </div></div>;
 }

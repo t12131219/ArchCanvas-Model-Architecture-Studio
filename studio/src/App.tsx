@@ -1,7 +1,7 @@
 import { sameSourceSemantics, sourcePresentationOperations } from './sourcePresentation';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { applyVisualBatch, buildScene, createDocument, createHistory, reconcileDocument, reduceHistory, renderSvg, validateArchitecture, presentEditorScene, editorSceneBounds, implicitRootIds } from './core';
+import { applyVisualBatch, buildScene, createDocument, createHistory, reconcileDocument, reduceHistory, validateArchitecture, presentEditorScene, editorSceneBounds, implicitRootIds } from './core';
 import type { Architecture, CanvasDocument, HistoryState, MoveScope, ScenePort, VisualOperation } from './core';
 import { api } from './api';
 import type { Binding, Capabilities, Example, InputSpec, RebindOptions, Transaction } from './api';
@@ -45,10 +45,10 @@ import type { AuthoredDraft } from './authoring';
 import { nearestPortLayout } from './core/portRouting';
 import { PreviewStudio } from './PreviewStudio';
 import type { PreviewHandle, PreviewSnapshot, PreviewSourceResult } from './PreviewStudio';
-import { architecturePreviewRequest, architecturePreviewFocus, bundlePreviewRequest, rawPreviewSourceRequest, previewCanvasOperations, previewSelectionNodeIds, previewSelectionDraftIds, previewNodeLayoutOperation, previewExpansionOperations, previewSourceMatchesArchitecture } from './previewInterop';
+import { architecturePreviewRequest, architecturePreviewFocus, bundlePreviewRequest, rawPreviewSourceRequest, previewSelectionNodeIds, previewSelectionDraftIds, previewNodeLayoutOperation, previewExpansionOperations, previewSourceMatchesArchitecture } from './previewInterop';
 import type { PreviewEvidenceSource, PreviewSelection, PreviewSourceBundle, PreviewVisualGraph } from './previewInterop';
-import { previewPanelDocument } from './previewPanelDocument';
-import { isPreviewDraftEdge, previewEdgeAppearance, previewFormalEdgeIds, previewGraphEdges, previewPresentationFields, previewDocumentSyncOperations, previewNodePresentation } from './previewPresentation';
+import { previewMappingSignature, previewNeedsPanelDocument, previewPanelDocument, projectPreviewHistory } from './previewPanelDocument';
+import { isPreviewDraftEdge, previewEdgeAppearance, previewFormalEdgeIds, previewGraphEdges, previewDocumentSyncOperations, previewNodePresentation, previewPresentation, previewAnnotationConflicts, previewAnnotationPosition } from './previewPresentation';
 import type { PreviewVisualEdge } from './previewPresentation';
 import type { PreviewExportSource } from './previewPublication';
 
@@ -83,9 +83,12 @@ export default function App() {
   const previewSnapshot = useRef<PreviewSnapshot | null>(null);
   const previewSource = useRef<PreviewEvidenceSource | undefined>(undefined);
   const previewBoundSource = useRef('');
+  const previewSourceMatch = useRef<{ source: PreviewEvidenceSource; architecture: Architecture; matches: boolean } | null>(null);
+  const previewCoverage = useRef<{ source: PreviewEvidenceSource | undefined; architecture: Architecture; signature: string; needsPanel: boolean } | null>(null);
   const previewCase = useRef('');
   const previewLoading = useRef(false);
   const [previewConnecting, setPreviewConnecting] = useState(true);
+  const [previewBusy, setPreviewBusy] = useState(false);
   const synchronizingPreview = useRef(false);
   const initialModelLoading = useRef(true);
   const previewSequence = useRef(0);
@@ -93,6 +96,7 @@ export default function App() {
   const [previewDirty, setPreviewDirty] = useState(false);
   const [previewUndo, setPreviewUndo] = useState(false);
   const [previewRedo, setPreviewRedo] = useState(false);
+  const [previewSelectedNodeIds, setPreviewSelectedNodeIds] = useState<string[]>([]);
   const savedPreviewGraph = useRef<string | null>(null);
   const enteringAuthoring = useRef(false);
   const openingExport = useRef(false);
@@ -108,6 +112,7 @@ export default function App() {
   const [selection, setSelection] = useState<Selection>({ kind: 'node', ids: [] });
   const [camera, setCamera] = useState<Camera>({ x: 35, y: 35, zoom: 0.9 });
   const [tool, setTool] = useState<'select' | 'pan'>('select');
+  const [previewTool, setPreviewTool] = useState<'select' | 'connect' | 'bend'>('select');
   const [portEditing, setPortEditing] = useState(false);
   const [portLayoutPreview, setPortLayoutPreview] = useState<{ base: CanvasDocument; document: CanvasDocument } | null>(null);
   const [layoutMoveScope, setLayoutMoveScope] = useState<MoveScope>('all-frontiers');
@@ -162,10 +167,12 @@ export default function App() {
   const cameraViewport = useRef<CameraViewport | null>(null);
 
   const current = history?.document;
-  const committedScene = useMemo(() => current ? buildScene(current, { presentation: 'editor' }) : null, [current]);
+  // The recursive iframe owns preview geometry and routing. Build the formal
+  // scene only when an explicitly requested legacy inspection tool needs it.
+  const needsFormalScene = !!recoveryPreview || !!portLayoutPreview || !!preview;
+  const committedScene = useMemo(() => current && needsFormalScene ? buildScene(current, { presentation: 'editor' }) : null, [current, needsFormalScene]);
   const activeRecovery = recoveryPreview && recoveryPreview.document === current && selection.kind === 'node' && selection.ids.length === 1 && selection.ids[0] === recoveryPreview.plan.id ? recoveryPreview : null;
   const scene = useMemo(() => { const result = portLayoutPreview && portLayoutPreview.base === current ? buildScene(portLayoutPreview.document, { presentation: 'editor' }) : activeRecovery ? activeRecovery.plan.scene : preview && preview.document === current ? previewMoveScene(preview.session, preview.dx, preview.dy, { presentation: 'editor' }) : committedScene; return result ? presentEditorScene(result) : null; }, [current, committedScene, preview, activeRecovery, portLayoutPreview]);
-  const markup = useMemo(() => scene ? renderSvg(scene, { interactive: true, background: false, presentation: 'editor' }) : '', [scene]);
   const implicitRoots = useMemo(() => scene ? implicitRootIds(scene) : new Set<string>(), [scene]);
   const architecture = current?.architecture;
   const selectedNode = selection.kind === 'node' ? architecture?.nodes.find(n => n.id === selection.ids[0]) : undefined;
@@ -184,8 +191,14 @@ export default function App() {
     return ids.length === 1 && ids[0] === selectedNode.id;
   }) : undefined;
   const selectedPreviewNodePresentation = selectedVisiblePreviewNode ? previewNodePresentation(previewSnapshot.current?.graph, selectedVisiblePreviewNode) : undefined;
+  const previewSelectedNodes = (graphFromSnapshot()?.nodes ?? []).filter(node => previewSelectedNodeIds.includes(node.id) && !node.junction);
+  const previewPinnedCount = previewSelectedNodes.filter(node => previewPresentation(previewSnapshot.current?.graph)?.nodes?.[node.id]?.pinned).length;
+  const previewAllPinned = previewSelectedNodes.length > 0 && previewPinnedCount === previewSelectedNodes.length;
+  const previewLayoutDisabled = !current || busy || previewConnecting || previewBusy;
+  const previewCanAlign = previewSelectedNodes.length >= 2 && previewSelectedNodes.every(node => (node.parent ?? null) === (previewSelectedNodes[0].parent ?? null));
   const selectedSceneAnnotation = scene?.annotations.find(n => n.id === selectedAnnotation?.id);
-  const annotationConflicts = scene && selectedSceneAnnotation ? findAnnotationBodyConflicts(scene, selectedSceneAnnotation) : [];
+  const annotationConflicts = selectedAnnotation && previewSnapshot.current?.graph ? previewAnnotationConflicts(previewSnapshot.current.graph, selectedAnnotation.id) :
+    scene && selectedSceneAnnotation ? findAnnotationBodyConflicts(scene, selectedSceneAnnotation) : [];
   const paperPosition = scene ? paperTranslation(camera, scene.bounds) : null;
   const dotGrid = canvasDotGrid(camera);
   const dirty = previewDirty || (!!current && current.revision !== savedVisualRevision);
@@ -197,11 +210,22 @@ export default function App() {
     const graph = snapshot?.graph;
     return graph && Array.isArray(graph.nodes) ? graph as unknown as PreviewVisualGraph : null;
   }
+  function currentPreviewSourceMatches(architecture: Architecture): boolean {
+    const source = previewSource.current;
+    if (!source) return false;
+    // Imported source corpora and architecture are immutable for a generation;
+    // all source edits install new objects and invalidate this checked pair.
+    const checked = previewSourceMatch.current;
+    if (checked?.source === source && checked.architecture === architecture) return checked.matches;
+    const matches = previewSourceMatchesArchitecture(source, architecture);
+    previewSourceMatch.current = { source, architecture, matches };
+    return matches;
+  }
   function readyPreview(document = historyRef.current?.document): boolean {
-    if (!document || initialModelLoading.current || previewLoading.current || synchronizingPreview.current || !previewSnapshot.current?.graph) return false;
+    if (!document || initialModelLoading.current || previewLoading.current || synchronizingPreview.current || !previewSnapshot.current?.graph || previewSnapshot.current.busy) return false;
     if (document.sourceBindingDigest.startsWith('preview-only:')) return document.sourceBindingDigest === `preview-only:${previewCase.current}`;
     return !!previewSource.current && previewBoundSource.current === document.architecture.sourceDigest + ':' + document.architecture.irDigest &&
-      previewSourceMatchesArchitecture(previewSource.current, document.architecture) &&
+      currentPreviewSourceMatches(document.architecture) &&
       (previewSource.current.schema === 'summary-source-adapter/1' ? previewSource.current.id : previewSource.current.caseId) === previewCase.current;
   }
   async function restoreMatchingPreview(document: CanvasDocument, caseId: string | undefined, sequence: number): Promise<PreviewSnapshot | null> {
@@ -232,7 +256,7 @@ export default function App() {
   function mapPreviewOperations(operations: VisualOperation[]): Record<string, unknown>[] {
     const byId = (id: string) => {
       const mapped = previewNodeId(id);
-      if (!mapped) throw new Error('该对象没有对应的预览源码位置；当前图与源码保持原样。');
+      if (!mapped) throw new Error('当前源码对象未显示为独立图元；可进入模型编辑，或在原型画布选择对应的展示对象。');
       return mapped;
     };
     return operations.flatMap<Record<string, unknown>>(operation => {
@@ -261,21 +285,37 @@ export default function App() {
     const source = sourceFromResult(result);
     if (!source) throw new Error('当前示例没有模型源码；可新建模型或导入 Python 源码。');
     previewSource.current = source;
-    const request = source.schema === 'summary-source-adapter/1' ? bundlePreviewRequest(source) : rawPreviewSourceRequest(source);
     const sequence = ++previewSequence.current;
     const expectedCase = previewCase.current;
     setPreviewConnecting(true);
     let arch: Architecture;
-    try { arch = await api.previewEditSource(request); }
+    try {
+      const request = source.schema === 'summary-source-adapter/1' ? bundlePreviewRequest(source) : rawPreviewSourceRequest(source);
+      arch = await api.previewEditSource(request);
+    }
     catch (error) {
-      if (sequence === previewSequence.current && expectedCase === previewCase.current && previewSnapshot.current) {
+      if (sequence !== previewSequence.current || expectedCase !== previewCase.current) return;
+      if (previewSnapshot.current) {
         const panelDocument = previewPanelDocument(previewSnapshot.current, source);
         historyRef.current = createHistory(panelDocument); setHistory(historyRef.current);
+        previewBoundSource.current = '';
+        setProjectId(null); setStorageRevision(0); setSavedVisualRevision(-1);
+        await receivePreviewState(previewSnapshot.current);
         setPreviewConnecting(false);
+        setNotice(`源码文本已打开，只读查看；此入口暂超出模型编辑契约：${String(error)}`);
       }
-      throw error;
+      if (openEditor) { setSourceOpen(true); throw error; }
+      return;
     }
     if (sequence !== previewSequence.current || expectedCase !== previewCase.current) return;
+    if (!openEditor && previewSnapshot.current && previewNeedsPanelDocument(previewSnapshot.current, arch, source)) {
+      historyRef.current = createHistory(previewPanelDocument(previewSnapshot.current, source)); setHistory(historyRef.current);
+      previewBoundSource.current = ''; setProjectId(null); setStorageRevision(0); setSavedVisualRevision(-1);
+      await receivePreviewState(previewSnapshot.current);
+      setExampleId(''); setPreviewConnecting(false);
+      setNotice('原型视图与源码已打开；展示对象可独立编辑，进入编辑模式后按源码建立模型绑定。');
+      return;
+    }
     previewBoundSource.current = arch.sourceDigest + ':' + arch.irDigest;
     await openArchitecture(arch, true);
     if (sequence !== previewSequence.current || expectedCase !== previewCase.current) return;
@@ -286,12 +326,13 @@ export default function App() {
     if (openEditor) await continueModelAuthoring();
   }
   function receivePreviewSelection(message: Record<string, unknown>) {
+    if (message.caseId && message.caseId !== previewCase.current) return;
+    synchronizePreviewNodeSelection(message.nodeIds ?? message.selectedNodes);
     if (typeof message.annotationId === 'string') {
       setSelection({ kind: 'annotation', ids: [message.annotationId] }); setPanel('object'); return;
     }
     const architecture = historyRef.current?.document.architecture;
     if (!architecture) return;
-    if (message.caseId && message.caseId !== previewCase.current) return;
     const edge = message.edge as PreviewVisualEdge | undefined;
     const graph = graphFromSnapshot();
     if (edge && graph) {
@@ -309,6 +350,11 @@ export default function App() {
   }
   async function receivePreviewState(snapshot: PreviewSnapshot) {
     previewSnapshot.current = snapshot;
+    synchronizePreviewNodeSelection(snapshot.selectedNodes);
+    if (snapshot.tool === 'select' || snapshot.tool === 'connect' || snapshot.tool === 'bend') setPreviewTool(snapshot.tool);
+    if (typeof snapshot.showPorts === 'boolean') setPortEditing(snapshot.showPorts);
+    if (typeof snapshot.gridVisible === 'boolean') setGrid(snapshot.gridVisible);
+    setPreviewBusy(Boolean(snapshot.busy));
     const graph = snapshot.graph;
     const caseId = String(graph?.caseId ?? snapshot.caseId ?? '');
     setPreviewDirty(Boolean(snapshot.dirty) && JSON.stringify(graph) !== savedPreviewGraph.current);
@@ -317,6 +363,9 @@ export default function App() {
     setSelection(before => before.kind === 'preview-edge' && !previewGraphEdges(graph).some(edge => edge.id === before.ids[0]) ? { kind: 'node', ids: [] } : before);
     if (initialModelLoading.current) { previewCase.current = caseId; return; }
     if (previewLoading.current) { previewCase.current = caseId; return; }
+    // A loading/route transaction publishes toolbar state with the previous
+    // committed graph. Source ownership changes only after its final snapshot.
+    if (snapshot.busy) return;
     if (caseId && caseId !== previewCase.current) {
       ++previewSequence.current; ++loadSequence.current;
       previewCase.current = caseId; previewBoundSource.current = ''; previewSource.current = undefined;
@@ -325,28 +374,39 @@ export default function App() {
       historyRef.current = createHistory(panelDocument); setHistory(historyRef.current);
       setSelection({ kind: 'node', ids: [] }); setExampleId(''); setProjectId(null);
       const frozenCase = caseId;
+      const generation = previewSequence.current, loadGeneration = loadSequence.current;
       try {
         const result = await previewEngine.current!.source();
-        if (previewCase.current !== frozenCase) return;
+        if (previewCase.current !== frozenCase || generation !== previewSequence.current || loadGeneration !== loadSequence.current) return;
         await bindPreviewSource(result);
-      } catch (error) { if (previewCase.current === frozenCase) { setPreviewConnecting(false); setNotice(`预览已打开；源码编辑入口：${String(error)}`); } }
+      } catch (error) { if (previewCase.current === frozenCase && generation === previewSequence.current && loadGeneration === loadSequence.current) { setPreviewConnecting(false); setNotice(`预览已打开；源码编辑入口：${String(error)}`); } }
       return;
     }
     if (synchronizingPreview.current) return;
-    const before = historyRef.current, visual = graphFromSnapshot(snapshot);
+    let before = historyRef.current;
+    const visual = graphFromSnapshot(snapshot);
     if (before && !before.document.sourceBindingDigest.startsWith('preview-only:') && (!previewSource.current ||
-      !previewSourceMatchesArchitecture(previewSource.current, before.document.architecture) ||
+      !currentPreviewSourceMatches(before.document.architecture) ||
       (previewSource.current.schema === 'summary-source-adapter/1' ? previewSource.current.id : previewSource.current.caseId) !== caseId)) return;
-    if (before && visual) {
-      const operations = previewCanvasOperations(before.document, visual, previewSource.current);
-      const next = operations.length ? reduceHistory(before, { type: 'apply', operations }) : before;
-      const presentationTitle = ((graph?.recursive as { state?: { studioPresentation?: { title?: string } } } | undefined)?.state?.studioPresentation ?? graph?.studioPresentation) as { title?: string } | undefined;
-      const document = { ...next.document, ...previewPresentationFields(next.document, graph, previewSource.current), title: presentationTitle?.title ?? String(snapshot.title ?? next.document.title) };
-      if (JSON.stringify(document) !== JSON.stringify(before.document)) {
-        if (document.revision === before.document.revision) document.revision++;
-        const synchronized = { ...next, document };
-        historyRef.current = synchronized; setHistory(synchronized);
+    if (before && visual && !before.document.sourceBindingDigest.startsWith('preview-only:') && !enteringAuthoring.current && !authoringOpen) {
+      const architecture = before.document.architecture, source = previewSource.current, signature = previewMappingSignature(snapshot);
+      let coverage = previewCoverage.current;
+      if (!coverage || coverage.architecture !== architecture || coverage.source !== source || coverage.signature !== signature) {
+        coverage = { architecture, source, signature, needsPanel: previewNeedsPanelDocument(snapshot, architecture, source) };
+        previewCoverage.current = coverage;
       }
+      if (coverage.needsPanel) {
+        const panelDocument = previewPanelDocument(snapshot, previewSource.current);
+        panelDocument.revision = before.document.revision + 1;
+        before = createHistory(panelDocument); historyRef.current = before; setHistory(before);
+        previewBoundSource.current = ''; setProjectId(null); setStorageRevision(0); setSavedVisualRevision(-1);
+        setSelection({ kind: 'node', ids: [] });
+      }
+    }
+    if (before && visual) {
+      const presentationTitle = ((graph?.recursive as { state?: { studioPresentation?: { title?: string } } } | undefined)?.state?.studioPresentation ?? graph?.studioPresentation) as { title?: string } | undefined;
+      const next = projectPreviewHistory(before, visual, previewSource.current, presentationTitle?.title ?? String(snapshot.title ?? before.document.title));
+      if (next !== before) { historyRef.current = next; setHistory(next); }
     }
   }
   useEffect(() => {
@@ -485,7 +545,10 @@ export default function App() {
     const viewport = viewportRef.current;
     if (pointerId !== undefined && viewport?.hasPointerCapture(pointerId)) viewport.releasePointerCapture(pointerId);
   }, []);
-  function chooseTool(next: 'select' | 'pan') { cancelGesture(); setTool(next); previewEngine.current?.command(next === 'pan' ? 'pan-tool' : 'select-tool'); }
+  function chooseTool(next: 'select' | 'connect' | 'bend') {
+    cancelGesture(); setTool('select'); setPreviewTool(next);
+    previewEngine.current?.command(`${next}-tool`);
+  }
   function chooseMoveScope(next: MoveScope) { cancelGesture(); setLayoutMoveScope(next); }
   useEffect(() => {
     const blur = () => { space.current = false; cancelGesture(); };
@@ -502,6 +565,17 @@ export default function App() {
       if (!previous) return;
       if (!readyPreview(previous.document)) throw new Error('预览正在接入当前源码，请完成后再编辑画布。');
       const translated = mapPreviewOperations(operations);
+      if (operations.some(operation => operation.type === 'expand')) {
+        // The preview transaction owns validation, neighbor displacement and
+        // one undo entry. Its resulting snapshot updates the formal mirror.
+        const sequence = loadSequence.current;
+        void previewEngine.current?.visual(translated).catch(error => {
+          if (sequence === loadSequence.current) setFailure(String(error));
+        });
+        if (message) setNotice(message);
+        setFailure('');
+        return;
+      }
       const next = reduceHistory(previous, { type: 'apply', baseRevision: previous.document.revision, operations });
       historyRef.current = next; setHistory(next);
       void previewEngine.current?.visual(translated).catch(error => {
@@ -518,6 +592,16 @@ export default function App() {
     if (!engine || !readyPreview() || !previewGraphEdges(previewSnapshot.current?.graph).some(edge => edge.id === id)) return;
     try { await engine.visual([{ type: 'edgeStyle', id, style }]); setFailure(''); }
     catch (error) { setFailure(String(error)); }
+  }
+  function optimizeAutomaticPorts(id: string) {
+    const document = historyRef.current?.document;
+    if (!document || !readyPreview(document)) return;
+    const ports = buildScene(document, { presentation: 'editor' }).nodes.find(node => node.id === id)?.ports ?? [];
+    const operations = ports.filter(port => port.layoutKey).map(port => {
+      const [ownerId, nodeId, portId, role] = JSON.parse(port.layoutKey!) as [string, string, string, 'data' | 'residual' | 'memory' | 'mask'];
+      return { type: 'portLayout' as const, ownerId, nodeId, portId, role, layout: null };
+    });
+    if (operations.length) apply(operations, '已恢复自动连接点');
   }
   const selectHierarchyNode = useCallback((id: string) => { setSelection({ kind: 'node', ids: [id] }); setPanel('object'); focusPreviewNode(id); }, []);
   const expandHierarchyNode = useCallback((id: string, expanded: boolean) => apply([{ type: 'expand', id, expanded }]), [apply]);
@@ -574,6 +658,7 @@ export default function App() {
   const fit = useCallback((documentToFit?: CanvasDocument) => {
     cancelGesture();
     previewEngine.current?.command('fit');
+    if (!documentToFit && previewSnapshot.current?.graph) return;
     const doc = documentToFit ?? historyRef.current?.document;
     if (!doc || !viewportRef.current) return;
     const interaction = studioTelemetry.beginInteraction('fit-canvas');
@@ -767,12 +852,15 @@ export default function App() {
       if (authoringOpen || editingTarget(event.target) || review || exportDocument || connectionProposal || runtimeOpen || importOpen) return;
       if (event.code === 'Space') { space.current = true; event.preventDefault(); }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); event.shiftKey ? redo() : undo(); }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') { event.preventDefault(); redo(); }
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); previewEngine.current?.command('apply-layout'); }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); void save(); }
       if (event.key === 'Escape') { cancelGesture(); setSelection({ kind: 'node', ids: [] }); setInline(null); }
       if (!event.ctrlKey && !event.metaKey && !event.altKey) {
         if (event.key.toLowerCase() === 'f') fit();
-        if (event.key.toLowerCase() === 'h') { cancelGesture(); setTool('pan'); }
-        if (event.key.toLowerCase() === 'v') { cancelGesture(); setTool('select'); }
+        if (event.key.toLowerCase() === 'v') chooseTool('select');
+        if (event.key.toLowerCase() === 'c') chooseTool('connect');
+        if (event.key.toLowerCase() === 'b') chooseTool('bend');
       }
     };
     const up = (event: KeyboardEvent) => { if (event.code === 'Space') space.current = false; };
@@ -1060,11 +1148,17 @@ export default function App() {
     }
     localStorage.removeItem(REVIEW); setReview(null); setReviewError('');
   }
-  function align() {
-    if (!scene || selection.kind !== 'node' || selection.ids.length < 2) return;
-    const selected = scene.nodes.filter(n => !implicitRoots.has(n.id) && selection.ids.includes(n.id));
-    const left = Math.min(...selected.map(n => n.x));
-    apply(selected.map(n => ({ type: 'move', ids: [n.id], dx: left - n.x, dy: 0, scope: layoutMoveScope })), '已左对齐所选对象');
+  function synchronizePreviewNodeSelection(value: unknown) {
+    const ids = Array.isArray(value) ? [...new Set(value.filter((id): id is string => typeof id === 'string'))] : [];
+    setPreviewSelectedNodeIds(previous => previous.length === ids.length && previous.every((id, index) => id === ids[index]) ? previous : ids);
+  }
+  function arrangePreview(kind: string) {
+    if (previewLayoutDisabled || !previewCanAlign) return;
+    setFailure(''); previewEngine.current?.command('arrange-selection', { kind, scope: layoutMoveScope });
+  }
+  function pinPreviewSelection() {
+    if (previewLayoutDisabled || !previewSelectedNodes.length) return;
+    setFailure(''); previewEngine.current?.command('pin-selection', { pinned: !previewAllPinned });
   }
   function runCommand() {
     if (!selectedNode || !current) { setFailure('先在画布或层级中选择一个节点'); return; }
@@ -1100,8 +1194,15 @@ export default function App() {
       try {
         const arch = await api.previewEditSource(request);
         if (sequence !== loadSequence.current) return;
-        previewBoundSource.current = arch.sourceDigest + ':' + arch.irDigest;
-        await openArchitecture(arch, true, sequence);
+        if (previewNeedsPanelDocument(snapshot, arch, bundle)) {
+          previewBoundSource.current = '';
+          historyRef.current = createHistory(previewPanelDocument(snapshot, bundle)); setHistory(historyRef.current);
+          setProjectId(null); setStorageRevision(0); setSavedVisualRevision(-1);
+          setNotice('递归预览与源码已打开；展示图元可独立编辑，模型编辑使用已解析的源码对象。');
+        } else {
+          previewBoundSource.current = arch.sourceDigest + ':' + arch.irDigest;
+          await openArchitecture(arch, true, sequence);
+        }
       } catch (error) {
         if (sequence !== loadSequence.current) return;
         previewBoundSource.current = '';
@@ -1139,6 +1240,7 @@ export default function App() {
   function focusAnnotation(id: string) {
     cancelGesture();
     previewEngine.current?.focus({ annotationId: id });
+    if (previewSnapshot.current?.graph) return;
     const document = historyRef.current?.document, viewport = viewportRef.current;
     if (!document || !viewport) return;
     const updated = buildScene(document), annotation = updated.annotations.find(item => item.id === id);
@@ -1147,7 +1249,7 @@ export default function App() {
     commitCamera(focusCameraOnPoint(cameraRef.current, { x: annotation.x + annotation.width / 2, y: annotation.y + annotation.height / 2 }, { width, height }));
   }
   function addAnnotation() {
-    if (!scene || !readyPreview()) return;
+    if (!current || !readyPreview()) return;
     const id = `annotation-${crypto.randomUUID()}`;
     const raw = previewSnapshot.current?.graph as ({ nodes?: { x: number; y: number; w?: number; h?: number }[]; canvas?: [number, number] } | undefined);
     const visible = raw?.nodes?.filter(node => Number.isFinite(node.x) && Number.isFinite(node.y)) ?? [];
@@ -1157,12 +1259,14 @@ export default function App() {
     const width = 380, height = 64;
     const x = canvas ? Math.max(12, Math.min(maxX - width, canvas[0] - width - 12)) : Math.max(12, maxX - width);
     const y = canvas ? Math.max(12, Math.min(maxY + 24, canvas[1] - height - 12)) : maxY + 24;
-    apply([{ type: 'annotation', annotation: { id, text: '双击节点编辑显示名；说明不改变计算。', x, y, width } }]);
+    apply([{ type: 'annotation', annotation: { id, text: '双击模块展开或收起；显示名在右侧对象面板编辑。', x, y, width } }]);
     setSelection({ kind: 'annotation', ids: [id] }); setPanel('object'); focusAnnotation(id);
   }
   function moveAnnotationBelow() {
-    if (!scene || !selectedAnnotation) return;
-    const position = suggestAnnotationPosition(scene, selectedAnnotation.id);
+    if (!selectedAnnotation) return;
+    const graph = previewSnapshot.current?.graph;
+    if (!graph && !scene) return;
+    const position = graph ? previewAnnotationPosition(graph, selectedAnnotation.id) : suggestAnnotationPosition(scene!, selectedAnnotation.id);
     if (position.x !== selectedAnnotation.x || position.y !== selectedAnnotation.y) apply([{ type: 'annotation', annotation: { ...selectedAnnotation, ...position } }], '说明已移到图下方；可撤销恢复原位置');
     focusAnnotation(selectedAnnotation.id);
   }
@@ -1327,6 +1431,8 @@ export default function App() {
       }
       const detailSvg = new Map<string, string>();
       setExportPreview({ binding: { caseId: frozenCase, sourceDigest, irDigest, revision: previewVersion }, detailChoices: choices,
+        editingDocument: JSON.stringify(snapshot, null, 2),
+        sourcePackage: snapshot.adapter ? JSON.stringify(snapshot.adapter, null, 2) : undefined,
         svg: async id => {
           if (!id) return whole;
           if (detailSvg.has(id)) return detailSvg.get(id)!;
@@ -1394,7 +1500,7 @@ export default function App() {
     <header className="topbar">
       <div className="brand"><span className="brand-mark"><i /><i /><i /></span><span>ArchCanvas<small>MODEL ARCHITECTURE STUDIO</small></span></div>
       <div className="project-breadcrumb"><span className="slash">/</span><Icon name="file" size={15} /><span>{current?.title ?? '模型工作台'}</span><span className="alpha-tag">ALPHA</span></div>
-      <div className="header-actions"><details className="workspace-menu"><summary>模型 <span>⌄</span></summary><div><button disabled={busy || !!review || !!activeRecovery} onClick={openBlankAuthoring}><Icon name="plus" size={15} />新建空白模型</button><button disabled={busy || !!review} onClick={() => setImportOpen(true)}><Icon name="file" size={15} />导入 Python 源码</button><button disabled={!current} onClick={() => setSourceOpen(true)}><Icon name="code" size={15} />查看源码</button><button onClick={() => previewEngine.current?.command("show-library")}><Icon name="layers" size={15} />示例与模块库</button><button onClick={() => previewEngine.current?.command("show-evidence")}><Icon name="info" size={15} />原型来源与审查记录</button><button onClick={() => previewEngine.current?.command("show-import")}><Icon name="file" size={15} />导入源码目录 / 适配包</button></div></details><WorkspaceModeSwitch mode="view" disabled={!current || busy || previewConnecting || !!review || !!activeRecovery} onView={() => {}} onEdit={() => void editCurrentPreview()} /><span className={`save-state ${dirty ? 'dirty' : ''}`}><i />{current ? dirty ? '有未保存编辑' : '已保存' : '等待文档'}</span><button onClick={save} disabled={!current || busy || previewConnecting || !!activeRecovery}><Icon name="save" size={15} />保存</button><button className="primary" onClick={() => void openPreviewExport()} disabled={!current || busy || previewConnecting || !!activeRecovery}><Icon name="export" size={16} />导出</button></div>
+      <div className="header-actions"><details className="workspace-menu"><summary>模型 <span>⌄</span></summary><div><button disabled={busy || !!review || !!activeRecovery} onClick={openBlankAuthoring}><Icon name="plus" size={15} />新建空白模型</button><button disabled={busy || !!review} onClick={() => setImportOpen(true)}><Icon name="file" size={15} />导入 Python 源码</button><button disabled={!current} onClick={() => setSourceOpen(true)}><Icon name="code" size={15} />查看源码</button><button onClick={() => previewEngine.current?.command("show-library")}><Icon name="layers" size={15} />示例与模块库</button><button onClick={() => previewEngine.current?.command("show-evidence")}><Icon name="info" size={15} />原型来源与审查记录</button></div></details><WorkspaceModeSwitch mode="view" disabled={!current || busy || previewConnecting || previewBusy || !!review || !!activeRecovery} onView={() => {}} onEdit={() => void editCurrentPreview()} /><span className={`save-state ${dirty ? 'dirty' : ''}`}><i />{current ? dirty ? '有未保存编辑' : '已保存' : '等待文档'}</span><button onClick={save} disabled={!current || busy || previewConnecting || previewBusy || !!activeRecovery}><Icon name="save" size={15} />保存</button><button className="primary" onClick={() => void openPreviewExport()} disabled={!current || busy || previewConnecting || previewBusy || !!activeRecovery}><Icon name="export" size={16} />导出</button></div>
     </header>
     <div className="workspace">
       <aside className="navigator">
@@ -1407,24 +1513,42 @@ export default function App() {
       </aside>
       <main className="main">
         <div className="workspace-caption"><b>{current?.title ?? '模型工作台'}</b><span>MODEL ARCHITECTURE · 静态源码视图</span></div>
-        <div className="canvas-toolbar"><div className="tool-group"><button title="选择 / Shift 多选 · V" aria-label="选择对象" aria-pressed={tool === 'select'} className={`tool ${tool === 'select' ? 'selected' : ''}`} onClick={() => chooseTool('select')}><Icon name="arrow" /></button><button title="拖动画布 · H" aria-label="平移画布" aria-pressed={tool === 'pan'} className={`tool ${tool === 'pan' ? 'selected' : ''}`} onClick={() => chooseTool('pan')}><Icon name="hand" /></button><button className={`tool ${portEditing ? "selected" : ""}`} title="拖动连接点到模块边缘" aria-label="移动连接点" aria-pressed={portEditing} onClick={() => { cancelGesture(); setTool("select"); setPortEditing(value => !value); previewEngine.current?.command("show-ports", { visible: !portEditing }); }}><Icon name="grid" /></button><span className="tool-divider" /><button className="tool" onClick={undo} disabled={!previewUndo} title="撤销 Ctrl+Z"><Icon name="undo" /></button><button className="tool" onClick={redo} disabled={!previewRedo} title="重做 Ctrl+Shift+Z"><Icon name="redo" /></button><span className="tool-divider" /><button className="tool" onClick={align} disabled={selection.ids.length < 2} title="左对齐"><Icon name="align" /></button><button className="tool" onClick={() => apply([{ type: 'pin', ids: selection.ids, pinned: !current?.pinnedObjects.includes(selection.ids[0]) }])} disabled={!selection.ids.length || selection.kind !== 'node'} title="固定 / 解锁"><Icon name="pin" /></button></div><div className="paper-preset"><span className="mini-paper" /><select aria-label="页面预设" value={current?.pageSpec.preset ?? 'paper'} disabled={!current} onChange={e => apply([{ type: 'page', page: { preset: e.target.value as 'paper' | 'monochrome' } }])}><option value="paper">论文 · 彩色</option><option value="monochrome">论文 · 黑白</option></select></div><div className="tool-group"><button className={`tool ${grid ? 'selected' : ''}`} title="显示点阵网格" aria-label="显示点阵网格" aria-pressed={grid} onClick={() => { setGrid(x => !x); previewEngine.current?.command("grid", { enabled: !grid }); }}><Icon name="grid" size={16} /></button><button className="tool" onClick={() => fit()} title="适合画布 F"><Icon name="fit" /></button></div></div>
+        <div className="canvas-toolbar" role="toolbar" aria-label="画布编辑工具">
+          <div className="tool-group">
+            {([{ id: 'select', icon: 'arrow', label: '选择对象', hint: '选择 / Shift 多选 · V' }, { id: 'connect', icon: 'connect', label: '创建连接', hint: '创建视觉草稿连接 · C' }, { id: 'bend', icon: 'bend', label: '编辑折点', hint: '选择连线，添加或拖动折点 · B' }] as const).map(item => <button key={item.id} title={item.hint} aria-label={item.label} aria-pressed={previewTool === item.id} className={`tool ${previewTool === item.id ? 'selected' : ''}`} disabled={!current || busy || previewConnecting || previewBusy} onClick={() => chooseTool(item.id)}><Icon name={item.icon} /></button>)}
+            <button className={`tool ${portEditing ? 'selected' : ''}`} title="显示节点端口；选中连线后可拖动 S / T 端点" aria-label="显示连接点" aria-pressed={portEditing} disabled={!current || busy || previewConnecting || previewBusy} onClick={() => { cancelGesture(); previewEngine.current?.command('show-ports', { visible: !portEditing }); }}><Icon name="ports" /></button>
+            <span className="tool-divider" />
+            <button className="tool" onClick={undo} disabled={!previewUndo || busy || previewConnecting || previewBusy} title="撤销 Ctrl+Z"><Icon name="undo" /></button>
+            <button className="tool" onClick={redo} disabled={!previewRedo || busy || previewConnecting || previewBusy} title="重做 Ctrl+Shift+Z"><Icon name="redo" /></button>
+            <button className="tool" title="恢复当前模型的初始视图；可撤销" aria-label="恢复初始视图" disabled={!current || busy || previewConnecting || previewBusy} onClick={() => { cancelGesture(); previewEngine.current?.command('reset'); }}><Icon name="reset" /></button>
+            <span className="tool-divider" />
+            <button className="tool" aria-label="左对齐所选节点" onClick={() => arrangePreview('left')} disabled={previewLayoutDisabled || !previewCanAlign} title="左对齐 · Shift 多选同一容器中的两个以上节点"><Icon name="align" /></button>
+            <details className="alignment-menu"><summary title="更多对齐与分布" aria-label="更多对齐与分布"><Icon name="chevron" size={13} /></summary><div>
+              {([{ kind: 'left', label: '左对齐' }, { kind: 'hcenter', label: '水平居中对齐' }, { kind: 'right', label: '右对齐' }, { kind: 'top', label: '顶部对齐' }, { kind: 'vcenter', label: '垂直居中对齐' }, { kind: 'bottom', label: '底部对齐' }, { kind: 'distribute-x', label: '水平等距分布' }, { kind: 'distribute-y', label: '垂直等距分布' }]).map(item => <button key={item.kind} disabled={previewLayoutDisabled || !previewCanAlign || (item.kind.startsWith('distribute') && previewSelectedNodes.length < 3)} onClick={event => { arrangePreview(item.kind); event.currentTarget.closest('details')?.removeAttribute('open'); }}>{item.label}</button>)}
+            </div></details>
+            <button className={`tool ${previewAllPinned ? 'selected' : ''}`} aria-label={previewAllPinned ? '解锁所选节点' : '固定所选节点'} aria-pressed={previewAllPinned} onClick={pinPreviewSelection} disabled={previewLayoutDisabled || !previewSelectedNodes.length} title={previewAllPinned ? '解锁所选节点，恢复直接拖动' : '固定所选节点的直接拖动；子图仍随父容器移动'}><Icon name="pin" /></button>
+          </div>
+          <button className="layout-apply" aria-label="Apply layout" title="按当前布线设置应用布局 · Ctrl+Enter" disabled={!current || busy || previewConnecting || previewBusy} onClick={() => previewEngine.current?.command('apply-layout')}><Icon name="bend" size={16} />Apply layout</button>
+          <div className="tool-group"><button className={`tool ${grid ? 'selected' : ''}`} title="显示点阵网格" aria-label="显示点阵网格" aria-pressed={grid} onClick={() => previewEngine.current?.command('grid', { enabled: !grid })}><Icon name="grid" size={16} /></button><button className="tool" onClick={() => fit()} title="适合画布 F"><Icon name="fit" /></button></div>
+        </div>
         <div ref={viewportRef} className="canvas-viewport prototype-canvas" data-canvas-surface="recursive-preview">
           <PreviewStudio ref={previewEngine} visible={!authoringOpen} onState={snapshot => void receivePreviewState(snapshot)}
             onSelection={receivePreviewSelection} onEditSource={result => { void bindPreviewSource(result, true).catch(error => setFailure(String(error))); }}
-            onError={setFailure} />
+            onError={setFailure} onSave={() => void save()} />
         </div>
         {!!layoutGuidance.length && <div className="layout-warning" role="status" aria-label="布局提示">{layoutGuidance.slice(0, 3).map(message => <p key={message}>{message}</p>)}{layoutGuidance.length > 3 && <p>另有 {layoutGuidance.length - 3} 处布局冲突；调整后会重新检查。</p>}</div>}
         {activeRecovery && <div className="layout-recovery-preview" role="status" aria-label="位置修复预览"><p>位置修复预览 · {activeRecovery.plan.operation.scope === 'current-frontier' ? '仅当前视图' : '所有视图'} · 应用后才调整选中对象。</p><div><button className="primary" onClick={applyPositionRecovery}>应用位置修复</button><button onClick={cancelGesture}>取消预览</button></div></div>}
         <div className="command-bar"><span className="command-icon"><Icon name="message" size={17} /></span><input aria-label="画布文字指令" placeholder={selectedNode ? '向右移动 24，或设为蓝色、命名为…' : '选择一个节点，用文字修改画布…'} value={command} onChange={e => setCommand(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) runCommand(); }} /><span className="local-label">本地视觉指令</span><button onClick={runCommand} disabled={!command.trim()}>应用 <span>↵</span></button></div>
-        {sourceOpen && architecture && <div className="source-drawer"><div className="drawer-header"><Icon name="code" size={16} /><b>源码证据</b><span>{selectedNode?.source ? `${selectedNode.source.path}:${selectedNode.source.line}` : '只读 · 未执行'}</span><button className="tool" onClick={() => setSourceOpen(false)} aria-label="关闭源码"><Icon name="close" size={16} /></button></div><div className="source-content">{architecture.sources.map(source => <div key={source.path}><div className="source-filename">{source.path}</div><pre>{source.content.split('\n').map((line, i) => <div key={i} className={selectedNode?.source?.path === source.path && i + 1 >= selectedNode.source.line && i + 1 <= selectedNode.source.endLine ? 'source-highlight' : ''}><span>{i + 1}</span>{line || ' '}</div>)}</pre></div>)}</div></div>}
+        {sourceOpen && architecture && <div className="source-drawer"><div className="drawer-header"><Icon name="code" size={16} /><b>源码证据</b><span>{selectedNode?.source ? `${selectedNode.source.path}:${selectedNode.source.line}` : '只读 · 未执行'}</span><button className="tool" onClick={() => setSourceOpen(false)} aria-label="关闭源码"><Icon name="close" size={16} /></button></div><div className="source-content">{current?.sourceBindingDigest.startsWith('preview-only:') && <p className="field-help">只读源码文本。展示对象没有经过正式模型解析的计算绑定；可在编辑模式中解析支持的源码入口。</p>}{!selectedNode?.source && architecture.sources.length > 0 && <p className="field-help">当前图元没有独立的源码行证据，以下提供完整模型源码供查阅。</p>}{architecture.sources.length === 0 && <p className="field-help">当前案例是视觉或路由示例，没有模型源码。</p>}{architecture.sources.map(source => <div key={source.path}><div className="source-filename">{source.path}</div><pre>{source.content.split('\n').map((line, i) => <div key={i} className={selectedNode?.source?.path === source.path && i + 1 >= selectedNode.source.line && i + 1 <= selectedNode.source.endLine ? 'source-highlight' : ''}><span>{i + 1}</span>{line || ' '}</div>)}</pre></div>)}</div></div>}
       </main>
       <aside className="inspector"><div className="inspector-tabs"><button className={panel === 'object' ? 'active' : ''} onClick={() => setPanel('object')}>对象</button><button className={panel === 'legend' ? 'active' : ''} onClick={() => setPanel('legend')}>图例</button><button className={panel === 'page' ? 'active' : ''} onClick={() => setPanel('page')}>页面</button></div><div className="inspector-content"><details className="preview-routing-menu"><summary>自动布线与递归展开</summary><div className="studio-preview-buttons"><button onClick={() => previewEngine.current?.command("show-routing")}>布线与箭头设置</button><button onClick={() => previewEngine.current?.command("expand-all")}>展开全部</button><button onClick={() => previewEngine.current?.command("collapse-all")}>收起全部</button></div></details>
+        {panel === 'object' && previewSelectedNodes.length > 0 && <section className="preview-selection-tools" aria-label="画布选区"><h3>已选 {previewSelectedNodes.length} 个节点<span>已固定 {previewPinnedCount} 个</span></h3><p className="field-help">{previewSelectedNodes.map(node => node.label || node.id).join('、')}</p><div><button disabled={previewLayoutDisabled || !previewCanAlign} onClick={() => arrangePreview('left')} aria-label="属性面板左对齐所选节点">左对齐</button><button disabled={previewLayoutDisabled} onClick={pinPreviewSelection} aria-label={previewAllPinned ? '属性面板解锁所选节点' : '属性面板固定所选节点'}>{previewAllPinned ? '解锁所选节点' : '固定所选节点'}</button></div><p className="field-help">Shift 多选同一容器中的节点后对齐；三个以上可等距分布。固定阻止节点的直接移动，子图仍随父容器移动，展开时仍使用原型布局。</p>{previewSelectedNodes.length > 1 && !previewCanAlign && <p className="field-help">当前选区跨越不同容器；请选择同级节点进行对齐。</p>}</section>}
         {panel === 'object' && selectedNode && current && <>
           <div className="object-heading"><span className="object-icon" style={{ background: (selectedPreviewNodePresentation?.fill ?? selectedSceneNode?.fill) }}><Icon name="layers" size={20} /></span><div><h2>{current.displayAliases[selectedNode.id] ?? selectedNode.label}</h2><span>{selectedNode.kind}</span></div></div><div className={`evidence-tag ${selectedNode.evidence}`}><Icon name="check" size={12} />{statusText(selectedNode.evidence)}</div>
           <section className="property-section"><h3>显示</h3><TextField label="显示名称" value={current.displayAliases[selectedNode.id] ?? selectedNode.label} onCommit={label => apply([{ type: 'alias', id: selectedNode.id, label }])} /><p className="field-help">源名称：{selectedNode.label}</p><label className="field-label">图元样式</label><select className="field-select" aria-label="图元样式" value={current.nodeStyleOverrides[selectedNode.id]?.glyph ?? (selectedPreviewNodePresentation?.glyph ?? selectedSceneNode?.glyph) ?? 'module'} onChange={e => apply([{ type: 'nodeStyle', id: selectedNode.id, style: { glyph: e.target.value as 'module' } }])}>{['module', 'operator', 'tensor', 'attention', 'norm', 'add', 'opaque'].map(g => <option key={g} value={g}>{({ module: '模块框', operator: '紧凑算子', tensor: '张量条带', attention: 'Attention 图元', norm: '归一化图元', add: '加法图元', opaque: '未知边界' } as Record<string, string>)[g]}</option>)}</select><label className="field-label">填充颜色</label><div className="color-palette">{PALETTE.map(color => <button key={color} aria-label={`填充 ${color}`} className={(selectedPreviewNodePresentation?.fill ?? selectedSceneNode?.fill) === color ? 'picked' : ''} style={{ background: color }} onClick={() => apply(selection.ids.map(id => ({ type: 'nodeStyle', id, style: { fill: color } })))} />)}<input type="color" aria-label="自定义填充颜色" value={(selectedPreviewNodePresentation?.fill ?? selectedSceneNode?.fill) ?? '#dcebf6'} onChange={e => apply(selection.ids.map(id => ({ type: 'nodeStyle', id, style: { fill: e.target.value } })))} /></div><label className="field-label">边框颜色</label><div className="color-field"><input type="color" aria-label="边框颜色" value={(selectedPreviewNodePresentation?.stroke ?? selectedSceneNode?.stroke) ?? '#607d91'} onChange={e => apply([{ type: 'nodeStyle', id: selectedNode.id, style: { stroke: e.target.value } }])} /><code>{(selectedPreviewNodePresentation?.stroke ?? selectedSceneNode?.stroke)}</code></div></section>
-          <section className="property-section"><h3>排列与层级</h3><div className="coordinate-row"><label>X <output>{Math.round(selectedPreviewNodePresentation?.x ?? selectedSceneNode?.x ?? 0)}</output></label><label>Y <output>{Math.round(selectedPreviewNodePresentation?.y ?? selectedSceneNode?.y ?? 0)}</output></label></div><label className="field-label" htmlFor="layout-move-scope">移动范围</label><select id="layout-move-scope" className="field-select" aria-label="移动范围" value={layoutMoveScope} onChange={e => chooseMoveScope(e.target.value as MoveScope)}><option value="all-frontiers">所有视图</option><option value="current-frontier">仅当前视图</option></select><p className="field-help">拖动、对齐、位置修复和文字移动使用此范围。{layoutMoveScope === 'current-frontier' ? '保留其他层级的排列；展开或收起时，操作容器及祖先、固定对象保持位置。' : '同步调整已保存的展开层级布局。'}</p><button className="full-button" onClick={() => apply([{ type: 'pin', ids: selection.ids, pinned: !current.pinnedObjects.includes(selectedNode.id) }])}><Icon name="pin" size={14} />{current.pinnedObjects.includes(selectedNode.id) ? '取消固定位置' : '固定位置'}</button>{selectedSceneNode?.expandable && <button className="full-button" onClick={() => apply([{ type: 'expand', id: selectedNode.id, expanded: !selectedSceneNode.expanded }])}><Icon name="layers" size={14} />{selectedSceneNode.expanded ? '原位收起' : '原位展开'}</button>}<button className="full-button" onClick={previewPositionRecovery} disabled={busy || selection.ids.length !== 1}><Icon name="align" size={14} />预览位置修复</button><button className="text-button" onClick={() => focusNode(selectedNode.id)}>聚焦这个对象</button></section>
-          <section className="property-section"><h3>连接点</h3><p className="field-help">{portEditing ? "拖动端口到模块任一边缘。" : "点击“优化自动连接点”比较侧面；启用工具栏“移动连接点”可手动调整。"}</p><button className="full-button" disabled={busy || !selectedSceneNode?.ports.length} onClick={() => apply((selectedSceneNode?.ports ?? []).filter(p => p.layoutKey).map(p => { const [ownerId, nodeId, portId, role] = JSON.parse(p.layoutKey!) as [string, string, string, "data" | "residual" | "memory" | "mask"]; return { type: "portLayout" as const, ownerId, nodeId, portId, role, layout: null }; }), "已恢复自动连接点")}>优化自动连接点</button></section><ParameterEditor node={selectedNode} busy={busy} enabled={!current.sourceBindingDigest.startsWith('preview-only:') && !!capabilities?.semanticWriteback} onPrepare={prepareParameter} onInspectConfiguration={inspectConfiguration} />
-          <ActivationEditor node={selectedNode} busy={busy} enabled={!!capabilities?.supportedIntents?.includes('replace_activation')} inputSpec={inputSpec} onSetup={() => setRuntimeOpen(true)} onPrepare={prepareActivation} />
+          <section className="property-section"><h3>排列与层级</h3><div className="coordinate-row"><label>X <output>{Math.round(selectedPreviewNodePresentation?.x ?? selectedSceneNode?.x ?? 0)}</output></label><label>Y <output>{Math.round(selectedPreviewNodePresentation?.y ?? selectedSceneNode?.y ?? 0)}</output></label></div><label className="field-label" htmlFor="layout-move-scope">移动范围</label><select id="layout-move-scope" className="field-select" aria-label="移动范围" value={layoutMoveScope} onChange={e => chooseMoveScope(e.target.value as MoveScope)}><option value="all-frontiers">所有视图</option><option value="current-frontier">仅当前视图</option></select><p className="field-help">对齐、位置修复和文字移动使用此范围。{layoutMoveScope === 'current-frontier' ? '调整当前可见前沿；其他层级保留自己的布局。' : '同步调整已保存的展开层级布局。'}</p>{!!selectedNode.children.length && <button className="full-button" disabled={previewLayoutDisabled} onClick={() => apply([{ type: 'expand', id: selectedNode.id, expanded: !current.expandedIds.includes(selectedNode.id) }])}><Icon name="layers" size={14} />{current.expandedIds.includes(selectedNode.id) ? '原位收起' : '原位展开'}</button>}<button className="full-button" onClick={previewPositionRecovery} disabled={busy || selection.ids.length !== 1}><Icon name="align" size={14} />预览位置修复</button><button className="text-button" onClick={() => focusNode(selectedNode.id)}>聚焦这个对象</button></section>
+          <section className="property-section"><h3>连接点</h3><p className="field-help">{portEditing ? "拖动端口到模块任一边缘。" : "点击“优化自动连接点”比较侧面；使用“显示连接点”查看端口；选中连线后可拖动 S / T 端点。"}</p><button className="full-button" disabled={busy || (!selectedNode.ports.length && !selectedNode.children.length)} onClick={() => optimizeAutomaticPorts(selectedNode.id)}>优化自动连接点</button></section><ParameterEditor node={selectedNode} busy={busy} enabled={!current.sourceBindingDigest.startsWith('preview-only:') && !!capabilities?.semanticWriteback} onPrepare={prepareParameter} onInspectConfiguration={inspectConfiguration} />
+          <ActivationEditor node={selectedNode} busy={busy} enabled={!current.sourceBindingDigest.startsWith('preview-only:') && !!capabilities?.supportedIntents?.includes('replace_activation')} inputSpec={inputSpec} onSetup={() => setRuntimeOpen(true)} onPrepare={prepareActivation} />
           <ObjectFacts architecture={current.architecture} node={selectedNode} onSelect={id => { setSelection({ kind: 'node', ids: [id] }); setPanel('object'); }} />
           {selectedNode.ports.some(p => p.direction === 'in') && <ConnectionEditor key={`${architecture?.sourceDigest}:${selectedNode.id}:${JSON.stringify(inputSpec)}`} document={current} nodeId={selectedNode.id} portId={selectedNode.ports.find(p => p.direction === 'in')!.id} busy={busy} inputSpec={inputSpec} onSetup={() => setRuntimeOpen(true)} enabled={!current.sourceBindingDigest.startsWith('preview-only:') && !!capabilities?.supportedIntents?.includes('rebind_input')} onInspect={inspectRebind} onPrepare={prepareRebind} />}
           <section className="property-section"><h3>模型事实<span className="read-only">只读</span></h3>{Object.entries(selectedNode.parameters).length ? <dl className="parameters">{Object.entries(selectedNode.parameters).map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{typeof value === 'string' ? value : JSON.stringify(value)}</dd></div>)}</dl> : <p className="field-help">没有已解析的构造参数。</p>}<button className="full-button" onClick={() => setSourceOpen(true)}><Icon name="code" size={14} />查看源码位置</button></section>
@@ -1444,9 +1568,9 @@ export default function App() {
             <p className="field-help">连接及样式保存在当前预览中，可撤销或通过编辑 JSON 恢复。视觉草稿不会自动写入模型源码。</p>
           </section>
         </>}
-        {panel === 'object' && !selectedNode && !selectedEdge && !selectedPreviewEdge && !selectedAnnotation && <><div className="inspector-empty"><div className="empty-symbol"><Icon name="arrow" size={24} /></div><h2>从一个对象开始</h2><p>选择模块、连线或说明文字，<br />调整论文图的呈现方式。</p><div className="shortcut-line"><kbd>Shift</kbd> 多选对象</div><div className="shortcut-line"><kbd>双击</kbd> 编辑显示名</div></div><div className="document-summary"><div className="eyebrow">SOURCE-GROUNDED CANVAS</div><h3>{current?.title ?? 'ArchCanvas'}</h3><p>一份模型事实，一份可持续编辑的画布。</p><div><b>{architecture?.nodes.length ?? '—'}</b><span>事实对象</span><b>{architecture?.edges.length ?? '—'}</b><span>端口关系</span></div></div>{!!architecture?.diagnostics.length && <div className="diagnostics"><h3>分析边界</h3>{architecture.diagnostics.slice(0, 4).map((d, i) => <p key={i}>{d.message}</p>)}</div>}</>}
+        {panel === 'object' && !selectedNode && !selectedEdge && !selectedPreviewEdge && !selectedAnnotation && !previewSelectedNodes.length && <><div className="inspector-empty"><div className="empty-symbol"><Icon name="arrow" size={24} /></div><h2>从一个对象开始</h2><p>选择模块、连线或说明文字，<br />调整论文图的呈现方式。</p><div className="shortcut-line"><kbd>Shift</kbd> 多选对象</div><div className="shortcut-line"><kbd>双击</kbd> 展开 / 收起模块</div></div><div className="document-summary"><div className="eyebrow">SOURCE-GROUNDED CANVAS</div><h3>{current?.title ?? 'ArchCanvas'}</h3><p>一份模型事实，一份可持续编辑的画布。</p><div><b>{architecture?.nodes.length ?? '—'}</b><span>事实对象</span><b>{architecture?.edges.length ?? '—'}</b><span>端口关系</span></div></div>{!!architecture?.diagnostics.length && <div className="diagnostics"><h3>分析边界</h3>{architecture.diagnostics.slice(0, 4).map((d, i) => <p key={i}>{d.message}</p>)}</div>}</>}
         {panel === 'legend' && current && <><div className="panel-heading"><h2>图例编辑</h2><p>图例属于画布，随当前版本保存和导出。</p>{current.pageSpec.preset === 'monochrome' && <p className="field-help">悬浮图例显示当前可见连线的角色与实际线型；出版图例随视图和样式自动更新。</p>}</div><div className="legend-list">{current.legendItems.map((item, index) => <div className="legend-editor" key={item.id}><div className="legend-row"><input type="color" aria-label={`图例颜色 ${index + 1}`} value={item.color} onChange={e => apply([{ type: 'legend', items: current.legendItems.map(x => x.id === item.id ? { ...x, color: e.target.value } : x) }])} /><TextField label="" value={item.label} onCommit={label => apply([{ type: 'legend', items: current.legendItems.map(x => x.id === item.id ? { ...x, label } : x) }])} /><button className="tool" aria-label={`删除图例 ${index + 1}`} onClick={() => apply([{ type: 'legend', items: current.legendItems.filter(x => x.id !== item.id) }])}><Icon name="close" size={13} /></button></div><div className="legend-controls"><select aria-label={`图例符号 ${index + 1}`} value={item.glyph} onChange={e => apply([{ type: 'legend', items: current.legendItems.map(x => x.id === item.id ? { ...x, glyph: e.target.value as 'module' } : x) }])}>{['module', 'operator', 'tensor', 'attention', 'norm', 'add', 'opaque'].map(g => <option key={g}>{g}</option>)}</select><button disabled={index === 0} onClick={() => { const items = [...current.legendItems]; [items[index - 1], items[index]] = [items[index], items[index - 1]]; apply([{ type: 'legend', items }]); }} title="上移">↑</button><button disabled={index === current.legendItems.length - 1} onClick={() => { const items = [...current.legendItems]; [items[index + 1], items[index]] = [items[index], items[index + 1]]; apply([{ type: 'legend', items }]); }} title="下移">↓</button></div></div>)}</div><button className="full-button" onClick={() => apply([{ type: 'legend', items: [...current.legendItems, { id: `legend-${crypto.randomUUID()}`, label: '自定义图例', color: '#dcebf6', glyph: 'module' }] }])}><Icon name="plus" size={15} />添加图例条目</button></>}
-        {panel === 'page' && current && <><div className="panel-heading"><h2>出版页面</h2><p>SVG、PDF 与 PNG 共用当前画布场景。</p></div><section className="property-section"><label className="field-label">物理页宽</label><div className="segmented">{[85, 180].map(widthMm => <button key={widthMm} className={current.pageSpec.widthMm === widthMm ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { widthMm } }])}>{widthMm} mm</button>)}</div><label className="field-label">背景</label><div className="color-field"><input aria-label="页面背景" type="color" value={current.pageSpec.background} onChange={e => apply([{ type: 'page', page: { background: e.target.value } }])} /><code>{current.pageSpec.background}</code></div><label className="field-label">配色</label><div className="segmented"><button className={current.pageSpec.preset === 'paper' ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { preset: 'paper' } }])}>论文彩色</button><button className={current.pageSpec.preset === 'monochrome' ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { preset: 'monochrome' } }])}>黑白</button></div></section><section className="property-section"><h3>说明与工件</h3><button className="full-button" onClick={addAnnotation}><Icon name="plus" size={14} />添加说明文字</button><button className="full-button" onClick={() => previewEngine.current?.command("export-json")}><Icon name="save" size={14} />下载画布文档</button><p className="field-help">导出论文图可生成 SVG、PDF 或 PNG，并保留可重开的文件链接与导出收据。</p></section></>}
+        {panel === 'page' && current && <><div className="panel-heading"><h2>出版页面</h2><p>SVG、PDF 与 PNG 共用当前画布场景。</p></div><section className="property-section"><label className="field-label">物理页宽</label><div className="segmented">{[85, 180].map(widthMm => <button key={widthMm} className={current.pageSpec.widthMm === widthMm ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { widthMm } }])}>{widthMm} mm</button>)}</div><label className="field-label">背景</label><div className="color-field"><input aria-label="页面背景" type="color" value={current.pageSpec.background} onChange={e => apply([{ type: 'page', page: { background: e.target.value } }])} /><code>{current.pageSpec.background}</code></div><label className="field-label">配色</label><div className="segmented"><button className={current.pageSpec.preset === 'paper' ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { preset: 'paper' } }])}>论文彩色</button><button className={current.pageSpec.preset === 'monochrome' ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { preset: 'monochrome' } }])}>黑白</button></div></section><section className="property-section"><h3>说明文字</h3><button className="full-button" onClick={addAnnotation}><Icon name="plus" size={14} />添加说明文字</button><p className="field-help">使用右上角“导出”生成 SVG、PDF、PNG 或完整编辑 JSON。</p></section></>}
       </div><div className="inspector-footer"><Icon name="info" size={14} /><span>视觉编辑不修改模型源码</span></div></aside>
     </div>
     <footer className={`statusbar ${failure ? 'has-error' : ''}`}><span><i className={busy ? 'busy-dot' : 'live-dot'} />{failure || (runtimeCancel ? cancelling ? '正在取消运行验证…' : '正在隔离运行并核对前后结构…' : busy ? '正在处理…' : notice)}</span><div>{runtimeCancel && <button disabled={cancelling} onClick={() => void cancelRuntime()}>{cancelling ? '取消中…' : '取消运行验证'}</button>}{selection.ids.length > 0 && <span>{selection.ids.length} 个已选</span>}<span>RECURSIVE PREVIEW</span><span>rev {current?.revision ?? 0}</span></div></footer>
@@ -1457,7 +1581,7 @@ export default function App() {
       selectedId={selection.kind === 'node' && selection.ids.length === 1 ? selection.ids[0] : undefined}
       previewExport={exportPreview}
       onClose={() => { setExportDocument(null); setExportPreview(null); }} />}
-    {importOpen && <div className="modal-backdrop"><div className="import-modal" role="dialog" aria-modal="true" aria-labelledby="import-title"><div className="modal-heading"><div><div className="eyebrow">STATIC SOURCE IMPORT</div><h2 id="import-title">从 Python 源码开始</h2></div><button className="tool" onClick={() => setImportOpen(false)} aria-label="关闭导入"><Icon name="close" /></button></div><p>导入单文件 nn.Module。分析器只解析源码；不导入模块、不运行 forward。多文件工程可从模型菜单导入源码目录，也可导入预览的源码与编辑 JSON 包。</p><div className="import-fields"><label>模型类名<input value={entry} onChange={e => setEntry(e.target.value)} /></label><label>文件名<input value={filename} onChange={e => setFilename(e.target.value)} /></label><button onClick={() => fileRef.current?.click()}><Icon name="file" size={15} />读取 .py / 架构 JSON</button><input ref={fileRef} hidden type="file" accept=".py,.json" onChange={async e => { const file = e.target.files?.[0]; if (!file) return; try { if (file.size > 4_000_000) throw new Error('文件超过 4 MB 导入预算'); const text = await file.text(); if (file.name.endsWith('.json')) { await importCanvasJson(text); } else { setSourceText(text); setFilename(file.name); } } catch (error) { setFailure(`导入失败：${String(error)}`); } e.target.value = ''; }} /></div><textarea aria-label="Python 源码" spellCheck={false} placeholder="import torch\nfrom torch import nn\n\nclass Model(nn.Module):\n    ..." value={sourceText} onChange={e => setSourceText(e.target.value)} />{failure && <p className="error-text">{failure}</p>}<div className="modal-actions"><button onClick={() => setImportOpen(false)}>取消</button><button className="primary" onClick={() => void importSource()} disabled={busy || !sourceText.trim()}>静态分析并打开画布</button></div></div></div>}
+    {importOpen && <div className="modal-backdrop"><div className="import-modal" role="dialog" aria-modal="true" aria-labelledby="import-title"><div className="modal-heading"><div><div className="eyebrow">STATIC SOURCE IMPORT</div><h2 id="import-title">从 Python 源码开始</h2></div><button className="tool" onClick={() => setImportOpen(false)} aria-label="关闭导入"><Icon name="close" /></button></div><p>导入单文件 nn.Module。分析器只解析源码；不导入模块、不运行 forward。多文件工程和已有预览文档可使用下方的目录与适配包入口。</p><button onClick={() => { setImportOpen(false); previewEngine.current?.command("show-import"); }}><Icon name="file" size={15} />选择源码目录 / 编辑 JSON / 适配包</button><div className="import-fields"><label>模型类名<input value={entry} onChange={e => setEntry(e.target.value)} /></label><label>文件名<input value={filename} onChange={e => setFilename(e.target.value)} /></label><button onClick={() => fileRef.current?.click()}><Icon name="file" size={15} />读取 .py / 架构 JSON</button><input ref={fileRef} hidden type="file" accept=".py,.json" onChange={async e => { const file = e.target.files?.[0]; if (!file) return; try { if (file.size > (file.name.endsWith('.json') ? 16_000_000 : 2_000_000)) throw new Error(file.name.endsWith('.json') ? '编辑 JSON 超过 16 MB 导入预算' : 'Python 源码超过 2 MB 导入预算'); const text = await file.text(); if (file.name.endsWith('.json')) { await importCanvasJson(text); } else { setSourceText(text); setFilename(file.name); } } catch (error) { setFailure(`导入失败：${String(error)}`); } e.target.value = ''; }} /></div><textarea aria-label="Python 源码" spellCheck={false} placeholder="import torch\nfrom torch import nn\n\nclass Model(nn.Module):\n    ..." value={sourceText} onChange={e => setSourceText(e.target.value)} />{failure && <p className="error-text">{failure}</p>}<div className="modal-actions"><button onClick={() => setImportOpen(false)}>取消</button><button className="primary" onClick={() => void importSource()} disabled={busy || !sourceText.trim()}>静态分析并打开画布</button></div></div></div>}
   </div>{authoringView}</>;
 }
 

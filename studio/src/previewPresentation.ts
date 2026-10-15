@@ -1,4 +1,5 @@
-import type { Architecture, CanvasDocument, EdgeStyle } from './core/types.ts';
+import type { Architecture, Bounds, CanvasDocument, EdgeStyle } from './core/types.ts';
+import type { AnnotationBodyConflict } from './core/annotationPlacement.ts';
 import { previewNodeLayoutOperation, previewSelectionNodeIds, previewSourceMatchesArchitecture } from './previewInterop.ts';
 import type { PreviewEvidenceSource, PreviewVisualGraph } from './previewInterop.ts';
 
@@ -13,7 +14,7 @@ type Presentation = {
   edges?: Record<string, EdgeStyle>; legend?: CanvasDocument['legendItems'];
   annotations?: Record<string, CanvasDocument['annotations'][number]>; page?: Partial<CanvasDocument['pageSpec']>;
 };
-type Graph = PreviewVisualGraph & { edges?: PreviewVisualEdge[]; studioPresentation?: Presentation;
+type Graph = PreviewVisualGraph & { edges?: PreviewVisualEdge[]; canvas?: [number, number]; studioPresentation?: Presentation;
   recursive?: { state?: { studioPresentation?: Presentation }; authority?: { detail?: Graph } } };
 const graphValue = (value: unknown): Graph | undefined => value && typeof value === 'object' ? value as Graph : undefined;
 
@@ -21,6 +22,45 @@ const graphValue = (value: unknown): Graph | undefined => value && typeof value 
 export function previewPresentation(value: unknown): Presentation | undefined {
   const graph = graphValue(value);
   return graph?.recursive?.state?.studioPresentation ?? graph?.studioPresentation;
+}
+
+/** Native notes use a baseline and 20-unit wrapped lines, independently of the
+ * formal renderer. Inspector geometry must follow those visible text metrics. */
+export function previewAnnotationBody(annotation: CanvasDocument['annotations'][number]): Bounds {
+  const width = Math.max(80, annotation.width || 380), length = Math.max(10, Math.floor(width / 9));
+  const lines = String(annotation.text || '').split('\n').reduce((count, line) => count + Math.max(1, Math.ceil(line.length / length)), 0);
+  return { x: annotation.x - 5, y: annotation.y - 17, width: width + 10, height: lines * 20 + 7 };
+}
+
+function previewAnnotationGeometry(value: unknown) {
+  const graph = graphValue(value), presentation = previewPresentation(value);
+  const nodes = (graph?.nodes ?? []).filter(node => !node.junction).map(node => ({ id: node.id, parent: node.parent,
+    x: node.x, y: node.y, width: node.w ?? 180, height: node.h ?? 70 }));
+  const annotations = Object.values(presentation?.annotations ?? {}).map(annotation => ({ id: annotation.id, ...previewAnnotationBody(annotation) }));
+  const count = presentation?.legend?.length ?? 0, canvas = graph?.canvas;
+  const legend = count && canvas ? { id: 'studio:legend', x: Math.max(10, canvas[0] - 270), y: Math.max(10, canvas[1] - count * 28 - 52), width: 250, height: count * 28 + 32 } : undefined;
+  return { nodes, annotations, legend };
+}
+
+/** Inspect visible bodies only; expanded frames keep their free interior space. */
+export function previewAnnotationConflicts(value: unknown, id: string): AnnotationBodyConflict[] {
+  const { nodes, annotations, legend } = previewAnnotationGeometry(value), body = annotations.find(annotation => annotation.id === id);
+  if (!body) return [];
+  const intersects = (other: Bounds) => body.x < other.x + other.width && body.x + body.width > other.x && body.y < other.y + other.height && body.y + body.height > other.y;
+  const parents = new Set(nodes.map(node => node.parent)), conflicts: AnnotationBodyConflict[] = [];
+  for (const node of nodes) if (!parents.has(node.id) && intersects(node)) conflicts.push({ kind: 'node', id: node.id });
+  if (legend && intersects(legend)) conflicts.push({ kind: 'legend', id: legend.id });
+  for (const annotation of annotations) if (annotation.id !== id && intersects(annotation)) conflicts.push({ kind: 'annotation', id: annotation.id });
+  return conflicts;
+}
+
+/** Move the note below current preview bodies without running layout or routing.
+ * Excluding the note itself makes repeating the explicit command a no-op. */
+export function previewAnnotationPosition(value: unknown, id: string): { x: number; y: number } {
+  const { nodes, annotations, legend } = previewAnnotationGeometry(value);
+  const bodies = [...nodes, ...annotations.filter(annotation => annotation.id !== id), ...(legend ? [legend] : [])];
+  return { x: Math.min(50, ...nodes.map(node => node.x), ...(legend ? [legend.x] : [])),
+    y: Math.max(92, ...bodies.map(body => body.y + body.height)) + 24 + 17 };
 }
 
 /** Send only changed formal presentation; layout retains the preview's own frames. */
@@ -146,8 +186,10 @@ export function previewPresentationFields(document: CanvasDocument, value: unkno
   // Hidden original edges retain their own style. A bundled visible edge may
   // represent several formal operands; its style stays in the preview document.
   for (const edge of [...previewGraphEdges(detail), ...previewGraphEdges(graph)]) {
-    const ids = previewFormalEdgeIds(document.architecture, edge, graph, source), raw = overlayEdgeStyle(graph, edge);
-    if (ids.length === 1 && raw) edgeStyleOverrides[ids[0]] = edgeStyle(raw);
+    const raw = overlayEdgeStyle(graph, edge);
+    if (!raw) continue;
+    const ids = previewFormalEdgeIds(document.architecture, edge, graph, source);
+    if (ids.length === 1) edgeStyleOverrides[ids[0]] = edgeStyle(raw);
   }
   return { displayAliases, nodeStyleOverrides, edgeStyleOverrides, pinnedObjects: [...new Set(pinnedObjects)],
     legendItems: structuredClone(presentation?.legend ?? []), annotations: structuredClone(Object.values(presentation?.annotations ?? {})),

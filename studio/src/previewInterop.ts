@@ -128,23 +128,30 @@ function validLocation(raw: Partial<PreviewEvidence> & { path?: string }, source
 }
 
 /** AST columns remain UTF-8 byte offsets; source navigation should use the line number directly. */
-export function previewSourceLocation(selection: PreviewSelection, bundle?: PreviewEvidenceSource): PreviewSourceLocation | null {
+function previewSourceLocations(selection: PreviewSelection, bundle?: PreviewEvidenceSource): PreviewSourceLocation[] {
+  const locations: PreviewSourceLocation[] = [];
   const direct = selection.span ? validLocation(selection.span, selection.sourcePath) : null;
-  if (direct) return direct;
-  if (selection.sourcePath && selection.line) return validLocation({ line: selection.line }, selection.sourcePath);
+  if (direct) locations.push(direct);
+  if (selection.sourcePath && selection.line) {
+    const location = validLocation({ line: selection.line }, selection.sourcePath);
+    if (location) locations.push(location);
+  }
   const node = sourceNode(selection, bundle);
   for (const id of node?.source_evidence ?? []) {
     const evidence = bundle?.evidence?.[id], location = evidence && validLocation(evidence);
-    if (location) return location;
+    if (location) locations.push(location);
   }
   const raw = selection.evidence;
   const evidence = Array.isArray(raw) ? raw : raw && 'file' in raw ? [raw as PreviewEvidence] : Object.values(raw ?? {});
-  for (const item of evidence) { const location = validLocation(item); if (location) return location; }
-  return null;
+  for (const item of evidence) { const location = validLocation(item); if (location) locations.push(location); }
+  return [...new Map(locations.map(location => [JSON.stringify(location), location])).values()];
+}
+export function previewSourceLocation(selection: PreviewSelection, bundle?: PreviewEvidenceSource): PreviewSourceLocation | null {
+  return previewSourceLocations(selection, bundle)[0] ?? null;
 }
 
-const categoryAliases: Record<string, string> = { group: 'container', normalization: 'normalization', convolution: 'convolution',
-  input: 'input', output: 'output', linear: 'linear', activation: 'activation', opaque: 'opaque', literal: 'literal' };
+const categoryAliases: Record<string, string[]> = { group: ['container'], container: ['container'], normalization: ['norm', 'normalization'], norm: ['norm', 'normalization'], convolution: ['convolution'],
+  input: ['input'], output: ['output'], linear: ['linear'], activation: ['activation'], opaque: ['opaque'], literal: ['literal'], add: ['operator', 'residual'] };
 const normalizedKind = (value: string | undefined) => (value ?? '').replace(/^torch\.nn\.|^nn\./, '').toLowerCase();
 const normalizedInstance = (value: string | undefined) => (value ?? '').replace(/^instance:/, '').replace(':', '.');
 function selectionScore(node: ArchitectureNode, raw: PreviewSourceNode | undefined, location: PreviewSourceLocation): number {
@@ -154,11 +161,10 @@ function selectionScore(node: ArchitectureNode, raw: PreviewSourceNode | undefin
   if (location.expression && source.expression.trim() === location.expression.trim()) score += 100;
   if (raw?.expression && source.expression.trim() === raw.expression.trim()) score += 80;
   if (raw?.kind) {
-    const category = categoryAliases[raw.kind];
-    if (category) score += node.category === category ? 120 : -120;
+    const category = Object.hasOwn(categoryAliases, raw.kind) ? categoryAliases[raw.kind] : undefined;
+    if (category) score += category.includes(node.category) ? 120 : -120;
     if (normalizedKind(node.kind) === normalizedKind(raw.moduleType ?? raw.kind)) score += 60;
   }
-  if (raw?.label && node.label === raw.label) score += 40;
   if (raw?.instance && node.instanceId) score += normalizedInstance(raw.instance) === normalizedInstance(node.instanceId) ? 160 : -80;
   if (node.sourceStructure) score -= 30;
   return score;
@@ -169,9 +175,9 @@ export function previewSelectionNodeIds(architecture: Architecture, selection: P
   if (bundle && selection.caseId && selection.caseId !== evidenceCaseId(bundle)) return [];
   const raw = sourceNode(selection, bundle), id = selection.nodeId ?? raw?.id;
   if (id && architecture.nodes.some(node => node.id === id)) return [id];
-  const location = previewSourceLocation(selection, bundle);
-  if (!location) return [];
-  const scores = architecture.nodes.map(node => ({ id: node.id, score: selectionScore(node, raw, location) }));
+  const locations = previewSourceLocations(selection, bundle);
+  if (!locations.length) return [];
+  const scores = architecture.nodes.map(node => ({ id: node.id, score: Math.max(...locations.map(location => selectionScore(node, raw, location))) }));
   const best = Math.max(0, ...scores.map(item => item.score));
   return best ? scores.filter(item => item.score === best).map(item => item.id) : [];
 }
@@ -198,7 +204,7 @@ export function documentPreviewIdentity(document: CanvasDocument): PreviewSource
   return previewSourceIdentity(document.architecture, document.id);
 }
 
-export type PreviewVisualNode = PreviewSourceNode & { parent?: string | null; x: number; y: number; w?: number; h?: number; fill?: string; expanded?: boolean; semantic?: PreviewSourceNode };
+export type PreviewVisualNode = PreviewSourceNode & { parent?: string | null; x: number; y: number; w?: number; h?: number; fill?: string; expanded?: boolean; junction?: boolean; semantic?: PreviewSourceNode };
 export type PreviewVisualGraph = { nodes: PreviewVisualNode[] };
 
 /** Carry visible arrangement and expansion into the model editor without borrowing preview HTML or topology. */
@@ -207,7 +213,7 @@ export function previewCanvasOperations(document: CanvasDocument, graph: Preview
   const mapped = new Map<string, string>(), positioned = new Map<string, PreviewVisualNode>();
   for (const node of graph.nodes) {
     if (!Number.isFinite(node.x) || !Number.isFinite(node.y) || Math.abs(node.x) > 1_000_000 || Math.abs(node.y) > 1_000_000) continue;
-    const ids = previewSelectionNodeIds(architecture, { nodeId: node.id, node }, source);
+    const ids = canonical.has(node.id) ? [node.id] : previewSelectionNodeIds(architecture, { nodeId: node.id, node }, source);
     if (ids.length !== 1 || positioned.has(ids[0])) continue;
     mapped.set(node.id, ids[0]); positioned.set(ids[0], node);
   }

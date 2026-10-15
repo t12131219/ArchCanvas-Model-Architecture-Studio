@@ -26,11 +26,12 @@ export const PreviewStudio = forwardRef<PreviewHandle, {
   onSelection: (selection: Record<string, unknown>) => void;
   onEditSource: (result: PreviewSourceResult) => void;
   onError: (message: string) => void;
-}>(function PreviewStudio({ visible, onState, onSelection, onEditSource, onError }, ref) {
+  onSave: () => void;
+}>(function PreviewStudio({ visible, onState, onSelection, onEditSource, onError, onSave }, ref) {
   const iframe = useRef<HTMLIFrameElement>(null);
   const ready = useRef(false);
-  const callbacks = useRef({ onState, onSelection, onEditSource, onError });
-  callbacks.current = { onState, onSelection, onEditSource, onError };
+  const callbacks = useRef({ onState, onSelection, onEditSource, onError, onSave });
+  callbacks.current = { onState, onSelection, onEditSource, onError, onSave };
   const pending = useRef(new Map<string, Pending>());
   const readyWaiters = useRef(new Set<() => void>());
   const [connected, setConnected] = useState(false);
@@ -101,6 +102,7 @@ export const PreviewStudio = forwardRef<PreviewHandle, {
         busy: message.busy, selectedNodes: message.selectedNodes, selectedEdges: message.selectedEdges, caseInfo: message.case,
       });
       if (type === 'selection') callbacks.current.onSelection(message);
+      if (type === 'shortcut' && message.action === 'save') callbacks.current.onSave();
       if (type === 'edit-source') callbacks.current.onEditSource(message as PreviewSourceResult);
       if (type === 'error' && !task) callbacks.current.onError(String(message.error ?? message.message ?? '预览处理失败'));
     };

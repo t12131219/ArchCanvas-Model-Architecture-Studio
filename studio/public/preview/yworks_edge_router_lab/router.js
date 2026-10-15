@@ -9,11 +9,30 @@
   const expand = (n, margin) => ({ x: n.x - margin, y: n.y - margin, w: n.w + margin * 2, h: n.h + margin * 2, id: n.id });
   // Liang-Barsky on the open rectangle. Boundary travel is permitted.
   function intersectsRect(a, b, r) {
-    const inset = { x: r.x + EPS, y: r.y + EPS, w: r.w - EPS * 2, h: r.h - EPS * 2 };
-    let lo = 0, hi = 1;
     const dx = b.x - a.x, dy = b.y - a.y;
+    const left=r.x+EPS,right=left+(r.w-EPS*2),top=r.y+EPS,bottom=top+(r.h-EPS*2);
+    // Visibility-graph links are axis aligned. Clip just their varying axis,
+    // preserving the same inset and endpoint parameters as Liang-Barsky.
+    // Avoid allocating an inset object and two arrays for every obstacle/link.
+    if(dx===0){
+      if(a.x-left<0||right-a.x<0)return false;
+      if(Math.abs(dy)<EPS)return a.y-top>=0&&bottom-a.y>=0;
+      const enter=dy>0?(a.y-top)/-dy:(bottom-a.y)/dy;
+      const leave=dy>0?(bottom-a.y)/dy:(a.y-top)/-dy;
+      const lo=Math.max(0,enter),hi=Math.min(1,leave);
+      return lo<=hi&&hi>EPS&&lo<1-EPS;
+    }
+    if(dy===0){
+      if(a.y-top<0||bottom-a.y<0)return false;
+      if(Math.abs(dx)<EPS)return a.x-left>=0&&right-a.x>=0;
+      const enter=dx>0?(a.x-left)/-dx:(right-a.x)/dx;
+      const leave=dx>0?(right-a.x)/dx:(a.x-left)/-dx;
+      const lo=Math.max(0,enter),hi=Math.min(1,leave);
+      return lo<=hi&&hi>EPS&&lo<1-EPS;
+    }
+    let lo = 0, hi = 1;
     const p = [-dx, dx, -dy, dy];
-    const q = [a.x - inset.x, inset.x + inset.w - a.x, a.y - inset.y, inset.y + inset.h - a.y];
+    const q = [a.x - left, right - a.x, a.y - top, bottom - a.y];
     for (let i = 0; i < 4; i++) {
       if (Math.abs(p[i]) < EPS) { if (q[i] < 0) return false; }
       else { const t = q[i] / p[i]; if (p[i] < 0) lo = Math.max(lo, t); else hi = Math.min(hi, t); if (lo > hi) return false; }
@@ -47,6 +66,46 @@
       dist(u,p)>EPS&&dist(v,p)>EPS&&dist(u,p)+dist(p,v)<dist(u,v)+EPS;
     return crossing(a,b,c,d)||on(a,c,d)||on(b,c,d)||on(c,a,b)||on(d,a,b);
   }
+  // Geometry only. Callers exclude equal source wire identities and licensed
+  // complete shared presentations before invoking this edge-pair helper.
+  function wireContacts(first, second, epsilon = 1e-5) {
+    const distance = (a, b) => Math.hypot(a.x-b.x, a.y-b.y);
+    const atTerminal = (point, route) => distance(point, route[0]) <= epsilon || distance(point, route.at(-1)) <= epsilon;
+    const bins = new Map(), contacts = [];
+    function add(point, strict) {
+      const bx=Math.floor(point.x/epsilon),by=Math.floor(point.y/epsilon);let known;
+      for(let x=bx-1;x<=bx+1&&!known;x++)for(let y=by-1;y<=by+1&&!known;y++)
+        known=(bins.get(x+':'+y)||[]).find(entry=>distance(entry.point,point)<=epsilon);
+      if(known){known.strict ||= strict;return;}
+      const entry={point,strict};contacts.push(entry);const key=bx+':'+by,bin=bins.get(key)||[];bin.push(entry);bins.set(key,bin);
+    }
+    for(let i=1;i<first.length;i++)for(let j=1;j<second.length;j++){
+      const a=first[i-1],b=first[i],c=second[j-1],d=second[j],ux=b.x-a.x,uy=b.y-a.y,vx=d.x-c.x,vy=d.y-c.y;
+      const lengthA=Math.hypot(ux,uy),lengthB=Math.hypot(vx,vy);if(lengthA<=epsilon||lengthB<=epsilon)continue;
+      const determinant=ux*vy-uy*vx;
+      if(Math.abs(determinant)<=epsilon*Math.max(1,lengthA,lengthB)){
+        // Positive shared runs are already rejected by the overlap validator.
+        // Two collinear segments can still meet at an internal single point.
+        const lineDistance=Math.abs((c.x-a.x)*uy-(c.y-a.y)*ux)/lengthA;
+        if(lineDistance>epsilon)continue;
+        const along=p=>((p.x-a.x)*ux+(p.y-a.y)*uy)/lengthA;
+        const cAlong=along(c),dAlong=along(d),low=Math.max(0,Math.min(cAlong,dAlong)),high=Math.min(lengthA,Math.max(cAlong,dAlong));
+        if(high<low-epsilon||high-low>epsilon)continue;
+        const position=Math.max(0,Math.min(lengthA,(low+high)/2)),point={x:a.x+ux*position/lengthA,y:a.y+uy*position/lengthA};
+        if(!atTerminal(point,first)||!atTerminal(point,second))add(point,false);
+        continue;
+      }
+      const wx=c.x-a.x,wy=c.y-a.y,t=(wx*vy-wy*vx)/determinant,u=(wx*uy-wy*ux)/determinant;
+      if(t < -epsilon/lengthA||t > 1+epsilon/lengthA||u < -epsilon/lengthB||u > 1+epsilon/lengthB)continue;
+      const point={x:(a.x+Math.max(0,Math.min(1,t))*ux+c.x+Math.max(0,Math.min(1,u))*vx)/2,
+        y:(a.y+Math.max(0,Math.min(1,t))*uy+c.y+Math.max(0,Math.min(1,u))*vy)/2};
+      // Coincident actual route terminals are separately governed by port and
+      // source contracts. Internal bends count even if both segments end here.
+      if(atTerminal(point,first)&&atTerminal(point,second))continue;
+      add(point,t>epsilon/lengthA&&t<1-epsilon/lengthA&&u>epsilon/lengthB&&u<1-epsilon/lengthB);
+    }
+    return contacts.map(({point,strict})=>({point,kind:strict?'crossing':'touch'}));
+  }
   function overlap(a, b, c, d) {
     if (Math.abs(a.y - b.y) < EPS && Math.abs(c.y - d.y) < EPS && Math.abs(a.y - c.y) < EPS)
       return Math.max(0, Math.min(Math.max(a.x, b.x), Math.max(c.x, d.x)) - Math.max(Math.min(a.x, b.x), Math.min(c.x, d.x)));
@@ -65,6 +124,31 @@
   const reverses = (a, b) => a !== 0 && b !== 0 && Math.abs(a - b) === 2;
   function search(start, end, obstacles, priorPaths, settings, boundary, incoming = 0, outgoing = 0) {
     if (inside(start, boundary) === false || inside(end, boundary) === false || obstacles.some(r => inside(start, r) || inside(end, r))) return null;
+    // A straight leg or one elbow can already attain the obstacle-free
+    // lower bound, including its signed arrival and departure headings.
+    // In that case a complete visibility grid cannot improve its cost.
+    // Price wire contacts too; a crossing never qualifies as a free leg.
+    if (equal(start, end) && !reverses(incoming, outgoing)) {
+      return { points: [{ x: start.x, y: start.y }],
+        cost: incoming && outgoing && incoming !== outgoing ? settings.bendCost : 0, expanded: 0 };
+    }
+    if (!equal(start, end)) {
+      const trials = [[start, end], [start, { x: start.x, y: end.y }, end], [start, { x: end.x, y: start.y }, end]];
+      let lower = Infinity, best = null;
+      for (const raw of trials) {
+        const points = simplify(raw);
+        if (points.slice(1).some((p, i) => Math.abs(p.x - points[i].x) > EPS && Math.abs(p.y - points[i].y) > EPS)) continue;
+        const first = heading(points[0], points[1]), last = heading(points.at(-2), points.at(-1));
+        if (reverses(incoming, first) || reverses(last, outgoing)) continue;
+        const turns = Math.max(0, points.length - 2) + (incoming && incoming !== first ? 1 : 0) + (outgoing && outgoing !== last ? 1 : 0);
+        const free = Math.abs(start.x - end.x) + Math.abs(start.y - end.y) + turns * settings.bendCost;
+        lower = Math.min(lower, free);
+        if (points.slice(1).some((p, i) => obstacles.some(r => intersectsRect(points[i], p, r)))) continue;
+        const cost = routeCost(points, priorPaths, settings) + (turns - Math.max(0, points.length - 2)) * settings.bendCost;
+        if (Number.isFinite(cost) && (!best || cost < best.cost)) best = { points, cost, expanded: 0 };
+      }
+      if (best && best.cost <= lower + EPS) return best;
+    }
     let xs = [start.x, end.x, boundary.x, boundary.x + boundary.w], ys = [start.y, end.y, boundary.y, boundary.y + boundary.h];
     for (const r of obstacles) { xs.push(r.x, r.x + r.w); ys.push(r.y, r.y + r.h); }
     // Give overlapping edges a parallel lane, rather than pricing a conflict
@@ -121,11 +205,38 @@
     const s = ids.get(xs.indexOf(start.x) + ':' + ys.indexOf(start.y)), t = ids.get(xs.indexOf(end.x) + ':' + ys.indexOf(end.y));
     if (s === undefined || t === undefined) return null;
     const startKey = s * 5 + incoming;
-    const costs = new Map([[startKey, 0]]), parent = new Map(), heap = new Heap(); heap.push({ key: startKey, cost: 0 });
+    // Manhattan distance is an admissible lower bound: obstacles, bends,
+    // crossings and overlaps only add nonnegative cost. Keep travelled cost
+    // separately so stale-entry checks and the optimal-route bound remain exact.
+    const remaining=p=>Math.abs(p.x-end.x)+Math.abs(p.y-end.y);
+    const costs = new Map([[startKey, 0]]), parent = new Map(), heap = new Heap(); heap.push({ key: startKey, distance:0, cost:remaining(start) });
+    // Each geometric link is visited with several arrival headings. Its wire
+    // contacts are independent of that heading, so price them once per search.
+    const linkCosts = new Map();
+    function linkCost(u, v) {
+      const key = Math.min(u, v) * pts.length + Math.max(u, v);
+      if (linkCosts.has(key)) return linkCosts.get(key);
+      const a = pts[u], b = pts[v]; let penalty = 0, blocked = false;
+      for (const path of priorPaths) for (let i = 1; i < path.length; i++) {
+        if (wireContact(a, b, path[i - 1], path[i])) penalty += settings.crossingCost;
+        const shared = overlap(a, b, path[i - 1], path[i]);
+        const commonTerminal = shared > EPS && (settings.terminalStems || []).some(stem => {
+          const atPort = i === 1 && equal(stem.port, path[0]) ||
+            i === path.length - 1 && equal(stem.port, path[path.length - 1]);
+          const horizontal = Math.abs(stem.port.y - stem.outer.y) < EPS;
+          return path.wire===undefined && atPort && (horizontal ? Math.abs(a.y-stem.port.y)<EPS && Math.abs(b.y-stem.port.y)<EPS :
+            Math.abs(a.x-stem.port.x)<EPS && Math.abs(b.x-stem.port.x)<EPS);
+        });
+        if (settings.edgeSpacing > 0 && shared > EPS && !commonTerminal) blocked = true;
+        penalty += shared * settings.overlapCost;
+      }
+      const value = blocked ? Infinity : penalty;
+      linkCosts.set(key, value); return value;
+    }
     let finalKey = null, finalCost = Infinity, expanded = 0;
     while (heap.length) {
       const current = heap.pop(), base = costs.get(current.key);
-      if (current.cost > base + EPS) continue;
+      if (current.distance > base + EPS) continue;
       if (current.cost >= finalCost - EPS) break;
       const u = Math.floor(current.key / 5), direction = current.key % 5; expanded++;
       if (u === t && !reverses(direction, outgoing)) {
@@ -135,26 +246,11 @@
       for (const v of neighbors[u]) {
         const a = pts[u], b = pts[v], nextDirection = heading(a, b);
         if (reverses(direction, nextDirection)) continue;
-        let penalty = (direction && direction !== nextDirection) ? settings.bendCost : 0;
-        let blocked = false;
-        for (const path of priorPaths) for (let i = 1; i < path.length; i++) {
-          if (wireContact(a, b, path[i - 1], path[i])) penalty += settings.crossingCost;
-          const shared = overlap(a, b, path[i - 1], path[i]);
-          // Recorded semantic fan-outs can have the exact same physical port.
-          // Their terminal stem is shared; unrelated intermediate wires are not.
-          const commonTerminal = shared > EPS && (settings.terminalStems || []).some(stem => {
-            const atPort = i === 1 && equal(stem.port, path[0]) ||
-              i === path.length - 1 && equal(stem.port, path[path.length - 1]);
-            const horizontal = Math.abs(stem.port.y - stem.outer.y) < EPS;
-            return path.wire===undefined && atPort && (horizontal ? Math.abs(a.y-stem.port.y)<EPS && Math.abs(b.y-stem.port.y)<EPS :
-              Math.abs(a.x-stem.port.x)<EPS && Math.abs(b.x-stem.port.x)<EPS);
-          });
-          if (settings.edgeSpacing > 0 && shared > EPS && !commonTerminal) blocked = true;
-          penalty += shared * settings.overlapCost;
-        }
-        if (blocked) continue;
+        const wirePenalty = linkCost(u, v);
+        if (!Number.isFinite(wirePenalty)) continue;
+        const penalty = wirePenalty + ((direction && direction !== nextDirection) ? settings.bendCost : 0);
         const key = v * 5 + nextDirection, cost = base + dist(a, b) + penalty;
-        if (cost < (costs.get(key) ?? Infinity) - EPS) { costs.set(key, cost); parent.set(key, current.key); heap.push({ key, cost }); }
+        if (cost < (costs.get(key) ?? Infinity) - EPS) { costs.set(key, cost); parent.set(key, current.key); heap.push({ key, distance:cost, cost:cost+remaining(b) }); }
       }
     }
     if (finalKey === null) return null;
@@ -203,6 +299,19 @@
     const candidates=(node,other,fixed,fraction)=>candidateSides(node,other,settings.sides,fixed).map(side=>fixed||{side,fraction:fraction??.5});
     const portsS=options.sourceCandidates||candidates(s,t,edge.fixedSource,options.sourceFraction),portsT=options.targetCandidates||candidates(t,s,edge.fixedTarget,options.targetFraction);
     let best = null;
+    // Fixed interior gate legs recur across physical endpoint candidates.
+    // Cache exact solves (including failure) within this route only. An
+    // unmarked legacy peer can license a terminal stem, so include stems
+    // for those callers; source-tagged peers never use that exemption.
+    const legCache = new Map(), taggedPeers = priorPaths.every(path => path.wire !== undefined);
+    const solveLeg = (start, end, obstacles, incoming, outgoing) => {
+      const key = JSON.stringify([start.x, start.y, end.x, end.y, incoming, outgoing,
+        obstacles.map(r => [r.x, r.y, r.w, r.h]), taggedPeers ? null : settings.terminalStems]);
+      if (legCache.has(key)) return legCache.get(key);
+      const result = search(start, end, obstacles, priorPaths, settings, boundary, incoming, outgoing);
+      if (legCache.size < 256) legCache.set(key, result);
+      return result;
+    };
     const pairs=[];
     // Try exact straight/elbow/balanced paths before adding terminal stubs. In
     // short gaps two fixed stubs can pass each other and invent a tiny detour.
@@ -233,7 +342,17 @@
     };
     const trials=[];
     const waypoints=settings.preserve?(edge.waypoints||[]):[];
-    if(edge.route?.length>1&&waypoints.every(p=>edge.route.slice(1).some((b,i)=>dist(edge.route[i],p)+dist(p,b)<=dist(edge.route[i],b)+EPS))){const pair=pairs.find(p=>equal(p.sp,edge.route[0])&&equal(p.tp,edge.route.at(-1)));
+    const followsWaypoints=points=>{
+      let next=0;
+      for(let i=1;i<points.length&&next<waypoints.length;i++){
+        const a=points[i-1],b=points[i],length=dist(a,b);let minimum=0;
+        while(next<waypoints.length){const p=waypoints[next],along=dist(a,p);
+          if(!(along>=minimum-EPS&&along+dist(p,b)<=length+EPS))break;
+          minimum=along;next++;
+        }
+      }return next===waypoints.length;
+    };
+    if(edge.route?.length>1&&followsWaypoints(edge.route)){const pair=pairs.find(p=>equal(p.sp,edge.route[0])&&equal(p.tp,edge.route.at(-1)));
       if(pair){const cost=routeCost(edge.route,priorPaths,settings);if(Number.isFinite(cost))trials.push({points:simplify(edge.route),cost,pair});}}
     if(!waypoints.length)for(const pair of pairs){
       const {sp:s,tp:t,fs,ft}=pair,ns=SIDE[fs.side],nt=SIDE[ft.side],ss=fs.inward?-1:1,ts=ft.inward?-1:1;
@@ -250,6 +369,9 @@
     for(const trial of trials)if(acceptable(trial.points,trial.pair)){
       best={ok:true,points:trial.points,cost:trial.cost,expanded:0,sourcePort:trial.pair.sp,targetPort:trial.pair.tp,physicalSource:trial.pair.fs,physicalTarget:trial.pair.ft};break;
     }
+    // Recursive presentation changes need a legal settled frontier promptly.
+    // Explicit routing retains the default cost optimization over all ports.
+    if(best&&settings.firstLegal)return best;
     // A Manhattan route with at most one bend has reached the unobstructed
     // lower bound. Complex corridors use the visibility graph below.
     if(best&&best.cost<=Math.min(...pairs.map(p=>p.lower))+EPS)return best;
@@ -271,7 +393,7 @@
         // previous leg and is rejected only after the entire solve; retaining
         // the heading lets the search find the next legal parallel corridor.
         const joined=simplify(points),incoming=i===1?heading(sp,a):joined.length>1?heading(joined.at(-2),joined.at(-1)):0;
-        const result = search(stops[i - 1], stops[i], obstacles, priorPaths, settings, boundary,
+        const result = solveLeg(stops[i - 1], stops[i], obstacles,
           incoming, i === stops.length - 1 ? heading(b, tp) : 0);
         if (!result) { failed = true; break; } points.push(...result.points); cost += result.cost; expanded += result.expanded;
       }
@@ -291,7 +413,9 @@
       }
       if(!acceptable(points,pair))continue;
       cost=routeCost(points,priorPaths,settings);
+      if(!Number.isFinite(cost))continue;
       if (!best || cost < best.cost-EPS) best = { ok: true, points, cost, expanded, sourcePort: sp, targetPort: tp, physicalSource:fs,physicalTarget:ft,obstacles };
+      if(settings.firstLegal)return best;
     }
     return best || { ok: false, reason: 'No valid path with these ports/waypoints. Move nodes or release fixed ports.' };
   }
@@ -322,7 +446,7 @@
     for (let i = 0; i < edges.length; i++) for (let j = i + 1; j < edges.length; j++) { const a = edges[i].route || [], b = edges[j].route || []; for (let u = 1; u < a.length; u++) for (let v = 1; v < b.length; v++) if (crossing(a[u - 1], a[u], b[v - 1], b[v])) crossings++; }
     return { length: Math.round(length), bends, crossings };
   }
-  const api = { routeEdge, routeCost, port, candidateSides, simplify, chamfer, roundedPath, polylinePath, stats, intersectsRect, expand, crossing, overlap, dist, SIDE };
+  const api = { routeEdge, routeCost, port, candidateSides, simplify, chamfer, roundedPath, polylinePath, stats, intersectsRect, expand, crossing, wireContacts, overlap, dist, SIDE };
   root.EdgeRouterLabRouting = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

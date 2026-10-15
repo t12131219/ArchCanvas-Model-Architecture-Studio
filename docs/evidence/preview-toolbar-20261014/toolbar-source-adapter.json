@@ -1,0 +1,207 @@
+{
+  "schema": "summary-source-adapter/1",
+  "id": "source-249e3afc2282691a",
+  "title": "ToolbarSmoke1791957218182",
+  "entry": "toolbar_smoke:ToolbarSmoke1791957218182",
+  "files": [
+    {
+      "path": "toolbar_smoke.py",
+      "sha256": "7633025e7e70e530ea38b0d912f5dc01d8bee5e23b869dc40327d7035254b839",
+      "text": "from torch import nn\n\nclass ToolbarSmoke1791957218182(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.project = nn.Linear(4, 4)\n        self.act = nn.ReLU()\n    def forward(self, features):\n        value = self.project(features)\n        return self.act(value)\n"
+    }
+  ],
+  "sourceSha256": "3ae38dd4c0ed7f131b89362cb01200ec036dcb5f23f590e74e0081bd4bc0e24a",
+  "ir": {
+    "schema": "summary-source-ir/1",
+    "entry": "toolbar_smoke:ToolbarSmoke1791957218182",
+    "nodes": [
+      {
+        "id": "model/group-3-0-1",
+        "parent": null,
+        "kind": "group",
+        "label": "ToolbarSmoke1791957218182",
+        "source_evidence": [
+          "e-e6dc5759f68d6907"
+        ],
+        "expression": "class ToolbarSmoke1791957218182(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.project = nn.Linear(4, 4)\n        self.act = nn.ReLU()\n\n    def forward(self, features):\n        value = self.project(features)\n        return self.act(value)",
+        "instance": "toolbar_smoke:ToolbarSmoke1791957218182",
+        "certainty": "static",
+        "constructor": "toolbar_smoke:ToolbarSmoke1791957218182",
+        "moduleType": "ToolbarSmoke1791957218182",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-3-0-1/input-8-22-2",
+        "parent": "model/group-3-0-1",
+        "kind": "input",
+        "label": "features",
+        "source_evidence": [
+          "e-e4817c303c634472"
+        ],
+        "expression": "features"
+      },
+      {
+        "id": "model/group-3-0-1/linear-9-16-3",
+        "parent": "model/group-3-0-1",
+        "kind": "linear",
+        "label": "Linear",
+        "source_evidence": [
+          "e-054fbb50b4c41eab"
+        ],
+        "expression": "self.project(features)",
+        "instance": "toolbar_smoke:ToolbarSmoke1791957218182.project",
+        "certainty": "static",
+        "constructor": "nn.Linear(4, 4)",
+        "moduleType": "Linear",
+        "constructorArgs": [
+          4,
+          4
+        ],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-3-0-1/activation-10-15-4",
+        "parent": "model/group-3-0-1",
+        "kind": "activation",
+        "label": "ReLU",
+        "source_evidence": [
+          "e-eaeb06b2ed1283f7"
+        ],
+        "expression": "self.act(value)",
+        "instance": "toolbar_smoke:ToolbarSmoke1791957218182.act",
+        "certainty": "static",
+        "constructor": "nn.ReLU()",
+        "moduleType": "ReLU",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-3-0-1/output-10-8-5",
+        "parent": "model/group-3-0-1",
+        "kind": "output",
+        "label": "return",
+        "source_evidence": [
+          "e-936fb8ddb355a980"
+        ],
+        "expression": "return self.act(value)"
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-1",
+        "source": "model/group-3-0-1/input-8-22-2",
+        "target": "model/group-3-0-1/linear-9-16-3",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-3-0-1/input-8-22-2:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-054fbb50b4c41eab"
+        ]
+      },
+      {
+        "id": "edge-2",
+        "source": "model/group-3-0-1/linear-9-16-3",
+        "target": "model/group-3-0-1/activation-10-15-4",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-3-0-1/linear-9-16-3:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-eaeb06b2ed1283f7"
+        ]
+      },
+      {
+        "id": "edge-3",
+        "source": "model/group-3-0-1/activation-10-15-4",
+        "target": "model/group-3-0-1/output-10-8-5",
+        "sourcePort": "out",
+        "targetPort": "value",
+        "wire": "model/group-3-0-1/activation-10-15-4:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-936fb8ddb355a980"
+        ]
+      }
+    ],
+    "instances": {
+      "toolbar_smoke:ToolbarSmoke1791957218182": [
+        "model/group-3-0-1"
+      ],
+      "toolbar_smoke:ToolbarSmoke1791957218182.project": [
+        "model/group-3-0-1/linear-9-16-3"
+      ],
+      "toolbar_smoke:ToolbarSmoke1791957218182.act": [
+        "model/group-3-0-1/activation-10-15-4"
+      ]
+    },
+    "analysis": "static-source-dependencies",
+    "modelExecuted": false,
+    "shapePolicy": "No tensor dimensions or execution path inferred",
+    "registrySha256": "9c153d45ae26c27b1f5da8becde63af92eb51883b8e8ad1b00860151802f7e5f"
+  },
+  "canonicalIR": "{\"analysis\":\"static-source-dependencies\",\"edges\":[{\"id\":\"edge-1\",\"role\":\"source_dependency\",\"source\":\"model/group-3-0-1/input-8-22-2\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-054fbb50b4c41eab\"],\"target\":\"model/group-3-0-1/linear-9-16-3\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-3-0-1/input-8-22-2:out\"},{\"id\":\"edge-2\",\"role\":\"source_dependency\",\"source\":\"model/group-3-0-1/linear-9-16-3\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-eaeb06b2ed1283f7\"],\"target\":\"model/group-3-0-1/activation-10-15-4\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-3-0-1/linear-9-16-3:out\"},{\"id\":\"edge-3\",\"role\":\"source_dependency\",\"source\":\"model/group-3-0-1/activation-10-15-4\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-936fb8ddb355a980\"],\"target\":\"model/group-3-0-1/output-10-8-5\",\"targetPort\":\"value\",\"wire\":\"model/group-3-0-1/activation-10-15-4:out\"}],\"entry\":\"toolbar_smoke:ToolbarSmoke1791957218182\",\"instances\":{\"toolbar_smoke:ToolbarSmoke1791957218182\":[\"model/group-3-0-1\"],\"toolbar_smoke:ToolbarSmoke1791957218182.act\":[\"model/group-3-0-1/activation-10-15-4\"],\"toolbar_smoke:ToolbarSmoke1791957218182.project\":[\"model/group-3-0-1/linear-9-16-3\"]},\"modelExecuted\":false,\"nodes\":[{\"certainty\":\"static\",\"constructor\":\"toolbar_smoke:ToolbarSmoke1791957218182\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"class ToolbarSmoke1791957218182(nn.Module):\\n\\n    def __init__(self):\\n        super().__init__()\\n        self.project = nn.Linear(4, 4)\\n        self.act = nn.ReLU()\\n\\n    def forward(self, features):\\n        value = self.project(features)\\n        return self.act(value)\",\"id\":\"model/group-3-0-1\",\"instance\":\"toolbar_smoke:ToolbarSmoke1791957218182\",\"kind\":\"group\",\"label\":\"ToolbarSmoke1791957218182\",\"moduleType\":\"ToolbarSmoke1791957218182\",\"parent\":null,\"source_evidence\":[\"e-e6dc5759f68d6907\"]},{\"expression\":\"features\",\"id\":\"model/group-3-0-1/input-8-22-2\",\"kind\":\"input\",\"label\":\"features\",\"parent\":\"model/group-3-0-1\",\"source_evidence\":[\"e-e4817c303c634472\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Linear(4, 4)\",\"constructorArgs\":[4,4],\"constructorKwargs\":{},\"expression\":\"self.project(features)\",\"id\":\"model/group-3-0-1/linear-9-16-3\",\"instance\":\"toolbar_smoke:ToolbarSmoke1791957218182.project\",\"kind\":\"linear\",\"label\":\"Linear\",\"moduleType\":\"Linear\",\"parent\":\"model/group-3-0-1\",\"source_evidence\":[\"e-054fbb50b4c41eab\"]},{\"certainty\":\"static\",\"constructor\":\"nn.ReLU()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.act(value)\",\"id\":\"model/group-3-0-1/activation-10-15-4\",\"instance\":\"toolbar_smoke:ToolbarSmoke1791957218182.act\",\"kind\":\"activation\",\"label\":\"ReLU\",\"moduleType\":\"ReLU\",\"parent\":\"model/group-3-0-1\",\"source_evidence\":[\"e-eaeb06b2ed1283f7\"]},{\"expression\":\"return self.act(value)\",\"id\":\"model/group-3-0-1/output-10-8-5\",\"kind\":\"output\",\"label\":\"return\",\"parent\":\"model/group-3-0-1\",\"source_evidence\":[\"e-936fb8ddb355a980\"]}],\"registrySha256\":\"9c153d45ae26c27b1f5da8becde63af92eb51883b8e8ad1b00860151802f7e5f\",\"schema\":\"summary-source-ir/1\",\"shapePolicy\":\"No tensor dimensions or execution path inferred\"}",
+  "irSha256": "c9f2036ac7bb9257396879dfc426a1eea8b3d1e91177f07b7fb35eeb0e6333ac",
+  "evidence": {
+    "e-e6dc5759f68d6907": {
+      "file": "toolbar_smoke.py",
+      "line": 3,
+      "endLine": 10,
+      "column": 0,
+      "endColumn": 30,
+      "expression": "class ToolbarSmoke1791957218182(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.project = nn.Linear(4, 4)\n        self.act = nn.ReLU()\n    def forward(self, features):\n        value = self.project(features)\n        return self.act(value)"
+    },
+    "e-7c35444b510090fd": {
+      "file": "toolbar_smoke.py",
+      "line": 6,
+      "endLine": 6,
+      "column": 23,
+      "endColumn": 38,
+      "expression": "nn.Linear(4, 4)"
+    },
+    "e-313aa62476b62750": {
+      "file": "toolbar_smoke.py",
+      "line": 7,
+      "endLine": 7,
+      "column": 19,
+      "endColumn": 28,
+      "expression": "nn.ReLU()"
+    },
+    "e-e4817c303c634472": {
+      "file": "toolbar_smoke.py",
+      "line": 8,
+      "endLine": 8,
+      "column": 22,
+      "endColumn": 30,
+      "expression": "features"
+    },
+    "e-054fbb50b4c41eab": {
+      "file": "toolbar_smoke.py",
+      "line": 9,
+      "endLine": 9,
+      "column": 16,
+      "endColumn": 38,
+      "expression": "self.project(features)"
+    },
+    "e-eaeb06b2ed1283f7": {
+      "file": "toolbar_smoke.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 15,
+      "endColumn": 30,
+      "expression": "self.act(value)"
+    },
+    "e-936fb8ddb355a980": {
+      "file": "toolbar_smoke.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 8,
+      "endColumn": 30,
+      "expression": "return self.act(value)"
+    }
+  },
+  "diagnostics": [],
+  "config": {},
+  "adapterVersion": 1
+}

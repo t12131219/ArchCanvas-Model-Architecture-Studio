@@ -22,6 +22,7 @@ PYTHONPATH=src .venv/bin/python -B -m archcanvas_cli serve --host 127.0.0.1 --po
 | --- | --- |
 | `studio/public/preview/yworks_edge_router_lab` | 递归前端、Worker、路由、交互及同源 Studio 桥 |
 | `studio/public/preview/data` | 案例目录和源码索引 |
+| `studio/public/preview/sources` | 规范命名的预设 Python 源码包和全量 Notebook 转换版，见 [源码整理](preview-sources.md) |
 | `studio/public/preview/snapshots`、`verification` | 原始模型材料、离线资源及原型历史证据 |
 | `src/archcanvas_preview` | 有界 AST 解析器及随 Python 包分发的 registry |
 | `studio/src/previewInterop.ts` | 正式编辑与预览之间的源码身份、证据和视觉映射 |
@@ -68,7 +69,9 @@ PYTHONPATH=src .venv/bin/python -B -m archcanvas_cli serve --host 127.0.0.1 --po
 
 递归展开、局部布局、手动路由、连接草稿及导入包由预览引擎保存在浏览器 IndexedDB；相关偏好保存在 localStorage。正式 CanvasDocument、managed source、authoring drafts、事务和导出仍保存在正式服务状态目录。`serve --data-dir` 指定完整状态根，默认是正式工程 `.archcanvas`。
 
-顶部保存会先请求子预览保存，随后获取并同步 snapshot，再冻结正式文档与历史并提交正式保存；两种存储不是同一数据库或跨存储原子事务，失败时需要分别核对提示。浏览器数据按 origin 隔离：换端口、清理浏览器数据或换浏览器后，服务端 CanvasDocument 不等于包含所有预览路由细节的备份。迁移复杂预览状态时使用“页面 → 下载画布文档”生成的编辑 JSON，并通过“模型 → 导入源码目录 / 适配包”恢复。已保存正式文档的可映射显示名、样式、图例、说明和页面在加载时送入新预览；独有的递归几何、草稿连接和路由仍以预览编辑 JSON/IndexedDB 为准。
+顶部保存会先请求子预览保存，随后获取并同步 snapshot，再冻结正式文档与历史并提交正式保存；两种存储不是同一数据库或跨存储原子事务，失败时需要分别核对提示。浏览器数据按 origin 隔离：换端口、清理浏览器数据或换浏览器后，服务端 CanvasDocument 不等于包含所有预览路由细节的备份。迁移复杂预览状态时使用右上“导出 → 编辑 JSON”，通过“导入 Python 源码 → 选择源码目录 / 编辑 JSON / 适配包”恢复。已保存正式文档的可映射显示名、样式、图例、说明和页面在加载时送入新预览；独有的递归几何、草稿连接和路由仍以预览编辑 JSON/IndexedDB 为准。
+
+后续工具入口合并、按住鼠标中键平移及当前构建的验证见 [预览工具整合](preview-toolbar.md)。下方报告记录首次迁移时的构建，后续修改的验证单独存放。
 
 ## 本次执行的验证
 
@@ -104,3 +107,10 @@ PYTHONPATH=src:tests .venv/bin/python -B -m unittest -v test_preview_bundle_budg
 最终 Studio 界面快照：
 
 ![正式 Studio 递归预览与原有工具面板](evidence/preview-migration-20261014/ui-preview.jpg)
+
+## 后续局部展开修复
+
+局部展开的共享分支、残差通道、旧缓存升级和 Worker/Studio 重复计算修复见
+[preview-expansion.md](preview-expansion.md)。本次重新验证的运行时摘要、浏览器
+展开/收起与撤销记录保存在 `docs/evidence/preview-expansion-20261014/`，
+与上面的历史迁移测试记录分开保留。

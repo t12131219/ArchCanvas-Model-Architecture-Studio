@@ -31,6 +31,9 @@
       if(e.hasAttribute('stroke')&&e.getAttribute('stroke')!=='none')e.setAttribute('stroke','#343a40');
     }
     view.g.setAttribute('data-studio-pinned',String(!!p.pinned));
+    if(p.pinned){
+      if(!view.pinTitle){view.pinTitle=node('title',{'data-editor-only':'pin'},'已固定直接移动；子节点仍随父容器移动与递归布局更新。');view.g.append(view.pinTitle);}
+    }else if(view.pinTitle){view.pinTitle.remove();view.pinTitle=null;}
     view.g.setAttribute('data-studio-glyph',p.glyph||'source');
     view.g.setAttribute('data-studio-alias',p.alias||'');
   }
