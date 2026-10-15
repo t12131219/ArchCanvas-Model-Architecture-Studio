@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://archcanvas.local/schemas/source-adapter-v1.schema.json",
+  "title": "Source-bound data adapter",
+  "description": "AST evidence and reusable presentation, never an executable plugin or tensor-generation contract. Runtime validation regenerates all facts from source; schema validation alone is insufficient.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "generatorRevision", "id", "binding", "config", "inputs", "outputs", "children", "dependencies", "diagnostics", "generationContract", "authority", "presentation"],
+  "properties": {
+    "schema": {"const": "archcanvas-source-adapter/1"},
+    "generatorRevision": {"const": "source-inspection/2"},
+    "id": {"type": "string", "pattern": "^adapter-[a-f0-9]{24}$"},
+    "binding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["entry", "method", "sourceFiles", "symbol", "methodSpan"],
+      "properties": {
+        "entry": {"type": "string"}, "method": {"type": "string"},
+        "sourceFiles": {"type": "array", "minItems": 1, "maxItems": 80, "items": {"type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": {"path": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}}},
+        "symbol": {"allOf": [{"$ref": "#/$defs/source"}], "required": ["qualifiedName"]},
+        "methodSpan": {"allOf": [{"$ref": "#/$defs/source"}], "required": ["sha256"]}
+      }
+    },
+    "config": {"type": "object"},
+    "inputs": {"type": "array", "items": {"type": "object", "required": ["id", "name", "kind", "required", "source"]}},
+    "outputs": {"type": "array", "items": {"type": "object", "required": ["id", "path", "kind", "source"]}},
+    "children": {"type": "array", "maxItems": 480, "items": {"type": "object", "required": ["id", "label", "kind", "source", "ports", "sourceStructure"], "properties": {"ports": {"const": []}, "sourceStructure": {"const": true}}}},
+    "dependencies": {"type": "array", "maxItems": 1440, "items": {"type": "object", "required": ["id", "sourceId", "targetId", "kind", "source"]}},
+    "diagnostics": {"type": "array"},
+    "generationContract": {"type": "null"},
+    "authority": {"const": "source-structure-only; no execution path, tensor ports, shapes, or source-generation authority"},
+    "presentation": {"type": "object", "additionalProperties": false, "required": ["labels", "notes"], "properties": {"labels": {"type": "object", "additionalProperties": {"type": "string", "minLength": 1, "maxLength": 240}}, "notes": {"type": "array", "maxItems": 32, "items": {"type": "string", "minLength": 1, "maxLength": 240}}}}
+  },
+  "$defs": {
+    "source": {"type": "object", "required": ["path", "line", "endLine", "column", "endColumn", "expression"], "properties": {"path": {"type": "string"}, "line": {"type": "integer", "minimum": 1}, "endLine": {"type": "integer", "minimum": 1}, "column": {"type": "integer", "minimum": 0}, "endColumn": {"type": "integer", "minimum": 0}, "expression": {"type": "string"}}}
+  }
+}

@@ -10,6 +10,7 @@ import ast
 import hashlib
 from collections import deque
 from .source_dependencies import source_dependencies
+from .discovery import discover_files
 
 MAX_STRUCTURE_NODES = 480
 MAX_STRUCTURE_DEPTH = 12
@@ -24,6 +25,7 @@ class SourceStructure:
         self.leaves = deque()
         self.modules = {}
         self.call_nodes = {}
+        self.statement_nodes = {}
         self.branch_scopes = {}
         self.condition_scopes = {}
         self.loop_scopes = {}
@@ -31,6 +33,51 @@ class SourceStructure:
         self.flow_functions = {}
         self.alternatives = {}
         self.sequences = []
+        self.containment = None
+        self.definitions = {}
+
+    def binding_choices(self, unit, definition, name):
+        """Follow source factory/argument evidence without claiming execution.
+
+        Inventory relationships describe possible containment across authored
+        call sites. They are inspection children, never tensor graph bindings.
+        """
+        if self.containment is None:
+            self.containment = discover_files({own.path: own.content for own in self.analyzer.corpus.units.values()})["relationships"]
+        owner = f"{unit.module}:{definition.name}"
+        matches = []
+        for relation in self.containment:
+            if relation["owner"] != owner or relation["slot"] != name:
+                continue
+            located = self.bound_constructor(relation)
+            if located:
+                own, call = located
+                guards = ("source containment candidate; runtime path/configuration unverified",) if relation["certainty"] == "possible" else ()
+                matches.append((call, guards, own, relation))
+        direct = [(call, guards, unit, {"owner": owner, "slot": name})
+                  for call, guards in self.constructors(definition, name)]
+        # A factory call and its source-proven result are one containment fact,
+        # not independent modules or alternative tensor producers.
+        if matches:
+            direct = [item for item in direct if self.analyzer.corpus.definition(item[2].resolve(item[0].func))
+                      or item[2].resolve(item[0].func).startswith("torch.nn.")]
+        choices, seen = [], set()
+        for item in [*direct, *matches]:
+            key = item[2].path, item[0].lineno, item[0].col_offset, item[0].end_lineno, item[0].end_col_offset
+            if key not in seen:
+                seen.add(key)
+                choices.append(item)
+        return choices
+
+    def bound_constructor(self, relation):
+        evidence = relation.get("targetEvidence", {})
+        unit = next((own for own in self.analyzer.corpus.units.values() if own.path == evidence.get("file")), None)
+        if not unit:
+            return None
+        calls = [call for call in ast.walk(unit.tree) if isinstance(call, ast.Call)
+                 and call.lineno == evidence.get("line") and call.end_lineno == evidence.get("endLine")
+                 and unit.expression(call) == evidence.get("expression")]
+        return (unit, calls[0]) if len(calls) == 1 else None
 
     def defer(self, parent, callback, *args):
         # Inspect shallow siblings before descending. A large first branch must
@@ -119,8 +166,8 @@ class SourceStructure:
                     # pretending the local iteration variable is a tensor op.
                     iterator = statement.iter if isinstance(statement, ast.For) else None
                     name = self.self_attribute(iterator)
-                    for constructor, guards in self.constructors(definition, name) if definition and name else []:
-                        self.module(constructor, unit, name, loop['id'], depth, stack, guards)
+                    for constructor, guards, own, relation in self.binding_choices(unit, definition, name) if definition and name else []:
+                        self.module(constructor, own, name, loop['id'], depth, stack, guards, relation)
                     self.defer(loop['id'], self.block, statement.body, unit, definition, loop['id'], depth + 1, stack)
                     self.defer(loop['id'], self.block, statement.orelse, unit, definition, loop['id'], depth + 1, stack)
             elif isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
@@ -148,7 +195,7 @@ class SourceStructure:
 
     def call(self, call, unit, definition, parent, depth, stack):
         name = self.self_attribute(call.func)
-        choices = self.constructors(definition, name) if definition and name else []
+        choices = self.binding_choices(unit, definition, name) if definition and name else []
         if choices:
             holder = None
             if len(choices) > 1:
@@ -156,8 +203,8 @@ class SourceStructure:
                 if not holder:
                     return
             targets = []
-            for constructor, guards in choices:
-                module = self.module(constructor, unit, name, holder["id"] if holder else parent, depth, stack, guards)
+            for constructor, guards, own, relation in choices:
+                module = self.module(constructor, own, name, holder["id"] if holder else parent, depth, stack, guards, relation)
                 if module:
                     targets.append(module['id'])
             self.call_nodes[parent, id(call)] = targets
@@ -176,7 +223,7 @@ class SourceStructure:
         else:
             self.leaf(parent, unit, call, unit.expression(call.func), 'SourceCall')
 
-    def module(self, constructor, unit, name, parent, depth, stack, guards=()):
+    def module(self, constructor, unit, name, parent, depth, stack, guards=(), relation=None):
         # This hierarchy describes definitions, not invocation counts. Repeated
         # calls to one authored attribute share one definition in this scope.
         # Repeated references to one constructor share its card. Separate
@@ -187,6 +234,8 @@ class SourceStructure:
         qualified = unit.resolve(constructor.func)
         definition = self.analyzer.corpus.definition(qualified)
         parameters = {"sourceType": ast.unparse(constructor.func), "construction": ast.unparse(constructor)}
+        if relation and relation.get("targetEvidence"):
+            parameters["bindingEvidence"] = "source containment across factory/constructor arguments; no execution path selected"
         if guards:
             parameters["constructedWhen"] = " and ".join(f"({guard})" for guard in guards)
         module = self.node(parent, unit, constructor, name, "SourceModule", parameters)
@@ -205,12 +254,58 @@ class SourceStructure:
                 return module
             module["parameters"]["sourceType"] = cls.name
             module["parameters"]["definition"] = f"{own_unit.module}:{cls.name}"
-            forward = next((item for item in cls.body if isinstance(item, ast.FunctionDef) and item.name == "forward"), None)
-            if forward and not forward.decorator_list:
-                self.flow_roots.append((forward.body, own_unit, module['id']))
+            # This is a source definition tree, not a runtime instance graph.
+            # Preserve each call/construction card and its own arguments, but
+            # inspect a shared class body once. Its referenced body includes
+            # all authored branches rather than one guessed configuration.
+            # Small call-site bodies retain separate dependency scopes. Large
+            # repeated class bodies use an explicit source reference to keep
+            # inspection bounded without conflating any runtime invocation.
+            reference_body = sum(1 for _ in ast.walk(cls)) > 192
+            if reference_body and key in self.definitions:
+                module["parameters"]["definitionReference"] = self.definitions[key]
+                module["parameters"]["definitionScope"] = "shared source body only; this construction and runtime instance remain distinct"
+                return module
+            if reference_body:
+                self.definitions[key] = module["id"]
+            method = self.analyzer.corpus.entry_method(own_unit, cls)
+            if method:
+                method_unit, forward = method
+                method_cls = next((candidate for candidate in method_unit.classes.values()
+                                   if candidate.lineno <= forward.lineno <= candidate.end_lineno), cls)
+                self.flow_roots.append((forward.body, method_unit, module['id']))
                 self.flow_functions[module['id']] = forward
-                self.defer(module['id'], self.block, forward.body, own_unit, cls, module['id'], depth + 1, (*stack, key))
+                self.defer(module['id'], self.block, forward.body, method_unit, method_cls, module['id'], depth + 1, (*stack, key))
         elif qualified in ("torch.nn.ModuleList", "torch.nn.Sequential"):
+            # A configured collection exposes one source element template per
+            # authored call-site candidate. Unknown counts are never replaced
+            # with a guessed unrolling count from another entry's defaults.
+            templates = [item for item in self.containment or []
+                         if relation and item["owner"] == relation.get("owner")
+                         and item["slot"].startswith(relation.get("slot", "") + "[")
+                         and item.get("targetLocal")]
+            if templates:
+                module["parameters"]["repeatExpression"] = "source element templates; configured collection count is unresolved"
+                comprehensions = [arg for arg in constructor.args if isinstance(arg, ast.ListComp)]
+                header = ("for " + ", ".join(f"{ast.unparse(generator.target)} in {ast.unparse(generator.iter)}"
+                                            for generator in comprehensions[0].generators)) if comprehensions else "for configured element in " + name
+                loop = self.node(module["id"], unit, comprehensions[0] if comprehensions else constructor,
+                                 header, "SourceLoop", {"repeatExpression": header,
+                                                        "repetitionStatus": "source template only; runtime count unverified"})
+                template_parent = loop["id"] if loop else module["id"]
+                used = set()
+                for template in templates:
+                    located = self.bound_constructor(template)
+                    if not located:
+                        continue
+                    own, call = located
+                    binding = own.path, call.lineno, call.col_offset
+                    if binding in used:
+                        continue
+                    used.add(binding)
+                    self.defer(template_parent, self.module, call, own, template["slot"], template_parent, depth + 1, stack,
+                               ("source element template; runtime repetition unverified",), template)
+                return module
             if qualified == 'torch.nn.Sequential':
                 sequence = [None] * len(constructor.args)
                 self.sequences.append((module['id'], sequence, unit, constructor))
@@ -251,6 +346,8 @@ class SourceStructure:
             node = self.node(*args)
             if node and isinstance(args[2], ast.Call):
                 self.call_nodes[args[0], id(args[2])] = [node['id']]
+            elif node and isinstance(args[2], ast.stmt):
+                self.statement_nodes[args[0], id(args[2])] = [node['id']]
         if self.limited:
             self.analyzer.warn(f"Source structure inspection reached its {MAX_STRUCTURE_NODES}-node/{MAX_STRUCTURE_DEPTH}-level budget; original source expressions remain available. No execution path or tensor contract was inferred from inspection nodes.")
         return source_dependencies(self)

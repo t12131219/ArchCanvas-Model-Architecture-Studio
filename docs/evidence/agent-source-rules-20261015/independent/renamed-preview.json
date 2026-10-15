@@ -1,0 +1,475 @@
+{
+  "schema": "summary-source-adapter/1",
+  "id": "source-aa3809949146ead6",
+  "title": "GoldenIndex",
+  "entry": "relocated_map:GoldenIndex",
+  "files": [
+    {
+      "path": "relocated_map.py",
+      "sha256": "237eabfdd8bc33b1b29c2c2196126f7b0391cbdafae38fb0433d6b527e1e38aa",
+      "text": "from torch import nn\nraise RuntimeError(\"STATIC_ONLY_SENTINEL_MUST_NOT_EXECUTE\")\n\nclass GoldenIndex(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.mapper = nn.Linear(4, 4)\n\n    def forward(self, records):\n        return {name: self.mapper(embedding) for name, embedding in records if embedding is not None}\n"
+    }
+  ],
+  "sourceSha256": "8b514df5c2977580039dcf384ffa170a4d74d65cff7a7c94e751a480e006314f",
+  "ir": {
+    "schema": "summary-source-ir/1",
+    "entry": "relocated_map:GoldenIndex",
+    "nodes": [
+      {
+        "id": "model/group-4-0-1",
+        "parent": null,
+        "kind": "group",
+        "label": "GoldenIndex",
+        "source_evidence": [
+          "e-ba5443d006d84f1e"
+        ],
+        "expression": "class GoldenIndex(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.mapper = nn.Linear(4, 4)\n\n    def forward(self, records):\n        return {name: self.mapper(embedding) for name, embedding in records if embedding is not None}",
+        "instance": "relocated_map:GoldenIndex",
+        "certainty": "static",
+        "constructor": "relocated_map:GoldenIndex",
+        "moduleType": "GoldenIndex",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-4-0-1/input-9-22-2",
+        "parent": "model/group-4-0-1",
+        "kind": "input",
+        "label": "records",
+        "source_evidence": [
+          "e-7d3e8a34e2dbcde8"
+        ],
+        "expression": "records"
+      },
+      {
+        "id": "model/group-4-0-1/opaque-10-15-3",
+        "parent": "model/group-4-0-1",
+        "kind": "opaque",
+        "label": "待解析 · DictComp",
+        "source_evidence": [
+          "e-a5ab5f5d1cba4983"
+        ],
+        "expression": "{name: self.mapper(embedding) for name, embedding in records if embedding is not None}",
+        "certainty": "opaque"
+      },
+      {
+        "id": "model/group-4-0-1/output-10-8-4",
+        "parent": "model/group-4-0-1",
+        "kind": "output",
+        "label": "return",
+        "source_evidence": [
+          "e-12cb29a6c01349e4"
+        ],
+        "expression": "return {name: self.mapper(embedding) for name, embedding in records if embedding is not None}"
+      },
+      {
+        "id": "model/group-4-0-1/opaque-10-15-3/rule-c31e645d57f0dffa",
+        "parent": "model/group-4-0-1/opaque-10-15-3",
+        "kind": "source_structure",
+        "label": "records",
+        "sourceParameters": {
+          "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+          "sourceMatch": "match-6b142a11d2e713bc33effd6a",
+          "sourceRulePath": [
+            "generators",
+            0,
+            "iter"
+          ],
+          "guards": [],
+          "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+        },
+        "source_evidence": [
+          "e-527136f6b808a49e"
+        ],
+        "expression": "records",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceExpression",
+        "sourceAdapterId": "adapter-693c8af1a1a691f879669e97",
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-4-0-1/opaque-10-15-3/rule-c7a0f3a3c506bb4c",
+        "parent": "model/group-4-0-1/opaque-10-15-3",
+        "kind": "source_structure",
+        "label": "name",
+        "sourceParameters": {
+          "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+          "sourceMatch": "match-6b142a11d2e713bc33effd6a",
+          "sourceRulePath": [
+            "key"
+          ],
+          "guards": [
+            "for (name, embedding) in records",
+            "if embedding is not None"
+          ],
+          "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+        },
+        "source_evidence": [
+          "e-79f9ecab9f416db8"
+        ],
+        "expression": "name",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceExpression",
+        "sourceAdapterId": "adapter-693c8af1a1a691f879669e97",
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-4-0-1/opaque-10-15-3/rule-77572ff162232407",
+        "parent": "model/group-4-0-1/opaque-10-15-3",
+        "kind": "source_structure",
+        "label": "self.mapper",
+        "sourceParameters": {
+          "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+          "sourceMatch": "match-6b142a11d2e713bc33effd6a",
+          "sourceRulePath": [
+            "value"
+          ],
+          "guards": [
+            "for (name, embedding) in records",
+            "if embedding is not None"
+          ],
+          "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+        },
+        "source_evidence": [
+          "e-abff0153f0897b9e"
+        ],
+        "expression": "self.mapper(embedding)",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceCall",
+        "sourceAdapterId": "adapter-693c8af1a1a691f879669e97",
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-4-0-1/opaque-10-15-3/rule-842d8cee4d8e0068",
+        "parent": "model/group-4-0-1/opaque-10-15-3/rule-77572ff162232407",
+        "kind": "source_structure",
+        "label": "embedding",
+        "sourceParameters": {
+          "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+          "sourceMatch": "match-6b142a11d2e713bc33effd6a",
+          "sourceRulePath": [
+            "value",
+            "args",
+            0
+          ],
+          "guards": [
+            "for (name, embedding) in records",
+            "if embedding is not None"
+          ],
+          "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+        },
+        "source_evidence": [
+          "e-a80c7cd0a3bf0222"
+        ],
+        "expression": "embedding",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceExpression",
+        "sourceAdapterId": "adapter-693c8af1a1a691f879669e97",
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "generationContract": null
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-1",
+        "source": "model/group-4-0-1/input-9-22-2",
+        "target": "model/group-4-0-1/opaque-10-15-3",
+        "sourcePort": "out",
+        "targetPort": "dependency[0]",
+        "wire": "model/group-4-0-1/input-9-22-2:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-a5ab5f5d1cba4983"
+        ]
+      },
+      {
+        "id": "edge-2",
+        "source": "model/group-4-0-1/opaque-10-15-3",
+        "target": "model/group-4-0-1/output-10-8-4",
+        "sourcePort": "out",
+        "targetPort": "value",
+        "wire": "model/group-4-0-1/opaque-10-15-3:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-12cb29a6c01349e4"
+        ]
+      },
+      {
+        "id": "rule-edge-e00849171c64f0c7aff7",
+        "source": "model/group-4-0-1/opaque-10-15-3/rule-c31e645d57f0dffa",
+        "target": "model/group-4-0-1/opaque-10-15-3/rule-c7a0f3a3c506bb4c",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-4-0-1/opaque-10-15-3/rule-c31e645d57f0dffa:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-79f9ecab9f416db8"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-693c8af1a1a691f879669e97",
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2"
+      },
+      {
+        "id": "rule-edge-899422b09e8964438595",
+        "source": "model/group-4-0-1/opaque-10-15-3/rule-c31e645d57f0dffa",
+        "target": "model/group-4-0-1/opaque-10-15-3/rule-77572ff162232407",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-4-0-1/opaque-10-15-3/rule-c31e645d57f0dffa:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-abff0153f0897b9e"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-693c8af1a1a691f879669e97",
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2"
+      },
+      {
+        "id": "rule-edge-34ee10f03aa7d02a6df7",
+        "source": "model/group-4-0-1/opaque-10-15-3/rule-842d8cee4d8e0068",
+        "target": "model/group-4-0-1/opaque-10-15-3/rule-77572ff162232407",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-4-0-1/opaque-10-15-3/rule-842d8cee4d8e0068:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-abff0153f0897b9e"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-693c8af1a1a691f879669e97",
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2"
+      }
+    ],
+    "instances": {
+      "relocated_map:GoldenIndex": [
+        "model/group-4-0-1"
+      ]
+    },
+    "analysis": "static-source-dependencies",
+    "modelExecuted": false,
+    "shapePolicy": "No tensor dimensions or execution path inferred",
+    "registrySha256": "9c153d45ae26c27b1f5da8becde63af92eb51883b8e8ad1b00860151802f7e5f"
+  },
+  "canonicalIR": "{\"analysis\":\"static-source-dependencies\",\"edges\":[{\"id\":\"edge-1\",\"role\":\"source_dependency\",\"source\":\"model/group-4-0-1/input-9-22-2\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-a5ab5f5d1cba4983\"],\"target\":\"model/group-4-0-1/opaque-10-15-3\",\"targetPort\":\"dependency[0]\",\"wire\":\"model/group-4-0-1/input-9-22-2:out\"},{\"id\":\"edge-2\",\"role\":\"source_dependency\",\"source\":\"model/group-4-0-1/opaque-10-15-3\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-12cb29a6c01349e4\"],\"target\":\"model/group-4-0-1/output-10-8-4\",\"targetPort\":\"value\",\"wire\":\"model/group-4-0-1/opaque-10-15-3:out\"},{\"id\":\"rule-edge-e00849171c64f0c7aff7\",\"role\":\"source_dependency\",\"source\":\"model/group-4-0-1/opaque-10-15-3/rule-c31e645d57f0dffa\",\"sourceAdapterId\":\"adapter-693c8af1a1a691f879669e97\",\"sourcePort\":\"out\",\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"source_evidence\":[\"e-79f9ecab9f416db8\"],\"syntaxOnly\":true,\"target\":\"model/group-4-0-1/opaque-10-15-3/rule-c7a0f3a3c506bb4c\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-4-0-1/opaque-10-15-3/rule-c31e645d57f0dffa:out\"},{\"id\":\"rule-edge-899422b09e8964438595\",\"role\":\"source_dependency\",\"source\":\"model/group-4-0-1/opaque-10-15-3/rule-c31e645d57f0dffa\",\"sourceAdapterId\":\"adapter-693c8af1a1a691f879669e97\",\"sourcePort\":\"out\",\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"source_evidence\":[\"e-abff0153f0897b9e\"],\"syntaxOnly\":true,\"target\":\"model/group-4-0-1/opaque-10-15-3/rule-77572ff162232407\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-4-0-1/opaque-10-15-3/rule-c31e645d57f0dffa:out\"},{\"id\":\"rule-edge-34ee10f03aa7d02a6df7\",\"role\":\"source_dependency\",\"source\":\"model/group-4-0-1/opaque-10-15-3/rule-842d8cee4d8e0068\",\"sourceAdapterId\":\"adapter-693c8af1a1a691f879669e97\",\"sourcePort\":\"out\",\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"source_evidence\":[\"e-abff0153f0897b9e\"],\"syntaxOnly\":true,\"target\":\"model/group-4-0-1/opaque-10-15-3/rule-77572ff162232407\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-4-0-1/opaque-10-15-3/rule-842d8cee4d8e0068:out\"}],\"entry\":\"relocated_map:GoldenIndex\",\"instances\":{\"relocated_map:GoldenIndex\":[\"model/group-4-0-1\"]},\"modelExecuted\":false,\"nodes\":[{\"certainty\":\"static\",\"constructor\":\"relocated_map:GoldenIndex\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"class GoldenIndex(nn.Module):\\n\\n    def __init__(self):\\n        super().__init__()\\n        self.mapper = nn.Linear(4, 4)\\n\\n    def forward(self, records):\\n        return {name: self.mapper(embedding) for name, embedding in records if embedding is not None}\",\"id\":\"model/group-4-0-1\",\"instance\":\"relocated_map:GoldenIndex\",\"kind\":\"group\",\"label\":\"GoldenIndex\",\"moduleType\":\"GoldenIndex\",\"parent\":null,\"source_evidence\":[\"e-ba5443d006d84f1e\"]},{\"expression\":\"records\",\"id\":\"model/group-4-0-1/input-9-22-2\",\"kind\":\"input\",\"label\":\"records\",\"parent\":\"model/group-4-0-1\",\"source_evidence\":[\"e-7d3e8a34e2dbcde8\"]},{\"certainty\":\"opaque\",\"expression\":\"{name: self.mapper(embedding) for name, embedding in records if embedding is not None}\",\"id\":\"model/group-4-0-1/opaque-10-15-3\",\"kind\":\"opaque\",\"label\":\"待解析 · DictComp\",\"parent\":\"model/group-4-0-1\",\"source_evidence\":[\"e-a5ab5f5d1cba4983\"]},{\"expression\":\"return {name: self.mapper(embedding) for name, embedding in records if embedding is not None}\",\"id\":\"model/group-4-0-1/output-10-8-4\",\"kind\":\"output\",\"label\":\"return\",\"parent\":\"model/group-4-0-1\",\"source_evidence\":[\"e-12cb29a6c01349e4\"]},{\"certainty\":\"syntax\",\"expression\":\"records\",\"generationContract\":null,\"id\":\"model/group-4-0-1/opaque-10-15-3/rule-c31e645d57f0dffa\",\"kind\":\"source_structure\",\"label\":\"records\",\"parent\":\"model/group-4-0-1/opaque-10-15-3\",\"sourceAdapterId\":\"adapter-693c8af1a1a691f879669e97\",\"sourceKind\":\"SourceExpression\",\"sourceParameters\":{\"guards\":[],\"inspectionAuthority\":\"syntax only; runtime path and repetition unverified\",\"sourceMatch\":\"match-6b142a11d2e713bc33effd6a\",\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"sourceRulePath\":[\"generators\",0,\"iter\"]},\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"sourceStructure\":true,\"source_evidence\":[\"e-527136f6b808a49e\"]},{\"certainty\":\"syntax\",\"expression\":\"name\",\"generationContract\":null,\"id\":\"model/group-4-0-1/opaque-10-15-3/rule-c7a0f3a3c506bb4c\",\"kind\":\"source_structure\",\"label\":\"name\",\"parent\":\"model/group-4-0-1/opaque-10-15-3\",\"sourceAdapterId\":\"adapter-693c8af1a1a691f879669e97\",\"sourceKind\":\"SourceExpression\",\"sourceParameters\":{\"guards\":[\"for (name, embedding) in records\",\"if embedding is not None\"],\"inspectionAuthority\":\"syntax only; runtime path and repetition unverified\",\"sourceMatch\":\"match-6b142a11d2e713bc33effd6a\",\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"sourceRulePath\":[\"key\"]},\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"sourceStructure\":true,\"source_evidence\":[\"e-79f9ecab9f416db8\"]},{\"certainty\":\"syntax\",\"expression\":\"self.mapper(embedding)\",\"generationContract\":null,\"id\":\"model/group-4-0-1/opaque-10-15-3/rule-77572ff162232407\",\"kind\":\"source_structure\",\"label\":\"self.mapper\",\"parent\":\"model/group-4-0-1/opaque-10-15-3\",\"sourceAdapterId\":\"adapter-693c8af1a1a691f879669e97\",\"sourceKind\":\"SourceCall\",\"sourceParameters\":{\"guards\":[\"for (name, embedding) in records\",\"if embedding is not None\"],\"inspectionAuthority\":\"syntax only; runtime path and repetition unverified\",\"sourceMatch\":\"match-6b142a11d2e713bc33effd6a\",\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"sourceRulePath\":[\"value\"]},\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"sourceStructure\":true,\"source_evidence\":[\"e-abff0153f0897b9e\"]},{\"certainty\":\"syntax\",\"expression\":\"embedding\",\"generationContract\":null,\"id\":\"model/group-4-0-1/opaque-10-15-3/rule-842d8cee4d8e0068\",\"kind\":\"source_structure\",\"label\":\"embedding\",\"parent\":\"model/group-4-0-1/opaque-10-15-3/rule-77572ff162232407\",\"sourceAdapterId\":\"adapter-693c8af1a1a691f879669e97\",\"sourceKind\":\"SourceExpression\",\"sourceParameters\":{\"guards\":[\"for (name, embedding) in records\",\"if embedding is not None\"],\"inspectionAuthority\":\"syntax only; runtime path and repetition unverified\",\"sourceMatch\":\"match-6b142a11d2e713bc33effd6a\",\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"sourceRulePath\":[\"value\",\"args\",0]},\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"sourceStructure\":true,\"source_evidence\":[\"e-a80c7cd0a3bf0222\"]}],\"registrySha256\":\"9c153d45ae26c27b1f5da8becde63af92eb51883b8e8ad1b00860151802f7e5f\",\"schema\":\"summary-source-ir/1\",\"shapePolicy\":\"No tensor dimensions or execution path inferred\"}",
+  "irSha256": "e6a8eb05d376e9af5a3f295b024f50e5875386cbeef4a1ba32a85c3fa8901738",
+  "evidence": {
+    "e-ba5443d006d84f1e": {
+      "file": "relocated_map.py",
+      "line": 4,
+      "endLine": 10,
+      "column": 0,
+      "endColumn": 101,
+      "expression": "class GoldenIndex(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.mapper = nn.Linear(4, 4)\n\n    def forward(self, records):\n        return {name: self.mapper(embedding) for name, embedding in records if embedding is not None}"
+    },
+    "e-b5b419faa7ca54d3": {
+      "file": "relocated_map.py",
+      "line": 7,
+      "endLine": 7,
+      "column": 22,
+      "endColumn": 37,
+      "expression": "nn.Linear(4, 4)"
+    },
+    "e-7d3e8a34e2dbcde8": {
+      "file": "relocated_map.py",
+      "line": 9,
+      "endLine": 9,
+      "column": 22,
+      "endColumn": 29,
+      "expression": "records"
+    },
+    "e-a5ab5f5d1cba4983": {
+      "file": "relocated_map.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 15,
+      "endColumn": 101,
+      "expression": "{name: self.mapper(embedding) for name, embedding in records if embedding is not None}"
+    },
+    "e-12cb29a6c01349e4": {
+      "file": "relocated_map.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 8,
+      "endColumn": 101,
+      "expression": "return {name: self.mapper(embedding) for name, embedding in records if embedding is not None}"
+    },
+    "e-527136f6b808a49e": {
+      "file": "relocated_map.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 68,
+      "endColumn": 75,
+      "expression": "records"
+    },
+    "e-79f9ecab9f416db8": {
+      "file": "relocated_map.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 16,
+      "endColumn": 20,
+      "expression": "name"
+    },
+    "e-abff0153f0897b9e": {
+      "file": "relocated_map.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 22,
+      "endColumn": 44,
+      "expression": "self.mapper(embedding)"
+    },
+    "e-a80c7cd0a3bf0222": {
+      "file": "relocated_map.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 34,
+      "endColumn": 43,
+      "expression": "embedding"
+    }
+  },
+  "diagnostics": [
+    {
+      "node": "model/group-4-0-1/opaque-10-15-3",
+      "evidence": "e-a5ab5f5d1cba4983",
+      "message": "此表达式暂未有静态适配契约。"
+    }
+  ],
+  "config": {},
+  "adapterVersion": 1,
+  "adaptationRequests": [
+    {
+      "nodeId": "model/group-4-0-1/opaque-10-15-3",
+      "sourceEvidence": [
+        "e-a5ab5f5d1cba4983"
+      ],
+      "sourceSymbols": [
+        "relocated_map:GoldenIndex"
+      ],
+      "status": "needs-source-adapter",
+      "generationContract": "unresolved",
+      "truncated": false,
+      "next": {
+        "command": "adapter scaffold",
+        "entry": "relocated_map:GoldenIndex",
+        "workflow": [
+          "scaffold",
+          "review-source-evidence",
+          "validate",
+          "register",
+          "preview"
+        ],
+        "format": "archcanvas-source-adapter/1",
+        "ruleFormat": "archcanvas-source-rule/1",
+        "ruleWorkflow": [
+          "read-source",
+          "author-rule",
+          "rule-validate",
+          "scaffold --rules",
+          "validate",
+          "register",
+          "preview"
+        ],
+        "ruleApplications": [
+          {
+            "adapter": "adapter-693c8af1a1a691f879669e97",
+            "ruleId": "rule-f5ca275a283717fd70c1f3f2",
+            "matchKey": "match-6b142a11d2e713bc33effd6a",
+            "boundary": "model/group-4-0-1/opaque-10-15-3",
+            "anchor": "model/group-4-0-1/opaque-10-15-3",
+            "nodes": [
+              "model/group-4-0-1/opaque-10-15-3",
+              "model/group-4-0-1/opaque-10-15-3/rule-c31e645d57f0dffa",
+              "model/group-4-0-1/opaque-10-15-3/rule-c7a0f3a3c506bb4c",
+              "model/group-4-0-1/opaque-10-15-3/rule-77572ff162232407",
+              "model/group-4-0-1/opaque-10-15-3/rule-842d8cee4d8e0068"
+            ],
+            "reusedNodes": [
+              "model/group-4-0-1/opaque-10-15-3"
+            ],
+            "edges": [
+              "rule-edge-e00849171c64f0c7aff7",
+              "rule-edge-899422b09e8964438595",
+              "rule-edge-34ee10f03aa7d02a6df7"
+            ],
+            "nodeMap": {
+              "source-rule:e52436135e8d2ffe9f8f37d0": "model/group-4-0-1/opaque-10-15-3",
+              "source-rule:886cf30224db1c02cad379d3": "model/group-4-0-1/opaque-10-15-3/rule-c31e645d57f0dffa",
+              "source-rule:5528a0882534588b6d7cbb93": "model/group-4-0-1/opaque-10-15-3/rule-c7a0f3a3c506bb4c",
+              "source-rule:4bb240ad9787dacfd8774579": "model/group-4-0-1/opaque-10-15-3/rule-77572ff162232407",
+              "source-rule:0e519c9a487df043da862dce": "model/group-4-0-1/opaque-10-15-3/rule-842d8cee4d8e0068"
+            },
+            "labels": {
+              "model/group-4-0-1/opaque-10-15-3": "DictComp",
+              "model/group-4-0-1/opaque-10-15-3/rule-c31e645d57f0dffa": "records",
+              "model/group-4-0-1/opaque-10-15-3/rule-c7a0f3a3c506bb4c": "name",
+              "model/group-4-0-1/opaque-10-15-3/rule-77572ff162232407": "self.mapper",
+              "model/group-4-0-1/opaque-10-15-3/rule-842d8cee4d8e0068": "embedding"
+            },
+            "truncated": false,
+            "authority": "source-structure-only"
+          }
+        ]
+      }
+    }
+  ],
+  "coverage": {
+    "scope": "static-source-and-source-inspection",
+    "opaqueBoundaries": 1,
+    "inspectedOpaqueBoundaries": 0,
+    "truncatedInspections": 0,
+    "tensorExecutionVerified": false,
+    "modelExecuted": false,
+    "agentAuthoredSourceRules": true,
+    "sourceRuleApplications": 1,
+    "generationAuthority": "Adapters do not authorize structural generation; use independently checked source-preserving generation when eligible."
+  },
+  "sourceRuleApplications": [
+    {
+      "adapter": "adapter-693c8af1a1a691f879669e97",
+      "ruleId": "rule-f5ca275a283717fd70c1f3f2",
+      "matchKey": "match-6b142a11d2e713bc33effd6a",
+      "boundary": "model/group-4-0-1/opaque-10-15-3",
+      "anchor": "model/group-4-0-1/opaque-10-15-3",
+      "nodes": [
+        "model/group-4-0-1/opaque-10-15-3",
+        "model/group-4-0-1/opaque-10-15-3/rule-c31e645d57f0dffa",
+        "model/group-4-0-1/opaque-10-15-3/rule-c7a0f3a3c506bb4c",
+        "model/group-4-0-1/opaque-10-15-3/rule-77572ff162232407",
+        "model/group-4-0-1/opaque-10-15-3/rule-842d8cee4d8e0068"
+      ],
+      "reusedNodes": [
+        "model/group-4-0-1/opaque-10-15-3"
+      ],
+      "edges": [
+        "rule-edge-e00849171c64f0c7aff7",
+        "rule-edge-899422b09e8964438595",
+        "rule-edge-34ee10f03aa7d02a6df7"
+      ],
+      "nodeMap": {
+        "source-rule:e52436135e8d2ffe9f8f37d0": "model/group-4-0-1/opaque-10-15-3",
+        "source-rule:886cf30224db1c02cad379d3": "model/group-4-0-1/opaque-10-15-3/rule-c31e645d57f0dffa",
+        "source-rule:5528a0882534588b6d7cbb93": "model/group-4-0-1/opaque-10-15-3/rule-c7a0f3a3c506bb4c",
+        "source-rule:4bb240ad9787dacfd8774579": "model/group-4-0-1/opaque-10-15-3/rule-77572ff162232407",
+        "source-rule:0e519c9a487df043da862dce": "model/group-4-0-1/opaque-10-15-3/rule-842d8cee4d8e0068"
+      },
+      "labels": {
+        "model/group-4-0-1/opaque-10-15-3": "DictComp",
+        "model/group-4-0-1/opaque-10-15-3/rule-c31e645d57f0dffa": "records",
+        "model/group-4-0-1/opaque-10-15-3/rule-c7a0f3a3c506bb4c": "name",
+        "model/group-4-0-1/opaque-10-15-3/rule-77572ff162232407": "self.mapper",
+        "model/group-4-0-1/opaque-10-15-3/rule-842d8cee4d8e0068": "embedding"
+      },
+      "truncated": false,
+      "authority": "source-structure-only"
+    }
+  ],
+  "availableSourceRules": [
+    "rule-f5ca275a283717fd70c1f3f2"
+  ]
+}

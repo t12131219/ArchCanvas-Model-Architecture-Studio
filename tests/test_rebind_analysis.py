@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from archcanvas_python import analyze_project
+from archcanvas_python.frontend import AnalysisError
 from archcanvas_python.rebind import inspect_rebind
 
 
@@ -123,7 +124,6 @@ class RebindAnalysisTests(unittest.TestCase):
             "global_scope": SOURCE.replace("out = self.output(b)", "out = self.output(global_tensor)"),
             "signature": SOURCE.replace("def forward(self, features, memory):", "def forward(receiver, features, memory):"),
             "self_store": SOURCE.replace("b = self.activation(a)", "self = self.first(a)\n        b = self.activation(a)"),
-            "descriptor": SOURCE.replace("class Model(nn.Module):", "class Model(nn.Module):\n    __call__ = plugin"),
             "constructor_factory": SOURCE.replace("self.branch = nn.GELU()", "self.branch = plugin_factory()"),
             "initializer_control": SOURCE.replace("self.branch = nn.GELU()", "if True:\n            self.branch = nn.GELU()"),
         }
@@ -169,10 +169,37 @@ class RebindAnalysisTests(unittest.TestCase):
                 options, _, _ = self.inspect(SOURCE.replace("from torch import nn", "from torch import nn\n" + change))
                 self.assertFalse(options["supported"], options)
                 self.assertTrue(options["blockers"])
-        for replacement in ("    forward = replace_forward\n", "    __init__ = replace_init\n"):
+        for replacement in ("    forward = replace_forward\n",):
             with self.subTest(replacement=replacement):
                 options, _, _ = self.inspect(SOURCE.replace("    def forward(self, features, memory):", replacement + "    def forward(self, features, memory):"))
                 self.assertFalse(options["supported"], options)
+
+    def test_replaced_call_does_not_recover_a_different_forward(self):
+        # Python dispatches this replacement instead of the authored forward.
+        # Keeping the old forward's registered modules would describe another
+        # program and cannot provide an authoring/rebind contract.
+        sentinel = self.root / "replacement-executed"
+        source = (f'def plugin(*args, **kwargs):\n    open({str(sentinel)!r}, "w").write("bad")\n'
+                  + SOURCE.replace("class Model(nn.Module):", "class Model(nn.Module):\n    __call__ = plugin"))
+        self.path.write_text(source)
+        with self.assertRaises(AnalysisError):
+            analyze_project(self.root, "model:Model")
+        self.assertFalse(sentinel.exists())
+
+    def test_replaced_initializer_keeps_unknown_calls_and_blocks_rebind(self):
+        sentinel = self.root / "initializer-executed"
+        source = (f'def replace_init(*args, **kwargs):\n    open({str(sentinel)!r}, "w").write("bad")\n'
+                  + SOURCE.replace("    def forward(self, features, memory):",
+                                   "    __init__ = replace_init\n    def forward(self, features, memory):"))
+        self.path.write_text(source)
+        architecture = analyze_project(self.root, "model:Model")
+        self.assertFalse(any(node.get("instanceId", "").endswith(".output") for node in architecture["nodes"]))
+        target = next(node for node in architecture["nodes"] if node["kind"] == "self.output")
+        self.assertEqual((target["category"], target["evidence"]), ("opaque", "opaque"))
+        options = inspect_rebind(self.root, "model:Model", target["id"], architecture)
+        self.assertFalse(options["supported"])
+        self.assertEqual(options["candidates"], [])
+        self.assertFalse(sentinel.exists())
 
     def test_source_change_during_evidence_freezing_cannot_bind_mixed_versions(self):
         architecture = analyze_project(self.root, "model:Model")

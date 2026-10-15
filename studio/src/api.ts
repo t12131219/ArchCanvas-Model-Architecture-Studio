@@ -98,6 +98,7 @@ export const api = {
   save: (document: CanvasDocument, expectedRevision: number, history?: HistoryState) => request<{ document: CanvasDocument; revision: number }>(`/documents/${encodeURIComponent(document.id)}`, { method: 'PUT', body: JSON.stringify(canvasSavePayload(document, expectedRevision, history)) }),
   analyze: (source: string, entry: string, filename: string) => request<Architecture>('/analyze', { method: 'POST', body: JSON.stringify({ source, entry, filename }) }),
   register: (architecture: Architecture) => mutation<ManagedProject>('/projects', { entry: architecture.entry, sources: architecture.sources, sourceDigest: architecture.sourceDigest, irDigest: architecture.irDigest }),
+  open: (architecture: Architecture) => mutation<{ documentId: string; projectId: string; revision: number }>('/open', { architecture }),
   project: (id: string) => request<ManagedProject>(`/projects/${encodeURIComponent(id)}`),
   prepare: (project: string, architecture: Architecture, nodeId: string, parameter: string, value: number) => mutation<Transaction>(`/projects/${encodeURIComponent(project)}/transactions`, { nodeId, parameter, value, baseSourceDigest: architecture.sourceDigest, baseIrDigest: architecture.irDigest }),
   configurationOptions: (project: string, architecture: Architecture, nodeId: string, parameter: string) => mutation<ConfigurationOptions>(`/projects/${encodeURIComponent(project)}/configuration-options`, { nodeId, parameter, baseSourceDigest: architecture.sourceDigest, baseIrDigest: architecture.irDigest }),

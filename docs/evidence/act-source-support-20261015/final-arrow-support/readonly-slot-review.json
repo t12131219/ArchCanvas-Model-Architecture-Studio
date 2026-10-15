@@ -1,0 +1,106 @@
+{
+  "schema": "archcanvas-source-slot-readonly-audit/1",
+  "modelExecuted": false,
+  "implementationEdited": false,
+  "scope": "Existing 23 def/use regression cases and current ACT bundle only; no new syntax or generation authority.",
+  "existingFixtureChecks": [
+    {
+      "existingFixture": "known",
+      "expected": [
+        [
+          "x.cos",
+          "right"
+        ],
+        [
+          "x.sin",
+          "left"
+        ]
+      ],
+      "forbidden": [
+        [
+          "x.cos",
+          "left"
+        ],
+        [
+          "x.sin",
+          "right"
+        ]
+      ],
+      "actual": [
+        [
+          "x.cos",
+          "right"
+        ],
+        [
+          "x.sin",
+          "left"
+        ]
+      ],
+      "passed": true
+    },
+    {
+      "existingFixture": "partly-unknown",
+      "expected": [
+        [
+          "unseen",
+          "left"
+        ],
+        [
+          "x.cos",
+          "right"
+        ]
+      ],
+      "forbidden": [
+        [
+          "unseen",
+          "right"
+        ],
+        [
+          "x.cos",
+          "left"
+        ]
+      ],
+      "actual": [
+        [
+          "unseen",
+          "left"
+        ],
+        [
+          "x.cos",
+          "right"
+        ]
+      ],
+      "passed": true
+    }
+  ],
+  "actModelReturnProjections": [
+    {
+      "sourceId": "model/group-9-0-1/opaque-23-8-11/adapter-81461260d30ad54d",
+      "sourceLabel": "latent_proj · nn.Linear",
+      "expression": "nn.Linear(hidden_dim, self.latent_dim*2)",
+      "targetLabel": "kl_divergence",
+      "syntaxOnly": true
+    },
+    {
+      "sourceId": "model/group-9-0-1/opaque-23-8-11/adapter-94bd3054484471a5",
+      "sourceLabel": "action_head · nn.Linear",
+      "expression": "nn.Linear(hidden_dim, state_dim)",
+      "targetLabel": "F.l1_loss",
+      "syntaxOnly": true
+    }
+  ],
+  "actSlotProjection": "latent_proj supplies mu/logvar consumed by KL; action_head supplies a_hat consumed by L1; no cross-slot producer found in this audit.",
+  "sourcePreservationSummary": "source-preservation/summary.json",
+  "sourcePreservationSummarySha256": "51725879c565989102a961dc1a1f6384040914a4ce253f03c00a70264073f31b",
+  "sourcePreservationImplementationMismatches": {},
+  "runtimeFiles": {
+    "src/archcanvas_python/source_dependencies.py": "ea6c4b7fc60b48638afb215bdf98d7f47a948446a92751bdd08e2d6664a81210",
+    "src/archcanvas_python/source_structure.py": "80f27c3542bd54ccef6b089ec1b8b28f6534dd611a627c68f198ed8975ce70e5",
+    "src/archcanvas_adapters/registry.py": "83c63c5c87f788db6d141d6661cc06512c3ac6fb2a458354b63bbd607255c21f"
+  },
+  "limits": [
+    "Unknown or shape-mismatched unpacking retains broad source provenance with Value.complete=false; it does not certify return slots or tensor identity.",
+    "A missing local result leaf may use its source definition as an incomplete producer; proven sibling slots are not unioned into that leaf.",
+    "No audit claim about arbitrary container mutation, runtime branch selection, shapes or execution."
+  ]
+}

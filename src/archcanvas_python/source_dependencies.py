@@ -101,8 +101,18 @@ def source_dependencies(structure):
             env = {name: value if isinstance(value, Value) else EMPTY for name, value in bound.items()}
             body, own_unit = roots[target]
             _, falls, returned = block(body, own_unit, target, env, (*stack, target))
-            if falls or not returned.complete:
+            if falls:
                 return replace(joined([returned, Value(frozenset({Trace(target)}), complete=False)]), complete=False)
+            if not returned.complete:
+                # A literal return tuple remains structurally known even when
+                # one leaf has unresolved provenance. Do not spread a known
+                # sibling's producer into every slot as a fallback. The local
+                # definition supplies only leaves whose origin stayed unknown.
+                def fill_unknown(value):
+                    if value.slots is not None:
+                        return structured((key, fill_unknown(child)) for key, child in value.slots)
+                    return value if value.producers or value.complete else Value(frozenset({Trace(target)}), complete=False)
+                return fill_unknown(returned)
             return returned
         inputs = joined([*args, *keywords.values()])
         link(inputs, {target}, unit, expression)
@@ -152,9 +162,22 @@ def source_dependencies(structure):
         if isinstance(target, ast.Name):
             env[target.id] = value
         elif isinstance(target, (ast.Tuple, ast.List)):
-            slots = dict(value.slots) if value.slots is not None else {}
+            # An unresolved call still produced the object being unpacked.
+            # Retain that broad source dependency without pretending to know
+            # which return slot or runtime tensor each name denotes. Proven
+            # structured returns continue to select their exact authored slot.
+            slots = dict(value.slots) if value.slots is not None else None
+            precise = slots is not None and len(slots) == len(target.elts) and not any(isinstance(item, ast.Starred) for item in target.elts)
+            broad = Value(value.producers, complete=False)
             for i, item in enumerate(target.elts):
-                assign(item, slots.get(i, UNKNOWN), env)
+                assign(item.value if isinstance(item, ast.Starred) else item,
+                       slots.get(i, UNKNOWN) if precise else broad, env)
+
+    def statement_use(statement, value, unit, parent):
+        # A visible assignment/return card consumes its RHS. Keep the original
+        # value provenance through aliases and returns; this is not a new
+        # tensor operation, a statement-order edge or a generated binding.
+        link(value, structure.statement_nodes.get((parent, id(statement)), ()), unit, statement)
 
     def merge(environments):
         names = set().union(*(env.keys() for env in environments))
@@ -201,13 +224,18 @@ def source_dependencies(structure):
                             env[node.id] = UNKNOWN
             elif isinstance(statement, (ast.Assign, ast.AnnAssign)):
                 value = expression(statement.value, env, unit, parent, stack)
+                statement_use(statement, value, unit, parent)
                 targets = statement.targets if isinstance(statement, ast.Assign) else [statement.target]
                 for target in targets:
                     assign(target, value, env)
             elif isinstance(statement, ast.AugAssign):
-                assign(statement.target, joined([expression(statement.target, env, unit, parent, stack), expression(statement.value, env, unit, parent, stack)]), env)
+                value = joined([expression(statement.target, env, unit, parent, stack), expression(statement.value, env, unit, parent, stack)])
+                statement_use(statement, value, unit, parent)
+                assign(statement.target, value, env)
             elif isinstance(statement, ast.Return):
-                returns.append(expression(statement.value, env, unit, parent, stack))
+                value = expression(statement.value, env, unit, parent, stack)
+                statement_use(statement, value, unit, parent)
+                returns.append(value)
                 return env, False, joined(returns)
             elif isinstance(statement, ast.Expr):
                 expression(statement.value, env, unit, parent, stack)

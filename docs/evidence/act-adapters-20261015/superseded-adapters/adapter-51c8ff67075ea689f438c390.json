@@ -1,0 +1,1322 @@
+{
+  "authority": "source-structure-only; no execution path, tensor ports, shapes, or source-generation authority",
+  "binding": {
+    "entry": "policy:CNNMLPPolicy",
+    "method": "__call__",
+    "methodSpan": {
+      "column": 4,
+      "endColumn": 24,
+      "endLine": 66,
+      "expression": "def __call__(self, qpos, image, actions=None, is_pad=None):\n        env_state = None # TODO\n        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],\n                                         std=[0.229, 0.224, 0.225])\n        image = normalize(image)\n        if actions is not None: # training time\n            actions = actions[:, 0]\n            a_hat = self.model(qpos, image, env_state, actions)\n            mse = F.mse_loss(actions, a_hat)\n            loss_dict = dict()\n            loss_dict['mse'] = mse\n            loss_dict['loss'] = loss_dict['mse']\n            return loss_dict\n        else: # inference time\n            a_hat = self.model(qpos, image, env_state) # no action, sample from prior\n            return a_hat",
+      "line": 51,
+      "path": "policy.py",
+      "sha256": "9bcceef32b6beec2f743e13455482b0c777a8ec9e2531c5fc86217efc1a286fc"
+    },
+    "sourceFiles": [
+      {
+        "path": "constants.py",
+        "sha256": "2e27d4412e2b7e1f2e4148105fdf514d8c52ec6c8f1c86ef0549c475e8b91d86"
+      },
+      {
+        "path": "detr/main.py",
+        "sha256": "c849042c949d4cfe9ff41b4b167a2af67dae4ba4a0e8b7d25a875d04231a4162"
+      },
+      {
+        "path": "detr/models/__init__.py",
+        "sha256": "7ed43d119c4bef1c46df821cc3b4f256153fbe59717a2e9f1825abc2d3b3e778"
+      },
+      {
+        "path": "detr/models/backbone.py",
+        "sha256": "dec9770e496e2deb56f694e622a15d01ea3bdea977c2446fb3c41bc18cf4ed55"
+      },
+      {
+        "path": "detr/models/detr_vae.py",
+        "sha256": "499d968a3704156e5e29425a29691c3fa93421481d3609ed6b600b21801270f1"
+      },
+      {
+        "path": "detr/models/position_encoding.py",
+        "sha256": "5a8f62c66fc7ec66e862bdfe96e122098b93a688fbed514460990c74fa307151"
+      },
+      {
+        "path": "detr/models/transformer.py",
+        "sha256": "c6d2a1e7138e6ca62db7cc61bfc99857fb2a3a9375ba7b304310ca264f357ee2"
+      },
+      {
+        "path": "detr/setup.py",
+        "sha256": "96d9ab1a9911e640992121cf64a2d98c1894bf50e51589502388ecd08228f120"
+      },
+      {
+        "path": "detr/util/__init__.py",
+        "sha256": "9e535c45af09ac24ef8d5631a151f77febafe72a92ad6bfeb2d941f0c4a54e35"
+      },
+      {
+        "path": "detr/util/box_ops.py",
+        "sha256": "f0c1c3e27b0f69955e74b09b4ae1898e41e409d1af292c478ba8be71856112fc"
+      },
+      {
+        "path": "detr/util/misc.py",
+        "sha256": "b56dfabebf8eded2e7dbf359e167bd308d9c75ee0394f63a751cad9eee597f00"
+      },
+      {
+        "path": "detr/util/plot_utils.py",
+        "sha256": "45e371d165675185fce81142332da1408abc982585e24f7b084f6068fb51e529"
+      },
+      {
+        "path": "ee_sim_env.py",
+        "sha256": "4c93d949c0829ffbbd1ea613e8278c095e8265ebf0dd33ca129958edd93e76c4"
+      },
+      {
+        "path": "imitate_episodes.py",
+        "sha256": "f2b057cd497f3fef20bdc4197879d1c02e1c751f83154cce0183fcc10f7e2540"
+      },
+      {
+        "path": "policy.py",
+        "sha256": "352efca415ee0e31073a27ca91560195702d1e9b545e573a3a668a53f06dd127"
+      },
+      {
+        "path": "record_sim_episodes.py",
+        "sha256": "1ad3bdb05defb3059f664851a99d9c2cee6fea1e2591882e1685ee123c81cb98"
+      },
+      {
+        "path": "scripted_policy.py",
+        "sha256": "8b8425ea09c248d086e47eebaf3875be77bea7d3694fee83a1d7c8f0e1f25c36"
+      },
+      {
+        "path": "sim_env.py",
+        "sha256": "691f555cb3d8ede94c8ddc9c76a996f03b00f3bbdee9726efa44cd75b19d0ada"
+      },
+      {
+        "path": "utils.py",
+        "sha256": "71315de9e613024e781f089c2f46baa6a94be79daa97a45c8601829fc1badcec"
+      },
+      {
+        "path": "visualize_episodes.py",
+        "sha256": "b2d543b0b9271317bf461383d6b6d42269d10787fdd556432db303f905cdff75"
+      }
+    ],
+    "symbol": {
+      "column": 0,
+      "endColumn": 29,
+      "endLine": 69,
+      "expression": "class CNNMLPPolicy(nn.Module):\n    def __init__(self, args_override):\n        super().__init__()\n        model, optimizer = build_CNNMLP_model_and_optimizer(args_override)\n        self.model = model # decoder\n        self.optimizer = optimizer\n\n    def __call__(self, qpos, image, actions=None, is_pad=None):\n        env_state = None # TODO\n        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],\n                                         std=[0.229, 0.224, 0.225])\n        image = normalize(image)\n        if actions is not None: # training time\n            actions = actions[:, 0]\n            a_hat = self.model(qpos, image, env_state, actions)\n            mse = F.mse_loss(actions, a_hat)\n            loss_dict = dict()\n            loss_dict['mse'] = mse\n            loss_dict['loss'] = loss_dict['mse']\n            return loss_dict\n        else: # inference time\n            a_hat = self.model(qpos, image, env_state) # no action, sample from prior\n            return a_hat\n\n    def configure_optimizers(self):\n        return self.optimizer",
+      "line": 44,
+      "path": "policy.py",
+      "qualifiedName": "policy:CNNMLPPolicy"
+    }
+  },
+  "children": [
+    {
+      "category": "container",
+      "children": [
+        "source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d",
+        "source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d@2"
+      ],
+      "evidence": "source",
+      "id": "source:adapter-root:SourceConditional:a328f95c6d",
+      "kind": "SourceConditional",
+      "label": "if actions is not None",
+      "parameters": {},
+      "parentId": null,
+      "ports": [],
+      "source": {
+        "column": 8,
+        "endColumn": 24,
+        "endLine": 66,
+        "expression": "if actions is not None: # training time\n            actions = actions[:, 0]\n            a_hat = self.model(qpos, image, env_state, actions)\n            mse = F.mse_loss(actions, a_hat)\n            loss_dict = dict()\n            loss_dict['mse'] = mse\n            loss_dict['loss'] = loss_dict['mse']\n            return loss_dict\n        else: # inference time\n            a_hat = self.model(qpos, image, env_state) # no action, sample from prior\n            return a_hat",
+        "line": 56,
+        "path": "policy.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [
+        "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056",
+        "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceCode:077ce5b86f",
+        "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceCall:9fe51a10e0",
+        "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceCall:475f946347",
+        "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceCode:b1913bf4ef",
+        "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceCode:4ea0d2dbe8",
+        "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceCode:b4ec0b8463"
+      ],
+      "evidence": "source",
+      "id": "source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d",
+      "kind": "SourceBranch",
+      "label": "if actions is not None",
+      "parameters": {
+        "condition": "actions is not None"
+      },
+      "parentId": "source:adapter-root:SourceConditional:a328f95c6d",
+      "ports": [],
+      "source": {
+        "column": 8,
+        "endColumn": 24,
+        "endLine": 66,
+        "expression": "if actions is not None: # training time\n            actions = actions[:, 0]\n            a_hat = self.model(qpos, image, env_state, actions)\n            mse = F.mse_loss(actions, a_hat)\n            loss_dict = dict()\n            loss_dict['mse'] = mse\n            loss_dict['loss'] = loss_dict['mse']\n            return loss_dict\n        else: # inference time\n            a_hat = self.model(qpos, image, env_state) # no action, sample from prior\n            return a_hat",
+        "line": 56,
+        "path": "policy.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [
+        "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d@2:SourceModule:eb1fa74056",
+        "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d@2:SourceCode:f22b6af135"
+      ],
+      "evidence": "source",
+      "id": "source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d@2",
+      "kind": "SourceBranch",
+      "label": "else",
+      "parameters": {
+        "condition": "not (actions is not None)"
+      },
+      "parentId": "source:adapter-root:SourceConditional:a328f95c6d",
+      "ports": [],
+      "source": {
+        "column": 8,
+        "endColumn": 24,
+        "endLine": 66,
+        "expression": "if actions is not None: # training time\n            actions = actions[:, 0]\n            a_hat = self.model(qpos, image, env_state, actions)\n            mse = F.mse_loss(actions, a_hat)\n            loss_dict = dict()\n            loss_dict['mse'] = mse\n            loss_dict['loss'] = loss_dict['mse']\n            return loss_dict\n        else: # inference time\n            a_hat = self.model(qpos, image, env_state) # no action, sample from prior\n            return a_hat",
+        "line": 56,
+        "path": "policy.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [
+        "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734",
+        "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:602d0d121b",
+        "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceModule:0bd1771127",
+        "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceCode:9392048eab",
+        "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceCode:652040fa39",
+        "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceCode:a32a5ccec5",
+        "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceCode:276a459318",
+        "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceCall:30fb493ff9",
+        "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceCall:067fadd4d7",
+        "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceCode:f22b6af135"
+      ],
+      "evidence": "source",
+      "id": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056",
+      "kind": "SourceModule",
+      "label": "model",
+      "parameters": {
+        "bindingEvidence": "source containment across factory/constructor arguments; no execution path selected",
+        "construction": "CNNMLP(backbones, state_dim=state_dim, camera_names=args.camera_names)",
+        "definition": "detr.models.detr_vae:CNNMLP",
+        "sourceType": "CNNMLP"
+      },
+      "parentId": "source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d",
+      "ports": [],
+      "source": {
+        "column": 12,
+        "endColumn": 5,
+        "endLine": 272,
+        "expression": "CNNMLP(\n        backbones,\n        state_dim=state_dim,\n        camera_names=args.camera_names,\n    )",
+        "line": 268,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d@2:SourceModule:eb1fa74056",
+      "kind": "SourceModule",
+      "label": "model",
+      "parameters": {
+        "bindingEvidence": "source containment across factory/constructor arguments; no execution path selected",
+        "construction": "CNNMLP(backbones, state_dim=state_dim, camera_names=args.camera_names)",
+        "definition": "detr.models.detr_vae:CNNMLP",
+        "definitionReference": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056",
+        "definitionScope": "shared source body only; this construction and runtime instance remain distinct",
+        "sourceType": "CNNMLP"
+      },
+      "parentId": "source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d@2",
+      "ports": [],
+      "source": {
+        "column": 12,
+        "endColumn": 5,
+        "endLine": 272,
+        "expression": "CNNMLP(\n        backbones,\n        state_dim=state_dim,\n        camera_names=args.camera_names,\n    )",
+        "line": 268,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [
+        "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd",
+        "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:6bf9f9836c",
+        "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceCode:a3730fc008",
+        "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceCode:25c04b6a01",
+        "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceCall:c7c78c58a4"
+      ],
+      "evidence": "source",
+      "id": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734",
+      "kind": "SourceLoop",
+      "label": "for cam_id, cam_name in enumerate(self.camera_names)",
+      "parameters": {
+        "repeatExpression": "for cam_id, cam_name in enumerate(self.camera_names)"
+      },
+      "parentId": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056",
+      "ports": [],
+      "source": {
+        "column": 8,
+        "endColumn": 79,
+        "endLine": 189,
+        "expression": "for cam_id, cam_name in enumerate(self.camera_names):\n            features, pos = self.backbones[cam_id](image[:, cam_id])\n            features = features[0] # take the last layer feature\n            pos = pos[0] # not used\n            all_cam_features.append(self.backbone_down_projs[cam_id](features))",
+        "line": 185,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [
+        "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:602d0d121b:SourceCall:8fca2843ff",
+        "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:602d0d121b:SourceCall:8b36d68aff"
+      ],
+      "evidence": "source",
+      "id": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:602d0d121b",
+      "kind": "SourceLoop",
+      "label": "for cam_feature in all_cam_features",
+      "parameters": {
+        "repeatExpression": "for cam_feature in all_cam_features"
+      },
+      "parentId": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056",
+      "ports": [],
+      "source": {
+        "column": 8,
+        "endColumn": 68,
+        "endLine": 193,
+        "expression": "for cam_feature in all_cam_features:\n            flattened_features.append(cam_feature.reshape([bs, -1]))",
+        "line": 192,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceModule:0bd1771127",
+      "kind": "SourceModule",
+      "label": "mlp",
+      "parameters": {
+        "bindingEvidence": "source containment across factory/constructor arguments; no execution path selected",
+        "constructedWhen": "(source containment candidate; runtime path/configuration unverified)",
+        "construction": "nn.Sequential(*mods)",
+        "sourceType": "nn.Sequential"
+      },
+      "parentId": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056",
+      "ports": [],
+      "source": {
+        "column": 12,
+        "endColumn": 32,
+        "endLine": 208,
+        "expression": "nn.Sequential(*mods)",
+        "line": 208,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [
+        "source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd"
+      ],
+      "evidence": "source",
+      "id": "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd",
+      "kind": "SourceModule",
+      "label": "backbones",
+      "parameters": {
+        "constructedWhen": "(backbones is not None)",
+        "construction": "nn.ModuleList(backbones)",
+        "repeatExpression": "source element templates; configured collection count is unresolved",
+        "sourceType": "nn.ModuleList"
+      },
+      "parentId": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734",
+      "ports": [],
+      "source": {
+        "column": 29,
+        "endColumn": 53,
+        "endLine": 158,
+        "expression": "nn.ModuleList(backbones)",
+        "line": 158,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [
+        "source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0"
+      ],
+      "evidence": "source",
+      "id": "source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd",
+      "kind": "SourceLoop",
+      "label": "for configured element in backbones",
+      "parameters": {
+        "repeatExpression": "for configured element in backbones",
+        "repetitionStatus": "source template only; runtime count unverified"
+      },
+      "parentId": "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd",
+      "ports": [],
+      "source": {
+        "column": 29,
+        "endColumn": 53,
+        "endLine": 158,
+        "expression": "nn.ModuleList(backbones)",
+        "line": 158,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:6bf9f9836c",
+      "kind": "SourceModule",
+      "label": "backbone_down_projs",
+      "parameters": {
+        "constructedWhen": "(backbones is not None)",
+        "construction": "nn.ModuleList(backbone_down_projs)",
+        "sourceType": "nn.ModuleList"
+      },
+      "parentId": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734",
+      "ports": [],
+      "source": {
+        "column": 39,
+        "endColumn": 73,
+        "endLine": 167,
+        "expression": "nn.ModuleList(backbone_down_projs)",
+        "line": 167,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [
+        "source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0",
+        "source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceCall:14d00b27d3",
+        "source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceCode:a9e9ced49d",
+        "source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceCode:6d1bda4ae1",
+        "source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceCode:a72a9bc494"
+      ],
+      "evidence": "source",
+      "id": "source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0",
+      "kind": "SourceModule",
+      "label": "backbones[*]",
+      "parameters": {
+        "bindingEvidence": "source containment across factory/constructor arguments; no execution path selected",
+        "constructedWhen": "(source element template; runtime repetition unverified)",
+        "construction": "Joiner(backbone, position_embedding)",
+        "definition": "detr.models.backbone:Joiner",
+        "sourceType": "Joiner"
+      },
+      "parentId": "source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd",
+      "ports": [],
+      "source": {
+        "column": 12,
+        "endColumn": 48,
+        "endLine": 120,
+        "expression": "Joiner(backbone, position_embedding)",
+        "line": 120,
+        "path": "detr/models/backbone.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [
+        "source:source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0:SourceCall:2d56468914",
+        "source:source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0:SourceCall:d1a22c7807",
+        "source:source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0:SourceCall:88d2399437",
+        "source:source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0:SourceCall:2bca47ef16"
+      ],
+      "evidence": "source",
+      "id": "source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0",
+      "kind": "SourceLoop",
+      "label": "for name, x in xs.items()",
+      "parameters": {
+        "repeatExpression": "for name, x in xs.items()"
+      },
+      "parentId": "source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0",
+      "ports": [],
+      "source": {
+        "column": 8,
+        "endColumn": 46,
+        "endLine": 110,
+        "expression": "for name, x in xs.items():\n            out.append(x)\n            # position encoding\n            pos.append(self[1](x).to(x.dtype))",
+        "line": 107,
+        "path": "detr/models/backbone.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:adapter-root:SourceCode:41764286b3",
+      "kind": "SourceCode",
+      "label": "env_state",
+      "parameters": {},
+      "parentId": null,
+      "ports": [],
+      "source": {
+        "column": 8,
+        "endColumn": 24,
+        "endLine": 52,
+        "expression": "env_state = None",
+        "line": 52,
+        "path": "policy.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [],
+      "evidence": "source",
+      "id": "source:adapter-root:SourceCall:6666b7e387",
+      "kind": "SourceCall",
+      "label": "transforms.Normalize",
+      "parameters": {},
+      "parentId": null,
+      "ports": [],
+      "source": {
+        "column": 20,
+        "endColumn": 67,
+        "endLine": 54,
+        "expression": "transforms.Normalize(mean=[0.485, 0.456, 0.406],\n                                         std=[0.229, 0.224, 0.225])",
+        "line": 53,
+        "path": "policy.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [],
+      "evidence": "source",
+      "id": "source:adapter-root:SourceCall:c8ef6396dd",
+      "kind": "SourceCall",
+      "label": "normalize",
+      "parameters": {},
+      "parentId": null,
+      "ports": [],
+      "source": {
+        "column": 16,
+        "endColumn": 32,
+        "endLine": 55,
+        "expression": "normalize(image)",
+        "line": 55,
+        "path": "policy.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceCode:077ce5b86f",
+      "kind": "SourceCode",
+      "label": "actions",
+      "parameters": {},
+      "parentId": "source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d",
+      "ports": [],
+      "source": {
+        "column": 12,
+        "endColumn": 35,
+        "endLine": 57,
+        "expression": "actions = actions[:, 0]",
+        "line": 57,
+        "path": "policy.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceCall:9fe51a10e0",
+      "kind": "SourceCall",
+      "label": "F.mse_loss",
+      "parameters": {},
+      "parentId": "source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d",
+      "ports": [],
+      "source": {
+        "column": 18,
+        "endColumn": 44,
+        "endLine": 59,
+        "expression": "F.mse_loss(actions, a_hat)",
+        "line": 59,
+        "path": "policy.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceCall:475f946347",
+      "kind": "SourceCall",
+      "label": "dict",
+      "parameters": {},
+      "parentId": "source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d",
+      "ports": [],
+      "source": {
+        "column": 24,
+        "endColumn": 30,
+        "endLine": 60,
+        "expression": "dict()",
+        "line": 60,
+        "path": "policy.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceCode:b1913bf4ef",
+      "kind": "SourceCode",
+      "label": "loss_dict['mse']",
+      "parameters": {},
+      "parentId": "source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d",
+      "ports": [],
+      "source": {
+        "column": 12,
+        "endColumn": 34,
+        "endLine": 61,
+        "expression": "loss_dict['mse'] = mse",
+        "line": 61,
+        "path": "policy.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceCode:4ea0d2dbe8",
+      "kind": "SourceCode",
+      "label": "loss_dict['loss']",
+      "parameters": {},
+      "parentId": "source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d",
+      "ports": [],
+      "source": {
+        "column": 12,
+        "endColumn": 48,
+        "endLine": 62,
+        "expression": "loss_dict['loss'] = loss_dict['mse']",
+        "line": 62,
+        "path": "policy.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceCode:b4ec0b8463",
+      "kind": "SourceCode",
+      "label": "return",
+      "parameters": {},
+      "parentId": "source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d",
+      "ports": [],
+      "source": {
+        "column": 12,
+        "endColumn": 28,
+        "endLine": 63,
+        "expression": "return loss_dict",
+        "line": 63,
+        "path": "policy.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d@2:SourceCode:f22b6af135",
+      "kind": "SourceCode",
+      "label": "return",
+      "parameters": {},
+      "parentId": "source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d@2",
+      "ports": [],
+      "source": {
+        "column": 12,
+        "endColumn": 24,
+        "endLine": 66,
+        "expression": "return a_hat",
+        "line": 66,
+        "path": "policy.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceCode:9392048eab",
+      "kind": "SourceCode",
+      "label": "is_training",
+      "parameters": {},
+      "parentId": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056",
+      "ports": [],
+      "source": {
+        "column": 8,
+        "endColumn": 41,
+        "endLine": 181,
+        "expression": "is_training = actions is not None",
+        "line": 181,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceCode:652040fa39",
+      "kind": "SourceCode",
+      "label": "bs, _",
+      "parameters": {},
+      "parentId": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056",
+      "ports": [],
+      "source": {
+        "column": 8,
+        "endColumn": 26,
+        "endLine": 182,
+        "expression": "bs, _ = qpos.shape",
+        "line": 182,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceCode:a32a5ccec5",
+      "kind": "SourceCode",
+      "label": "all_cam_features",
+      "parameters": {},
+      "parentId": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056",
+      "ports": [],
+      "source": {
+        "column": 8,
+        "endColumn": 29,
+        "endLine": 184,
+        "expression": "all_cam_features = []",
+        "line": 184,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceCode:276a459318",
+      "kind": "SourceCode",
+      "label": "flattened_features",
+      "parameters": {},
+      "parentId": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056",
+      "ports": [],
+      "source": {
+        "column": 8,
+        "endColumn": 31,
+        "endLine": 191,
+        "expression": "flattened_features = []",
+        "line": 191,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceCall:30fb493ff9",
+      "kind": "SourceCall",
+      "label": "torch.cat",
+      "parameters": {},
+      "parentId": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056",
+      "ports": [],
+      "source": {
+        "column": 29,
+        "endColumn": 66,
+        "endLine": 194,
+        "expression": "torch.cat(flattened_features, axis=1)",
+        "line": 194,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceCall:067fadd4d7",
+      "kind": "SourceCall",
+      "label": "torch.cat",
+      "parameters": {},
+      "parentId": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056",
+      "ports": [],
+      "source": {
+        "column": 19,
+        "endColumn": 64,
+        "endLine": 195,
+        "expression": "torch.cat([flattened_features, qpos], axis=1)",
+        "line": 195,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceCode:f22b6af135",
+      "kind": "SourceCode",
+      "label": "return",
+      "parameters": {},
+      "parentId": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056",
+      "ports": [],
+      "source": {
+        "column": 8,
+        "endColumn": 20,
+        "endLine": 197,
+        "expression": "return a_hat",
+        "line": 197,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceCode:a3730fc008",
+      "kind": "SourceCode",
+      "label": "features",
+      "parameters": {},
+      "parentId": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734",
+      "ports": [],
+      "source": {
+        "column": 12,
+        "endColumn": 34,
+        "endLine": 187,
+        "expression": "features = features[0]",
+        "line": 187,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceCode:25c04b6a01",
+      "kind": "SourceCode",
+      "label": "pos",
+      "parameters": {},
+      "parentId": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734",
+      "ports": [],
+      "source": {
+        "column": 12,
+        "endColumn": 24,
+        "endLine": 188,
+        "expression": "pos = pos[0]",
+        "line": 188,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceCall:c7c78c58a4",
+      "kind": "SourceCall",
+      "label": "all_cam_features.append",
+      "parameters": {},
+      "parentId": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734",
+      "ports": [],
+      "source": {
+        "column": 12,
+        "endColumn": 79,
+        "endLine": 189,
+        "expression": "all_cam_features.append(self.backbone_down_projs[cam_id](features))",
+        "line": 189,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:602d0d121b:SourceCall:8fca2843ff",
+      "kind": "SourceCall",
+      "label": "flattened_features.append",
+      "parameters": {},
+      "parentId": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:602d0d121b",
+      "ports": [],
+      "source": {
+        "column": 12,
+        "endColumn": 68,
+        "endLine": 193,
+        "expression": "flattened_features.append(cam_feature.reshape([bs, -1]))",
+        "line": 193,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:602d0d121b:SourceCall:8b36d68aff",
+      "kind": "SourceCall",
+      "label": "cam_feature.reshape",
+      "parameters": {},
+      "parentId": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:602d0d121b",
+      "ports": [],
+      "source": {
+        "column": 38,
+        "endColumn": 67,
+        "endLine": 193,
+        "expression": "cam_feature.reshape([bs, -1])",
+        "line": 193,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceCall:14d00b27d3",
+      "kind": "SourceCall",
+      "label": "self[0]",
+      "parameters": {},
+      "parentId": "source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0",
+      "ports": [],
+      "source": {
+        "column": 13,
+        "endColumn": 33,
+        "endLine": 104,
+        "expression": "self[0](tensor_list)",
+        "line": 104,
+        "path": "detr/models/backbone.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceCode:a9e9ced49d",
+      "kind": "SourceCode",
+      "label": "out: List[NestedTensor]",
+      "parameters": {},
+      "parentId": "source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0",
+      "ports": [],
+      "source": {
+        "column": 8,
+        "endColumn": 36,
+        "endLine": 105,
+        "expression": "out: List[NestedTensor] = []",
+        "line": 105,
+        "path": "detr/models/backbone.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceCode:6d1bda4ae1",
+      "kind": "SourceCode",
+      "label": "pos",
+      "parameters": {},
+      "parentId": "source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0",
+      "ports": [],
+      "source": {
+        "column": 8,
+        "endColumn": 16,
+        "endLine": 106,
+        "expression": "pos = []",
+        "line": 106,
+        "path": "detr/models/backbone.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "container",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceCode:a72a9bc494",
+      "kind": "SourceCode",
+      "label": "return",
+      "parameters": {},
+      "parentId": "source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0",
+      "ports": [],
+      "source": {
+        "column": 8,
+        "endColumn": 23,
+        "endLine": 112,
+        "expression": "return out, pos",
+        "line": 112,
+        "path": "detr/models/backbone.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0:SourceCall:2d56468914",
+      "kind": "SourceCall",
+      "label": "out.append",
+      "parameters": {},
+      "parentId": "source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0",
+      "ports": [],
+      "source": {
+        "column": 12,
+        "endColumn": 25,
+        "endLine": 108,
+        "expression": "out.append(x)",
+        "line": 108,
+        "path": "detr/models/backbone.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0:SourceCall:d1a22c7807",
+      "kind": "SourceCall",
+      "label": "pos.append",
+      "parameters": {},
+      "parentId": "source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0",
+      "ports": [],
+      "source": {
+        "column": 12,
+        "endColumn": 46,
+        "endLine": 110,
+        "expression": "pos.append(self[1](x).to(x.dtype))",
+        "line": 110,
+        "path": "detr/models/backbone.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0:SourceCall:88d2399437",
+      "kind": "SourceCall",
+      "label": "self[1](x).to",
+      "parameters": {},
+      "parentId": "source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0",
+      "ports": [],
+      "source": {
+        "column": 23,
+        "endColumn": 45,
+        "endLine": 110,
+        "expression": "self[1](x).to(x.dtype)",
+        "line": 110,
+        "path": "detr/models/backbone.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [],
+      "evidence": "source",
+      "id": "source:source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0:SourceCall:2bca47ef16",
+      "kind": "SourceCall",
+      "label": "self[1]",
+      "parameters": {},
+      "parentId": "source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0",
+      "ports": [],
+      "source": {
+        "column": 23,
+        "endColumn": 33,
+        "endLine": 110,
+        "expression": "self[1](x)",
+        "line": 110,
+        "path": "detr/models/backbone.py"
+      },
+      "sourceStructure": true
+    }
+  ],
+  "config": {},
+  "dependencies": [
+    {
+      "id": "source-relation:f223d22b6a8ffa748e77bd58",
+      "kind": "value-dependency",
+      "source": {
+        "column": 16,
+        "endColumn": 32,
+        "endLine": 55,
+        "expression": "normalize(image)",
+        "line": 55,
+        "path": "policy.py"
+      },
+      "sourceId": "source:adapter-root:SourceCall:6666b7e387",
+      "targetId": "source:adapter-root:SourceCall:c8ef6396dd"
+    },
+    {
+      "id": "source-relation:88327c2e94492af9a85b95a8",
+      "kind": "value-dependency",
+      "source": {
+        "column": 28,
+        "endColumn": 68,
+        "endLine": 186,
+        "expression": "self.backbones[cam_id](image[:, cam_id])",
+        "line": 186,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceId": "source:adapter-root:SourceCall:c8ef6396dd",
+      "targetId": "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd"
+    },
+    {
+      "id": "source-relation:5d616161f2b477db424034e8",
+      "kind": "value-dependency",
+      "source": {
+        "column": 12,
+        "endColumn": 79,
+        "endLine": 189,
+        "expression": "all_cam_features.append(self.backbone_down_projs[cam_id](features))",
+        "line": 189,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceId": "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:6bf9f9836c",
+      "targetId": "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceCall:c7c78c58a4"
+    },
+    {
+      "id": "source-relation:37a12620196a278412cf810f",
+      "kind": "value-dependency",
+      "source": {
+        "column": 12,
+        "endColumn": 68,
+        "endLine": 193,
+        "expression": "flattened_features.append(cam_feature.reshape([bs, -1]))",
+        "line": 193,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceId": "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:602d0d121b:SourceCall:8b36d68aff",
+      "targetId": "source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:602d0d121b:SourceCall:8fca2843ff"
+    },
+    {
+      "id": "source-relation:67e6881395c52b235285cdcb",
+      "kind": "value-dependency",
+      "source": {
+        "column": 19,
+        "endColumn": 64,
+        "endLine": 195,
+        "expression": "torch.cat([flattened_features, qpos], axis=1)",
+        "line": 195,
+        "path": "detr/models/detr_vae.py"
+      },
+      "sourceId": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceCall:30fb493ff9",
+      "targetId": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceCall:067fadd4d7"
+    },
+    {
+      "id": "source-relation:802f35c1a5739586e505cfd0",
+      "kind": "value-dependency",
+      "source": {
+        "column": 18,
+        "endColumn": 44,
+        "endLine": 59,
+        "expression": "F.mse_loss(actions, a_hat)",
+        "line": 59,
+        "path": "policy.py"
+      },
+      "sourceId": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056",
+      "targetId": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceCall:9fe51a10e0"
+    },
+    {
+      "id": "source-relation:83ce9c540e94d2ea76c4a657",
+      "kind": "value-dependency",
+      "source": {
+        "column": 18,
+        "endColumn": 44,
+        "endLine": 59,
+        "expression": "F.mse_loss(actions, a_hat)",
+        "line": 59,
+        "path": "policy.py"
+      },
+      "sourceId": "source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceModule:0bd1771127",
+      "targetId": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceCall:9fe51a10e0"
+    },
+    {
+      "id": "source-relation:85fe8ef1980a08c7ec50f5eb",
+      "kind": "value-dependency",
+      "source": {
+        "column": 20,
+        "endColumn": 54,
+        "endLine": 65,
+        "expression": "self.model(qpos, image, env_state)",
+        "line": 65,
+        "path": "policy.py"
+      },
+      "sourceId": "source:adapter-root:SourceCall:c8ef6396dd",
+      "targetId": "source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d@2:SourceModule:eb1fa74056"
+    },
+    {
+      "id": "source-relation:7e16800e2ec595a5d829c9a2",
+      "kind": "value-dependency",
+      "source": {
+        "column": 23,
+        "endColumn": 45,
+        "endLine": 110,
+        "expression": "self[1](x).to(x.dtype)",
+        "line": 110,
+        "path": "detr/models/backbone.py"
+      },
+      "sourceId": "source:source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0:SourceCall:2bca47ef16",
+      "targetId": "source:source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0:SourceCall:88d2399437"
+    },
+    {
+      "id": "source-relation:923aaba47657e5a7cc0d8106",
+      "kind": "value-dependency",
+      "source": {
+        "column": 12,
+        "endColumn": 46,
+        "endLine": 110,
+        "expression": "pos.append(self[1](x).to(x.dtype))",
+        "line": 110,
+        "path": "detr/models/backbone.py"
+      },
+      "sourceId": "source:source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0:SourceCall:88d2399437",
+      "targetId": "source:source:source:source:source:source:source:source:source:adapter-root:SourceConditional:a328f95c6d:SourceBranch:a328f95c6d:SourceModule:eb1fa74056:SourceLoop:b2a3cb5734:SourceModule:ce306485bd:SourceLoop:ce306485bd:SourceModule:c474ab3aa0:SourceLoop:acefd1bdb0:SourceCall:d1a22c7807"
+    }
+  ],
+  "diagnostics": [],
+  "generationContract": null,
+  "id": "adapter-51c8ff67075ea689f438c390",
+  "inputs": [
+    {
+      "id": "input-0",
+      "kind": "source-parameter",
+      "name": "qpos",
+      "parameterKind": "positional-or-keyword",
+      "required": true,
+      "source": {
+        "column": 23,
+        "endColumn": 27,
+        "endLine": 51,
+        "expression": "qpos",
+        "line": 51,
+        "path": "policy.py"
+      }
+    },
+    {
+      "id": "input-1",
+      "kind": "source-parameter",
+      "name": "image",
+      "parameterKind": "positional-or-keyword",
+      "required": true,
+      "source": {
+        "column": 29,
+        "endColumn": 34,
+        "endLine": 51,
+        "expression": "image",
+        "line": 51,
+        "path": "policy.py"
+      }
+    },
+    {
+      "defaultSource": {
+        "column": 44,
+        "endColumn": 48,
+        "endLine": 51,
+        "expression": "None",
+        "line": 51,
+        "path": "policy.py"
+      },
+      "id": "input-2",
+      "kind": "source-parameter",
+      "name": "actions",
+      "parameterKind": "positional-or-keyword",
+      "required": false,
+      "source": {
+        "column": 36,
+        "endColumn": 43,
+        "endLine": 51,
+        "expression": "actions",
+        "line": 51,
+        "path": "policy.py"
+      }
+    },
+    {
+      "defaultSource": {
+        "column": 57,
+        "endColumn": 61,
+        "endLine": 51,
+        "expression": "None",
+        "line": 51,
+        "path": "policy.py"
+      },
+      "id": "input-3",
+      "kind": "source-parameter",
+      "name": "is_pad",
+      "parameterKind": "positional-or-keyword",
+      "required": false,
+      "source": {
+        "column": 50,
+        "endColumn": 56,
+        "endLine": 51,
+        "expression": "is_pad",
+        "line": 51,
+        "path": "policy.py"
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "id": "return-63-12-0",
+      "kind": "source-return-slot",
+      "path": [],
+      "source": {
+        "column": 19,
+        "endColumn": 28,
+        "endLine": 63,
+        "expression": "loss_dict",
+        "line": 63,
+        "path": "policy.py"
+      }
+    },
+    {
+      "id": "return-66-12-1",
+      "kind": "source-return-slot",
+      "path": [],
+      "source": {
+        "column": 19,
+        "endColumn": 24,
+        "endLine": 66,
+        "expression": "a_hat",
+        "line": 66,
+        "path": "policy.py"
+      }
+    }
+  ],
+  "presentation": {
+    "labels": {},
+    "notes": [
+      "Source inspection only. Training/inference paths and configured repeat counts remain unresolved; no model execution occurred."
+    ]
+  },
+  "schema": "archcanvas-source-adapter/1"
+}

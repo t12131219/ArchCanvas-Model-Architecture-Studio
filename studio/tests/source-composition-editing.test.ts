@@ -12,6 +12,7 @@ import { changeDraft, draftHistory, travelDraft, moveDraftNodes } from '../src/a
 import type { AuthoredDraft } from '../src/authoring.ts';
 import type { ImportedSourceDraft, GeneratedDraft } from '../src/api.ts';
 import { resumeSourceAuthoring } from '../src/sourceAuthoringSession.ts';
+import { readDraftValidation } from '../src/draftValidation.ts';
 
 const project = fileURLToPath(new URL('../../', import.meta.url));
 function backend(expression: string, value?: unknown): Promise<any> {
@@ -29,6 +30,36 @@ const importEditing = (view: CanvasDocument) => {
   const editing = projectSourceEditing(view);
   return backend('print(json.dumps(import_editable_source_draft(*v)))', [view, buildScene(view), editing.document, editing.scene]) as Promise<ImportedSourceDraft>;
 };
+
+test('source checks expose the generation boundary and reject fabricated generation claims', async () => {
+  const architecture = await backend('print(json.dumps(analyze_source(v,"model:Branch")))', `from torch import nn
+class Branch(nn.Module):
+ def __init__(self):
+  super().__init__(); self.projection=nn.Linear(4, 2)
+ def forward(self,x):
+  if x.sum() > 0: return self.projection(x)
+  return x
+`) as Architecture;
+  const { draft } = await importEditing(createDocument(architecture));
+  const raw = await backend('print(json.dumps(validate_draft(v)))', draft);
+  const result = readDraftValidation(raw);
+  assert.equal(result.complete, true);
+  assert.equal(result.generation?.supported, true);
+  assert.equal(result.generation?.topology, 'preserved');
+  assert.ok(result.generation!.limitations.length > 0);
+  for (const generation of [
+    { ...raw.generation, mode: 'arbitrary-topology' },
+    { ...raw.generation, topology: 'rewritten' },
+    { ...raw.generation, supported: 'yes' },
+    { ...raw.generation, runtimeVerified: true },
+    { ...raw.generation, limitations: [false] },
+  ]) assert.throws(() => readDraftValidation({ ...raw, generation }), /检查响应格式/);
+  const changed = structuredClone(draft);
+  changed.nodes.pop();
+  changed.edges = changed.edges.filter(e => changed.nodes.some(n => n.id === e.source.nodeId) && changed.nodes.some(n => n.id === e.target.nodeId));
+  const blocked = await backend('print(json.dumps(validate_draft(v)))', changed);
+  assert.equal(readDraftValidation(blocked).generation?.supported, false);
+});
 
 test('unresolved regions expose both authored paths and nested source definitions in view and editor', async () => {
   const { validateArchitecture } = await import('../src/core/validate.ts');
@@ -77,7 +108,10 @@ class Wisteria(nn.Module):
   assert.equal(restored.label, 'Inspected projection'); assert.equal(restored.x, position.x); assert.equal(restored.y, position.y);
   assert.match(renderSvg(buildScene(reopened)), /Inspected projection/);
   assert.deepEqual(reopened.architecture, architecture);
-  await assert.rejects(backend('print(json.dumps(generate_model(v)))', after), /Source inspection is expandable/);
+  const preserved = await backend('print(json.dumps(generate_model(v)))', after);
+  assert.equal(preserved.verification.scope, 'source-preserved-literal-edit-copy');
+  assert.equal(preserved.verification.literalEdits, 0);
+  assert.deepEqual(preserved.architecture.sources, architecture.sources);
   assert.deepEqual(after.sourceProvenance!.architecture.sources, architecture.sources);
   for (const field of ['ports', 'instanceId', 'callId', 'repeat', 'parameterOrigins']) {
     const invalid = structuredClone(architecture), inspection = invalid.nodes.find(n => n.id === sourceNode.id)!;

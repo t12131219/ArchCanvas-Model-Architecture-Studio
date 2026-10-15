@@ -39,7 +39,8 @@
   function expandedTemplate(a,n){const wanted=children(a,n.id).filter(v=>!v.junction).map(v=>v.id);return a.variants.find(g=>g.nodes.some(v=>v.id===n.id&&v.expanded)&&wanted.every(id=>g.nodes.some(v=>v.id===id)))||a.detail;}
   function compact(n){const v=copy(n);v.expanded=false;v.routingObstacle=true;v.w=Math.min(330,Math.max(180,n.w));v.h=84;v.labelObstacles=[];v.base=[n.x,n.y];
     const escape=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    v.html=`<rect x="${v.x}" y="${v.y}" width="${v.w}" height="${v.h}" rx="10" fill="${n.fill||'#e7f5fe'}" stroke="#263348" stroke-width="2"/><text x="${v.x+16}" y="${v.y+29}" font-size="16" fill="#172336">${escape(n.label||n.id)}</text><text x="${v.x+16}" y="${v.y+55}" font-size="11" fill="#526078">${escape(n.id)}</text>`;return v;
+    const title=n.foldedPresentation?.title||n.label||n.id,detail=n.foldedPresentation?.detail??n.id;
+    v.html=`<rect x="${v.x}" y="${v.y}" width="${v.w}" height="${v.h}" rx="10" fill="${n.fill||'#e7f5fe'}" stroke="#263348" stroke-width="2"/><text x="${v.x+16}" y="${v.y+29}" font-size="16" fill="#172336">${escape(title)}</text><text x="${v.x+16}" y="${v.y+55}" font-size="11" fill="#526078">${escape(detail)}</text>`;return v;
   }
   function settleJunctions(nodes,doc){
     const inside=(p,r)=>p.x>r.x-EPS&&p.x<r.x+r.w+EPS&&p.y>r.y-EPS&&p.y<r.y+r.h+EPS;
@@ -427,7 +428,7 @@
     for(const m of graph.junctionMarkers||[]){const es=m.edges.map(id=>graph.edges.find(e=>e.id===id));if(es.some(e=>!e)||!graph.nodes.some(n=>n.id===m.owner)||es.some(e=>e.contract.wire!==es[0].contract.wire))errors.push('recursive junction provenance changed');}
     return errors;
   }
-  function edgeErrors(graph,e,points=e.route){if(!graph.recursive)return[];const errors=[],doc=graph.recursive,raw=receipts(doc).edges.get(e.projection?.original);
+  function edgeErrors(graph,e,points=e.route,options={}){if(!graph.recursive)return[];const errors=[],doc=graph.recursive,raw=receipts(doc).edges.get(e.projection?.original);
     if(e.draft){
       // Draft endpoints may change visually; audited bindings and the original
       // projection receipt continue to identify the source relationship.
@@ -443,7 +444,7 @@
     if(e.contract?.wire!==C.wireIdentity(raw,doc.authority.detail))errors.push('recursive wire identity changed');
     for(const gate of e.contract?.gates||[]){const licensed=doc.authority.variants.some(v=>v.edges.some(ve=>(semanticKey(ve)===semanticKey(raw)||trace(ve).some(id=>trace(raw).includes(id)))&&(ve.contract?.gates||[]).some(g=>g.frame===gate.frame&&g.side===gate.side&&g.direction===gate.direction)));
       if(!licensed)errors.push('recursive boundary has no source interface '+gate.frame);}
-    errors.push(...root.SummaryPhysicalPorts.errors(graph,e,points));return errors;
+    if(!options.skipPhysical)errors.push(...root.SummaryPhysicalPorts.errors(graph,e,points));return errors;
   }
   function validate(graph){const errors=nodeErrors(graph),doc=graph.recursive;if(!doc)return {ok:true,violations:[]};const ids=visible(doc),seen=new Set();
     for(const e of graph.edges){errors.push(...edgeErrors(graph,e).map(v=>e.id+': '+v));if(!e.draft&&seen.has(e.projection?.original))errors.push('duplicate recursive source edge');for(const id of e.projection?.originals||[e.projection?.original]){if(e.draft){if(id!==undefined)seen.add(id);continue;}const raw=receipts(doc).edges.get(id);if(!raw||e.source!==representative(doc,raw.source,ids)||e.target!==representative(doc,raw.target,ids)||e.contract?.wire!==C.wireIdentity(raw,doc.authority.detail))errors.push('recursive bundled source provenance changed '+id);seen.add(id);}}

@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-15T05:45:29.404844+00:00",
+  "status": "passed",
+  "scope": "Source conditional overlay survives sanitization and unchanged publication server validation; editor-only source-control data attributes are stripped at export",
+  "implementationSHA256": {
+    "studio/src/previewPublication.ts": "bb75e55e6b3c47f8c804c8a992610488678c34ab1516f1660a245fbeb58f83d9",
+    "studio/tests/previewPublication.test.ts": "445b6ec9f5168ee42d33db042bf2bc6e33aed9617c57a23510e2fb322b93efb9"
+  },
+  "validation": {
+    "command": "node --experimental-strip-types --test --test-isolation=none tests/previewPublication.test.ts",
+    "cwd": "studio",
+    "counts": {
+      "tests": 3,
+      "pass": 3,
+      "fail": 0,
+      "skipped": 0
+    },
+    "environment": "Local Chromium launched outside process sandbox after automatic approval",
+    "log": "docs/evidence/act-source-support-20261015/preview-source-publication-tests.log",
+    "logSHA256": "42491049c1391eb878d926f21a1bdd6d34787054d64e6f09283518711d8449a3",
+    "typescript": {
+      "exitCode": 0,
+      "command": "npx tsc --noEmit",
+      "log": "docs/evidence/act-source-support-20261015/preview-source-publication-tsc.log"
+    }
+  },
+  "verified": [
+    "Actual browser DOM sanitation strips data-source-control id, owner, target, decision and legend attributes from exported SVG without changing the live editor DOM.",
+    "Control route, short dashes, decision diamond, true-label and non-tensor conditional legend geometry remain in sanitized SVG.",
+    "The sanitized output is accepted by the unchanged Python export_svg validator.",
+    "Source/IR data, source generation identity, source-control runtime geometry and backend publication protocol are unchanged."
+  ]
+}

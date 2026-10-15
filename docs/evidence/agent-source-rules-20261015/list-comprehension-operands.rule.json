@@ -1,0 +1,70 @@
+{
+  "schema": "archcanvas-source-rule/1",
+  "name": "List comprehension call operands",
+  "match": {
+    "type": "ListComp",
+    "fields": {
+      "elt": {
+        "type": "Call",
+        "fields": {
+          "args": [
+            {
+              "type": "Name"
+            }
+          ]
+        }
+      },
+      "generators": [
+        {
+          "type": "comprehension",
+          "fields": {
+            "is_async": 0
+          }
+        }
+      ]
+    }
+  },
+  "nodes": [
+    {
+      "key": "region",
+      "at": [],
+      "parent": null,
+      "kind": "SourceLoop"
+    },
+    {
+      "key": "iterable",
+      "at": [
+        "generators",
+        0,
+        "iter"
+      ],
+      "parent": "region",
+      "kind": "SourceExpression"
+    },
+    {
+      "key": "input",
+      "at": [
+        "elt",
+        "args",
+        0
+      ],
+      "parent": "region",
+      "kind": "SourceExpression"
+    },
+    {
+      "key": "call",
+      "at": [
+        "elt"
+      ],
+      "parent": "region",
+      "kind": "SourceCall"
+    }
+  ],
+  "relations": [
+    {
+      "source": "input",
+      "target": "call",
+      "proof": "expression-input"
+    }
+  ]
+}

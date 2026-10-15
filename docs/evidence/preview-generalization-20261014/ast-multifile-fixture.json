@@ -1,6 +1,6 @@
 {
   "schema": "archcanvas-preview-formal-ast-fixture/1",
-  "generatedAt": "2026-10-14T08:42:43.414808+00:00",
+  "generatedAt": "2026-10-15T10:09:22.177033+00:00",
   "inputs": {
     "files": {
       "net/__init__.py": "",
@@ -11,12 +11,16 @@
   },
   "parser": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/src/archcanvas_preview/__init__.py",
   "implementation": {
+    "src/archcanvas_adapters/__init__.py": "68c982322fc63ebf8b9785d7e0935d5760fb0584ed8721c93cfa1416c5207ab7",
+    "src/archcanvas_adapters/registry.py": "d7535bca73d93f76209916734bc1349d79309966e99ee4a167fd698c0ea4b10b",
+    "src/archcanvas_adapters/source_rules.py": "78828ca1bfa3bd7050aaed145b1c02baa1bdec92d01c89ce9211c0a6753966f9",
     "src/archcanvas_preview/__init__.py": "e316c2a9491ed15478647d2cda2cdb329ba7b6072aabab25d32a57f8abd3a249",
-    "src/archcanvas_preview/analyze.py": "d3e5c8e9108ef8bcef9b0e6b70c4ca4744232c7adebab716fb01e12099ec7a7f",
+    "src/archcanvas_preview/analyze.py": "6dc41e0c28bcca00bee072e7f41cd1db14e129a92f524afc69ba63b6882bbb40",
     "src/archcanvas_python/__init__.py": "125d5112117b4267b6000f4d8c720210ade0d3717ec3cd421cdef36bc99373bd",
-    "src/archcanvas_python/frontend.py": "2051fb60512c7a51912d777035cb11e1093aff50dd4798a00fb3cd8d57479f23",
-    "src/archcanvas_python/source_dependencies.py": "678a153947328fdf6ae7598071f15b727931134e7014c507edd1a9da1b41ab66",
-    "src/archcanvas_python/source_structure.py": "5fd477aa38b5ba4aa9ae5c117d8e43ccba0d052f588c81a1ee679d640622dd7e",
+    "src/archcanvas_python/discovery.py": "182c6992bf6ac0d62651b07e767ee2176d15960421133114b509daf1c24ce4a1",
+    "src/archcanvas_python/frontend.py": "48333e024756c0ac319bbd449bfb1a69bca0b721f3468c3f7ac899a9b635d907",
+    "src/archcanvas_python/source_dependencies.py": "ea6c4b7fc60b48638afb215bdf98d7f47a948446a92751bdd08e2d6664a81210",
+    "src/archcanvas_python/source_structure.py": "80f27c3542bd54ccef6b089ec1b8b28f6534dd611a627c68f198ed8975ce70e5",
     "studio/scripts/generate-preview-ast-fixture.py": "7986bdf19c9a369ca047cb819cc091d8269dc7b43919447f0405bb81b4f0a6d5"
   },
   "modelExecuted": false,
@@ -483,13 +487,25 @@
     },
     "diagnostics": [],
     "config": {},
-    "adapterVersion": 1
+    "adapterVersion": 1,
+    "adaptationRequests": [],
+    "coverage": {
+      "scope": "static-source-and-source-inspection",
+      "opaqueBoundaries": 0,
+      "inspectedOpaqueBoundaries": 0,
+      "truncatedInspections": 0,
+      "tensorExecutionVerified": false,
+      "modelExecuted": false,
+      "agentAuthoredSourceRules": true,
+      "sourceRuleApplications": 0,
+      "generationAuthority": "Adapters do not authorize structural generation; use independently checked source-preserving generation when eligible."
+    }
   },
   "architecture": {
     "schemaVersion": 1,
     "id": "architecture:net.model.Model",
     "label": "Model",
-    "sourceDigest": "0ca9243745ddd9ebb6868e5e1c67b222252e9e87a4b047eadadb268d5ede24ae",
+    "sourceDigest": "7d7f41e98fac0c7f3ea85f588d73ae07004a34c7296a24e509c11412da30ae5b",
     "irDigest": "4adb095076bdeaaf21f0806cebc32de425072e3b46b97a362835a30b82dccbb4",
     "entry": "net.model:Model",
     "nodes": [
@@ -981,6 +997,11 @@
       }
     ],
     "sources": [
+      {
+        "path": "net/__init__.py",
+        "content": "",
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
       {
         "path": "net/model.py",
         "content": "from torch import nn\nfrom .ops import Branch\nclass Model(nn.Module):\n def __init__(self):\n  super().__init__()\n  self.shared = Branch()\n def forward(self,x):\n  a = self.shared(x)\n  b = self.shared(x)\n  return a,b\n",

@@ -12,7 +12,8 @@ import type { AuthoringWorkspace, SourceAuthoringView } from '../src/sourceAutho
 import type { AuthoredDraft } from '../src/authoring.ts';
 import type { ImportedSourceDraft } from '../src/api.ts';
 import type { CanvasDocument, Scene } from '../src/core/types.ts';
-import { resumeGeneratedWorkspace, readGeneratedWorkspace, writeGeneratedWorkspace } from '../src/generatedWorkspace.ts';
+import { resumeGeneratedWorkspace, readPersistentGeneratedWorkspace, writePersistentGeneratedWorkspace, authoringViewSelection } from '../src/generatedWorkspace.ts';
+import { createSourceAuthoringCache } from '../src/sourceAuthoringCache.ts';
 import type { GeneratedWorkspaceBinding } from '../src/generatedWorkspace.ts';
 
 const run = promisify(execFile), project = fileURLToPath(new URL('../../', import.meta.url));
@@ -41,13 +42,19 @@ function extract(file: string, component: string, names: string[]) {
     assert.ok(statement, `${file} actual callback ${name}`); return statement.getText(ast); }).join('\n');
 }
 
-function appHarness(document: CanvasDocument, imported: ImportedSourceDraft) {
+function appHarness(document: CanvasDocument, imported: ImportedSourceDraft, stored?: Map<string, unknown>) {
   const historyRef = { current: createHistory(document) }, cameraRef = { current: { ...view.camera } }, loadSequence = { current: 2 };
   const authoringSessions = { current: new Map<string, AuthoringWorkspace>() }, authoringSessionKey = { current: null as string | null };
   const generatedWorkspaces = { current: new Map<string, GeneratedWorkspaceBinding>() }, baselines: Array<AuthoredDraft | undefined> = [];
   const cache = new Map<string, string>(), localStorage = { getItem: (key: string) => cache.get(key) ?? null, setItem: (key: string, value: string) => { cache.set(key, value); } };
+  const records = stored ?? new Map<string, unknown>(), persistentCache = { get: async (key: string) => records.get(key), put: async (key: string, value: unknown) => { records.set(key, structuredClone(value)); } };
+  const sourceCache = createSourceAuthoringCache(persistentCache.get, persistentCache.put, localStorage);
   const opened: AuthoringWorkspace[] = [], failures: string[] = [], busyStates: boolean[] = [], apiCalls: string[] = [];
-  const env = { historyRef, cameraRef, loadSequence, authoringSessions, authoringSessionKey, generatedWorkspaces, resumeGeneratedWorkspace, readGeneratedWorkspace, writeGeneratedWorkspace, localStorage, selection: { kind: 'node', ids: [] as string[] }, tool: 'select', busy: false,
+  const env = { historyRef, cameraRef, loadSequence, authoringSessions, authoringSessionKey, generatedWorkspaces, resumeGeneratedWorkspace,
+    readPersistentGeneratedWorkspace: (document: CanvasDocument) => readPersistentGeneratedWorkspace(document, persistentCache, localStorage),
+    writePersistentGeneratedWorkspace: (workspace: AuthoringWorkspace, binding: GeneratedWorkspaceBinding) => writePersistentGeneratedWorkspace(workspace, binding, persistentCache),
+    readSourceAuthoringWorkspace: sourceCache.read, writeSourceAuthoringWorkspace: sourceCache.write, authoringViewSelection,
+    selection: { kind: 'node', ids: [] as string[] }, tool: 'select', busy: false,
     activeRecovery: null, cancelGesture: () => {}, readCameraViewport: () => view.viewport, sourceAuthoringKey, followSourceView, resumeSourceAuthoring, buildScene,
     api: { importSourceDraft: async () => { apiCalls.push('import'); return imported; }, sourceDraftFrontier: async (draft: AuthoredDraft, doc: CanvasDocument, scene: Scene) => { apiCalls.push('rebase'); return rebaseSource(draft, doc, scene); } },
     setFailure: (value: string) => { failures.push(value); }, setBusy: (value: boolean) => { busyStates.push(value); },
@@ -57,7 +64,7 @@ function appHarness(document: CanvasDocument, imported: ImportedSourceDraft) {
     { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
   const callbacks = new Function(...Object.keys(env), `${code};return {continueModelAuthoring,retainAuthoringWorkspace,steer(ids,nextTool){selection={kind:'node',ids};tool=nextTool}};`)(...Object.values(env)) as {
       continueModelAuthoring: () => Promise<void>; retainAuthoringWorkspace: (workspace: AuthoringWorkspace) => void; steer: (ids: string[], tool: string) => void };
-  return { ...callbacks, historyRef, cameraRef, authoringSessions, generatedWorkspaces, baselines, opened, failures, busyStates, apiCalls };
+  return { ...callbacks, historyRef, cameraRef, authoringSessions, generatedWorkspaces, baselines, opened, failures, busyStates, apiCalls, records };
 }
 
 test('actual App callbacks retain draft undo/redo and follow same-revision camera, selection and tool on multiple returns', async () => {
@@ -76,6 +83,32 @@ test('actual App callbacks retain draft undo/redo and follow same-revision camer
   await h.continueModelAuthoring(); assert.deepEqual(h.opened.at(-1)!.selection, []); assert.equal(h.opened.at(-1)!.history, history);
   assert.deepEqual(h.opened.at(-1)!.camera, h.cameraRef.current); assert.equal(h.apiCalls.length, 1);
   assert.equal(JSON.stringify(h.historyRef.current), sourceHistoryBefore, 'source canvas history is never replaced by semantic draft snapshots');
+});
+
+test('actual original-source edit session restores unsaved semantics and both history stacks after refresh without importing another draft', async () => {
+  const { document, imported } = await fixture(), before = appHarness(document, imported);
+  await before.continueModelAuthoring();
+  const workspace = before.opened.at(-1)!, fc = find(workspace.draft, 'Linear');
+  let history = changeDraft(workspace.history ?? draftHistory(workspace.draft), draft => { draft.nodes.find(node => node.id === fc.id)!.parameters.out_features = 9; });
+  history = changeDraft(history, draft => { draft.nodes.find(node => node.id === fc.id)!.label = 'future'; });
+  history = travelDraft(history, 'undo');
+  before.retainAuthoringWorkspace({ ...workspace, draft: history.draft, history, savedRevision: 0, storageRevision: 5,
+    camera: { x: 187, y: -77, zoom: .81 }, selection: [fc.id], tool: 'pan' });
+  await new Promise(resolve => setImmediate(resolve));
+  const after = appHarness(document, imported, before.records);
+  await after.continueModelAuthoring();
+  assert.deepEqual(after.apiCalls, [], 'the original source session restores before an explicit imported initial can replace it');
+  const recovered = after.opened.at(-1)!;
+  assert.equal(recovered.draft.id, workspace.draft.id); assert.equal(find(recovered.draft, 'Linear').parameters.out_features, 9);
+  assert.deepEqual(recovered.history, history); assert.equal(recovered.history!.future.length, 1);
+  assert.deepEqual(recovered.camera, { x: 187, y: -77, zoom: .81 }); assert.deepEqual(recovered.selection, [fc.id]);
+  assert.equal(recovered.storageRevision, 5); assert.equal(recovered.savedRevision, 0); assert.equal(recovered.tool, 'pan');
+  assert.deepEqual(after.historyRef.current.document, document, 'restored authoring edits do not mutate formal source facts');
+  const revised = applyVisualBatch(document, [{ type: 'alias', id: workspace.draft.sourceProvenance!.nodeRefs[fc.id].nodeId, label: '新的视图名' }]);
+  const rebased = appHarness(revised, imported, before.records); await rebased.continueModelAuthoring();
+  assert.ok(rebased.apiCalls.includes('rebase')); assert.ok(!rebased.apiCalls.includes('import'));
+  assert.equal(find(rebased.opened.at(-1)!.draft, 'Linear').parameters.out_features, 9);
+  assert.equal(rebased.opened.at(-1)!.history!.future.length, 1, 'a changed visual revision rebases the preserved semantic history');
 });
 
 test('real source rebase preserves parameters, added nodes and edges, deletion tombstones and both history stacks', async () => {

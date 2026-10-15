@@ -1,0 +1,91 @@
+{
+  "schema": "archcanvas-source-rule/1",
+  "name": "Filtered dictionary key and call source structure",
+  "match": {
+    "type": "DictComp",
+    "fields": {
+      "key": {
+        "type": "Name"
+      },
+      "value": {
+        "type": "Call",
+        "fields": {
+          "args": [
+            {
+              "type": "Name"
+            }
+          ]
+        }
+      },
+      "generators": [
+        {
+          "type": "comprehension",
+          "fields": {
+            "is_async": 0
+          }
+        }
+      ]
+    }
+  },
+  "nodes": [
+    {
+      "key": "comprehension",
+      "at": [],
+      "parent": null,
+      "kind": "SourceLoop"
+    },
+    {
+      "key": "iterable",
+      "at": [
+        "generators",
+        0,
+        "iter"
+      ],
+      "parent": "comprehension",
+      "kind": "SourceExpression"
+    },
+    {
+      "key": "dictionary-key",
+      "at": [
+        "key"
+      ],
+      "parent": "comprehension",
+      "kind": "SourceExpression"
+    },
+    {
+      "key": "value-call",
+      "at": [
+        "value"
+      ],
+      "parent": "comprehension",
+      "kind": "SourceCall"
+    },
+    {
+      "key": "call-argument",
+      "at": [
+        "value",
+        "args",
+        0
+      ],
+      "parent": "value-call",
+      "kind": "SourceExpression"
+    }
+  ],
+  "relations": [
+    {
+      "source": "iterable",
+      "target": "dictionary-key",
+      "proof": "comprehension-iteration"
+    },
+    {
+      "source": "iterable",
+      "target": "value-call",
+      "proof": "comprehension-iteration"
+    },
+    {
+      "source": "call-argument",
+      "target": "value-call",
+      "proof": "expression-input"
+    }
+  ]
+}

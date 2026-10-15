@@ -1,10 +1,10 @@
 import type { Architecture, Bounds, CanvasDocument, EdgeStyle } from './core/types.ts';
 import type { AnnotationBodyConflict } from './core/annotationPlacement.ts';
-import { previewNodeLayoutOperation, previewSelectionNodeIds, previewSourceMatchesArchitecture } from './previewInterop.ts';
+import { previewNodeLayoutOperation, previewSourceMatchesArchitecture, previewUniqueNodeBindings } from './previewInterop.ts';
 import type { PreviewEvidenceSource, PreviewVisualGraph } from './previewInterop.ts';
 
 export type PreviewVisualEdge = {
-  id: string; source: string; target: string; draft?: boolean; binding?: Record<string, unknown>;
+  id: string; source: string; target: string; draft?: boolean; binding?: Record<string, unknown>; role?: string; syntaxOnly?: boolean;
   stroke?: string; width?: number; dashed?: boolean;
   projection?: { original?: string; originals?: string[]; source?: string; target?: string };
 };
@@ -14,7 +14,7 @@ type Presentation = {
   edges?: Record<string, EdgeStyle>; legend?: CanvasDocument['legendItems'];
   annotations?: Record<string, CanvasDocument['annotations'][number]>; page?: Partial<CanvasDocument['pageSpec']>;
 };
-type Graph = PreviewVisualGraph & { edges?: PreviewVisualEdge[]; canvas?: [number, number]; studioPresentation?: Presentation;
+type Graph = PreviewVisualGraph & { edges?: PreviewVisualEdge[]; canvas?: [number, number]; studioPresentation?: Presentation; sourceControls?: { controls?: unknown[] };
   recursive?: { state?: { studioPresentation?: Presentation }; authority?: { detail?: Graph } } };
 const graphValue = (value: unknown): Graph | undefined => value && typeof value === 'object' ? value as Graph : undefined;
 
@@ -37,8 +37,10 @@ function previewAnnotationGeometry(value: unknown) {
   const nodes = (graph?.nodes ?? []).filter(node => !node.junction).map(node => ({ id: node.id, parent: node.parent,
     x: node.x, y: node.y, width: node.w ?? 180, height: node.h ?? 70 }));
   const annotations = Object.values(presentation?.annotations ?? {}).map(annotation => ({ id: annotation.id, ...previewAnnotationBody(annotation) }));
-  const count = presentation?.legend?.length ?? 0, canvas = graph?.canvas;
-  const legend = count && canvas ? { id: 'studio:legend', x: Math.max(10, canvas[0] - 270), y: Math.max(10, canvas[1] - count * 28 - 52), width: 250, height: count * 28 + 32 } : undefined;
+  const sourceRelation = previewGraphEdges(value).some(edge => isPreviewSourceDependency(value, edge));
+  const controls = !!graph?.sourceControls?.controls?.length;
+  const count = (presentation?.legend?.length ?? 0) + (sourceRelation ? 1 : 0) + (controls ? 1 : 0), canvas = graph?.canvas, legendWidth = sourceRelation || controls ? 360 : 250;
+  const legend = count && canvas ? { id: 'studio:legend', x: Math.max(10, canvas[0] - legendWidth - 20), y: Math.max(10, canvas[1] - count * 28 - 52), width: legendWidth, height: count * 28 + 32 } : undefined;
   return { nodes, annotations, legend };
 }
 
@@ -73,16 +75,11 @@ export function previewDocumentSyncOperations(before: CanvasDocument | undefined
   }
   const graph = graphValue(value);
   if (!graph?.nodes) throw new Error('预览图尚未就绪。');
-  const all = graph.recursive?.authority?.detail?.nodes ?? graph.nodes;
   const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   const nodes: Record<string, unknown> = {}, edges: Record<string, EdgeStyle> = {};
   const operations: Record<string, unknown>[] = [];
-  const identity = new Map<string, string>();
-  for (const node of all) {
-    const ids = previewSelectionNodeIds(after.architecture, { nodeId: node.id, node }, source);
-    if (ids.length !== 1 || identity.has(ids[0])) continue;
-    identity.set(ids[0], node.id);
-  }
+  const unique = previewUniqueNodeBindings(after.architecture, graph, source);
+  const identity = new Map([...unique].map(([preview, canonical]) => [canonical, preview]));
   for (const [id, previewId] of identity) {
     const desired = { ...(after.displayAliases[id] !== undefined ? { alias: after.displayAliases[id] } : {}),
       ...after.nodeStyleOverrides[id], pinned: after.pinnedObjects.includes(id) };
@@ -98,7 +95,7 @@ export function previewDocumentSyncOperations(before: CanvasDocument | undefined
     }
   }
   for (const edge of previewGraphEdges(graph)) {
-    const ids = previewFormalEdgeIds(after.architecture, edge, graph, source);
+    const ids = previewFormalEdgeIds(after.architecture, edge, graph, source, unique);
     if (ids.length === 1 && (!before || !equal(before.edgeStyleOverrides[ids[0]], after.edgeStyleOverrides[ids[0]]))) {
       edges[edge.id] = after.edgeStyleOverrides[ids[0]] ?? {};
     }
@@ -124,26 +121,34 @@ export function previewGraphEdges(value: unknown): PreviewVisualEdge[] {
 export function isPreviewDraftEdge(edge: PreviewVisualEdge): boolean {
   return edge.draft === true || /visual edit draft/i.test(String(edge.binding?.evidence ?? ''));
 }
+/** A source inspection dependency is distinct from a tensor or visual draft. */
+export function isPreviewSourceDependency(value: unknown, edge: PreviewVisualEdge): boolean {
+  if (isPreviewDraftEdge(edge)) return false;
+  if (edge.role && edge.role !== 'source_dependency') return false;
+  if (edge.role === 'source_dependency' && edge.syntaxOnly === true) return true;
+  const graph = graphValue(value), detail = graph?.recursive?.authority?.detail;
+  const original = detail?.edges?.find(item => item.id === edge.projection?.original) ?? edge;
+  if ((edge.role ?? original.role) !== 'source_dependency') return false;
+  if (edge.syntaxOnly === true || original.syntaxOnly === true) return true;
+  const nodes = detail?.nodes ?? graph?.nodes ?? [];
+  return [original.source, original.target].every(id => nodes.find(node => node.id === id)?.semantic?.sourceStructure === true);
+}
 
 /** Match the original source relation, never a visually reconnected edge or a guessed parallel operand. */
 export function previewFormalEdgeIds(architecture: Architecture, edge: PreviewVisualEdge, value: unknown,
-  source?: PreviewEvidenceSource): string[] {
+  source?: PreviewEvidenceSource, bindings?: Map<string, string>): string[] {
   if (isPreviewDraftEdge(edge)) return [];
   const graph = graphValue(value), detail = graph?.recursive?.authority?.detail;
+  const unique = bindings ?? (graph ? previewUniqueNodeBindings(architecture, graph, source) : new Map<string, string>());
   const originals = edge.projection?.originals ?? (edge.projection?.original ? [edge.projection.original] : []);
   if (detail && originals.length) {
     const raw = originals.map(id => previewGraphEdges(detail).find(candidate => candidate.id === id));
     if (raw.some(item => !item)) return [];
-    const mapped = raw.map(item => previewFormalEdgeIds(architecture, { ...item!, projection: undefined }, detail, source));
+    const mapped = raw.map(item => previewFormalEdgeIds(architecture, { ...item!, projection: undefined }, detail, source, unique));
     if (mapped.some(ids => ids.length !== 1)) return [];
     return [...new Set(mapped.flat())];
   }
-  const nodes = detail?.nodes ?? graph?.nodes ?? [];
-  const mapped = (id: string) => {
-    const node = nodes.find(item => item.id === id);
-    return node ? previewSelectionNodeIds(architecture, { nodeId: id, node }, source) : [];
-  };
-  const from = mapped(edge.source), to = mapped(edge.target);
+  const from = unique.has(edge.source) ? [unique.get(edge.source)!] : [], to = unique.has(edge.target) ? [unique.get(edge.target)!] : [];
   if (from.length !== 1 || to.length !== 1) return [];
   const candidates = architecture.edges.filter(item => item.source.nodeId === from[0] && item.target.nodeId === to[0]);
   const sourceIds = [edge.id, ...(Array.isArray(edge.binding?.semantic_edges) ? edge.binding.semantic_edges : [])];
@@ -162,20 +167,25 @@ function overlayEdgeStyle(value: unknown, edge: PreviewVisualEdge): EdgeStyle | 
 }
 export function previewEdgeAppearance(value: unknown, edge: PreviewVisualEdge) {
   const style = { ...edgeStyle(edge), ...edgeStyle(overlayEdgeStyle(value, edge)) };
-  return { stroke: previewPresentation(value)?.page?.preset === 'monochrome' ? '#4b5563' : style.stroke ?? '#263b4b',
-    width: style.width ?? 2.2, dashed: style.dashed ?? false };
+  const sourceRelation = isPreviewSourceDependency(value, edge);
+  return { stroke: previewPresentation(value)?.page?.preset === 'monochrome' ? '#4b5563' : style.stroke ?? (sourceRelation ? '#776095' : '#263b4b'),
+    width: style.width ?? 2.2, dashed: style.dashed ?? sourceRelation };
 }
 
 /** Rebuild every presentation field from the current snapshot so undo can remove overrides. */
-export function previewPresentationFields(document: CanvasDocument, value: unknown, source?: PreviewEvidenceSource): Pick<CanvasDocument,
+export function previewPresentationFields(document: CanvasDocument, value: unknown, source?: PreviewEvidenceSource,
+  bindings?: Map<string, string>): Pick<CanvasDocument,
   'displayAliases' | 'nodeStyleOverrides' | 'edgeStyleOverrides' | 'pinnedObjects' | 'legendItems' | 'annotations' | 'pageSpec'> {
   const graph = graphValue(value), presentation = previewPresentation(value), detail = graph?.recursive?.authority?.detail;
+  const unique = bindings ?? (graph ? previewUniqueNodeBindings(document.architecture, graph, source) : new Map<string, string>());
   const nodes = [...(graph?.nodes ?? []), ...(detail?.nodes ?? [])];
-  const displayAliases: CanvasDocument['displayAliases'] = {}, nodeStyleOverrides: CanvasDocument['nodeStyleOverrides'] = {};
-  const edgeStyleOverrides: CanvasDocument['edgeStyleOverrides'] = {}, pinnedObjects: string[] = [];
+  const projectedIds = new Set(unique.values());
+  const displayAliases: CanvasDocument['displayAliases'] = Object.fromEntries(Object.entries(document.displayAliases).filter(([id]) => !projectedIds.has(id)));
+  const nodeStyleOverrides: CanvasDocument['nodeStyleOverrides'] = Object.fromEntries(Object.entries(document.nodeStyleOverrides).filter(([id]) => !projectedIds.has(id)));
+  const edgeStyleOverrides: CanvasDocument['edgeStyleOverrides'] = {}, pinnedObjects = document.pinnedObjects.filter(id => !projectedIds.has(id));
   for (const [id, item] of Object.entries(presentation?.nodes ?? {})) {
     const raw = nodes.find(node => node.id === id);
-    const ids = raw ? previewSelectionNodeIds(document.architecture, { nodeId: id, node: raw }, source) : [];
+    const canonical = raw && unique.get(id), ids = canonical ? [canonical] : [];
     for (const target of ids) {
       if (item.alias !== undefined) displayAliases[target] = item.alias;
       if (item.fill || item.stroke || item.glyph) nodeStyleOverrides[target] = { ...(item.fill ? { fill: item.fill } : {}),
@@ -188,7 +198,7 @@ export function previewPresentationFields(document: CanvasDocument, value: unkno
   for (const edge of [...previewGraphEdges(detail), ...previewGraphEdges(graph)]) {
     const raw = overlayEdgeStyle(graph, edge);
     if (!raw) continue;
-    const ids = previewFormalEdgeIds(document.architecture, edge, graph, source);
+    const ids = previewFormalEdgeIds(document.architecture, edge, graph, source, unique);
     if (ids.length === 1) edgeStyleOverrides[ids[0]] = edgeStyle(raw);
   }
   return { displayAliases, nodeStyleOverrides, edgeStyleOverrides, pinnedObjects: [...new Set(pinnedObjects)],

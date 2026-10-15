@@ -298,7 +298,11 @@ def validate_source_draft(draft: dict, *, require_complete=False) -> dict:
                 issues.append(_diagnostic("unbound-input", "输入端口尚未连接；可继续编辑源码副本。", "Connect the declared input port.", nodeId=node["id"], portId=port["id"]))
     if require_complete and issues:
         raise DraftError("Source draft is incomplete.", diagnostics=issues)
-    return {"draft": deepcopy(draft), "draftDigest": _digest(draft), "complete": not issues, "issues": issues, "tensors": {}, "order": order, "verification": SOURCE_VERIFICATION}
+    result = {"draft": deepcopy(draft), "draftDigest": _digest(draft), "complete": not issues, "issues": issues, "tensors": {}, "order": order, "verification": SOURCE_VERIFICATION}
+    if any(node.get("sourceStructure") for node in architecture.get("nodes", [])):
+        from .source_preservation import preservation_options
+        result["generation"] = preservation_options(draft)
+    return result
 
 
 def _source_class(fact, facts, sources):
@@ -490,12 +494,8 @@ def generate_source_draft(draft: dict) -> dict:
     refs = provenance["nodeRefs"]
     canonical_nodes = provenance["architecture"]["nodes"]
     if any(node.get('sourceStructure') for node in canonical_nodes):
-        raise DraftError(
-            'Source inspection is expandable but has no verified tensor lowering; preserve presentation edits on the original canvas.',
-            diagnostics=[_diagnostic('unsupported-source-structure',
-                                    '源码分支可以展开查看；尚未确定实际路径和张量连接。展示修改可以保存到原画布，结构生成需要真实配置和受支持的解析规则。',
-                                    'Keep visual edits on the source canvas; provide configuration evidence before semantic generation.')],
-        )
+        from .source_preservation import generate_preserved_source
+        return generate_preserved_source(draft, validated)
     canonical_facts = {node["id"]: node for node in canonical_nodes}
     visible_kinds = {refs.get(node["id"], {}).get("kind", node["kind"]) for node in draft["nodes"]}
     canonical_kinds = {node["kind"] for node in canonical_nodes}

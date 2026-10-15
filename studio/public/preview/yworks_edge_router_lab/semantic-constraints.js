@@ -192,9 +192,38 @@
   }
   // This context is scoped to one geometry operation, never cached across
   // edits. Node/source metadata is invariant during a routing transaction.
-  function validationContext(graph){return {nodeErrors:S?S.nodeErrors(graph):[],geometryKey:geometryKey(graph),frameGaps:new Map(graph.nodes.filter(n=>n.expanded).map(n=>[n.id,frameGaps(graph,n)]))};}
+  function sourceScope(graph){const doc=graph.recursive;
+    // Include every source input read by edgeErrors, without copying SVG,
+    // source text or saved geometric frontiers that it never examines.
+    return JSON.stringify(doc?[
+      doc.authority.mandatory,doc.state.open,doc.state.folded,
+      doc.authority.detail.nodes.map(n=>[n.id,n.parent]),
+      doc.authority.detail.edges.map(e=>[e.id,e.source,e.target,e.role,e.binding]),
+      doc.authority.variants.map(g=>g.edges.map(e=>[e.source,e.target,e.role,e.binding,e.contract?.gates])),
+      graph.recursiveReceipt?.edges
+    ]:graph.semanticBaseline?.edges);
+  }
+  function validationContext(graph){return {nodeErrors:S?S.nodeErrors(graph):[],geometryKey:geometryKey(graph),frameGaps:new Map(graph.nodes.filter(n=>n.expanded).map(n=>[n.id,frameGaps(graph,n)])),
+    // The complete source scope is immutable for this synchronous routing
+    // transaction, including all variant gate licences. Never reuse the
+    // context across a hierarchy/source edit or for another graph.
+    sourceGraph:graph,sourceScope:sourceScope(graph),sourceEdgeErrors:new Map()};}
+  function sourceErrors(graph,e,points,context){
+    if(!S)return [];
+    if(context?.sourceGraph!==graph||!context.sourceEdgeErrors)return S.edgeErrors(graph,e,points);
+    // Alternate physical ports and candidate polylines leave these source
+    // fields unchanged. Sign all of them on every call, so even an in-place
+    // edge-contract mutation cannot inherit a previously valid result.
+    const key=JSON.stringify([e.id,e.draft,e.source,e.target,e.binding,e.fixedSource,e.fixedTarget,e.portPolicy,e.contract,e.projection]),saved=context.sourceEdgeErrors.get(e.id);
+    let errors;
+    if(saved?.key===key&&saved.scope===context.sourceScope)errors=saved.errors;
+    else{errors=S.edgeErrors(graph,e,points,{skipPhysical:true});context.sourceEdgeErrors.set(e.id,{key,scope:context.sourceScope,errors});}
+    // Port occupancy and endpoint coordinates can change as peers settle.
+    // They are always checked against the live graph and candidate route.
+    return !e.draft&&(graph.recursive||graph.semanticBaseline?.edges?.[e.id])?[...errors,...P.errors(graph,e,points)]:errors;
+  }
   function validate(graph,e,points,context){
-    const violations=S?[...(context?.nodeErrors||S.nodeErrors(graph)),...S.edgeErrors(graph,e,points)]:[];
+    const violations=S?[...(context?.nodeErrors||S.nodeErrors(graph)),...sourceErrors(graph,e,points,context)]:[];
     if(!e.contract)violations.push('missing routing/source contract');
     if(!e.contract)return {ok:false,violations};
     if(points.length<2||points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)))violations.push('invalid route geometry');

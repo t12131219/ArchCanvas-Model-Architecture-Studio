@@ -63,8 +63,11 @@ def capabilities() -> dict:
         "schemaVersion": 1,
         "runtimeVersion": archcanvas_cli.__version__,
         "sourceAnalysis": True,
+        "modelDiscovery": {"endpoint": "/api/models/discover", "cli": "discover --root PATH", "analysis": "static-class-and-construction-evidence", "modelExecuted": False},
+        "sourceAdapters": {"schema": "archcanvas-source-adapter/1", "schemas": ["archcanvas-source-adapter/1", "archcanvas-source-adapter/2"], "scaffold": "/api/adapters/scaffold", "validate": "/api/adapters/validate", "register": "/api/adapters/register", "list": "/api/adapters/list", "storage": "data-dir/adapters", "format": "source-bound-json", "pluginExecution": False,
+                           "agentRules": {"schema": "archcanvas-source-rule/1", "validate": "/api/adapters/rule-validate", "list": "/api/adapters/rules", "storage": "data-dir/adapters/rules", "validation": "independent-ast-path-and-operand-proofs", "crossSourceReuse": "reinstantiate-and-validate-current-source", "tensorGeneration": False}},
         "preview": archcanvas_preview.capabilities(),
-        "modelAuthoring": {"mode": "authored-draft", "catalog": "/api/authoring/catalog", "generation": "new-managed-copy", "sourceImport": "/api/authoring/import-source", "sourceFrontier": "/api/authoring/source-frontier", "customModulePreview": "/api/authoring/custom-modules/preview", "runtimeVerified": False},
+        "modelAuthoring": {"mode": "authored-draft", "catalog": "/api/authoring/catalog", "generation": "new-managed-copy", "sourceImport": "/api/authoring/import-source", "sourceFrontier": "/api/authoring/source-frontier", "customModulePreview": "/api/authoring/custom-modules/preview", "sourcePreservingGeneration": {"mode": "source-preserved-copy", "topology": "preserved", "parameters": "registered-explicit-constructor-literals", "validation": "independent-source-reanalysis", "modelExecuted": False}, "runtimeVerified": False},
         "documentPersistence": True,
         "canvasSessions": {"open": "/api/open", "read": "/api/canvas-sessions/{documentId}", "actions": ["apply", "undo", "redo", "export"],
                            "operations": "studio-typescript-core", "history": "persistent", "stateRoot": "data-dir", "modelExecution": False},
@@ -80,7 +83,7 @@ def capabilities() -> dict:
         "frontend": "stdlib-ast-subset",
         "packageProvenance": {"projectRoot": str(root) if root else None, "modules": modules, "independent": independent},
         "supported": ["local-module-imports", "literal-module-construction", "named-attention-ports", "tuple-outputs", "residual-dataflow", "bounded-module-list", "shared-instance-identity"],
-        "limitations": ["Source analysis never executes models; structural execution requires an explicit frozen CPU profile and mandatory kernel isolation", "Sample runtime observations do not establish full-program coverage or old/new numerical equivalence", "HTTP source edits affect registered managed copies only", "Only directly authored forward methods", "Unsupported dynamic control, state, factories and reflection remain opaque", "80 source files, 2 MB corpus, 1200 nodes, 16 repeat iterations", "One service process per data directory; document CAS is process-local"],
+        "limitations": ["Source analysis never executes models; structural execution requires an explicit frozen CPU profile and mandatory kernel isolation", "Sample runtime observations do not establish full-program coverage or old/new numerical equivalence", "HTTP source edits affect registered managed copies only", "Local forward, inherited methods and authored __call__ follow static source evidence", "Unresolved dynamic control, state and external factories retain explicit boundaries; source inspection does not establish tensor lowering", "80 source files, 2 MB corpus, 1200 nodes, 16 repeat iterations", "One service process per data directory; document CAS is process-local"],
     }
 
 
@@ -232,6 +235,8 @@ class ArchCanvasServer(ThreadingHTTPServer):
         self.workspace = Workspace(self.state_root, root)
         self.drafts = DraftStore(self.state_root / "drafts")
         self.transactions = TransactionManager(self.state_root / "transactions")
+        from archcanvas_adapters import AdapterRegistry
+        self.adapters = AdapterRegistry(self.state_root / "adapters")
         self.session_token = secrets.token_urlsafe(32)
         self.studio_dir = (studio_dir or (root / "studio" / "dist" if root else Path.cwd() / "studio" / "dist")).resolve()
         self.fixture_root = root / "fixtures" if root else None
@@ -334,7 +339,7 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError as exc:
             raise ValueError("Content-Length must be an integer.") from exc
         path = unquote(urlsplit(self.path).path)
-        source_authoring = path in {"/api/authoring/import-source", "/api/authoring/source-frontier", "/api/authoring/validate", "/api/authoring/generate", "/api/preview/exports"} or path.startswith("/api/authoring/drafts/")
+        source_authoring = path in {"/api/authoring/import-source", "/api/authoring/source-frontier", "/api/authoring/validate", "/api/authoring/generate", "/api/preview/exports", "/api/models/discover"} or path.startswith(("/api/authoring/drafts/", "/api/adapters/"))
         budget = MAX_SOURCE_REQUEST_BYTES if source_authoring else MAX_REQUEST_BYTES
         if not 0 <= length <= budget:
             raise ValueError(f"JSON request body must fit within {budget // 1_000_000} MB.")
@@ -449,7 +454,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.guard():
             return
         path = urlsplit(self.path).path
-        if path not in ("/api/analyze", "/api/preview/analyze", "/api/source-adapter/analyze") and not self.session_guard():
+        if path not in ("/api/analyze", "/api/preview/analyze", "/api/source-adapter/analyze", "/api/models/discover") and not self.session_guard():
             return
         try:
             payload = self.body()
@@ -462,10 +467,12 @@ class Handler(BaseHTTPRequestHandler):
                     saved = self.server.store.get(document["id"])
                     if saved is not None and saved["document"]["architecture"] != document["architecture"]:
                         raise ValueError("The existing canvas identity belongs to different source facts.")
-                    if saved is None:
+                    if saved is None or not saved.get("projectId"):
                         architecture = payload["architecture"]
                         project = self.server.workspace.register({key: architecture[key] for key in ("entry", "sources", "sourceDigest", "irDigest")})
-                        saved = self.server.store.put(document["id"], document, 0, history=history, project_id=project["id"])
+                        saved = self.server.store.put(document["id"], saved["document"] if saved else document,
+                                                      saved["revision"] if saved else 0,
+                                                      history=saved.get("history") if saved else history, project_id=project["id"])
                 identity = document["id"]
                 self.send_json(201, {"documentId": identity, "sessionId": identity, "projectId": saved.get("projectId"),
                                      "revision": saved["revision"], "url": f"http://127.0.0.1:{self.server.server_address[1]}/?documentId={identity}"})
@@ -492,6 +499,40 @@ class Handler(BaseHTTPRequestHandler):
                                                                   "operations": payload.get("operations"), "visualRevision": payload["visualRevision"]})
                         result = self.server.store.put(identity, history["document"], saved["revision"], history=history)
                 self.send_json(200, result)
+            elif path == "/api/models/discover":
+                if set(payload) != {"files"}:
+                    raise ValueError("Model discovery requires Python file text only; filesystem paths are not accepted over HTTP.")
+                from archcanvas_python.discovery import discover_files
+                self.send_json(200, discover_files(payload["files"]))
+            elif path.startswith("/api/adapters/"):
+                from archcanvas_adapters import scaffold_adapter_files, validate_adapter_files
+                action = path.removeprefix("/api/adapters/")
+                allowed = {"files", "entry", "method", "config", "rules", "useRegistryRules"} if action == "scaffold" else {"files", "definition"} if action in ("validate", "register") else {"files"} if action == "list" else {"rule"} if action == "rule-validate" else set() if action == "rules" else None
+                required = {"rule"} if action == "rule-validate" else set() if action == "rules" else {"files"}
+                if allowed is None or required - set(payload) or set(payload) - allowed:
+                    raise ValueError("Adapter operations require exact source file text and operation fields; filesystem paths and executable plugins are not accepted.")
+                if action == "scaffold":
+                    rules = payload.get("rules")
+                    from archcanvas_adapters.registry import merge_rules
+                    if type(payload.get("useRegistryRules", False)) is not bool:
+                        raise ValueError("useRegistryRules must be a boolean.")
+                    if payload.get("useRegistryRules"):
+                        rules = merge_rules(rules, self.server.adapters.rule_definitions())
+                    elif rules is not None:
+                        rules = merge_rules(rules)
+                    result = scaffold_adapter_files(payload["files"], payload.get("entry"), method=payload.get("method"), config=payload.get("config"), rules=rules)
+                elif action == "validate":
+                    result = validate_adapter_files(payload.get("definition"), payload["files"])
+                elif action == "register":
+                    result = self.server.adapters.register_files(payload.get("definition"), payload["files"])
+                elif action == "rule-validate":
+                    from archcanvas_adapters.source_rules import validate_rule
+                    result = validate_rule(payload["rule"])
+                elif action == "rules":
+                    result = self.server.adapters.rules()
+                else:
+                    result = self.server.adapters.list_files(payload["files"])
+                self.send_json(201 if action == "register" else 200, result)
             elif path == "/api/analyze":
                 if set(payload) - {"source", "entry", "filename"}:
                     raise ValueError("Analyze accepts source text, entry and optional logical filename only; filesystem roots are not accepted over HTTP.")
@@ -501,7 +542,9 @@ class Handler(BaseHTTPRequestHandler):
             elif path in ("/api/preview/analyze", "/api/source-adapter/analyze"):
                 if set(payload) - {"files", "entry", "config"} or "files" not in payload:
                     raise ValueError("Preview analysis accepts files, entry and optional config only; filesystem paths are not accepted.")
-                self.send_json(200, archcanvas_preview.analyze(payload["files"], payload.get("entry"), payload.get("config")))
+                result = archcanvas_preview.analyze(payload["files"], payload.get("entry"), payload.get("config"))
+                result = self.server.adapters.preview(result, payload["files"])
+                self.send_json(200, result)
             elif path == "/api/preview/edit-source":
                 if set(payload) != {"files", "entry"}:
                     raise ValueError("Preview source editing requires files and entry only; filesystem paths are not accepted.")
@@ -564,6 +607,7 @@ class Handler(BaseHTTPRequestHandler):
                             return
                         files = {source["path"]: source["content"] for source in project["architecture"]["sources"]}
                         result = archcanvas_preview.analyze(files, project["entry"], payload.get("config"))
+                        result = self.server.adapters.preview(result, files)
                         result["studioBinding"] = {"projectId": project["id"], **{key: project[key] for key in ("entry", "sourceDigest", "irDigest")}}
                     self.send_json(200, result)
                     return

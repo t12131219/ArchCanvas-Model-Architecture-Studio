@@ -6,7 +6,12 @@ import type { CanvasDocument } from './core/types.ts';
  * frontier caches are never changed by entering the model editor. */
 export function sourceEditingDocument(view: CanvasDocument): CanvasDocument {
   const document = structuredClone(view);
-  const compound = document.architecture.nodes.filter(node => node.children.length);
+  // Large unresolved source trees are inspection data, not a tensor graph that
+  // needs complete materialization before editing. Keep their authored regions
+  // available as expandable cards; proven compositions still expose primitives.
+  // Existing user expansion choices survive both entry and subsequent rebases.
+  const boundedInspection = document.architecture.nodes.length > 96 && document.architecture.nodes.some(node => node.sourceStructure);
+  const compound = document.architecture.nodes.filter(node => node.children.length && (!boundedInspection || !node.sourceStructure));
   const missing = compound.some(node => !document.expandedIds.includes(node.id));
   if (!missing) return document;
   document.expandedIds = [...new Set([...document.expandedIds, ...compound.map(node => node.id)])];

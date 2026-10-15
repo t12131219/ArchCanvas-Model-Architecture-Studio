@@ -17,6 +17,32 @@ def main(argv: list[str] | None = None) -> int:
     subcommands = parser.add_subparsers(dest="command", required=True)
     subcommands.add_parser("capabilities", help="Report implemented capabilities and actual package provenance")
     subcommands.add_parser("doctor", help="Identify actual runtime version, assets, module counts and next step without model execution")
+    discovery = subcommands.add_parser("discover", help="Scan local Python model classes and source-backed containment without executing models")
+    discovery.add_argument("--root", type=Path, required=True)
+    discovery.add_argument("--output", type=Path)
+    adapter = subcommands.add_parser("adapter", help="Scaffold, verify and persist source-bound data adapters; never execute plugins")
+    adapter_actions = adapter.add_subparsers(dest="adapter_action", required=True)
+    rule_check = adapter_actions.add_parser("rule-validate", help="Validate an Agent-authored declarative AST rule without a source binding")
+    rule_check.add_argument("--rule", type=Path, required=True)
+    rule_check.add_argument("--output", type=Path)
+    rule_list = adapter_actions.add_parser("rules", help="List persisted reusable AST rule templates")
+    rule_list.add_argument("--registry", type=Path, required=True)
+    rule_list.add_argument("--output", type=Path)
+    for action in ("scaffold", "validate", "register", "list", "preview"):
+        operation = adapter_actions.add_parser(action)
+        operation.add_argument("--root", type=Path, required=True, help="Source corpus used to verify the adapter's exact source binding")
+        operation.add_argument("--output", type=Path)
+        if action in ("scaffold", "preview"):
+            operation.add_argument("--entry", required=True)
+            operation.add_argument("--config", type=Path, help="JSON constructor configuration, statically declared only")
+        if action == "scaffold":
+            operation.add_argument("--method", help="Source method to inspect, defaulting to the resolved model entry method")
+            operation.add_argument("--rules", type=Path, help="Agent-authored source rule object or array of rule templates")
+            operation.add_argument("--registry", type=Path, help="Reuse saved rules to bind a fresh v2 adapter to this source")
+        if action in ("validate", "register"):
+            operation.add_argument("--definition", type=Path, required=True)
+        if action in ("register", "list", "preview"):
+            operation.add_argument("--registry", type=Path, required=True, help="Explicit persistent JSON adapter registry")
     opening = subcommands.add_parser("open", help="Statically analyze a model and return its exact persisted canvas session URL")
     inputs = opening.add_mutually_exclusive_group(required=True)
     inputs.add_argument("--root", type=Path)
@@ -91,6 +117,38 @@ def main(argv: list[str] | None = None) -> int:
         if options.command == "doctor":
             from .doctor import diagnose
             result = diagnose()
+        elif options.command == "discover":
+            from archcanvas_python.discovery import discover_directory
+            result = discover_directory(options.root)
+        elif options.command == "adapter":
+            from archcanvas_adapters import AdapterRegistry, scaffold_adapter_files, validate_adapter_files
+            from archcanvas_python.discovery import read_directory_files
+            action = options.adapter_action
+            files = read_directory_files(options.root) if hasattr(options, "root") else None
+            config = json.loads(options.config.read_text()) if getattr(options, "config", None) else None
+            if action == "rule-validate":
+                from archcanvas_adapters.source_rules import validate_rule
+                result = validate_rule(json.loads(options.rule.read_text()))
+            elif action == "rules":
+                result = AdapterRegistry(options.registry).rules()
+            elif action == "scaffold":
+                rules = json.loads(options.rules.read_text()) if options.rules else None
+                from archcanvas_adapters.registry import merge_rules
+                if options.registry:
+                    rules = merge_rules(rules, AdapterRegistry(options.registry).rule_definitions())
+                elif rules is not None:
+                    rules = merge_rules(rules)
+                result = scaffold_adapter_files(files, options.entry, method=options.method, config=config, rules=rules)
+            elif action == "validate":
+                result = validate_adapter_files(json.loads(options.definition.read_text()), files)
+            elif action == "register":
+                result = AdapterRegistry(options.registry).register_files(json.loads(options.definition.read_text()), files)
+            elif action == "list":
+                result = AdapterRegistry(options.registry).list_files(files)
+            else:
+                import archcanvas_preview
+                result = archcanvas_preview.analyze(files, options.entry, config)
+                result = AdapterRegistry(options.registry).preview(result, files)
         elif options.command in ("open", "session"):
             from .client import request
             from urllib.parse import quote
@@ -176,6 +234,10 @@ def main(argv: list[str] | None = None) -> int:
                 pass
             finally:
                 server.server_close()
+            return 0
+        if options.command in ("discover", "adapter") and options.output:
+            options.output.parent.mkdir(parents=True, exist_ok=True)
+            options.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             return 0
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 2 if options.command == "doctor" and result["status"] != "ready-local" else 0

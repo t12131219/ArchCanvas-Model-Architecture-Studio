@@ -1,0 +1,421 @@
+{
+  "schema": "archcanvas-source-adapter/2",
+  "generatorRevision": "source-rules/1",
+  "binding": {
+    "entry": "cobalt:CobaltMap",
+    "method": "forward",
+    "sourceFiles": [
+      {
+        "path": "cobalt.py",
+        "sha256": "9371d894ca23bf0874c893730e151fe9ac98c8344ab72755a1af743501782f1d"
+      }
+    ],
+    "symbol": {
+      "path": "cobalt.py",
+      "line": 4,
+      "endLine": 10,
+      "column": 0,
+      "endColumn": 92,
+      "expression": "class CobaltMap(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.projection = nn.Linear(4, 4)\n\n    def forward(self, batch):\n        return {tag: self.projection(vector) for tag, vector in batch if vector is not None}",
+      "qualifiedName": "cobalt:CobaltMap"
+    },
+    "methodSpan": {
+      "path": "cobalt.py",
+      "line": 9,
+      "endLine": 10,
+      "column": 4,
+      "endColumn": 92,
+      "expression": "def forward(self, batch):\n        return {tag: self.projection(vector) for tag, vector in batch if vector is not None}",
+      "sha256": "4c528e9d82e26fd58d68277439777c99d5a00f273fab491881443d23c1eebceb"
+    }
+  },
+  "config": {},
+  "inputs": [
+    {
+      "id": "input-0",
+      "name": "batch",
+      "kind": "source-parameter",
+      "required": true,
+      "source": {
+        "path": "cobalt.py",
+        "line": 9,
+        "endLine": 9,
+        "column": 22,
+        "endColumn": 27,
+        "expression": "batch"
+      },
+      "parameterKind": "positional-or-keyword"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "return-10-8-0",
+      "path": [],
+      "kind": "source-return-slot",
+      "source": {
+        "path": "cobalt.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 15,
+        "endColumn": 92,
+        "expression": "{tag: self.projection(vector) for tag, vector in batch if vector is not None}"
+      }
+    }
+  ],
+  "rules": [
+    {
+      "schema": "archcanvas-source-rule/1",
+      "name": "Filtered dictionary key and call source structure",
+      "match": {
+        "type": "DictComp",
+        "fields": {
+          "generators": [
+            {
+              "type": "comprehension",
+              "fields": {
+                "is_async": 0
+              }
+            }
+          ],
+          "key": {
+            "type": "Name",
+            "fields": {}
+          },
+          "value": {
+            "type": "Call",
+            "fields": {
+              "args": [
+                {
+                  "type": "Name",
+                  "fields": {}
+                }
+              ]
+            }
+          }
+        }
+      },
+      "nodes": [
+        {
+          "key": "comprehension",
+          "at": [],
+          "parent": null,
+          "kind": "SourceLoop"
+        },
+        {
+          "key": "iterable",
+          "at": [
+            "generators",
+            0,
+            "iter"
+          ],
+          "parent": "comprehension",
+          "kind": "SourceExpression"
+        },
+        {
+          "key": "dictionary-key",
+          "at": [
+            "key"
+          ],
+          "parent": "comprehension",
+          "kind": "SourceExpression"
+        },
+        {
+          "key": "value-call",
+          "at": [
+            "value"
+          ],
+          "parent": "comprehension",
+          "kind": "SourceCall"
+        },
+        {
+          "key": "call-argument",
+          "at": [
+            "value",
+            "args",
+            0
+          ],
+          "parent": "value-call",
+          "kind": "SourceExpression"
+        }
+      ],
+      "relations": [
+        {
+          "proof": "comprehension-iteration",
+          "source": "iterable",
+          "target": "dictionary-key"
+        },
+        {
+          "proof": "comprehension-iteration",
+          "source": "iterable",
+          "target": "value-call"
+        },
+        {
+          "proof": "expression-input",
+          "source": "call-argument",
+          "target": "value-call"
+        }
+      ],
+      "id": "rule-f5ca275a283717fd70c1f3f2"
+    }
+  ],
+  "applications": [
+    {
+      "ruleId": "rule-f5ca275a283717fd70c1f3f2",
+      "matchKey": "match-bb30ddd60833232e5d49691b",
+      "source": {
+        "path": "cobalt.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 15,
+        "endColumn": 92,
+        "expression": "{tag: self.projection(vector) for tag, vector in batch if vector is not None}"
+      },
+      "rootId": "source-rule:c312448b895fd7bf62eaf463",
+      "nodeIds": [
+        "source-rule:c312448b895fd7bf62eaf463",
+        "source-rule:d2738de5a73c868e6e395460",
+        "source-rule:b25adabf0c2377288807d735",
+        "source-rule:5d2a2db5129c1580b57ee499",
+        "source-rule:78bae2a24ec9e833206df8fe"
+      ]
+    }
+  ],
+  "children": [
+    {
+      "id": "source-rule:c312448b895fd7bf62eaf463",
+      "label": "DictComp",
+      "kind": "SourceLoop",
+      "category": "container",
+      "parentId": null,
+      "children": [
+        "source-rule:d2738de5a73c868e6e395460",
+        "source-rule:b25adabf0c2377288807d735",
+        "source-rule:5d2a2db5129c1580b57ee499"
+      ],
+      "ports": [],
+      "parameters": {
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "sourceMatch": "match-bb30ddd60833232e5d49691b",
+        "sourceRulePath": [],
+        "guards": [
+          "for (tag, vector) in batch",
+          "if vector is not None"
+        ],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+      },
+      "source": {
+        "path": "cobalt.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 15,
+        "endColumn": 92,
+        "expression": "{tag: self.projection(vector) for tag, vector in batch if vector is not None}"
+      },
+      "evidence": "source",
+      "sourceStructure": true
+    },
+    {
+      "id": "source-rule:d2738de5a73c868e6e395460",
+      "label": "batch",
+      "kind": "SourceExpression",
+      "category": "operator",
+      "parentId": "source-rule:c312448b895fd7bf62eaf463",
+      "children": [],
+      "ports": [],
+      "parameters": {
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "sourceMatch": "match-bb30ddd60833232e5d49691b",
+        "sourceRulePath": [
+          "generators",
+          0,
+          "iter"
+        ],
+        "guards": [],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+      },
+      "source": {
+        "path": "cobalt.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 64,
+        "endColumn": 69,
+        "expression": "batch"
+      },
+      "evidence": "source",
+      "sourceStructure": true
+    },
+    {
+      "id": "source-rule:b25adabf0c2377288807d735",
+      "label": "tag",
+      "kind": "SourceExpression",
+      "category": "operator",
+      "parentId": "source-rule:c312448b895fd7bf62eaf463",
+      "children": [],
+      "ports": [],
+      "parameters": {
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "sourceMatch": "match-bb30ddd60833232e5d49691b",
+        "sourceRulePath": [
+          "key"
+        ],
+        "guards": [
+          "for (tag, vector) in batch",
+          "if vector is not None"
+        ],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+      },
+      "source": {
+        "path": "cobalt.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 16,
+        "endColumn": 19,
+        "expression": "tag"
+      },
+      "evidence": "source",
+      "sourceStructure": true
+    },
+    {
+      "id": "source-rule:5d2a2db5129c1580b57ee499",
+      "label": "self.projection",
+      "kind": "SourceCall",
+      "category": "operator",
+      "parentId": "source-rule:c312448b895fd7bf62eaf463",
+      "children": [
+        "source-rule:78bae2a24ec9e833206df8fe"
+      ],
+      "ports": [],
+      "parameters": {
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "sourceMatch": "match-bb30ddd60833232e5d49691b",
+        "sourceRulePath": [
+          "value"
+        ],
+        "guards": [
+          "for (tag, vector) in batch",
+          "if vector is not None"
+        ],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+      },
+      "source": {
+        "path": "cobalt.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 21,
+        "endColumn": 44,
+        "expression": "self.projection(vector)"
+      },
+      "evidence": "source",
+      "sourceStructure": true
+    },
+    {
+      "id": "source-rule:78bae2a24ec9e833206df8fe",
+      "label": "vector",
+      "kind": "SourceExpression",
+      "category": "operator",
+      "parentId": "source-rule:5d2a2db5129c1580b57ee499",
+      "children": [],
+      "ports": [],
+      "parameters": {
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "sourceMatch": "match-bb30ddd60833232e5d49691b",
+        "sourceRulePath": [
+          "value",
+          "args",
+          0
+        ],
+        "guards": [
+          "for (tag, vector) in batch",
+          "if vector is not None"
+        ],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+      },
+      "source": {
+        "path": "cobalt.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 37,
+        "endColumn": 43,
+        "expression": "vector"
+      },
+      "evidence": "source",
+      "sourceStructure": true
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "source-rule-relation:5a100e9794e121ae08fc7cf6",
+      "sourceId": "source-rule:d2738de5a73c868e6e395460",
+      "targetId": "source-rule:b25adabf0c2377288807d735",
+      "kind": "source-data-dependency",
+      "source": {
+        "path": "cobalt.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 16,
+        "endColumn": 19,
+        "expression": "tag"
+      },
+      "proof": "comprehension-iteration",
+      "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+      "sourceMatch": "match-bb30ddd60833232e5d49691b",
+      "syntaxOnly": true,
+      "guards": [
+        "for (tag, vector) in batch",
+        "if vector is not None"
+      ]
+    },
+    {
+      "id": "source-rule-relation:a3c9b042fb9f07192e814fae",
+      "sourceId": "source-rule:d2738de5a73c868e6e395460",
+      "targetId": "source-rule:5d2a2db5129c1580b57ee499",
+      "kind": "source-data-dependency",
+      "source": {
+        "path": "cobalt.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 21,
+        "endColumn": 44,
+        "expression": "self.projection(vector)"
+      },
+      "proof": "comprehension-iteration",
+      "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+      "sourceMatch": "match-bb30ddd60833232e5d49691b",
+      "syntaxOnly": true,
+      "guards": [
+        "for (tag, vector) in batch",
+        "if vector is not None"
+      ]
+    },
+    {
+      "id": "source-rule-relation:c8f36cb5ce2a74a54900e02f",
+      "sourceId": "source-rule:78bae2a24ec9e833206df8fe",
+      "targetId": "source-rule:5d2a2db5129c1580b57ee499",
+      "kind": "source-data-dependency",
+      "source": {
+        "path": "cobalt.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 21,
+        "endColumn": 44,
+        "expression": "self.projection(vector)"
+      },
+      "proof": "expression-input",
+      "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+      "sourceMatch": "match-bb30ddd60833232e5d49691b",
+      "syntaxOnly": true,
+      "guards": [
+        "for (tag, vector) in batch",
+        "if vector is not None"
+      ]
+    }
+  ],
+  "diagnostics": [],
+  "generationContract": null,
+  "authority": "source-structure-only; no execution path, tensor ports, shapes, or source-generation authority",
+  "id": "adapter-38cff2649f4107c3415d366d",
+  "presentation": {
+    "labels": {},
+    "notes": []
+  }
+}

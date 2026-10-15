@@ -109,7 +109,7 @@ function appHarness(scope:MoveScope=all, ids:string[]=['output'], commandText=''
   const app=ast.statements.find(item=>ts.isFunctionDeclaration(item)&&item.name?.text==='App');
   assert.ok(app&&ts.isFunctionDeclaration(app)&&app.body);
   const names=['cancelGesture','chooseMoveScope','apply','panInput','pointerDown','pointerMove','pointerUp',
-    'align','runCommand','previewPositionRecovery','applyPositionRecovery'];
+    'arrangePreview','runCommand','previewPositionRecovery','applyPositionRecovery'];
   const snippets=names.map(name=>{
     const statement=app.body!.statements.find(item=>ts.isFunctionDeclaration(item)?item.name?.text===name:
       ts.isVariableStatement(item)&&item.declarationList.declarations.some(d=>ts.isIdentifier(d.name)&&d.name.text===name));
@@ -122,6 +122,7 @@ function appHarness(scope:MoveScope=all, ids:string[]=['output'], commandText=''
   const pending=new Map<number,FrameRequestCallback>(),captured=new Set<number>();
   const operations:VisualOperation[][]=[],notices:string[]=[],failures:string[]=[],commands:string[]=[],scopeChanges:MoveScope[]=[];
   const previewCalls:MoveScope[]=[],recoveryCalls:MoveScope[]=[],events:string[]=[];
+  const arrangementCalls:unknown[][]=[];
   let nextFrame=0,preview:unknown=null,recovery:unknown=null;
   const element={getBoundingClientRect:()=>({left:20,top:40,width:640,height:600}),
     setPointerCapture:(id:number)=>{captured.add(id);events.push('capture');},hasPointerCapture:(id:number)=>captured.has(id),
@@ -143,7 +144,8 @@ function appHarness(scope:MoveScope=all, ids:string[]=['output'], commandText=''
     // validates and commits the formal operations under test.
     mapPreviewOperations:(value:VisualOperation[])=>value,
     readyPreview:()=>true,
-    previewEngine:{current:{visual:async()=>{}}},
+    previewLayoutDisabled:false,previewCanAlign:true,
+    previewEngine:{current:{visual:async()=>{},command:(...args:unknown[])=>arrangementCalls.push(args)}},
     prepareMovePreview:(document:CanvasDocument,selection:readonly string[],value?:MoveScope)=>{
       previewCalls.push(value??all);return prepareMovePreview(document,selection,value);},
     planLayoutRecovery:(document:CanvasDocument,id:string,value?:MoveScope)=>{
@@ -159,13 +161,13 @@ function appHarness(scope:MoveScope=all, ids:string[]=['output'], commandText=''
     replaceRenderScope(value) { layoutMoveScope=value; }, replaceActiveRecovery(value) { activeRecovery=value; }};`)(...Object.values(environment)) as {
     cancelGesture:()=>void;chooseMoveScope:(scope:MoveScope)=>void;apply:(ops:VisualOperation[])=>void;
     pointerDown:(event:Pointer)=>void;pointerMove:(event:Pointer)=>void;pointerUp:(event:Pointer)=>void;
-    align:()=>void;runCommand:()=>void;previewPositionRecovery:()=>void;applyPositionRecovery:()=>void;
+    arrangePreview:(kind:string)=>void;runCommand:()=>void;previewPositionRecovery:()=>void;applyPositionRecovery:()=>void;
     replaceRenderScope:(value:MoveScope)=>void;replaceActiveRecovery:(value:unknown)=>void;
   };
   const event=(x:number,y:number,nodeId?:string,pointerId=7)=>({pointerId,clientX:x+20,clientY:y+40,button:0,shiftKey:false,
     currentTarget:element,preventDefault(){},target:{closest:(selector:string)=>selector==='[data-node-id]'&&nodeId?{getAttribute:()=>nodeId}:null}}) as unknown as Pointer;
   return {...callbacks,current,scene,historyRef,gesture,portGesture,frame,cameraRef,pending,captured,operations,
-    notices,failures,commands,scopeChanges,previewCalls,recoveryCalls,events,event,
+    notices,failures,commands,scopeChanges,previewCalls,recoveryCalls,arrangementCalls,events,event,
     getPreview:()=>preview as {session:ReturnType<typeof prepareMovePreview>;dx:number;dy:number}|null,
     getRecovery:()=>recovery as {document:CanvasDocument;plan:ReturnType<typeof planLayoutRecovery>}|null,
     runFrames:()=>{const work=[...pending];pending.clear();for(const [,callback] of work)callback(0);}};
@@ -209,13 +211,13 @@ test('actual App scope selection cancels gesture, frame and recovery before a la
   h.runFrames();h.pointerUp(h.event(112,104));assert.equal(h.operations.length,0);assert.equal(h.historyRef.current.past.length,0);
 });
 
-test('actual App alignment uses the selected scope and preserves the unrelated compact cache for current scope', () => {
+test('actual App alignment forwards selected scope to the recursive preview without mutating formal source caches', () => {
   for(const scope of [all,local]) {
     const h=appHarness(scope,['input','output']),oldCompact=JSON.stringify(h.current.layoutByFrontier[compactKey]);
-    h.align();
-    assert.deepEqual(h.operations,[[{type:'move',ids:['input'],dx:0,dy:0,scope},{type:'move',ids:['output'],dx:-4,dy:0,scope}]]);
-    assert.equal(h.historyRef.current.document.layout.output.x,32);
-    assert.equal(JSON.stringify(h.historyRef.current.document.layoutByFrontier[compactKey])===oldCompact,scope===local);
+    h.arrangePreview('left');
+    assert.deepEqual(h.arrangementCalls,[['arrange-selection',{kind:'left',scope}]]);
+    assert.deepEqual(h.operations,[]);
+    assert.equal(JSON.stringify(h.historyRef.current.document.layoutByFrontier[compactKey]),oldCompact);
   }
 });
 

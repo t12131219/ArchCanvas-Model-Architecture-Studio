@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from archcanvas_python import AnalysisError, analyze_project
-from archcanvas_python.frontend import Corpus, digest
+from archcanvas_python.frontend import Corpus, digest, load_project_corpus
 
 from .lowering import TRANSFORM, LoweringError, expected_delta, facts_digest, rewrite_literal, semantic_facts
 from .rebind import REBIND_TRANSFORM, STRUCTURAL_TRANSFORM, expected_rebind, expected_structural_rebind, rewrite_name
@@ -372,7 +372,7 @@ class TransactionManager:
                         raise LoweringError("Source changed while freezing the isolation snapshot.")
                     original_bytes[logical] = raw
                     self._durable_write(directory / "staged" / logical, raw)
-                corpus = Corpus(project)
+                corpus = load_project_corpus(project)
                 corpus.load(entry.split(":", 1)[0])
                 logical = intent["origin"]["path"]
                 changed = lower(original_bytes[logical], intent, before, corpus)

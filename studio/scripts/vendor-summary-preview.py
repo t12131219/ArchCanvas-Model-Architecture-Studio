@@ -18,6 +18,8 @@ from pathlib import Path
 EXCLUDED = {'.git', '.rollback', '__pycache__', '.pytest_cache', 'node_modules'}
 TREES = ('yworks_edge_router_lab', 'data', 'snapshots', 'verification')
 CUSTOMIZED = {'yworks_edge_router_lab/app.js', 'yworks_edge_router_lab/index.html',
+              'yworks_edge_router_lab/source-adapter.js',
+              'yworks_edge_router_lab/source-contracts.js',
               'yworks_edge_router_lab/semantic-constraints.js',
               'yworks_edge_router_lab/graph-engine.js', 'yworks_edge_router_lab/recursive-graph.js',
               'yworks_edge_router_lab/router.js', 'yworks_edge_router_lab/routing-worker.js'}

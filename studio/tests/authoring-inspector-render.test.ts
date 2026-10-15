@@ -6,6 +6,7 @@ import { createElement } from 'react';
 import type { ComponentType } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import ts from 'typescript';
+import { blankDraft } from '../src/authoring.ts';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
@@ -27,13 +28,16 @@ function compile(input: string, name: string) {
 }
 for (const name of ['icons', 'WorkspaceModeSwitch', 'FloatingLegend', 'CustomModuleDialog']) compile(readFileSync(`${studio}src/${name}.tsx`, 'utf8'), name);
 compile(source, 'AuthoringStudio');
-type Props = { onClose: () => void; onOpen: () => Promise<void> };
+type Props = { onClose: () => void; onOpen: () => Promise<void>; initialWorkspace?: { draft: ReturnType<typeof blankDraft> } };
 const { AuthoringStudio, unsupportedPaletteMessage } = await import(pathToFileURL(`${temporary}/AuthoringStudio.mjs`).href) as {
   AuthoringStudio: ComponentType<Props>;
   unsupportedPaletteMessage: (value: string) => string | null;
 };
 function markup(Component = AuthoringStudio) {
-  return renderToStaticMarkup(createElement(Component, { onClose: () => {}, onOpen: async () => {} }));
+  // SSR does not run effects or IndexedDB hydration. Render an explicit
+  // blank session so these assertions inspect the ready editor and palette.
+  return renderToStaticMarkup(createElement(Component, { onClose: () => {}, onOpen: async () => {},
+    initialWorkspace: { draft: blankDraft('inspector-render') } }));
 }
 function inspector(html: string) {
   const found = html.match(/<aside class="draft-inspector">([\s\S]*?)<\/aside>/);

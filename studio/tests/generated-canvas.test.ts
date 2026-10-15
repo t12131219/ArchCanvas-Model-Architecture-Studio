@@ -14,7 +14,7 @@ import type { AuthoredDraft } from '../src/authoring.ts';
 import type { GeneratedDraft, ImportedSourceDraft } from '../src/api.ts';
 import { ApiError } from '../src/api.ts';
 import { sourceAuthoringKey } from '../src/sourceAuthoringSession.ts';
-import { readGeneratedWorkspace, writeGeneratedWorkspace } from '../src/generatedWorkspace.ts';
+import { readGeneratedWorkspace, writeGeneratedWorkspace, readPersistentGeneratedWorkspace, writePersistentGeneratedWorkspace } from '../src/generatedWorkspace.ts';
 import type { GeneratedWorkspaceBinding } from '../src/generatedWorkspace.ts';
 import { sameGeneratedDraft } from '../src/generatedWorkspace.ts';
 
@@ -230,8 +230,9 @@ test('actual generate callback keeps the collapsed Transformer frontier and anch
   // Run the actual App callback as well: the generator receipt keeps the
   // complete graph, while App must pass the presentation snapshot through to
   // createGeneratedCanvas and restore current selection/camera on that scene.
-  const workspace = { draft: snapshot, history: currentRef.current, selection: [memoryMask.id], camera: { x: 54, y: 0, zoom: 1 }, tool: 'select' };
-  let openedDocument: CanvasDocument | undefined, selected: unknown, restoredCamera: unknown;
+  const workspace = { draft: snapshot, history: currentRef.current, selection: [memoryMask.id], camera: { x: 54, y: 0, zoom: 1 }, tool: 'select' as const };
+  let openedDocument: CanvasDocument | undefined, selected: unknown, restoredCamera: unknown, selectedProject: unknown, updatedUrl: unknown;
+  const saves: unknown[][] = [], versions: number[] = [];
   const appCurrent = { current: null as ReturnType<typeof createHistory> | null };
   const generatedWorkspaces = { current: new Map<string, GeneratedWorkspaceBinding>() };
   const open = actualCallback('App.tsx', 'App', 'openGeneratedModel', {
@@ -239,9 +240,12 @@ test('actual generate callback keeps the collapsed Transformer frontier and anch
     generatedWorkspaces, sourceDraftKey: sourceAuthoringKey,
     cacheGeneratedWorkspace: () => {},
     loadSequence: { current: 0 }, cameraOwner: { current: null }, cameraIntent: { current: 0 },
-    api: { register: async (architecture: Architecture) => ({ id: 'generated-project', architecture }) }, openArchitecture: async () => {}, createGeneratedCanvas,
+    api: { open: async () => ({ projectId: 'generated-project', documentId: result.document.id, revision: 3 }),
+      save: async (...values: unknown[]) => { saves.push(values); return { revision: 4 }; } }, createGeneratedCanvas,
     createHistory, historyRef: appCurrent, setHistory: (history: ReturnType<typeof createHistory>) => { openedDocument = history.document; },
-    setSelection: (value: unknown) => { selected = value; }, setProjectId: () => {}, setExampleId: () => {}, setAuthoringOpen: () => {},
+    setSelection: (value: unknown) => { selected = value; }, setProjectId: (value: unknown) => { selectedProject = value; }, setExampleId: () => {}, setAuthoringOpen: () => {},
+    setStorageRevision: (value: number) => { versions.push(value); }, setSavedVisualRevision() {}, setReview() {},
+    localStorage: { removeItem() {} }, REVIEW: 'review', setPreview() {}, setSourceOpen() {}, updateDocumentUrl: (value: unknown) => { updatedUrl = value; },
     commitCamera: (camera: unknown) => { restoredCamera = camera; }, setTool: () => {}, initializeCamera: () => { throw new Error('Current camera must be retained'); }, setNotice: () => {},
   });
   await open(generated);
@@ -249,9 +253,71 @@ test('actual generate callback keeps the collapsed Transformer frontier and anch
   assert.equal(buildScene(openedDocument).nodes.length, 12);
   assert.deepEqual(selected, { kind: 'node', ids: [result.nodeBindings[memoryMask.id]] });
   assert.deepEqual(restoredCamera, workspace.camera);
+  assert.equal(selectedProject, 'generated-project'); assert.equal(updatedUrl, openedDocument.id); assert.deepEqual(versions, [4]);
+  assert.equal(saves.length, 1); assert.equal(saves[0][1], 3); assert.deepEqual(saves[0][0], openedDocument);
+  assert.deepEqual((saves[0][2] as ReturnType<typeof createHistory>).document, openedDocument, 'server persistence retains the generated presentation before navigation');
   const binding = generatedWorkspaces.current.get(sourceAuthoringKey(openedDocument));
   assert.ok(binding, 'the actual opening callback links this new view to the exact retained draft workspace');
   assert.equal(binding.workspaceKey, 'active'); assert.deepEqual(binding.draft, snapshot);
   assert.deepEqual(binding.nodeBindings, { ...generated.nodeBindings, ...(generated.containerBindings ?? {}), ...result.nodeBindings });
   assert.equal(binding.visualRevision, openedDocument.revision);
+  const generatedCache = new Map<string, unknown>(), cache = { get: async (key: string) => generatedCache.get(key), put: async (key: string, value: unknown) => { generatedCache.set(key, structuredClone(value)); } };
+  await writePersistentGeneratedWorkspace({ ...workspace, storageRevision: 0, savedRevision: -1 }, binding, cache);
+  const resumed = await readPersistentGeneratedWorkspace(openedDocument, cache, { getItem: () => null, setItem() {} });
+  assert.ok(resumed, 'the exact bindings retained by App remain recoverable after reload');
+  assert.deepEqual(resumed.workspace.history, currentRef.current);
+});
+
+test('generated workspace restores from async storage without touching localStorage quota and rejects stale identities', async () => {
+  const architecture = grouped(), document = createDocument(architecture), draft = blankDraft('draft-async-cache');
+  draft.nodes = [{ id: 'first', kind: 'ReLU', label: 'first', parameters: {}, position: { x: 20, y: 40 } }];
+  const history = changeDraft(draftHistory(draft), value => { value.title = 'retained edit'; });
+  const workspace = { draft: history.draft, history, storageRevision: 8, savedRevision: 1,
+    selection: ['first'], camera: { x: -45, y: 13, zoom: .75 }, tool: 'select' as const };
+  const binding: GeneratedWorkspaceBinding = { workspaceKey: 'cached', documentId: document.id, sourceDigest: document.sourceBindingDigest,
+    irDigest: document.architecture.irDigest, draft, nodeBindings: { first: 'a' }, edgeBindings: {}, visualRevision: document.revision };
+  const records = new Map<string, unknown>(), cache = { get: async (key: string) => records.get(key), put: async (key: string, value: unknown) => { records.set(key, structuredClone(value)); } };
+  let legacyReads = 0;
+  const legacy = { getItem: () => { legacyReads++; throw new Error('localStorage quota unavailable'); }, setItem: () => { throw new Error('must not write full workspace to localStorage'); } };
+  await writePersistentGeneratedWorkspace(workspace, binding, cache);
+  const restored = await readPersistentGeneratedWorkspace(document, cache, legacy);
+  assert.ok(restored); assert.equal(legacyReads, 0);
+  assert.deepEqual(restored.binding, binding); assert.deepEqual(restored.workspace.history, history);
+  assert.deepEqual(restored.workspace.selection, workspace.selection); assert.deepEqual(restored.workspace.camera, workspace.camera);
+  const invalid = structuredClone(records.get(sourceAuthoringKey(document))) as { binding: GeneratedWorkspaceBinding };
+  invalid.binding.sourceDigest = 'stale-source'; records.set(sourceAuthoringKey(document), invalid);
+  assert.equal(await readPersistentGeneratedWorkspace(document, cache, legacy), null, 'async records retain the full source-generation gates');
+});
+
+test('legacy workspace migrates to async storage without a synchronous write and remains recoverable if migration fails', async () => {
+  const document = createDocument(grouped()), draft = blankDraft('draft-legacy');
+  const binding: GeneratedWorkspaceBinding = { workspaceKey: 'legacy', documentId: document.id, sourceDigest: document.sourceBindingDigest,
+    irDigest: document.architecture.irDigest, draft, nodeBindings: {}, visualRevision: 0 };
+  const strings = new Map<string, string>(), legacy = { getItem: (key: string) => strings.get(key) ?? null, setItem: (key: string, value: string) => { strings.set(key, value); }, removeItem: (key: string) => { strings.delete(key); } };
+  writeGeneratedWorkspace(legacy, { draft, storageRevision: 0, savedRevision: -1 }, binding);
+  const puts: unknown[] = [], cache = { get: async () => undefined, put: async (_key: string, value: unknown) => { puts.push(value); } };
+  assert.ok(await readPersistentGeneratedWorkspace(document, cache, legacy)); assert.equal(puts.length, 1);
+  assert.equal(strings.size, 0, 'release the old synchronous quota only after migration commits');
+  writeGeneratedWorkspace(legacy, { draft, storageRevision: 0, savedRevision: -1 }, binding);
+  assert.ok(await readPersistentGeneratedWorkspace(document, { get: async () => { throw Error('unavailable'); }, put: async () => { throw Error('unavailable'); } }, legacy));
+  assert.equal(strings.size, 1, 'a failed migration keeps its recoverable original');
+});
+
+test('opening a generated model keeps the editor and current document intact if server persistence fails or becomes stale', async () => {
+  const draft = blankDraft('draft-generation-save-failure'), architecture = grouped();
+  const generated = { draft, architecture, nodeBindings: {}, edgeBindings: {} } as GeneratedDraft;
+  const retained = createGeneratedCanvas(architecture, draft, generated);
+  for (const stale of [false, true]) {
+    const original = { document: createDocument(architecture), past: [], future: [] }, historyRef = { current: original }, loadSequence = { current: 0 };
+    let saves = 0;
+    const open = actualCallback('App.tsx', 'App', 'openGeneratedModel', {
+      cancelGesture() {}, authoringSessionKey: { current: null }, authoringSessions: { current: new Map() }, loadSequence, createGeneratedCanvas,
+      api: { open: async () => { if (stale) loadSequence.current++; return { documentId: retained.document.id, projectId: 'project', revision: 1 }; },
+        save: async () => { saves++; throw Error('server unavailable'); } },
+      createHistory, historyRef,
+      setHistory: () => { throw Error('must retain current editor'); }, updateDocumentUrl: () => { throw Error('must retain current URL'); },
+    });
+    if (stale) await open(generated); else await assert.rejects(() => open(generated), /server unavailable/);
+    assert.equal(historyRef.current, original); assert.equal(saves, stale ? 0 : 1);
+  }
 });

@@ -10,8 +10,8 @@
     if(value&&typeof value==='object')return Object.fromEntries(Object.keys(value).sort().map(k=>[k,normalize(value[k])]));
     return value;
   }
-  function edgeErrors(graph,e,points=e.route){
-    if(graph.recursive&&root.SummaryRecursive)return root.SummaryRecursive.edgeErrors(graph,e,points);
+  function edgeErrors(graph,e,points=e.route,options={}){
+    if(graph.recursive&&root.SummaryRecursive)return root.SummaryRecursive.edgeErrors(graph,e,points,options);
     const base=graph.semanticBaseline;if(!base)return [];
     const errors=[],saved=base.edges[e.id];
     if(!saved){if(!e.draft)errors.push('unreviewed connection requires a draft');return errors;}
@@ -19,7 +19,7 @@
     if(!e.draft&&(e.source!==saved.source||e.target!==saved.target))errors.push('source producer/consumer changed');
     if(!e.draft)for(const key of ['fixedSource','fixedTarget'])if(stable(e[key]||null)!==stable(saved[key]||null))errors.push('source port changed without a draft');
     if(!e.draft&&stable(e.portPolicy||null)!==stable(saved.portPolicy||null))errors.push('source routing policy changed');
-    if(!e.draft)errors.push(...P.errors(graph,e,points));
+    if(!e.draft&&!options.skipPhysical)errors.push(...P.errors(graph,e,points));
     return errors;
   }
   function nodeErrors(graph){

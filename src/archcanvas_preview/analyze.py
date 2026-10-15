@@ -13,6 +13,7 @@ import hashlib
 import json
 from importlib.resources import files as package_files
 from pathlib import Path, PurePosixPath
+from archcanvas_python.discovery import ModelIndex
 
 REGISTRY = json.loads(package_files('archcanvas_preview').joinpath('registry.json').read_text(encoding='utf-8'))
 MAX_FILES, MAX_BYTES, MAX_NODES, MAX_EDGES, MAX_DEPTH = 80, 2_000_000, 480, 3600, 10
@@ -78,12 +79,15 @@ class Analyzer:
                             if isinstance(n, ast.Name): imports.pop(n.id, None)
                     if isinstance(stmt, ast.FunctionDef): imports.pop(stmt.name, None)
             module = name[:-3].replace('/', '.')
-            if module.endswith('.__init__'):
+            if module == '__init__':
+                module = ''
+            elif module.endswith('.__init__'):
                 module = module[:-9]
             self.units[name] = {'tree': tree, 'imports': imports, 'module': module}
             for c in tree.body:
                 if isinstance(c, ast.ClassDef):
                     self.classes[module + ':' + c.name] = (name, c)
+        self.model_index = ModelIndex(self.files)
 
     def span(self, file, node):
         snippet = ast.get_source_segment(self.files[file], node) or ast.unparse(node)
@@ -99,6 +103,9 @@ class Analyzer:
         return self.units[file]['imports'].get(first, first) + (dot + rest if dot else '')
 
     def local(self, file, expr):
+        resolved = self.model_index.resolve(self.model_index.symbol(file, expr))
+        if resolved in self.classes:
+            return resolved
         raw = ast.unparse(expr)
         module = self.units[file]['module']
         same = module + ':' + raw
@@ -116,10 +123,13 @@ class Analyzer:
 
     def supported_class(self, key):
         file, cls = self.classes[key]
-        hooks = {'__call__', '__getattribute__', '__getattr__', '__setattr__'}
-        return (not cls.decorator_list and len(cls.bases) == 1
-                and self.symbol(file, cls.bases[0]) == 'torch.nn.Module'
-                and not any(isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name in hooks for n in cls.body))
+        hooks = {'__getattribute__', '__getattr__', '__setattr__'}
+        order = self.model_index.mro(key)
+        return (self.model_index.resolve(key) == key and self.model_index.is_module(key) and order is not None
+                and not self.model_index.method_blocked(key, '__init__')
+                and all(not definition.decorator_list and not any(
+                    isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name in hooks for n in definition.body)
+                    for owner in order if owner in self.classes for _, definition in [self.classes[owner]]))
 
     def add(self, parent, kind, label, file, expr, **fields):
         if len(self.nodes) >= MAX_NODES:
@@ -182,10 +192,10 @@ class Analyzer:
         return {**data, 'type': 'opaque'}
 
     def constructor(self, key, args, kwargs, instance):
-        file, cls = self.classes[key]
-        init = next((n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == '__init__'), None)
+        inherited = self.model_index.method(key, '__init__')
+        file, init = inherited if inherited else (self.classes[key][0], None)
         attrs, values = {}, {}
-        if not init or init.decorator_list or init.args.vararg or init.args.kwarg:
+        if not isinstance(init, ast.FunctionDef) or init.decorator_list or init.args.vararg or init.args.kwarg:
             return attrs, values
         positional = (init.args.posonlyargs + init.args.args)[1:]
         keyword_only = list(init.args.kwonlyargs)
@@ -268,15 +278,15 @@ class Analyzer:
             self.connect(value, out, 'value', evidence)
             return out
         key = spec['class']
-        method_file, cls = self.classes[key]
-        forward = next((n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == 'forward'), None)
+        method = self.model_index.effective_method(key)
+        method_file, forward = method if method else (self.classes[key][0], None)
         attrs, values = self.constructor(key, spec.get('args', []), spec.get('kwargs', {}), identity)
-        if not forward or forward.decorator_list or forward.args.vararg or forward.args.kwarg:
+        if not isinstance(forward, ast.FunctionDef) or forward.decorator_list or forward.args.vararg or forward.args.kwarg:
             self.nodes[next(i for i,n in enumerate(self.nodes) if n['id']==node)].update(kind='opaque',certainty='opaque')
             for i, arg in enumerate(args):
                 self.connect(arg, node, f'arg[{i}]', evidence)
             for k, arg in kwargs.items():self.connect(arg,node,k,evidence)
-            self.diagnostic(file, call, 'forward 缺失、被装饰或签名动态，保留整体模块。', node)
+            self.diagnostic(file, call, 'forward/__call__ 缺失、被装饰或签名动态，保留整体模块。', node)
             return node
         env = {}
         params = forward.args.posonlyargs + forward.args.args
@@ -430,7 +440,7 @@ class Analyzer:
         return None
 
     def run(self,entry=None):
-        candidates=[k for k,(f,c) in self.classes.items() if any(isinstance(n,ast.FunctionDef) and n.name=='forward' for n in c.body)]
+        candidates=[k for k in self.classes if self.model_index.resolve(k) == k and self.model_index.is_module(k) and self.model_index.effective_method(k)]
         matches=[k for k in candidates if entry in (k,k.rsplit(':',1)[-1])] if entry else candidates
         if len(matches)!=1:
             raise AdapterError('请指定模型入口 file.module:Class。候选：'+', '.join(candidates))
@@ -461,7 +471,9 @@ def analyze(files,entry=None,config=None):
         except (ValueError, TypeError, RecursionError) as exc:
             raise AdapterError('构造参数必须是有限的 JSON 字面量。') from exc
     try:
-        return Analyzer(files,config).run(entry)
+        bundle = Analyzer(files,config).run(entry)
+        from archcanvas_adapters import enrich_preview
+        return enrich_preview(bundle, files)
     except (RecursionError, TypeError, AttributeError) as exc:
         raise AdapterError('源码超出静态分析的支持范围或嵌套预算。') from exc
 

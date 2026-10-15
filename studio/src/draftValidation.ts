@@ -15,6 +15,7 @@ export type DraftValidation = {
   portTensors?: Record<string, Record<string, DraftTensor>>;
   verification: 'static-declared-tensors; no model execution' | 'source-preserved-graph; no model execution' | 'static-topology; custom output shapes unknown; no model execution';
   unknownTensorNodeIds?: string[];
+  generation?: { mode: 'source-preserved-copy'; supported: boolean; topology: 'preserved'; limitations: string[] };
 };
 
 const STATIC_VERIFICATION = 'static-declared-tensors; no model execution';
@@ -129,7 +130,7 @@ function readTensor(value: unknown): DraftTensor {
 /** Read only the backend's static-declaration response, never execution/generated-source receipts. */
 export function readDraftValidation(value: unknown): DraftValidation {
   const result = record(value);
-  keys(result, ['draft', 'draftDigest', 'complete', 'issues', 'tensors', 'order', 'verification'], ['portTensors', 'unknownTensorNodeIds']);
+  keys(result, ['draft', 'draftDigest', 'complete', 'issues', 'tensors', 'order', 'verification'], ['portTensors', 'unknownTensorNodeIds', 'generation']);
   if (![STATIC_VERIFICATION, 'source-preserved-graph; no model execution', 'static-topology; custom output shapes unknown; no model execution'].includes(result.verification as string) || typeof result.draftDigest !== 'string' || !/^[a-f0-9]{64}$/.test(result.draftDigest) || typeof result.complete !== 'boolean' || !Array.isArray(result.issues) || result.issues.length > 3600 || !Array.isArray(result.order)) invalid();
   const draft = readDraft(result.draft), nodeIds = new Set(draft.nodes.map(node => node.id)), edgeIds = new Set(draft.edges.map(edge => edge.id));
   const issues = (result.issues as unknown[]).map(readDiagnostic), order = (result.order as unknown[]).map(identity);
@@ -149,7 +150,13 @@ export function readDraftValidation(value: unknown): DraftValidation {
   if (draft.customModules?.length ? result.verification !== 'static-topology; custom output shapes unknown; no model execution' : !!draft.sourceProvenance !== (result.verification === 'source-preserved-graph; no model execution')) invalid();
   const unknownTensorNodeIds = result.unknownTensorNodeIds ? (Array.isArray(result.unknownTensorNodeIds) ? result.unknownTensorNodeIds.map(identity) : invalid()) : undefined;
   if (unknownTensorNodeIds?.some(id => !nodeIds.has(id) || tensors[id])) invalid();
-  return { draft, draftDigest: result.draftDigest as string, complete: result.complete as boolean, issues, tensors, order, verification: result.verification as DraftValidation['verification'], ...(portTensors ? { portTensors } : {}), ...(unknownTensorNodeIds ? { unknownTensorNodeIds } : {}) };
+  let generation: DraftValidation['generation'];
+  if (result.generation !== undefined) {
+    const g = record(result.generation); keys(g, ['mode', 'supported', 'topology', 'limitations']);
+    if (!draft.sourceProvenance || g.mode !== 'source-preserved-copy' || g.topology !== 'preserved' || typeof g.supported !== 'boolean' || !Array.isArray(g.limitations) || g.limitations.length > 50) invalid();
+    generation = { mode: g.mode, supported: g.supported, topology: g.topology, limitations: g.limitations.map(value => text(value, 4096)) };
+  }
+  return { draft, draftDigest: result.draftDigest as string, complete: result.complete as boolean, issues, tensors, order, verification: result.verification as DraftValidation['verification'], ...(portTensors ? { portTensors } : {}), ...(unknownTensorNodeIds ? { unknownTensorNodeIds } : {}), ...(generation ? { generation } : {}) };
 }
 
 /** Arrays preserve the server's stable graph/forward ordering; parameter object order has no meaning. */

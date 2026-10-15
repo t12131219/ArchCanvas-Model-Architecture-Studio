@@ -36,16 +36,17 @@ import type { AuthoringWorkspace } from './AuthoringStudio';
 import type { GeneratedDraft } from './api';
 import { createGeneratedCanvas } from './generatedCanvas';
 import { followSourceView, resumeSourceAuthoring, sourceAuthoringKey } from './sourceAuthoringSession';
+import { readSourceAuthoringWorkspace, writeSourceAuthoringWorkspace } from './sourceAuthoringCache';
 import { WorkspaceModeSwitch } from './WorkspaceModeSwitch';
 import { FloatingLegend } from './FloatingLegend';
-import { resumeGeneratedWorkspace, generatedSourceView, sameGeneratedDraft, readGeneratedWorkspace, writeGeneratedWorkspace, authoringViewSelection } from './generatedWorkspace';
+import { resumeGeneratedWorkspace, generatedSourceView, sameGeneratedDraft, readPersistentGeneratedWorkspace, writePersistentGeneratedWorkspace, authoringViewSelection } from './generatedWorkspace';
 import type { GeneratedWorkspaceBinding } from './generatedWorkspace';
 import { blankDraft } from './authoring';
 import type { AuthoredDraft } from './authoring';
 import { nearestPortLayout } from './core/portRouting';
 import { PreviewStudio } from './PreviewStudio';
 import type { PreviewHandle, PreviewSnapshot, PreviewSourceResult } from './PreviewStudio';
-import { architecturePreviewRequest, architecturePreviewFocus, bundlePreviewRequest, rawPreviewSourceRequest, previewSelectionNodeIds, previewSelectionDraftIds, previewNodeLayoutOperation, previewExpansionOperations, previewSourceMatchesArchitecture } from './previewInterop';
+import { architecturePreviewRequest, architecturePreviewFocus, bundlePreviewRequest, rawPreviewSourceRequest, previewSelectionDraftIds, previewNodeLayoutOperation, previewExpansionOperations, previewSourceMatchesArchitecture, previewUniqueNodeBindings, previewSourceLocation } from './previewInterop';
 import type { PreviewEvidenceSource, PreviewSelection, PreviewSourceBundle, PreviewVisualGraph } from './previewInterop';
 import { previewMappingSignature, previewNeedsPanelDocument, previewPanelDocument, projectPreviewHistory } from './previewPanelDocument';
 import { isPreviewDraftEdge, previewEdgeAppearance, previewFormalEdgeIds, previewGraphEdges, previewDocumentSyncOperations, previewNodePresentation, previewPresentation, previewAnnotationConflicts, previewAnnotationPosition } from './previewPresentation';
@@ -84,7 +85,7 @@ export default function App() {
   const previewSource = useRef<PreviewEvidenceSource | undefined>(undefined);
   const previewBoundSource = useRef('');
   const previewSourceMatch = useRef<{ source: PreviewEvidenceSource; architecture: Architecture; matches: boolean } | null>(null);
-  const previewCoverage = useRef<{ source: PreviewEvidenceSource | undefined; architecture: Architecture; signature: string; needsPanel: boolean } | null>(null);
+  const previewNodeBindings = useRef<{ source?: PreviewEvidenceSource; architecture: Architecture; signature: string; bindings: Map<string, string> } | null>(null);
   const previewCase = useRef('');
   const previewLoading = useRef(false);
   const [previewConnecting, setPreviewConnecting] = useState(true);
@@ -176,22 +177,26 @@ export default function App() {
   const implicitRoots = useMemo(() => scene ? implicitRootIds(scene) : new Set<string>(), [scene]);
   const architecture = current?.architecture;
   const selectedNode = selection.kind === 'node' ? architecture?.nodes.find(n => n.id === selection.ids[0]) : undefined;
+  const formalPreviewBindings = currentPreviewNodeBindings();
   const selectedEdge = selection.kind === 'edge' ? architecture?.edges.find(n => n.id === selection.ids[0]) : undefined;
   const selectedPreviewEdge = selection.kind === 'preview-edge' ? previewGraphEdges(previewSnapshot.current?.graph).find(edge => edge.id === selection.ids[0]) : undefined;
   const selectedEdgePreview = selectedEdge && architecture ? previewGraphEdges(previewSnapshot.current?.graph).find(edge => {
-    const ids = previewFormalEdgeIds(architecture, edge, previewSnapshot.current?.graph, previewSource.current);
+    const ids = previewFormalEdgeIds(architecture, edge, previewSnapshot.current?.graph, previewSource.current, formalPreviewBindings);
     return ids.length === 1 && ids[0] === selectedEdge.id;
   }) : undefined;
   const selectedEdgeAppearance = selectedEdgePreview ? previewEdgeAppearance(previewSnapshot.current?.graph, selectedEdgePreview) : selectedEdge && current && scene ? edgeAppearance(current, selectedEdge.id, scene) : undefined;
   const selectedPreviewEdgeAppearance = selectedPreviewEdge ? previewEdgeAppearance(previewSnapshot.current?.graph, selectedPreviewEdge) : undefined;
   const selectedAnnotation = selection.kind === 'annotation' ? current?.annotations.find(n => n.id === selection.ids[0]) : undefined;
   const selectedSceneNode = scene?.nodes.find(n => n.id === selectedNode?.id);
-  const selectedVisiblePreviewNode = selectedNode && architecture ? graphFromSnapshot()?.nodes.find(node => {
-    const ids = previewSelectionNodeIds(architecture, { nodeId: node.id, node }, previewSource.current);
-    return ids.length === 1 && ids[0] === selectedNode.id;
-  }) : undefined;
+  const selectedVisiblePreviewNode = selectedNode && architecture ? graphFromSnapshot()?.nodes.find(node => formalPreviewBindings.get(node.id) === selectedNode.id) : undefined;
   const selectedPreviewNodePresentation = selectedVisiblePreviewNode ? previewNodePresentation(previewSnapshot.current?.graph, selectedVisiblePreviewNode) : undefined;
   const previewSelectedNodes = (graphFromSnapshot()?.nodes ?? []).filter(node => previewSelectedNodeIds.includes(node.id) && !node.junction);
+  const inspectionNode = !selectedNode && selection.kind === 'node' && !selection.ids.length && previewSelectedNodes.length === 1 ? previewSelectedNodes[0] : undefined;
+  const inspectionPresentation = inspectionNode ? previewNodePresentation(previewSnapshot.current?.graph, inspectionNode) : undefined;
+  const inspectionSource = inspectionNode ? previewSourceLocation({ nodeId: inspectionNode.id, node: inspectionNode }, previewSource.current) : null;
+  const previewSourceSpan = selectedNode?.source ?? inspectionSource;
+  const inspectionExpandable = inspectionNode && (graphFromSnapshot()?.nodes.some(node => node.parent === inspectionNode.id) ||
+    (previewSnapshot.current?.graph?.recursive as { authority?: { detail?: PreviewVisualGraph } } | undefined)?.authority?.detail?.nodes.some(node => node.parent === inspectionNode.id));
   const previewPinnedCount = previewSelectedNodes.filter(node => previewPresentation(previewSnapshot.current?.graph)?.nodes?.[node.id]?.pinned).length;
   const previewAllPinned = previewSelectedNodes.length > 0 && previewPinnedCount === previewSelectedNodes.length;
   const previewLayoutDisabled = !current || busy || previewConnecting || previewBusy;
@@ -221,6 +226,15 @@ export default function App() {
     previewSourceMatch.current = { source, architecture, matches };
     return matches;
   }
+  function currentPreviewNodeBindings(): Map<string, string> {
+    const architecture = historyRef.current?.document.architecture, snapshot = previewSnapshot.current;
+    if (!architecture || !snapshot?.graph) return new Map();
+    const source = previewSource.current, signature = previewMappingSignature(snapshot), cached = previewNodeBindings.current;
+    if (cached?.architecture === architecture && cached.source === source && cached.signature === signature) return cached.bindings;
+    const bindings = previewUniqueNodeBindings(architecture, snapshot.graph as unknown as PreviewVisualGraph, source);
+    previewNodeBindings.current = { architecture, source, signature, bindings };
+    return bindings;
+  }
   function readyPreview(document = historyRef.current?.document): boolean {
     if (!document || initialModelLoading.current || previewLoading.current || synchronizingPreview.current || !previewSnapshot.current?.graph || previewSnapshot.current.busy) return false;
     if (document.sourceBindingDigest.startsWith('preview-only:')) return document.sourceBindingDigest === `preview-only:${previewCase.current}`;
@@ -246,7 +260,8 @@ export default function App() {
     if (!document || !graph) return undefined;
     const detail = (previewSnapshot.current?.graph?.recursive as { authority?: { detail?: PreviewVisualGraph } } | undefined)?.authority?.detail;
     const nodes = detail?.nodes ?? graph.nodes;
-    return nodes.find(node => previewSelectionNodeIds(document.architecture, { nodeId: node.id, node }, previewSource.current).includes(id))?.id;
+    const bindings = currentPreviewNodeBindings();
+    return nodes.find(node => bindings.get(node.id) === id)?.id;
   }
   function focusPreviewNode(id: string) {
     const nodeId = previewNodeId(id);
@@ -265,8 +280,9 @@ export default function App() {
         const formal = architecture?.edges.find(edge => edge.id === operation.id);
         const graph = previewSnapshot.current?.graph;
         if (!formal || !architecture || !graph) throw new Error('连接的源码绑定不可用。');
+        const bindings = currentPreviewNodeBindings();
         const found = previewGraphEdges(graph).filter(edge => {
-          const ids = previewFormalEdgeIds(architecture, edge, graph, previewSource.current);
+          const ids = previewFormalEdgeIds(architecture, edge, graph, previewSource.current, bindings);
           return ids.length === 1 && ids[0] === formal.id;
         });
         if (!found.length) throw new Error('当前前沿没有显示该连接，请先展开所属模块。');
@@ -288,6 +304,16 @@ export default function App() {
     const sequence = ++previewSequence.current;
     const expectedCase = previewCase.current;
     setPreviewConnecting(true);
+    const bound = historyRef.current?.document;
+    // A source-inspection projection may contain additional opaque objects.
+    // That does not revoke an existing, byte-matched formal source contract.
+    if (bound && !bound.sourceBindingDigest.startsWith('preview-only:') && previewSourceMatchesArchitecture(source, bound.architecture)) {
+      previewBoundSource.current = bound.architecture.sourceDigest + ':' + bound.architecture.irDigest;
+      if (previewSnapshot.current) await receivePreviewState(previewSnapshot.current);
+      setPreviewConnecting(false);
+      if (openEditor) await continueModelAuthoring();
+      return;
+    }
     let arch: Architecture;
     try {
       const request = source.schema === 'summary-source-adapter/1' ? bundlePreviewRequest(source) : rawPreviewSourceRequest(source);
@@ -337,15 +363,14 @@ export default function App() {
     const graph = graphFromSnapshot();
     if (edge && graph) {
       const raw = previewGraphEdges(previewSnapshot.current?.graph).find(item => item.id === edge.id);
-      const ids = raw ? previewFormalEdgeIds(architecture, raw, previewSnapshot.current?.graph, previewSource.current) : [];
+      const ids = raw ? previewFormalEdgeIds(architecture, raw, previewSnapshot.current?.graph, previewSource.current, currentPreviewNodeBindings()) : [];
       setSelection(ids.length === 1 ? { kind: 'edge', ids } : { kind: 'preview-edge', ids: [edge.id] });
       setPanel('object'); return;
     }
     const selected = (message.nodeIds ?? message.selectedNodes) as string[] | undefined;
-    const ids = selected?.length && graph ? [...new Set(selected.flatMap(id => {
-      const node = graph.nodes.find(node => node.id === id);
-      return node ? previewSelectionNodeIds(architecture, { nodeId: id, node }, previewSource.current) : [];
-    }))] : previewSelectionNodeIds(architecture, message as PreviewSelection, previewSource.current);
+    const bindings = currentPreviewNodeBindings();
+    const ids = selected?.length && graph ? [...new Set(selected.flatMap(id => bindings.has(id) ? [bindings.get(id)!] : []))] :
+      typeof message.nodeId === 'string' && bindings.has(message.nodeId) ? [bindings.get(message.nodeId)!] : [];
     setSelection({ kind: 'node', ids }); setPanel('object');
   }
   async function receivePreviewState(snapshot: PreviewSnapshot) {
@@ -383,29 +408,16 @@ export default function App() {
       return;
     }
     if (synchronizingPreview.current) return;
-    let before = historyRef.current;
+    const before = historyRef.current;
     const visual = graphFromSnapshot(snapshot);
     if (before && !before.document.sourceBindingDigest.startsWith('preview-only:') && (!previewSource.current ||
       !currentPreviewSourceMatches(before.document.architecture) ||
       (previewSource.current.schema === 'summary-source-adapter/1' ? previewSource.current.id : previewSource.current.caseId) !== caseId)) return;
-    if (before && visual && !before.document.sourceBindingDigest.startsWith('preview-only:') && !enteringAuthoring.current && !authoringOpen) {
-      const architecture = before.document.architecture, source = previewSource.current, signature = previewMappingSignature(snapshot);
-      let coverage = previewCoverage.current;
-      if (!coverage || coverage.architecture !== architecture || coverage.source !== source || coverage.signature !== signature) {
-        coverage = { architecture, source, signature, needsPanel: previewNeedsPanelDocument(snapshot, architecture, source) };
-        previewCoverage.current = coverage;
-      }
-      if (coverage.needsPanel) {
-        const panelDocument = previewPanelDocument(snapshot, previewSource.current);
-        panelDocument.revision = before.document.revision + 1;
-        before = createHistory(panelDocument); historyRef.current = before; setHistory(before);
-        previewBoundSource.current = ''; setProjectId(null); setStorageRevision(0); setSavedVisualRevision(-1);
-        setSelection({ kind: 'node', ids: [] });
-      }
-    }
+    // Project uniquely mapped presentation only. Extra inspection objects stay
+    // in the preview graph and never replace formal facts or project ownership.
     if (before && visual) {
       const presentationTitle = ((graph?.recursive as { state?: { studioPresentation?: { title?: string } } } | undefined)?.state?.studioPresentation ?? graph?.studioPresentation) as { title?: string } | undefined;
-      const next = projectPreviewHistory(before, visual, previewSource.current, presentationTitle?.title ?? String(snapshot.title ?? before.document.title));
+      const next = projectPreviewHistory(before, visual, previewSource.current, presentationTitle?.title ?? String(snapshot.title ?? before.document.title), currentPreviewNodeBindings());
       if (next !== before) { historyRef.current = next; setHistory(next); }
     }
   }
@@ -811,6 +823,12 @@ export default function App() {
   useEffect(() => { if (exampleId) localStorage.setItem(KEY, exampleId); }, [exampleId]);
   useEffect(() => { if (current) localStorage.setItem(ACTIVE, JSON.stringify({ documentId: current.id, projectId, previewCaseId: previewCase.current })); }, [current?.id, projectId, previewCase.current]);
 
+  function updateDocumentUrl(documentId: string) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('documentId', documentId);
+    window.history.replaceState(window.history.state, '', url);
+  }
+
   const save = useCallback(async () => {
     if (activeRecovery) { setNotice('请先应用或取消位置修复预览，再保存画布。'); return; }
     if (!historyRef.current || saving.current) return;
@@ -842,6 +860,7 @@ export default function App() {
       if (snapshot) savedPreviewGraph.current = JSON.stringify(snapshot.graph);
       setPreviewDirty(false);
       setStorageRevision(result.revision); setSavedVisualRevision(frozen.revision);
+      updateDocumentUrl(frozen.id);
       setNotice('画布已保存到正式工程 .archcanvas；可重开继续编辑'); setFailure('');
     } catch (error) { if (sequence === loadSequence.current) setFailure(`保存失败，当前编辑已保留：${String(error)}`); }
     finally { saving.current = false; if (sequence === loadSequence.current) setBusy(false); }
@@ -1160,6 +1179,12 @@ export default function App() {
     if (previewLayoutDisabled || !previewSelectedNodes.length) return;
     setFailure(''); previewEngine.current?.command('pin-selection', { pinned: !previewAllPinned });
   }
+  async function applyInspectionVisual(operations: Record<string, unknown>[]) {
+    if (!readyPreview() || previewLayoutDisabled) return;
+    const sequence = loadSequence.current;
+    try { await previewEngine.current!.visual(operations); }
+    catch (error) { if (sequence === loadSequence.current) setFailure(String(error)); }
+  }
   function runCommand() {
     if (!selectedNode || !current) { setFailure('先在画布或层级中选择一个节点'); return; }
     const text = command.trim(); const ops: VisualOperation[] = [];
@@ -1280,9 +1305,10 @@ export default function App() {
   }
 
   function sourceDraftKey(document: CanvasDocument) { return sourceAuthoringKey(document); }
-  function cacheGeneratedWorkspace(workspace: AuthoringWorkspace, binding: GeneratedWorkspaceBinding) {
-    try { writeGeneratedWorkspace(localStorage, workspace, binding); }
-    catch { setFailure('浏览器未能保留工作区恢复记录；请保存当前草稿与画布。'); }
+  async function cacheGeneratedWorkspace(workspace: AuthoringWorkspace, binding: GeneratedWorkspaceBinding) {
+    const sequence = loadSequence.current;
+    try { await writePersistentGeneratedWorkspace(workspace, binding); }
+    catch { if (sequence === loadSequence.current) setFailure('浏览器未能保留工作区恢复记录；请保存当前草稿与画布。'); }
   }
   function retainAuthoringWorkspace(workspace: AuthoringWorkspace) {
     const key = authoringSessionKey.current;
@@ -1290,6 +1316,12 @@ export default function App() {
     const retained = { ...workspace, viewBaseline: workspace.viewBaseline ?? authoringSessions.current.get(key)?.viewBaseline,
       sourceHistory: { past: historyRef.current?.past.length ?? 0, future: historyRef.current?.future.length ?? 0 } };
     authoringSessions.current.set(key, retained);
+    if (retained.draft.sourceProvenance) {
+      const sequence = loadSequence.current;
+      void writeSourceAuthoringWorkspace(retained).catch(() => {
+        if (sequence === loadSequence.current) setFailure('浏览器未能保留源码编辑恢复记录；请保存当前草稿。');
+      });
+    }
     for (const binding of generatedWorkspaces.current.values()) if (binding.workspaceKey === key) cacheGeneratedWorkspace(retained, binding);
   }
   function openBlankAuthoring() {
@@ -1315,7 +1347,8 @@ export default function App() {
     const sequence = loadSequence.current, key = sourceDraftKey(frozen);
     let generatedBinding = generatedWorkspaces.current.get(key);
     if (!generatedBinding) {
-      const recovered = readGeneratedWorkspace(localStorage, frozen);
+      const recovered = await readPersistentGeneratedWorkspace(frozen);
+      if (sequence !== loadSequence.current || frozen !== historyRef.current?.document) return;
       if (recovered) {
         generatedBinding = recovered.binding; generatedWorkspaces.current.set(key, generatedBinding);
         authoringSessions.current.set(generatedBinding.workspaceKey, recovered.workspace);
@@ -1341,18 +1374,30 @@ export default function App() {
         finally { if (sequence === loadSequence.current) setBusy(false); }
       }
     }
-    const retained = authoringSessions.current.get(key);
+    let retained = authoringSessions.current.get(key), recoveredSource = false;
+    if (!retained) {
+      try {
+        const recovered = await readSourceAuthoringWorkspace(frozen);
+        if (sequence !== loadSequence.current || frozen !== historyRef.current?.document) return;
+        if (recovered) { retained = recovered; recoveredSource = true; authoringSessions.current.set(key, recovered); }
+      } catch (error) {
+        if (sequence === loadSequence.current) setFailure(`无法恢复源码编辑副本，原记录与画布已保留：${String(error)}`);
+        return;
+      }
+    }
     if (retained) {
+      const sourceView = { selection: recoveredSource ? authoringViewSelection(retained) : selection.kind === 'node' ? selection.ids : [],
+        camera: recoveredSource && retained.camera ? { ...retained.camera } : { ...cameraRef.current },
+        viewport: recoveredSource ? retained.viewport : readCameraViewport() ?? undefined, tool: recoveredSource ? retained.tool ?? tool : tool,
+        sourceHistory: recoveredSource && retained.sourceHistory ? { ...retained.sourceHistory } : { past: historyRef.current?.past.length ?? 0, future: historyRef.current?.future.length ?? 0 } };
       const retainedRevision = retained.draft.sourceProvenance?.visualRevision;
       if (retainedRevision === frozen.revision) {
-        const workspace = followSourceView(retained, { selection: selection.kind === 'node' ? selection.ids : [], camera: { ...cameraRef.current }, viewport: readCameraViewport() ?? undefined, tool,
-          sourceHistory: { past: historyRef.current?.past.length ?? 0, future: historyRef.current?.future.length ?? 0 } });
+        const workspace = recoveredSource ? retained : followSourceView(retained, sourceView);
         authoringSessions.current.set(key, workspace); authoringSessionKey.current = key; setBrowseBaseline(workspace.viewBaseline); setAuthoringWorkspace(workspace); setAuthoringOpen(true); return;
       }
       setBusy(true); setFailure('');
       try {
-        const workspace = await resumeSourceAuthoring(retained, frozen, { selection: selection.kind === 'node' ? selection.ids : [], camera: { ...cameraRef.current }, viewport: readCameraViewport() ?? undefined, tool,
-          sourceHistory: { past: historyRef.current?.past.length ?? 0, future: historyRef.current?.future.length ?? 0 } },
+        const workspace = await resumeSourceAuthoring(retained, frozen, sourceView,
           (draft, document, scene) => api.sourceDraftFrontier(draft, document, scene, true));
         if (sequence !== loadSequence.current || frozen !== historyRef.current?.document) return;
         authoringSessions.current.set(key, workspace); authoringSessionKey.current = key;
@@ -1421,12 +1466,13 @@ export default function App() {
       await assertFrozen();
       const graph = graphFromSnapshot(snapshot)!;
       const mapped = new Map<string, string>(), choices: { nodeId: string; pathLabel: string }[] = [];
+      const bindings = currentPreviewNodeBindings();
       for (const node of graph.nodes) {
-        const ids = previewSelectionNodeIds(frozen.architecture, { nodeId: node.id, node }, previewSource.current);
-        if (ids.length !== 1 || mapped.has(ids[0])) continue;
-        mapped.set(ids[0], node.id);
-        if (node.expanded && frozen.architecture.nodes.find(item => item.id === ids[0])?.children.length) {
-          choices.push({ nodeId: ids[0], pathLabel: frozen.displayAliases[ids[0]] ?? node.label ?? ids[0] });
+        const id = bindings.get(node.id);
+        if (!id) continue;
+        mapped.set(id, node.id);
+        if (node.expanded && frozen.architecture.nodes.find(item => item.id === id)?.children.length) {
+          choices.push({ nodeId: id, pathLabel: frozen.displayAliases[id] ?? node.label ?? id });
         }
       }
       const detailSvg = new Map<string, string>();
@@ -1448,25 +1494,34 @@ export default function App() {
   }
   async function openGeneratedModel(generated: GeneratedDraft) {
     cancelGesture();
-    const workspace = authoringSessionKey.current ? authoringSessions.current.get(authoringSessionKey.current) : undefined;
+    const workspaceKey = authoringSessionKey.current;
+    const workspace = workspaceKey ? authoringSessions.current.get(workspaceKey) : undefined;
     const sequence = ++loadSequence.current;
-    cameraOwner.current = null; cameraIntent.current++;
-    const project = await api.register(generated.architecture);
-    if (sequence !== loadSequence.current) return;
-    await openArchitecture(project.architecture, false, sequence, false);
-    if (sequence !== loadSequence.current) return;
-    const retained = createGeneratedCanvas(project.architecture, generated.draft, generated, generated.presentationDraft);
+    const retained = createGeneratedCanvas(generated.architecture, generated.draft, generated, generated.presentationDraft);
     const document = retained.document;
-    if (workspace && authoringSessionKey.current) {
-      const binding = { workspaceKey: authoringSessionKey.current,
+    // Persist the exact generated model and its retained presentation before
+    // switching away from the editor. Reload must reopen this generation.
+    const opened = await api.open(generated.architecture);
+    if (sequence !== loadSequence.current) return;
+    if (opened.documentId !== document.id) throw new Error('新模型画布身份与生成结果不一致；当前编辑已保留。');
+    const next = createHistory(document);
+    const saved = await api.save(document, opened.revision, next);
+    if (sequence !== loadSequence.current) return;
+    if (workspace && workspaceKey) {
+      const binding = { workspaceKey,
         documentId: document.id, sourceDigest: document.sourceBindingDigest, irDigest: document.architecture.irDigest,
-        draft: structuredClone(workspace.draft), nodeBindings: { ...generated.nodeBindings, ...generated.containerBindings }, edgeBindings: generated.edgeBindings, visualRevision: document.revision };
+        draft: structuredClone(workspace.draft), nodeBindings: { ...generated.nodeBindings, ...generated.containerBindings, ...retained.nodeBindings }, edgeBindings: generated.edgeBindings, visualRevision: document.revision };
       generatedWorkspaces.current.set(sourceDraftKey(document), binding);
-      cacheGeneratedWorkspace(workspace, binding);
+      await cacheGeneratedWorkspace(workspace, binding);
     }
-    historyRef.current = createHistory(document); setHistory(historyRef.current);
+    if (sequence !== loadSequence.current) return;
+    cameraOwner.current = null; cameraIntent.current++;
+    historyRef.current = next; setHistory(next);
+    setStorageRevision(saved.revision); setSavedVisualRevision(document.revision);
+    setReview(null); localStorage.removeItem(REVIEW); setPreview(null); setSourceOpen(false);
     setSelection({ kind: 'node', ids: (workspace?.selection ?? []).flatMap(id => retained.nodeBindings[id] ? [retained.nodeBindings[id]] : []) });
-    setProjectId(project.id); setExampleId(''); setAuthoringOpen(false);
+    setProjectId(opened.projectId); setExampleId(''); setAuthoringOpen(false);
+    updateDocumentUrl(document.id);
     if (workspace?.camera && !workspace.draft.sourceProvenance?.viewCanvas) { commitCamera(workspace.camera, document); setTool(workspace.tool ?? 'select'); }
     else initializeCamera(document, sequence, false);
     setNotice(`已打开新模型工作副本，并保留搭建位置与视角。模型未执行。${retained.unmappedNodeIds.length ? ` ${retained.unmappedNodeIds.length} 个展示框没有对应的新源码节点。` : ''}${retained.unresolvedEdgeStyles.length ? ` ${retained.unresolvedEdgeStyles.length} 条连线样式待核对。` : ''}`);
@@ -1539,10 +1594,24 @@ export default function App() {
         {!!layoutGuidance.length && <div className="layout-warning" role="status" aria-label="布局提示">{layoutGuidance.slice(0, 3).map(message => <p key={message}>{message}</p>)}{layoutGuidance.length > 3 && <p>另有 {layoutGuidance.length - 3} 处布局冲突；调整后会重新检查。</p>}</div>}
         {activeRecovery && <div className="layout-recovery-preview" role="status" aria-label="位置修复预览"><p>位置修复预览 · {activeRecovery.plan.operation.scope === 'current-frontier' ? '仅当前视图' : '所有视图'} · 应用后才调整选中对象。</p><div><button className="primary" onClick={applyPositionRecovery}>应用位置修复</button><button onClick={cancelGesture}>取消预览</button></div></div>}
         <div className="command-bar"><span className="command-icon"><Icon name="message" size={17} /></span><input aria-label="画布文字指令" placeholder={selectedNode ? '向右移动 24，或设为蓝色、命名为…' : '选择一个节点，用文字修改画布…'} value={command} onChange={e => setCommand(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) runCommand(); }} /><span className="local-label">本地视觉指令</span><button onClick={runCommand} disabled={!command.trim()}>应用 <span>↵</span></button></div>
-        {sourceOpen && architecture && <div className="source-drawer"><div className="drawer-header"><Icon name="code" size={16} /><b>源码证据</b><span>{selectedNode?.source ? `${selectedNode.source.path}:${selectedNode.source.line}` : '只读 · 未执行'}</span><button className="tool" onClick={() => setSourceOpen(false)} aria-label="关闭源码"><Icon name="close" size={16} /></button></div><div className="source-content">{current?.sourceBindingDigest.startsWith('preview-only:') && <p className="field-help">只读源码文本。展示对象没有经过正式模型解析的计算绑定；可在编辑模式中解析支持的源码入口。</p>}{!selectedNode?.source && architecture.sources.length > 0 && <p className="field-help">当前图元没有独立的源码行证据，以下提供完整模型源码供查阅。</p>}{architecture.sources.length === 0 && <p className="field-help">当前案例是视觉或路由示例，没有模型源码。</p>}{architecture.sources.map(source => <div key={source.path}><div className="source-filename">{source.path}</div><pre>{source.content.split('\n').map((line, i) => <div key={i} className={selectedNode?.source?.path === source.path && i + 1 >= selectedNode.source.line && i + 1 <= selectedNode.source.endLine ? 'source-highlight' : ''}><span>{i + 1}</span>{line || ' '}</div>)}</pre></div>)}</div></div>}
+        {sourceOpen && architecture && <div className="source-drawer"><div className="drawer-header"><Icon name="code" size={16} /><b>源码证据</b><span>{previewSourceSpan ? `${previewSourceSpan.path}:${previewSourceSpan.line}` : '只读 · 未执行'}</span><button className="tool" onClick={() => setSourceOpen(false)} aria-label="关闭源码"><Icon name="close" size={16} /></button></div><div className="source-content">{current?.sourceBindingDigest.startsWith('preview-only:') && <p className="field-help">只读源码文本。展示对象没有经过正式模型解析的计算绑定；可在编辑模式中解析支持的源码入口。</p>}{!previewSourceSpan && architecture.sources.length > 0 && <p className="field-help">当前图元没有独立的源码行证据，以下提供完整模型源码供查阅。</p>}{architecture.sources.length === 0 && <p className="field-help">当前案例是视觉或路由示例，没有模型源码。</p>}{architecture.sources.map(source => <div key={source.path}><div className="source-filename">{source.path}</div><pre>{source.content.split('\n').map((line, i) => <div key={i} className={previewSourceSpan?.path === source.path && i + 1 >= previewSourceSpan.line && i + 1 <= previewSourceSpan.endLine ? 'source-highlight' : ''}><span>{i + 1}</span>{line || ' '}</div>)}</pre></div>)}</div></div>}
       </main>
       <aside className="inspector"><div className="inspector-tabs"><button className={panel === 'object' ? 'active' : ''} onClick={() => setPanel('object')}>对象</button><button className={panel === 'legend' ? 'active' : ''} onClick={() => setPanel('legend')}>图例</button><button className={panel === 'page' ? 'active' : ''} onClick={() => setPanel('page')}>页面</button></div><div className="inspector-content"><details className="preview-routing-menu"><summary>自动布线与递归展开</summary><div className="studio-preview-buttons"><button onClick={() => previewEngine.current?.command("show-routing")}>布线与箭头设置</button><button onClick={() => previewEngine.current?.command("expand-all")}>展开全部</button><button onClick={() => previewEngine.current?.command("collapse-all")}>收起全部</button></div></details>
         {panel === 'object' && previewSelectedNodes.length > 0 && <section className="preview-selection-tools" aria-label="画布选区"><h3>已选 {previewSelectedNodes.length} 个节点<span>已固定 {previewPinnedCount} 个</span></h3><p className="field-help">{previewSelectedNodes.map(node => node.label || node.id).join('、')}</p><div><button disabled={previewLayoutDisabled || !previewCanAlign} onClick={() => arrangePreview('left')} aria-label="属性面板左对齐所选节点">左对齐</button><button disabled={previewLayoutDisabled} onClick={pinPreviewSelection} aria-label={previewAllPinned ? '属性面板解锁所选节点' : '属性面板固定所选节点'}>{previewAllPinned ? '解锁所选节点' : '固定所选节点'}</button></div><p className="field-help">Shift 多选同一容器中的节点后对齐；三个以上可等距分布。固定阻止节点的直接移动，子图仍随父容器移动，展开时仍使用原型布局。</p>{previewSelectedNodes.length > 1 && !previewCanAlign && <p className="field-help">当前选区跨越不同容器；请选择同级节点进行对齐。</p>}</section>}
+        {panel === 'object' && inspectionNode && inspectionPresentation && <>
+          <div className="object-heading"><span className="object-icon" style={{ background: inspectionPresentation.fill }}><Icon name="layers" size={20} /></span><div><h2>{previewPresentation(previewSnapshot.current?.graph)?.nodes?.[inspectionNode.id]?.alias ?? inspectionNode.label ?? inspectionNode.id}</h2><span>{inspectionNode.semantic?.moduleType ?? inspectionNode.semantic?.kind ?? inspectionNode.kind ?? '检查对象'}</span></div></div>
+          <div className="evidence-tag opaque">源码检查 · 视觉对象</div>
+          <section className="property-section"><h3>显示</h3>
+            <TextField label="预览显示名称" value={previewPresentation(previewSnapshot.current?.graph)?.nodes?.[inspectionNode.id]?.alias ?? inspectionNode.label ?? inspectionNode.id} onCommit={label => void applyInspectionVisual([{ type: 'alias', id: inspectionNode.id, label }])} />
+            <label className="field-label">填充颜色</label><input type="color" aria-label="检查对象填充颜色" disabled={previewLayoutDisabled || current?.pageSpec.preset === 'monochrome'} value={inspectionPresentation.fill} onChange={event => void applyInspectionVisual([{ type: 'nodeStyle', id: inspectionNode.id, style: { fill: event.target.value } }])} />
+            <label className="field-label">边框颜色</label><input type="color" aria-label="检查对象边框颜色" disabled={previewLayoutDisabled || current?.pageSpec.preset === 'monochrome'} value={inspectionPresentation.stroke} onChange={event => void applyInspectionVisual([{ type: 'nodeStyle', id: inspectionNode.id, style: { stroke: event.target.value } }])} />
+          </section>
+          <section className="property-section"><h3>排列与层级</h3><div className="coordinate-row"><label>X <output>{Math.round(inspectionPresentation.x)}</output></label><label>Y <output>{Math.round(inspectionPresentation.y)}</output></label></div>
+            {inspectionExpandable && <button className="full-button" disabled={previewLayoutDisabled} onClick={() => void applyInspectionVisual([{ type: 'expand', id: inspectionNode.id, expanded: !inspectionNode.expanded }])}><Icon name="layers" size={14} />{inspectionNode.expanded ? '原位收起检查结构' : '原位展开检查结构'}</button>}
+            <button className="text-button" onClick={() => previewEngine.current?.focus({ nodeId: inspectionNode.id })}>聚焦这个检查对象</button>
+          </section>
+          <section className="property-section"><h3>源码证据</h3><p className="field-help">{inspectionSource ? `${inspectionSource.path}:${inspectionSource.line}–${inspectionSource.endLine}` : '此展示对象没有独立的源码位置。'}</p><button className="full-button" onClick={() => setSourceOpen(true)}><Icon name="code" size={14} />查看检查对象源码</button><p className="field-help">展示和展开保存在递归预览中。此对象没有唯一的正式计算绑定，参数或连接改写请进入模型编辑；视觉调整不改变模型源码。</p></section>
+        </>}
         {panel === 'object' && selectedNode && current && <>
           <div className="object-heading"><span className="object-icon" style={{ background: (selectedPreviewNodePresentation?.fill ?? selectedSceneNode?.fill) }}><Icon name="layers" size={20} /></span><div><h2>{current.displayAliases[selectedNode.id] ?? selectedNode.label}</h2><span>{selectedNode.kind}</span></div></div><div className={`evidence-tag ${selectedNode.evidence}`}><Icon name="check" size={12} />{statusText(selectedNode.evidence)}</div>
           <section className="property-section"><h3>显示</h3><TextField label="显示名称" value={current.displayAliases[selectedNode.id] ?? selectedNode.label} onCommit={label => apply([{ type: 'alias', id: selectedNode.id, label }])} /><p className="field-help">源名称：{selectedNode.label}</p><label className="field-label">图元样式</label><select className="field-select" aria-label="图元样式" value={current.nodeStyleOverrides[selectedNode.id]?.glyph ?? (selectedPreviewNodePresentation?.glyph ?? selectedSceneNode?.glyph) ?? 'module'} onChange={e => apply([{ type: 'nodeStyle', id: selectedNode.id, style: { glyph: e.target.value as 'module' } }])}>{['module', 'operator', 'tensor', 'attention', 'norm', 'add', 'opaque'].map(g => <option key={g} value={g}>{({ module: '模块框', operator: '紧凑算子', tensor: '张量条带', attention: 'Attention 图元', norm: '归一化图元', add: '加法图元', opaque: '未知边界' } as Record<string, string>)[g]}</option>)}</select><label className="field-label">填充颜色</label><div className="color-palette">{PALETTE.map(color => <button key={color} aria-label={`填充 ${color}`} className={(selectedPreviewNodePresentation?.fill ?? selectedSceneNode?.fill) === color ? 'picked' : ''} style={{ background: color }} onClick={() => apply(selection.ids.map(id => ({ type: 'nodeStyle', id, style: { fill: color } })))} />)}<input type="color" aria-label="自定义填充颜色" value={(selectedPreviewNodePresentation?.fill ?? selectedSceneNode?.fill) ?? '#dcebf6'} onChange={e => apply(selection.ids.map(id => ({ type: 'nodeStyle', id, style: { fill: e.target.value } })))} /></div><label className="field-label">边框颜色</label><div className="color-field"><input type="color" aria-label="边框颜色" value={(selectedPreviewNodePresentation?.stroke ?? selectedSceneNode?.stroke) ?? '#607d91'} onChange={e => apply([{ type: 'nodeStyle', id: selectedNode.id, style: { stroke: e.target.value } }])} /><code>{(selectedPreviewNodePresentation?.stroke ?? selectedSceneNode?.stroke)}</code></div></section>

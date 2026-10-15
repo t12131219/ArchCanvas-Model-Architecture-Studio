@@ -24,9 +24,9 @@ import { draftEdgeRoles } from './draftEdgeRoles';
 import { reprojectSourceDraft } from './sourceDraftFrontier';
 import { canvasDotGrid, clampCanvasZoom } from './cameraProjection';
 import { draftPaletteCategories, draftPaletteCategoryLabel, draftPresetMatches, filterDraftModules } from './draftPalette';
-import { authoringCameraAtViewport, parseAuthoringWorkspace, reopenAuthoringWorkspace } from './sourceAuthoringSession';
+import { authoringCameraAtViewport, reopenAuthoringWorkspace } from './sourceAuthoringSession';
+import { AUTHORING_CACHE_ERROR, writeCachedAuthoringWorkspace, restoreCachedAuthoringWorkspace } from './authoringWorkspaceCache';
 
-const CACHE = 'archcanvas.authored-workspace.v1';
 export type DraftCamera = { x: number; y: number; zoom: number };
 type Camera = DraftCamera;
 export type { AuthoringWorkspace } from './sourceAuthoringSession';
@@ -63,16 +63,11 @@ export function unsupportedPaletteMessage(value: string): string | null {
 }
 
 function createBlank() { return blankDraft(`draft-${crypto.randomUUID()}`); }
-function restored() {
-  try {
-    const stored = parseAuthoringWorkspace(JSON.parse(localStorage.getItem(CACHE) ?? 'null'));
-    if (stored) return stored;
-  } catch { /* A damaged browser cache is never used as a source document. */ }
-  return { draft: createBlank(), storageRevision: 0, savedRevision: -1 };
-}
-
 export function AuthoringStudio({ onClose, onOpen, initialWorkspace, onViewState, browseBaseline, onReuseView, onNewBlank }: { onClose: () => void; onOpen: (generated: GeneratedDraft) => Promise<void>; initialWorkspace?: AuthoringWorkspace; onViewState?: (workspace: AuthoringWorkspace) => void; browseBaseline?: AuthoredDraft; onReuseView?: (workspace: AuthoringWorkspace) => void | boolean | Promise<void | boolean>; onNewBlank?: (workspace: AuthoringWorkspace) => void }) {
-  const [initial] = useState(() => initialWorkspace ?? restored());
+  const [initial, setInitial] = useState<AuthoringWorkspace>(() => initialWorkspace ?? { draft: createBlank(), storageRevision: 0, savedRevision: -1 });
+  const [cacheReady, setCacheReady] = useState(!!initialWorkspace);
+  const [cacheWritable, setCacheWritable] = useState(!!initialWorkspace);
+  const cacheWriter = useRef(writeCachedAuthoringWorkspace);
   const [history, setHistory] = useState(() => initial.history ?? draftHistory(initial.draft));
   const [baseCatalog, setBaseCatalog] = useState<DraftCatalog | null>(null);
   const [storageRevision, setStorageRevision] = useState(initial.storageRevision ?? 0);
@@ -118,7 +113,7 @@ export function AuthoringStudio({ onClose, onOpen, initialWorkspace, onViewState
   const catalog = useMemo(() => sourceDraftCatalog(history.draft, baseCatalog), [history.draft.sourceProvenance, history.draft.customModules, baseCatalog]);
   const paletteCatalog = useMemo(() => baseCatalog ? { ...baseCatalog, modules: [...baseCatalog.modules, ...(history.draft.customModules ?? []).map(customModuleCatalog)] } : null, [baseCatalog, history.draft.customModules]);
   const catalogRef = useRef(catalog); catalogRef.current = catalog;
-  const selectedIds = selection.nodes ?? (selection.node ? [selection.node] : []);
+  const selectedIds = useMemo(() => selection.nodes ?? (selection.node ? [selection.node] : []), [selection]);
   const grid = canvasDotGrid(camera);
   const viewStateRef = useRef(onViewState); viewStateRef.current = onViewState;
   const selected = draft.nodes.find(node => node.id === selection.node);
@@ -131,9 +126,33 @@ export function AuthoringStudio({ onClose, onOpen, initialWorkspace, onViewState
   const checked = validation?.key === validationKey && !invalidFields.length ? validation.result : null;
   const currentNotice = checkNoticeKey && (checkNoticeKey !== validationKey || !checked) ? '草稿结构已改变；请重新检查声明形状与连接，模型尚未执行。' : notice;
   const labelScale = draftCanvasTextScale(camera.zoom);
-  useEffect(() => { viewStateRef.current?.({ draft: history.draft, history, storageRevision, savedRevision, selection: selectedIds, camera, viewport: cameraViewport.current, tool, sourceHistory: initial.sourceHistory, viewBaseline: initial.viewBaseline }); }, [history, storageRevision, savedRevision, selection, camera, tool]);
+  useEffect(() => {
+    if (initialWorkspace) return;
+    let alive = true;
+    void restoreCachedAuthoringWorkspace(() => initial).then(recovered => {
+      if (!alive) return;
+      restoreWorkspace(recovered.workspace);
+      if (recovered.warning) setError(recovered.warning);
+      setCacheWritable(recovered.writable); setCacheReady(true);
+    });
+    return () => { alive = false; };
+  }, []);
+  function restoreWorkspace(workspace: AuthoringWorkspace) {
+    const restoredHistory = workspace.history ?? draftHistory(workspace.draft);
+    currentRef.current = restoredHistory;
+    cameraViewport.current = workspace.viewport;
+    fitSourceOnEntry.current = !workspace.camera && !!workspace.draft.sourceProvenance?.viewCanvas;
+    setInitial(workspace); setHistory(restoredHistory);
+    setStorageRevision(workspace.storageRevision ?? 0); setSavedRevision(workspace.savedRevision ?? -1);
+    setSelection({ node: workspace.selection?.at(-1), nodes: workspace.selection ?? [] });
+    setCamera(workspace.camera ?? { x: 30, y: 30, zoom: 1 }); setTool(workspace.tool ?? 'select');
+  }
+  useEffect(() => {
+    if (cacheReady) viewStateRef.current?.({ draft: history.draft, history, storageRevision, savedRevision, selection: selectedIds, camera, viewport: cameraViewport.current, tool, sourceHistory: initial.sourceHistory, viewBaseline: initial.viewBaseline });
+  }, [cacheReady, history, storageRevision, savedRevision, selection, camera, tool]);
 
   useEffect(() => {
+    if (!cacheReady) return;
     let alive = true;
     api.authoringCatalog().then(async value => {
       if (!alive) return;
@@ -145,11 +164,16 @@ export function AuthoringStudio({ onClose, onOpen, initialWorkspace, onViewState
       catch (reason) { if (alive && initial.draft === currentRef.current.draft) reportError(reason, '先前草稿尚未通过检查，编辑已保留：'); }
     }).catch(reason => { if (alive) setError(String(reason)); });
     return () => { alive = false; };
-  }, [initial.draft]);
+  }, [cacheReady, initial.draft]);
   useEffect(() => {
-    try { localStorage.setItem(CACHE, JSON.stringify({ draft: history.draft, history, storageRevision, savedRevision, selection: selectedIds, camera, viewport: cameraViewport.current, tool, viewBaseline: initial.viewBaseline })); }
-    catch { setError('浏览器未能保留草稿；请使用“保存草稿”。'); }
-  }, [history, storageRevision, savedRevision, selectedIds, camera, tool]);
+    if (!cacheReady || !cacheWritable) return;
+    let alive = true;
+    void cacheWriter.current!({ draft: history.draft, history, storageRevision, savedRevision, selection: selectedIds,
+      camera, viewport: cameraViewport.current, tool, sourceHistory: initial.sourceHistory, viewBaseline: initial.viewBaseline })
+      .then(() => { if (alive) setError(previous => previous === AUTHORING_CACHE_ERROR ? '' : previous); })
+      .catch(() => { if (alive) setError(AUTHORING_CACHE_ERROR); });
+    return () => { alive = false; };
+  }, [cacheReady, cacheWritable, history, storageRevision, savedRevision, selectedIds, camera, tool]);
 
   useLayoutEffect(() => {
     const viewport = svgRef.current;
@@ -164,7 +188,7 @@ export function AuthoringStudio({ onClose, onOpen, initialWorkspace, onViewState
     resize();
     const observer = new ResizeObserver(resize); observer.observe(viewport);
     return () => observer.disconnect();
-  }, []);
+  }, [cacheReady]);
 
   useEffect(() => {
     if (!catalog || !fitSourceOnEntry.current) return;
@@ -179,7 +203,7 @@ export function AuthoringStudio({ onClose, onOpen, initialWorkspace, onViewState
         setCamera({ x: rect.width / 2 - (left + right) / 2 * zoom, y: 24 - top * zoom, zoom });
       } else setCamera(fitted);
     }
-    setNotice('源码组合模块已递归展开；可以编辑内部基础模块。点击“适合画布”查看完整结构。');
+    setNotice('源码编辑前沿已载入；大型源码区域可按需逐层展开，已支持的基础模块参数可直接编辑。');
   }, [catalog]);
 
   function cancel() {
@@ -336,7 +360,7 @@ export function AuthoringStudio({ onClose, onOpen, initialWorkspace, onViewState
     const snapshot = currentRef.current.draft;
     try {
       const result = readDraftValidation(await api.validateDraft(snapshot));
-      if (receiveValidation(snapshot, result)) { setNotice(result.complete ? result.draft.sourceProvenance ? '连接检查通过；源码来源已保留，形状与模型执行尚未验证。' : '静态检查通过；声明形状与连接相容，模型尚未执行。' : `还有 ${result.issues.length} 项需要完成；可在右侧定位并继续搭建。`); setCheckNoticeKey(draftValidationKey(snapshot)); }
+      if (receiveValidation(snapshot, result)) { setNotice(result.complete ? result.draft.sourceProvenance ? result.generation ? result.generation.supported ? '连接检查通过；可生成保留原分支的源码副本，形状与模型执行尚未验证。' : '连接检查通过；当前修改超出源码保留生成范围，请查看生成限制。' : '连接检查通过；源码生成仍需独立核对，形状与模型执行尚未验证。' : '静态检查通过；声明形状与连接相容，模型尚未执行。' : `还有 ${result.issues.length} 项需要完成；可在右侧定位并继续搭建。`); setCheckNoticeKey(draftValidationKey(snapshot)); }
     } catch (reason) {
       if (draftValidationKey(snapshot) === draftValidationKey(currentRef.current.draft)) { setValidation(null); reportError(reason, '检查未通过：'); }
     } finally { setBusyOperation(null); setBusy(false); }
@@ -428,6 +452,7 @@ export function AuthoringStudio({ onClose, onOpen, initialWorkspace, onViewState
     setCamera(old => { const next = clampCanvasZoom(old.zoom * factor); return { zoom: next, x: rect.width / 2 - (rect.width / 2 - old.x) * next / old.zoom, y: rect.height / 2 - (rect.height / 2 - old.y) * next / old.zoom }; });
   }
   useEffect(() => {
+    if (!cacheReady) return;
     const key = (event: KeyboardEvent) => {
       if ((event.target as Element)?.closest('input,textarea,select') || busy || generated) return;
       if (event.key === 'Escape') { const pending = !!connection || gesture.current?.type === 'port'; cancel(); setSelection({}); if (pending) { clearError(); setNotice('已取消连线；选择输出端口即可重新连接。'); } }
@@ -544,6 +569,7 @@ export function AuthoringStudio({ onClose, onOpen, initialWorkspace, onViewState
     setMeasuredHint(previous => previous?.key === hintLayoutKey && previous.left === position.left && previous.top === position.top ? previous : { key: hintLayoutKey, left: position.left, top: position.top });
   }, [hintLayoutKey]);
 
+  if (!cacheReady) return <div className="authoring-studio" aria-busy="true"><header className="authoring-header"><b>ArchCanvas</b><button onClick={onClose}>查看原始视图</button></header><p role="status">正在恢复模型草稿与编辑记录…</p></div>;
   return <div className="authoring-studio">
     <header className="authoring-header"><div className="authoring-brand"><b>ArchCanvas</b><span>MODEL ARCHITECTURE STUDIO</span></div><DraftTextInput ariaLabel="模型草稿名称" value={history.draft.title} disabled={busy} onCommit={title => apply(value => { value.title = title; })} /><div className="header-actions"><details className="workspace-menu"><summary>模型 <span>⌄</span></summary><div><button disabled={busy} onClick={startBlankDraft}>新建空白模型</button><button disabled={busy || !storageRevision} onClick={() => void reopen()}>重开已保存草稿</button><button disabled={busy || !draft.nodes.length || !!invalidFields.length} onClick={() => void generate()}><Icon name="code" size={15} />预览生成源码</button><button disabled={busy} onClick={onClose}>查看原始视图</button></div></details><WorkspaceModeSwitch mode="edit" disabled={busy || !catalog || !!invalidFields.length} onView={() => void browse()} onEdit={() => {}} /><span className="authoring-save-state">{dirty ? '有未保存编辑' : '草稿已保存'}</span><button disabled={busy || !catalog || !!invalidFields.length} onClick={() => void save()}><Icon name="save" size={15} />保存</button></div></header>
     <div className="authoring-body">
@@ -578,10 +604,10 @@ export function AuthoringStudio({ onClose, onOpen, initialWorkspace, onViewState
           </svg>{!!(geometry.routes.length || sourceRouting.relations.length) && <FloatingLegend scene={{ sourceRelations: sourceRouting.relations, legend: draft.sourceProvenance?.canvas.legendItems ?? [], edges: presentedRoutes.map(route => ({ id: route.id, role: edgeRoles.get(route.id) ?? 'data', stroke: edgeRoles.get(route.id) === 'residual' ? '#a76d35' : '#628572', width: 1.8, dashed: edgeRoles.get(route.id) === 'residual' })) }} />}{tool !== 'pan' && hintNode && hintPort && hintPosition && <div id="draft-port-tooltip" ref={hintRef} className="draft-port-tooltip" role="tooltip" style={{ ...(measuredHint?.key === hintLayoutKey ? { left: measuredHint.left, top: measuredHint.top } : hintPosition), maxHeight: Math.max(1, viewportSize.height - 24) }}><b>{hintNode.label} · {hintPort.name}</b><span>{hintPort.direction === 'in' ? '输入端口' : '输出端口'}{hintBinding && hintProducer ? ` · 来自 ${hintProducer.label}` : hintPort.direction === 'in' ? ' · 尚未连接' : ' · 可连接多个下游'}</span>{hintTensor ? <span>{draftTensorLabel(hintTensor)}</span> : <span>形状待检查 · 模型尚未执行</span>}<small>{portEditing ? '拖动连接点到模块边缘；自动走线会跟随更新。' : hintPort.direction === 'out' ? '点击或按 Enter 选择，再连接输入端口。' : connection ? '点击或按 Enter 连接；形状以静态检查为准。' : '先选择输出端口，再连接到这里。'}</small></div>}{!draft.nodes.length && <div className="draft-empty"><span>从零搭建一个模型</span><h2>把第一个 Input 拖到这里</h2><p>再加入 Linear、激活函数与 Output。<br />也可以从左侧“网络起点”加入完整 MLP、CNN 或残差网络。</p><button disabled={!catalog} onClick={() => { const input = catalog?.modules.find(module => module.kind === 'Input'); if (input) add(input, { x: 80, y: 120 }); }}>添加输入</button></div>}
         </div><div className="draft-help">{portEditing && "连接点模式：拖动端口到任一边缘 · "}Shift 连续选择 · 框选 / Ctrl+A 多选 · 拖动整体 · 滚轮缩放 · 中键/Alt 平移 · 输出端口 → 输入端口 · 方向键移动 16 · Delete 删除 · Escape 取消 · Ctrl+Z 撤销</div>
       </main>
-      <aside className="draft-inspector"><span className="eyebrow">MODEL PROPERTIES</span>{selected && selectedModule ? <><h2>{draftSourceKind(draft, selected)}</h2>{selectedIds.length > 1 && <p>已选择 {selectedIds.length} 个部件；拖动或方向键可整体移动。</p>}{draft.sourceProvenance?.nodeRefs[selected.id] && <div className="draft-source-evidence"><b>源码编辑副本</b><p>保留完整源码、层级、共享和未知事实。此处结构编辑只影响独立草稿。</p><code>{draft.sourceProvenance.nodeRefs[selected.id].nodeId}</code><details><summary>原始参数与事实</summary><pre>{JSON.stringify(draft.sourceProvenance.architecture.nodes.find(node => node.id === draft.sourceProvenance?.nodeRefs[selected.id]?.nodeId)?.parameters, null, 2)}</pre></details><p>{draft.sourceProvenance.nodeRefs[selected.id].repeat && `重复 ${draft.sourceProvenance.nodeRefs[selected.id].repeat!.count} 次 · ${draft.sourceProvenance.nodeRefs[selected.id].repeat!.sharing}`} {draft.sourceProvenance.nodeRefs[selected.id].evidence === 'opaque' && '未知区域：可移动、重连或替换；生成需明确表达式。'}</p></div>}{draft.sourceProvenance?.architecture.nodes.find(node => node.id === draft.sourceProvenance?.nodeRefs[selected.id]?.nodeId)?.children.length ? <button disabled={busy} onClick={() => void toggleSourceHierarchy(selected.id)}>{selected.presentation?.group ? '折叠此源码区域' : '展开此源码区域'}</button> : null}<label className="draft-field">显示名称<DraftTextInput ariaLabel="模块显示名称" value={selected.label} disabled={busy} onCommit={label => apply(value => { value.nodes.find(node => node.id === selected.id)!.label = label; })} /></label><div className="draft-param-fields">{selectedModule.parameters.map(parameter => <DraftField key={`${selected.id}:${parameter.name}`} kind={selected.kind} parameter={parameter} value={selected.parameters[parameter.name]} disabled={busy} error={feedback?.target?.nodeId === selected.id && feedback.target.parameter === parameter.name ? feedback.message : undefined} onValidity={invalid => fieldValidity(selected.id, parameter.name, invalid)} onDiscardInvalid={discardInvalidInput} onCommit={value => apply(next => { next.nodes.find(node => node.id === selected.id)!.parameters[parameter.name] = value; })} />)}</div><p className="draft-description">{selectedModule.description}</p><button disabled={busy} onClick={() => apply(value => { for (const port of selectedModule.ports) setDraftPortLayout(value, { nodeId: selected.id, portId: port.id }, null); })}>恢复自动连接点</button>{selected.kind === 'Linear' && <p className="draft-parameter-help">例如输入形状为 [1, 16] 时，in_features 应为 16；out_features 决定输出最后一维。</p>}<div className="draft-coordinate">{(['x', 'y'] as const).map(axis => <label key={axis}>{axis.toUpperCase()}<input aria-label={`模块 ${axis.toUpperCase()} 坐标`} type="number" value={selected.position[axis]} disabled={busy} onChange={event => { if (event.target.value && Number.isFinite(Number(event.target.value))) apply(value => { value.nodes.find(node => node.id === selected.id)!.position[axis] = Number(event.target.value); }); }} /></label>)}</div><button disabled={busy} onClick={deleteSelection}>删除模块及相连连线</button></> : selection.edge ? <><h2>张量连线</h2><p>此连线定义模块的输入来源。</p><button disabled={busy} onClick={deleteSelection}>删除连线</button></> : <><h2>每一步都在图上完成</h2><ol><li>拖入 Input，设置输入形状。</li><li>拖入常用模块，编辑参数。</li><li>连接端口，加入 Output。</li><li>保存草稿，生成模型与论文图。</li></ol><p>随时点击“检查模型”，查看缺少的连接与声明形状；完成后再生成。当前是静态建模，模型尚未执行。</p></>}<label className="check-field"><input type="checkbox" aria-label="保留未使用分支" checked={draft.allowUnusedNodes ?? false} disabled={busy} onChange={event => apply(value => { value.allowUnusedNodes = event.target.checked; })} />保留未使用分支</label><p className="field-help">重建源码中的独立分支时可启用；所有输入端口仍须连接，分支会写入新源码。</p><section className="draft-check" aria-label="模型静态检查"><h3>{checked ? checked.complete ? draft.customModules?.length ? '连接检查通过 · 自定义形状未知' : draft.sourceProvenance ? '连接检查通过' : '静态检查通过' : `${checked.issues.length} 项待完成` : '检查当前结构'}</h3><p>{checked ? draft.customModules?.length ? '仅检查静态连接；自定义模块及下游输出形状未推测，模型尚未执行。' : draft.sourceProvenance ? '保留源码事实；当前连接检查不推测未知形状，模型尚未执行。' : '以下形状来自静态声明，模型尚未执行。' : '参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。'}</p>{selected && checked?.tensors[selected.id] && <div className="draft-checked-tensor">{draftTensorLabel(checked.tensors[selected.id])}</div>}{checked?.issues.map((issue, index) => { const targets = (issue.nodeId ? [issue.nodeId] : issue.nodeIds ?? []).filter(id => draft.nodes.filter(node => node.id === id).length === 1); return <div className="draft-check-issue" key={`${issue.code}:${index}`}><span>{issue.message}</span>{targets.map(id => <button key={id} onClick={() => { reportError(new ApiError(issue.technical ?? issue.message, 400, [{ ...issue, nodeId: id }])); }}>{`定位 ${draft.nodes.find(node => node.id === id)!.label}`}</button>)}</div>; })}<button disabled={busy || !catalog || !!invalidFields.length} onClick={() => void check()}>{checked ? '重新检查' : '检查模型'}</button></section><div className="draft-summary"><b>{draft.nodes.length}</b> 模块 <b>{draft.edges.length}</b> 连接</div></aside>
+      <aside className="draft-inspector"><span className="eyebrow">MODEL PROPERTIES</span>{selected && selectedModule ? <><h2>{draftSourceKind(draft, selected)}</h2>{selectedIds.length > 1 && <p>已选择 {selectedIds.length} 个部件；拖动或方向键可整体移动。</p>}{draft.sourceProvenance?.nodeRefs[selected.id] && <div className="draft-source-evidence"><b>源码编辑副本</b><p>保留完整源码、层级、共享和未知事实。此处结构编辑只影响独立草稿。</p><code>{draft.sourceProvenance.nodeRefs[selected.id].nodeId}</code><details><summary>原始参数与事实</summary><pre>{JSON.stringify(draft.sourceProvenance.architecture.nodes.find(node => node.id === draft.sourceProvenance?.nodeRefs[selected.id]?.nodeId)?.parameters, null, 2)}</pre></details><p>{draft.sourceProvenance.nodeRefs[selected.id].repeat && `重复 ${draft.sourceProvenance.nodeRefs[selected.id].repeat!.count} 次 · ${draft.sourceProvenance.nodeRefs[selected.id].repeat!.sharing}`} {draft.sourceProvenance.nodeRefs[selected.id].evidence === 'opaque' && '未知区域：可查看与调整展示；重连或替换需独立生成合同，源码保留模式不改写动态分支。'}</p></div>}{draft.sourceProvenance?.architecture.nodes.find(node => node.id === draft.sourceProvenance?.nodeRefs[selected.id]?.nodeId)?.children.length ? <button disabled={busy} onClick={() => void toggleSourceHierarchy(selected.id)}>{selected.presentation?.group ? '折叠此源码区域' : '展开此源码区域'}</button> : null}<label className="draft-field">显示名称<DraftTextInput ariaLabel="模块显示名称" value={selected.label} disabled={busy} onCommit={label => apply(value => { value.nodes.find(node => node.id === selected.id)!.label = label; })} /></label><div className="draft-param-fields">{selectedModule.parameters.map(parameter => <DraftField key={`${selected.id}:${parameter.name}`} kind={selected.kind} parameter={parameter} value={selected.parameters[parameter.name]} disabled={busy} error={feedback?.target?.nodeId === selected.id && feedback.target.parameter === parameter.name ? feedback.message : undefined} onValidity={invalid => fieldValidity(selected.id, parameter.name, invalid)} onDiscardInvalid={discardInvalidInput} onCommit={value => apply(next => { next.nodes.find(node => node.id === selected.id)!.parameters[parameter.name] = value; })} />)}</div><p className="draft-description">{selectedModule.description}</p><button disabled={busy} onClick={() => apply(value => { for (const port of selectedModule.ports) setDraftPortLayout(value, { nodeId: selected.id, portId: port.id }, null); })}>恢复自动连接点</button>{selected.kind === 'Linear' && <p className="draft-parameter-help">例如输入形状为 [1, 16] 时，in_features 应为 16；out_features 决定输出最后一维。</p>}<div className="draft-coordinate">{(['x', 'y'] as const).map(axis => <label key={axis}>{axis.toUpperCase()}<input aria-label={`模块 ${axis.toUpperCase()} 坐标`} type="number" value={selected.position[axis]} disabled={busy} onChange={event => { if (event.target.value && Number.isFinite(Number(event.target.value))) apply(value => { value.nodes.find(node => node.id === selected.id)!.position[axis] = Number(event.target.value); }); }} /></label>)}</div><button disabled={busy} onClick={deleteSelection}>删除模块及相连连线</button></> : selection.edge ? <><h2>张量连线</h2><p>此连线定义模块的输入来源。</p><button disabled={busy} onClick={deleteSelection}>删除连线</button></> : <><h2>每一步都在图上完成</h2><ol><li>拖入 Input，设置输入形状。</li><li>拖入常用模块，编辑参数。</li><li>连接端口，加入 Output。</li><li>保存草稿，生成模型与论文图。</li></ol><p>随时点击“检查模型”，查看缺少的连接与声明形状；完成后再生成。当前是静态建模，模型尚未执行。</p></>}<label className="check-field"><input type="checkbox" aria-label="保留未使用分支" checked={draft.allowUnusedNodes ?? false} disabled={busy} onChange={event => apply(value => { value.allowUnusedNodes = event.target.checked; })} />保留未使用分支</label><p className="field-help">重建源码中的独立分支时可启用；所有输入端口仍须连接，分支会写入新源码。</p><section className="draft-check" aria-label="模型静态检查"><h3>{checked ? checked.complete ? draft.customModules?.length ? '连接检查通过 · 自定义形状未知' : draft.sourceProvenance ? checked.generation ? checked.generation.supported ? '连接通过 · 源码保留可生成' : '连接通过 · 源码生成受限' : '连接通过 · 生成需独立核对' : '静态检查通过' : `${checked.issues.length} 项待完成` : '检查当前结构'}</h3><p>{checked ? draft.customModules?.length ? '仅检查静态连接；自定义模块及下游输出形状未推测，模型尚未执行。' : draft.sourceProvenance ? '保留源码事实；当前连接检查不推测未知形状，模型尚未执行。' : '以下形状来自静态声明，模型尚未执行。' : '参数、模块或连接改变后需重新检查；移动和显示名称不影响声明形状。'}</p>{checked?.generation && <div className="source-generation-scope"><b>保留源码生成</b><p>原有分支、循环和未编辑语句保留。仅修改已核对源码位置的字面量参数，生成独立副本；模型尚未执行。</p>{checked.generation.limitations.map((item, index) => <p key={index}>{item}</p>)}</div>}{selected && checked?.tensors[selected.id] && <div className="draft-checked-tensor">{draftTensorLabel(checked.tensors[selected.id])}</div>}{checked?.issues.map((issue, index) => { const targets = (issue.nodeId ? [issue.nodeId] : issue.nodeIds ?? []).filter(id => draft.nodes.filter(node => node.id === id).length === 1); return <div className="draft-check-issue" key={`${issue.code}:${index}`}><span>{issue.message}</span>{targets.map(id => <button key={id} onClick={() => { reportError(new ApiError(issue.technical ?? issue.message, 400, [{ ...issue, nodeId: id }])); }}>{`定位 ${draft.nodes.find(node => node.id === id)!.label}`}</button>)}</div>; })}<button disabled={busy || !catalog || !!invalidFields.length} onClick={() => void check()}>{checked ? '重新检查' : '检查模型'}</button></section><div className="draft-summary"><b>{draft.nodes.length}</b> 模块 <b>{draft.edges.length}</b> 连接</div></aside>
     </div><footer className={`authoring-status ${error ? 'error' : ''}`} role={error || invalidFields.length ? 'alert' : 'status'}>{busy ? ({ check: '正在检查模型…', save: '正在保存草稿…', reopen: '正在重开保存的草稿…', generate: '正在生成并核对模型…', open: '正在打开新工作副本…', frontier: '正在展开源码层级并保留草稿编辑…' }[busyOperation ?? 'check']) : invalidFields.length ? '参数输入尚未有效：请修正标记字段，或按 Escape 恢复上次有效值，再保存或生成。' : error || currentNotice}{!busy && error && feedback?.target && <button onClick={() => focusDraftNode(feedback.target!.nodeId)}>定位出错模块</button>}{!busy && error && feedback?.technical && <details><summary>技术详情</summary><span>{feedback.technical}</span></details>}</footer>
     {customModuleOpen && <CustomModuleDialog onClose={() => setCustomModuleOpen(false)} onInsert={insertCustomModule} />}
-    {generated && <div className="modal-backdrop"><section className="authoring-review" role="dialog" aria-modal="true" aria-label="生成的新模型"><div className="modal-heading"><div><span className="eyebrow">NEW MODEL</span><h2>模型已生成并静态核对</h2></div><button onClick={() => setGenerated(null)} disabled={busy}><Icon name="close" /></button></div><p>{generated.draft.sourceProvenance ? '原源码已保留在独立新副本，生成源码通过语法与静态分析检查；不声明数值等价或执行验证。' : '节点、端口、参数和连接已与新源码的分析结果核对。'}接下来可打开论文图、编辑样式并导出；模型尚未执行。</p><pre>{generated.source}</pre><div className="modal-actions"><button disabled={busy} onClick={() => setGenerated(null)}>继续搭建</button><button className="primary" disabled={busy} onClick={async () => { setBusy(true); setBusyOperation('open'); try { await onOpen(generated); } catch (reason) { reportError(reason); setBusyOperation(null); setBusy(false); } }}>创建新工作副本并打开论文图</button></div></section></div>}
+    {generated && <div className="modal-backdrop"><section className="authoring-review" role="dialog" aria-modal="true" aria-label="生成的新模型"><div className="modal-heading"><div><span className="eyebrow">NEW MODEL</span><h2>模型已生成并静态核对</h2></div><button onClick={() => setGenerated(null)} disabled={busy}><Icon name="close" /></button></div><p>{generated.draft.sourceProvenance ? generated.verification.scope === 'source-preserved-literal-edit-copy' ? '原分支、循环和未编辑语句已保留在独立新副本；已核对参数修改及其余静态结构。未执行模型。' : '原源码已保留在独立新副本，生成源码通过语法与静态分析检查；不声明数值等价或执行验证。' : '节点、端口、参数和连接已与新源码的分析结果核对。'}接下来可打开论文图、编辑样式并导出；模型尚未执行。</p><pre>{generated.source}</pre><div className="modal-actions"><button disabled={busy} onClick={() => setGenerated(null)}>继续搭建</button><button className="primary" disabled={busy} onClick={async () => { setBusy(true); setBusyOperation('open'); try { await onOpen(generated); } catch (reason) { reportError(reason); setBusyOperation(null); setBusy(false); } }}>创建新工作副本并打开论文图</button></div></section></div>}
   </div>;
 }
 

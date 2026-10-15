@@ -65,16 +65,25 @@ test('real DOM SVG sanitization preserves path, transform, marker and physical p
   }
   context.after(() => instance.close());
   const page = await instance.newPage();
+  const sourceControls = `<g id="source-controls" data-source-control-id="branch-control" data-source-control-owner="predicate" data-source-control-target="if-arm"><path d="M 180 35 H 240 V 75" fill="none" stroke="#8a6a46" stroke-width="1.5" stroke-dasharray="4 4"/><text x="185" y="30" font-size="12">条件成立 · true</text></g><g id="source-decision" data-source-control-owner="predicate" data-source-control-decision="true"><path d="M 170 29 L 176 35 L 170 41 L 164 35 Z" fill="#ffffff" stroke="#8a6a46"/></g><g id="source-control-legend" data-source-control-legend="true"><path d="M 250 170 H 280" stroke="#8a6a46" stroke-dasharray="4 4"/><text x="285" y="174" font-size="12">条件分支 · 非张量</text></g>`;
   const parsed = await page.evaluate(({ module, fixture }: { module: string; fixture: string }) => {
     const sanitize = new Function(`${module}\nreturn sanitizePreviewPublication;`)();
     const output = sanitize(fixture, 180), xml = new DOMParser().parseFromString(output.svg, 'image/svg+xml');
     return { output, path: xml.querySelector('svg>path')!.getAttribute('d'), transform: xml.querySelector('g')!.getAttribute('transform'),
       marker: xml.querySelector('svg>path')!.getAttribute('marker-end'), wireFill: xml.querySelector('svg>path')!.getAttribute('fill'), font: xml.querySelector('text')!.getAttribute('font-size'),
-      unsafe: xml.querySelectorAll('script,foreignObject,style,.node-hit,#handleLayer').length };
-  }, { module, fixture });
+      unsafe: xml.querySelectorAll('script,foreignObject,style,.node-hit,#handleLayer').length,
+      controlAttributes: [...xml.querySelectorAll('*')].flatMap(node => [...node.attributes].filter(attribute => attribute.name.startsWith('data-source-control'))).length,
+      controlPath: xml.querySelector('#source-controls path')!.getAttribute('d'), controlDash: xml.querySelector('#source-controls path')!.getAttribute('stroke-dasharray'),
+      decisionPath: xml.querySelector('#source-decision path')!.getAttribute('d'), controlLabel: xml.querySelector('#source-controls text')!.textContent,
+      controlLegend: xml.querySelector('#source-control-legend text')!.textContent };
+  }, { module, fixture: fixture.replace('</svg>', sourceControls + '</svg>') });
   assert.equal(parsed.unsafe, 0);
   assert.equal(parsed.path, 'M 120 80 L 200 80 L 200 150'); assert.equal(parsed.transform, 'translate(30,40)');
   assert.equal(parsed.marker, 'url(#arrow)'); assert.equal(parsed.wireFill, 'none'); assert.equal(parsed.font, '12');
+  assert.equal(parsed.controlAttributes, 0, 'export strips editor control metadata before the unchanged server publication contract');
+  assert.equal(parsed.controlPath, 'M 180 35 H 240 V 75'); assert.equal(parsed.controlDash, '4 4');
+  assert.equal(parsed.decisionPath, 'M 170 29 L 176 35 L 170 41 L 164 35 Z');
+  assert.equal(parsed.controlLabel, '条件成立 · true'); assert.equal(parsed.controlLegend, '条件分支 · 非张量');
   assert.deepEqual(parsed.output.viewBox, [-10, 20, 400, 200]); assert.equal(parsed.output.physical.heightMm, 90);
   assert.ok(Math.abs(parsed.output.physical.minTextPt - 12 * 180 * 72 / 25.4 / 400) < 1e-10);
   const project = new URL('../../', import.meta.url).pathname;

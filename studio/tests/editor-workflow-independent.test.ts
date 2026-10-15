@@ -90,12 +90,17 @@ function generatedAppHarness(workspace: AuthoringWorkspace, existing?: CanvasDoc
   const historyRef = { current: existing ? createHistory(existing) : null as ReturnType<typeof createHistory> | null };
   const cameraRef = { current: { ...view.camera } }, opened: AuthoringWorkspace[] = [], baselines: Array<AuthoredDraft | undefined> = [], failures: string[] = [];
   const selection = { kind: 'node', ids: [] as string[] }, registered: Architecture[] = [];
-  const localStorage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value); } };
+  const localStorage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value); }, removeItem: (key: string) => { values.delete(key); } };
+  const persistentCache = { get: async (key: string) => JSON.parse(values.get(`idb:${key}`) ?? 'null'),
+    put: async (key: string, value: unknown) => { values.set(`idb:${key}`, JSON.stringify(value)); } };
   const env = { ...generatedWorkspaceHelpers, historyRef, cameraRef, authoringSessions, authoringSessionKey, generatedWorkspaces,
+    readPersistentGeneratedWorkspace: (document: CanvasDocument) => generatedWorkspaceHelpers.readPersistentGeneratedWorkspace(document, persistentCache, localStorage),
+    writePersistentGeneratedWorkspace: (workspace: AuthoringWorkspace, binding: GeneratedWorkspaceBinding) => generatedWorkspaceHelpers.writePersistentGeneratedWorkspace(workspace, binding, persistentCache),
     localStorage, selection, sourceAuthoringKey, followSourceView, resumeSourceAuthoring, buildScene, createGeneratedCanvas, createHistory, blankDraft,
     loadSequence: { current: 0 }, cameraOwner: { current: null }, cameraIntent: { current: 0 }, tool: 'pan', busy: false, portEditing: false, activeRecovery: null,
     cancelGesture: () => {}, readCameraViewport: () => view.viewport, openArchitecture: async () => {},
-    api: { register: async (architecture: Architecture) => { registered.push(architecture); return { id: 'managed-generated', architecture }; },
+    api: { open: async (architecture: Architecture) => { registered.push(architecture); return { projectId: 'managed-generated', documentId: createDocument(architecture).id, revision: 1 }; },
+      save: async () => ({ revision: 2 }),
       importSourceDraft: async () => { throw new Error('A generated view must resume the original draft, not import a new one'); },
       sourceDraftFrontier: async () => { throw new Error('A plain authored atom has no source frontier to rebase'); } },
     setFailure: (value: string) => failures.push(value), setBusy: () => {},
@@ -104,6 +109,7 @@ function generatedAppHarness(workspace: AuthoringWorkspace, existing?: CanvasDoc
     setBrowseBaseline: (draft: AuthoredDraft | undefined) => { baselines.push(draft); },
     setAuthoringWorkspace: (current: AuthoringWorkspace) => { opened.push(current); }, setAuthoringOpen: () => {},
     setProjectId: () => {}, setExampleId: () => {}, setTool: () => {}, setNotice: () => {},
+    setStorageRevision() {}, setSavedVisualRevision() {}, setReview() {}, REVIEW: 'review', setPreview() {}, setSourceOpen() {}, updateDocumentUrl() {},
     commitCamera: (camera: typeof view.camera) => { cameraRef.current = { ...camera }; },
     initializeCamera: () => { throw new Error('The current editor camera must be retained'); },
   };

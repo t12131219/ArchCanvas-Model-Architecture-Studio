@@ -25,7 +25,9 @@
       throw new Error([...validation.source.violations,...validation.layout.violations,
         ...validation.edges.filter(([,v])=>!v.ok).map(([id,v])=>id+': '+v.violations.join(', '))].slice(0,4).join('; ')||'展开连接未通过完整校验。');
     }
-    return {ok:true,...result,validation,timing:{build:built-started,route:routed-built,validation:finished-routed,total:finished-started}};
+    root.SummarySourceControls?.refresh(candidate);
+    const presented=clock();
+    return {ok:true,...result,validation,timing:{build:built-started,route:routed-built,validation:finished-routed,controls:presented-finished,total:presented-started}};
   }
   root.SummaryFrontierTask={run};
   if(typeof module!=='undefined'&&module.exports)module.exports=root.SummaryFrontierTask;

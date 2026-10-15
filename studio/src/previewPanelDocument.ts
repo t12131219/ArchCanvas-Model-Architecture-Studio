@@ -1,6 +1,6 @@
 import { validateDocument } from './core/validate.ts';
 import { CATEGORY_STYLES } from './core/tokens.ts';
-import { previewCanvasOperations, previewSelectionNodeIds, previewSourceLocation } from './previewInterop.ts';
+import { previewCanvasOperations, previewSelectionNodeIds, previewSourceLocation, previewUniqueNodeBindings } from './previewInterop.ts';
 import { previewPresentationFields } from './previewPresentation.ts';
 import type { PreviewEvidenceSource, PreviewVisualGraph } from './previewInterop.ts';
 import type { Architecture, ArchitectureNode, CanvasDocument, HistoryState } from './core/types.ts';
@@ -46,10 +46,11 @@ export function previewMappingSignature(snapshot: PreviewSnapshot): string {
 /** Mirror an already laid-out, validated preview. Replaying `expand` through the
  * formal layout engine would route and displace the same graph a second time.
  * History entries share immutable source architecture and untouched visual fields. */
-export function projectPreviewHistory(history: HistoryState, graph: PreviewVisualGraph, source?: PreviewEvidenceSource, title = history.document.title): HistoryState {
+export function projectPreviewHistory(history: HistoryState, graph: PreviewVisualGraph, source?: PreviewEvidenceSource, title = history.document.title,
+  bindings = previewUniqueNodeBindings(history.document.architecture, graph, source)): HistoryState {
   const before = history.document;
   validateDocument(before);
-  const operations = previewCanvasOperations(before, graph, source);
+  const operations = previewCanvasOperations(before, graph, source, bindings);
   let layout = before.layout, expandedIds = before.expandedIds;
   for (const operation of operations) {
     if (operation.type === 'nodeLayout') {
@@ -61,7 +62,7 @@ export function projectPreviewHistory(history: HistoryState, graph: PreviewVisua
       expandedIds = [...expanded];
     }
   }
-  const presentation = previewPresentationFields(before, graph, source);
+  const presentation = previewPresentationFields(before, graph, source, bindings);
   let changed = layout !== before.layout || expandedIds !== before.expandedIds || title !== before.title;
   for (const key of Object.keys(presentation) as (keyof typeof presentation)[]) {
     if (JSON.stringify(presentation[key]) === JSON.stringify(before[key])) {

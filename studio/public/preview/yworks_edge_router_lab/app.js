@@ -97,13 +97,20 @@
     }
   }
   function asset(descriptor,c){if(importedSources.has(c.id))return Promise.resolve(importedSources.get(c.id)[descriptor.key]);return new Promise((resolve,reject)=>{const id=c.id+':'+descriptor.key;if(window.SummaryCaseData?.[id])return resolve(window.SummaryCaseData[id]);const script=document.createElement('script');script.src='../'+descriptor.asset;script.onload=()=>resolve(window.SummaryCaseData[id]);script.onerror=()=>reject(new Error('无法读取 '+descriptor.asset));document.head.append(script);});}
+  async function caseSources(c,builtin=false){
+    // The menu exposes overview/detail, while imported sources also supply
+    // compact receipts for every nested depth. All receipts are authoritative
+    // inputs to folding, reopening and routing; menu entries are not that list.
+    if(importedSources.has(c.id))return importedSources.get(c.id);
+    return builtin?{overview:lab()}:Object.fromEntries(await Promise.all(c.views.map(async d=>[d.key,await asset(d,c)])));
+  }
   async function openCase(c,v,restore){
     if(busy||drag){toast('正在处理图操作，完成后可切换示例。');return false;}
     flushPersist();const token=++loadToken,modelKey=c.id+':unified';let committed=false,validation=null;busy=true;
     render({presentationOnly:true});studioBridge?.state();
     try{
       const builtin=!!v.builtin;
-      const sources=builtin?{overview:lab()}:Object.fromEntries(await Promise.all(c.views.map(async d=>[d.key,await asset(d,c)])));
+      const sources=await caseSources(c,builtin);
       if(token!==loadToken)return false;
       const nextSources=Object.fromEntries(Object.entries(sources).map(([k,g])=>[k,C.initialize(E.clone(g))]));
       const initial=await runGraphTask({task:'frontier',graph:F.build(F.create(nextSources)),options:{}});
@@ -209,11 +216,12 @@
     for(const a of graph.attachments||[]){const owner=node(a.owner);if(!owner||!visible.has(a.owner))continue;let v=scene.attachments.get(a.id);if(!v){const g=element('g',{class:'scene-attachment'});v={g};scene.attachments.set(a.id,v);$('labelLayer').append(g);}const offset=E.attachmentTransform(graph,a);setAttrs(v.g,{'data-attachment-id':a.id,'data-follow-owner':a.owner,'data-follow-kind':a.kind,transform:`translate(${offset.x} ${offset.y})`});if(v.html!==a.html){v.g.innerHTML=a.html;v.html=a.html;}v.g.onpointerdown=ev=>nodeDown(ev,owner);}
     prune(scene.attachments,new Set((graph.attachments||[]).filter(a=>visible.has(a.owner)).map(a=>a.id)));
     if(scene.ghost!==ghost||scene.showGhost!==$('showGhost').checked){$('ghostLayer').replaceChildren();if($('showGhost').checked)for(const e of ghost)$('ghostLayer').append(element('path',{d:E.path(e.route,e.style),fill:'none',stroke:'#a7babb','stroke-width':1.5,'stroke-dasharray':'6 7',opacity:.6,'pointer-events':'none'}));scene.ghost=ghost;scene.showGhost=$('showGhost').checked;}
-    for(const e of displayEdges){let v=scene.edges.get(e.id);const edgeGraph=graph;const ps=interactive?R.simplify(e.route):presentationOnly&&v?.points?v.points:E.displayed(edgeGraph,e);if(ps.length<2)continue;const check=scene.checks.get(e.id)||{ok:true,violations:[]},selected=selectedEdges.has(e.id),color=e.failed||!check.ok?'#d54c60':selected?'#d77944':'#263b4b',start=e.arrow==='both',end=e.arrow!=='none';
+    for(const e of displayEdges){let v=scene.edges.get(e.id);const edgeGraph=graph;const ps=interactive?R.simplify(e.route):presentationOnly&&v?.points?v.points:E.displayed(edgeGraph,e);if(ps.length<2)continue;const check=scene.checks.get(e.id)||{ok:true,violations:[]},selected=selectedEdges.has(e.id),appearance=window.ArchCanvasStudioPresentation.edgeAppearance(graph,e),color=e.failed||!check.ok?'#d54c60':selected?'#d77944':appearance.stroke,start=e.arrow==='both',end=e.arrow!=='none';
       if(!v){const g=element('g',{'data-render-instance':++epoch}),shaft=element('path',{fill:'none',class:'wire-path','stroke-linecap':'butt'}),head=element('path',{class:'arrow-shape','pointer-events':'none'}),tail=element('path',{class:'arrow-shape','pointer-events':'none'}),hit=element('path',{class:'wire-hit','data-edge-hit':e.id});g.append(shaft,head,tail,hit);v={g,shaft,head,tail,hit};scene.edges.set(e.id,v);$('edgeLayer').append(g);}
       setAttrs(v.g,{'data-edge-id':e.id,'data-source':e.source,'data-target':e.target,'data-role':e.role||'tensor','data-draft':String(!!e.draft),'data-physical-source':JSON.stringify(E.endpoint(edgeGraph,e,'source')),'data-physical-target':JSON.stringify(E.endpoint(edgeGraph,e,'target')),'data-constraint-valid':interactive?'pending':String(check.ok&&!e.failed),'data-constraint-reason':interactive?'drag preview':e.reason||check.violations.join('; '),'data-semantic-binding':JSON.stringify(e.binding),'data-boundary-gates':JSON.stringify(e.contract?.gates||[]),'aria-label':`边 ${e.id} ${e.source} 到 ${e.target}`});
+      if(appearance.sourceRelation){v.g.setAttribute('data-source-relation-id',e.id);v.g.setAttribute('aria-label',`源码数据依赖 ${e.id} ${e.source} 到 ${e.target}；执行路径未确定`);}else v.g.removeAttribute('data-source-relation-id');
       const d=interactive?R.polylinePath(ps):presentationOnly&&v.path?v.path:E.path(ps,e.style,edgeGraph,e);
-      if(!interactive&&!presentationOnly){v.points=ps;v.path=d;}setAttrs(v.shaft,{d,stroke:color,'stroke-width':selected?2.8:e.width||2.2,'stroke-dasharray':e.dashed?'7 5':'none'});
+      if(!interactive&&!presentationOnly){v.points=ps;v.path=d;}setAttrs(v.shaft,{d,stroke:color,'stroke-width':selected?2.8:appearance.width,'stroke-dasharray':appearance.dashArray});
       setAttrs(v.head,{display:end?'inline':'none',d:end?E.arrow(ps.at(-1),ps.at(-2),e.arrow==='open'):'',fill:e.arrow==='open'?'none':color,stroke:e.arrow==='open'?color:'none','stroke-width':e.arrow==='open'?1.7:0});
       setAttrs(v.tail,{display:start?'inline':'none',d:start?E.arrow(ps[0],ps[1]):'',fill:color,stroke:'none'});
       setAttrs(v.hit,{d,'stroke-width':Math.min(45,12/scale)});v.hit.onpointerdown=ev=>edgeDown(ev,e);
@@ -226,6 +234,7 @@
     updateUnifiedStatus();$('dirtyBadge').textContent=realtimeDrag?(graph.lastMove?.blocked?'保留上一合法位置':'实时布线'):interactive?'拖动预览':!sourceCheck.ok?'源码语义校验失败':busy?'正在布线…':dirty?'待 Apply · 已编辑':'布局已就绪';$('dirtyBadge').title=sourceCheck.violations.join('; ');$('dirtyBadge').classList.toggle('dirty',dirty||!sourceCheck.ok);$('undo').disabled=busy||!!drag||!history.length;$('redo').disabled=busy||!!drag||!future.length;$('applyLayout').disabled=busy||!!drag||!sourceCheck.ok;$('interactionMode').disabled=busy||!!drag;
     $('exportSvg').disabled=busy||interactive;$('exportJson').disabled=busy||interactive;
     svg.setAttribute('data-render-ms',(performance.now()-measuredStart).toFixed(2));
+    window.SummarySourceControls?.render(graph,svg);
     $('modelTitle').textContent=window.ArchCanvasStudioPresentation?.state(graph).title||current.title;window.ArchCanvasStudioPresentation?.render(graph,svg,{selectedAnnotation,onAnnotationDown:studioAnnotationDown});
     if(interactive)svg.setAttribute('data-preview-ms',(performance.now()-measuredStart).toFixed(2));
   }
@@ -336,7 +345,7 @@
       if(!valid){restoreGesture(gesture);toast('实时移动已恢复：最终位置未通过完整约束校验。');}
       else {F.captureMove(base,graph,gesture.node.id);toast(graph.lastMove?.blocked?'此位置无法保留合法连接，已停留在上一合法位置。':'实时更新已提交：节点、箭头、所属文字与连接同步保存。');}
       drag=null;dragPoint=null;$('previewLayer').replaceChildren();if(svg.hasPointerCapture(ev.pointerId))svg.releasePointerCapture(ev.pointerId);
-      render({validation:valid?validation:null,validationOrigin:'main'});persist();studioBridge?.state();return;
+      window.SummarySourceControls?.refresh(graph);render({validation:valid?validation:null,validationOrigin:'main'});persist();studioBridge?.state();return;
     }
     if(kind==='node'&&drag.saved){
       const gesture=drag,base=gesture.before,old=base.nodes.find(n=>n.id===gesture.node.id),moved=node(gesture.node.id),dx=moved.x-old.x,dy=moved.y-old.y;
@@ -348,7 +357,7 @@
         else {graph=result.graph;F.captureMove(base,graph,old.id);svg.setAttribute('data-move-ms',(performance.now()-start).toFixed(2));toast(graph.lastMove?.blocked?'此位置无法保留合法连接，已限制移动。':'节点、所属文字与连接已同步更新。');validation=result.validation;}
       }catch(error){restoreGesture(gesture);toast('移动已恢复：'+error.message);}finally{busy=false;render({validation});persist();studioBridge?.state();}return;
     }
-    const changed=drag.saved||kind==='connection'||kind==='endpoint';drag=null;svg.classList.remove('is-panning');$('previewLayer').replaceChildren();if(svg.hasPointerCapture(ev.pointerId))svg.releasePointerCapture(ev.pointerId);if(changed)persist();render({presentationOnly:!changed});studioBridge?.state();
+    const changed=drag.saved||kind==='connection'||kind==='endpoint';drag=null;svg.classList.remove('is-panning');$('previewLayer').replaceChildren();if(svg.hasPointerCapture(ev.pointerId))svg.releasePointerCapture(ev.pointerId);if(changed&&(kind==='route-label'||kind==='studio-annotation'))window.SummarySourceControls?.refresh(graph);if(changed)persist();render({presentationOnly:!changed});studioBridge?.state();
   });
   svg.addEventListener('pointercancel',()=>{if(dragFrame)cancelAnimationFrame(dragFrame);dragFrame=0;dragPoint=null;if(drag?.saved)restoreGesture(drag);drag=null;svg.classList.remove('is-panning');connection=null;$('previewLayer').replaceChildren();render();studioBridge?.state();});
   svg.addEventListener('wheel',ev=>{if(!graph)return;ev.preventDefault();zoom(ev.deltaY<0?1.15:1/1.15,point(ev));},{passive:false});
@@ -360,9 +369,9 @@
   async function runGraphTask(message){const active=ensureWorker();if(active){const result=await new Promise(resolve=>{const requestId=++workerId;pendingTasks.set(requestId,resolve);try{active.postMessage({...message,requestId});}catch(_){pendingTasks.delete(requestId);resolve(null);}});if(result)return result;}
     await new Promise(resolve=>setTimeout(resolve,0));const copy=E.clone(message.graph);
     if(message.task==='frontier')return window.SummaryFrontierTask.run(copy,message.transition,message.options);
-    if(message.task==='validate')return {ok:true,graph:copy,validation:E.validateView(copy)};
-    if(message.task==='move'){E.move(copy,message.id,message.dx,message.dy,message.options);const validation=E.validateView(copy);if(!validation.source.ok||!validation.layout.ok||validation.edges.some(([,check])=>!check.ok))return {ok:false,error:'移动后的图未通过完整校验'};return{ok:true,graph:copy,validation};}
-    const result=E.routeBatch(copy,message.ids,message.options);return {ok:true,...result,validation:E.validateView(copy)};
+    if(message.task==='validate'){window.SummarySourceControls?.refresh(copy);return {ok:true,graph:copy,validation:E.validateView(copy)};}
+    if(message.task==='move'){E.move(copy,message.id,message.dx,message.dy,message.options);const validation=E.validateView(copy);if(!validation.source.ok||!validation.layout.ok||validation.edges.some(([,check])=>!check.ok))return {ok:false,error:'移动后的图未通过完整校验'};window.SummarySourceControls?.refresh(copy);return{ok:true,graph:copy,validation};}
+    const result=E.routeBatch(copy,message.ids,message.options);window.SummarySourceControls?.refresh(result.graph);return {ok:true,...result,validation:E.validateView(copy)};
   }
   async function runRouting(ids,opts){C.initialize(graph);return runGraphTask({task:'route',graph,ids,options:opts});}
   async function apply(){if(!graph||busy)return;restoreSourceBaseline();const sourceCheck=C.validateSource(graph);if(!sourceCheck.ok){render();toast('源码语义校验失败：'+sourceCheck.violations[0]);return;}let targets=$('scope').value==='all'?graph.edges:$('scope').value==='selected'?graph.edges.filter(e=>selectedEdges.has(e.id)):graph.edges.filter(e=>selectedNodes.has(e.source)||selectedNodes.has(e.target));
@@ -459,7 +468,7 @@
     if(busy||drag)throw new Error('请先完成当前图操作。');const c=catalog.cases.find(c=>c.id===(payload.caseId||payload.case));if(!c||!payload.graph?.recursive)throw new Error('编辑 JSON 没有对应的案例或递归状态。');
     flushPersist();busy=true;render({presentationOnly:true});studioBridge?.state();let restored;
     try{
-      const sources=c.views[0]?.builtin?{overview:lab()}:Object.fromEntries(await Promise.all(c.views.map(async descriptor=>[descriptor.key,await asset(descriptor,c)]))),base=F.build(F.create(sources));restored=E.clone(payload.graph);restored.recursive.authority=E.clone(base.recursive.authority);const checked=await runGraphTask({task:'validate',graph:restored});if(!checked.ok)throw new Error(checked.error);const validation=checked.validation;
+      const sources=await caseSources(c,!!c.views[0]?.builtin),base=F.build(F.create(sources));restored=E.clone(payload.graph);restored.recursive.authority=E.clone(base.recursive.authority);const checked=await runGraphTask({task:'validate',graph:restored});if(!checked.ok)throw new Error(checked.error);const validation=checked.validation;
       if(restored.irSha256!==base.irSha256||!validation.source.ok||!validation.layout.ok||invalidSourceRoutes(restored,validation))throw new Error('编辑 JSON 与当前案例的源码契约不一致。');
     }finally{busy=false;render({presentationOnly:true});studioBridge?.state();}
     if(!await openCase(c,c.views[0],{graph:restored,history:[],future:[],dirty:!!payload.dirty}))throw new Error('编辑 JSON 的递归视图加载失败。');
@@ -615,6 +624,7 @@
     try{
       if(geometry){const result=await runGraphTask({task:'frontier',graph:candidate,options:{...options(),portOverrides}});if(!result.ok)throw new Error(result.error||'图元布局未通过完整校验。');candidate=result.graph;validation=result.validation;}
       validation=validation||E.validateView(candidate);const invalidEdges=validation.edges.filter(([id,v])=>!v.ok&&(geometry||!candidate.edges.find(e=>e.id===id)?.draft));if(!validation.source.ok||!validation.layout.ok||invalidEdges.length)throw new Error([...validation.source.violations,...validation.layout.violations,...invalidEdges.map(([id])=>'连接无效 '+id)].slice(0,4).join('; '));
+      if(!geometry)window.SummarySourceControls?.refresh(candidate);
       history.push(before);if(history.length>30)history.shift();future=[];graph=candidate;dirty=true;syncUnifiedState();committed=true;
     }finally{busy=false;render(committed?{validation}:{presentationOnly:true});if(committed)persist();studioBridge?.state();}
   }
@@ -629,7 +639,9 @@
       const selected=node(message.nodeId);if(!selected)throw new Error('导出图元当前不可见。');const ids=new Set([selected.id]);let changed=true;while(changed){changed=false;for(const n of graph.nodes)if(ids.has(n.parent)&&!ids.has(n.id)){ids.add(n.id);changed=true;}}
       for(const group of out.querySelectorAll('[data-node-id]'))if(!ids.has(group.getAttribute('data-node-id')))group.remove();
       const edges=new Set(graph.edges.filter(e=>ids.has(e.source)&&ids.has(e.target)).map(e=>e.id));for(const group of out.querySelectorAll('[data-edge-id]'))if(!edges.has(group.getAttribute('data-edge-id')))group.remove();
-      for(const group of out.querySelectorAll('[data-follow-owner]'))if(!ids.has(group.getAttribute('data-follow-owner')))group.remove();for(const group of out.querySelectorAll('[data-follow-edge]'))if(!edges.has(group.getAttribute('data-follow-edge')))group.remove();out.querySelector('#studioPresentationLayer')?.remove();
+      for(const group of out.querySelectorAll('[data-follow-owner]'))if(!ids.has(group.getAttribute('data-follow-owner')))group.remove();for(const group of out.querySelectorAll('[data-follow-edge]'))if(!edges.has(group.getAttribute('data-follow-edge')))group.remove();
+      for(const group of out.querySelectorAll('[data-source-control-owner]'))if(!ids.has(group.getAttribute('data-source-control-owner'))||group.hasAttribute('data-source-control-target')&&!ids.has(group.getAttribute('data-source-control-target')))group.remove();
+      out.querySelector('#studioPresentationLayer')?.remove();
       const regions=graph.nodes.filter(n=>ids.has(n.id)).flatMap(n=>[{x:n.x,y:n.y,w:n.w,h:n.h},...(n.labelObstacles||[]).map(b=>({x:n.x+b.x,y:n.y+b.y,w:b.w,h:b.h}))]);const x=Math.min(...regions.map(n=>n.x))-24,y=Math.min(...regions.map(n=>n.y))-24,w=Math.max(...regions.map(n=>n.x+n.w))-x+24,h=Math.max(...regions.map(n=>n.y+n.h))-y+24;bounds={x,y,w,h};out.setAttribute('width',w);out.setAttribute('height',h);out.setAttribute('viewBox',`${x} ${y} ${w} ${h}`);
     }
     out.prepend(element('rect',{x:bounds.x,y:bounds.y,width:bounds.w,height:bounds.h,fill:p.page.background||'#ffffff'}));out.prepend(element('metadata',{id:'archcanvas-preview-document'},JSON.stringify({schema:'summary-merge-recursive/1',case:current.id,view:view.key,selection:message.nodeId||null,interactionMode,source:graph.source,irSha256:graph.irSha256,edited:dirty,presentation:p,sourceDraftOperations:graph.sourceDraftOperations||[],sourceValidation:C.validateSource(graph),attachments:graph.attachments||[],routeLabels:graph.routeLabels||[],junctionMarkers:graph.junctionMarkers||[],nodes:graph.nodes.map(n=>({id:n.id,parent:n.parent,semantic:n.semantic,visualBinding:n.visualBinding,glyphPresentation:n.glyphPresentation})),edges:graph.edges.map(e=>({id:e.id,source:e.source,target:e.target,draft:e.draft,binding:e.binding,portPolicy:e.portPolicy,physicalSource:e.physicalSource,physicalTarget:e.physicalTarget}))})));return new XMLSerializer().serializeToString(out);
@@ -649,15 +661,47 @@
     throw new Error('不支持的预览命令：'+command);
   }
   $('showSourceImport').onclick=()=>$('sourceImportDialog').showModal();$('closeSourceImport').onclick=()=>$('sourceImportDialog').close();
-  $('sourceFiles').onchange=()=>{$('sourceDirectory').value='';};$('sourceDirectory').onchange=()=>{$('sourceFiles').value='';};
+  const resetSourceDiscovery=()=>{$('sourceCandidateField').hidden=true;$('sourceHierarchy').hidden=true;$('sourceDiscoveryStatus').textContent='';};
+  $('sourceFiles').onchange=()=>{$('sourceDirectory').value='';resetSourceDiscovery();};$('sourceDirectory').onchange=()=>{$('sourceFiles').value='';resetSourceDiscovery();};
+  async function selectedSourceFiles(){
+    const directory=$('sourceDirectory').files.length>0,chosen=directory?[...$('sourceDirectory').files].filter(f=>f.name.endsWith('.py')):[...$('sourceFiles').files];
+    if(!chosen.length)throw new Error('请选择 Python 源文件或目录。');if(chosen.length>80||chosen.reduce((v,f)=>v+f.size,0)>2000000)throw new Error('请选择不超过 80 文件、2 MB 的模型源码子目录。');
+    // Directory picker paths include the selected root name; module entries
+    // are relative to that source root, just as in the CLI.
+    const files={};for(const file of chosen){const raw=file.webkitRelativePath||file.name,path=directory&&raw.includes('/')?raw.slice(raw.indexOf('/')+1):raw;if(files[path]!==undefined)throw new Error('源码路径重复：'+path);files[path]=await file.text();}return files;
+  }
+  $('sourceCandidates').onchange=event=>{if(event.target.value)$('sourceEntry').value=event.target.value;};
+  function sourceHierarchyText(result){
+    const models=new Map((result.models||[]).map(model=>[model.id,model])),relations=result.relationships||[],lines=[];
+    function walk(id,prefix,stack){
+      if(lines.length>=600)return;const model=models.get(id);lines.push(prefix+(model?.name||id)+` (${id})`);
+      if(stack.includes(id)||stack.length>=12){lines.push(prefix+'  ↳ 已在上层出现或超过显示深度；完整关系可由 Agent 扫描读取。');return;}
+      const seen=new Set();for(const relation of relations.filter(item=>item.owner===id)){const key=[relation.slot,relation.target,relation.instanceId,relation.certainty].join('|');if(seen.has(key))continue;seen.add(key);
+        const note=relation.certainty==='possible'?' · 条件候选':'',count=relation.count===null||relation.count===undefined?'数量待配置':`数量 ${relation.count}`,location=relation.evidence?` · ${relation.evidence.file}:${relation.evidence.line}`:'';
+        lines.push(prefix+`  ├ ${relation.slot} · ${count}${note}${location}`);if(relation.targetLocal)walk(relation.target,prefix+'  │ ',[...stack,id]);else lines.push(prefix+'  │ '+relation.target+' · 外部模块');if(lines.length>=600)break;
+      }
+    }
+    for(const id of result.roots||[])walk(id,'',[]);
+    if(!lines.length)for(const id of models.keys())walk(id,'',[]);
+    if(lines.length>=600)lines.push('显示已截取前 600 行；完整关系保留在扫描结果中。');
+    lines.push('',`已发现 ${models.size} 个本地模型 / 模块。包含关系表示源码可见的构造关系；条件候选不代表同时执行。`);
+    if(result.unknowns?.length)lines.push(`另有 ${result.unknowns.length} 项工厂、外部模块或配置待确定；未推测实例数量。`);
+    return lines.join('\n');
+  }
+  $('discoverSource').onclick=async()=>{const button=$('discoverSource');button.disabled=true;
+    try{const files=await selectedSourceFiles();$('sourceDiscoveryStatus').textContent='正在读取类、继承与构造证据…';const response=await fetch('/api/models/discover',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({files})});const result=await response.json();if(!response.ok)throw new Error(result.error||'模型扫描失败');
+      const models=result.models||[],select=$('sourceCandidates');select.replaceChildren(new Option('选择要打开的模型 / 模块',''));for(const model of models){const id=model.entry||model.id;select.add(new Option(`${model.name||id} · ${id}`,id));}
+      $('sourceCandidateField').hidden=false;$('sourceHierarchy').hidden=false;$('sourceDiscoveryStatus').textContent=`找到 ${models.length} 个本地模型 / 模块；动态配置保留为待确定。`;
+      $('sourceHierarchyText').textContent=sourceHierarchyText(result);
+      if(models.length===1){select.value=models[0].entry||models[0].id;$('sourceEntry').value=select.value;}
+    }catch(error){sourceError(error);$('sourceDiscoveryStatus').textContent='扫描未完成；源码未改变。';}finally{button.disabled=false;}};
   $('exportSourcePackage').onclick=()=>{const b=importedPackages.get(current?.id);if(b)download(JSON.stringify(b,null,2),'application/json',b.title+'-source-adapter.json');};
   $('openSourceExample').onclick=async()=>{try{const r=await fetch('../verification/source-adapter/river-net.json');if(!r.ok)throw new Error('无法读取示例适配包');await installSource(await r.json());}catch(e){sourceError(e);}};
     $('sourcePackage').onchange=async event=>{const file=event.target.files[0];if(!file)return;try{if(file.size>16000000)throw new Error('适配包超过 16 MB');await studioLoad(JSON.parse(await file.text()));}catch(e){sourceError(e);}finally{event.target.value='';}};
   $('analyzeSource').onclick=async()=>{const button=$('analyzeSource');button.disabled=true;
-    try{const chosen=$('sourceDirectory').files.length?[...$('sourceDirectory').files].filter(f=>f.name.endsWith('.py')):[...$('sourceFiles').files];if(!chosen.length)throw new Error('请选择 Python 源文件或目录。');if(chosen.length>80||chosen.reduce((v,f)=>v+f.size,0)>2000000)throw new Error('请选择不超过 80 文件、2 MB 的模型源码子目录。');
-      const files={};for(const f of chosen){const path=f.webkitRelativePath||f.name;if(files[path]!==undefined)throw new Error('源码路径重复：'+path);files[path]=await f.text();}
+    try{const files=await selectedSourceFiles();
       $('sourceImportStatus').textContent='正在静态解析源码并验证连接…';const response=await fetch('/api/source-adapter/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({files,entry:$('sourceEntry').value.trim()||null,config:JSON.parse($('sourceConfig').value||'{}')})});
-      if(response.status===404||response.status===405||response.status===501)throw new Error('当前是静态服务。请运行 python3 source_adapter/serve.py --port 8766，或导入 CLI 生成的适配包。');const payload=await response.json();if(!response.ok)throw new Error(payload.error||'源码解析失败');await installSource(payload);
+      if(response.status===404||response.status===405||response.status===501)throw new Error('当前服务不支持源码解析。请使用 ArchCanvas Studio 服务，或导入 CLI 生成的适配包。');const payload=await response.json();if(!response.ok)throw new Error(payload.error||'源码解析失败');await installSource(payload);
     }catch(e){sourceError(e);}finally{button.disabled=false;}};
   function evidence(){const q=$('evidenceSearch').value.toLowerCase();$('evidenceList').innerHTML=catalog.evidence.filter(e=>e.title.toLowerCase().includes(q)).map(e=>`<a class="evidence-row" href="../${esc(e.path)}" target="_blank">${esc(e.title)} <small>${Math.round(e.bytes/1024)} KB</small></a>`).join('');}
   $('showEvidence').onclick=()=>{evidence();$('evidenceDialog').showModal();};$('closeEvidence').onclick=()=>$('evidenceDialog').close();$('evidenceSearch').oninput=evidence;

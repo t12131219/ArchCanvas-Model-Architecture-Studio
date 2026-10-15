@@ -9,7 +9,7 @@ import tokenize
 from pathlib import Path
 from typing import Any
 
-from archcanvas_python.frontend import Analyzer, Corpus, Spec
+from archcanvas_python.frontend import Analyzer, Corpus, Spec, load_project_corpus
 from archcanvas_python.rebind import _module_effect_blocker, _span
 
 from .lowering import LoweringError, TRANSFORM, anchor_key, semantic_facts
@@ -21,7 +21,7 @@ ACTIVATION_VERIFIED_TRANSFORM = {**ACTIVATION_TRANSFORM, "id": "pytorch-verified
 
 
 def _specifications(root: Path, entry: str):
-    corpus = Corpus(root); corpus.load(entry.split(":", 1)[0])
+    corpus = load_project_corpus(root)
     definition = corpus.definition(entry.replace(":", "."))
     if not definition or not corpus.framework_is_unshadowed():
         raise LoweringError("The entry and external PyTorch symbols are not independently resolved.")

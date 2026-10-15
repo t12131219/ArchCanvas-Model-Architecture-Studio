@@ -137,6 +137,10 @@ export function parseAuthoringWorkspace(value: unknown): AuthoringWorkspace | nu
   if (raw.tool && raw.tool !== 'select' && raw.tool !== 'pan') return null;
   const viewBaseline = raw.viewBaseline === undefined ? undefined : parseDraftCache({ draft: raw.viewBaseline, storageRevision: 0, savedRevision: -1 })?.draft;
   if (raw.viewBaseline !== undefined && (!viewBaseline || viewBaseline.id !== base.draft.id)) return null;
+  const sourceHistory = raw.sourceHistory as AuthoringWorkspace['sourceHistory'];
+  if (sourceHistory !== undefined && (!sourceHistory || typeof sourceHistory !== 'object' ||
+      !Number.isSafeInteger(sourceHistory.past) || sourceHistory.past < 0 || !Number.isSafeInteger(sourceHistory.future) || sourceHistory.future < 0)) return null;
   return { ...base, history: recovered, selection: (raw.selection as string[] | undefined)?.filter(id => visible.has(id)) ?? [],
-    camera: camera ? { ...camera } : undefined, viewport: cameraViewportSize(raw.viewport as CameraViewport | undefined) ?? undefined, tool: raw.tool as AuthoringWorkspace['tool'], viewBaseline };
+    camera: camera ? { ...camera } : undefined, viewport: cameraViewportSize(raw.viewport as CameraViewport | undefined) ?? undefined, tool: raw.tool as AuthoringWorkspace['tool'], viewBaseline,
+    ...(sourceHistory ? { sourceHistory: { past: sourceHistory.past, future: sourceHistory.future } } : {}) };
 }

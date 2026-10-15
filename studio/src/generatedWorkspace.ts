@@ -128,15 +128,15 @@ export function resumeGeneratedWorkspace(workspace: AuthoringWorkspace, document
     viewport: workspace.draft.sourceProvenance?.viewCanvas ? workspace.viewport : view.viewport, tool: view.tool, sourceHistory: view.sourceHistory };
 }
 
-export type GeneratedWorkspaceStorage = Pick<Storage, 'getItem' | 'setItem'>;
+export type GeneratedWorkspaceStorage = Pick<Storage, 'getItem' | 'setItem'> & Partial<Pick<Storage, 'removeItem'>>;
 const CACHE_PREFIX = 'archcanvas.generated-workspace.v1:';
 
-/** Recover only a draft bound to this exact saved model generation. */
-export function readGeneratedWorkspace(storage: GeneratedWorkspaceStorage, document: CanvasDocument): { binding: GeneratedWorkspaceBinding; workspace: AuthoringWorkspace } | null {
+/** Both legacy JSON and IndexedDB records pass the same source identity gates. */
+function parseGeneratedWorkspace(raw: unknown, document: CanvasDocument): { binding: GeneratedWorkspaceBinding; workspace: AuthoringWorkspace } | null {
   try {
-    const raw = JSON.parse(storage.getItem(CACHE_PREFIX + sourceAuthoringKey(document)) ?? 'null');
-    if (!raw || raw.schemaVersion !== 1 || !raw.binding) return null;
-    const b = raw.binding as GeneratedWorkspaceBinding, workspace = parseAuthoringWorkspace(raw.workspace);
+    const value = raw as { schemaVersion?: unknown; binding?: GeneratedWorkspaceBinding; workspace?: unknown } | null;
+    if (!value || value.schemaVersion !== 1 || !value.binding) return null;
+    const b = value.binding, workspace = parseAuthoringWorkspace(value.workspace);
     const baseline = parseAuthoringWorkspace({ draft: b.draft, storageRevision: 0, savedRevision: -1 });
     const draftIds = baseline ? new Set([...baseline.draft.nodes, ...(baseline.draft.sourceCache?.nodes ?? [])].map(node => node.id)) : new Set<string>();
     const draftEdgeIds = baseline ? new Set([...baseline.draft.edges, ...(baseline.draft.sourceCache?.edges ?? [])].map(edge => edge.id)) : new Set<string>();
@@ -152,9 +152,91 @@ export function readGeneratedWorkspace(storage: GeneratedWorkspaceStorage, docum
   } catch { return null; }
 }
 
+/** Recover only a draft bound to this exact saved model generation. */
+export function readGeneratedWorkspace(storage: GeneratedWorkspaceStorage, document: CanvasDocument) {
+  try { return parseGeneratedWorkspace(JSON.parse(storage.getItem(CACHE_PREFIX + sourceAuthoringKey(document)) ?? 'null'), document); }
+  catch { return null; }
+}
+
 export function writeGeneratedWorkspace(storage: GeneratedWorkspaceStorage, workspace: AuthoringWorkspace, binding: GeneratedWorkspaceBinding) {
   const key = JSON.stringify([binding.documentId, binding.sourceDigest, binding.irDigest]);
   storage.setItem(CACHE_PREFIX + key, JSON.stringify({ schemaVersion: 1, workspace, binding }));
+}
+
+export type GeneratedWorkspaceCache = { get(key: string): Promise<unknown>; put(key: string, value: unknown): Promise<void> };
+let workspaceDatabase: Promise<IDBDatabase> | undefined;
+function openWorkspaceDatabase() {
+  workspaceDatabase ??= new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open('archcanvas.workspaces.v1', 1);
+    request.onupgradeneeded = () => { request.result.createObjectStore('generated'); };
+    request.onerror = () => reject(request.error ?? new Error('工作区数据库无法打开。'));
+    request.onblocked = () => reject(new Error('工作区数据库被其他页面占用。'));
+    request.onsuccess = () => {
+      const database = request.result;
+      database.onversionchange = () => { database.close(); workspaceDatabase = undefined; };
+      resolve(database);
+    };
+  }).catch(error => { workspaceDatabase = undefined; throw error; });
+  return workspaceDatabase;
+}
+const persistentWorkspaceCache: GeneratedWorkspaceCache = {
+  async get(key) {
+    const database = await openWorkspaceDatabase();
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction('generated', 'readonly');
+      const request = transaction.objectStore('generated').get(key);
+      transaction.oncomplete = () => resolve(request.result);
+      transaction.onabort = () => reject(transaction.error ?? new Error('工作区读取失败。'));
+      transaction.onerror = () => reject(transaction.error ?? new Error('工作区读取失败。'));
+    });
+  },
+  async put(key, value) {
+    const database = await openWorkspaceDatabase();
+    return new Promise<void>((resolve, reject) => {
+      const transaction = database.transaction('generated', 'readwrite');
+      transaction.objectStore('generated').put(value, key);
+      transaction.oncomplete = () => resolve();
+      transaction.onabort = () => reject(transaction.error ?? new Error('工作区保存失败。'));
+      transaction.onerror = () => reject(transaction.error ?? new Error('工作区保存失败。'));
+    });
+  },
+};
+
+/** Shared asynchronous browser storage for authoring recovery. Namespace these
+ * keys separately from exact generated-document bindings. Errors stay visible
+ * to the caller, which owns legacy migration and hydration precedence. */
+export function readWorkspaceCache(key: string): Promise<unknown> {
+  return persistentWorkspaceCache.get(`workspace:${key}`);
+}
+export function writeWorkspaceCache(key: string, value: unknown): Promise<void> {
+  return persistentWorkspaceCache.put(`workspace:${key}`, value);
+}
+
+/** Source workspaces carry full corpora and history, so never write them into
+ * localStorage's small synchronous quota. Existing records migrate on read. */
+export async function readPersistentGeneratedWorkspace(document: CanvasDocument,
+  cache = persistentWorkspaceCache, legacyStorage?: GeneratedWorkspaceStorage) {
+  try {
+    const raw = await cache.get(sourceAuthoringKey(document));
+    if (raw !== undefined && raw !== null) return parseGeneratedWorkspace(raw, document);
+  } catch { /* A legacy record can still recover when IndexedDB is unavailable. */ }
+  let legacy: ReturnType<typeof readGeneratedWorkspace>;
+  try { legacy = readGeneratedWorkspace(legacyStorage ?? localStorage, document); }
+  catch { return null; }
+  if (legacy) {
+    try {
+      await writePersistentGeneratedWorkspace(legacy.workspace, legacy.binding, cache);
+      (legacyStorage ?? localStorage).removeItem?.(CACHE_PREFIX + sourceAuthoringKey(document));
+    }
+    catch { /* Retain the readable legacy copy until a later successful write. */ }
+  }
+  return legacy;
+}
+
+export async function writePersistentGeneratedWorkspace(workspace: AuthoringWorkspace, binding: GeneratedWorkspaceBinding,
+  cache = persistentWorkspaceCache) {
+  const key = JSON.stringify([binding.documentId, binding.sourceDigest, binding.irDigest]);
+  await cache.put(key, { schemaVersion: 1, workspace, binding });
 }
 
 export function authoringViewSelection(workspace: AuthoringWorkspace, binding?: GeneratedWorkspaceBinding): string[] {

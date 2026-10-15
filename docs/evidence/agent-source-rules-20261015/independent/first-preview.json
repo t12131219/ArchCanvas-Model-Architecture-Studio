@@ -1,0 +1,475 @@
+{
+  "schema": "summary-source-adapter/1",
+  "id": "source-7799a7da623c72ca",
+  "title": "CobaltMap",
+  "entry": "cobalt:CobaltMap",
+  "files": [
+    {
+      "path": "cobalt.py",
+      "sha256": "9371d894ca23bf0874c893730e151fe9ac98c8344ab72755a1af743501782f1d",
+      "text": "from torch import nn\nraise RuntimeError(\"STATIC_ONLY_SENTINEL_MUST_NOT_EXECUTE\")\n\nclass CobaltMap(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.projection = nn.Linear(4, 4)\n\n    def forward(self, batch):\n        return {tag: self.projection(vector) for tag, vector in batch if vector is not None}\n"
+    }
+  ],
+  "sourceSha256": "a054b464fb94fda9ab2e33d8ce5c1f8131924b2bdbb5098ab349b1c6a2ba8a15",
+  "ir": {
+    "schema": "summary-source-ir/1",
+    "entry": "cobalt:CobaltMap",
+    "nodes": [
+      {
+        "id": "model/group-4-0-1",
+        "parent": null,
+        "kind": "group",
+        "label": "CobaltMap",
+        "source_evidence": [
+          "e-a365137abbc60643"
+        ],
+        "expression": "class CobaltMap(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.projection = nn.Linear(4, 4)\n\n    def forward(self, batch):\n        return {tag: self.projection(vector) for tag, vector in batch if vector is not None}",
+        "instance": "cobalt:CobaltMap",
+        "certainty": "static",
+        "constructor": "cobalt:CobaltMap",
+        "moduleType": "CobaltMap",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-4-0-1/input-9-22-2",
+        "parent": "model/group-4-0-1",
+        "kind": "input",
+        "label": "batch",
+        "source_evidence": [
+          "e-2c9113227c49399f"
+        ],
+        "expression": "batch"
+      },
+      {
+        "id": "model/group-4-0-1/opaque-10-15-3",
+        "parent": "model/group-4-0-1",
+        "kind": "opaque",
+        "label": "待解析 · DictComp",
+        "source_evidence": [
+          "e-dcbecf74a441ca74"
+        ],
+        "expression": "{tag: self.projection(vector) for tag, vector in batch if vector is not None}",
+        "certainty": "opaque"
+      },
+      {
+        "id": "model/group-4-0-1/output-10-8-4",
+        "parent": "model/group-4-0-1",
+        "kind": "output",
+        "label": "return",
+        "source_evidence": [
+          "e-728ecbc818f5083f"
+        ],
+        "expression": "return {tag: self.projection(vector) for tag, vector in batch if vector is not None}"
+      },
+      {
+        "id": "model/group-4-0-1/opaque-10-15-3/rule-4a3308e9472415a1",
+        "parent": "model/group-4-0-1/opaque-10-15-3",
+        "kind": "source_structure",
+        "label": "batch",
+        "sourceParameters": {
+          "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+          "sourceMatch": "match-bb30ddd60833232e5d49691b",
+          "sourceRulePath": [
+            "generators",
+            0,
+            "iter"
+          ],
+          "guards": [],
+          "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+        },
+        "source_evidence": [
+          "e-83addab74643cdd5"
+        ],
+        "expression": "batch",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceExpression",
+        "sourceAdapterId": "adapter-38cff2649f4107c3415d366d",
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-4-0-1/opaque-10-15-3/rule-033639801a8ffc0b",
+        "parent": "model/group-4-0-1/opaque-10-15-3",
+        "kind": "source_structure",
+        "label": "tag",
+        "sourceParameters": {
+          "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+          "sourceMatch": "match-bb30ddd60833232e5d49691b",
+          "sourceRulePath": [
+            "key"
+          ],
+          "guards": [
+            "for (tag, vector) in batch",
+            "if vector is not None"
+          ],
+          "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+        },
+        "source_evidence": [
+          "e-a051902b33127447"
+        ],
+        "expression": "tag",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceExpression",
+        "sourceAdapterId": "adapter-38cff2649f4107c3415d366d",
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-4-0-1/opaque-10-15-3/rule-ce39275fcdc3abaf",
+        "parent": "model/group-4-0-1/opaque-10-15-3",
+        "kind": "source_structure",
+        "label": "self.projection",
+        "sourceParameters": {
+          "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+          "sourceMatch": "match-bb30ddd60833232e5d49691b",
+          "sourceRulePath": [
+            "value"
+          ],
+          "guards": [
+            "for (tag, vector) in batch",
+            "if vector is not None"
+          ],
+          "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+        },
+        "source_evidence": [
+          "e-7253fec07096a4b7"
+        ],
+        "expression": "self.projection(vector)",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceCall",
+        "sourceAdapterId": "adapter-38cff2649f4107c3415d366d",
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-4-0-1/opaque-10-15-3/rule-d3d0841c9771bb18",
+        "parent": "model/group-4-0-1/opaque-10-15-3/rule-ce39275fcdc3abaf",
+        "kind": "source_structure",
+        "label": "vector",
+        "sourceParameters": {
+          "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+          "sourceMatch": "match-bb30ddd60833232e5d49691b",
+          "sourceRulePath": [
+            "value",
+            "args",
+            0
+          ],
+          "guards": [
+            "for (tag, vector) in batch",
+            "if vector is not None"
+          ],
+          "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+        },
+        "source_evidence": [
+          "e-3bda4e72e5a64843"
+        ],
+        "expression": "vector",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceExpression",
+        "sourceAdapterId": "adapter-38cff2649f4107c3415d366d",
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "generationContract": null
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-1",
+        "source": "model/group-4-0-1/input-9-22-2",
+        "target": "model/group-4-0-1/opaque-10-15-3",
+        "sourcePort": "out",
+        "targetPort": "dependency[0]",
+        "wire": "model/group-4-0-1/input-9-22-2:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-dcbecf74a441ca74"
+        ]
+      },
+      {
+        "id": "edge-2",
+        "source": "model/group-4-0-1/opaque-10-15-3",
+        "target": "model/group-4-0-1/output-10-8-4",
+        "sourcePort": "out",
+        "targetPort": "value",
+        "wire": "model/group-4-0-1/opaque-10-15-3:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-728ecbc818f5083f"
+        ]
+      },
+      {
+        "id": "rule-edge-c26ccf3d3516cb69e0ed",
+        "source": "model/group-4-0-1/opaque-10-15-3/rule-4a3308e9472415a1",
+        "target": "model/group-4-0-1/opaque-10-15-3/rule-033639801a8ffc0b",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-4-0-1/opaque-10-15-3/rule-4a3308e9472415a1:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-a051902b33127447"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-38cff2649f4107c3415d366d",
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2"
+      },
+      {
+        "id": "rule-edge-db6c529fa1d6c71fdca4",
+        "source": "model/group-4-0-1/opaque-10-15-3/rule-4a3308e9472415a1",
+        "target": "model/group-4-0-1/opaque-10-15-3/rule-ce39275fcdc3abaf",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-4-0-1/opaque-10-15-3/rule-4a3308e9472415a1:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-7253fec07096a4b7"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-38cff2649f4107c3415d366d",
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2"
+      },
+      {
+        "id": "rule-edge-f7b4d544af29f5180a51",
+        "source": "model/group-4-0-1/opaque-10-15-3/rule-d3d0841c9771bb18",
+        "target": "model/group-4-0-1/opaque-10-15-3/rule-ce39275fcdc3abaf",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-4-0-1/opaque-10-15-3/rule-d3d0841c9771bb18:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-7253fec07096a4b7"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-38cff2649f4107c3415d366d",
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2"
+      }
+    ],
+    "instances": {
+      "cobalt:CobaltMap": [
+        "model/group-4-0-1"
+      ]
+    },
+    "analysis": "static-source-dependencies",
+    "modelExecuted": false,
+    "shapePolicy": "No tensor dimensions or execution path inferred",
+    "registrySha256": "9c153d45ae26c27b1f5da8becde63af92eb51883b8e8ad1b00860151802f7e5f"
+  },
+  "canonicalIR": "{\"analysis\":\"static-source-dependencies\",\"edges\":[{\"id\":\"edge-1\",\"role\":\"source_dependency\",\"source\":\"model/group-4-0-1/input-9-22-2\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-dcbecf74a441ca74\"],\"target\":\"model/group-4-0-1/opaque-10-15-3\",\"targetPort\":\"dependency[0]\",\"wire\":\"model/group-4-0-1/input-9-22-2:out\"},{\"id\":\"edge-2\",\"role\":\"source_dependency\",\"source\":\"model/group-4-0-1/opaque-10-15-3\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-728ecbc818f5083f\"],\"target\":\"model/group-4-0-1/output-10-8-4\",\"targetPort\":\"value\",\"wire\":\"model/group-4-0-1/opaque-10-15-3:out\"},{\"id\":\"rule-edge-c26ccf3d3516cb69e0ed\",\"role\":\"source_dependency\",\"source\":\"model/group-4-0-1/opaque-10-15-3/rule-4a3308e9472415a1\",\"sourceAdapterId\":\"adapter-38cff2649f4107c3415d366d\",\"sourcePort\":\"out\",\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"source_evidence\":[\"e-a051902b33127447\"],\"syntaxOnly\":true,\"target\":\"model/group-4-0-1/opaque-10-15-3/rule-033639801a8ffc0b\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-4-0-1/opaque-10-15-3/rule-4a3308e9472415a1:out\"},{\"id\":\"rule-edge-db6c529fa1d6c71fdca4\",\"role\":\"source_dependency\",\"source\":\"model/group-4-0-1/opaque-10-15-3/rule-4a3308e9472415a1\",\"sourceAdapterId\":\"adapter-38cff2649f4107c3415d366d\",\"sourcePort\":\"out\",\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"source_evidence\":[\"e-7253fec07096a4b7\"],\"syntaxOnly\":true,\"target\":\"model/group-4-0-1/opaque-10-15-3/rule-ce39275fcdc3abaf\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-4-0-1/opaque-10-15-3/rule-4a3308e9472415a1:out\"},{\"id\":\"rule-edge-f7b4d544af29f5180a51\",\"role\":\"source_dependency\",\"source\":\"model/group-4-0-1/opaque-10-15-3/rule-d3d0841c9771bb18\",\"sourceAdapterId\":\"adapter-38cff2649f4107c3415d366d\",\"sourcePort\":\"out\",\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"source_evidence\":[\"e-7253fec07096a4b7\"],\"syntaxOnly\":true,\"target\":\"model/group-4-0-1/opaque-10-15-3/rule-ce39275fcdc3abaf\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-4-0-1/opaque-10-15-3/rule-d3d0841c9771bb18:out\"}],\"entry\":\"cobalt:CobaltMap\",\"instances\":{\"cobalt:CobaltMap\":[\"model/group-4-0-1\"]},\"modelExecuted\":false,\"nodes\":[{\"certainty\":\"static\",\"constructor\":\"cobalt:CobaltMap\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"class CobaltMap(nn.Module):\\n\\n    def __init__(self):\\n        super().__init__()\\n        self.projection = nn.Linear(4, 4)\\n\\n    def forward(self, batch):\\n        return {tag: self.projection(vector) for tag, vector in batch if vector is not None}\",\"id\":\"model/group-4-0-1\",\"instance\":\"cobalt:CobaltMap\",\"kind\":\"group\",\"label\":\"CobaltMap\",\"moduleType\":\"CobaltMap\",\"parent\":null,\"source_evidence\":[\"e-a365137abbc60643\"]},{\"expression\":\"batch\",\"id\":\"model/group-4-0-1/input-9-22-2\",\"kind\":\"input\",\"label\":\"batch\",\"parent\":\"model/group-4-0-1\",\"source_evidence\":[\"e-2c9113227c49399f\"]},{\"certainty\":\"opaque\",\"expression\":\"{tag: self.projection(vector) for tag, vector in batch if vector is not None}\",\"id\":\"model/group-4-0-1/opaque-10-15-3\",\"kind\":\"opaque\",\"label\":\"待解析 · DictComp\",\"parent\":\"model/group-4-0-1\",\"source_evidence\":[\"e-dcbecf74a441ca74\"]},{\"expression\":\"return {tag: self.projection(vector) for tag, vector in batch if vector is not None}\",\"id\":\"model/group-4-0-1/output-10-8-4\",\"kind\":\"output\",\"label\":\"return\",\"parent\":\"model/group-4-0-1\",\"source_evidence\":[\"e-728ecbc818f5083f\"]},{\"certainty\":\"syntax\",\"expression\":\"batch\",\"generationContract\":null,\"id\":\"model/group-4-0-1/opaque-10-15-3/rule-4a3308e9472415a1\",\"kind\":\"source_structure\",\"label\":\"batch\",\"parent\":\"model/group-4-0-1/opaque-10-15-3\",\"sourceAdapterId\":\"adapter-38cff2649f4107c3415d366d\",\"sourceKind\":\"SourceExpression\",\"sourceParameters\":{\"guards\":[],\"inspectionAuthority\":\"syntax only; runtime path and repetition unverified\",\"sourceMatch\":\"match-bb30ddd60833232e5d49691b\",\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"sourceRulePath\":[\"generators\",0,\"iter\"]},\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"sourceStructure\":true,\"source_evidence\":[\"e-83addab74643cdd5\"]},{\"certainty\":\"syntax\",\"expression\":\"tag\",\"generationContract\":null,\"id\":\"model/group-4-0-1/opaque-10-15-3/rule-033639801a8ffc0b\",\"kind\":\"source_structure\",\"label\":\"tag\",\"parent\":\"model/group-4-0-1/opaque-10-15-3\",\"sourceAdapterId\":\"adapter-38cff2649f4107c3415d366d\",\"sourceKind\":\"SourceExpression\",\"sourceParameters\":{\"guards\":[\"for (tag, vector) in batch\",\"if vector is not None\"],\"inspectionAuthority\":\"syntax only; runtime path and repetition unverified\",\"sourceMatch\":\"match-bb30ddd60833232e5d49691b\",\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"sourceRulePath\":[\"key\"]},\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"sourceStructure\":true,\"source_evidence\":[\"e-a051902b33127447\"]},{\"certainty\":\"syntax\",\"expression\":\"self.projection(vector)\",\"generationContract\":null,\"id\":\"model/group-4-0-1/opaque-10-15-3/rule-ce39275fcdc3abaf\",\"kind\":\"source_structure\",\"label\":\"self.projection\",\"parent\":\"model/group-4-0-1/opaque-10-15-3\",\"sourceAdapterId\":\"adapter-38cff2649f4107c3415d366d\",\"sourceKind\":\"SourceCall\",\"sourceParameters\":{\"guards\":[\"for (tag, vector) in batch\",\"if vector is not None\"],\"inspectionAuthority\":\"syntax only; runtime path and repetition unverified\",\"sourceMatch\":\"match-bb30ddd60833232e5d49691b\",\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"sourceRulePath\":[\"value\"]},\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"sourceStructure\":true,\"source_evidence\":[\"e-7253fec07096a4b7\"]},{\"certainty\":\"syntax\",\"expression\":\"vector\",\"generationContract\":null,\"id\":\"model/group-4-0-1/opaque-10-15-3/rule-d3d0841c9771bb18\",\"kind\":\"source_structure\",\"label\":\"vector\",\"parent\":\"model/group-4-0-1/opaque-10-15-3/rule-ce39275fcdc3abaf\",\"sourceAdapterId\":\"adapter-38cff2649f4107c3415d366d\",\"sourceKind\":\"SourceExpression\",\"sourceParameters\":{\"guards\":[\"for (tag, vector) in batch\",\"if vector is not None\"],\"inspectionAuthority\":\"syntax only; runtime path and repetition unverified\",\"sourceMatch\":\"match-bb30ddd60833232e5d49691b\",\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"sourceRulePath\":[\"value\",\"args\",0]},\"sourceRuleId\":\"rule-f5ca275a283717fd70c1f3f2\",\"sourceStructure\":true,\"source_evidence\":[\"e-3bda4e72e5a64843\"]}],\"registrySha256\":\"9c153d45ae26c27b1f5da8becde63af92eb51883b8e8ad1b00860151802f7e5f\",\"schema\":\"summary-source-ir/1\",\"shapePolicy\":\"No tensor dimensions or execution path inferred\"}",
+  "irSha256": "ce7e8e8c4cd86536b270049c869bc6602723acc480e3a41c903c1c0bc5d9065a",
+  "evidence": {
+    "e-a365137abbc60643": {
+      "file": "cobalt.py",
+      "line": 4,
+      "endLine": 10,
+      "column": 0,
+      "endColumn": 92,
+      "expression": "class CobaltMap(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.projection = nn.Linear(4, 4)\n\n    def forward(self, batch):\n        return {tag: self.projection(vector) for tag, vector in batch if vector is not None}"
+    },
+    "e-1cd9379144e4a58b": {
+      "file": "cobalt.py",
+      "line": 7,
+      "endLine": 7,
+      "column": 26,
+      "endColumn": 41,
+      "expression": "nn.Linear(4, 4)"
+    },
+    "e-2c9113227c49399f": {
+      "file": "cobalt.py",
+      "line": 9,
+      "endLine": 9,
+      "column": 22,
+      "endColumn": 27,
+      "expression": "batch"
+    },
+    "e-dcbecf74a441ca74": {
+      "file": "cobalt.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 15,
+      "endColumn": 92,
+      "expression": "{tag: self.projection(vector) for tag, vector in batch if vector is not None}"
+    },
+    "e-728ecbc818f5083f": {
+      "file": "cobalt.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 8,
+      "endColumn": 92,
+      "expression": "return {tag: self.projection(vector) for tag, vector in batch if vector is not None}"
+    },
+    "e-83addab74643cdd5": {
+      "file": "cobalt.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 64,
+      "endColumn": 69,
+      "expression": "batch"
+    },
+    "e-a051902b33127447": {
+      "file": "cobalt.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 16,
+      "endColumn": 19,
+      "expression": "tag"
+    },
+    "e-7253fec07096a4b7": {
+      "file": "cobalt.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 21,
+      "endColumn": 44,
+      "expression": "self.projection(vector)"
+    },
+    "e-3bda4e72e5a64843": {
+      "file": "cobalt.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 37,
+      "endColumn": 43,
+      "expression": "vector"
+    }
+  },
+  "diagnostics": [
+    {
+      "node": "model/group-4-0-1/opaque-10-15-3",
+      "evidence": "e-dcbecf74a441ca74",
+      "message": "此表达式暂未有静态适配契约。"
+    }
+  ],
+  "config": {},
+  "adapterVersion": 1,
+  "adaptationRequests": [
+    {
+      "nodeId": "model/group-4-0-1/opaque-10-15-3",
+      "sourceEvidence": [
+        "e-dcbecf74a441ca74"
+      ],
+      "sourceSymbols": [
+        "cobalt:CobaltMap"
+      ],
+      "status": "needs-source-adapter",
+      "generationContract": "unresolved",
+      "truncated": false,
+      "next": {
+        "command": "adapter scaffold",
+        "entry": "cobalt:CobaltMap",
+        "workflow": [
+          "scaffold",
+          "review-source-evidence",
+          "validate",
+          "register",
+          "preview"
+        ],
+        "format": "archcanvas-source-adapter/1",
+        "ruleFormat": "archcanvas-source-rule/1",
+        "ruleWorkflow": [
+          "read-source",
+          "author-rule",
+          "rule-validate",
+          "scaffold --rules",
+          "validate",
+          "register",
+          "preview"
+        ],
+        "ruleApplications": [
+          {
+            "adapter": "adapter-38cff2649f4107c3415d366d",
+            "ruleId": "rule-f5ca275a283717fd70c1f3f2",
+            "matchKey": "match-bb30ddd60833232e5d49691b",
+            "boundary": "model/group-4-0-1/opaque-10-15-3",
+            "anchor": "model/group-4-0-1/opaque-10-15-3",
+            "nodes": [
+              "model/group-4-0-1/opaque-10-15-3",
+              "model/group-4-0-1/opaque-10-15-3/rule-4a3308e9472415a1",
+              "model/group-4-0-1/opaque-10-15-3/rule-033639801a8ffc0b",
+              "model/group-4-0-1/opaque-10-15-3/rule-ce39275fcdc3abaf",
+              "model/group-4-0-1/opaque-10-15-3/rule-d3d0841c9771bb18"
+            ],
+            "reusedNodes": [
+              "model/group-4-0-1/opaque-10-15-3"
+            ],
+            "edges": [
+              "rule-edge-c26ccf3d3516cb69e0ed",
+              "rule-edge-db6c529fa1d6c71fdca4",
+              "rule-edge-f7b4d544af29f5180a51"
+            ],
+            "nodeMap": {
+              "source-rule:c312448b895fd7bf62eaf463": "model/group-4-0-1/opaque-10-15-3",
+              "source-rule:d2738de5a73c868e6e395460": "model/group-4-0-1/opaque-10-15-3/rule-4a3308e9472415a1",
+              "source-rule:b25adabf0c2377288807d735": "model/group-4-0-1/opaque-10-15-3/rule-033639801a8ffc0b",
+              "source-rule:5d2a2db5129c1580b57ee499": "model/group-4-0-1/opaque-10-15-3/rule-ce39275fcdc3abaf",
+              "source-rule:78bae2a24ec9e833206df8fe": "model/group-4-0-1/opaque-10-15-3/rule-d3d0841c9771bb18"
+            },
+            "labels": {
+              "model/group-4-0-1/opaque-10-15-3": "DictComp",
+              "model/group-4-0-1/opaque-10-15-3/rule-4a3308e9472415a1": "batch",
+              "model/group-4-0-1/opaque-10-15-3/rule-033639801a8ffc0b": "tag",
+              "model/group-4-0-1/opaque-10-15-3/rule-ce39275fcdc3abaf": "self.projection",
+              "model/group-4-0-1/opaque-10-15-3/rule-d3d0841c9771bb18": "vector"
+            },
+            "truncated": false,
+            "authority": "source-structure-only"
+          }
+        ]
+      }
+    }
+  ],
+  "coverage": {
+    "scope": "static-source-and-source-inspection",
+    "opaqueBoundaries": 1,
+    "inspectedOpaqueBoundaries": 0,
+    "truncatedInspections": 0,
+    "tensorExecutionVerified": false,
+    "modelExecuted": false,
+    "agentAuthoredSourceRules": true,
+    "sourceRuleApplications": 1,
+    "generationAuthority": "Adapters do not authorize structural generation; use independently checked source-preserving generation when eligible."
+  },
+  "sourceRuleApplications": [
+    {
+      "adapter": "adapter-38cff2649f4107c3415d366d",
+      "ruleId": "rule-f5ca275a283717fd70c1f3f2",
+      "matchKey": "match-bb30ddd60833232e5d49691b",
+      "boundary": "model/group-4-0-1/opaque-10-15-3",
+      "anchor": "model/group-4-0-1/opaque-10-15-3",
+      "nodes": [
+        "model/group-4-0-1/opaque-10-15-3",
+        "model/group-4-0-1/opaque-10-15-3/rule-4a3308e9472415a1",
+        "model/group-4-0-1/opaque-10-15-3/rule-033639801a8ffc0b",
+        "model/group-4-0-1/opaque-10-15-3/rule-ce39275fcdc3abaf",
+        "model/group-4-0-1/opaque-10-15-3/rule-d3d0841c9771bb18"
+      ],
+      "reusedNodes": [
+        "model/group-4-0-1/opaque-10-15-3"
+      ],
+      "edges": [
+        "rule-edge-c26ccf3d3516cb69e0ed",
+        "rule-edge-db6c529fa1d6c71fdca4",
+        "rule-edge-f7b4d544af29f5180a51"
+      ],
+      "nodeMap": {
+        "source-rule:c312448b895fd7bf62eaf463": "model/group-4-0-1/opaque-10-15-3",
+        "source-rule:d2738de5a73c868e6e395460": "model/group-4-0-1/opaque-10-15-3/rule-4a3308e9472415a1",
+        "source-rule:b25adabf0c2377288807d735": "model/group-4-0-1/opaque-10-15-3/rule-033639801a8ffc0b",
+        "source-rule:5d2a2db5129c1580b57ee499": "model/group-4-0-1/opaque-10-15-3/rule-ce39275fcdc3abaf",
+        "source-rule:78bae2a24ec9e833206df8fe": "model/group-4-0-1/opaque-10-15-3/rule-d3d0841c9771bb18"
+      },
+      "labels": {
+        "model/group-4-0-1/opaque-10-15-3": "DictComp",
+        "model/group-4-0-1/opaque-10-15-3/rule-4a3308e9472415a1": "batch",
+        "model/group-4-0-1/opaque-10-15-3/rule-033639801a8ffc0b": "tag",
+        "model/group-4-0-1/opaque-10-15-3/rule-ce39275fcdc3abaf": "self.projection",
+        "model/group-4-0-1/opaque-10-15-3/rule-d3d0841c9771bb18": "vector"
+      },
+      "truncated": false,
+      "authority": "source-structure-only"
+    }
+  ],
+  "availableSourceRules": [
+    "rule-f5ca275a283717fd70c1f3f2"
+  ]
+}

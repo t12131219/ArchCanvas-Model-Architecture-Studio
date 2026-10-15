@@ -62,6 +62,8 @@
     // intersection misses these contacts, letting a path evade crossing cost
     // by putting a bend at the intersection. Shared tensors are filtered by
     // the caller, so an unrelated T contact is also a visual conflict.
+    // Keep the fuzzy predicate at every scale: its cross-product tolerance
+    // can admit short near-parallel segments beyond an EPS-wide envelope.
     const on=(p,u,v)=>Math.abs((v.x-u.x)*(p.y-u.y)-(v.y-u.y)*(p.x-u.x))<EPS&&
       dist(u,p)>EPS&&dist(v,p)>EPS&&dist(u,p)+dist(p,v)<dist(u,v)+EPS;
     return crossing(a,b,c,d)||on(a,c,d)||on(b,c,d)||on(c,a,b)||on(d,a,b);
@@ -191,17 +193,22 @@
       xs=centers(xs,'x','w');ys=centers(ys,'y','h');
     }
     if(settings.maxSearchVertices&&xs.length*ys.length>settings.maxSearchVertices)return null;
+    // A visibility link is horizontal or vertical. Filter by its fixed axis
+    // first, then retain the original exact inside/intersection predicates.
+    // This only removes rectangles that cannot possibly block that row/column.
+    const horizontalObstacles = ys.map(y=>obstacles.filter(r=>y>=r.y && y<=r.y+r.h));
+    const verticalObstacles = xs.map(x=>obstacles.filter(r=>x>=r.x && x<=r.x+r.w));
     const pts = [], ids = new Map(), neighbors = [];
     for (let yi = 0; yi < ys.length; yi++) for (let xi = 0; xi < xs.length; xi++) {
       const p = { x: xs[xi], y: ys[yi] };
-      if (!obstacles.some(r => inside(p, r))) { ids.set(xi + ':' + yi, pts.length); pts.push(p); neighbors.push([]); }
+      if (!horizontalObstacles[yi].some(r => inside(p, r))) { ids.set(xi + ':' + yi, pts.length); pts.push(p); neighbors.push([]); }
     }
-    function link(u, v) {
+    function link(u, v, localObstacles) {
       if (u === undefined || v === undefined) return;
-      if (!obstacles.some(r => intersectsRect(pts[u], pts[v], r))) { neighbors[u].push(v); neighbors[v].push(u); }
+      if (!localObstacles.some(r => intersectsRect(pts[u], pts[v], r))) { neighbors[u].push(v); neighbors[v].push(u); }
     }
-    for (let y = 0; y < ys.length; y++) { let last; for (let x = 0; x < xs.length; x++) { const id = ids.get(x + ':' + y); if (id !== undefined) { if (last !== undefined) link(last, id); last = id; } } }
-    for (let x = 0; x < xs.length; x++) { let last; for (let y = 0; y < ys.length; y++) { const id = ids.get(x + ':' + y); if (id !== undefined) { if (last !== undefined) link(last, id); last = id; } } }
+    for (let y = 0; y < ys.length; y++) { let last; for (let x = 0; x < xs.length; x++) { const id = ids.get(x + ':' + y); if (id !== undefined) { if (last !== undefined) link(last, id, horizontalObstacles[y]); last = id; } } }
+    for (let x = 0; x < xs.length; x++) { let last; for (let y = 0; y < ys.length; y++) { const id = ids.get(x + ':' + y); if (id !== undefined) { if (last !== undefined) link(last, id, verticalObstacles[x]); last = id; } } }
     const s = ids.get(xs.indexOf(start.x) + ':' + ys.indexOf(start.y)), t = ids.get(xs.indexOf(end.x) + ':' + ys.indexOf(end.y));
     if (s === undefined || t === undefined) return null;
     const startKey = s * 5 + incoming;

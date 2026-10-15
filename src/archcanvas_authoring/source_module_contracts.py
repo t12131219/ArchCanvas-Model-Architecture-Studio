@@ -10,7 +10,7 @@ import hashlib
 from pathlib import Path
 import tempfile
 
-from archcanvas_python.frontend import Analyzer, Corpus, output_bindings
+from archcanvas_python.frontend import Analyzer, Corpus, output_bindings, load_project_corpus
 from .custom_modules import _scope_bindings
 from .draft import DraftError
 
@@ -85,7 +85,7 @@ def source_module_contracts(architecture):
                 raw = b"\xef\xbb\xbf" + raw
             path.write_bytes(raw)
         module, name = original["entry"].split(":")
-        analyzer = _BoundaryAnalyzer(Corpus(root))
+        analyzer = _BoundaryAnalyzer(load_project_corpus(root))
         replayed = analyzer.analyze(module, name)
         if replayed != original:
             raise DraftError("源码模块边界的独立重放与原始事实不一致。")

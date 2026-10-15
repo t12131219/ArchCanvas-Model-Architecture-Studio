@@ -11,7 +11,7 @@ import math
 from pathlib import Path
 from typing import Any
 
-from .frontend import Corpus, UNKNOWN, analyze_project, digest, literal
+from .frontend import Corpus, UNKNOWN, analyze_project, digest, literal, load_project_corpus
 from .rebind import PRESERVING, _binding, _module_effect_blocker, _span
 
 
@@ -65,7 +65,7 @@ def inspect_structural_rebind(root: str | Path, entry: str, node_id: str, port_i
         if target is None or len(roots) != 1 or target.get("parentId") != roots[0]["id"] or target.get("kind") not in STRUCTURAL_SCOPE["targetKinds"] or target.get("evidence") != "contract":
             raise StructuralEvidenceError("Target must be one directly authored registered call in the entry-root forward.")
         model = roots[0]
-        corpus = Corpus(Path(root)); corpus.load(entry.split(":", 1)[0])
+        corpus = load_project_corpus(root)
         definition = corpus.definition(entry.replace(":", "."))
         if not definition or not corpus.framework_is_unshadowed():
             raise StructuralEvidenceError("Entry and external framework provenance are unresolved.")

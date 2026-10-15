@@ -1,0 +1,421 @@
+{
+  "schema": "archcanvas-source-adapter/2",
+  "generatorRevision": "source-rules/1",
+  "binding": {
+    "entry": "relocated_map:GoldenIndex",
+    "method": "forward",
+    "sourceFiles": [
+      {
+        "path": "relocated_map.py",
+        "sha256": "237eabfdd8bc33b1b29c2c2196126f7b0391cbdafae38fb0433d6b527e1e38aa"
+      }
+    ],
+    "symbol": {
+      "path": "relocated_map.py",
+      "line": 4,
+      "endLine": 10,
+      "column": 0,
+      "endColumn": 101,
+      "expression": "class GoldenIndex(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.mapper = nn.Linear(4, 4)\n\n    def forward(self, records):\n        return {name: self.mapper(embedding) for name, embedding in records if embedding is not None}",
+      "qualifiedName": "relocated_map:GoldenIndex"
+    },
+    "methodSpan": {
+      "path": "relocated_map.py",
+      "line": 9,
+      "endLine": 10,
+      "column": 4,
+      "endColumn": 101,
+      "expression": "def forward(self, records):\n        return {name: self.mapper(embedding) for name, embedding in records if embedding is not None}",
+      "sha256": "0fb3ef945b5ea815d05b48bf7a8aaef0a49183fe83864c844e8a7509bae7e2be"
+    }
+  },
+  "config": {},
+  "inputs": [
+    {
+      "id": "input-0",
+      "name": "records",
+      "kind": "source-parameter",
+      "required": true,
+      "source": {
+        "path": "relocated_map.py",
+        "line": 9,
+        "endLine": 9,
+        "column": 22,
+        "endColumn": 29,
+        "expression": "records"
+      },
+      "parameterKind": "positional-or-keyword"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "return-10-8-0",
+      "path": [],
+      "kind": "source-return-slot",
+      "source": {
+        "path": "relocated_map.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 15,
+        "endColumn": 101,
+        "expression": "{name: self.mapper(embedding) for name, embedding in records if embedding is not None}"
+      }
+    }
+  ],
+  "rules": [
+    {
+      "schema": "archcanvas-source-rule/1",
+      "name": "Filtered dictionary key and call source structure",
+      "match": {
+        "type": "DictComp",
+        "fields": {
+          "generators": [
+            {
+              "type": "comprehension",
+              "fields": {
+                "is_async": 0
+              }
+            }
+          ],
+          "key": {
+            "type": "Name",
+            "fields": {}
+          },
+          "value": {
+            "type": "Call",
+            "fields": {
+              "args": [
+                {
+                  "type": "Name",
+                  "fields": {}
+                }
+              ]
+            }
+          }
+        }
+      },
+      "nodes": [
+        {
+          "key": "comprehension",
+          "at": [],
+          "parent": null,
+          "kind": "SourceLoop"
+        },
+        {
+          "key": "iterable",
+          "at": [
+            "generators",
+            0,
+            "iter"
+          ],
+          "parent": "comprehension",
+          "kind": "SourceExpression"
+        },
+        {
+          "key": "dictionary-key",
+          "at": [
+            "key"
+          ],
+          "parent": "comprehension",
+          "kind": "SourceExpression"
+        },
+        {
+          "key": "value-call",
+          "at": [
+            "value"
+          ],
+          "parent": "comprehension",
+          "kind": "SourceCall"
+        },
+        {
+          "key": "call-argument",
+          "at": [
+            "value",
+            "args",
+            0
+          ],
+          "parent": "value-call",
+          "kind": "SourceExpression"
+        }
+      ],
+      "relations": [
+        {
+          "proof": "comprehension-iteration",
+          "source": "iterable",
+          "target": "dictionary-key"
+        },
+        {
+          "proof": "comprehension-iteration",
+          "source": "iterable",
+          "target": "value-call"
+        },
+        {
+          "proof": "expression-input",
+          "source": "call-argument",
+          "target": "value-call"
+        }
+      ],
+      "id": "rule-f5ca275a283717fd70c1f3f2"
+    }
+  ],
+  "applications": [
+    {
+      "ruleId": "rule-f5ca275a283717fd70c1f3f2",
+      "matchKey": "match-6b142a11d2e713bc33effd6a",
+      "source": {
+        "path": "relocated_map.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 15,
+        "endColumn": 101,
+        "expression": "{name: self.mapper(embedding) for name, embedding in records if embedding is not None}"
+      },
+      "rootId": "source-rule:e52436135e8d2ffe9f8f37d0",
+      "nodeIds": [
+        "source-rule:e52436135e8d2ffe9f8f37d0",
+        "source-rule:886cf30224db1c02cad379d3",
+        "source-rule:5528a0882534588b6d7cbb93",
+        "source-rule:4bb240ad9787dacfd8774579",
+        "source-rule:0e519c9a487df043da862dce"
+      ]
+    }
+  ],
+  "children": [
+    {
+      "id": "source-rule:e52436135e8d2ffe9f8f37d0",
+      "label": "DictComp",
+      "kind": "SourceLoop",
+      "category": "container",
+      "parentId": null,
+      "children": [
+        "source-rule:886cf30224db1c02cad379d3",
+        "source-rule:5528a0882534588b6d7cbb93",
+        "source-rule:4bb240ad9787dacfd8774579"
+      ],
+      "ports": [],
+      "parameters": {
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "sourceMatch": "match-6b142a11d2e713bc33effd6a",
+        "sourceRulePath": [],
+        "guards": [
+          "for (name, embedding) in records",
+          "if embedding is not None"
+        ],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+      },
+      "source": {
+        "path": "relocated_map.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 15,
+        "endColumn": 101,
+        "expression": "{name: self.mapper(embedding) for name, embedding in records if embedding is not None}"
+      },
+      "evidence": "source",
+      "sourceStructure": true
+    },
+    {
+      "id": "source-rule:886cf30224db1c02cad379d3",
+      "label": "records",
+      "kind": "SourceExpression",
+      "category": "operator",
+      "parentId": "source-rule:e52436135e8d2ffe9f8f37d0",
+      "children": [],
+      "ports": [],
+      "parameters": {
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "sourceMatch": "match-6b142a11d2e713bc33effd6a",
+        "sourceRulePath": [
+          "generators",
+          0,
+          "iter"
+        ],
+        "guards": [],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+      },
+      "source": {
+        "path": "relocated_map.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 68,
+        "endColumn": 75,
+        "expression": "records"
+      },
+      "evidence": "source",
+      "sourceStructure": true
+    },
+    {
+      "id": "source-rule:5528a0882534588b6d7cbb93",
+      "label": "name",
+      "kind": "SourceExpression",
+      "category": "operator",
+      "parentId": "source-rule:e52436135e8d2ffe9f8f37d0",
+      "children": [],
+      "ports": [],
+      "parameters": {
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "sourceMatch": "match-6b142a11d2e713bc33effd6a",
+        "sourceRulePath": [
+          "key"
+        ],
+        "guards": [
+          "for (name, embedding) in records",
+          "if embedding is not None"
+        ],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+      },
+      "source": {
+        "path": "relocated_map.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 16,
+        "endColumn": 20,
+        "expression": "name"
+      },
+      "evidence": "source",
+      "sourceStructure": true
+    },
+    {
+      "id": "source-rule:4bb240ad9787dacfd8774579",
+      "label": "self.mapper",
+      "kind": "SourceCall",
+      "category": "operator",
+      "parentId": "source-rule:e52436135e8d2ffe9f8f37d0",
+      "children": [
+        "source-rule:0e519c9a487df043da862dce"
+      ],
+      "ports": [],
+      "parameters": {
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "sourceMatch": "match-6b142a11d2e713bc33effd6a",
+        "sourceRulePath": [
+          "value"
+        ],
+        "guards": [
+          "for (name, embedding) in records",
+          "if embedding is not None"
+        ],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+      },
+      "source": {
+        "path": "relocated_map.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 22,
+        "endColumn": 44,
+        "expression": "self.mapper(embedding)"
+      },
+      "evidence": "source",
+      "sourceStructure": true
+    },
+    {
+      "id": "source-rule:0e519c9a487df043da862dce",
+      "label": "embedding",
+      "kind": "SourceExpression",
+      "category": "operator",
+      "parentId": "source-rule:4bb240ad9787dacfd8774579",
+      "children": [],
+      "ports": [],
+      "parameters": {
+        "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+        "sourceMatch": "match-6b142a11d2e713bc33effd6a",
+        "sourceRulePath": [
+          "value",
+          "args",
+          0
+        ],
+        "guards": [
+          "for (name, embedding) in records",
+          "if embedding is not None"
+        ],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified"
+      },
+      "source": {
+        "path": "relocated_map.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 34,
+        "endColumn": 43,
+        "expression": "embedding"
+      },
+      "evidence": "source",
+      "sourceStructure": true
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "source-rule-relation:79e1462707de1c606efba868",
+      "sourceId": "source-rule:886cf30224db1c02cad379d3",
+      "targetId": "source-rule:5528a0882534588b6d7cbb93",
+      "kind": "source-data-dependency",
+      "source": {
+        "path": "relocated_map.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 16,
+        "endColumn": 20,
+        "expression": "name"
+      },
+      "proof": "comprehension-iteration",
+      "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+      "sourceMatch": "match-6b142a11d2e713bc33effd6a",
+      "syntaxOnly": true,
+      "guards": [
+        "for (name, embedding) in records",
+        "if embedding is not None"
+      ]
+    },
+    {
+      "id": "source-rule-relation:0b1b82c86c6e6139d906a9bd",
+      "sourceId": "source-rule:886cf30224db1c02cad379d3",
+      "targetId": "source-rule:4bb240ad9787dacfd8774579",
+      "kind": "source-data-dependency",
+      "source": {
+        "path": "relocated_map.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 22,
+        "endColumn": 44,
+        "expression": "self.mapper(embedding)"
+      },
+      "proof": "comprehension-iteration",
+      "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+      "sourceMatch": "match-6b142a11d2e713bc33effd6a",
+      "syntaxOnly": true,
+      "guards": [
+        "for (name, embedding) in records",
+        "if embedding is not None"
+      ]
+    },
+    {
+      "id": "source-rule-relation:f379e7f8a37fc011586e7c53",
+      "sourceId": "source-rule:0e519c9a487df043da862dce",
+      "targetId": "source-rule:4bb240ad9787dacfd8774579",
+      "kind": "source-data-dependency",
+      "source": {
+        "path": "relocated_map.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 22,
+        "endColumn": 44,
+        "expression": "self.mapper(embedding)"
+      },
+      "proof": "expression-input",
+      "sourceRuleId": "rule-f5ca275a283717fd70c1f3f2",
+      "sourceMatch": "match-6b142a11d2e713bc33effd6a",
+      "syntaxOnly": true,
+      "guards": [
+        "for (name, embedding) in records",
+        "if embedding is not None"
+      ]
+    }
+  ],
+  "diagnostics": [],
+  "generationContract": null,
+  "authority": "source-structure-only; no execution path, tensor ports, shapes, or source-generation authority",
+  "id": "adapter-693c8af1a1a691f879669e97",
+  "presentation": {
+    "labels": {},
+    "notes": []
+  }
+}

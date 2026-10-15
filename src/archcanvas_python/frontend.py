@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from .source_structure import SourceStructure
+from .discovery import ModelIndex, NN_BASES, read_directory_files, DiscoveryError
 
 MAX_FILES = 80
 MAX_BYTES = 2_000_000
@@ -76,6 +77,14 @@ def literal(node: ast.AST | None, env: dict[str, Any]) -> Any:
 UNKNOWN = object()
 
 
+def portable_literal(value):
+    """Abstract module objects must never escape into JSON parameter facts."""
+    return (value is None or type(value) in (str, bool, int)
+            or type(value) is float and math.isfinite(value)
+            or isinstance(value, (list, tuple)) and all(portable_literal(item) for item in value)
+            or isinstance(value, dict) and all(type(key) is str and portable_literal(item) for key, item in value.items()))
+
+
 @dataclass
 class Unit:
     module: str
@@ -109,6 +118,8 @@ class Corpus:
         self.root = root.resolve() if root else None
         self.units: dict[str, Unit] = {}
         self.total_bytes = 0
+        self._method_index: ModelIndex | None = None
+        self._method_index_signature: tuple[tuple[str, str | None], ...] = ()
 
     def add(self, module: str, path: str, content: str, raw: bytes | None = None) -> Unit:
         if len(self.units) >= MAX_FILES or self.total_bytes + len(content.encode()) > MAX_BYTES:
@@ -147,10 +158,13 @@ class Corpus:
                     if alias.name != "*":
                         unit.imports[alias.asname or alias.name] = f"{imported}.{alias.name}".strip(".")
             elif isinstance(statement, ast.Assign):
+                alias = unit.resolve(statement.value) if isinstance(statement.value, (ast.Name, ast.Attribute)) else ""
                 for target in statement.targets:
                     if isinstance(target, ast.Name):
                         unit.imports.pop(target.id, None)
                         unit.functions.pop(target.id, None)
+                        if alias:
+                            unit.imports[target.id] = alias
                 value = literal(statement.value, unit.constants)
                 if value is not UNKNOWN:
                     for target in statement.targets:
@@ -213,11 +227,8 @@ class Corpus:
         function = unit.functions.get(name)
         if not function or function.decorator_list:
             return None
-        # A single return expression is the only supported factory body. No
-        # Python is executed, and no earlier side effect is skipped.
-        body = [item for item in function.body if not (isinstance(item, ast.Expr) and isinstance(item.value, ast.Constant) and isinstance(item.value.value, str))]
-        if len(body) != 1 or not isinstance(body[0], ast.Return) or body[0].value is None:
-            return None
+        # The analyzer separately certifies the complete bounded body. Merely
+        # finding a return never authorizes skipping earlier side effects.
         bindings = [item for item in unit.tree.body if
                     isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and item.name == name
                     or not isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and
@@ -227,6 +238,35 @@ class Corpus:
     def framework_is_unshadowed(self) -> bool:
         """A local module named torch cannot prove an external PyTorch contract."""
         return not any(name == "torch" or name.startswith("torch.") for name in self.units)
+
+    def entry_method(self, unit: Unit, definition: ast.ClassDef) -> tuple[Unit, ast.FunctionDef] | None:
+        """Resolve Python's local C3 lookup and a custom __call__ before forward.
+
+        Base definitions are loaded as source data before building the index;
+        dynamic/decorated entry methods remain an opaque boundary.
+        """
+        def load_bases(own: Unit, cls: ast.ClassDef, seen: set[str]) -> None:
+            key = f"{own.module}:{cls.name}"
+            if key in seen: return
+            seen.add(key)
+            for base in cls.bases:
+                inherited = self.definition(own.resolve(base))
+                if inherited: load_bases(*inherited, seen)
+        load_bases(unit, definition, set())
+        signature = tuple(sorted((own.path, own.raw_digest) for own in self.units.values()))
+        if self._method_index is None or self._method_index_signature != signature:
+            self._method_index = ModelIndex({own.path: own.content for own in self.units.values()})
+            self._method_index_signature = signature
+        index = self._method_index
+        key = f"{unit.module}:{definition.name}"
+        if index.resolve(key) != key:
+            return None
+        method = index.effective_method(key)
+        if not method or not isinstance(method[1], ast.FunctionDef) or method[1].decorator_list:
+            return None
+        path, function = method
+        own = next((candidate for candidate in self.units.values() if candidate.path == path), None)
+        return (own, function) if own else None
 
 
 # Only exact framework-qualified constructors receive these public contracts.
@@ -431,7 +471,7 @@ class Analyzer:
         seen.add(key)
         for base in definition.bases:
             qualified = unit.resolve(base)
-            if qualified == "torch.nn.Module" and self.corpus.framework_is_unshadowed():
+            if qualified.startswith("torch.nn.") and qualified[9:] in NN_BASES and self.corpus.framework_is_unshadowed():
                 return True
             inherited = self.corpus.definition(qualified)
             if inherited and self.is_module(*inherited, seen):
@@ -448,17 +488,34 @@ class Analyzer:
         defaults.update({item.arg: value for item, value in zip(function.args.kwonlyargs, function.args.kw_defaults) if value is not None})
         allowed = set(names + [item.arg for item in function.args.kwonlyargs])
         bound = dict(zip(names, args))
-        if set(keywords) - allowed or set(bound) & set(keywords):
+        if set(keywords) - allowed or set(bound) & set(keywords) or set(keywords) & {item.arg for item in function.args.posonlyargs[int(method):]}:
             return None
         bound.update(keywords)
         for name in allowed - bound.keys():
             bound[name] = literal(defaults[name], env) if name in defaults else UNKNOWN
         return bound
 
-    def factory_expression(self, unit: Unit, function: ast.FunctionDef) -> ast.AST | None:
-        expression = next(item.value for item in function.body if isinstance(item, ast.Return))
+    def factory_expression(self, unit: Unit, function: ast.FunctionDef, stack=()) -> ast.AST | None:
+        key = unit.module, function.name
+        if key in stack or len(stack) >= 12:
+            return None
+        body = [item for item in function.body if not (isinstance(item, ast.Expr) and isinstance(item.value, ast.Constant) and isinstance(item.value.value, str))]
+        if not 1 <= len(body) <= 80 or not isinstance(body[-1], ast.Return) or body[-1].value is None:
+            return None
         local = {item.arg: UNKNOWN for item in [*function.args.posonlyargs, *function.args.args, *function.args.kwonlyargs]}
-        for part in ast.walk(expression):
+        expressions = []
+        for statement in body[:-1]:
+            if not isinstance(statement, (ast.Assign, ast.AnnAssign)) or statement.value is None:
+                return None
+            targets = statement.targets if isinstance(statement, ast.Assign) else [statement.target]
+            if not all(isinstance(target, ast.Name) for target in targets):
+                return None
+            # Local rebinding must not change a constructor/import symbol used
+            # earlier in this same factory; resolve against the complete scope.
+            local.update({target.id: UNKNOWN for target in targets})
+            expressions.append(statement.value)
+        expressions.append(body[-1].value)
+        for part in (part for expression in expressions for part in ast.walk(expression)):
             if isinstance(part, ast.Call):
                 qualified = unit.resolve(part.func, local)
                 short = qualified.rsplit(".", 1)[-1]
@@ -468,20 +525,50 @@ class Analyzer:
                     continue
                 if self.corpus.framework_is_unshadowed() and qualified == f"torch.nn.{short}" and short in (*CONTRACTS, "ModuleList", "Sequential"):
                     continue
+                definition = self.corpus.definition(qualified)
+                if definition and self.is_module(*definition):
+                    continue
+                factory = self.corpus.factory(qualified)
+                if factory and self.factory_expression(*factory, (*stack, key)) is not None:
+                    continue
                 return None
             if isinstance(part, (ast.NamedExpr, ast.Await, ast.Yield, ast.Lambda)):
                 return None
-        return expression
+        return body[-1].value
+
+    def factory_value(self, unit, function, bound, identity, depth):
+        """Interpret only certified assignment/return syntax as source data."""
+        env = {**unit.constants, **bound}
+        for statement in function.body:
+            if isinstance(statement, ast.Expr):
+                continue  # factory_expression admitted only a docstring here.
+            expression = statement.value
+            local_identity = identity if isinstance(statement, ast.Return) else f"{identity}.{(statement.targets[0] if isinstance(statement, ast.Assign) else statement.target).id}@factory:{statement.lineno}"
+            value = self.construct(expression, unit, env, {}, local_identity, depth + 1)
+            if value is None:
+                value = literal(expression, env)
+            if isinstance(statement, ast.Return):
+                return value if value is not UNKNOWN else None
+            targets = statement.targets if isinstance(statement, ast.Assign) else [statement.target]
+            for target in targets:
+                env[target.id] = value
+        return None
+
+    @staticmethod
+    def method_environment(spec, unit):
+        """Methods use their defining module globals, never __init__ locals."""
+        return {**unit.constants, **{key: value for key, value in spec.env.items() if key.startswith("self.")}}
 
     def construct(self, expression: ast.AST, unit: Unit, env: dict[str, Any], attributes: dict[str, Any], identity: str, depth: int = 0) -> Any:
         if depth > 12:
             return None
-        if isinstance(expression, ast.Name) and isinstance(env.get(expression.id), (Spec, list)):
+        if isinstance(expression, ast.Name) and isinstance(env.get(expression.id), (Spec, list, tuple)):
             return env[expression.id]
         if isinstance(expression, ast.Attribute) and isinstance(expression.value, ast.Name) and expression.value.id == "self":
             return attributes.get(expression.attr)
-        if isinstance(expression, ast.List):
-            return [self.construct(item, unit, env, attributes, f"{identity}.{index}", depth + 1) for index, item in enumerate(expression.elts)]
+        if isinstance(expression, (ast.List, ast.Tuple)):
+            values = [self.construct(item, unit, env, attributes, f"{identity}.{index}", depth + 1) for index, item in enumerate(expression.elts)]
+            return tuple(values) if isinstance(expression, ast.Tuple) else values
         if isinstance(expression, ast.BinOp) and isinstance(expression.op, ast.Mult):
             values = self.construct(expression.left, unit, env, attributes, identity, depth + 1)
             count = literal(expression.right, env)
@@ -516,10 +603,10 @@ class Analyzer:
             factory_unit, function = factory
             body = self.factory_expression(factory_unit, function)
             if body is not None and not any(keyword.arg is None for keyword in expression.keywords):
-                argument = lambda value: self.construct(value, unit, env, attributes, identity, depth + 1) or literal(value, env)
-                bound = self.bind_static(function, [argument(value) for value in expression.args], {item.arg: argument(item.value) for item in expression.keywords}, factory_unit.constants)
+                argument = lambda value, suffix: self.construct(value, unit, env, attributes, f"{identity}.{suffix}", depth + 1) or literal(value, env)
+                bound = self.bind_static(function, [argument(value, f"arg{index}") for index, value in enumerate(expression.args)], {item.arg: argument(item.value, item.arg) for item in expression.keywords}, factory_unit.constants)
                 if bound is not None:
-                    return self.construct(body, factory_unit, {**factory_unit.constants, **bound}, {}, identity, depth + 1)
+                    return self.factory_value(factory_unit, function, bound, identity, depth + 1)
         if qualified in ("torch.nn.ModuleList", "torch.nn.Sequential") and self.corpus.framework_is_unshadowed():
             if short == "ModuleList":
                 items = self.construct(expression.args[0], unit, env, attributes, identity, depth + 1) if expression.args else []
@@ -532,26 +619,30 @@ class Analyzer:
         definition = self.corpus.definition(qualified)
         if definition and self.is_module(*definition):
             own_unit, cls = definition
-            initializer = next((item for item in cls.body if isinstance(item, ast.FunctionDef) and item.name == "__init__"), None)
-            local = dict(own_unit.constants)
+            initialized = self.local_initializer(own_unit, cls)
+            init_unit, init_cls, initializer = initialized if initialized else (own_unit, cls, None)
+            local = dict(init_unit.constants)
             if not initializer and any(own_unit.resolve(base) != "torch.nn.Module" for base in cls.bases):
                 self.warn(f"Inherited initializer for {cls.name} is outside the initial subset; unresolved attributes remain opaque.")
             if initializer:
-                params = initializer.args.args[1:]
-                defaults = dict(zip([param.arg for param in params[-len(initializer.args.defaults):]], initializer.args.defaults)) if initializer.args.defaults else {}
-                for param in params:
-                    local[param.arg] = literal(defaults.get(param.arg), local) if param.arg in defaults else UNKNOWN
-                for param, arg in zip(params, expression.args):
-                    local[param.arg] = self.construct(arg, unit, env, attributes, identity, depth + 1) or literal(arg, env)
-                for keyword in expression.keywords:
-                    if keyword.arg:
-                        local[keyword.arg] = self.construct(keyword.value, unit, env, attributes, identity, depth + 1) or literal(keyword.value, env)
+                params = [*initializer.args.posonlyargs, *initializer.args.args][1:] + list(initializer.args.kwonlyargs)
+                argument = lambda value, suffix: self.construct(value, unit, env, attributes, f"{identity}.{suffix}", depth + 1) or literal(value, env)
+                bound = None if any(isinstance(item, ast.Starred) for item in expression.args) or any(item.arg is None for item in expression.keywords) else self.bind_static(initializer, [argument(value, params[index].arg if index < len(params) else f"arg{index}") for index, value in enumerate(expression.args)], {item.arg: argument(item.value, item.arg) for item in expression.keywords}, local, method=True)
+                if bound is None:
+                    self.warn(f"Constructor binding for {cls.name} is outside the supported signature subset; retained opaque.")
+                    return Spec(identity, cls.name, "opaque", {}, own_unit, expression)
+                local.update(bound)
                 unresolved = [param.arg for param in params if local.get(param.arg) is UNKNOWN]
                 if unresolved:
                     self.warn(f"Constructor arguments for {cls.name} remain symbolic ({', '.join(unresolved)}); this is not a claim of valid executable instantiation.")
-            spec = Spec(identity, cls.name, "container", {key: value for key, value in local.items() if value is not UNKNOWN and not isinstance(value, Spec) and not (isinstance(value, list) and any(isinstance(item, Spec) for item in value))}, own_unit, expression, cls, local)
+            spec = Spec(identity, cls.name, "container", {key: value for key, value in local.items() if portable_literal(value)}, own_unit, expression, cls, local)
+            # Lexical super lookup follows the initializer's defining class,
+            # while overridden self methods still dispatch on the receiver.
+            spec.receiver_definition = (own_unit, cls)
             if initializer:
-                self.initializer_statements(initializer.body, spec, depth)
+                initial_spec = copy.copy(spec)
+                initial_spec.unit, initial_spec.definition = init_unit, init_cls
+                self.initializer_statements(initializer.body, initial_spec, depth)
             return spec
         params: dict[str, Any] = {}
         origins: dict[str, Any] = {}
@@ -560,16 +651,70 @@ class Analyzer:
         for index, arg in enumerate(expression.args):
             value = literal(arg, env)
             name = positional[index] if index < len(positional) else f"arg{index}"
-            params[name] = value if value is not UNKNOWN else {"expression": unit.expression(arg), "origin": "unknown"}
+            params[name] = value if portable_literal(value) else {"expression": unit.expression(arg), "origin": "unknown"}
             origins[name] = self.parameter_origin(unit, arg, env)
         for keyword in expression.keywords:
             if keyword.arg:
                 value = literal(keyword.value, env)
-                params[keyword.arg] = value if value is not UNKNOWN else {"expression": unit.expression(keyword.value), "origin": "unknown"}
+                params[keyword.arg] = value if portable_literal(value) else {"expression": unit.expression(keyword.value), "origin": "unknown"}
                 origins[keyword.arg] = self.parameter_origin(unit, keyword.value, env)
         if not contract:
             self.warn(f"Unknown constructor {qualified or unit.expression(expression.func)} at {unit.path}:{expression.lineno}; no type semantics inferred from its name.")
         return Spec(identity, short or "Unknown", contract[1] if contract else "opaque", params, unit, expression, parameter_origins=origins)
+
+    def local_initializer(self, unit, cls):
+        """Locate an ordinary inherited initializer through local C3 lookup."""
+        self.corpus.entry_method(unit, cls)  # Load local base source definitions.
+        index = ModelIndex({own.path: own.content for own in self.corpus.units.values()})
+        method = index.method(f"{unit.module}:{cls.name}", "__init__")
+        if not method or not isinstance(method[1], ast.FunctionDef) or method[1].decorator_list:
+            return None
+        path, function = method
+        own = next((candidate for candidate in self.corpus.units.values() if candidate.path == path), None)
+        definition = next((candidate for candidate in own.classes.values()
+                           if candidate.lineno <= function.lineno <= candidate.end_lineno), None) if own else None
+        return (own, definition, function) if own and definition else None
+
+    def super_initializer(self, expression, spec, depth):
+        """Bind a single local base initializer; uncertain MRO stays opaque."""
+        if (not spec.definition or depth >= 12 or not isinstance(expression, ast.Call)
+                or not isinstance(expression.func, ast.Attribute) or expression.func.attr != "__init__"
+                or not isinstance(expression.func.value, ast.Call)):
+            return False
+        call = expression.func.value
+        if not isinstance(call.func, ast.Name) or call.func.id != "super" or "super" in spec.env or call.keywords:
+            return False
+        if call.args and not (len(call.args) == 2 and isinstance(call.args[0], ast.Name)
+                              and call.args[0].id == spec.definition.name and isinstance(call.args[1], ast.Name)
+                              and call.args[1].id == "self"):
+            return False
+        if len(spec.definition.bases) != 1 or any(isinstance(item, ast.Starred) for item in expression.args) or any(item.arg is None for item in expression.keywords):
+            return False
+        base = spec.unit.resolve(spec.definition.bases[0])
+        argument = lambda value, suffix: self.construct(value, spec.unit, spec.env, spec.attributes, f"{spec.identity}.super.{suffix}", depth + 1) or literal(value, spec.env)
+        args = [argument(value, f"arg{index}") for index, value in enumerate(expression.args)]
+        keywords = {item.arg: argument(item.value, item.arg) for item in expression.keywords}
+        if base == "torch.nn.Module" and self.corpus.framework_is_unshadowed():
+            return not args and not keywords
+        if base == "torch.nn.Sequential" and self.corpus.framework_is_unshadowed():
+            if keywords or not all(isinstance(value, Spec) for value in args):
+                return False
+            spec.items.extend(args)
+            return True
+        definition = self.corpus.definition(base)
+        initialized = self.local_initializer(*definition) if definition else None
+        if not initialized:
+            return False
+        unit, cls, function = initialized
+        bound = self.bind_static(function, args, keywords, unit.constants, method=True)
+        if bound is None:
+            return False
+        inherited = copy.copy(spec)
+        inherited.unit, inherited.definition = unit, cls
+        inherited.env = {**unit.constants, **bound, **{key: value for key, value in spec.env.items() if key.startswith("self.")}}
+        self.initializer_statements(function.body, inherited, depth + 1)
+        spec.env.update({key: value for key, value in inherited.env.items() if key.startswith("self.")})
+        return True
 
     def initializer_unknown(self, statements: list[ast.stmt], spec: Spec):
         """Invalidate facts that an unsupported initializer region can replace.
@@ -770,6 +915,8 @@ class Analyzer:
         """
         if not spec.definition or not self.corpus.framework_is_unshadowed():
             return False
+        if getattr(spec, "receiver_definition", (spec.unit, spec.definition)) != (spec.unit, spec.definition):
+            return False
         if any(spec.unit.resolve(base) != "torch.nn.Module" for base in spec.definition.bases):
             return False
         if not (isinstance(expression, ast.Call) and isinstance(expression.func, ast.Attribute)
@@ -814,6 +961,63 @@ class Analyzer:
                             and all(keyword.arg and literal(keyword.value, spec.env) is not UNKNOWN for keyword in item.keywords))
                     if not dim and not init: return False
         return bool(loop.body)
+
+    def registered_state_initializer(self, expression: ast.AST, spec: Spec) -> bool:
+        """Exact Module state registration does not replace unrelated children.
+
+        This is a topology contract, not permission to run a buffer-producing
+        helper. User overrides and module-valued arguments remain uncertain.
+        """
+        if (not spec.definition or not self.corpus.framework_is_unshadowed()
+                or not isinstance(expression, ast.Call) or not isinstance(expression.func, ast.Attribute)
+                or not isinstance(expression.func.value, ast.Name) or expression.func.value.id != "self"
+                or expression.func.attr not in ("register_buffer", "register_parameter")
+                or expression.func.attr in spec.attributes):
+            return False
+        method_name = expression.func.attr
+        visited = set()
+        def unshadowed(unit, cls):
+            key = unit.module, cls.name
+            if key in visited:
+                return False
+            visited.add(key)
+            if len(cls.bases) != 1 or any(getattr(item, "name", None) == method_name for item in cls.body):
+                return False
+            for base in cls.bases:
+                qualified = unit.resolve(base)
+                if qualified == "torch.nn.Module":
+                    return True
+                definition = self.corpus.definition(qualified)
+                if definition and unshadowed(*definition):
+                    return True
+            return False
+        receiver_unit, receiver_cls = getattr(spec, "receiver_definition", (spec.unit, spec.definition))
+        if not unshadowed(receiver_unit, receiver_cls) or any(item.arg is None for item in expression.keywords):
+            return False
+        allowed = {"name", "tensor", "persistent"} if method_name == "register_buffer" else {"name", "param"}
+        if len(expression.args) > (3 if method_name == "register_buffer" else 2) or any(item.arg not in allowed for item in expression.keywords):
+            return False
+        values = dict(zip(["name", "tensor" if method_name == "register_buffer" else "param", "persistent"], expression.args))
+        if any(item.arg in values for item in expression.keywords):
+            return False
+        values.update({item.arg: item.value for item in expression.keywords})
+        name = literal(values.get("name"), spec.env)
+        if type(name) is not str or not name or "." in name or name in spec.attributes:
+            return False
+        value = values.get("tensor" if method_name == "register_buffer" else "param")
+        if value is None:
+            return False
+        # An arbitrary helper may mutate a child passed into it, even when its
+        # return is registered as state. Do not grant it this narrow contract.
+        for part in ast.walk(value):
+            if isinstance(part, ast.Name) and part.id == "self":
+                return False
+            if isinstance(part, ast.Name) and isinstance(spec.env.get(part.id), (Spec, list)):
+                return False
+            if isinstance(part, ast.Attribute) and isinstance(part.value, ast.Name) and part.value.id == "self" and isinstance(spec.attributes.get(part.attr), (Spec, list)):
+                return False
+        spec.env.pop(f"self.{name}", None)
+        return True
 
     def initializer_statements(self, statements: list[ast.stmt], spec: Spec, depth: int) -> bool:
         """Recover direct construction and constant branches, never unknown paths."""
@@ -868,14 +1072,10 @@ class Analyzer:
                 return True
             elif isinstance(statement, ast.Pass) or isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Constant):
                 continue
-            elif (isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Call)
-                  and isinstance(statement.value.func, ast.Attribute) and statement.value.func.attr == "__init__"
-                  and isinstance(statement.value.func.value, ast.Call)
-                  and isinstance(statement.value.func.value.func, ast.Name) and statement.value.func.value.func.id == "super"
-                  and "super" not in spec.env and not statement.value.func.value.args
-                  and not statement.value.func.value.keywords and not statement.value.args and not statement.value.keywords):
-                continue  # The external Module initializer supplies no diagram internals.
-            elif isinstance(statement, ast.Expr) and self.parameter_only_initializer(statement.value, spec):
+            elif isinstance(statement, ast.Expr) and self.super_initializer(statement.value, spec, depth):
+                continue
+            elif isinstance(statement, ast.Expr) and (self.registered_state_initializer(statement.value, spec)
+                                                      or self.parameter_only_initializer(statement.value, spec)):
                 continue
             else:
                 self.initializer_unknown([statement], spec)
@@ -943,27 +1143,35 @@ class Analyzer:
                 for name, value in keywords.items():
                     self.bind(value, own, name)
                 return self.out(own)
-            forward = next((item for item in spec.definition.body if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)) and item.name == "forward"), None)
-            if not forward:
+            method = self.corpus.entry_method(spec.unit, spec.definition)
+            if not method:
                 own["category"], own["evidence"] = "opaque", "opaque"
-                self.warn(f"No directly authored forward found for {spec.kind}; inherited forward analysis is not yet supported.")
+                self.warn(f"No safe local forward/__call__ method found for {spec.kind}; invocation remains opaque.")
                 for index, value in enumerate(args):
                     self.bind(value, own, f"arg{index}")
                 for name, value in keywords.items():
                     self.bind(value, own, name)
                 return self.out(own)
-            names = [item.arg for item in forward.args.args[1:]] + [item.arg for item in forward.args.kwonlyargs]
-            bound = dict(zip(names, args)) | keywords
-            defaults = dict(zip([item.arg for item in forward.args.args[-len(forward.args.defaults):]], forward.args.defaults)) if forward.args.defaults else {}
+            method_unit, forward = method
+            names = [item.arg for item in [*forward.args.posonlyargs, *forward.args.args][1:]] + [item.arg for item in forward.args.kwonlyargs]
+            method_env = self.method_environment(spec, method_unit)
+            bound = self.bind_static(forward, args, keywords, method_env, method=True)
+            if bound is None:
+                own["category"], own["evidence"] = "opaque", "opaque"
+                self.warn(f"Call signature for {spec.kind}.{forward.name} cannot be bound statically; invocation remains opaque.")
+                for index, value in enumerate(args): self.bind(value, own, f"arg{index}")
+                for name, value in keywords.items(): self.bind(value, own, name)
+                return self.out(own)
             values: dict[str, Any] = {}
             for name in names:
                 value = bound.get(name)
-                if value is None and name in defaults:
-                    value = literal(defaults[name], spec.env)
                 self.bind(value, own, name, "mask" if "mask" in name else "memory" if name == "memory" else "data")
                 values[name] = value
             self.depth += 1
-            result, returned = self.statements(forward.body, spec, values, own["id"])
+            method_spec = copy.copy(spec)
+            method_spec.unit = method_unit
+            method_spec.env = method_env
+            result, returned = self.statements(forward.body, method_spec, values, own["id"])
             self.depth -= 1
             if not returned:
                 own["category"], own["evidence"] = "opaque", "opaque"
@@ -1054,6 +1262,8 @@ class Analyzer:
 
     def expression(self, expression: ast.AST, spec: Spec, values: dict[str, Any], parent: str) -> Any:
         if isinstance(expression, ast.Name):
+            if expression.id == "self":
+                return spec
             return values.get(expression.id, spec.env.get(expression.id))
         if isinstance(expression, ast.Constant):
             return expression.value
@@ -1083,6 +1293,8 @@ class Analyzer:
         if isinstance(expression, ast.Subscript):
             value = self.expression(expression.value, spec, values, parent)
             index = literal(expression.slice, spec.env)
+            if isinstance(value, Spec) and value.items:
+                value = value.items
             if isinstance(value, (tuple, list, dict)) and index is not UNKNOWN:
                 try:
                     return value[index]
@@ -1109,11 +1321,16 @@ class Analyzer:
                         and not any(isinstance(item, ast.Starred) for item in expression.args)
                         and not any(item.arg is None for item in expression.keywords)
                         and not any(isinstance(item, ast.Attribute) and isinstance(item.ctx, (ast.Store, ast.Del)) for item in ast.walk(method))):
-                    bound = self.bind_static(method, args, keywords, spec.env, method=True)
+                    helper_unit = next((unit for unit in self.corpus.units.values()
+                                        if any(method is part for part in ast.walk(unit.tree))), spec.unit)
+                    helper_spec = copy.copy(spec)
+                    helper_spec.unit = helper_unit
+                    helper_spec.env = self.method_environment(spec, helper_unit)
+                    bound = self.bind_static(method, args, keywords, helper_spec.env, method=True)
                     if bound is not None:
                         self.depth += 1
                         try:
-                            result, returned = self.statements(method.body, spec, bound, parent)
+                            result, returned = self.statements(method.body, helper_spec, bound, parent)
                         finally:
                             self.depth -= 1
                         if returned:
@@ -1261,27 +1478,31 @@ class Analyzer:
         spec = self.construct(entry_expression, own_unit, {}, {}, f"instance:{module}.{name}")
         if not isinstance(spec, Spec):
             raise AnalysisError("Entry construction is outside the supported static subset.")
-        forward = next((statement for statement in cls.body if isinstance(statement, ast.FunctionDef) and statement.name == "forward"), None)
-        if not forward:
-            raise AnalysisError("Entry needs a directly authored forward method in this initial static subset.")
+        method = self.corpus.entry_method(own_unit, cls)
+        if not method:
+            raise AnalysisError("Entry needs a safe local forward or __call__ method (possibly inherited).")
+        method_unit, forward = method
         # Root node is inserted by invoke; inputs are its children and can feed
         # deeply expanded calls while keeping one canonical tensor identity.
         root_id = f"call:{spec.identity}"
-        names = [item.arg for item in forward.args.args[1:]] + [item.arg for item in forward.args.kwonlyargs]
+        positional_names = [item.arg for item in [*forward.args.posonlyargs, *forward.args.args][1:]]
+        names = positional_names + [item.arg for item in forward.args.kwonlyargs]
         input_nodes = []
         args = []
+        keywords = {}
         for arg in names:
-            node = self.node(f"input:{module}.{name}:{arg}", arg, "Input", "input", None, own_unit, forward)
+            node = self.node(f"input:{module}.{name}:{arg}", arg, "Input", "input", None, method_unit, forward)
             input_nodes.append(node)
-            args.append(self.out(node, arg))
-        outputs = self.invoke(spec, args, {}, None, own_unit, cls, name)
+            if arg in positional_names: args.append(self.out(node, arg))
+            else: keywords[arg] = self.out(node, arg)
+        outputs = self.invoke(spec, args, keywords, None, own_unit, cls, name)
         root = next(node for node in self.nodes if node["id"] == root_id)
         for node in input_nodes:
             node["parentId"] = root_id
             root["children"].insert(0, node["id"])
         bindings = output_bindings(outputs)
         for index, (value, path) in enumerate(bindings):
-            node = self.node(f"output:{module}.{name}:{index}", "output" if len(bindings) == 1 else f"output {index + 1}", "Output", "output", root_id, own_unit, forward)
+            node = self.node(f"output:{module}.{name}:{index}", "output" if len(bindings) == 1 else f"output {index + 1}", "Output", "output", root_id, method_unit, forward)
             node["outputPath"] = path
             self.bind(value, node, "value")
         # Expose available branch syntax and local definitions independently
@@ -1304,14 +1525,36 @@ class Analyzer:
                 **({'sourceRelations':source_relations} if source_relations else {})}
 
 
-def analyze_project(root: str | Path, entry: str) -> dict[str, Any]:
+def load_project_corpus(root: str | Path) -> Corpus:
+    """Parse and retain the complete bounded selected project as source data."""
     root_path = Path(root).resolve()
     if not root_path.is_dir():
         raise AnalysisError("Project root is not a directory.")
+    corpus = Corpus(root_path)
+    try:
+        files = read_directory_files(root_path, max_files=MAX_FILES, max_bytes=MAX_BYTES)
+    except DiscoveryError as exc:
+        raise AnalysisError(str(exc)) from exc
+    # A source-preserving copy includes the complete selected Python corpus,
+    # including helpers imported inside methods or branches. Preloading parses
+    # source as data; it does not execute imports or enlarge the tensor subset.
+    for logical in sorted(files):
+        parts = Path(logical).with_suffix("").parts
+        own_module = ".".join(parts[:-1] if parts[-1] == "__init__" else parts)
+        if not own_module:
+            own_module = "__init__"
+        if own_module in corpus.units:
+            raise AnalysisError(f"Selected source files have an ambiguous Python module identity: {own_module}.")
+        raw = (root_path / logical).read_bytes()
+        corpus.add(own_module, logical, raw.decode("utf-8-sig"), raw)
+    return corpus
+
+
+def analyze_project(root: str | Path, entry: str) -> dict[str, Any]:
     module, separator, name = entry.partition(":")
     if not separator or not name.isidentifier() or any(not part.isidentifier() for part in module.split(".")):
         raise AnalysisError("Entry must have the form module:ModelClass.")
-    return Analyzer(Corpus(root_path)).analyze(module, name)
+    return Analyzer(load_project_corpus(root)).analyze(module, name)
 
 
 def analyze_source(source: str, entry: str, filename: str = "model.py", *, raw_bytes: bytes | None = None) -> dict[str, Any]:

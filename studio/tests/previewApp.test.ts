@@ -74,6 +74,7 @@ test('actual save freezes the synchronized preview revision and records a stable
     receivePreviewState: async () => { historyRef.current = { document: { ...historyRef.current.document, revision: 9 } }; },
     readyPreview: () => true,
     api: { save: async (...args: unknown[]) => { sent.push(args); return { revision: 4 }; } },
+    updateDocumentUrl: (id: string) => { assert.equal(id, 'doc'); },
     setBusy() {}, setNotice() {}, setFailure() {}, setStorageRevision() {}, setPreviewDirty() {}, setSavedVisualRevision: (value: number) => revisions.push(value) };
   await callback('save', env)();
   assert.equal(sent[0][0].revision, 9); assert.equal(sent[0][2].document.revision, 9);
@@ -126,6 +127,89 @@ test('actual unsupported catalog source retains read-only text and a safe displa
   await bind({}, false);
   assert.equal(historyRef.current.document.actual, source); assert.match(notices[0], /只读查看/);
   await assert.rejects(() => bind({}, true), /unsupported entry/);
+});
+
+test('additional preview inspection objects preserve a byte-matched formal document and managed ownership', async () => {
+  const architecture = { sourceDigest: 'source', irDigest: 'ir' }, original = { document: { id: 'formal', sourceBindingDigest: 'source', architecture, revision: 6 } };
+  const historyRef = { current: original }, source = { schema: 'summary-source-adapter/1', id: 'formal-case' }, projected: unknown[] = [];
+  const environment = {
+    previewSnapshot: { current: null }, synchronizePreviewNodeSelection() {}, setPreviewTool() {}, setPortEditing() {}, setGrid() {}, setPreviewBusy() {},
+    setPreviewDirty() {}, setPreviewUndo() {}, setPreviewRedo() {}, setPreviewVersion() {}, setSelection() {}, savedPreviewGraph: { current: null },
+    initialModelLoading: { current: false }, previewLoading: { current: false }, previewCase: { current: 'formal-case' }, previewSource: { current: source },
+    synchronizingPreview: { current: false }, historyRef, graphFromSnapshot: (snapshot: any) => snapshot.graph,
+    currentPreviewSourceMatches: (actual: unknown) => actual === architecture, currentPreviewNodeBindings: () => new Map(),
+    previewPanelDocument: () => { throw Error('inspection cannot revoke formal ownership'); },
+    setProjectId: () => { throw Error('inspection cannot detach its managed project'); },
+    projectPreviewHistory: (before: unknown) => { projected.push(before); return before; },
+  };
+  const receive = callback('receivePreviewState', environment) as unknown as (snapshot: unknown) => Promise<void>;
+  await receive({ caseId: 'formal-case', graph: { nodes: [{ id: 'formal-node' }, { id: 'opaque-inspection-only' }], edges: [] } });
+  assert.equal(historyRef.current, original); assert.deepEqual(projected, [original]);
+  environment.currentPreviewSourceMatches = () => false;
+  const rejectForeignSource = callback('receivePreviewState', environment) as unknown as (snapshot: unknown) => Promise<void>;
+  await rejectForeignSource({ caseId: 'formal-case', graph: { nodes: [], edges: [] } });
+  assert.deepEqual(projected, [original], 'a different source cannot borrow the formal generation');
+});
+
+test('inspection-only visual operations use preview IDs and ignore errors from a superseded source generation', async () => {
+  const sent: unknown[] = [], failures: string[] = [], loadSequence = { current: 3 };
+  let reject!: (reason: Error) => void;
+  const apply = callback('applyInspectionVisual', {
+    readyPreview: () => true, previewLayoutDisabled: false, loadSequence,
+    previewEngine: { current: { visual: (operations: unknown) => { sent.push(operations); return new Promise((_resolve, fail) => { reject = fail; }); } } },
+    setFailure: (message: string) => { failures.push(message); },
+  }) as unknown as (operations: unknown[]) => Promise<void>;
+  const operations = [{ type: 'alias', id: 'inspection-only', label: '检查部件' }, { type: 'expand', id: 'inspection-only', expanded: true }];
+  const pending = apply(operations); assert.deepEqual(sent, [operations]);
+  loadSequence.current++; reject(Error('old source failed')); await pending;
+  assert.deepEqual(failures, [], 'late visual failures cannot overwrite another model status');
+});
+
+test('formal selection excludes shared inspection evidence and retains its raw preview selection', () => {
+  const selected: unknown[] = [], raw: unknown[] = [];
+  const select = callback('receivePreviewSelection', {
+    previewCase: { current: 'case' }, synchronizePreviewNodeSelection: (value: unknown) => { raw.push(value); },
+    historyRef: { current: { document: { architecture: {} } } }, graphFromSnapshot: () => ({ nodes: [] }),
+    currentPreviewNodeBindings: () => new Map([['unique-display', 'unique-formal']]),
+    setSelection: (value: unknown) => { selected.push(value); }, setPanel() {},
+  }) as unknown as (message: unknown) => void;
+  select({ caseId: 'case', nodeIds: ['shared-display'] });
+  select({ caseId: 'case', nodeIds: ['unique-display'] });
+  assert.deepEqual(raw, [['shared-display'], ['unique-display']]);
+  assert.deepEqual(selected, [{ kind: 'node', ids: [] }, { kind: 'node', ids: ['unique-formal'] }]);
+});
+
+test('a delayed IndexedDB recovery cannot install its authoring workspace after the current model changes', async () => {
+  for (const changeGeneration of [false, true]) {
+    const frozen = { id: 'formal', sourceBindingDigest: 'source' }, historyRef = { current: { document: frozen } }, loadSequence = { current: 8 };
+    const generatedWorkspaces = { current: new Map() }, authoringSessions = { current: new Map() };
+    let finish!: (value: unknown) => void;
+    const open = callback('continueModelAuthoring', {
+      cancelGesture() {}, historyRef, busy: false, activeRecovery: null, loadSequence, sourceDraftKey: () => 'formal-key',
+      generatedWorkspaces, authoringSessions, readPersistentGeneratedWorkspace: () => new Promise(resolve => { finish = resolve; }),
+      setAuthoringOpen: () => { throw Error('stale cache opened an editor'); },
+    });
+    const pending = open();
+    if (changeGeneration) loadSequence.current++;
+    else historyRef.current = { document: { ...frozen } };
+    finish({ binding: { workspaceKey: 'old' }, workspace: {} }); await pending;
+    assert.equal(generatedWorkspaces.current.size, 0); assert.equal(authoringSessions.current.size, 0);
+  }
+});
+
+test('source panel opening reuses the existing exact formal binding instead of reparsing and discarding a generated document', async () => {
+  const source = { schema: 'summary-source-adapter/1' }, architecture = { sourceDigest: 'generated-source', irDigest: 'generated-ir' };
+  const original = { document: { id: 'generated-document', sourceBindingDigest: 'generated-source', architecture } }, historyRef = { current: original };
+  const previewBoundSource = { current: '' }, calls: string[] = [];
+  const bind = callback('bindPreviewSource', {
+    sourceFromResult: () => source, previewSource: { current: undefined }, previewSequence: { current: 0 }, previewCase: { current: 'case' },
+    previewSnapshot: { current: {} }, historyRef, previewBoundSource, setPreviewConnecting() {},
+    previewSourceMatchesArchitecture: (actualSource: unknown, actualArchitecture: unknown) => actualSource === source && actualArchitecture === architecture,
+    receivePreviewState: async () => { calls.push('sync'); }, continueModelAuthoring: async () => { calls.push('edit'); },
+    api: { previewEditSource: () => { throw Error('must retain exact generation'); } },
+  }) as unknown as (result: unknown, edit: boolean) => Promise<void>;
+  await bind({}, true);
+  assert.equal(historyRef.current, original); assert.equal(previewBoundSource.current, 'generated-source:generated-ir'); assert.deepEqual(calls, ['sync', 'edit']);
 });
 
 test('actual hierarchy expansion delegates one preview transaction without repeating the formal layout and ignores a stale rejection', async () => {

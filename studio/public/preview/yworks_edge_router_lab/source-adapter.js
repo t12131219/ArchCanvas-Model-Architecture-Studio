@@ -38,20 +38,28 @@
     return bundle;
   }
   const colors={group:'#e7f5fe',input:'#e3f3ef',output:'#e3f3ef',opaque:'#fff0d9',normalization:'#fff6bd',activation:'#c9f1cd',linear:'#dfdff8',convolution:'#dbeafa',literal:'#f2f3f5'};
-  const presentationVersion=2;
+  const presentationVersion=8;
   // Conservative glyph advances keep the obstacle close to the actual text;
   // reserving a 180/300 px box for every short caption falsely blocks ports.
   const textWidth=(s,size)=>Math.ceil([...s].reduce((sum,c)=>sum+size*(/[^\u0000-\u00ff]/.test(c)?1:.64),0))+8;
-  const titleOf=raw=>raw.label.length>29?raw.label.slice(0,28)+'…':raw.label;
-  const detailOf=(raw,bundle)=>raw.kind==='opaque'?'待解析 · 保留源码依赖':raw.instance?'实例 '+raw.instance.split('.').slice(-2).join('.'):'源码 L'+bundle.evidence[raw.source_evidence[0]].line;
-  function sources(bundle){validate(bundle);const ir=bundle.ir,by=new Map(ir.nodes.map(n=>[n.id,n])),children=id=>ir.nodes.filter(n=>n.parent===id);
-    function graph(folded){
-      const visible=ir.nodes.filter(n=>!folded||!n.parent||!by.get(n.parent)?.parent),shown=new Set(visible.map(n=>n.id));
+  function sources(bundle){validate(bundle);const ir=bundle.ir,by=new Map(ir.nodes.map(n=>[n.id,n])),childIndex=new Map(),depths=new Map(),incomingIndex=new Map();
+    // Validated rules contribute display aliases without rewriting canonical
+    // source objects (including cards reused from the built-in inspector).
+    const ruleLabels=new Map();for(const receipt of bundle.sourceRuleApplications||[])for(const [id,label] of Object.entries(receipt.labels||{}))if(by.has(id)&&typeof label==='string')ruleLabels.set(id,label);
+    const titleOf=raw=>{const label=ruleLabels.get(raw.id)||raw.label;return label.length>29?label.slice(0,28)+'…':label;};
+    const detailOf=(raw,bundle)=>ruleLabels.has(raw.id)?'规则适配 · 已验证源码关系':raw.sourceStructure?'源码结构 · 执行路径未选择':raw.sourceInspection?'可展开源码 · 执行路径待确定':raw.kind==='opaque'?'待解析 · 保留源码依赖':raw.instance?'实例 '+raw.instance.split('.').slice(-2).join('.'):'源码 L'+bundle.evidence[raw.source_evidence[0]].line;
+    for(const n of ir.nodes){const kids=childIndex.get(n.parent)||[];kids.push(n);childIndex.set(n.parent,kids);}
+    for(const e of ir.edges){const incoming=incomingIndex.get(e.target)||[];incoming.push(e);incomingIndex.set(e.target,incoming);}
+    const children=id=>childIndex.get(id)||[];
+    function depth(n){if(depths.has(n.id))return depths.get(n.id);const value=n.parent?depth(by.get(n.parent))+1:0;depths.set(n.id,value);return value;}
+    ir.nodes.forEach(depth);
+    function graph(limit=Infinity){
+      const visible=ir.nodes.filter(n=>depths.get(n.id)<=limit),shown=new Set(visible.map(n=>n.id));
       const representative=id=>{let n=by.get(id);while(n&&!shown.has(n.id))n=by.get(n.parent);return n?.id;};
       const projected=ir.edges.map(e=>({...e,source:representative(e.source),target:representative(e.target),raw:e})).filter(e=>e.source!==e.target);
       const nodes=[],positions=new Map(),sizing=new Map();
       function measure(raw){const kids=children(raw.id).filter(n=>shown.has(n.id));
-        const incoming=ir.edges.filter(e=>e.target===raw.id),binary=['add','multiply'].includes(raw.kind)&&incoming.length===2;
+        const incoming=incomingIndex.get(raw.id)||[],binary=['add','multiply'].includes(raw.kind)&&incoming.length===2;
         if(!kids.length){const group=children(raw.id).length>0,w=binary?32:group?270:230,h=binary?32:70;
           const captionW=Math.max(textWidth(titleOf(raw),12),textWidth(detailOf(raw,bundle).slice(0,30),10));
           const out={w,h,slotW:binary?Math.max(180,32+captionW+12):w,slotH:binary?44:h,kids:[],binary};sizing.set(raw.id,out);return out;}
@@ -59,7 +67,16 @@
         const owner=id=>{let n=by.get(id);while(n&&!kidIds.has(n.id)&&n.id!==raw.id)n=by.get(n.parent);return kidIds.has(n?.id)?n.id:null;};
         const deps=new Map(kids.map(n=>[n.id,new Set()]));for(const e of projected){const s=owner(e.source),t=owner(e.target);if(s&&t&&s!==t)deps.get(t).add(s);}
         const rank=new Map(),visiting=new Set();function level(id){if(rank.has(id))return rank.get(id);if(visiting.has(id))fail('数据依赖有环；需要不透明循环边界');visiting.add(id);const value=Math.max(-1,...[...deps.get(id)].map(level))+1;visiting.delete(id);rank.set(id,value);return value;}
-        kids.forEach(n=>level(n.id));const rows=[];for(const n of kids){const index=rank.get(n.id);(rows[index]||=([])).push(n);}
+        kids.forEach(n=>level(n.id));const ranks=[];for(const n of kids){const index=rank.get(n.id);(ranks[index]||=([])).push(n);}
+        // A syntax inspection can contain many independent statements. They
+        // share a dependency rank, not an obligation to occupy one unbounded
+        // horizontal strip. Wrap only within that rank; later dependency
+        // ranks still follow it, and no new data-flow edge is introduced.
+        const rows=[];
+        for(const rankKids of ranks){const limit=Math.max(1200,...rankKids.map(n=>sizing.get(n.id).slotW));let row=[],width=0;
+          for(const n of rankKids){const w=sizing.get(n.id).slotW,next=width+(row.length?56:0)+w;if(row.length&&next>limit){rows.push(row);row=[];width=0;}row.push(n);width+=(row.length>1?56:0)+w;}
+          if(row.length)rows.push(row);
+        }
         // Keep a caption-aware but compact band.  The old 252 px binary slot
         // and 86 px row gap reserved space for a right-hand title even when
         // the title was the only object in that band.  A binary glyph is only
@@ -67,19 +84,24 @@
         // below, so the layout should reserve a readable lane, not a full
         // rectangle around the caption on every side.
         const widths=rows.map(row=>row.reduce((v,n)=>v+sizing.get(n.id).slotW,0)+(row.length-1)*56),heights=rows.map(row=>Math.max(...row.map(n=>sizing.get(n.id).slotH)));
-        const w=Math.max(330,...widths)+72,h=84+heights.reduce((a,b)=>a+b,0)+(rows.length-1)*54+34;
-        const out={w,h,slotW:w,slotH:h,kids,rows,widths,heights};sizing.set(raw.id,out);return out;
+        const condition=raw.sourceStructure&&raw.sourceKind==='SourceConditional';
+        const w=Math.max(330,...widths)+72,h=84+heights.reduce((a,b)=>a+b,0)+(rows.length-1)*54+34+(condition?48:0);
+        const out={w,h,slotW:w,slotH:h,kids,rows,widths,heights,condition};sizing.set(raw.id,out);return out;
       }
       const rootNode=visible.find(n=>!n.parent);measure(rootNode);
       function place(raw,x,y){const m=sizing.get(raw.id),expanded=!!m.kids.length;
         const n={id:raw.id,label:raw.label,parent:raw.parent,semantic:clone(raw),x,y,w:m.w,h:m.h,base:[x,y],expanded,routingObstacle:!expanded,fill:colors[raw.kind]||'#eef1fa',labelObstacles:[]};
         const title=titleOf(raw),detail=detailOf(raw,bundle);
+        // Recursive fallback cards (including detailed-only imports) must
+        // retain a human caption rather than paint a potentially huge ID.
+        n.foldedPresentation={title,detail:detail.slice(0,38)};
         if(m.binary){const symbol=raw.kind==='add'?'+':'×',caption=title.slice(0,25),box={x:44,y:-6,w:180,h:44};
           n.glyphPresentation={schema:'source-glyph-presentation/1',kind:'binary-circle',operation:raw.kind,symbol,semantic_node:raw.id,silhouette:'circle',source_evidence:raw.source_evidence,authority:'Python AST binary expression or registered call; no runtime dtype claim'};
           n.labelObstacles=[box];n.html=`<circle cx="${x+16}" cy="${y+16}" r="16" fill="white" stroke="#263348" stroke-width="2"/><text x="${x+16}" y="${y+23}" text-anchor="middle" font-size="23" fill="#172336">${symbol}</text><text x="${x+44}" y="${y+9}" font-size="12" fill="#172336">${esc(caption)}</text><text x="${x+44}" y="${y+29}" font-size="10" fill="#526078">${esc(detail.slice(0,30))}</text>`;
         }else{n.html=`<rect x="${x}" y="${y}" width="${m.w}" height="${m.h}" rx="${expanded?16:9}" fill="${n.fill}" stroke="#263348" stroke-width="2"${raw.kind==='opaque'?' stroke-dasharray="6 4"':''}/><text x="${x+16}" y="${y+27}" font-size="15" font-weight="600" fill="#172336">${esc(title)}</text><text x="${x+16}" y="${y+49}" font-size="10" fill="#526078">${esc(detail.slice(0,38))}</text>`;
           if(expanded)n.labelObstacles=[{x:12,y:8,w:Math.min(m.w-24,Math.max(textWidth(title,15),textWidth(detail.slice(0,38),10))+4),h:48}];}
-        positions.set(n.id,n);nodes.push(n);let yy=y+76;
+        if(m.condition){n.sourceControlPresentation={schema:'source-condition-presentation/1',anchor:{x:80,y:80},obstacle:{x:72,y:72,w:16,h:16}};n.labelObstacles.push(clone(n.sourceControlPresentation.obstacle));}
+        positions.set(n.id,n);nodes.push(n);let yy=y+(m.condition?124:76);
         if(expanded)m.rows.forEach((row,i)=>{let xx=x+(m.w-m.widths[i])/2;for(const kid of row){const km=sizing.get(kid.id);place(kid,xx+(km.binary?(km.slotW-32)/2:0),yy);xx+=km.slotW+56;}yy+=m.heights[i]+54;});
       }
       place(rootNode,60,60);
@@ -170,16 +192,25 @@
         const ps=[a,{x:a.x,y:lane},{x:fixedTarget.side==='left'?b.x-24:b.x,y:lane},fixedTarget.side==='left'?{x:b.x-24,y:b.y}:b,b].filter((p,i,arr)=>!i||p.x!==arr[i-1].x||p.y!==arr[i-1].y);
         const binding={src:e.raw.source+':'+e.sourcePort,dst:e.raw.target+':'+e.targetPort,canonical_src:e.raw.source+':'+e.sourcePort,canonical_dst:e.raw.target+':'+e.targetPort,wire_identity:e.raw.wire,semantic_edges:[e.id],source_evidence:e.source_evidence,semantic_kind:e.role};
         const policy=(n,side)=>({mode:'perimeter',shape:n.glyphPresentation?'circle':'rectangle',spacing:12,gates:[],sharedStem:null,authority:'typed source dependency; display side is movable'});
-        return {id:e.id,source:e.source,target:e.target,role:e.role,binding,fixedSource,fixedTarget,portPolicy:{source:policy(s),target:policy(t)},route:ps,waypoints:[],style:'orthogonal',width:2.2,arrow:'target',dashed:e.role==='shape_dependency',draft:false,needsRecursiveRouting:true};
+        return {id:e.id,source:e.source,target:e.target,role:e.role,...(e.raw.syntaxOnly?{syntaxOnly:true}:{}),binding,fixedSource,fixedTarget,portPolicy:{source:policy(s),target:policy(t)},route:ps,waypoints:[],style:'orthogonal',width:2.2,arrow:'target',dashed:!!e.raw.syntaxOnly||e.role==='shape_dependency',draft:false,needsRecursiveRouting:true};
       });
-      const g={nodes,edges,canvas:[sizing.get(rootNode.id).w+180,Math.max(720,sizing.get(rootNode.id).h+180)],definitions:'',extras:'',attachments:[],junctionMarkers:[],routeLabels:[],sourceDraftOperations:[],caseId:bundle.id,viewKey:folded?'overview':'detailed',irSha256:bundle.irSha256,
+      const g={nodes,edges,canvas:[sizing.get(rootNode.id).w+180,Math.max(720,sizing.get(rootNode.id).h+180)],definitions:'',extras:'',attachments:[],junctionMarkers:[],routeLabels:[],sourceDraftOperations:[],caseId:bundle.id,viewKey:limit===1?'overview':Number.isFinite(limit)?'source-depth-'+limit:'detailed',irSha256:bundle.irSha256,
         sourceAdapter:{version:1,presentationVersion,entry:bundle.entry,sourceSha256:bundle.sourceSha256,irSha256:bundle.irSha256},sourceProfile:{analysis:'static source dependencies',modelExecuted:false,entry:bundle.entry,opaqueRegions:bundle.diagnostics.length,tensorShapes:'未推断'},
         sourceFacts:['源码经 Python AST 静态解析，未导入或执行模型。','箭头表示可证明的源码值依赖；不代表已验证的张量形状或运行轨迹。','相同 instance 标识保留源码中的模块复用；未知调用和动态控制流使用虚线边框。',...bundle.diagnostics.slice(0,12).map(d=>d.message)]};
       C.initialize(g);
       g.semanticBaseline={schema:'imported-source-baseline/1',irSha256:g.irSha256,nodes:Object.fromEntries(nodes.map(n=>[n.id,{parent:n.parent,semantic:clone(n.semantic),visualBinding:null,...(n.glyphPresentation?{glyphPresentation:clone(n.glyphPresentation),glyphMarkupHash:hash(n.html),labelObstacles:clone(n.labelObstacles)}:{})}])),edges:Object.fromEntries(edges.map(e=>[e.id,{source:e.source,target:e.target,binding:clone(e.binding),fixedSource:clone(e.fixedSource),fixedTarget:clone(e.fixedTarget),portPolicy:clone(e.portPolicy)}])),attachments:{},routeLabels:{},junctionMarkers:[]};
       return g;
     }
-    return {overview:graph(true),detailed:graph(false)};
+    // Every expandable source object needs a folded geometry receipt. With
+    // only root overview and full detail, a nested frame has no compact
+    // variant: the recursive editor correctly retains its smallest recorded
+    // width, which then reserves room for every hidden descendant. Bounded
+    // depth frontiers supply that missing receipt without changing the IR,
+    // source identities, or the existing recursive/layout engines.
+    const result={overview:graph(1),detailed:graph()};
+    const frontierDepths=[...new Set(ir.nodes.filter(n=>children(n.id).length&&depths.get(n.id)>1).map(n=>depths.get(n.id)))].sort((a,b)=>a-b);
+    for(const limit of frontierDepths)result['source-depth-'+limit]=graph(limit);
+    return result;
   }
   function hash(s){let h=2166136261;for(let i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619)>>>0;return h.toString(16).padStart(8,'0');}
   const api={validate,verify,sources};root.SummarySourceAdapter=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;

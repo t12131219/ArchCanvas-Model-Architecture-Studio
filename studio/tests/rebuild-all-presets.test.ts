@@ -1,8 +1,10 @@
-import test from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { addDraftNode, blankDraft, changeDraft, connectDraft, draftHistory, draftRoutes, parseDraftCache, removeDraftNode, travelDraft } from '../src/authoring.ts';
 import type { AuthoredDraft, DraftCatalog, DraftModule, DraftValue } from '../src/authoring.ts';
 import { draftPresets, insertDraftPreset } from '../src/authoringPresets.ts';
@@ -15,11 +17,12 @@ import type { CustomModuleDefinition } from '../src/customModules.ts';
 import type { GeneratedDraft, ImportedSourceDraft } from '../src/api.ts';
 
 const project = fileURLToPath(new URL('../../', import.meta.url));
-const evidence = `${project}docs/evidence/rebuild-all-presets-20261010`;
+const evidence = await mkdtemp(join(tmpdir(), 'archcanvas-rebuild-presets-'));
+after(() => rm(evidence, { recursive: true, force: true }));
 function backend(expression: string, value: unknown = null): Promise<any> {
   return new Promise((resolve, reject) => {
     const child = execFile(`${project}.venv/bin/python`, ['-I', '-S', '-B', '-c',
-      `import sys,json;sys.path.insert(0,sys.argv[1]+"/src");from pathlib import Path;from archcanvas_python import analyze_project;from archcanvas_authoring import generate_model,validate_draft,module_catalog;from archcanvas_authoring.source_import import import_editable_source_draft;from archcanvas_authoring.custom_modules import preview_custom_module;v=json.load(sys.stdin);${expression}`, project],
+      `import sys,json;sys.path.insert(0,sys.argv[1]+"/src");from pathlib import Path;from archcanvas_python import analyze_project;from archcanvas_authoring import generate_model,validate_draft,module_catalog;from archcanvas_authoring.source_import import import_editable_source_draft;from archcanvas_authoring.custom_modules import preview_custom_module;v=json.load(sys.stdin);${expression}`, project, evidence],
       { maxBuffer: 24_000_000 }, (error, stdout, stderr) => {
         if (error) reject(new Error(stderr || String(error))); else try { resolve(JSON.parse(stdout)); } catch (error) { reject(error); }
       });
@@ -54,7 +57,7 @@ function deleteOneByOne(original: AuthoredDraft) {
 }
 
 async function persist(draft: AuthoredDraft) {
-  return backend('from archcanvas_cli.drafts import DraftStore;s=DraftStore(Path(sys.argv[1])/"docs/evidence/rebuild-all-presets-20261010/saved-drafts");previous=s.get(v["id"]);s.put(v["id"],v,previous["revision"] if previous else 0);print(json.dumps(s.get(v["id"])))', draft);
+  return backend('from archcanvas_cli.drafts import DraftStore;s=DraftStore(Path(sys.argv[2])/"saved-drafts");previous=s.get(v["id"]);s.put(v["id"],v,previous["revision"] if previous else 0);print(json.dumps(s.get(v["id"])))', draft);
 }
 
 test('every advertised source example can be deleted to zero and rebuilt one module/edge at a time', async () => {

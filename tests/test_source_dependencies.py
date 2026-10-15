@@ -46,7 +46,7 @@ class SourceDependencyTests(unittest.TestCase):
   y=self.act(alias)
   return self.head(y+a)
 ''')
-        self.assertEqual(pairs(a), {('proj','act'), ('act','head'), ('proj','head')})
+        self.assertEqual(pairs(a), {('proj','act'), ('act','head'), ('proj','head'), ('proj','alias')})
 
     def test_mutually_exclusive_branches_do_not_get_chained(self):
         a = inspect('''  if x.enabled:
@@ -65,7 +65,7 @@ class SourceDependencyTests(unittest.TestCase):
    y=self.other(x)
   return self.head(y)
 ''')
-        self.assertEqual(pairs(a), {('other','head')})
+        self.assertEqual(pairs(a), {('other','head'), ('proj','return')})
 
     def test_tuple_swap_reads_all_old_values_before_writing(self):
         a = inspect('''  a=self.proj(x)
@@ -74,7 +74,7 @@ class SourceDependencyTests(unittest.TestCase):
   y=self.act(a)
   return self.head(b+y)
 ''')
-        self.assertEqual(pairs(a), {('other','act'), ('proj','head'), ('act','head')})
+        self.assertEqual(pairs(a), {('other','act'), ('proj','head'), ('act','head'), ('proj','a, b'), ('other','a, b')})
 
     def test_sequential_order_is_declared_but_modulelist_is_storage(self):
         a = inspect('  return self.head(self.seq(x))\n', '  self.seq=nn.Sequential(nn.Linear(4,4),nn.GELU())\n  self.unused=nn.ModuleList([nn.Linear(4,4),nn.GELU()])')
@@ -88,7 +88,7 @@ class SourceDependencyTests(unittest.TestCase):
   c=self.proj(b)
   return c+a
 ''')
-        self.assertEqual(pairs(a), {('other','proj')})
+        self.assertEqual(pairs(a), {('other','proj'), ('proj','return')})
         self.assertTrue(all(r['sourceId'] != r['targetId'] for r in a['sourceRelations']))
 
     def test_equal_sequential_constructor_occurrences_are_distinct_source_cards(self):

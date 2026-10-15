@@ -5,7 +5,7 @@ import type { AuthoredDraft } from './authoring.ts';
 export type PreviewSourceRequest = { files: Record<string, string>; entry: string; config: Record<string, unknown> };
 export type PreviewSourceLocation = { path: string; line: number; endLine: number; expression?: string; column?: number; endColumn?: number };
 export type PreviewEvidence = { file: string; line: number; endLine: number; expression: string; column?: number; endColumn?: number };
-export type PreviewSourceNode = { id: string; kind?: string; label?: string; instance?: string; moduleType?: string; expression?: string; source_evidence?: string[] };
+export type PreviewSourceNode = { id: string; kind?: string; label?: string; instance?: string; moduleType?: string; expression?: string; source_evidence?: string[]; sourceStructure?: boolean };
 export type PreviewSourceBundle = {
   schema: 'summary-source-adapter/1'; id: string; entry: string; sourceSha256: string; irSha256: string;
   files: { path: string; text: string; sha256: string }[]; config?: Record<string, unknown>;
@@ -207,15 +207,31 @@ export function documentPreviewIdentity(document: CanvasDocument): PreviewSource
 export type PreviewVisualNode = PreviewSourceNode & { parent?: string | null; x: number; y: number; w?: number; h?: number; fill?: string; expanded?: boolean; junction?: boolean; semantic?: PreviewSourceNode };
 export type PreviewVisualGraph = { nodes: PreviewVisualNode[] };
 
+/** A reviewed aggregate may share evidence with another display object. Only
+ * globally one-to-one identities can carry formal presentation or selection. */
+export function previewUniqueNodeBindings(architecture: Architecture, graph: PreviewVisualGraph, source?: PreviewEvidenceSource): Map<string, string> {
+  const detail = (graph as PreviewVisualGraph & { recursive?: { authority?: { detail?: PreviewVisualGraph } } }).recursive?.authority?.detail;
+  const byCanonical = new Map<string, string[]>();
+  const singleton = new Set<string>();
+  for (const node of new Map((detail?.nodes ?? graph.nodes).map(node => [node.id, node])).values()) {
+    if (node.junction) continue;
+    const ids = previewSelectionNodeIds(architecture, { nodeId: node.id, node }, source);
+    if (ids.length === 1) singleton.add(node.id);
+    for (const id of ids) byCanonical.set(id, [...(byCanonical.get(id) ?? []), node.id]);
+  }
+  return new Map([...byCanonical].filter(([, ids]) => ids.length === 1 && singleton.has(ids[0])).map(([canonical, ids]) => [ids[0], canonical]));
+}
+
 /** Carry visible arrangement and expansion into the model editor without borrowing preview HTML or topology. */
-export function previewCanvasOperations(document: CanvasDocument, graph: PreviewVisualGraph, source?: PreviewEvidenceSource): VisualOperation[] {
+export function previewCanvasOperations(document: CanvasDocument, graph: PreviewVisualGraph, source?: PreviewEvidenceSource,
+  bindings = previewUniqueNodeBindings(document.architecture, graph, source)): VisualOperation[] {
   const architecture = document.architecture, canonical = new Map(architecture.nodes.map(node => [node.id, node]));
   const mapped = new Map<string, string>(), positioned = new Map<string, PreviewVisualNode>();
   for (const node of graph.nodes) {
     if (!Number.isFinite(node.x) || !Number.isFinite(node.y) || Math.abs(node.x) > 1_000_000 || Math.abs(node.y) > 1_000_000) continue;
-    const ids = canonical.has(node.id) ? [node.id] : previewSelectionNodeIds(architecture, { nodeId: node.id, node }, source);
-    if (ids.length !== 1 || positioned.has(ids[0])) continue;
-    mapped.set(node.id, ids[0]); positioned.set(ids[0], node);
+    const id = bindings.get(node.id);
+    if (!id || positioned.has(id)) continue;
+    mapped.set(node.id, id); positioned.set(id, node);
   }
   const operations: VisualOperation[] = [];
   for (const [id, node] of positioned) {
@@ -254,11 +270,11 @@ export function previewNodeLayoutOperation(document: CanvasDocument, operation: 
 /** Replay only known containers; saved coordinates need a separate preview-layout provenance. */
 export function previewExpansionOperations(document: CanvasDocument, graph: PreviewVisualGraph, source?: PreviewEvidenceSource): Extract<VisualOperation, { type: 'expand' }>[] {
   const expanded = new Set(document.expandedIds), result: Extract<VisualOperation, { type: 'expand' }>[] = [];
-  const mapped = new Set<string>();
+  const bindings = previewUniqueNodeBindings(document.architecture, graph, source);
   for (const node of graph.nodes) {
-    const ids = previewSelectionNodeIds(document.architecture, { nodeId: node.id, node }, source);
-    if (ids.length !== 1 || mapped.has(ids[0]) || !document.architecture.nodes.find(target => target.id === ids[0])?.children.length) continue;
-    mapped.add(ids[0]); result.push({ type: 'expand', id: node.id, expanded: expanded.has(ids[0]) });
+    const id = bindings.get(node.id);
+    if (!id || !document.architecture.nodes.find(target => target.id === id)?.children.length) continue;
+    result.push({ type: 'expand', id: node.id, expanded: expanded.has(id) });
   }
   return result;
 }

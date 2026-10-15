@@ -12,7 +12,7 @@ import copy
 from pathlib import Path
 from typing import Any
 
-from .frontend import Corpus, UNKNOWN, analyze_project, literal
+from .frontend import Corpus, UNKNOWN, analyze_project, literal, load_project_corpus
 
 PRESERVING = {"Identity", "Dropout", "ReLU", "GELU"}
 REBINDSCOPE = {
@@ -121,7 +121,7 @@ def inspect_rebind(root: str | Path, entry: str, node_id: str, architecture: dic
     if len(roots) != 1 or target.get("parentId") != roots[0]["id"]:
         return reject("Only calls directly inside the entry-root forward are supported; shared or nested authored scopes require an impact rule.")
     model = roots[0]
-    corpus = Corpus(Path(root))
+    corpus = load_project_corpus(root)
     module, _, classname = entry.partition(":")
     corpus.load(module)
     definition = corpus.definition(f"{module}.{classname}")

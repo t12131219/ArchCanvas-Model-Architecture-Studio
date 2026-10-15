@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { buildScene, renderSvg } from '../src/core/index.ts';
+import { buildScene, renderSvg, createDocument, createHistory } from '../src/core/index.ts';
 import { sourceNodeFacts } from '../src/core/nodeFacts.ts';
-import { isPreviewPanelDocument, previewMappingCoverage, previewNeedsPanelDocument, previewPanelDocument } from '../src/previewPanelDocument.ts';
-import { previewSelectionNodeIds } from '../src/previewInterop.ts';
+import { isPreviewPanelDocument, previewMappingCoverage, previewNeedsPanelDocument, previewPanelDocument, projectPreviewHistory } from '../src/previewPanelDocument.ts';
+import { previewSelectionNodeIds, previewUniqueNodeBindings, previewCanvasOperations, previewExpansionOperations } from '../src/previewInterop.ts';
 import { previewDocumentSyncOperations } from '../src/previewPresentation.ts';
 import type { RawPreviewSource } from '../src/previewInterop.ts';
 import type { PreviewSnapshot } from '../src/PreviewStudio.tsx';
@@ -111,4 +111,19 @@ test('mapping coverage treats reviewed aggregates sharing one formal source obje
   const coverage = previewMappingCoverage({ graph }, formal, source);
   assert.equal(coverage.total, 2); assert.equal(coverage.mapped, 0); assert.deepEqual(coverage.shared, ['reviewed-first', 'reviewed-second']);
   assert.equal(previewNeedsPanelDocument({ graph }, formal, source), true);
+  const document = createDocument(formal);
+  document.displayAliases['formal-call'] = '正式部件名'; document.nodeStyleOverrides['formal-call'] = { fill: '#112233' };
+  document.pinnedObjects = ['formal-call'];
+  const visual = { ...graph, studioPresentation: { nodes: {
+    'reviewed-first': { alias: '第一展示名', fill: '#334455' }, 'reviewed-second': { alias: '第二展示名', fill: '#556677' },
+  } } };
+  assert.equal(previewUniqueNodeBindings(formal, visual, source).size, 0);
+  assert.deepEqual(previewCanvasOperations(document, visual, source), []);
+  assert.deepEqual(previewExpansionOperations(document, visual, source), []);
+  const synchronized = previewDocumentSyncOperations(undefined, document, visual, source);
+  assert.deepEqual(synchronized.flatMap(operation => Object.keys((operation.nodes ?? {}) as Record<string, unknown>)), [], 'formal presentation never chooses the first shared display object');
+  const after = projectPreviewHistory(createHistory(document), visual, source).document;
+  assert.deepEqual(after.layout, document.layout); assert.deepEqual(after.architecture, formal);
+  assert.deepEqual(after.displayAliases, document.displayAliases); assert.deepEqual(after.nodeStyleOverrides, document.nodeStyleOverrides);
+  assert.deepEqual(after.pinnedObjects, document.pinnedObjects, 'inspection painting cannot overwrite a formal object through shared evidence');
 });
