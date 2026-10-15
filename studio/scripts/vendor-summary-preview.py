@@ -83,11 +83,11 @@ def source_index(source: Path, catalog: dict) -> dict:
     return {'schema': 'archcanvas-preview-catalog-sources/1', 'cases': result}
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--target', type=Path, required=True)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     source, target = args.source.resolve(), args.target.resolve()
     if not (source / 'data/catalog.json').is_file():
         parser.error('source is not a Summary Merge distribution')
@@ -123,22 +123,35 @@ def main() -> None:
         if name == 'organize-preview-sources':
             module.organize(target, source_index(source, catalog))
         else:
-            report, outputs = module.build_plan(target)
-            for relative, data in outputs.items():
-                destination = target / relative
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                destination.write_bytes(data)
-            (target / 'data/notebook-conversions.json').write_bytes(module.ledger_bytes(report))
+            report = module.migrate(target)
+    converted = {record['notebook']: record for record in report['notebooks']}
+    converted_sources = []
+    retained = []
+    for record in copied:
+        if Path(record['path']).suffix.lower() != '.ipynb':
+            retained.append(record)
+            continue
+        conversion = converted[record['path']]
+        converted_sources.append({**record, 'removed': True,
+                                  'replacement': conversion['canonical_python'],
+                                  'replacement_sha256': conversion['python_sha256'],
+                                  'conversion_id': conversion['conversion_id']})
+    copied = retained
     manifest = {'schema': 'archcanvas-preview-vendor/1',
                 'source': 'prototype/Summary_Merge',
                 'reason': 'User requested full preview replacement; assets vendored independently for portable builds.',
                 'catalog': catalog['counts'], 'files': copied,
                 'totalBytes': sum(p['bytes'] for p in copied),
+                'convertedSources': converted_sources,
+                'sourceNotebookPolicy': 'Static Python conversion with provenance; Notebook originals are removed before publishing.',
                 'excluded': sorted(EXCLUDED) + ['*.pyc', '*.pid'],
                 'customized': sorted(CUSTOMIZED),
                 'integration': ['yworks_edge_router_lab/studio-bridge.js', 'yworks_edge_router_lab/studio-presentation.js', 'yworks_edge_router_lab/studio-embed.css', 'yworks_edge_router_lab/frontier-task.js'],
                 'sourceAssets': ['data/catalog-sources.json', 'data/source-packages.json', 'data/notebook-conversions.json', 'sources/']}
     (target / 'vendor-manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
+    # Refresh customized integration receipts after every copied asset,
+    # descriptor and vendor provenance manifest has reached published bytes.
+    module.refresh_integration_manifest(target)
     print(json.dumps({'files': len(copied), 'bytes': manifest['totalBytes'],
                       'cases': catalog['counts'], 'target': str(target)}, ensure_ascii=False))
 

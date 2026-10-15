@@ -7,13 +7,15 @@
 | 位置 | 内容 |
 | --- | --- |
 | `sources/packages/<案例名>_<摘要>/` | 案例实际绑定的多文件 Python 包、许可证；相同内容供当前/历史案例共享 |
-| `sources/notebooks/` | 全部 Notebook 的合法 Python 路径转换版 |
+| `sources/notebooks/` | 历史 Notebook 的纯 Python 转换版，目录内只有 `.py` |
 | `data/catalog-sources.json` | 每个案例的入口、Python 资源、原始路径别名、证据和许可证 |
 | `data/source-packages.json` | 110 个源码包、142 个 Python 文件及来源台账 |
 | `data/notebook-conversions.json` | 112 份 Notebook、28 种内容、29 个 Python 资产及完整 cell/行映射 |
-| `snapshots/` | 原始来源、Notebook、图、许可证和历史证据，继续保留用于追溯 |
+| `snapshots/` | Python 来源、图、许可证和历史证据；Notebook 原件已移除 |
 
 源码整理不需要访问原型目录，也不 import、实例化或执行模型。112 份 Notebook 都有与代码单元逐字一致的既有 Python 转换；本次验证转换后将精确字节集中发布。Notebook magic 作为注释保留。案例目录、文件名中的连字符及版本号点改为合法 Python 标识符；多文件包移除共同的仓库目录前缀，使 `layers.*` 等本地导入可被静态解析。入口和源码位置同步转换，正文及证据行号不变，`originalPath` / `originalAsset` 保留原名称。
+
+2026-10-15 清理了正式项目中的全部 224 份 `.ipynb`（112 份来源及 112 份构建副本）。112 条转换记录对应 28 种 Notebook 内容、29 个 Python 资产；原始 SHA256、代码单元到 Python 行号的映射继续保存在转换台账中，`notebook_retained` 为 `false`。历史证据中的 `.ipynb` 路径和上游 URL 是来源身份，不再表示本地文件可用。日常入口统一为 `sources/packages/` 和 `sources/notebooks/`，无需 Jupyter。
 
 盘点确认原型 `snapshots` 的 5731 个文件在正式工程中均已存在，报错并非普遍漏拷贝。此前 223 个有源码案例的 304 个 Python 资源引用都能读取；这次补入同一源码快照中原已保存、但未进案例索引的 MobileNetV3 `utils.py`，最终为 306 个引用、142 个去重资源。没有网络下载或替换成不同版本的依赖。
 
@@ -37,7 +39,9 @@ PYTHONPATH=src python3 -B studio/scripts/check-preview-sources.py
 node --experimental-strip-types studio/scripts/check-preview-source-mapping.ts
 ```
 
-开发用 `vendor-summary-preview.py` 在刷新原型材料后也会执行两项整理，正式启动不执行这些脚本。
+转换命令会先校验 Python 和台账，再移除 Notebook 原件；重复运行不改变已有结果，新增 Notebook 会增量合并。旧参数 `--remove-notebooks` 继续兼容。开发用 `vendor-summary-preview.py` 在刷新原型材料后也会执行两项整理并移除 Notebook，正式启动不执行这些脚本。
+
+本次清理验证见 [Python 源码迁移记录](evidence/python-source-migration-20261015/README.md)，包括全项目盘点、转换回归测试、来源完整性、构建及 HTTP 资源校验。下列 2026-10-14 记录保留为当时状态的历史证据。
 
 本次静态结果见 [source-availability.json](evidence/preview-sources-20261014/source-availability.json)：230 个案例索引，223 个有源码，全部资源 SHA256、AST、入口符号和预算检查通过；112 份 Notebook 共验证 27674 个原始单元行映射。图与正式源码节点的实际映射覆盖、完整展示投影覆盖见 [source-mapping.json](evidence/preview-sources-20261014/source-mapping.json)。这不证明任意 Python 实现、动态控制流或训练执行均受支持。
 

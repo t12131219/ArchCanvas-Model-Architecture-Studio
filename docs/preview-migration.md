@@ -22,7 +22,7 @@ PYTHONPATH=src .venv/bin/python -B -m archcanvas_cli serve --host 127.0.0.1 --po
 | --- | --- |
 | `studio/public/preview/yworks_edge_router_lab` | 递归前端、Worker、路由、交互及同源 Studio 桥 |
 | `studio/public/preview/data` | 案例目录和源码索引 |
-| `studio/public/preview/sources` | 规范命名的预设 Python 源码包和全量 Notebook 转换版，见 [源码整理](preview-sources.md) |
+| `studio/public/preview/sources` | 规范命名的预设 Python 源码包和全量历史 Notebook 的 `.py` 转换版，原件已移除，见 [源码整理](preview-sources.md) |
 | `studio/public/preview/snapshots`、`verification` | 原始模型材料、离线资源及原型历史证据 |
 | `src/archcanvas_preview` | 有界 AST 解析器及随 Python 包分发的 registry |
 | `studio/src/previewInterop.ts` | 正式编辑与预览之间的源码身份、证据和视觉映射 |

@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 
 SCRIPT = Path(__file__).resolve().parents[1] / "studio/scripts/convert-preview-notebooks.py"
 SPEC = importlib.util.spec_from_file_location("preview_notebooks", SCRIPT)
@@ -20,6 +21,23 @@ def notebook(*cells: str) -> bytes:
 
 
 class PreviewNotebookConversionTests(unittest.TestCase):
+    def removed_ledger(self, root: Path, original: str, original_bytes: bytes):
+        canonical = root / "sources/notebooks/model.py"
+        canonical.parent.mkdir(parents=True, exist_ok=True)
+        canonical.write_bytes(b"answer = 42\n")
+        digest = converter.sha256(canonical.read_bytes())
+        report = {"schema": converter.SCHEMA, "notebook_count": 1, "unique_notebook_count": 1,
+                  "python_asset_count": 1, "notebooks": [{"notebook": original,
+                  "notebook_sha256": converter.sha256(original_bytes),
+                  "canonical_python": "sources/notebooks/model.py", "python_sha256": digest,
+                  "conversion_id": "forged", "notebook_retained": False}],
+                  "conversions": {"forged": {"canonical_python": "sources/notebooks/model.py",
+                                             "python_sha256": digest, "line_map": []}}}
+        ledger = root / "data/notebook-conversions.json"
+        ledger.parent.mkdir(parents=True)
+        ledger.write_bytes(converter.ledger_bytes(report))
+        return report
+
     def test_existing_evidence_lines_and_bytes_are_preserved(self):
         raw = notebook("value = 3\n", "class Model:\n    def forward(self, x):\n        return x + value\n")
         expected, expected_map, _ = converter.extract(json.loads(raw))
@@ -124,13 +142,14 @@ class PreviewNotebookConversionTests(unittest.TestCase):
             target.parent.mkdir(parents=True)
             target.write_bytes(notebook("answer = 42\n"))
             self.assertEqual(converter.main(["--preview-root", str(root)]), 0)
+            self.assertFalse(target.exists())
             self.assertEqual(converter.main(["--preview-root", str(root), "--check"]), 0)
             asset = root / "sources/notebooks/model.py"
             asset.write_text("answer = 43\n")
             self.assertEqual(converter.main(["--preview-root", str(root), "--check"]), 1)
             self.assertEqual(asset.read_text(), "answer = 43\n")
 
-    def test_optional_removal_preserves_provenance_and_can_be_checked(self):
+    def test_compatible_removal_flag_preserves_provenance_and_can_be_checked(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             target = root / "snapshots/sources/model.ipynb"
@@ -142,6 +161,184 @@ class PreviewNotebookConversionTests(unittest.TestCase):
             report = json.loads((root / "data/notebook-conversions.json").read_text())
             self.assertEqual(report["notebooks"][0]["notebook"], "snapshots/sources/model.ipynb")
             self.assertFalse(report["notebooks"][0]["notebook_retained"])
+
+    def test_new_notebooks_after_completed_removal_extend_the_same_ledger(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = root / "snapshots/sources/first.ipynb"
+            first.parent.mkdir(parents=True)
+            first.write_bytes(notebook("answer = 41\n"))
+            converter.migrate(root)
+            ledger = root / "data/notebook-conversions.json"
+            old = json.loads(ledger.read_bytes())
+            second = first.with_name("second.IPYNB")
+            second.write_bytes(notebook("answer = 42\n"))
+            before = second.read_bytes()
+            self.assertEqual(converter.main(["--preview-root", str(root), "--check"]), 1)
+            self.assertEqual(second.read_bytes(), before)
+            self.assertEqual(converter.main(["--preview-root", str(root)]), 0)
+            self.assertFalse(second.exists())
+            final = json.loads(ledger.read_bytes())
+            self.assertEqual(final["notebook_count"], 2)
+            self.assertEqual(final["notebooks"][0], old["notebooks"][0])
+            self.assertEqual(final["conversions"][old["notebooks"][0]["conversion_id"]],
+                             old["conversions"][old["notebooks"][0]["conversion_id"]])
+            self.assertEqual(converter.main(["--preview-root", str(root), "--check"]), 0)
+            stable = ledger.read_bytes()
+            converter.migrate(root)
+            self.assertEqual(ledger.read_bytes(), stable)
+
+    def test_refresh_reintroduced_notebook_preserves_canonical_url_and_provenance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "snapshots/sources/model.ipynb"
+            target.parent.mkdir(parents=True)
+            raw = notebook("answer = 42\n")
+            target.write_bytes(raw)
+            converter.migrate(root)
+            ledger = root / "data/notebook-conversions.json"
+            expected = ledger.read_bytes()
+            target.write_bytes(raw)
+            converter.migrate(root)
+            self.assertEqual(ledger.read_bytes(), expected)
+            self.assertFalse(target.exists())
+
+    def test_failure_to_convert_any_input_retains_every_notebook(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = root / "snapshots/sources/a.ipynb"
+            first.parent.mkdir(parents=True)
+            first.write_bytes(notebook("answer = 42\n"))
+            invalid = first.with_name("z.ipynb")
+            invalid.write_bytes(b"invalid notebook JSON")
+            with self.assertRaises(ValueError):
+                converter.migrate(root)
+            self.assertTrue(first.exists())
+            self.assertTrue(invalid.exists())
+            self.assertFalse((root / "data/notebook-conversions.json").exists())
+
+    def test_new_logical_collision_cannot_overwrite_a_previously_published_asset(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = root / "snapshots/active/sources/model.ipynb"
+            first.parent.mkdir(parents=True)
+            first.write_bytes(notebook("answer = 41\n"))
+            old = converter.migrate(root)
+            canonical = old["notebooks"][0]["canonical_python"]
+            old_data = (root / canonical).read_bytes()
+            second = root / "snapshots/history/sources/model.ipynb"
+            second.parent.mkdir(parents=True)
+            second.write_bytes(notebook("answer = 42\n"))
+            report = converter.migrate(root)
+            self.assertEqual((root / canonical).read_bytes(), old_data)
+            self.assertEqual(len({record["canonical_python"] for record in report["notebooks"]}), 2)
+            self.assertFalse(converter.check_removed_records(root, report))
+
+    def test_failed_python_publication_never_removes_notebook_inputs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "snapshots/sources/model.ipynb"
+            target.parent.mkdir(parents=True)
+            raw = notebook("answer = 42\n")
+            target.write_bytes(raw)
+            original_write = Path.write_bytes
+            def fail_python(path, data):
+                if path.suffix == ".py":
+                    raise OSError("simulated publication failure")
+                return original_write(path, data)
+            with mock.patch.object(Path, "write_bytes", fail_python):
+                with self.assertRaisesRegex(OSError, "simulated publication failure"):
+                    converter.migrate(root)
+            self.assertEqual(target.read_bytes(), raw)
+            self.assertFalse((root / "data/notebook-conversions.json").exists())
+
+    def test_forged_ledger_cannot_delete_non_notebook_snapshot_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            victim = root / "snapshots/keep.py"
+            victim.parent.mkdir(parents=True)
+            raw = b"important = True\n"
+            victim.write_bytes(raw)
+            report = self.removed_ledger(root, "snapshots/keep.py", raw)
+            ledger_bytes = (root / "data/notebook-conversions.json").read_bytes()
+            for operation in (lambda: converter.build_plan(root, previous_report=report),
+                              lambda: converter.check_removed_records(root, report),
+                              lambda: converter.migrate(root)):
+                with self.assertRaisesRegex(ValueError, "snapshots/.*ipynb"):
+                    operation()
+            self.assertEqual(victim.read_bytes(), raw)
+            self.assertEqual((root / "data/notebook-conversions.json").read_bytes(), ledger_bytes)
+
+    def test_forged_ledger_cannot_delete_notebook_outside_snapshots(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "snapshots").mkdir()
+            victim = root / "sources/keep.ipynb"
+            victim.parent.mkdir()
+            raw = notebook("important = True\n")
+            victim.write_bytes(raw)
+            report = self.removed_ledger(root, "sources/keep.ipynb", raw)
+            for operation in (lambda: converter.build_plan(root, previous_report=report),
+                              lambda: converter.check_removed_records(root, report),
+                              lambda: converter.migrate(root)):
+                with self.assertRaisesRegex(ValueError, "snapshots/.*ipynb"):
+                    operation()
+            self.assertEqual(victim.read_bytes(), raw)
+
+    def test_notebook_symlinks_are_neither_converted_nor_deleted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            victim = root / "snapshots/source.bin"
+            victim.parent.mkdir(parents=True)
+            raw = notebook("important = True\n")
+            victim.write_bytes(raw)
+            link = victim.with_name("linked.IPYNB")
+            link.symlink_to(victim)
+            with self.assertRaisesRegex(ValueError, "symlink"):
+                converter.build_plan(root)
+            report = self.removed_ledger(root, "snapshots/linked.IPYNB", raw)
+            for operation in (lambda: converter.check_removed_records(root, report),
+                              lambda: converter.migrate(root)):
+                with self.assertRaisesRegex(ValueError, "symlink"):
+                    operation()
+            self.assertTrue(link.is_symlink())
+            self.assertEqual(victim.read_bytes(), raw)
+
+    def test_ledger_cannot_delete_through_a_symlink_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            victim = root / "retained/source.ipynb"
+            victim.parent.mkdir()
+            raw = notebook("important = True\n")
+            victim.write_bytes(raw)
+            (root / "snapshots").mkdir()
+            link = root / "snapshots/alias"
+            link.symlink_to(victim.parent, target_is_directory=True)
+            report = self.removed_ledger(root, "snapshots/alias/source.ipynb", raw)
+            for operation in (lambda: converter.check_removed_records(root, report),
+                              lambda: converter.migrate(root)):
+                with self.assertRaisesRegex(ValueError, "symlink"):
+                    operation()
+            self.assertTrue(link.is_symlink())
+            self.assertEqual(victim.read_bytes(), raw)
+
+    def test_migration_refreshes_only_its_existing_integration_receipt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            original = root / "snapshots/model.ipynb"
+            original.parent.mkdir()
+            original.write_bytes(notebook("answer = 42\n"))
+            unrelated = {"path": "app.js", "bytes": 123, "sha256": "unchanged-receipt"}
+            manifest = root / "integration-manifest.json"
+            manifest.write_text(json.dumps({"schema": "existing-integration/1", "files": [
+                {"path": "data/notebook-conversions.json", "bytes": 0, "sha256": "old-receipt"}, unrelated]}))
+            converter.migrate(root)
+            records = json.loads(manifest.read_bytes())["files"]
+            data = (root / "data/notebook-conversions.json").read_bytes()
+            self.assertEqual(records[0]["bytes"], len(data))
+            self.assertEqual(records[0]["sha256"], converter.sha256(data))
+            self.assertEqual(records[1], unrelated)
+            self.assertFalse(original.exists())
 
 
 if __name__ == "__main__":

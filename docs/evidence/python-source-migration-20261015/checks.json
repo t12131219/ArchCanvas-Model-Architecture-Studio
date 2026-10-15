@@ -1,0 +1,61 @@
+{
+  "schema": "archcanvas-python-source-migration-checks/1",
+  "ok": true,
+  "pythonTests": {
+    "schema": "archcanvas-python-migration-tests/1",
+    "tests": 26,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "ok": true,
+    "log": "python-tests.log"
+  },
+  "frontend": {
+    "command": "node --experimental-strip-types --test --test-isolation=none tests/previewSourceControls.test.ts tests/previewSourceValidationContext.test.ts tests/previewPanelDocument.test.ts",
+    "cwd": "studio",
+    "passed": 18,
+    "failed": 0,
+    "skipped": 0,
+    "ok": true
+  },
+  "build": {
+    "command": "npm run build",
+    "cwd": "studio",
+    "typecheck": "passed",
+    "vite": "passed",
+    "bundle": "index-BrM_1Yhw.js",
+    "warning": "Existing main bundle exceeds the 500 kB chunk warning threshold",
+    "ok": true
+  },
+  "conversionCheck": {
+    "command": "python3 -B studio/scripts/convert-preview-notebooks.py --check",
+    "ok": true,
+    "records": 112,
+    "pythonAssets": 29
+  },
+  "catalogCheck": {
+    "report": "source-availability.json",
+    "ok": true,
+    "cases": 230,
+    "availableCases": 223,
+    "sourceReferences": 306,
+    "uniqueSourceAssets": 142
+  },
+  "http": {
+    "report": "http-source-assets.json",
+    "ok": true,
+    "resources": 514
+  },
+  "sourceIntegrity": {
+    "report": "public-integrity.json",
+    "ok": true
+  },
+  "wholeProjectScan": {
+    "report": "inventory-after.json",
+    "ok": true
+  },
+  "diffCheck": {
+    "command": "git diff --check",
+    "ok": true
+  }
+}
