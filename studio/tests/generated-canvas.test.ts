@@ -5,18 +5,20 @@ import { execFile } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
 import ts from 'typescript';
 import { createGeneratedCanvas } from '../src/generatedCanvas.ts';
-import { buildScene, createDocument, createHistory, renderSvg } from '../src/core/index.ts';
+import { applyVisualBatch, buildScene, createDocument, createHistory, renderSvg } from '../src/core/index.ts';
 import type { Architecture, ArchitectureNode, CanvasDocument } from '../src/core/types.ts';
 import { blankDraft, changeDraft, draftHistory, travelDraft } from '../src/authoring.ts';
 import type { AuthoredDraft } from '../src/authoring.ts';
 import type { GeneratedDraft, ImportedSourceDraft } from '../src/api.ts';
 import { ApiError } from '../src/api.ts';
 import { sourceAuthoringKey } from '../src/sourceAuthoringSession.ts';
-import { readGeneratedWorkspace, writeGeneratedWorkspace, readPersistentGeneratedWorkspace, writePersistentGeneratedWorkspace } from '../src/generatedWorkspace.ts';
+import { generatedSourceView, resumeGeneratedWorkspace, readGeneratedWorkspace, writeGeneratedWorkspace, readPersistentGeneratedWorkspace, writePersistentGeneratedWorkspace } from '../src/generatedWorkspace.ts';
 import type { GeneratedWorkspaceBinding } from '../src/generatedWorkspace.ts';
 import { sameGeneratedDraft } from '../src/generatedWorkspace.ts';
+import { architecturePreviewRequest, previewExpansionOperations, previewSelectionNodeIds, previewUniqueNodeBindings } from '../src/previewInterop.ts';
 
 const project = fileURLToPath(new URL('../../', import.meta.url));
 const run = promisify(execFile);
@@ -166,6 +168,160 @@ test('a real backend generated model reopens with edited draft positions and lab
     assert.deepEqual({ x: actual.x, y: actual.y, label: actual.label }, { ...node.position, label: node.label });
   }
   assert.deepEqual(new Set(scene.edges.flatMap(edge => edge.canonicalEdgeIds)), new Set(generated.architecture.edges.filter((edge: { id: string }) => !scene.hiddenEdges.includes(edge.id)).map((edge: { id: string }) => edge.id)));
+});
+
+test('new source operations reveal every return occurrence and reflow their truthful hierarchy while retaining the source draft', async () => {
+  const architecture = await sourceBackend('from archcanvas_python import analyze_source;print(json.dumps(analyze_source(v,"model:Cedar")))', `from torch import nn
+class Cedar(nn.Module):
+ def __init__(self):
+  super().__init__()
+  self.head=nn.Linear(4,4)
+ def forward(self,x,flag):
+  if flag:
+   return self.head(x)
+  else:
+   return x
+`) as Architecture;
+  const original = createDocument(architecture), originalScene = buildScene(original);
+  original.annotations.push({ id: 'source-note', text: '保留原说明', x: 20, y: -90, width: 200 });
+  original.pageSpec.widthMm = 85;
+  const imported = await sourceBackend('print(json.dumps(import_source_draft(v[0],v[1])))', [original, originalScene]) as ImportedSourceDraft;
+  const draft = imported.draft, refs = draft.sourceProvenance!.nodeRefs;
+  const boundary = draft.nodes.find(node => refs[node.id].kind === 'ConditionalRegion')!;
+  assert.equal(boundary.presentation!.group, false, 'the real source overview keeps the unresolved branch folded');
+  boundary.label = '用户条件区域';
+  boundary.visual = { width: 260, height: 110, fill: '#f5eedd', stroke: '#556677' };
+  const definition = (await sourceBackend('from archcanvas_authoring import preview_custom_module;print(json.dumps(preview_custom_module(v)))', {
+    source: 'from torch import nn\nclass PersonalPass(nn.Module):\n def forward(self,features): return features\n',
+    entry: 'PersonalPass', label: '用户模块', constructorValues: {},
+  }) as { definition: NonNullable<AuthoredDraft['customModules']>[number] }).definition;
+  draft.customModules = [definition];
+  const output = draft.nodes.find(node => refs[node.id].kind === 'Output')!;
+  const edge = draft.edges.find(edge => edge.target.nodeId === output.id)!;
+  const upstream = structuredClone(edge.source);
+  draft.nodes.push({ id: 'inserted-identity', kind: 'Identity', label: '新基础模块', parameters: {}, position: { x: 12000, y: -8000 },
+    visual: { width: 220, height: 100, fill: '#ccddee', stroke: '#334455' } },
+    { id: 'inserted-custom', kind: definition.kind, label: '新源码模块', parameters: {}, position: { x: -6000, y: 9000 },
+      visual: { width: 220, height: 100, fill: '#ddeeff', stroke: '#223344' } });
+  draft.edges.push({ id: 'into-identity', source: upstream, target: { nodeId: 'inserted-identity', portId: 'input' } },
+    { id: 'into-custom', source: { nodeId: 'inserted-identity', portId: 'output' }, target: { nodeId: 'inserted-custom', portId: definition.inputs[0].id } });
+  edge.source = { nodeId: 'inserted-custom', portId: definition.outputs[0].id };
+  const draftBytes = JSON.stringify(draft), originalBytes = JSON.stringify(original);
+  const generated = await sourceBackend('print(json.dumps(generate_model(v)))', draft) as GeneratedDraft;
+  const generationBytes = JSON.stringify(generated);
+  const retained = createGeneratedCanvas(generated.architecture, generated.draft, generated, draft), scene = buildScene(retained.document);
+  assert.equal(retained.hierarchyReflowed, true);
+  assert.deepEqual(retained.unmappedNodeIds, []);
+  assert.deepEqual(retained.document.architecture, generated.architecture);
+  assert.equal(retained.document.pageSpec.widthMm, 85);
+  assert.deepEqual(retained.document.annotations, original.annotations);
+  const occurrences = generated.verification.operationOccurrences as { nodeId: string; canonicalIds: string[]; binding: string }[];
+  assert.equal(occurrences.length, 2);
+  for (const occurrence of occurrences) {
+    assert.equal(occurrence.binding, 'source-inspection');
+    assert.equal(occurrence.canonicalIds.length, 2, 'each edited module is present in both source return paths');
+    const authored = draft.nodes.find(node => node.id === occurrence.nodeId)!;
+    for (const id of occurrence.canonicalIds) {
+      const node = scene.nodes.find(node => node.id === id)!;
+      assert.ok(node, 'every independently recovered return occurrence is visible');
+      assert.equal(node.label, authored.label);
+      assert.equal(node.fill, authored.visual!.fill);
+      assert.equal(node.stroke, authored.visual!.stroke);
+      assert.deepEqual(generated.architecture.nodes.find(node => node.id === id)!.ports, [], 'source occurrences acquire no tensor ports');
+      assert.equal(retained.document.architecture.nodes.find(node => node.id === id)!.sourceStructure, true);
+    }
+  }
+  const visibleBoundary = scene.nodes.find(node => node.id === retained.nodeBindings[boundary.id])!;
+  assert.equal(visibleBoundary.expanded, true);
+  assert.equal(visibleBoundary.label, '用户条件区域');
+  assert.equal(visibleBoundary.fill, boundary.visual.fill);
+  assert.deepEqual(scene.diagnostics.filter(item => ['layout-overlap', 'layout-header-overlap', 'layout-outside-parent'].includes(item.code ?? '')), []);
+  for (const parent of scene.nodes.filter(node => node.expanded)) for (const child of scene.nodes.filter(node => node.parentId === parent.id)) {
+    assert.ok(child.x >= parent.x && child.y >= parent.y + parent.headerHeight);
+    assert.ok(child.x + child.width <= parent.x + parent.width && child.y + child.height <= parent.y + parent.height);
+  }
+  assert.equal(JSON.stringify(draft), draftBytes);
+  assert.equal(JSON.stringify(original), originalBytes);
+  assert.equal(JSON.stringify(generated), generationBytes);
+  const reopened = JSON.parse(JSON.stringify(retained.document)) as CanvasDocument;
+  assert.deepEqual(buildScene(reopened).nodes.map(node => [node.id, node.x, node.y]), scene.nodes.map(node => [node.id, node.x, node.y]));
+  const stored = new Map<string, string>(), storage = { getItem: (key: string) => stored.get(key) ?? null, setItem: (key: string, value: string) => { stored.set(key, value); } };
+  writeGeneratedWorkspace(storage, { draft, history: draftHistory(draft), storageRevision: 0, savedRevision: -1 }, {
+    workspaceKey: 'cedar-source-edits', documentId: reopened.id, sourceDigest: reopened.sourceBindingDigest, irDigest: reopened.architecture.irDigest,
+    visualRevision: reopened.revision, draft, nodeBindings: retained.nodeBindings, edgeBindings: generated.edgeBindings,
+  });
+  assert.equal(JSON.stringify(readGeneratedWorkspace(storage, reopened)!.workspace.draft), draftBytes, 'the old layout and complete editable source draft remain recoverable');
+
+  const restored = readGeneratedWorkspace(storage, reopened)!;
+  const editedId = occurrences[0].canonicalIds[0];
+  const viewedAgain = applyVisualBatch(reopened, [{ type: 'alias', id: editedId, label: '生成视图中的名称' },
+    { type: 'nodeStyle', id: editedId, style: { fill: '#d1e2f3', stroke: '#123456' } }]);
+  assert.equal(generatedSourceView(restored.workspace, viewedAgain, restored.binding), null,
+    'new source occurrence ancestors cannot replace the original edited frontier on reload');
+  const resumed = resumeGeneratedWorkspace(restored.workspace, viewedAgain, restored.binding, {
+    selection: [editedId], camera: { x: 0, y: 0, zoom: 1 }, tool: 'select', sourceHistory: { past: 2, future: 0 },
+  });
+  assert.deepEqual(resumed.draft.edges, draft.edges, 'all materialized surgery edges remain live');
+  assert.deepEqual(resumed.draft.sourceCache, draft.sourceCache, 'presentation changes cannot create hidden structural edits');
+  assert.deepEqual(resumed.draft.sourceProvenance, draft.sourceProvenance, 'source anchors and the original editing frontier stay fixed');
+  assert.deepEqual(resumed.draft.nodes.map(node => [node.id, node.position]), draft.nodes.map(node => [node.id, node.position]),
+    'generated hierarchy reflow cannot turn old editing anchors into new parent coordinates');
+  const resumedEdited = resumed.draft.nodes.find(node => node.id === occurrences[0].nodeId)!;
+  assert.equal(resumedEdited.label, '生成视图中的名称');
+  assert.equal(resumedEdited.visual!.fill, '#d1e2f3');
+  const generationCheck = await sourceBackend('from archcanvas_authoring import validate_draft;print(json.dumps(validate_draft(v)))', resumed.draft) as { generation: { supported: boolean; limitations: string[] } };
+  assert.equal(generationCheck.generation.supported, true, generationCheck.generation.limitations.join('; '));
+  const regenerated = await sourceBackend('print(json.dumps(generate_model(v)))', resumed.draft) as GeneratedDraft;
+  assert.deepEqual(regenerated.architecture.sources, generated.architecture.sources, 'saving and resuming the edited graph can regenerate the same source');
+  assert.equal(JSON.stringify(draft), draftBytes);
+
+  // Exercise the actual second parser and recursive preview rather than
+  // accepting the formal tree as evidence that the iframe can display edits.
+  const bundle = await sourceBackend(`import tempfile
+from archcanvas_preview import analyze
+from archcanvas_adapters.registry import AdapterRegistry
+with tempfile.TemporaryDirectory(prefix="archcanvas-generated-preview-") as registry:
+ print(json.dumps(AdapterRegistry(Path(registry)).preview(analyze(v["files"],v["entry"],v["config"]),v["files"])))`,
+    architecturePreviewRequest(generated.architecture)) as any;
+  const bundleBytes = JSON.stringify(bundle), context = vm.createContext({ TextEncoder, TextDecoder });
+  for (const file of ['router.js', 'physical-ports.js', 'junction-markers.js', 'route-labels.js',
+    'source-contracts.js', 'semantic-constraints.js', 'graph-engine.js', 'recursive-graph.js', 'source-adapter.js']) {
+    vm.runInContext(readFileSync(new URL(`../public/preview/yworks_edge_router_lab/${file}`, import.meta.url), 'utf8'), context, { filename: file });
+  }
+  const F = context.SummaryRecursive, E = context.SummaryEngine, S = context.SummarySourceAdapter;
+  let preview = F.build(F.create(S.sources(bundle)));
+  const detail = preview.recursive.authority.detail, authorityBytes = JSON.stringify(preview.recursive.authority);
+  const occurrenceIds = new Set(occurrences.flatMap(item => item.canonicalIds));
+  const previewOccurrences = detail.nodes.filter((node: any) => node.semantic?.sourceKind === 'SourceModule' &&
+    previewSelectionNodeIds(generated.architecture, { nodeId: node.id, node }, bundle).some(id => occurrenceIds.has(id)));
+  assert.equal(previewOccurrences.length, 4, 'both edited modules have independent preview cards in both return paths');
+  const opaqueBoundary = detail.nodes.find((node: any) => node.semantic?.kind === 'opaque' &&
+    previewSelectionNodeIds(generated.architecture, { nodeId: node.id, node }, bundle).includes(retained.nodeBindings[boundary.id]));
+  assert.ok(opaqueBoundary);
+  assert.equal(previewUniqueNodeBindings(generated.architecture, detail, bundle).has(opaqueBoundary.id), false,
+    'a shared opaque/inspection binding cannot carry unique geometry');
+  const replay = previewExpansionOperations(retained.document, detail, bundle);
+  for (const operation of replay) preview = F.toggle(preview, operation.id, operation.expanded) ?? preview;
+  for (const node of previewOccurrences) {
+    assert.ok(preview.nodes.some((visible: any) => visible.id === node.id), `generated source occurrence is visible after expansion replay: ${node.id}`);
+    assert.equal(node.semantic.sourceStructure, true);
+    assert.equal(node.semantic.generationContract, null);
+  }
+  assert.equal(F.route(preview).failed, 0);
+  const previewValidation = E.validateView(preview);
+  assert.equal(previewValidation.source.ok, true, previewValidation.source.violations.join('; '));
+  assert.equal(previewValidation.layout.ok, true, previewValidation.layout.violations.join('; '));
+  assert.equal(JSON.stringify(preview.recursive.authority), authorityBytes, 'expansion replay cannot change preview source facts');
+  assert.equal(JSON.stringify(bundle), bundleBytes, 'source adapters stay empty and the preview corpus remains immutable');
+  for (const corrupt of [
+    (items: typeof occurrences) => { items[0].canonicalIds.push('missing-source-occurrence'); },
+    (items: typeof occurrences) => { items[0].canonicalIds.push(items[0].canonicalIds[0]); },
+    (items: typeof occurrences) => { items[0].binding = 'operation'; },
+  ]) {
+    const broken = structuredClone(generated);
+    corrupt(broken.verification.operationOccurrences as typeof occurrences);
+    assert.throws(() => createGeneratedCanvas(broken.architecture, broken.draft, broken, draft), /源码出现位置/);
+  }
 });
 
 test('actual generate callback keeps the collapsed Transformer frontier and anchors when complete source generation is reopened', async () => {

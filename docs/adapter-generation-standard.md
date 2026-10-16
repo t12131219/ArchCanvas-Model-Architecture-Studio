@@ -119,7 +119,7 @@ python3 -B -m archcanvas_cli adapter preview --root /tmp/archcanvas-rule-demo/so
 
 ## 绑定实例、存储与失效
 
-v1 的 `generatorRevision` 为 `source-inspection/2`，v2 为 `source-rules/1`。两者均记录完整相对文件集合与 SHA-256、精确入口/方法、符号与方法 AST 行列和原文、方法 hash、config、源码参数与独立 return 槽、真实 children/dependencies、`generationContract: null` 与纯展示 `presentation`。返回槽是源码槽位，不代表运行时张量接口。v2 另含规范化 `rules` 和 `applications`，后者记录 `ruleId`、`matchKey`、真实 `source`、`rootId`、`nodeIds`。适配实例的检查节点 `sourceStructure: true`、`ports: []`，关系均为语法证据。
+v1 的 `generatorRevision` 为 `source-inspection/3`，v2 为 `source-rules/1`。两者均记录完整相对文件集合与 SHA-256、精确入口/方法、符号与方法 AST 行列和原文、方法 hash、config、源码参数与独立 return 槽、真实 children/dependencies、`generationContract: null` 与纯展示 `presentation`。返回槽是源码槽位，不代表运行时张量接口。v1 的模块检查卡另以 `parameters.callSites` 保存实际调用位置，以便构造位置位于 `__init__` 的模块也能在对应待解析方法区域中展示；这些位置同样从源码重建验证，不授予张量流或源码生成权限。旧 `source-inspection/2` 实例应重新 scaffold、核对并注册；已审核的标签可按新 child ID 核对迁移，旧实例不会自动作为当前事实加载。v2 另含规范化 `rules` 和 `applications`，后者记录 `ruleId`、`matchKey`、真实 `source`、`rootId`、`nodeIds`。适配实例的检查节点 `sourceStructure: true`、`ports: []`，关系均为语法证据。
 
 实例校验从完整当前源码与嵌入模板重新构建并逐项比较；只允许修改已有 child ID 的 `presentation.labels` 和纯文本 `presentation.notes`。未知字段、无位置 AST、假证据、未知端点、非法包含/依赖环、插件字段或生成授权均拒绝。JSON Schema 仅检查数据形状，不能替代独立重建验证。
 
@@ -127,7 +127,7 @@ Registry 保存 `adapter-<digest>.json`，v2 注册同时保存 `rules/rule-<dig
 
 预览与 managed-project preview 自动读取服务 registry、对当前 corpus 重新实例化可用模板。只有能定位到相应 opaque 区域的真实匹配才接入视图；找不到区域或某模板证明失败时记录诊断，保留原图。规则可复用精确匹配的已有检查卡，避免重复追加；原 opaque 节点及原始计算绑定仍保留。添加或注册模板不会回写旧 CanvasDocument 的 immutable IR；需要新分析/新文档，原布局与 history 应保留。
 
-预算：源码最多 80 文件/2 MB；单模板最多 64 KB、1–64 nodes、128 relations、pattern 深度 12/512 items、selector 深度 16；单实例最多 16 模板、扫描 100000 个 AST 节点、480 matches/480 children/1440 relations、2 MB JSON。接入预览还受 480 总节点、3600 总边和 12 层包含预算约束。达到预算应暴露诊断/截断，不能宣称完整恢复。
+预算：源码最多 80 文件/2 MB；单模板最多 64 KB、1–64 nodes、128 relations、pattern 深度 12/512 items、selector 深度 16；单实例最多 16 模板、扫描 100000 个 AST 节点、480 matches/480 children/1440 relations、2 MB JSON。接入预览还受 480 总节点、3600 总边和 12 层包含预算约束。多个待解析区域按实际可展示需求公平分配检查卡，浅层同级模块优先于深层细节，小区域未用完的额度可用于较大区域。达到预算应暴露诊断/截断，不能宣称完整恢复。
 
 ## HTTP 与 Skill 调用
 
@@ -153,3 +153,13 @@ Registry 保存 `adapter-<digest>.json`，v2 注册同时保存 `rules/rule-<dig
 未修改拓扑的源码导入模型可使用独立的源码保留生成流程，复制原始 corpus 并重新分析；有精确 literal 来源和正式算子合同的参数才允许受支持修改。插入、删除、重接未证明计算语义的对象仍保留为草稿或源码修改提案，不能因视图规则验证成功而宣称任意 roundtrip 已支持。
 
 每次新增模板应保存：规范化模板与 ID、正例和迁移例源码/绑定收据、反例拒绝原因、前后覆盖差异、实际规则应用/截断诊断，以及新预览的交互与保存导出记录。`act` 等真实项目演示应与通用无预设名称的正反例一起报告；不能只凭一个模型打开成功或旧 v1 测试宣称新 DSL 完整通过。
+
+## 嵌套编辑与结构恢复
+
+适配器恢复的真实 `children` 必须继续通过源码身份投影到编辑模式。大型源码模型默认展开条件、分支和循环包装的一层内容，模块内部通过卡片右上角 `＋/−` 或双击逐层展开；视图新展开的区域也接入编辑层级，用户主动折叠继续保留。
+
+编辑器“当前模型源码结构”使用冻结完整 IR 建立层级树，包含尚未展开的对象。删除源码区域时，其隐藏后代和所属自定义子模块一起删除；保存节点、局部编辑快照和删除记录。恢复按原 canonical ID 恢复整棵所属源码子树，保留已有编辑，不覆盖已占用端口，也不恢复单独明确删除的连线。这是现有模型的精确恢复库，不能用任意基础模块默认参数替代。
+
+检查节点没有 tensor 端口时，可通过“编辑区域源码 / 重建内部”明确修改源码并创建新副本。`sourceFileEditing` 能力提供 `/api/authoring/source-regions/read`（`draft,regionId`）与 `/apply`（另加 `baselineDigest,replacement`）。编辑单位是所选节点对应的完整 Python 文件；读取前先保留当前受支持草稿修改，返回完整文件和源码位置。提交绑定完整基线摘要，通过语法检查及整个 corpus 的独立静态重分析后，才创建新的源码预览与新编辑会话。原始项目和原草稿保留；检查箭头仍不获得张量生成权限。
+
+若当前草稿包含不能生成的结构修改，必须明确报告并保留草稿；可先恢复相关源码区域，再进行显式源码重建。不得悄悄丢弃草稿改动来打开旧源码，也不得复用旧图节点映射作为新源码的事实。全模型删除后仍可从源码库恢复；要开始无关模型则使用“新建空白模型”。

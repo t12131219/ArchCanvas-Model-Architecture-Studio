@@ -1,7 +1,7 @@
 import type { CanvasDocument, Scene } from './core/types.ts';
+import type { AuthoredDraft } from './authoring.ts';
 
-/** Source projection is CPU work, so never perform it on the UI event loop. */
-export function sourceEditingProjection(document: CanvasDocument, previousEditing?: CanvasDocument, previousView?: CanvasDocument): Promise<{ document: CanvasDocument; scene: Scene }> {
+function project(input: unknown): Promise<{ document: CanvasDocument; scene: Scene }> {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL('./sourceEditingWorker.ts', import.meta.url), { type: 'module' });
     const finish = () => { clearTimeout(deadline); worker.terminate(); };
@@ -11,6 +11,19 @@ export function sourceEditingProjection(document: CanvasDocument, previousEditin
       if (event.data.error) reject(new Error(event.data.error)); else resolve(event.data.result);
     };
     worker.onerror = event => { finish(); reject(new Error(event.message || '无法展开源码组合模块；原视图已保留。')); };
-    worker.postMessage({ document, previousEditing, previousView });
+    worker.postMessage(input);
   });
+}
+
+/** Source projection is CPU work, so never perform it on the UI event loop. */
+export function sourceEditingProjection(document: CanvasDocument, previousEditing?: CanvasDocument, previousView?: CanvasDocument): Promise<{ document: CanvasDocument; scene: Scene }> {
+  return project({ document, previousEditing, previousView });
+}
+
+export function sourceFrontierProjection(draft: AuthoredDraft, nodeId: string, expanded: boolean) {
+  return project({ draft, nodeId, expanded });
+}
+
+export function sourceRegionProjection(draft: AuthoredDraft, canonicalId: string) {
+  return project({ draft, canonicalId });
 }

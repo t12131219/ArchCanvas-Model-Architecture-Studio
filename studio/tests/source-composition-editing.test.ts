@@ -47,6 +47,7 @@ class Branch(nn.Module):
   assert.equal(result.generation?.supported, true);
   assert.equal(result.generation?.topology, 'preserved');
   assert.ok(result.generation!.limitations.length > 0);
+  assert.equal(readDraftValidation({ ...raw, generation: { ...raw.generation, topology: 'anchored-edits' } }).generation?.topology, 'anchored-edits');
   for (const generation of [
     { ...raw.generation, mode: 'arbitrary-topology' },
     { ...raw.generation, topology: 'rewritten' },
@@ -59,6 +60,63 @@ class Branch(nn.Module):
   changed.edges = changed.edges.filter(e => changed.nodes.some(n => n.id === e.source.nodeId) && changed.nodes.some(n => n.id === e.target.nodeId));
   const blocked = await backend('print(json.dumps(validate_draft(v)))', changed);
   assert.equal(readDraftValidation(blocked).generation?.supported, false);
+});
+
+test('source drafts with a connected custom module retain source verification and the backend generation boundary', async () => {
+  const architecture = await backend('print(json.dumps(analyze_source(v,"model:Network")))', `from torch import nn
+class Network(nn.Module):
+ def __init__(self):
+  super().__init__(); self.projection=nn.Linear(4, 4)
+ def forward(self,x):
+  x=self.projection(x)
+  if x.sum() > 0: return x + x
+  return x
+`) as Architecture;
+  const preview = await backend('from archcanvas_authoring import preview_custom_module;print(json.dumps(preview_custom_module(v)))', {
+    source: 'from torch import nn\nclass UserModule(nn.Module):\n def forward(self, features): return features\n',
+    entry: 'UserModule', label: '用户源码模块', constructorValues: {},
+  });
+  const { draft } = await importEditing(createDocument(architecture));
+  draft.customModules = [preview.definition];
+  draft.nodes.push({ id: 'user-module', kind: preview.definition.kind, label: '用户源码模块', parameters: {}, position: { x: 20, y: 20 } });
+  // An incomplete source/custom composition must expose its real diagnostic,
+  // rather than failing the browser's verification-discriminator reader.
+  const incomplete = readDraftValidation(await backend('print(json.dumps(validate_draft(v)))', draft));
+  assert.equal(incomplete.complete, false);
+  assert.ok(incomplete.issues.some(issue => issue.nodeId === 'user-module' && issue.code === 'unbound-input'));
+  const original = draft.edges.shift()!;
+  assert.ok(original, 'the source fixture has a real source-derived dependency to edit');
+  draft.edges.push({ id: 'to-user-module', source: original.source, target: { nodeId: 'user-module', portId: preview.definition.inputs[0].id } },
+    { id: 'from-user-module', source: { nodeId: 'user-module', portId: preview.definition.outputs[0].id }, target: original.target });
+  const raw = await backend('print(json.dumps(validate_draft(v)))', draft);
+  const checked = readDraftValidation(raw);
+  assert.equal(checked.complete, true);
+  assert.equal(checked.verification, 'source-preserved-graph; no model execution');
+  assert.deepEqual(checked.tensors, {}, 'source inspection cannot invent custom or downstream tensor shapes');
+  assert.deepEqual(checked.generation, raw.generation, 'generation limitations remain visible beside a successful connection check');
+  assert.ok(checked.generation);
+  for (const verification of ['static-declared-tensors; no model execution', 'static-topology; custom output shapes unknown; no model execution']) {
+    assert.throws(() => readDraftValidation({ ...raw, verification }), /检查响应格式/);
+  }
+
+  // The same custom definition in a fresh authored composition uses the
+  // distinct custom-output contract, with declared input shapes only.
+  const authored: AuthoredDraft = { schemaVersion: 1, mode: 'authored-draft', id: 'draft-custom-protocol', title: '自定义合同', revision: 0,
+    customModules: [preview.definition], nodes: [
+      { id: 'input', kind: 'Input', label: '输入', parameters: { shape: [2, 4], dtype: 'float32' }, position: { x: 0, y: 0 } },
+      { id: 'module', kind: preview.definition.kind, label: '模块', parameters: {}, position: { x: 100, y: 0 } },
+      { id: 'output', kind: 'Output', label: '输出', parameters: {}, position: { x: 200, y: 0 } },
+    ], edges: [
+      { id: 'input-module', source: { nodeId: 'input', portId: 'output' }, target: { nodeId: 'module', portId: preview.definition.inputs[0].id } },
+      { id: 'module-output', source: { nodeId: 'module', portId: preview.definition.outputs[0].id }, target: { nodeId: 'output', portId: 'input' } },
+    ] };
+  const authoredRaw = await backend('print(json.dumps(validate_draft(v)))', authored), authoredCheck = readDraftValidation(authoredRaw);
+  assert.equal(authoredCheck.verification, 'static-topology; custom output shapes unknown; no model execution');
+  assert.deepEqual(authoredCheck.unknownTensorNodeIds, ['module', 'output']);
+  assert.deepEqual(Object.keys(authoredCheck.tensors), ['input']);
+  for (const verification of ['static-declared-tensors; no model execution', 'source-preserved-graph; no model execution']) {
+    assert.throws(() => readDraftValidation({ ...authoredRaw, verification }), /检查响应格式/);
+  }
 });
 
 test('unresolved regions expose both authored paths and nested source definitions in view and editor', async () => {

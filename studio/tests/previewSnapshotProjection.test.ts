@@ -66,6 +66,13 @@ test('coverage fingerprints ignore layout and visual labels while invalidating s
   moved.recursive.authority.detail.nodes[0].x += 8;
   assert.equal(previewMappingSignature({ graph: moved }), before);
   const node = moved.recursive.authority.detail.nodes[0];
+  const semantic = node.semantic ?? node;
+  (semantic as any).sourceStructure = true;
+  (semantic as any).sourceParameters = { callSites: [{ path: 'model.py', line: 3, endLine: 3, expression: 'self.cell(x)' }] };
+  const called = previewMappingSignature({ graph: moved });
+  assert.notEqual(called, before);
+  (semantic as any).sourceParameters.callSites[0].line = 4;
+  assert.notEqual(previewMappingSignature({ graph: moved }), called, 'call evidence invalidates the binding cache');
   if (node.semantic) node.semantic.source_evidence = ['another-source-span']; else node.source_evidence = ['another-source-span'];
   assert.notEqual(previewMappingSignature({ graph: moved }), before);
 });

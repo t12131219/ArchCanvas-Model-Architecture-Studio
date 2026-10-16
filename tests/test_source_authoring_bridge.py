@@ -234,3 +234,102 @@ class SourceAuthoringBridgeTests(unittest.TestCase):
         with self.assertRaises(DraftError):
             rebase_source_frontier(draft, other["document"], other["scene"])
         self.assertEqual({p: hashlib.sha256(p.read_bytes()).hexdigest() for p in original_bytes}, original_bytes)
+
+    def test_folded_custom_child_reappears_with_its_owner_and_deleted_owner_never_resurrects_it(self):
+        full = source_view(expanded=True)
+        draft = import_source_draft(full["document"], full["scene"])["draft"]
+        owner = next(node for node in draft["nodes"] if node["presentation"]["group"] and not node["presentation"].get("parentId"))
+        custom = {"id": "local_identity", "kind": "Identity", "label": "Nested Identity", "parameters": {},
+                  "position": {"x": 20, "y": 40}, "presentation": {"width": 120, "height": 62, "fill": "#ffffff",
+                  "stroke": "#355247", "group": False, "parentId": owner["id"], "ports": {}}}
+        draft["nodes"].append(custom)
+        compact = source_view(document=full["document"], expanded=False)
+        folded = rebase_source_frontier(draft, compact["document"], compact["scene"])["draft"]
+        self.assertNotIn(custom["id"], {node["id"] for node in folded["nodes"]})
+        self.assertIn(custom, folded["sourceCache"]["nodes"])
+        opened = rebase_source_frontier(json.loads(json.dumps(folded)), full["document"], full["scene"])["draft"]
+        self.assertIn(custom, opened["nodes"])
+        folded["nodes"] = []
+        folded["edges"] = []
+        deleted = rebase_source_frontier(folded, full["document"], full["scene"])["draft"]
+        self.assertEqual(deleted["nodes"], [])
+        self.assertIn(custom["id"], deleted["sourceCache"]["removedNodeIds"])
+        self.assertTrue({node["id"] for node in draft["nodes"]} <= set(deleted["sourceCache"]["removedNodeIds"]))
+        self.assertIn(custom, deleted["sourceCache"]["nodes"])
+
+    def test_deleted_source_baseline_is_saved_for_recovery_after_rebase(self):
+        full = source_view(expanded=True)
+        draft = import_source_draft(full["document"], full["scene"])["draft"]
+        removed = next(node for node in draft["nodes"] if draft["sourceProvenance"]["nodeRefs"][node["id"]]["kind"] == "Dropout")
+        draft["nodes"] = [node for node in draft["nodes"] if node["id"] != removed["id"]]
+        draft["edges"] = [edge for edge in draft["edges"] if removed["id"] not in (edge["source"]["nodeId"], edge["target"]["nodeId"])]
+        rebased = rebase_source_frontier(draft, full["document"], full["scene"])["draft"]
+        self.assertIn(removed, rebased["sourceCache"]["nodes"])
+        self.assertIn(removed["id"], rebased["sourceCache"]["removedNodeIds"])
+        self.assertNotIn(removed["id"], {node["id"] for node in rebased["nodes"]})
+        self.assertEqual(rebased["sourceCache"]["removedCanonicalEdgeIds"], [])
+
+    def test_explicit_edge_deletion_survives_a_deleted_endpoint_restore(self):
+        full = source_view(expanded=True)
+        draft = import_source_draft(full["document"], full["scene"])["draft"]
+        edge = next(edge for edge in draft["edges"] if not any(node["id"] == edge["target"]["nodeId"] and node["presentation"]["group"] for node in draft["nodes"]))
+        draft["edges"] = [item for item in draft["edges"] if item["id"] != edge["id"]]
+        without_edge = rebase_source_frontier(draft, full["document"], full["scene"])["draft"]
+        canonical = set(draft["sourceProvenance"]["edgeRefs"][edge["id"]])
+        self.assertTrue(canonical <= set(without_edge["sourceCache"]["removedCanonicalEdgeIds"]))
+        target = next(node for node in without_edge["nodes"] if node["id"] == edge["target"]["nodeId"])
+        without_edge["nodes"] = [node for node in without_edge["nodes"] if node["id"] != target["id"]]
+        without_edge["edges"] = [item for item in without_edge["edges"] if target["id"] not in (item["source"]["nodeId"], item["target"]["nodeId"])]
+        deleted = rebase_source_frontier(without_edge, full["document"], full["scene"])["draft"]
+        deleted["nodes"].append(deepcopy(target))
+        deleted["sourceCache"]["removedNodeIds"].remove(target["id"])
+        restored = rebase_source_frontier(deleted, full["document"], full["scene"])["draft"]
+        self.assertNotIn(edge["id"], {item["id"] for item in restored["edges"]})
+        self.assertTrue(canonical <= set(restored["sourceCache"]["removedCanonicalEdgeIds"]))
+
+    def test_source_cache_malformed_tombstones_and_duplicate_snapshots_are_rejected(self):
+        view = source_view(expanded=True)
+        pristine = import_source_draft(view["document"], view["scene"])["draft"]
+        for changed in ({"removedNodeIds": "wrong"}, {"removedNodeIds": ["same", "same"]},
+                        {"removedCanonicalEdgeIds": [{}]}, {"nodes": [pristine["nodes"][0], pristine["nodes"][0]]}):
+            with self.subTest(changed=changed):
+                draft = deepcopy(pristine)
+                draft["sourceCache"] = {"nodes": [], "edges": [], "removedNodeIds": [], "removedCanonicalEdgeIds": [], **changed}
+                with self.assertRaises(DraftError):
+                    validate_draft(draft)
+
+    def test_never_expanded_conditional_branch_deletes_hidden_descendants_and_recovers_baseline(self):
+        from tests.test_source_preservation import source_draft, SOURCE
+        from archcanvas_python import analyze_source
+        complete = source_draft(analyze_source(SOURCE, "model:Meadow"))
+        document = complete["sourceProvenance"]["canvas"]
+        branch = next(node for node in document["architecture"]["nodes"] if node["kind"] == "SourceBranch" and node["children"])
+        script = """import fs from 'node:fs';
+import {applyVisualBatch,buildScene} from './src/core/index.ts';
+const input=JSON.parse(fs.readFileSync(0,'utf8'));
+const document=applyVisualBatch(input.document,[{type:'expand',id:input.id,expanded:false}]);
+process.stdout.write(JSON.stringify({document,scene:buildScene(document)}));"""
+        result = subprocess.run(["node", "--experimental-strip-types", "--input-type=module", "-e", script],
+                                cwd=ROOT / "studio", input=json.dumps({"document": document, "id": branch["id"]}),
+                                text=True, capture_output=True, check=True)
+        folded_view = json.loads(result.stdout)
+        draft = import_source_draft(folded_view["document"], folded_view["scene"])["draft"]
+        refs = draft["sourceProvenance"]["nodeRefs"]
+        branch_id = next(identity for identity, ref in refs.items() if ref["nodeId"] == branch["id"])
+        draft["nodes"] = [node for node in draft["nodes"] if node["id"] != branch_id]
+        draft["edges"] = [edge for edge in draft["edges"] if branch_id not in (edge["source"]["nodeId"], edge["target"]["nodeId"])]
+        full = source_view(document=document, expanded="overview")
+        deleted = rebase_source_frontier(draft, full["document"], full["scene"])["draft"]
+        facts = {node["id"]: node for node in document["architecture"]["nodes"]}
+        subtree, pending = set(), [branch["id"]]
+        while pending:
+            identity = pending.pop(); subtree.add(identity); pending.extend(facts[identity]["children"])
+        refs = deleted["sourceProvenance"]["nodeRefs"]
+        self.assertFalse(any(refs[node["id"]]["nodeId"] in subtree for node in deleted["nodes"]))
+        recover = [node for node in deleted["sourceProvenance"]["originalGraph"]["nodes"] if refs[node["id"]]["nodeId"] in subtree]
+        deleted["nodes"].extend(deepcopy(recover))
+        restore_ids = {node["id"] for node in recover}
+        deleted["sourceCache"]["removedNodeIds"] = [identity for identity in deleted["sourceCache"]["removedNodeIds"] if identity not in restore_ids]
+        recovered = rebase_source_frontier(json.loads(json.dumps(deleted)), full["document"], full["scene"])["draft"]
+        self.assertTrue(restore_ids <= {node["id"] for node in recovered["nodes"]})
+        self.assertTrue(validate_draft(recovered)["generation"]["supported"])

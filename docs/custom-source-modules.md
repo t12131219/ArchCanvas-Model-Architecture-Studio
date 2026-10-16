@@ -27,7 +27,9 @@
 
 生成后重新静态分析整个源码 corpus，核对原始源码字节、构造事实、实例身份、输入名称、输出锚点和与其他模块连接的精确端口。已生成模型即使在新会话中重新导入，也通过独立的源码调用/返回重放恢复折叠源码模块合同；新包装文件不覆盖保留的源码。
 
-包含自定义模块的草稿中，`complete` 仅说明连接、拓扑和输出可达性满足生成合同。验证字符串为 `static-topology; custom output shapes unknown; no model execution`；`unknownTensorNodeIds` 明确列出无法推导形状的节点。形状可推导的上游原子模块继续静态检查，自定义输出及其下游的未知形状不会被冒充成功推导。`verification.modelExecution` 始终为 `not_run`；静态生成不证明运行兼容、数值正确或数值等价。
+从空白模型搭建的自定义模块草稿中，`complete` 仅说明连接、拓扑和输出可达性满足生成合同。验证字符串为 `static-topology; custom output shapes unknown; no model execution`；`unknownTensorNodeIds` 明确列出无法推导形状的节点。形状可推导的上游原子模块继续静态检查，自定义输出及其下游的未知形状不会被冒充成功推导。`verification.modelExecution` 始终为 `not_run`；静态生成不证明运行兼容、数值正确或数值等价。
+
+导入源码模型后再加入自定义模块时，优先使用原模型的 `source-preserved-graph; no model execution` 合同。连接检查与源码生成资格分别报告；只有可定位的一元调用参数或静态返回槽才支持插入，未知区域原样保留。定义和原始源码写入独立副本，不能把源码检查关系当作张量生成合同。通用插入、删除和新预览验证见 [2026-10-16 修复记录](generic-source-editing.md)。
 
 `nodes[].visual` 独立保存卡片尺寸和十六进制填充/描边色。它可用于空白模型和源码模型，不创建语义分组，不改变生成源码；草稿 CAS 保存、重开与源码 frontier rebase 均保留此字段。
 

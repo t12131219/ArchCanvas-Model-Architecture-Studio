@@ -2,7 +2,8 @@
 
 This never lowers the displayed source inspection tree into tensor operations.
 It copies the frozen corpus, optionally replacing independently anchored literal
-constructor arguments, then independently analyzes the resulting corpus.
+constructor arguments or bounded call/return expressions, then independently
+analyzes the resulting corpus.
 """
 from __future__ import annotations
 
@@ -20,7 +21,7 @@ from .draft import DraftError, _diagnostic
 def _unsupported(message, node_id=None):
     raise DraftError(message, diagnostics=[_diagnostic(
         "unsupported-source-preserving-edit",
-        "此模型保留原始分支与循环源码；当前仅支持已定位的模块字面量参数编辑。增删模块、重接连线或符号参数需要独立适配合同。",
+        "此模型保留原始分支与循环源码；改动需要明确的构造参数、调用参数或返回值源码锚点。未知语法关系、跨作用域连接与未定位的改动不能生成。",
         message, **({"nodeId": node_id} if node_id else {}))])
 
 
@@ -86,12 +87,15 @@ def preservation_options(draft):
     original = {node["id"]: node for node in provenance["originalGraph"]["nodes"]}
     current = {node["id"]: node for node in draft["nodes"]}
     reasons = []
-    if set(original) != set(current) or draft.get("customModules"):
-        reasons.append("Source-preserving copies cannot add or delete modules.")
-    if {edge["id"]: edge for edge in draft["edges"]} != {edge["id"]: edge for edge in provenance["originalGraph"]["edges"]}:
-        reasons.append("Source-preserving copies cannot rewire relations.")
+    from .source_surgery import structural_delta, plan_surgery
+    structural = structural_delta(draft)
+    if structural:
+        try:
+            plan_surgery(draft)
+        except DraftError as exc:
+            reasons.append(str(exc))
     cache = draft.get("sourceCache", {})
-    if cache.get("removedNodeIds") or cache.get("removedCanonicalEdgeIds") or cache.get("edges"):
+    if not structural and (cache.get("removedNodeIds") or cache.get("removedCanonicalEdgeIds") or cache.get("edges")):
         reasons.append("Hidden structural edits need a separate generation contract.")
     refs = provenance["nodeRefs"]
     facts = {node["id"]: node for node in provenance["architecture"]["nodes"]}
@@ -100,7 +104,8 @@ def preservation_options(draft):
     for identity, node in candidates.items():
         ref = refs.get(identity)
         if not ref:
-            reasons.append("Added nodes have no preserved source identity.")
+            if not structural:
+                reasons.append("Added nodes have no preserved source identity.")
             continue
         fact = facts[ref["nodeId"]]
         for parameter, value in node["parameters"].items():
@@ -110,10 +115,10 @@ def preservation_options(draft):
             origin = fact.get("parameterOrigins", {}).get(parameter, {})
             if fact.get("evidence") != "contract" or fact["kind"] not in CONTRACTS or origin.get("kind") != "literal" or type(value) not in (str, bool, int, float):
                 reasons.append("A changed parameter needs an explicit registered constructor literal.")
-    return {"mode": "source-preserved-copy", "supported": not reasons, "topology": "preserved",
+    return {"mode": "source-preserved-copy", "supported": not reasons, "topology": "anchored-edits" if structural else "preserved",
             "limitations": list(dict.fromkeys(reasons)) + [
                 "Original branches, loops and unresolved regions are copied as source; displayed inspection arrows are not tensor lowering.",
-                "Only explicit registered constructor literal edits are supported; independent source reanalysis is mandatory.",
+                "Literal parameters and bounded unary insertions, bypass deletions and rewires require exact AST anchors; independent source reanalysis is mandatory.",
                 "Static validation does not establish runtime shape or numerical correctness."]}
 
 
@@ -170,13 +175,16 @@ def _literal_edit(source, origin, kind, parameter, before, after, corpus):
 
 
 def generate_preserved_source(draft, validated):
+    from .source_surgery import structural_delta, generate_surgery
+    if structural_delta(draft):
+        return generate_surgery(draft, validated)
     from .source_import import _analyze_sources
     provenance = draft["sourceProvenance"]
     original = _analyze_sources(provenance["architecture"])
     refs = provenance["nodeRefs"]
     original_nodes = {node["id"]: node for node in provenance["originalGraph"]["nodes"]}
     actual_nodes = {node["id"]: node for node in draft["nodes"]}
-    if set(actual_nodes) != set(original_nodes) or draft.get("customModules"):
+    if set(actual_nodes) != set(original_nodes):
         _unsupported("Source-preserving generation cannot add, delete or substitute graph modules.")
     if {edge["id"]: edge for edge in draft["edges"]} != {edge["id"]: edge for edge in provenance["originalGraph"]["edges"]}:
         _unsupported("Source-preserving generation cannot alter tensor or source relations.")
@@ -283,5 +291,5 @@ def generate_preserved_source(draft, validated):
                              "modelExecution": "not_run", "sourceProvenanceDigest": provenance["digest"],
                              "literalEdits": len(edits), "affectedOperations": affected,
                              "limitations": ["Original branches, loops, helpers and unresolved regions are preserved as source bytes; they are not lowered from visual arrows.",
-                                             "Only explicit registered constructor literal arguments can change; graph additions, deletions and rewires require a separate verified adapter.",
+                                             "This copy preserves topology and changes only explicit registered constructor literals, if requested; eligible graph edits use the separate anchored-expression verification path.",
                                              "No model was imported or executed; shapes, runtime branches and numerical behavior remain unverified."]}}

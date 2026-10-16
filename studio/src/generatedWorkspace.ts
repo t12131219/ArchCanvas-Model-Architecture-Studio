@@ -45,6 +45,29 @@ export function sameGeneratedDraft(a: AuthoredDraft, b: AuthoredDraft) {
   return JSON.stringify(canonical({ ...a, revision: 0 })) === JSON.stringify(canonical({ ...b, revision: 0 }));
 }
 
+/** A generated source copy can add truthful parents that do not exist in the
+ * original editing graph. Keep that edited graph's anchors and hidden edits;
+ * rebasing its old corpus through the new hierarchy would cache live surgery
+ * edges as hidden edits and change the contract used to generate the copy. */
+function editedSourceTopology(draft: AuthoredDraft): boolean {
+  const source = draft.sourceProvenance;
+  if (!source) return false;
+  const cache = draft.sourceCache;
+  if (cache?.edges.length || cache?.removedNodeIds.length || cache?.removedCanonicalEdgeIds.length) return true;
+  const original = source.originalGraph;
+  if (draft.nodes.length !== original.nodes.length || draft.edges.length !== original.edges.length) return true;
+  const nodes = new Map(original.nodes.map(node => [node.id, node.kind]));
+  if (draft.nodes.some(node => nodes.get(node.id) !== node.kind)) return true;
+  const edges = new Map(original.edges.map(edge => [edge.id, edge]));
+  return draft.edges.some(edge => {
+    const before = edges.get(edge.id);
+    return !before || ['source', 'target'].some(direction => {
+      const end = direction as 'source' | 'target';
+      return edge[end].nodeId !== before[end].nodeId || edge[end].portId !== before[end].portId;
+    });
+  });
+}
+
 /** Translate the generated view by certified node bindings before rebasing the
  * original source draft. Source/IR identity stays that of the original corpus. */
 export function generatedSourceView(workspace: AuthoringWorkspace, document: CanvasDocument, binding: GeneratedWorkspaceBinding): CanvasDocument | null {
@@ -52,6 +75,7 @@ export function generatedSourceView(workspace: AuthoringWorkspace, document: Can
   if (!source || document.revision === binding.visualRevision) return null;
   if (binding.documentId !== document.id || binding.sourceDigest !== document.sourceBindingDigest || binding.irDigest !== document.architecture.irDigest)
     throw new Error('生成视图的源码绑定已变化，不能重投影原编辑草稿。');
+  if (editedSourceTopology(workspace.draft) || editedSourceTopology(binding.draft)) return null;
   const translated = structuredClone(source.viewCanvas ?? source.canvas), expanded = new Set(translated.expandedIds);
   const generated = new Map(buildScene(document).nodes.map(node => [node.id, node]));
   const refs = new Map(Object.entries(source.nodeRefs).flatMap(([id, ref]) => binding.nodeBindings[id] ? [[ref.nodeId, binding.nodeBindings[id]] as const] : []));
@@ -94,11 +118,21 @@ export function resumeGeneratedWorkspace(workspace: AuthoringWorkspace, document
   if (binding.documentId !== document.id || binding.sourceDigest !== document.sourceBindingDigest || binding.irDigest !== document.architecture.irDigest)
     throw new Error('浏览视图的源码绑定已变化，不能恢复为原编辑草稿。');
   const scene = buildScene(document), nodes = new Map(scene.nodes.map(node => [node.id, node]));
+  const retainEditedFrontier = editedSourceTopology(workspace.draft) || editedSourceTopology(binding.draft);
   let history = workspace.history ?? draftHistory(workspace.draft);
   if (document.revision !== binding.visualRevision) history = changeDraft(history, draft => {
     for (const node of draft.nodes) {
       const canonical = binding.nodeBindings[node.id], visible = nodes.get(canonical);
       if (!visible) continue;
+      if (retainEditedFrontier) {
+        // New source branch containers use a different parent/size contract.
+        // Names and colors have exact bindings; their new geometry does not.
+        node.label = visible.label;
+        const size = node.visual ?? node.presentation;
+        if (size) node.visual = { width: size.width, height: size.height, fill: visible.fill, stroke: visible.stroke };
+        if (node.presentation) node.presentation = { ...node.presentation, fill: visible.fill, stroke: visible.stroke };
+        continue;
+      }
       // A decomposed editor has already rebased source presentation through
       // generatedSourceView. Compact view boxes must not shrink its groups.
       if (draft.sourceProvenance?.viewCanvas && draft.sourceProvenance.nodeRefs[node.id]) continue;

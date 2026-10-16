@@ -170,6 +170,43 @@ export function addDraftNode(draft: AuthoredDraft, module: DraftModule, id: stri
 }
 export function removeDraftNode(draft: AuthoredDraft, id: string) {
   const ids = new Set(draftMoveIds(draft, [id]));
+  if (!draft.nodes.some(node => ids.has(node.id))) return;
+  // A collapsed source owner also owns cached and never-materialized children.
+  // Keep edited snapshots behind tombstones so recovery survives save/reopen.
+  if (draft.sourceProvenance) {
+    draft.sourceCache ??= { nodes: [], edges: [], removedNodeIds: [], removedCanonicalEdgeIds: [] };
+    const liveBefore = new Set(draft.nodes.map(node => node.id));
+    const currentEdges = new Map(draft.edges.map(edge => [edge.id, edge]));
+    const removedEdges = new Set(draft.sourceCache.removedCanonicalEdgeIds);
+    for (const edge of draft.sourceProvenance.originalGraph.edges) if (liveBefore.has(edge.source.nodeId) && liveBefore.has(edge.target.nodeId) &&
+      JSON.stringify(currentEdges.get(edge.id)) !== JSON.stringify(edge)) {
+      for (const canonical of draft.sourceProvenance.edgeRefs[edge.id] ?? []) removedEdges.add(canonical);
+    }
+    draft.sourceCache.removedCanonicalEdgeIds = [...removedEdges];
+    const snapshots = new Map([...draft.sourceCache.nodes, ...draft.nodes].map(node => [node.id, structuredClone(node)]));
+    const facts = new Map(draft.sourceProvenance.architecture.nodes.map(node => [node.id, node]));
+    const canonical = new Set([...ids].flatMap(nodeId => draft.sourceProvenance!.nodeRefs[nodeId]?.nodeId ?? []));
+    for (const [nodeId, ref] of Object.entries(draft.sourceProvenance.nodeRefs)) {
+      let parent: string | undefined = ref.nodeId;
+      while (parent) {
+        if (canonical.has(parent)) { ids.add(nodeId); break; }
+        parent = facts.get(parent)?.parentId;
+      }
+    }
+    let found = true;
+    while (found) {
+      found = false;
+      for (const node of snapshots.values()) if (node.presentation?.parentId && ids.has(node.presentation.parentId) && !ids.has(node.id)) {
+        ids.add(node.id); found = true;
+      }
+    }
+    draft.sourceCache.nodes = [...snapshots.values()];
+    const originalEdges = new Map(draft.sourceProvenance.originalGraph.edges.map(edge => [edge.id, edge]));
+    const changedEdges = new Map(draft.sourceCache.edges.map(edge => [edge.id, edge]));
+    for (const edge of draft.edges) if ((ids.has(edge.source.nodeId) || ids.has(edge.target.nodeId)) &&
+      JSON.stringify(originalEdges.get(edge.id)) !== JSON.stringify(edge)) changedEdges.set(edge.id, structuredClone(edge));
+    draft.sourceCache.edges = [...changedEdges.values()];
+  }
   // Empty expanded containers are removed with their last child. Otherwise
   // the invisible source root prevents a genuinely blank editor and retains
   // lowering restrictions from a graph that the user has already deleted.
@@ -186,11 +223,6 @@ export function removeDraftNode(draft: AuthoredDraft, id: string) {
   draft.edges = draft.edges.filter(edge => !ids.has(edge.source.nodeId) && !ids.has(edge.target.nodeId));
   if (draft.sourceCache) {
     draft.sourceCache.removedNodeIds = [...new Set([...draft.sourceCache.removedNodeIds, ...ids])];
-    draft.sourceCache.nodes = draft.sourceCache.nodes.filter(node => !ids.has(node.id));
-    draft.sourceCache.edges = draft.sourceCache.edges.filter(edge => !ids.has(edge.source.nodeId) && !ids.has(edge.target.nodeId));
-  }
-  if (!draft.nodes.length) {
-    delete draft.sourceProvenance; delete draft.sourceCache;
   }
 }
 /** A draft binding has one producer and preserves fan-out; cycles are rejected before mutation. */

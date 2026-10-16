@@ -14,6 +14,7 @@ import re
 import shutil
 import tempfile
 import threading
+from collections import deque
 from functools import lru_cache
 from pathlib import Path, PurePosixPath
 
@@ -281,6 +282,24 @@ def _scaffold_adapter_files(files, entry, method=None, config=None):
     except (AnalysisError, RecursionError, AttributeError, TypeError) as exc:
         raise AdapterError(f'Source inspection exceeded its supported subset: {exc}') from exc
     children = copy.deepcopy(analyzer.nodes[1:])
+    # A module card points to its construction in __init__, while its call can
+    # live inside a different method/opaque region. Preserve both locations in
+    # the inspection instance so selecting a region cannot lose real modules.
+    # This metadata belongs to the adapter, not the formal tensor graph.
+    by_id = {child['id']: child for child in children}
+    calls = {id(call): (own, call) for body, own, _ in structure.flow_roots
+             for statement in body for call in ast.walk(statement) if isinstance(call, ast.Call)}
+    for (_, call_id), targets in structure.call_nodes.items():
+        if call_id not in calls:
+            continue
+        own, call = calls[call_id]
+        source = _source(own, call)
+        for target in targets:
+            child = by_id.get(target)
+            if child and child['kind'] == 'SourceModule':
+                sites = child['parameters'].setdefault('callSites', [])
+                if source not in sites:
+                    sites.append(source)
     for child in children:
         if child.get('parentId') == root['id']:
             child['parentId'] = None
@@ -321,7 +340,7 @@ def _scaffold_adapter_files(files, entry, method=None, config=None):
     binding = {'entry': entry, 'method': method, 'sourceFiles': [{'path': path, 'sha256': _sha(text)} for path, text in sorted(files.items())],
                'symbol': {**_source(unit, symbol), 'qualifiedName': entry},
                'methodSpan': {**_source(method_unit, function), 'sha256': _sha(method_unit.expression(function))}}
-    core = {'schema': SCHEMA, 'generatorRevision': 'source-inspection/2', 'binding': binding, 'config': copy.deepcopy(config), 'inputs': inputs, 'outputs': outputs,
+    core = {'schema': SCHEMA, 'generatorRevision': 'source-inspection/3', 'binding': binding, 'config': copy.deepcopy(config), 'inputs': inputs, 'outputs': outputs,
             'children': children, 'dependencies': kept, 'diagnostics': analyzer.diagnostics,
             'generationContract': None, 'authority': 'source-structure-only; no execution path, tensor ports, shapes, or source-generation authority'}
     encoded = _canonical(core)
@@ -365,7 +384,7 @@ def validate_adapter_files(payload, files):
     if payload.get('schema') == 'archcanvas-source-adapter/2':
         from .source_rules import validate_rule_adapter_files
         return validate_rule_adapter_files(payload, files)
-    if payload.get('generatorRevision') != 'source-inspection/2':
+    if payload.get('generatorRevision') != 'source-inspection/3':
         raise AdapterError('Adapter is stale: source inspection rules changed; scaffold and review a new adapter.')
     binding = payload.get('binding')
     if not isinstance(binding, dict) or not all(key in binding for key in ('entry', 'method', 'sourceFiles')):
@@ -647,14 +666,26 @@ def _preview_evidence(source):
 
 def _selected_children(adapter, boundary, bundle, whole=False):
     children = adapter['children']
+    by_id = {node['id']: node for node in children}
     evidence = [bundle['evidence'][key] for key in boundary.get('source_evidence', []) if key in bundle['evidence']]
     root_match = boundary.get('parent') is None and adapter['binding']['entry'] == bundle.get('entry')
     def overlaps(source, item):
         return source['path'] == item['file'] and source['line'] <= item['endLine'] and source['endLine'] >= item['line']
-    roots = [node for node in children if node.get('parentId') is None and (whole or root_match or any(overlaps(node['source'], item) for item in evidence))]
-    selected = {node['id'] for node in roots}
+    selected = {node['id'] for node in children
+                if whole or root_match or any(overlaps(source, item) for source in
+                    [node['source'], *node.get('parameters', {}).get('callSites', [])] for item in evidence)}
+    # Def/use spans also locate callers whose card lives in a constructor or a
+    # different local file. These remain syntax dependencies, never tensor flow.
+    for relation in adapter['dependencies']:
+        if any(overlaps(relation['source'], item) for item in evidence):
+            selected.update((relation['sourceId'], relation['targetId']))
     if not selected:
         return []
+    for identity in list(selected):
+        parent = by_id[identity].get('parentId')
+        while parent is not None:
+            selected.add(parent)
+            parent = by_id[parent].get('parentId')
     # Include complete definition descendants, even when their authored source
     # lives in a different local file. No runtime instance count is inferred.
     for _ in range(12):
@@ -662,7 +693,41 @@ def _selected_children(adapter, boundary, bundle, whole=False):
         selected.update(node['id'] for node in children if node.get('parentId') in selected)
         if before == len(selected):
             break
-    return [node for node in children if node['id'] in selected]
+    # Spend a bounded view budget on shallow siblings before deeply inspecting
+    # the first one. The original order remains deterministic within a level.
+    siblings = {}
+    for node in children:
+        if node['id'] in selected:
+            siblings.setdefault(node.get('parentId'), []).append(node)
+    pending = deque(siblings.get(None, []))
+    ordered = []
+    while pending:
+        node = pending.popleft()
+        ordered.append(node)
+        pending.extend(siblings.get(node['id'], []))
+    return ordered
+
+
+def _inspection_allowances(demands, budget):
+    """Distribute a bounded card budget fairly, returning unused small shares.
+
+    A small region receives only the cards it actually needs. Its remaining
+    share can inspect a larger sibling instead of causing avoidable truncation.
+    Equal shares and their final remainder follow the authored boundary order.
+    """
+    allowances = [0] * len(demands)
+    ordered = sorted(range(len(demands)), key=lambda index: (demands[index], index))
+    for offset, index in enumerate(ordered):
+        active = ordered[offset:]
+        share, extra = divmod(budget, len(active))
+        if demands[index] <= share:
+            allowances[index] = demands[index]
+            budget -= demands[index]
+        else:
+            for position, remaining in enumerate(sorted(active)):
+                allowances[remaining] = share + (position < extra)
+            break
+    return allowances
 
 
 def apply_preview_adapters(bundle, files, adapters, *, automatic=False):
@@ -678,13 +743,15 @@ def apply_preview_adapters(bundle, files, adapters, *, automatic=False):
     result = copy.deepcopy(bundle)
     ir = result['ir']
     definitions.sort(key=lambda adapter: adapter['binding']['entry'] == result.get('entry'))
-    remaining = MAX_NODES - len(ir['nodes'])
     added, applied = 0, []
-    for boundary in list(ir['nodes']):
+    boundaries = list(ir['nodes'])
+    plans = {}
+    by_original = {node['id']: node for node in ir['nodes']}
+    # Select actual source facts first. Counting every opaque call as an equal
+    # demand wastes most of the view budget when later calls have tiny trees.
+    for boundary in boundaries:
         inspection = boundary.get('sourceInspection')
-        if boundary.get('kind') != 'opaque' or remaining <= 0 and not (inspection and not automatic):
-            continue
-        if inspection and automatic:
+        if boundary.get('kind') != 'opaque' or inspection and automatic:
             continue
         for adapter in definitions:
             if adapter['config'] != result.get('config', {}):
@@ -698,81 +765,106 @@ def apply_preview_adapters(bundle, files, adapters, *, automatic=False):
             facts = _selected_children(adapter, boundary, result, whole)
             if not facts:
                 continue
-            if inspection:
-                removed = {node['id'] for node in ir['nodes'] if node['id'].startswith(boundary['id'] + '/adapter-') and node.get('sourceStructure')}
-                ir['nodes'] = [node for node in ir['nodes'] if node['id'] not in removed]
-                ir['edges'] = [edge for edge in ir['edges'] if edge['source'] not in removed and edge['target'] not in removed]
-                remaining += len(removed)
-                result['sourceAdapters'] = [record for record in result.get('sourceAdapters', []) if record['boundary'] != boundary['id']]
-            by_original = {node['id']: node for node in ir['nodes']}
             parent_depth, cursor = 0, boundary
             while cursor.get('parent'):
                 parent_depth += 1; cursor = by_original[cursor['parent']]
-            mapping, pending = {}, list(facts)
-            omitted = 0
-            while pending and remaining > 0:
-                progressed = False
-                for fact in list(pending):
-                    parent = fact.get('parentId')
-                    if parent is not None and parent not in mapping:
-                        continue
-                    depth = 1
-                    ancestor = parent
-                    while ancestor is not None:
-                        depth += 1
-                        ancestor = next((node.get('parentId') for node in facts if node['id'] == ancestor), None)
-                    pending.remove(fact); progressed = True
-                    if parent_depth + depth > 12:
-                        omitted += 1
-                        continue
-                    identity = boundary['id'] + '/adapter-' + _sha(adapter['id'] + fact['id'])[:16]
-                    source = _preview_evidence(fact['source'])
-                    evidence_id = 'e-' + _sha(_canonical(source))[:16]
-                    result['evidence'][evidence_id] = source
-                    label = adapter['presentation']['labels'].get(fact['id'], fact['label'])
-                    source_type = fact.get('parameters', {}).get('sourceType')
-                    if source_type and fact['id'] not in adapter['presentation']['labels'] and source_type != fact['label']:
-                        label = label + ' · ' + source_type
-                    node = {'id': identity, 'parent': mapping.get(parent, boundary['id']), 'kind': 'source_structure',
-                            'label': label, 'sourceParameters': copy.deepcopy(fact.get('parameters', {})),
-                            'source_evidence': [evidence_id], 'expression': source['expression'],
-                            'certainty': 'syntax', 'sourceStructure': True, 'sourceKind': fact['kind'],
-                            'sourceAdapterId': adapter['id'], 'generationContract': None}
-                    ir['nodes'].append(node); mapping[fact['id']] = identity
-                    remaining -= 1; added += 1
-                    if remaining <= 0:
-                        break
-                if not progressed:
-                    break
-            for node in ir['nodes']:
-                if node['id'] not in mapping.values():
+            depths = {}
+            for fact in facts:
+                depths[fact['id']] = depths.get(fact.get('parentId'), 0) + 1
+            demand = sum(parent_depth + depth <= 12 for depth in depths.values())
+            if not demand:
+                continue
+            removed = {node['id'] for node in ir['nodes'] if inspection
+                       and node['id'].startswith(boundary['id'] + '/adapter-') and node.get('sourceStructure')}
+            plans[boundary['id']] = {'adapter': adapter, 'facts': facts, 'demand': demand,
+                                     'removed': removed, 'parentDepth': parent_depth}
+            break
+    removed = set().union(*(plan['removed'] for plan in plans.values())) if plans else set()
+    budget = max(0, MAX_NODES - len(ir['nodes']) + len(removed))
+    # An existing inspection being refreshed must retain at least one card;
+    # otherwise its freed cards could fund new regions while hiding that tree.
+    minimums = [int(bool(plan['removed'])) for plan in plans.values()]
+    allowances = _inspection_allowances([plan['demand'] - minimum for plan, minimum in zip(plans.values(), minimums)],
+                                        budget - sum(minimums))
+    for plan, allowance, minimum in zip(plans.values(), allowances, minimums):
+        plan['allowance'] = allowance + minimum
+    if removed:
+        ir['nodes'] = [node for node in ir['nodes'] if node['id'] not in removed]
+        ir['edges'] = [edge for edge in ir['edges'] if edge['source'] not in removed and edge['target'] not in removed]
+        result['sourceAdapters'] = [record for record in result.get('sourceAdapters', [])
+                                    if record['boundary'] not in plans]
+    remaining = MAX_NODES - len(ir['nodes'])
+    for boundary in boundaries:
+        plan = plans.get(boundary['id'])
+        if not plan or not plan['allowance']:
+            continue
+        adapter, facts = plan['adapter'], plan['facts']
+        parent_depth = plan['parentDepth']
+        mapping, pending = {}, list(facts)
+        omitted = 0
+        allowance = plan['allowance']
+        while pending and remaining > 0 and len(mapping) < allowance:
+            progressed = False
+            for fact in list(pending):
+                parent = fact.get('parentId')
+                if parent is not None and parent not in mapping:
                     continue
-                parameters = node.get('sourceParameters', {})
-                reference = parameters.get('definitionReference')
-                if reference:
-                    parameters['definitionReferenceSourceId'] = reference
-                    if reference in mapping:
-                        parameters['definitionReference'] = mapping[reference]
-                        node['sourceDefinitionReference'] = mapping[reference]
-                    else:
-                        parameters['definitionReferenceVisible'] = False
-            for relation in adapter['dependencies']:
-                if relation['sourceId'] not in mapping or relation['targetId'] not in mapping or len(ir['edges']) >= 3600:
+                depth = 1
+                ancestor = parent
+                while ancestor is not None:
+                    depth += 1
+                    ancestor = next((node.get('parentId') for node in facts if node['id'] == ancestor), None)
+                pending.remove(fact); progressed = True
+                if parent_depth + depth > 12:
+                    omitted += 1
                     continue
-                source = _preview_evidence(relation['source'])
+                identity = boundary['id'] + '/adapter-' + _sha(adapter['id'] + fact['id'])[:16]
+                source = _preview_evidence(fact['source'])
                 evidence_id = 'e-' + _sha(_canonical(source))[:16]
                 result['evidence'][evidence_id] = source
-                producer, consumer = mapping[relation['sourceId']], mapping[relation['targetId']]
-                ir['edges'].append({'id': 'adapter-edge-' + _sha(boundary['id'] + relation['id'])[:20],
-                                    'source': producer, 'target': consumer, 'sourcePort': 'out', 'targetPort': 'source-dependency',
-                                    'wire': producer + ':out', 'role': 'source_dependency', 'source_evidence': [evidence_id],
-                                    'syntaxOnly': True, 'sourceAdapterId': adapter['id']})
-            if mapping:
-                truncated = bool(pending or omitted or any('budget' in item.get('message', '') for item in adapter['diagnostics']))
-                applied.append({'boundary': boundary['id'], 'adapter': adapter['id'], 'nodes': len(mapping), 'truncated': truncated})
-                boundary['sourceInspection'] = {'adapterId': adapter['id'], 'authority': 'source-structure-only', 'truncated': truncated,
-                                                'origin': 'automatic' if automatic else 'registered', 'presentationSha256': _sha(_canonical(adapter['presentation']))}
+                label = adapter['presentation']['labels'].get(fact['id'], fact['label'])
+                source_type = fact.get('parameters', {}).get('sourceType')
+                if source_type and fact['id'] not in adapter['presentation']['labels'] and source_type != fact['label']:
+                    label = label + ' · ' + source_type
+                node = {'id': identity, 'parent': mapping.get(parent, boundary['id']), 'kind': 'source_structure',
+                        'label': label, 'sourceParameters': copy.deepcopy(fact.get('parameters', {})),
+                        'source_evidence': [evidence_id], 'expression': source['expression'],
+                        'certainty': 'syntax', 'sourceStructure': True, 'sourceKind': fact['kind'],
+                        'sourceAdapterId': adapter['id'], 'generationContract': None}
+                ir['nodes'].append(node); mapping[fact['id']] = identity
+                remaining -= 1; added += 1
+                if remaining <= 0 or len(mapping) >= allowance:
+                    break
+            if not progressed:
                 break
+        for node in ir['nodes']:
+            if node['id'] not in mapping.values():
+                continue
+            parameters = node.get('sourceParameters', {})
+            reference = parameters.get('definitionReference')
+            if reference:
+                parameters['definitionReferenceSourceId'] = reference
+                if reference in mapping:
+                    parameters['definitionReference'] = mapping[reference]
+                    node['sourceDefinitionReference'] = mapping[reference]
+                else:
+                    parameters['definitionReferenceVisible'] = False
+        for relation in adapter['dependencies']:
+            if relation['sourceId'] not in mapping or relation['targetId'] not in mapping or len(ir['edges']) >= 3600:
+                continue
+            source = _preview_evidence(relation['source'])
+            evidence_id = 'e-' + _sha(_canonical(source))[:16]
+            result['evidence'][evidence_id] = source
+            producer, consumer = mapping[relation['sourceId']], mapping[relation['targetId']]
+            ir['edges'].append({'id': 'adapter-edge-' + _sha(boundary['id'] + relation['id'])[:20],
+                                'source': producer, 'target': consumer, 'sourcePort': 'out', 'targetPort': 'source-dependency',
+                                'wire': producer + ':out', 'role': 'source_dependency', 'source_evidence': [evidence_id],
+                                'syntaxOnly': True, 'sourceAdapterId': adapter['id']})
+        if mapping:
+            truncated = bool(pending or omitted or any('budget' in item.get('message', '') for item in adapter['diagnostics']))
+            applied.append({'boundary': boundary['id'], 'adapter': adapter['id'], 'nodes': len(mapping), 'truncated': truncated})
+            boundary['sourceInspection'] = {'adapterId': adapter['id'], 'authority': 'source-structure-only', 'truncated': truncated,
+                                            'origin': 'automatic' if automatic else 'registered', 'presentationSha256': _sha(_canonical(adapter['presentation']))}
     if added:
         result['diagnostics'].append({'node': ir['nodes'][0]['id'], 'evidence': ir['nodes'][0]['source_evidence'][0],
                                       'message': f'Added {added} source inspection cards. Source arrows describe authored dependencies; execution paths, tensor ports and generation authority remain unresolved.'})

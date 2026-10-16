@@ -39,7 +39,8 @@ export function previewMappingSignature(snapshot: PreviewSnapshot): string {
   const graph = snapshot.graph as unknown as PreviewVisualGraph & { recursive?: { authority?: { detail?: PreviewVisualGraph } } };
   return JSON.stringify((graph.recursive?.authority?.detail ?? graph).nodes.filter(node => !node.junction).map(node => {
     const raw = node.semantic ?? node;
-    return [node.id, raw.id, raw.kind, raw.instance, raw.moduleType, raw.expression, raw.source_evidence];
+    return [node.id, raw.id, raw.kind, raw.instance, raw.moduleType, raw.expression, raw.source_evidence,
+      raw.sourceStructure, raw.sourceParameters?.callSites];
   }));
 }
 

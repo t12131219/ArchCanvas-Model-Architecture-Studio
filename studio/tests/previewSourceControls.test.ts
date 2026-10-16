@@ -37,6 +37,19 @@ function fixture() {
     { id: 'no', parent: 'if', x: 482, y: 204, w: 330, h: 300, expanded: false, routingObstacle: true, labelObstacles: [], semantic: semantic('SourceBranch', 'else') },
   ] } as any;
 }
+function stackedFixture() {
+  const graph = fixture(); graph.canvas = [1500, 1700];
+  Object.assign(graph.nodes[0], { w: 1400, h: 1600 });
+  Object.assign(graph.nodes[1], { w: 1272, h: 1340 });
+  Object.assign(graph.nodes[2], { w: 1200, h: 684, expanded: true, routingObstacle: false,
+    labelObstacles: [{ x: 12, y: 8, w: 224, h: 48 }] });
+  Object.assign(graph.nodes[3], { x: 495, y: 942, w: 402, h: 436, expanded: true, routingObstacle: false,
+    labelObstacles: [{ x: 12, y: 8, w: 142, h: 48 }] });
+  graph.nodes.push(
+    { id: 'yes-child', parent: 'yes', x: 132, y: 280, w: 270, h: 70, expanded: false, routingObstacle: true },
+    { id: 'no-child', parent: 'no', x: 581, y: 1018, w: 230, h: 70, expanded: false, routingObstacle: true });
+  return graph;
+}
 function svg() { const node = new SvgElement('svg'), nodes = new SvgElement('g'); nodes.setAttribute('id', 'nodeLayer'); node.append(nodes); return node; }
 function authority(graph: any) { return JSON.stringify([graph.nodes, graph.edges, graph.semanticBaseline, graph.recursive]); }
 const overlap = (a: any, b: any) => Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 1e-5 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 1e-5;
@@ -74,6 +87,43 @@ test('nested and independently expanded branches only receive arrows from their 
   assert.ok(value.controls.every((c: any) => c.owner === 'if' || c.owner === 'nested-if'));
 });
 
+test('vertically stacked expanded branches retain safe controls outside the earlier arm', () => {
+  const { S, E, context, response } = runtime(), graph = stackedFixture(), before = authority(graph);
+  const original = E.routeOne;
+  // Exercise the bounded recovery when the normal search has exhausted its
+  // candidates. Every replacement still passes the real geometry validator.
+  E.routeOne = (...args: any[]) => args[1].target === 'no' ? { ok: false } : original(...args);
+  const controls = S.refresh(graph);
+  assert.equal(controls.controls.length, 2); assert.deepEqual(plain(controls.diagnostics), []);
+  assert.equal(authority(graph), before); assert.equal(graph.edges.length, 0);
+  const otherwise = controls.controls.find((item: any) => item.target === 'no');
+  assert.ok(otherwise.points.some((point: any) => point.x < graph.nodes[2].x || point.x > graph.nodes[2].x + graph.nodes[2].w));
+  assert.ok(otherwise.points.every((point: any) => point.x > graph.nodes[1].x && point.x < graph.nodes[1].x + graph.nodes[1].w));
+  const worker = plain(graph); delete worker.sourceControls;
+  context.onmessage({ data: { requestId: 25, task: 'validate', graph: worker, options: {} } });
+  assert.equal(response().ok, true);
+  assert.deepEqual(response().graph.sourceControls, plain(controls));
+});
+
+test('a canonical tensor entering the branch centre keeps its own lane and syntax selects another top slot', () => {
+  const { S, E, context, response } = runtime(), graph = stackedFixture();
+  graph.nodes.push({ id: 'feed', parent: 'if', x: 1200, y: 898, w: 60, h: 24, expanded: false, routingObstacle: true });
+  graph.edges.push({ id: 'canonical-input', source: 'feed', target: 'no-child', style: 'orthogonal', arrow: 'filled',
+    fixedSource: { side: 'bottom', fraction: .5 }, fixedTarget: { side: 'top', fraction: .5 },
+    binding: { src: 'feed:out', dst: 'no-child:in' },
+    route: [{ x: 1230, y: 922 }, { x: 1230, y: 930 }, { x: 696, y: 930 }, { x: 696, y: 1018 }], waypoints: [] });
+  context.SummaryConstraints.initialize(graph);
+  assert.equal(E.validateView(graph).layout.ok, true);
+  const before = authority(graph), controls = S.refresh(graph);
+  assert.equal(controls.controls.length, 2); assert.deepEqual(plain(controls.diagnostics), []);
+  const otherwise = controls.controls.find((item: any) => item.target === 'no');
+  assert.notEqual(otherwise.points.at(-1).x, 696);
+  assert.equal(otherwise.points.at(-1).y, graph.nodes[3].y);
+  assert.equal(authority(graph), before); assert.equal(graph.edges.length, 1);
+  context.onmessage({ data: { requestId: 26, task: 'validate', graph: plain(graph), options: {} } });
+  assert.equal(response().ok, true); assert.deepEqual(response().graph.sourceControls, plain(controls));
+});
+
 test('geometry, actual routes and labels invalidate cached controls while render and legend never route', () => {
   const { S, E } = runtime(), graph = fixture(), out = svg(); S.refresh(graph);
   let routed = 0; const original = E.routeOne; E.routeOne = (...args: any[]) => { routed++; return original(...args); };
@@ -96,6 +146,39 @@ test('serialized forged control results are replaced by the worker and match the
   context.onmessage({ data: { requestId: 17, task: 'validate', graph, options: {} } }); const result = response(); assert.equal(result.ok, true); assert.equal(result.validation.layout.ok, true);
   assert.equal(result.graph.sourceControls.controls.length, 2); assert.ok(result.graph.sourceControls.controls.every((c: any) => c.owner === 'if'));
   assert.deepEqual(plain(S.refresh(fixture())), result.graph.sourceControls);
+});
+
+test('actual saved-case loader commits the worker-refreshed control graph when no geometry upgrade is needed', async () => {
+  const { S, context, response } = runtime(), F = context.SummaryRecursive;
+  const sources = { overview: fixture(), detailed: fixture() }, saved = F.build(F.create(sources));
+  saved.sourceControls = { version: 1, controls: [], decisions: [], diagnostics: [] };
+  const canonical = JSON.stringify([saved.nodes, saved.edges]), caseItem = { id: 'saved-condition', title: 'Saved condition',
+    collection: 'source_adapter', origin: 'model:Model', views: [{ key: 'overview' }] };
+  let request = 30, validations = 0, published: any;
+  Object.assign(context, {
+    E: context.SummaryEngine, C: context.SummaryConstraints, F, busy: false, drag: null, loadToken: 0,
+    sessions: new Map(), catalogSources: null, importedPackages: new Map(), names: {}, graph: null, studioBridge: null,
+    selectedNodes: new Set(), selectedEdges: new Set(), URL, location: { href: 'http://127.0.0.1/preview/' },
+    window: { history: { replaceState() {} } },
+    $: () => ({ value: '', checked: false, innerHTML: '', textContent: '' }),
+    flushPersist() {}, render() {}, syncUnifiedState() {}, renderCatalog() {}, fit() {}, persist() {}, toast() {}, esc: (v: unknown) => String(v),
+    caseSources: async () => sources,
+    invalidSourceRoutes: (_graph: any, validation: any) => validation.edges.some(([, value]: any) => !value.ok),
+    runGraphTask: async (message: any) => {
+      context.onmessage({ data: { ...plain(message), requestId: ++request } });
+      const result = response(); if (message.task === 'validate') { validations++; published = result.graph; }
+      return result;
+    },
+  });
+  const app = readFileSync(new URL('../public/preview/yworks_edge_router_lab/app.js', import.meta.url), 'utf8');
+  const start = app.indexOf('  async function openCase('), end = app.indexOf('  function cameraUpdate(', start);
+  assert.ok(start >= 0 && end > start);
+  vm.runInContext(app.slice(start, end) + '\nglobalThis.loadSavedCase=openCase;', context, { filename: 'app.js:openCase' });
+  assert.equal(await context.loadSavedCase(caseItem, caseItem.views[0], { graph: saved, history: [], future: [], dirty: true }), true);
+  assert.equal(validations, 1, 'current geometry uses validation without an extra layout transaction');
+  assert.equal(context.graph, published, 'publish the actual validated worker graph, including refreshed overlays');
+  assert.equal(S.ensure(context.graph).controls.length, 2); assert.deepEqual(plain(S.ensure(context.graph).diagnostics), []);
+  assert.equal(JSON.stringify([context.graph.nodes, context.graph.edges]), canonical);
 });
 
 test('monochrome retains non-tensor dash grammar, export scopes and a single control legend row', () => {

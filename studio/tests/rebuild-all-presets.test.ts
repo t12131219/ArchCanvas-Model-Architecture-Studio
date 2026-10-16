@@ -48,12 +48,16 @@ function deleteOneByOne(original: AuthoredDraft) {
   for (const id of leaves) history = changeDraft(history, draft => removeDraftNode(draft, id));
   assert.equal(history.draft.nodes.length, 0, 'last leaf deletion must also remove empty source containers');
   assert.equal(history.draft.edges.length, 0);
-  assert.equal(history.draft.sourceProvenance, undefined, 'the deleted model cannot constrain a new composition');
-  assert.equal(history.draft.sourceCache, undefined);
+  if (original.sourceProvenance) {
+    assert.ok(history.draft.sourceProvenance, 'deleted source stays recoverable after save/reopen');
+    assert.ok(history.draft.sourceCache?.removedNodeIds.length);
+  } else assert.equal(history.draft.sourceProvenance, undefined);
   const undone = travelDraft(history, 'undo'), redone = travelDraft(undone, 'redo');
   assert.ok(undone.draft.nodes.length > 0);
   assert.deepEqual(redone.draft.nodes, []);
-  return history;
+  // An unrelated composition uses the explicit new-blank workflow; the
+  // deleted source workspace remains independently recoverable.
+  return original.sourceProvenance ? draftHistory(blankDraft(original.id)) : history;
 }
 
 async function persist(draft: AuthoredDraft) {

@@ -52,3 +52,37 @@ test('small inspection examples and fully proven compositions retain recursive e
   assert.ok(editing.expandedIds.includes('body'));
   assert.equal(effectiveVisibleFrontier(editing).visibleIds.size, 162);
 });
+
+test('large source control scopes expose both branch bodies while retaining bounded module implementations', () => {
+  const architecture = inspectionTree(160);
+  const body = architecture.nodes.find(node => node.id === 'body')!;
+  body.kind = 'SourceBranch';
+  body.label = 'if flag';
+  body.children = ['branch-call'];
+  architecture.nodes.push({ id: 'branch-call', kind: 'SourceModule', label: 'projection', category: 'container', children: ['implementation'],
+    parentId: body.id, parameters: {}, ports: [], evidence: 'source', sourceStructure: true, source: { path: 'unknown.py', line: 1, endLine: 1, expression: 'projection(x)' } });
+  architecture.nodes.push({ id: 'implementation', kind: 'SourceCode', label: 'implementation', category: 'operator', children: [],
+    parentId: 'branch-call', parameters: {}, ports: [], evidence: 'source', sourceStructure: true, source: { path: 'unknown.py', line: 1, endLine: 1, expression: 'return x' } });
+  for (const node of architecture.nodes.filter(node => node.id.startsWith('body-'))) { node.parentId = 'region'; architecture.nodes[1].children.push(node.id); }
+  const editing = projectSourceEditing(createDocument(architecture));
+  assert.equal(editing.scene.nodes.find(node => node.id === body.id)?.expanded, true);
+  assert.ok(editing.scene.nodes.some(node => node.id === 'branch-call'));
+  assert.ok(!editing.scene.nodes.some(node => node.id === 'implementation'));
+  const collapsed = structuredClone(editing.document);
+  collapsed.expandedIds = collapsed.expandedIds.filter(id => id !== body.id);
+  const repeated = projectSourceEditing(createDocument(architecture), collapsed, createDocument(architecture));
+  assert.ok(!repeated.document.expandedIds.includes(body.id), 'an independent editor collapse is not a missing initialization flag');
+});
+
+test('cached editing receives newly revealed view structure without erasing independent editor frontier choices', () => {
+  const oldView = createDocument(inspectionTree(160));
+  const editing = sourceEditingDocument(oldView);
+  const revealedView = structuredClone(oldView);
+  revealedView.expandedIds.push('region', 'body');
+  const reopened = projectSourceEditing(revealedView, editing, oldView);
+  assert.ok(reopened.scene.nodes.some(node => node.id === 'body-1'));
+  const manuallyCollapsed = structuredClone(reopened.document);
+  manuallyCollapsed.expandedIds = manuallyCollapsed.expandedIds.filter(id => id !== 'body');
+  const unchangedView = projectSourceEditing(revealedView, manuallyCollapsed, revealedView);
+  assert.ok(!unchangedView.document.expandedIds.includes('body'));
+});

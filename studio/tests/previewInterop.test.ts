@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { architecturePreviewFocus, architecturePreviewRequest, assertPreviewBundleMatchesArchitecture, bundlePreviewRequest,
   documentPreviewIdentity, PreviewRequestGate, previewCanvasOperations, previewExpansionOperations, previewNodeLayoutOperation, previewSelectionDraftIds, previewSelectionNodeIds,
   previewSourceIdentity, previewSourceLocation, rawPreviewSourceRequest } from '../src/previewInterop.ts';
+import { previewUniqueNodeBindings } from '../src/previewInterop.ts';
 import type { PreviewSelection, PreviewSourceBundle, RawPreviewSource } from '../src/previewInterop.ts';
 import type { Architecture, ArchitectureNode, CanvasDocument } from '../src/core/types.ts';
 import type { AuthoredDraft, SourceDraftRef } from '../src/authoring.ts';
@@ -99,6 +100,23 @@ test('instance identities distinguish Sequential children that share a single ca
   assert.deepEqual(previewSelectionNodeIds(arch, selection), ['second']);
 });
 
+test('inspection constructors bridge exact call locations without guessing labels or choosing repeated calls', () => {
+  const arch = architecture(), adapted = bundle();
+  adapted.evidence!.construction = { file: 'models/net.py', line: 3, endLine: 3, expression: 'ReviewCell()' };
+  const card = { id: 'inspection-cell', kind: 'source_structure', label: 'arbitrary display title', sourceStructure: true,
+    source_evidence: ['construction'], sourceParameters: { callSites: [adapted.evidence!.left] } };
+  adapted.ir!.nodes = [card];
+  assert.deepEqual(previewSelectionNodeIds(arch, { node: card }, adapted), ['left']);
+  assert.equal(previewUniqueNodeBindings(arch, { nodes: [{ ...card, x: 0, y: 0 }] }, adapted).get(card.id), 'left');
+  assert.equal(previewSourceLocation({ node: card }, adapted)?.line, 3, 'source inspection still opens its constructor first');
+  card.sourceParameters.callSites.push(adapted.evidence!.right);
+  assert.deepEqual(previewSelectionNodeIds(arch, { node: card }, adapted), ['left', 'right']);
+  assert.equal(previewUniqueNodeBindings(arch, { nodes: [{ ...card, x: 0, y: 0 }] }, adapted).size, 0,
+    'a shared definition cannot silently choose one runtime invocation');
+  card.sourceParameters.callSites = [{ file: '../outside.py', line: 5, endLine: 5, expression: 'self.shared(features)' }];
+  assert.deepEqual(previewSelectionNodeIds(arch, { node: card }, adapted), []);
+});
+
 test('reviewed catalog nodes use every evidence span and normalization aliases without matching display names', () => {
   const arch = architecture(), norm = node('formal-norm', 'LayerNorm', 'norm', 6), sameSpan = node('other-norm', 'LayerNorm', 'norm', 6);
   norm.label = 'source label'; sameSpan.label = 'Pretty label'; arch.nodes = [norm, sameSpan];
@@ -145,4 +163,71 @@ test('editor layout replay converts local positions to the matching preview pare
   assert.deepEqual(previewExpansionOperations(canvas, graph, bundle()), [{ type: 'expand', id: 'root', expanded: false }], 'expansion replay contains no old layout coordinates');
   graph.nodes[1].parent = 'another-root';
   assert.throws(() => previewNodeLayoutOperation(canvas, { type: 'nodeLayout', id: 'left', position: { x: 80, y: 140 } }, graph, bundle()), /父容器不同/);
+});
+
+test('required preview wrappers open regardless of authority traversal order while unrelated collapsed modules stay folded', () => {
+  const arch = architecture(), root = arch.nodes.find(node => node.id === 'root')!;
+  const folded = node('folded', 'Block', 'container', 3), hidden = node('hidden', 'Linear', 'linear', 3);
+  const unrelated = node('unrelated', 'Block', 'container', 3), otherHidden = node('other-hidden', 'Linear', 'linear', 3);
+  folded.children = [hidden.id]; hidden.parentId = folded.id;
+  unrelated.children = [otherHidden.id]; otherHidden.parentId = unrelated.id;
+  root.children = ['left', folded.id, unrelated.id];
+  arch.nodes = [root, arch.nodes.find(node => node.id === 'left')!, folded, hidden, unrelated, otherHidden];
+  const canvas = document(arch); canvas.expandedIds = ['root'];
+  // The preview parser can place a formal sibling inside a source wrapper.
+  // That wrapper must open to reveal the sibling even when its own formal
+  // counterpart is folded; this must not depend on the detail array order.
+  const detail = { nodes: [{ id: 'root', x: 0, y: 0 }, { id: 'folded', parent: 'root', x: 0, y: 0 },
+    { id: 'left', parent: 'folded', x: 0, y: 0 }, { id: 'unrelated', parent: 'root', x: 0, y: 0 },
+    { id: 'other-hidden', parent: 'unrelated', x: 0, y: 0 }] };
+  const expected = [['folded', true], ['root', true], ['unrelated', false]];
+  const before = JSON.stringify({ canvas, detail });
+  for (const nodes of [detail.nodes, [...detail.nodes].reverse()]) {
+    const replay = previewExpansionOperations(canvas, { nodes, recursive: { authority: { detail: { nodes } } } } as typeof detail);
+    assert.deepEqual(replay.map(op => [op.id, op.expanded]).sort(([a], [b]) => String(a).localeCompare(String(b))), expected);
+    assert.ok(replay.every(op => op.type === 'expand' && !('position' in op)));
+  }
+  assert.equal(JSON.stringify({ canvas, detail }), before);
+});
+
+test('source branch context rejects a missing or conflicting occurrence even when source evidence leaves a single candidate', () => {
+  const arch = architecture(), adapted = bundle();
+  const expression = 'if flag:\n return self.shared(features)\nelse:\n return self.alias(features)';
+  adapted.evidence!.branch = { file: 'models/net.py', line: 4, endLine: 7, expression };
+  adapted.evidence!.construction = { file: 'models/net.py', line: 3, endLine: 3, expression: 'ReviewCell()' };
+  const branch = (id: string, condition: string): ArchitectureNode => ({ ...node(id, 'SourceBranch', 'module', 4, 7, expression),
+    sourceStructure: true, parameters: { condition } });
+  const module = (id: string, parentId: string): ArchitectureNode => ({ ...node(id, 'SourceModule', 'module', 3, 3, 'ReviewCell()'),
+    parentId, sourceStructure: true });
+  const rawBranch = { id: 'preview-else', kind: 'source_structure', sourceKind: 'SourceBranch', sourceStructure: true,
+    source_evidence: ['branch'], sourceParameters: { condition: 'not (flag)' } };
+  const rawModule = { id: 'preview-cell', parent: rawBranch.id, kind: 'source_structure', sourceKind: 'SourceModule',
+    sourceStructure: true, source_evidence: ['construction'] };
+  adapted.ir!.nodes = [rawBranch, rawModule];
+
+  arch.nodes = [branch('only-if', 'flag')];
+  assert.deepEqual(previewSelectionNodeIds(arch, { node: rawBranch }, adapted), [], 'an absent else branch cannot bind to the only if branch');
+  arch.nodes = [branch('first-if', 'flag'), branch('second-if', 'flag')];
+  assert.deepEqual(previewSelectionNodeIds(arch, { node: rawBranch }, adapted), [], 'conflicting alternatives cannot survive as an ambiguous fallback');
+  arch.nodes = [branch('only-if', 'flag'), module('only-if-call', 'only-if')];
+  assert.deepEqual(previewSelectionNodeIds(arch, { node: rawModule }, adapted), [], 'a constructor shared across branches does not authorize the wrong singleton occurrence');
+  arch.nodes.push(module('second-if-call', 'only-if'));
+  assert.deepEqual(previewSelectionNodeIds(arch, { node: rawModule }, adapted), [], 'all conflicting constructor candidates are excluded');
+  arch.nodes.push(branch('correct-else', 'not (flag)'), module('correct-else-call', 'correct-else'));
+  assert.deepEqual(previewSelectionNodeIds(arch, { node: rawBranch }, adapted), ['correct-else']);
+  assert.deepEqual(previewSelectionNodeIds(arch, { node: rawModule }, adapted), ['correct-else-call']);
+});
+
+test('a branch-local inspection constructor still bridges an actual model operation through exact call evidence', () => {
+  const arch = architecture(), adapted = bundle();
+  adapted.evidence!.branch = { file: 'models/net.py', line: 4, endLine: 7, expression: 'if flag: ...' };
+  adapted.evidence!.construction = { file: 'models/net.py', line: 3, endLine: 3, expression: 'ReviewCell()' };
+  const rawBranch = { id: 'preview-else', kind: 'source_structure', sourceKind: 'SourceBranch', sourceStructure: true,
+    source_evidence: ['branch'], sourceParameters: { condition: 'not (flag)' } };
+  const card = { id: 'inspection-cell', parent: rawBranch.id, kind: 'source_structure', sourceKind: 'SourceModule',
+    sourceStructure: true, source_evidence: ['construction'], sourceParameters: { callSites: [adapted.evidence!.right] } };
+  adapted.ir!.nodes = [rawBranch, card];
+  assert.deepEqual(previewSelectionNodeIds(arch, { node: card }, adapted), ['right'],
+    'a real model operation uses exact call evidence even though the formal parser has no inspection branch wrapper');
+  assert.equal(previewUniqueNodeBindings(arch, { nodes: [{ ...card, x: 0, y: 0 }] }, adapted).get(card.id), 'right');
 });

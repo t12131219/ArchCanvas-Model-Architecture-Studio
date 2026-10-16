@@ -1,0 +1,41 @@
+Recorded output excerpts from the completed checks. No checks were rerun when this evidence file was written.
+
+Command (cwd: studio):
+node --experimental-strip-types --test --test-isolation=none tests/generated-canvas.test.ts tests/source-composition-editing.test.ts
+✔ new source operations reveal every return occurrence and reflow their truthful hierarchy while retaining the source draft (719.563075ms)
+ℹ tests 18
+ℹ pass 18
+ℹ fail 0
+ℹ duration_ms 9726.593097
+
+Command (cwd: studio):
+node --experimental-strip-types --test --test-isolation=none tests/source-authoring-session.test.ts tests/editor-workflow-independent.test.ts
+ℹ tests 29
+ℹ pass 29
+ℹ fail 0
+ℹ duration_ms 2756.202114
+
+Command (cwd: studio):
+npx tsc --noEmit
+Exit code: 0; no stdout/stderr.
+
+Command (cwd: project):
+git diff --check -- studio/src/generatedWorkspace.ts studio/tests/generated-canvas.test.ts
+Exit code: 0; no diagnostics.
+
+ACT recovery command (cwd: studio):
+timeout 35 ../.venv/bin/python -I -S -B -u - <<'COMMAND_PY'
+import sys,json,time
+sys.path.insert(0,'../src')
+from archcanvas_authoring import validate_draft,generate_model
+v=json.load(open('/tmp/archcanvas-generic-fixes-20261016/act-resumed-generation-check.json'))
+print('starting-validation',len(v['nodes']),len(v['edges']),flush=True)
+t=time.monotonic(); check=validate_draft(v); print('validated',time.monotonic()-t,check['generation'],flush=True)
+t=time.monotonic(); generated=generate_model(v); print('generated',time.monotonic()-t,generated['verification']['status'],flush=True)
+COMMAND_PY
+starting-validation 13 8
+validated 0.07147729501593858 {'mode': 'source-preserved-copy', 'supported': True, 'topology': 'anchored-edits', 'limitations': ['Original branches, loops and unresolved regions are copied as source; displayed inspection arrows are not tensor lowering.', 'Literal parameters and bounded unary insertions, bypass deletions and rewires require exact AST anchors; independent source reanalysis is mandatory.', 'Static validation does not establish runtime shape or numerical correctness.']}
+generated 7.704827187000774 passed
+Exit code: 0.
+
+The full ACT regenerated response was not persisted. ui-final-generated.json is the existing UI generation reference, not a claimed byte-for-byte comparison with this recovery run. A separate earlier Node execFileSync transport check did not finish and was interrupted; its partial output is not used as passing evidence.

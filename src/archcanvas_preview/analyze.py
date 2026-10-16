@@ -191,12 +191,59 @@ class Analyzer:
             return {**data, 'type': 'module', 'kind': REGISTRY['modules'][symbol[9:]]}
         return {**data, 'type': 'opaque'}
 
+    def registered_state_call(self, key, file, call, attrs, values, module_aliases):
+        """Recognize Module state registration without running its producer.
+
+        Buffer/parameter registration does not replace unrelated child modules.
+        This narrow topology contract does not apply to an override, a dynamic
+        destination, or a producer that receives this model or a child alias.
+        Unknown initializer helpers retain the conservative opaque behavior.
+        """
+        if (not isinstance(call.func, ast.Attribute) or not isinstance(call.func.value, ast.Name)
+                or call.func.value.id != 'self' or call.func.attr not in ('register_buffer', 'register_parameter')
+                or call.func.attr in attrs or self.model_index.method(key, call.func.attr)
+                or self.model_index.method_blocked(key, call.func.attr)
+                or any(unit['module'] == 'torch' or unit['module'].startswith('torch.') for unit in self.units.values())):
+            return False
+        names = ('name', 'tensor', 'persistent') if call.func.attr == 'register_buffer' else ('name', 'param')
+        if (len(call.args) > len(names) or any(isinstance(arg, ast.Starred) for arg in call.args)
+                or any(item.arg not in names for item in call.keywords)):
+            return False
+        arguments = dict(zip(names, call.args))
+        if any(item.arg in arguments for item in call.keywords):
+            return False
+        arguments.update({item.arg: item.value for item in call.keywords})
+        name = self.literal(arguments['name'], values) if 'name' in arguments else None
+        value = arguments.get(names[1])
+        if type(name) is not str or not name or '.' in name or name in attrs or value is None:
+            return False
+        if any(isinstance(part, ast.Name) and part.id in {'self', *module_aliases} for part in ast.walk(value)):
+            return False
+        if 'persistent' in arguments and type(self.literal(arguments['persistent'], values)) is not bool:
+            return False
+        return True
+
     def constructor(self, key, args, kwargs, instance):
         inherited = self.model_index.method(key, '__init__')
         file, init = inherited if inherited else (self.classes[key][0], None)
-        attrs, values = {}, {}
+        attrs, values, module_aliases = {}, {}, set()
         if not isinstance(init, ast.FunctionDef) or init.decorator_list or init.args.vararg or init.args.kwarg:
             return attrs, values
+        receivers = init.args.posonlyargs + init.args.args
+        if (not receivers or receivers[0].arg != 'self'
+                or any(p.arg == 'super' for p in [*receivers, *init.args.kwonlyargs])
+                or any(isinstance(part, ast.Name) and part.id in ('self', 'super')
+                       and isinstance(part.ctx, (ast.Store, ast.Del)) for part in ast.walk(init))):
+            return attrs, values
+        # The familiar spelling super().__init__ is a framework contract only
+        # when the builtin was not rebound in this source module.
+        for statement in self.units[file]['tree'].body:
+            if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                if statement.name == 'super':
+                    return attrs, values
+            elif (any(isinstance(part, ast.Name) and part.id == 'super' and isinstance(part.ctx, (ast.Store, ast.Del))
+                      for part in ast.walk(statement)) or 'super' in self.units[file]['imports']):
+                return attrs, values
         positional = (init.args.posonlyargs + init.args.args)[1:]
         keyword_only = list(init.args.kwonlyargs)
         parameters = positional + keyword_only
@@ -218,6 +265,14 @@ class Analyzer:
                 for t in targets:
                     if isinstance(t, ast.Attribute) and isinstance(t.value, ast.Name) and t.value.id == 'self' and stmt.value:
                         attrs[t.attr] = self.spec(file, stmt.value, values, instance + '.' + t.attr, attrs)
+                    elif isinstance(t, ast.Name) and stmt.value:
+                        # Keep scalar aliases for state names, and remember
+                        # local aliases of children so they cannot be passed to
+                        # an unchecked state-producing helper as if harmless.
+                        values[t.id] = self.literal(stmt.value, values)
+                        if any(isinstance(n, ast.Name) and n.id in {'self', *module_aliases}
+                               for n in ast.walk(stmt.value)):
+                            module_aliases.add(t.id)
             elif isinstance(stmt, (ast.If, ast.For, ast.While, ast.Try, ast.With)):
                 # A guarded assignment does not establish a selected instance.
                 for t in ast.walk(stmt):
@@ -227,6 +282,8 @@ class Analyzer:
                 call = stmt.value
                 super_init = isinstance(call.func, ast.Attribute) and call.func.attr == '__init__' and isinstance(call.func.value, ast.Call) and isinstance(call.func.value.func, ast.Name) and call.func.value.func.id == 'super'
                 if not super_init:
+                    if self.registered_state_call(key, file, call, attrs, values, module_aliases):
+                        continue
                     # An initializer helper can replace earlier attributes.
                     return {}, values
                 if attrs or call.args or call.keywords:

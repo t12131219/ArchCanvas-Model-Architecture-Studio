@@ -2,7 +2,7 @@
 (function(root){
   'use strict';
   const R=root.EdgeRouterLabRouting,E=root.SummaryEngine,C=root.SummaryConstraints,L=root.SummaryRouteLabels;
-  const NS='http://www.w3.org/2000/svg',VERSION=1,cache=new Map(),clone=E.clone;
+  const NS='http://www.w3.org/2000/svg',VERSION=2,cache=new Map(),clone=E.clone;
   const kind=n=>n.semantic?.sourceStructure===true?n.semantic.sourceKind:null;
   const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   const overlay=graph=>graph.recursive?.state?.studioPresentation||graph.studioPresentation||{};
@@ -74,10 +74,30 @@
         route:R.simplify([a,{x:a.x,y:lane},{x:b.x,y:lane},b]),waypoints:[]};
       geometry.edges.push(edge);C.initialize(geometry);
       const options={margin:3,stub:12,bendCost:40,crossingCost:450,overlapCost:2,edgeSpacing:4,style:'orthogonal',sides:'any',boundaryLanes:false};
-      const routed=E.routeOne(geometry,edge,prior,options),checked=routed.ok?C.validate(geometry,edge,edge.route):null;
-      const overlapsPrior=prior.some(path=>path.wire!==edge.contract.wire&&path.slice(1).some((b,i)=>edge.route.slice(1).some((d,j)=>R.overlap(path[i],b,edge.route[j],d)>1e-5)));
-      const valid=routed.ok&&checked.ok&&!overlapsPrior&&!E.overlapsWire(geometry,edge,edge.route)&&
-        edge.route.every(p=>p.x>=owner.x+2&&p.y>=owner.y+2&&p.x<=owner.x+owner.w-2&&p.y<=owner.y+owner.h-2);
+      const safe=points=>C.validate(geometry,edge,points).ok&&
+        !prior.some(path=>path.wire!==edge.contract.wire&&path.slice(1).some((b,i)=>points.slice(1).some((d,j)=>R.overlap(path[i],b,points[j],d)>1e-5)))&&
+        !E.overlapsWire(geometry,edge,points)&&points.every(p=>p.x>=owner.x+2&&p.y>=owner.y+2&&p.x<=owner.x+owner.w-2&&p.y<=owner.y+owner.h-2);
+      const routed=E.routeOne(geometry,edge,prior,options);
+      let valid=routed.ok&&safe(edge.route);
+      if(!valid){
+        // Stacked, independently expanded arms can fill the direct corridor.
+        // Search a bounded pair of owner-side detours as well. These are only
+        // geometric proposals: the same walls, headings, canonical routes and
+        // containment checks still have to prove the entire path safe.
+        const terminal=Math.max(12,edge.contract.minimumTerminal||0),inset=terminal+6;
+        // A canonical tensor can already enter at the branch's top centre.
+        // This syntax association owns no tensor port, so it may use another
+        // top slot; never conceal the existing tensor terminal underneath it.
+        edge.portPolicy.target.mode='side';
+        const candidates=[.5,.25,.75].flatMap(fraction=>{
+          const endpoint={x:target.x+target.w*fraction,y:target.y};
+          return [owner.x+inset,owner.x+owner.w-inset].flatMap(x=>[0,6,12,24].map(extra=>({fraction,points:R.simplify([
+            a,{x:a.x,y:a.y+terminal},{x,y:a.y+terminal},
+            {x,y:endpoint.y-terminal-extra},{x:endpoint.x,y:endpoint.y-terminal-extra},endpoint])})));
+        });
+        const fallback=candidates.find(candidate=>{edge.physicalTarget={side:'top',fraction:candidate.fraction};return safe(candidate.points);});
+        if(fallback){edge.route=fallback.points;edge.failed=false;delete edge.reason;valid=true;}
+      }
       if(!valid){
         geometry.edges.pop();result.diagnostics.push({owner:owner.id,target:target.id,message:'条件分支没有合法的容器内通道；关联箭头未绘制。'});continue;
       }

@@ -1,5 +1,7 @@
 # 通用源码发现、适配与 act 验证
 
+> 本页保留 2026-10-15 的验收范围与历史收据。2026-10-16 的有限结构生成、自定义组合协议和新预览恢复修复见 [后续记录](generic-source-editing.md)；当前源码检查规则已升级为 `source-inspection/3`，旧版本收据不代表当前实现。
+
 2026-10-15。本轮修复针对共享源码规则和持久化合同，不按 `act`、Policy、DETRVAE 或任何预设模型名称特判。目标是让 Agent 可以发现陌生模型、检查本地结构、保存可复验适配数据，在 Studio 交互后通过保留源码的独立副本继续预览。
 
 本报告依据已保存的目录发现、15 类双解析器矩阵、数据适配、源码保留副本及路线差分证据。当前后端以[最终源码箭头与适配收据](evidence/act-source-support-20261015/final-arrow-support/receipt.json)、[重新生成的源码保留闭环](evidence/act-source-support-20261015/final-arrow-support/source-preservation/summary.json)和[只读返回槽审计](evidence/act-source-support-20261015/final-arrow-support/readonly-slot-review.json)绑定实现 SHA；中间收据仅用于追溯，不作为最终通过证明。

@@ -7,6 +7,8 @@ import type { PreviewSourceBundle, PreviewSourceRequest } from './previewInterop
 
 export type GeneratedDraft = { draft: AuthoredDraft; presentationDraft?: AuthoredDraft; draftDigest: string; source: string; entry: string; architecture: Architecture; nodeBindings: Record<string, string>; containerBindings?: Record<string, string>; edgeBindings?: Record<string, string[]>; verification: Record<string, unknown> };
 export type ImportedSourceDraft = { draft: AuthoredDraft; sourceNodeBindings: Record<string, string>; sceneNodeBindings: Record<string, string>; provenanceDigest: string; verification: string };
+export type SourceRegion = { regionId: string; canonicalId: string; path: string; source: string; baselineDigest: string; startLine: number; endLine: number; entry: string; baseSourceDigest: string; baseIrDigest: string };
+export type EditedSourceRegion = { architecture: Architecture; source: string; entry: string; sourceEdit: { path: string; beforeDigest: string; afterDigest: string; baselineDigest: string }; verification: Record<string, unknown> };
 
 export type Capabilities = { semanticWriteback: boolean; supportedIntents: string[]; publicationExport: { svg: boolean; pdf: boolean; png: boolean; unavailableReason?: string } };
 export type ManagedProject = { id: string; entry: string; scope: 'managed-copy'; architecture: Architecture; sourceDigest: string; irDigest: string };
@@ -91,6 +93,8 @@ export const api = {
   saveDraft: (draft: AuthoredDraft, expectedRevision: number) => mutation<{ draft: AuthoredDraft; revision: number }>(`/authoring/drafts/${encodeURIComponent(draft.id)}`, { draft, expectedRevision }),
   validateDraft: (draft: AuthoredDraft) => mutation<Record<string, unknown>>('/authoring/validate', { draft }),
   generateDraft: (draft: AuthoredDraft) => mutation<GeneratedDraft>('/authoring/generate', { draft }),
+  readSourceRegion: (draft: AuthoredDraft, regionId: string) => mutation<SourceRegion>('/authoring/source-regions/read', { draft, regionId }),
+  applySourceRegion: (draft: AuthoredDraft, regionId: string, baselineDigest: string, replacement: string) => mutation<EditedSourceRegion>('/authoring/source-regions/apply', { draft, regionId, baselineDigest, replacement }),
   capabilities: () => request<Capabilities>('/capabilities'),
   examples: () => request<Example[]>('/examples'),
   example: (id: string) => request<Architecture>(`/examples/${encodeURIComponent(id)}`),

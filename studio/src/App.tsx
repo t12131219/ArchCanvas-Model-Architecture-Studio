@@ -443,6 +443,7 @@ export default function App() {
           const expansion = detail ? previewExpansionOperations(document, detail, previewSource.current) : [];
           const operations = previewDocumentSyncOperations(undefined, document, previewSnapshot.current?.graph, previewSource.current);
           await previewEngine.current!.visual([...expansion, ...operations]);
+          await previewEngine.current!.command('fit');
         }
         if (alive) setNotice('源码已接入递归预览；模型未执行。');
       } catch (error) { if (alive) { previewBoundSource.current = ''; setFailure(`预览解析失败：${String(error)}`); } }
@@ -1524,10 +1525,22 @@ export default function App() {
     updateDocumentUrl(document.id);
     if (workspace?.camera && !workspace.draft.sourceProvenance?.viewCanvas) { commitCamera(workspace.camera, document); setTool(workspace.tool ?? 'select'); }
     else initializeCamera(document, sequence, false);
-    setNotice(`已打开新模型工作副本，并保留搭建位置与视角。模型未执行。${retained.unmappedNodeIds.length ? ` ${retained.unmappedNodeIds.length} 个展示框没有对应的新源码节点。` : ''}${retained.unresolvedEdgeStyles.length ? ` ${retained.unresolvedEdgeStyles.length} 条连线样式待核对。` : ''}`);
+    setNotice(`已打开新模型工作副本。${retained.hierarchyReflowed ? '新源码层级已重新排布，原草稿布局保留。' : '已保留搭建位置与视角。'}模型未执行。${retained.unmappedNodeIds.length ? ` ${retained.unmappedNodeIds.length} 个展示框没有对应的新源码节点。` : ''}${retained.unresolvedEdgeStyles.length ? ` ${retained.unresolvedEdgeStyles.length} 条连线样式待核对。` : ''}`);
+  }
+  async function openSourceEditedModel(architecture: Architecture) {
+    cancelGesture();
+    const sequence = ++loadSequence.current;
+    const opened = await api.open(architecture);
+    if (sequence !== loadSequence.current) return;
+    await openArchitecture(architecture, true, sequence);
+    if (sequence !== loadSequence.current) return;
+    setProjectId(opened.projectId); setExampleId(''); setAuthoringOpen(false);
+    updateDocumentUrl(opened.documentId);
+    setNotice('已打开源码修改后的独立模型，并重新建立已解析的模型层级；原草稿与原始项目保留。模型未执行。');
   }
   const authoringView = authoringOpen ? <AuthoringStudio key={authoringSessionKey.current} initialWorkspace={authoringWorkspace} browseBaseline={browseBaseline}
     onViewState={retainAuthoringWorkspace} onClose={() => setAuthoringOpen(false)} onOpen={openGeneratedModel}
+    onSourceOpen={openSourceEditedModel}
     onNewBlank={workspace => { retainAuthoringWorkspace(workspace); openBlankAuthoring(); }}
     onReuseView={async workspace => {
       retainAuthoringWorkspace(workspace);

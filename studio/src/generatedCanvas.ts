@@ -12,6 +12,7 @@ type GeneratedBindings = {
   nodeBindings: Record<string, string>;
   containerBindings?: Record<string, string>;
   edgeBindings?: Record<string, string[]>;
+  verification?: Record<string, unknown>;
 };
 
 /** Use the retained view hierarchy while carrying actual editor changes.
@@ -70,18 +71,49 @@ export function createGeneratedCanvas(architecture: Architecture, generationDraf
     mapping[node.id] = id;
     bound.set(id, node);
   }
+  // One edited output may wrap several mutually exclusive return paths. The
+  // generator retains every independent source occurrence while nodeBindings
+  // names one representative for returning to the draft. Reveal and caption
+  // all occurrences without inventing tensor edges between them.
+  const occurrences = bindings.verification?.operationOccurrences;
+  if (occurrences !== undefined) {
+    if (!Array.isArray(occurrences) || occurrences.length > generationDraft.nodes.length) throw new Error('生成模型的源码出现位置无效，已保留原草稿。');
+    const seen = new Set<string>();
+    for (const value of occurrences) {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('生成模型的源码出现位置无效，已保留原草稿。');
+      const item = value as { nodeId?: unknown; canonicalIds?: unknown; binding?: unknown };
+      if (typeof item.nodeId !== 'string' || seen.has(item.nodeId) || !Array.isArray(item.canonicalIds) || !item.canonicalIds.length ||
+          new Set(item.canonicalIds).size !== item.canonicalIds.length || !item.canonicalIds.includes(generationMapping[item.nodeId]) ||
+          !['operation', 'source-inspection'].includes(item.binding as string) || item.canonicalIds.some(id => typeof id !== 'string' || !byId.has(id) ||
+            !!byId.get(id)!.sourceStructure !== (item.binding === 'source-inspection'))) throw new Error('生成模型的源码出现位置无效，已保留原草稿。');
+      seen.add(item.nodeId);
+      const node = presentationNodes.find(node => node.id === item.nodeId);
+      if (!node) continue;
+      for (const id of item.canonicalIds as string[]) {
+        if (bound.has(id) && bound.get(id)!.id !== node.id) throw new Error('生成模型的部件映射不唯一，已保留原草稿。');
+        bound.set(id, node);
+      }
+    }
+  }
   const document = createDocument(architecture, draft.title, Object.fromEntries([...bound].map(([id, node]) => [id, node.label])));
   const expanded = new Set<string>();
   const collapsed = new Set([...bound].filter(([id, node]) => byId.get(id)!.children.length && node.presentation && !node.presentation.group).map(([id]) => id));
+  let hierarchyReflowed = false;
   for (const [id, node] of bound) {
     if (node.presentation?.group && byId.get(id)!.children.length) expanded.add(id);
     let parent = byId.get(id)!.parentId;
+    // Added source operations have acquired truthful parents in the generated
+    // hierarchy. Their old top-level editor coordinates are not child-local
+    // layout anchors; use the new source layout rather than squeezing them
+    // into a retained collapsed card or overlapping sibling return paths.
+    if (parent && draft.sourceProvenance && !draft.sourceProvenance.nodeRefs[node.id]) hierarchyReflowed = true;
     while (parent) {
-      if (collapsed.has(parent)) throw new Error('生成模型的可见部件落在已折叠区域内，已保留原草稿。');
+      if (collapsed.has(parent)) { collapsed.delete(parent); hierarchyReflowed = true; }
       expanded.add(parent); parent = byId.get(parent)!.parentId;
     }
   }
   document.expandedIds = [...expanded];
+  if (hierarchyReflowed) { document.layout = {}; document.layoutByFrontier = {}; }
   // A leaf's draft coordinate is absolute. Its source-bound layout is relative
   // to each real generated container, which must enclose the retained cards.
   const base = buildScene(document), baseById = new Map(base.nodes.map(node => [node.id, node]));
@@ -105,7 +137,9 @@ export function createGeneratedCanvas(architecture: Architecture, generationDraf
     } else box = { x: fallback?.x ?? 0, y: fallback?.y ?? 0, width, height };
     absolute.set(id, box); return box;
   }
-  architecture.nodes.filter(node => !node.parentId).forEach(node => position(node.id));
+  if (hierarchyReflowed) {
+    for (const node of base.nodes) absolute.set(node.id, { x: node.x, y: node.y, width: node.width, height: node.height });
+  } else architecture.nodes.filter(node => !node.parentId).forEach(node => position(node.id));
   for (const [id, box] of absolute) {
     const parentId = byId.get(id)!.parentId, parent = parentId ? absolute.get(parentId) : undefined;
     document.layout[id] = { x: box.x - (parent?.x ?? 0), y: box.y - (parent?.y ?? 0), width: box.width, height: box.height };
@@ -150,7 +184,7 @@ export function createGeneratedCanvas(architecture: Architecture, generationDraf
   }
   validateDocument(document);
   const unmappedNodeIds = [...draftIds].filter(id => !Object.hasOwn(mapping, id));
-  return { document, unmappedNodeIds, unresolvedEdgeStyles, nodeBindings: mapping, edgeBindings: bindings.edgeBindings };
+  return { document, unmappedNodeIds, unresolvedEdgeStyles, nodeBindings: mapping, edgeBindings: bindings.edgeBindings, hierarchyReflowed };
 }
 
 function sameEdgeStyle(a: EdgeStyle, b: EdgeStyle) {

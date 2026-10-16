@@ -4,14 +4,20 @@ import type { CanvasDocument } from './core/types.ts';
 /** A separate editing frontier exposes recovered compound implementations.
  * One projection replaces repeated expand operations; the source view and its
  * frontier caches are never changed by entering the model editor. */
-export function sourceEditingDocument(view: CanvasDocument): CanvasDocument {
+export function sourceEditingDocument(view: CanvasDocument, initializeInspection = true): CanvasDocument {
   const document = structuredClone(view);
   // Large unresolved source trees are inspection data, not a tensor graph that
   // needs complete materialization before editing. Keep their authored regions
   // available as expandable cards; proven compositions still expose primitives.
   // Existing user expansion choices survive both entry and subsequent rebases.
   const boundedInspection = document.architecture.nodes.length > 96 && document.architecture.nodes.some(node => node.sourceStructure);
-  const compound = document.architecture.nodes.filter(node => node.children.length && (!boundedInspection || !node.sourceStructure));
+  // Branch/control wrappers describe editable scope, not an implementation
+  // detail. Leaving them collapsed hides all useful contents behind empty
+  // if/else cards. Open these wrappers even for a large source corpus while
+  // keeping large module implementations individually expandable.
+  const controlScopes = new Set(['SourceBranch', 'SourceConditional', 'SourceLoop', 'SourceAlternatives']);
+  const compound = document.architecture.nodes.filter(node => node.children.length &&
+    (!node.sourceStructure || initializeInspection && (!boundedInspection || controlScopes.has(node.kind))));
   const missing = compound.some(node => !document.expandedIds.includes(node.id));
   if (!missing) return document;
   document.expandedIds = [...new Set([...document.expandedIds, ...compound.map(node => node.id)])];
@@ -31,6 +37,12 @@ export function projectSourceEditing(view: CanvasDocument, previousEditing?: Can
     // changes its local anchor, carrying every expanded descendant with it.
     document = structuredClone(previousEditing);
     document.revision = view.revision;
+    // A newly expanded view region must also be accessible in the editor.
+    // Compare with its old view frontier so unchanged view flags do not undo
+    // an intentional collapse made independently in the editing workspace.
+    const beforeExpanded = new Set(previousView.expandedIds);
+    const newlyExpanded = view.expandedIds.filter(id => !beforeExpanded.has(id));
+    document.expandedIds = [...new Set([...document.expandedIds, ...newlyExpanded])];
     for (const key of ['displayAliases', 'nodeStyleOverrides', 'edgeStyleOverrides', 'portLayoutOverrides', 'pageSpec', 'legendItems', 'annotations', 'pinnedObjects'] as const) {
       Object.assign(document, { [key]: structuredClone(view[key]) });
     }
@@ -42,7 +54,7 @@ export function projectSourceEditing(view: CanvasDocument, previousEditing?: Can
       layout.y += node.localY - old.localY;
       if (!node.expandable) { layout.width = node.width; layout.height = node.height; }
     }
-    document = sourceEditingDocument(document);
+    document = sourceEditingDocument(document, false);
   }
   const scene = buildScene(document, { presentation: 'editor' });
   for (const node of scene.nodes) document.layout[node.id] = { x: node.localX, y: node.localY };

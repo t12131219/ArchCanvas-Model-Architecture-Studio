@@ -226,8 +226,20 @@ def validate_source_draft(draft: dict, *, require_complete=False) -> dict:
     if "sourceCache" in draft:
         _keys(draft["sourceCache"], {"nodes", "edges", "removedNodeIds", "removedCanonicalEdgeIds"}, "Source edit cache")
         _safe_json(draft["sourceCache"])
-        if len(draft["sourceCache"]["nodes"]) > MAX_SOURCE_NODES or len(draft["sourceCache"]["edges"]) > MAX_SOURCE_EDGES:
+        cache = draft["sourceCache"]
+        if any(not isinstance(cache[key], list) for key in ("nodes", "edges", "removedNodeIds", "removedCanonicalEdgeIds")):
+            raise DraftError("Source edit cache fields must be arrays.")
+        if (len(cache["nodes"]) > MAX_SOURCE_NODES or len(cache["edges"]) > MAX_SOURCE_EDGES
+                or len(cache["removedNodeIds"]) > MAX_SOURCE_NODES or len(cache["removedCanonicalEdgeIds"]) > MAX_SOURCE_EDGES):
             raise DraftError("Source edit cache exceeds its persistence budget.")
+        for key in ("removedNodeIds", "removedCanonicalEdgeIds"):
+            if any(type(identity) is not str or not identity for identity in cache[key]) or len(set(cache[key])) != len(cache[key]):
+                raise DraftError("Source edit cache tombstones must be unique nonempty identities.")
+        for key in ("nodes", "edges"):
+            if any(not isinstance(item, dict) or type(item.get("id")) is not str for item in cache[key]):
+                raise DraftError("Source edit cache objects require identities.")
+            if len({item["id"] for item in cache[key]}) != len(cache[key]):
+                raise DraftError("Source edit cache objects must have unique identities.")
     if draft["schemaVersion"] != 1 or draft["mode"] != "authored-draft":
         raise DraftError("Invalid source-derived draft schema.")
     _identity(draft["id"], "Draft id"); _text(draft["title"], "Draft title")
@@ -713,7 +725,10 @@ def rebase_source_frontier(draft: dict, document: dict, scene: dict) -> dict:
     if provenance["sourceDigest"] != old["sourceDigest"] or provenance["irDigest"] != old["irDigest"]:
         raise DraftError("Source hierarchy rebase cannot replace the frozen source corpus.")
     previous = draft.get("sourceCache", {"nodes": [], "edges": [], "removedNodeIds": [], "removedCanonicalEdgeIds": []})
-    cached_nodes = {node["id"]: deepcopy(node) for node in previous["nodes"]}
+    # Immutable frontier nodes are a recovery baseline even when a client has
+    # just deleted them. Edited snapshots, when available, take precedence.
+    cached_nodes = {node["id"]: deepcopy(node) for node in old["originalGraph"]["nodes"]}
+    cached_nodes.update({node["id"]: deepcopy(node) for node in previous["nodes"]})
     cached_nodes.update({node["id"]: deepcopy(node) for node in draft["nodes"]})
     current_nodes = {node["id"]: node for node in draft["nodes"]}
     original_nodes = {node["id"]: node for node in old["originalGraph"]["nodes"]}
@@ -727,7 +742,13 @@ def rebase_source_frontier(draft: dict, document: dict, scene: dict) -> dict:
     changed_edges = {id: edge for id, edge in changed_edges.items() if id in current_edges or not {edge["source"]["nodeId"], edge["target"]["nodeId"]} <= live_ids}
     removed_edges = set(previous["removedCanonicalEdgeIds"])
     for id, edge in original_edges.items():
-        if current_edges.get(id) != edge: removed_edges.update(old["edgeRefs"].get(id, []))
+        # Removing an object already suppresses its incident edges. Recording
+        # those as independent connection deletions makes an exact subtree
+        # restore lose its original boundary relations. Explicit edge removal
+        # between retained endpoints remains a permanent tombstone.
+        if (current_edges.get(id) != edge
+                and not {edge["source"]["nodeId"], edge["target"]["nodeId"]} & removed_nodes):
+            removed_edges.update(old["edgeRefs"].get(id, []))
     for id, edge in current_edges.items():
         if original_edges.get(id) != edge: changed_edges[id] = deepcopy(edge)
     # Metadata for formerly visible nodes stays available for exact port mapping.
@@ -737,22 +758,110 @@ def rebase_source_frontier(draft: dict, document: dict, scene: dict) -> dict:
         refs[identity] = {**deepcopy(ref), "portBindings": {**deepcopy(prior.get("portBindings", {})), **deepcopy(ref["portBindings"])}}
     modules = {module["kind"]: module for module in old["modules"] + provenance["modules"]}
     source_facts = {node["id"]: node for node in provenance["architecture"]["nodes"]}
-    removed_canonical = {refs[id]["nodeId"] for id in removed_nodes if id in refs}
     def removed_descendant(id):
+        if id in removed_nodes:
+            return True
         canonical = refs.get(id, {}).get("nodeId")
+        removed_canonical = {refs[key]["nodeId"] for key in removed_nodes if key in refs}
+        visited = set()
         while canonical:
+            if canonical in visited:
+                raise DraftError("Source hierarchy contains cyclic parent bindings.")
+            visited.add(canonical)
             if canonical in removed_canonical: return True
             canonical = source_facts.get(canonical, {}).get("parentId")
+        # User-authored/custom descendants have no canonical source fact. Their
+        # persisted owner still participates in deletion, including while folded.
+        parent = cached_nodes.get(id, {}).get("presentation", {}).get("parentId")
+        visited = set()
+        while parent:
+            if parent in visited:
+                raise DraftError("Source edit cache contains cyclic presentation parents.")
+            visited.add(parent)
+            if parent in removed_nodes:
+                return True
+            parent = cached_nodes.get(parent, {}).get("presentation", {}).get("parentId")
         return False
+    # Closing the saved tombstones makes subtree deletion independent of which
+    # source/custom children happened to be visible when Delete was pressed.
+    while True:
+        descendants = {identity for identity in cached_nodes if identity not in removed_nodes and removed_descendant(identity)}
+        if not descendants:
+            break
+        removed_nodes.update(descendants)
     nodes = []
+    frontier_changed = (set(old["canvas"].get("expandedIds", [])) != set(document.get("expandedIds", [])))
+    migrated_positions = {}
+    def invalid_geometry(values):
+        source_nodes = {item["id"]: item for item in values if item["id"] in old["nodeRefs"]}
+        def bounds(item):
+            return {**item["position"], **item.get("visual", item.get("presentation", {"width": 176, "height": 100}))}
+        def ancestor(identity, child):
+            visited = set()
+            parent = source_nodes[child].get("presentation", {}).get("parentId")
+            while parent and parent not in visited:
+                if parent == identity: return True
+                visited.add(parent)
+                parent = source_nodes.get(parent, {}).get("presentation", {}).get("parentId")
+            return False
+        boxes = {identity: bounds(item) for identity, item in source_nodes.items()}
+        for identity, item in source_nodes.items():
+            box = boxes[identity]
+            parent = boxes.get(item.get("presentation", {}).get("parentId"))
+            if parent and (box["x"] < parent["x"] - .5 or box["y"] < parent["y"] - .5 or box["x"] + box["width"] > parent["x"] + parent["width"] + .5 or box["y"] + box["height"] > parent["y"] + parent["height"] + .5): return True
+            for other, peer in boxes.items():
+                if identity >= other or ancestor(identity, other) or ancestor(other, identity): continue
+                if box["x"] < peer["x"] + peer["width"] - .5 and peer["x"] < box["x"] + box["width"] - .5 and box["y"] < peer["y"] + peer["height"] - .5 and peer["y"] < box["y"] + box["height"] - .5: return True
+        return False
+    invalid_source_geometry = invalid_geometry(old["originalGraph"]["nodes"]) or invalid_geometry(draft["nodes"])
+    def source_delta(identity):
+        """Editing coordinates are absolute; baseline deltas include parent moves.
+
+        A fresh frontier already places newly exposed siblings and grows their
+        owners. Reusing compact absolute positions would undo that arrangement.
+        """
+        visited = set()
+        while identity and identity not in visited:
+            visited.add(identity)
+            baseline, edited = original_nodes.get(identity), cached_nodes.get(identity)
+            if baseline and edited:
+                return {axis: edited["position"][axis] - baseline["position"][axis] for axis in ("x", "y")}
+            identity = cached_nodes.get(identity, {}).get("presentation", {}).get("parentId")
+        return {"x": 0, "y": 0}
     for node in fresh["nodes"]:
         if node["id"] in removed_nodes or removed_descendant(node["id"]): continue
         previous_node = cached_nodes.get(node["id"])
         if previous_node:
-            node["label"], node["parameters"], node["position"] = deepcopy(previous_node["label"]), deepcopy(previous_node["parameters"]), deepcopy(previous_node["position"])
+            node["label"], node["parameters"] = deepcopy(previous_node["label"]), deepcopy(previous_node["parameters"])
+            if invalid_source_geometry:
+                pass  # Fresh source positions repair a stale migration baseline.
+            elif frontier_changed:
+                if node["id"] not in original_nodes:
+                    # A hidden edited object has no baseline in the compact
+                    # frontier. Keep its local arrangement relative to the
+                    # nearest retained owner instead of discarding its move.
+                    parent = previous_node.get("presentation", {}).get("parentId")
+                    while parent and parent not in migrated_positions:
+                        parent = cached_nodes.get(parent, {}).get("presentation", {}).get("parentId")
+                    moved = migrated_positions.get(parent, {})
+                    prior = cached_nodes.get(parent, {}).get("position", {})
+                    node["position"] = {axis: previous_node["position"][axis] + moved.get(axis, 0) - prior.get(axis, 0) for axis in ("x", "y")}
+                else:
+                    delta = source_delta(node["id"])
+                    node["position"] = {axis: node["position"][axis] + delta[axis] for axis in ("x", "y")}
+            else:
+                node["position"] = deepcopy(previous_node["position"])
             node["presentation"]["fill"], node["presentation"]["stroke"] = previous_node.get("presentation", node["presentation"])["fill"], previous_node.get("presentation", node["presentation"])["stroke"]
             if "visual" in previous_node:
                 node["visual"] = deepcopy(previous_node["visual"])
+                baseline = original_nodes.get(node["id"], previous_node)
+                old_box, new_box = baseline.get("presentation", {}), node["presentation"]
+                if (invalid_source_geometry or old_box.get("group") != new_box.get("group")
+                        or any(old_box.get(axis) != new_box.get(axis) for axis in ("width", "height"))):
+                    # Fill/stroke are user style; compact card dimensions are
+                    # not a valid expanded-container bounding box.
+                    for axis in ("width", "height"):
+                        node["visual"][axis] = new_box[axis]
             if "portLayouts" in previous_node:
                 # Scene port IDs include projection/side information and may
                 # change between frontiers. Retain offsets through canonical
@@ -781,10 +890,20 @@ def rebase_source_frontier(draft: dict, document: dict, scene: dict) -> dict:
                 if layouts:
                     node["portLayouts"] = layouts
         nodes.append(node)
+        migrated_positions[node["id"]] = deepcopy(node["position"])
     visible = {node["id"] for node in nodes}
-    for node in draft["nodes"]:
-        if node["id"] not in refs and node["id"] not in visible:
+    pending = [node for node in cached_nodes.values() if node["id"] not in refs and node["id"] not in visible and not removed_descendant(node["id"])]
+    while pending:
+        shown = {node["id"]: node for node in nodes}
+        ready = [node for node in pending if not node.get("presentation", {}).get("parentId")
+                 or (node["presentation"]["parentId"] in shown
+                     and shown[node["presentation"]["parentId"]].get("presentation", {}).get("group"))]
+        if not ready:
+            break  # Custom children of folded owners remain in the edit cache.
+        for node in ready:
             nodes.append(deepcopy(node)); visible.add(node["id"])
+        ready_ids = {node["id"] for node in ready}
+        pending = [node for node in pending if node["id"] not in ready_ids]
     edges = [edge for edge in fresh["edges"] if edge["source"]["nodeId"] in visible and edge["target"]["nodeId"] in visible and not set(provenance["edgeRefs"].get(edge["id"], [])) & removed_edges]
     def mapped_end(end, direction):
         if end["nodeId"] in visible:

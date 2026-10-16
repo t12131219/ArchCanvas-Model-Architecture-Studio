@@ -67,7 +67,7 @@ def capabilities() -> dict:
         "sourceAdapters": {"schema": "archcanvas-source-adapter/1", "schemas": ["archcanvas-source-adapter/1", "archcanvas-source-adapter/2"], "scaffold": "/api/adapters/scaffold", "validate": "/api/adapters/validate", "register": "/api/adapters/register", "list": "/api/adapters/list", "storage": "data-dir/adapters", "format": "source-bound-json", "pluginExecution": False,
                            "agentRules": {"schema": "archcanvas-source-rule/1", "validate": "/api/adapters/rule-validate", "list": "/api/adapters/rules", "storage": "data-dir/adapters/rules", "validation": "independent-ast-path-and-operand-proofs", "crossSourceReuse": "reinstantiate-and-validate-current-source", "tensorGeneration": False}},
         "preview": archcanvas_preview.capabilities(),
-        "modelAuthoring": {"mode": "authored-draft", "catalog": "/api/authoring/catalog", "generation": "new-managed-copy", "sourceImport": "/api/authoring/import-source", "sourceFrontier": "/api/authoring/source-frontier", "customModulePreview": "/api/authoring/custom-modules/preview", "sourcePreservingGeneration": {"mode": "source-preserved-copy", "topology": "preserved", "parameters": "registered-explicit-constructor-literals", "validation": "independent-source-reanalysis", "modelExecuted": False}, "runtimeVerified": False},
+        "modelAuthoring": {"mode": "authored-draft", "catalog": "/api/authoring/catalog", "generation": "new-managed-copy", "sourceImport": "/api/authoring/import-source", "sourceFrontier": "/api/authoring/source-frontier", "customModulePreview": "/api/authoring/custom-modules/preview", "sourceFileEditing": {"read": "/api/authoring/source-regions/read", "apply": "/api/authoring/source-regions/apply", "editUnit": "complete-frozen-python-file", "pendingSupportedEdits": "included", "validation": "digest-bound-compile-and-independent-analysis", "modelExecuted": False}, "sourcePreservingGeneration": {"mode": "source-preserved-copy", "topology": ["preserved", "anchored-edits"], "parameters": "registered-explicit-constructor-literals", "structuralEdits": ["unary-insertion", "unary-custom-source-insertion", "unary-bypass-deletion", "replacement-by-delete-and-insert", "dominated-local-value-rewire"], "anchors": ["unary-call-argument", "static-return-slot"], "unresolvedControlFlow": "preserved-source-and-inspection-bindings", "validation": "exact-ast-source-spans-and-independent-source-reanalysis", "modelExecuted": False}, "runtimeVerified": False},
         "documentPersistence": True,
         "canvasSessions": {"open": "/api/open", "read": "/api/canvas-sessions/{documentId}", "actions": ["apply", "undo", "redo", "export"],
                            "operations": "studio-typescript-core", "history": "persistent", "stateRoot": "data-dir", "modelExecution": False},
@@ -339,7 +339,7 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError as exc:
             raise ValueError("Content-Length must be an integer.") from exc
         path = unquote(urlsplit(self.path).path)
-        source_authoring = path in {"/api/authoring/import-source", "/api/authoring/source-frontier", "/api/authoring/validate", "/api/authoring/generate", "/api/preview/exports", "/api/models/discover"} or path.startswith(("/api/authoring/drafts/", "/api/adapters/"))
+        source_authoring = path in {"/api/authoring/import-source", "/api/authoring/source-frontier", "/api/authoring/validate", "/api/authoring/generate", "/api/preview/exports", "/api/models/discover"} or path.startswith(("/api/authoring/drafts/", "/api/authoring/source-regions/", "/api/adapters/"))
         budget = MAX_SOURCE_REQUEST_BYTES if source_authoring else MAX_REQUEST_BYTES
         if not 0 <= length <= budget:
             raise ValueError(f"JSON request body must fit within {budget // 1_000_000} MB.")
@@ -580,6 +580,14 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(200, result)
             elif path == "/api/authoring/custom-modules/preview":
                 self.send_json(200, archcanvas_authoring.preview_custom_module(payload))
+            elif path in ("/api/authoring/source-regions/read", "/api/authoring/source-regions/apply"):
+                from archcanvas_authoring.source_regions import prepare_source_region, apply_source_region
+                expected = {"draft", "regionId"} if path.endswith("/read") else {"draft", "regionId", "baselineDigest", "replacement"}
+                if set(payload) != expected:
+                    raise ValueError("Source file editing requires a draft, selected region and exact digest-bound replacement; filesystem paths are not accepted.")
+                result = (prepare_source_region(payload["draft"], payload["regionId"]) if path.endswith("/read")
+                          else apply_source_region(payload["draft"], payload["regionId"], payload["baselineDigest"], payload["replacement"]))
+                self.send_json(200, result)
             elif path in ("/api/authoring/validate", "/api/authoring/generate"):
                 if set(payload) != {"draft"}:
                     raise ValueError("Authoring requires one draft; paths and existing project ids are not accepted.")

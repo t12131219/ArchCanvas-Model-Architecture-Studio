@@ -5,7 +5,8 @@ import type { AuthoredDraft } from './authoring.ts';
 export type PreviewSourceRequest = { files: Record<string, string>; entry: string; config: Record<string, unknown> };
 export type PreviewSourceLocation = { path: string; line: number; endLine: number; expression?: string; column?: number; endColumn?: number };
 export type PreviewEvidence = { file: string; line: number; endLine: number; expression: string; column?: number; endColumn?: number };
-export type PreviewSourceNode = { id: string; kind?: string; label?: string; instance?: string; moduleType?: string; expression?: string; source_evidence?: string[]; sourceStructure?: boolean };
+export type PreviewSourceNode = { id: string; parent?: string | null; kind?: string; sourceKind?: string; label?: string; instance?: string; moduleType?: string; expression?: string; source_evidence?: string[]; sourceStructure?: boolean;
+  sourceParameters?: { callSites?: (Partial<PreviewEvidence> & { path?: string })[]; condition?: string } };
 export type PreviewSourceBundle = {
   schema: 'summary-source-adapter/1'; id: string; entry: string; sourceSha256: string; irSha256: string;
   files: { path: string; text: string; sha256: string }[]; config?: Record<string, unknown>;
@@ -141,6 +142,13 @@ function previewSourceLocations(selection: PreviewSelection, bundle?: PreviewEvi
     const evidence = bundle?.evidence?.[id], location = evidence && validLocation(evidence);
     if (location) locations.push(location);
   }
+  // Inspection cards are anchored at constructors; the formal module may be
+  // anchored at a call in another method/file. Match the independently rebuilt
+  // call evidence too, while keeping construction as the first source location.
+  for (const site of node?.sourceParameters?.callSites ?? []) {
+    const location = validLocation(site);
+    if (location) locations.push(location);
+  }
   const raw = selection.evidence;
   const evidence = Array.isArray(raw) ? raw : raw && 'file' in raw ? [raw as PreviewEvidence] : Object.values(raw ?? {});
   for (const item of evidence) { const location = validLocation(item); if (location) locations.push(location); }
@@ -166,6 +174,7 @@ function selectionScore(node: ArchitectureNode, raw: PreviewSourceNode | undefin
     if (normalizedKind(node.kind) === normalizedKind(raw.moduleType ?? raw.kind)) score += 60;
   }
   if (raw?.instance && node.instanceId) score += normalizedInstance(raw.instance) === normalizedInstance(node.instanceId) ? 160 : -80;
+  if (raw?.sourceStructure && node.sourceStructure && raw.sourceKind === node.kind) score += 160;
   if (node.sourceStructure) score -= 30;
   return score;
 }
@@ -179,7 +188,46 @@ export function previewSelectionNodeIds(architecture: Architecture, selection: P
   if (!locations.length) return [];
   const scores = architecture.nodes.map(node => ({ id: node.id, score: Math.max(...locations.map(location => selectionScore(node, raw, location))) }));
   const best = Math.max(0, ...scores.map(item => item.score));
-  return best ? scores.filter(item => item.score === best).map(item => item.id) : [];
+  const candidates = best ? scores.filter(item => item.score === best).map(item => item.id) : [];
+  if (candidates.length && raw?.sourceStructure && bundle?.schema === 'summary-source-adapter/1') {
+    // The same constructor can be inspected under mutually exclusive paths.
+    // A branch's authored condition and exact source span distinguish these
+    // occurrences without selecting a runtime path or comparing display names.
+    const previewNodes = new Map(bundle.ir?.nodes.map(node => [node.id, node]) ?? []);
+    const facts = new Map(architecture.nodes.map(node => [node.id, node]));
+    const signature = (condition: unknown, location: PreviewSourceLocation | null | undefined) =>
+      typeof condition === 'string' && location ? JSON.stringify([condition, location.path, location.line, location.endLine, location.expression?.trim()]) : undefined;
+    const rawContext: string[] = [], seen = new Set<string>();
+    let cursor = id ? previewNodes.get(id) : undefined;
+    while (cursor && !seen.has(cursor.id)) {
+      seen.add(cursor.id);
+      if (cursor.sourceKind === 'SourceBranch') {
+        const key = signature(cursor.sourceParameters?.condition, previewSourceLocation({ nodeId: cursor.id, node: cursor }, bundle));
+        if (key) rawContext.unshift(key);
+      }
+      cursor = cursor.parent ? previewNodes.get(cursor.parent) : undefined;
+    }
+    if (rawContext.length) {
+      const contextual = candidates.filter(candidate => {
+        const context: string[] = [], visited = new Set<string>();
+        let fact = facts.get(candidate);
+        // A real formal call can be represented by a syntax inspection card.
+        // It carries its own operation identity rather than a branch wrapper.
+        if (!fact?.sourceStructure) return true;
+        while (fact && !visited.has(fact.id)) {
+          visited.add(fact.id);
+          if (fact.sourceStructure && fact.kind === 'SourceBranch') {
+            const key = signature(fact.parameters.condition, fact.source);
+            if (key) context.unshift(key);
+          }
+          fact = fact.parentId ? facts.get(fact.parentId) : undefined;
+        }
+        return JSON.stringify(context) === JSON.stringify(rawContext);
+      });
+      return contextual;
+    }
+  }
+  return candidates;
 }
 
 /** Only live draft objects are selected; removed source objects stay in the editor's recovery cache. */
@@ -269,12 +317,39 @@ export function previewNodeLayoutOperation(document: CanvasDocument, operation: 
 
 /** Replay only known containers; saved coordinates need a separate preview-layout provenance. */
 export function previewExpansionOperations(document: CanvasDocument, graph: PreviewVisualGraph, source?: PreviewEvidenceSource): Extract<VisualOperation, { type: 'expand' }>[] {
-  const expanded = new Set(document.expandedIds), result: Extract<VisualOperation, { type: 'expand' }>[] = [];
-  const bindings = previewUniqueNodeBindings(document.architecture, graph, source);
-  for (const node of graph.nodes) {
-    const id = bindings.get(node.id);
-    if (!id || !document.architecture.nodes.find(target => target.id === id)?.children.length) continue;
-    result.push({ type: 'expand', id: node.id, expanded: expanded.has(id) });
+  const expanded = new Set(document.expandedIds), facts = new Map(document.architecture.nodes.map(node => [node.id, node]));
+  const detail = (graph as PreviewVisualGraph & { recursive?: { authority?: { detail?: PreviewVisualGraph } } }).recursive?.authority?.detail ?? graph;
+  const nodes = new Map(detail.nodes.map(node => [node.id, node])), states = new Map<string, boolean>(), requiredAncestors = new Set<string>();
+  const visible = (id: string) => {
+    let parent = facts.get(id)?.parentId;
+    const seen = new Set<string>();
+    while (parent && !seen.has(parent)) {
+      seen.add(parent);
+      if (!expanded.has(parent)) return false;
+      parent = facts.get(parent)?.parentId;
+    }
+    return !parent;
+  };
+  for (const node of nodes.values()) {
+    if (node.junction) continue;
+    const ids = previewSelectionNodeIds(document.architecture, { nodeId: node.id, node }, source);
+    if (!ids.length) continue;
+    // Several syntax wrappers can display one formal region. They may share a
+    // collapse choice; they still do not gain a unique geometry/source binding.
+    if (ids.every(id => !!facts.get(id)?.children.length) && ids.every(id => expanded.has(id) === expanded.has(ids[0]))) {
+      states.set(node.id, expanded.has(ids[0]));
+    }
+    if (ids.every(visible)) {
+      let parent = node.parent;
+      const seen = new Set<string>();
+      while (parent && nodes.has(parent) && !seen.has(parent)) {
+        seen.add(parent); requiredAncestors.add(parent); parent = nodes.get(parent)!.parent;
+      }
+    }
   }
-  return result;
+  // Preview wrappers and formal containers need not share the same hierarchy.
+  // Reveal required ancestors after collecting explicit states so node order
+  // cannot hide a formally visible descendant again.
+  for (const id of requiredAncestors) states.set(id, true);
+  return [...states].map(([id, expanded]) => ({ type: 'expand', id, expanded }));
 }

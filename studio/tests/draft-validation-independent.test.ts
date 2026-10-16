@@ -109,8 +109,9 @@ test('an incomplete graph may retain upstream declared tensors, but never report
 });
 
 test('execution claims, generated-source receipts and inconsistent complete/issue or missing-tensor claims are rejected', () => {
-  for (const verification of ['runtime-verified', 'static-declared-tensors; no model import or execution', { status: 'passed', modelExecution: 'not_run' }, null, true]) rejected({ ...response(), verification });
+  for (const verification of ['runtime-verified', 'source-preserved-graph; no model execution', 'static-topology; custom output shapes unknown; no model execution', 'static-declared-tensors; no model import or execution', { status: 'passed', modelExecution: 'not_run' }, null, true]) rejected({ ...response(), verification });
   rejected({ ...response(), source: 'import torch' }); rejected({ ...response(), draftDigest: 'not-a-digest' });
+  rejected({ ...response(), generation: { mode: 'source-preserved-copy', supported: true, topology: 'anchored-edits', limitations: [] } });
   const incomplete = partial(); incomplete.complete = true; rejected(incomplete);
   const complete = response(); complete.complete = false; rejected(complete);
   const missing = response(); delete missing.tensors.output; rejected(missing);
