@@ -100,6 +100,28 @@ test('instance identities distinguish Sequential children that share a single ca
   assert.deepEqual(previewSelectionNodeIds(arch, selection), ['second']);
 });
 
+test('multiple inputs sharing a method span map by declared argument ports rather than display labels', () => {
+  const arch = architecture(), adapted = bundle();
+  const left = node('left-input', 'Input', 'input', 4, 7, 'def forward(self, left, right): ...');
+  const right = { ...structuredClone(left), id: 'right-input' };
+  left.ports = [{ id: 'left-port', name: 'left', direction: 'out', role: 'data', ordinal: 0 }];
+  right.ports = [{ id: 'right-port', name: 'right', direction: 'out', role: 'data', ordinal: 0 }];
+  left.label = 'right'; right.label = 'left'; arch.nodes = [left, right];
+  adapted.evidence = {
+    l: { file: 'models/net.py', line: 4, endLine: 4, expression: 'left' },
+    r: { file: 'models/net.py', line: 4, endLine: 4, expression: 'right' },
+  };
+  adapted.ir = { nodes: [{ id: 'preview-l', kind: 'input', source_evidence: ['l'] },
+    { id: 'preview-r', kind: 'input', source_evidence: ['r'] }] };
+  assert.deepEqual(previewSelectionNodeIds(arch, { nodeId: 'preview-l' }, adapted), ['left-input']);
+  assert.deepEqual(previewSelectionNodeIds(arch, { nodeId: 'preview-r' }, adapted), ['right-input']);
+  const bindings = previewUniqueNodeBindings(arch, { nodes: adapted.ir.nodes.map(n => ({ ...n, x: 0, y: 0 })) }, adapted);
+  assert.equal(bindings.get('preview-l'), 'left-input'); assert.equal(bindings.get('preview-r'), 'right-input');
+  left.ports[0].name = 'unknown';
+  assert.deepEqual(previewSelectionNodeIds(arch, { nodeId: 'preview-l' }, adapted), [],
+    'missing argument evidence must not select an object by its display name');
+});
+
 test('inspection constructors bridge exact call locations without guessing labels or choosing repeated calls', () => {
   const arch = architecture(), adapted = bundle();
   adapted.evidence!.construction = { file: 'models/net.py', line: 3, endLine: 3, expression: 'ReviewCell()' };

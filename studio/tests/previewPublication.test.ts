@@ -6,7 +6,16 @@ import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import ts from 'typescript';
-import { PreviewPublicationRequestGate, previewPublicationCacheKey, readPreviewPublicationCache, writePreviewPublicationCache } from '../src/previewPublication.ts';
+import { PreviewPublicationRequestGate, previewPublicationCacheKey, readPreviewPublicationCache, writePreviewPublicationCache, previewExportBinding } from '../src/previewPublication.ts';
+
+test('preset exports keep preview identity without presenting it as a source digest; managed hashes remain exact', () => {
+  assert.deepEqual(previewExportBinding({ caseId: 'example', sourceDigest: 'preview-only:example', irDigest: 'b'.repeat(64), revision: 3 }),
+    { caseId: 'example', irDigest: 'b'.repeat(64), revision: 3 });
+  assert.deepEqual(previewExportBinding({ caseId: 'no-ir', sourceDigest: 'preview-only:no-ir', irDigest: 'preview-only:no-ir' }), { caseId: 'no-ir', revision: undefined });
+  const managed = { caseId: 'managed', sourceDigest: 'a'.repeat(64), irDigest: 'b'.repeat(64), revision: 9 };
+  assert.deepEqual(previewExportBinding(managed), managed);
+  for (const sourceDigest of ['preview-only:other', 'broken-hash', 'A'.repeat(64)]) assert.throws(() => previewExportBinding({ caseId: 'example', sourceDigest }), /SHA256/);
+});
 
 test('publication cache binds complete SVG paint and geometry, source generation, range and physical output', () => {
   const binding = { caseId: 'source-fixture', sourceDigest: 'a'.repeat(64), irDigest: 'b'.repeat(64), revision: 3 };
@@ -50,7 +59,7 @@ test('real DOM SVG sanitization preserves path, transform, marker and physical p
   try { automation = process.env.ARCHCANVAS_TEST_PLAYWRIGHT ?? createRequire(import.meta.url).resolve('playwright'); }
   catch { automation = runtime; }
   if (!existsSync(automation)) { context.skip('Playwright is required for the independent browser DOM check.'); return; }
-  const fixture = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 20 400 200"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 0 L 10 5 L 0 10 Z" fill="black"/></marker></defs><style>.wire-path {fill:none;stroke:#123456;stroke-width:2;stroke-linejoin:round}.scene-node text{font-family:Arial;font-size:12px}.hidden-label{display:none}</style><g class="scene-node" transform="translate(30,40)"><rect x="0" y="0" width="100" height="60" fill="white" stroke="#222222"/><text x="10" y="25" font-weight="600">Readable node</text></g><text font-size=".001" class="hidden-label">Hidden label</text><text font-size=".001" opacity="0">Hidden transparent label</text><path class="wire-path" d="M 120 80 L 200 80 L 200 150" marker-end="url(#arrow)"/><g id="handleLayer"><circle r="10"/></g><rect class="node-hit" x="0" y="0" width="100" height="100"/><foreignObject><div xmlns="http://www.w3.org/1999/xhtml">HTML</div></foreignObject><script>alert('unsafe')</script></svg>`;
+  const fixture = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 20 400 200"><defs><defs stroke="#102030"><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 0 L 10 5 L 0 10 Z" fill="black"/></marker></defs></defs><style>.wire-path {fill:none;stroke:#123456;stroke-width:2;stroke-linejoin:round}.scene-node text{font-family:Arial;font-size:12px}.hidden-label{display:none}</style><g class="scene-node" transform="translate(30,40)"><rect x="0" y="0" width="100" height="60" fill="white" stroke="#222222"/><text x="10" y="25" font-weight="600">Readable node</text></g><text font-size=".001" class="hidden-label">Hidden label</text><text font-size=".001" opacity="0">Hidden transparent label</text><path class="wire-path" d="M 120 80 L 200 80 L 200 150" marker-end="url(#arrow)"/><g id="handleLayer"><circle r="10"/></g><rect class="node-hit" x="0" y="0" width="100" height="100"/><foreignObject><div xmlns="http://www.w3.org/1999/xhtml">HTML</div></foreignObject><script>alert('unsafe')</script></svg>`;
   const module = ts.transpileModule(readFileSync(new URL('../src/previewPublication.ts', import.meta.url), 'utf8'), {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
   }).outputText.replace(/^export /gm, '');
@@ -71,13 +80,13 @@ test('real DOM SVG sanitization preserves path, transform, marker and physical p
     const output = sanitize(fixture, 180), xml = new DOMParser().parseFromString(output.svg, 'image/svg+xml');
     return { output, path: xml.querySelector('svg>path')!.getAttribute('d'), transform: xml.querySelector('g')!.getAttribute('transform'),
       marker: xml.querySelector('svg>path')!.getAttribute('marker-end'), wireFill: xml.querySelector('svg>path')!.getAttribute('fill'), font: xml.querySelector('text')!.getAttribute('font-size'),
-      unsafe: xml.querySelectorAll('script,foreignObject,style,.node-hit,#handleLayer').length,
+      unsafe: xml.querySelectorAll('script,foreignObject,style,.node-hit,#handleLayer').length, nestedDefinitions: xml.querySelectorAll('defs defs').length, markerStroke: xml.querySelector('marker')!.getAttribute('stroke'),
       controlAttributes: [...xml.querySelectorAll('*')].flatMap(node => [...node.attributes].filter(attribute => attribute.name.startsWith('data-source-control'))).length,
       controlPath: xml.querySelector('#source-controls path')!.getAttribute('d'), controlDash: xml.querySelector('#source-controls path')!.getAttribute('stroke-dasharray'),
       decisionPath: xml.querySelector('#source-decision path')!.getAttribute('d'), controlLabel: xml.querySelector('#source-controls text')!.textContent,
       controlLegend: xml.querySelector('#source-control-legend text')!.textContent };
   }, { module, fixture: fixture.replace('</svg>', sourceControls + '</svg>') });
-  assert.equal(parsed.unsafe, 0);
+  assert.equal(parsed.unsafe, 0); assert.equal(parsed.nestedDefinitions, 0); assert.equal(parsed.markerStroke, '#102030');
   assert.equal(parsed.path, 'M 120 80 L 200 80 L 200 150'); assert.equal(parsed.transform, 'translate(30,40)');
   assert.equal(parsed.marker, 'url(#arrow)'); assert.equal(parsed.wireFill, 'none'); assert.equal(parsed.font, '12');
   assert.equal(parsed.controlAttributes, 0, 'export strips editor control metadata before the unchanged server publication contract');

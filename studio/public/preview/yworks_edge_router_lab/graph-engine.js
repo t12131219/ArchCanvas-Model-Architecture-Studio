@@ -123,14 +123,25 @@
       points.slice(1).some((b,i)=>other.route.slice(1).some((d,j)=>R.overlap(points[i],b,other.route[j],d)>1e-5)));
   }
   function layoutConflicts(graph){
-    const nodes=[],wires=[];
-    for(const [i,a] of graph.nodes.entries())for(const b of graph.nodes.slice(i+1)){
-      if(a.junction||b.junction||a.parent!==b.parent)continue;
+    const nodes=[],wires=[],siblings=new Map();
+    for(const n of graph.nodes){if(n.junction)continue;if(!siblings.has(n.parent))siblings.set(n.parent,[]);siblings.get(n.parent).push(n);}
+    for(const group of siblings.values())for(const [i,a] of group.entries())for(const b of group.slice(i+1)){
       if(Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x)>1e-5&&Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y)>1e-5)nodes.push([a.id,b.id]);
     }
-    for(const [i,a] of graph.edges.entries())for(const b of graph.edges.slice(i+1)){
-      if(a.contract?.wire===b.contract?.wire||sharesPresentation(graph,a,b))continue;
-      if(a.route.slice(1).some((p,j)=>b.route.slice(1).some((q,k)=>R.overlap(a.route[j],p,b.route[k],q)>1e-5)))wires.push([a.id,b.id]);
+    // Only collinear segments can overlap. Buckets are deliberately wider
+    // than the router epsilon; neighbouring buckets retain near-equal lanes.
+    const lanes=new Map(),pairs=new Set();
+    for(const [index,edge] of graph.edges.entries())for(let i=1;i<edge.route.length;i++){
+      const a=edge.route[i-1],b=edge.route[i];
+      for(const [axis,coordinate]of [['h',Math.abs(a.y-b.y)<1e-6?a.y:null],['v',Math.abs(a.x-b.x)<1e-6?a.x:null]]){
+        if(coordinate===null)continue;const bucket=Math.floor(coordinate/1e-5);
+        for(let near=bucket-1;near<=bucket+1;near++)for(const other of lanes.get(axis+near)||[]){
+          if(other.index===index||other.edge.contract?.wire===edge.contract?.wire)continue;
+          const key=other.index+':'+index;if(pairs.has(key)||R.overlap(a,b,other.a,other.b)<=1e-5||sharesPresentation(graph,other.edge,edge))continue;
+          pairs.add(key);wires.push([other.edge.id,edge.id]);
+        }
+        const key=axis+bucket;if(!lanes.has(key))lanes.set(key,[]);lanes.get(key).push({edge,index,a,b});
+      }
     }
     return {nodes,wires};
   }
@@ -139,7 +150,10 @@
     const junctions=C.validateJunctions(graph);
     const violations=[...conflicts.nodes.map(ids=>'sibling glyph overlap '+ids.join(' / ')),...conflicts.wires.map(ids=>'unrelated tensor lane overlap '+ids.join(' / ')),...junctions.violations];
     const affected=new Map();for(const ids of conflicts.wires)for(const id of ids){const errors=affected.get(id)||[];errors.push('unrelated tensor lane overlap '+ids.join(' / '));affected.set(id,errors);}
-    const constrained=graph.edges.filter(e=>e.boundaryLane?.constrainedAt===C.geometryKey(graph)).map(e=>e.id);
+    // The synchronous validation context already signs the entire geometry.
+    // Rehashing thousands of source nodes for every edge made a budgeted
+    // routing batch spend minutes validating its still-pending routes.
+    const constrained=graph.edges.filter(e=>e.boundaryLane?.constrainedAt===context.geometryKey).map(e=>e.id);
     return {source:C.validateSource(graph),layout:{ok:!violations.length,violations,...conflicts,junctions},routing:{constrained,contacts:graph.edges.flatMap(e=>C.laneContacts(graph,e,e.route,context).map(hit=>({edge:e.id,...hit})))},edges:graph.edges.map(e=>{const check=C.validate(graph,e,e.route,context),extra=affected.get(e.id)||[];return [e.id,{ok:check.ok&&!extra.length,violations:[...check.violations,...extra]}];})};
   }
   function repairCandidates(graph,e,old){
@@ -161,6 +175,25 @@
       const terminal=Math.max(9,stub);
       const a={x:s.x+ns[0]*ss*stub,y:s.y+ns[1]*ss*stub},b={x:t.x+nt[0]*ts*terminal,y:t.y+nt[1]*ts*terminal};
       add([s,a,{x:b.x,y:a.y},b,t]);add([s,a,{x:a.x,y:b.y},b,t]);
+    }
+    // A caption can occupy the entire short terminal corridor. The bounded
+    // stub family above cannot escape a glyph whose label extends past the
+    // endpoint (for example a multiply caption below a right-side output).
+    // Add deterministic obstacle-edge doglegs before invoking the global
+    // visibility router. Every candidate is still checked against the full
+    // source/body/caption contract by the caller.
+    const captions=graph.nodes.filter(n=>n.glyphPresentation||n.expanded).flatMap(n=>(n.labelObstacles||[]).map(b=>({x:n.x+b.x,y:n.y+b.y,w:b.w,h:b.h})));
+    for(const box of captions){
+      const pad=12,edgePad=2,xs=[box.x-pad,box.x+box.w+pad],ys=[box.y-edgePad,box.y+box.h+edgePad,box.y-pad,box.y+box.h+pad];
+      for(const x of xs){
+        add([s,{x,y:s.y},{x,y:ys[0]},{x:t.x,y:ys[0]},t]);
+        add([s,{x,y:s.y},{x,y:ys[1]},{x:t.x,y:ys[1]},t]);
+      }
+      for(const y of ys){
+        add([s,{x:s.x,y},{x:t.x,y},t]);
+        add([s,{x:xs[0],y:s.y},{x:xs[0],y},{x:t.x,y},t]);
+        add([s,{x:xs[1],y:s.y},{x:xs[1],y},{x:t.x,y},t]);
+      }
     }
     return out.sort((a,b)=>(a.length-b.length)*40+a.slice(1).reduce((v,p,i)=>v+R.dist(a[i],p),0)-b.slice(1).reduce((v,p,i)=>v+R.dist(b[i],p),0));
   }
@@ -355,7 +388,7 @@
     const fraction=id=>{const siblings=graph.edges.filter(v=>v.source===id||v.target===id);return .2+.6*(siblings.indexOf(e)+1)/(siblings.length+1);};
     const compatible=prior.filter(p=>!p.wire||p.wire!==e.contract.wire);
     const tangled=options.crossingCost>0&&compatible.some(path=>path.slice(1).some((b,j)=>e.route.slice(1).some((d,i)=>R.crossing(path[j],b,e.route[i],d))));
-    if(!C.needsLaneRepair(graph,e,context)&&(options.optimizeCrossings===false||!tangled)&&(e.portPolicy?.source.sharedStem||e.contract.sharedStem)&&C.validate(graph,e,e.route,context).ok&&
+    if(!options.optimizeReadability&&!C.needsLaneRepair(graph,e,context)&&(options.optimizeCrossings===false||!tangled)&&(e.portPolicy?.source.sharedStem||e.contract.sharedStem)&&C.validate(graph,e,e.route,context).ok&&
         !compatible.some(path=>path.slice(1).some((b,j)=>e.route.slice(1).some((d,i)=>R.overlap(path[j],b,e.route[i],d)>1e-5)))){
       e.failed=false;e.style=options.style;delete e.reason;return {ok:true,retained:true,points:e.route,reason:'source-backed shared tensor stem retained'};
     }
@@ -379,7 +412,18 @@
       while(index<waypoints.length&&Math.abs(R.dist(source,waypoints[index])+R.dist(waypoints[index],stem)-length)<1e-5)index++;
       if(!waypoints.some(p=>R.dist(p,stem)<1e-5))waypoints.splice(index,0,stem);
     }
-    const result=R.routeEdge({...e,fixedSource:P.active(e,'source'),fixedTarget:P.active(e,'target'),waypoints},graph.nodes,compatible,{...C.constraints(graph,e,opts,context),...extra,preserve:!!stem||options.preserve});
+    const routedEdge={...e,fixedSource:P.active(e,'source'),fixedTarget:P.active(e,'target'),waypoints};
+    const routeSettings={...C.constraints(graph,e,opts,context),...extra,preserve:!!stem||options.preserve};
+    // Native layouts already allocate physical operand ports. Try them first;
+    // explicit inspector overrides retain their requested candidate set.
+    let result=options.firstLegal&&flexible?R.routeEdge(routedEdge,graph.nodes,compatible,{...routeSettings,quickCandidatesOnly:true}):null;
+    if(!result?.ok&&!options.quickCandidatesOnly&&options.preferCurrentPorts&&flexible&&!requestedPorts)result=R.routeEdge(routedEdge,graph.nodes,compatible,{...routeSettings,sourceCandidates:[P.active(e,'source')],targetCandidates:[P.active(e,'target')]});
+    if(!options.quickCandidatesOnly&&options.tryDirectPorts&&flexible&&graph.nodes.length<=300){
+      const quick=R.routeEdge({...routedEdge,route:result?.ok?result.points:routedEdge.route},graph.nodes,compatible,{...routeSettings,quickCandidatesOnly:true});
+      if(quick.ok&&(!result?.ok||quick.cost<result.cost-1e-6))result=quick;
+    }
+    if(!result?.ok&&!options.quickCandidatesOnly)result=R.routeEdge(routedEdge,graph.nodes,compatible,routeSettings);
+    if(options.quickCandidatesOnly&&!result?.ok){e.failed=true;e.reason=result?.reason||'No legal simple port candidate';return result||{ok:false,reason:e.reason};}
     if(!result.ok&&options.boundaryLanes!==false){
       // Aesthetic lane width cannot make a previously legal narrow source
       // interface immovable. Retry the painted-stroke safety constraint and
@@ -419,6 +463,14 @@
       // half of a fan-out still contains its previous coordinates.
       for(const [e,saved]of before){for(const k of Object.keys(e))delete e[k];Object.assign(e,saved);}
       return {graph,routed:0,failed:ids.length,retained:0,reason:junctionCheck.violations.join('; ')};
+    }
+    // Apply the same bounded readability pass used by recursive frontiers
+    // after an explicit Apply/layout request. It only changes legal route
+    // geometry, keeps source bindings and manual knots intact, and is gated
+    // by the caller so low-level routing tests can still exercise the raw
+    // visibility router in isolation.
+    if(options.optimizeReadability&&graph.recursive&&root.SummaryRecursive?.polish){
+      root.SummaryRecursive.polish(graph,{...options,edgeIds:options.edgeIds||undefined});
     }
     return {graph,routed,failed,retained};
   }

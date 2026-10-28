@@ -40,7 +40,9 @@ report = {
     "modelExecuted": False, "torchLoaded": False,
     "bundle": bundle, "architecture": architecture,
 }
-output = PROJECT / "docs/evidence/preview-generalization-20261014/ast-multifile-fixture.json"
+# This is a generated current test input. Historical migration evidence must
+# remain immutable when a later backend capability changes implementation bytes.
+output = PROJECT / "studio/tests/fixtures/preview-formal-ast.json"
 output.parent.mkdir(parents=True, exist_ok=True)
 output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf8")
 print(json.dumps({"output": str(output), "nodes": len(bundle["ir"]["nodes"]), "edges": len(bundle["ir"]["edges"]), "modules": len(modules), "modelExecuted": False}))

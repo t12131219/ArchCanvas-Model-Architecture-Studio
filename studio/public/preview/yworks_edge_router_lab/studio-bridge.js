@@ -45,8 +45,11 @@
       const command=message.type.slice(prefix.length);
       if(!capabilities().includes(command)&&command!=='hello')return;
       try{
+        // Startup may itself be awaiting a cancellable Worker. Do not queue
+        // its cancellation behind the promise that Worker must resolve.
+        if(command==='cancel-operation'){await api.command(command,message);emit('applied',{requestId,command});return;}
         await api.started();
-        if(api.isBusy?.()&&!concurrentReads.has(command))throw new Error('请先完成当前图操作。');
+        if(api.isBusy?.()&&!concurrentReads.has(command)&&command!=='cancel-gesture'&&command!=='cancel-operation')throw new Error('请先完成当前图操作。');
         if(command==='ping'||command==='hello'){emit('ready',{requestId,version:1,capabilities:capabilities()});state();}
         else if(command==='load'){
           if(!message.bundle||typeof message.bundle!=='object')throw new Error('缺少源码适配包或编辑 JSON。');
@@ -61,7 +64,7 @@
         else {await api.command(command,message);emit('applied',{requestId,command,...api.state()});state();}
       }catch(error){emit('error',{requestId,command,message:error?.message||String(error)});}
     }
-    function capabilities(){return ['load','snapshot','request-source','focus','save','export-svg','export-json','svg','visual','presentation','set-frontier','show-library','show-routing','show-import','show-evidence','undo','redo','reset','fit','zoom','select-tool','connect-tool',...(query.get('surface')==='canvas'?[]:['pan-tool']),'bend-tool','show-ports','grid','arrange-selection','pin-selection','apply-layout','collapse-all','expand-all','ping'];}
+    function capabilities(){return ['cancel-operation','cancel-gesture','authoring','open-case','load','snapshot','request-source','focus','save','export-svg','export-json','svg','visual','presentation','set-frontier','semantic-view','continue-routing','show-library','show-routing','show-import','show-evidence','undo','redo','reset','fit','zoom','select-tool','connect-tool',...(query.get('surface')==='canvas'?[]:['pan-tool']),'bend-tool','show-ports','show-ghost','show-obstacles','interaction-mode','grid','select-nodes','arrange-selection','pin-selection','apply-layout','collapse-all','expand-all','ping'];}
     root.addEventListener('message',event=>{
       // Read the committed state while a Worker is pending. Mutating commands
       // reject while busy instead of silently running later on another model.
@@ -70,7 +73,7 @@
       if(concurrentReads.has(command)||api.isBusy?.())void receive(event);
       else queue=queue.then(()=>receive(event)).catch(error=>emit('error',{message:error.message}));
     });
-    return {emit,state,selection,source,ready(){ready=true;emit('ready',{version:1,capabilities:capabilities()});state();}};
+    return {emit,state,selection,source,progress(payload){if(!ready)emit('progress',payload);},ready(){ready=true;emit('ready',{version:1,capabilities:capabilities()});state();}};
   }
   root.ArchCanvasPreviewBridge={create};
 })(window);

@@ -11,6 +11,7 @@
     return value;
   }
   function edgeErrors(graph,e,points=e.route,options={}){
+    if(graph.generic&&root.SummaryNativeSemantic)return root.SummaryNativeSemantic.edgeErrors(graph,e,points);
     if(graph.recursive&&root.SummaryRecursive)return root.SummaryRecursive.edgeErrors(graph,e,points,options);
     const base=graph.semanticBaseline;if(!base)return [];
     const errors=[],saved=base.edges[e.id];
@@ -23,6 +24,7 @@
     return errors;
   }
   function nodeErrors(graph){
+    if(graph.generic&&root.SummaryNativeSemantic)return root.SummaryNativeSemantic.nodeErrors(graph);
     if(graph.recursive&&root.SummaryRecursive)return root.SummaryRecursive.nodeErrors(graph);
     const base=graph.semanticBaseline;if(!base)return [];
     const errors=[],nodes=new Map(graph.nodes.map(n=>[n.id,n]));
@@ -60,6 +62,7 @@
     return errors;
   }
   function validateGraph(graph){
+    if(graph.generic&&root.SummaryNativeSemantic)return root.SummaryNativeSemantic.validate(graph);
     if(graph.recursive&&root.SummaryRecursive)return root.SummaryRecursive.validate(graph);
     const errors=nodeErrors(graph),base=graph.semanticBaseline;
     if(base){const ids=new Set(graph.edges.map(e=>e.id));for(const id of Object.keys(base.edges))if(!ids.has(id)){

@@ -251,6 +251,25 @@ class PreviewHTTPTests(unittest.TestCase):
         self.assertEqual(self.request(f"/api/projects/{project['id']}/preview", {}, token=False)[0], 403)
         self.assertEqual(self.request("/api/preview/edit-source", {**payload, "root": "/tmp"})[0], 400)
 
+    def test_summary_semantic_upload_managed_refresh_and_explicit_legacy_compatibility(self):
+        payload = {"files": {"model.py": EDITABLE}, "entry": "model:Editable", "semanticMode": "summary"}
+        code, summary = self.request("/api/preview/analyze", payload, token=False)
+        self.assertEqual(code, 200, summary)
+        self.assertEqual(summary["ir"]["semantic_ir"]["schema"], "archcanvas-source-semantic/2")
+        self.assertEqual(summary["semanticMode"], "summary")
+        self.assertEqual(summary, self.request("/api/source-adapter/analyze", payload, token=False)[1])
+        project = self.register(analyze_source(EDITABLE, "model:Editable"))
+        route = f"/api/projects/{project['id']}/preview"
+        code, managed = self.request(route, {"semanticMode": "summary", "baseSourceDigest": project["sourceDigest"], "baseIrDigest": project["irDigest"]})
+        self.assertEqual(code, 200, managed)
+        self.assertEqual(managed["irSha256"], summary["irSha256"])
+        self.assertEqual(managed["studioBinding"]["sourceDigest"], project["sourceDigest"])
+        self.assertEqual(self.request(route, {"semanticMode": "summary", "baseSourceDigest": "stale"})[0], 409)
+        code, legacy = self.request("/api/preview/analyze", {**payload, "semanticMode": "legacy"})
+        self.assertEqual(code, 200, legacy)
+        self.assertNotIn("semantic_ir", legacy["ir"])
+        self.assertEqual(self.request("/api/preview/analyze", {**payload, "semanticMode": "unknown"})[0], 400)
+
     def test_managed_preview_refreshes_after_reviewed_source_edit_and_rejects_stale_version(self):
         original = self.root / "original.py"
         original.write_text(EDITABLE)
@@ -273,6 +292,12 @@ class PreviewHTTPTests(unittest.TestCase):
         self.assertNotEqual(after["studioBinding"]["sourceDigest"], before["studioBinding"]["sourceDigest"])
         layer = next(n for n in after["ir"]["nodes"] if n.get("moduleType") == "Dropout")
         self.assertEqual(layer["constructorArgs"], [0.3])
+        code, semantic_after = self.request(preview_route, {"semanticMode": "summary"})
+        self.assertEqual(code, 200, semantic_after)
+        self.assertEqual(semantic_after["sourceSha256"], after["sourceSha256"])
+        self.assertEqual(semantic_after["studioBinding"], after["studioBinding"])
+        native_layer = next(n for n in semantic_after["ir"]["semantic_ir"]["nodes"] if n.get("operator") == "dropout")
+        self.assertEqual(native_layer["constructor"]["args"], [0.3])
         self.assertEqual(original.read_text(), EDITABLE)
 
     def test_capabilities_report_formal_preview_package_and_limits(self):

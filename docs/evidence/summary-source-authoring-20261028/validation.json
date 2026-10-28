@@ -1,0 +1,156 @@
+{
+  "schema": "archcanvas-summary-source-authoring-validation/1",
+  "recordedAt": "2026-10-27T20:01:33.297174+00:00",
+  "phase": "Summary source-module parsing, compatible replacement and exact recipe reconstruction in retained Studio panels",
+  "phaseStatus": "validated",
+  "overallMigrationStatus": "in-progress",
+  "frontendFull": {
+    "tests": 889,
+    "pass": 888,
+    "fail": 0,
+    "skipped": 1,
+    "cancelled": 0,
+    "durationMs": 584633.783889,
+    "command": "npm test",
+    "evidence": "frontend.log",
+    "scopeNote": "All runtime edits preceded the final full run. Current AST fixture and its harness were refreshed before that run. Later edits only document and record validation.",
+    "skipReason": "Standalone SVG DOM Chromium is unavailable in the sandbox; real Chromium matrices executed separately."
+  },
+  "sourceCore": {
+    "tests": 10,
+    "pass": 10,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "durationMs": 783.505374,
+    "evidence": "source-core.log",
+    "command": "node --experimental-strip-types --test --test-isolation=none tests/summarySourceAuthoring.test.ts tests/summaryAuthoring.test.ts"
+  },
+  "backend": {
+    "tests": 29,
+    "pass": 29,
+    "fail": 0,
+    "skipped": 0,
+    "evidence": "backend.log",
+    "command": "PYTHONPATH=src:tests .venv/bin/python -B -m unittest -v test_summary_authoring_bridge test_summary_authoring_http test_summary_semantic_bridge test_preview_backend"
+  },
+  "browser": {
+    "source": {
+      "passed": 6,
+      "browserErrors": 0,
+      "evidence": "browser-source.json"
+    },
+    "authoring": {
+      "passed": 12,
+      "browserErrors": 0,
+      "evidence": "browser-authoring.json"
+    },
+    "documents": {
+      "passed": 14,
+      "browserErrors": 0,
+      "evidence": "browser-documents.json"
+    },
+    "native": {
+      "passed": 16,
+      "browserErrors": 0,
+      "evidence": "browser-native.json"
+    },
+    "legacy": {
+      "passed": 23,
+      "browserErrors": 0,
+      "evidence": "browser-legacy.json"
+    }
+  },
+  "browserTotalChecks": 71,
+  "build": {
+    "passed": true,
+    "command": "npm run build",
+    "evidence": "build.log"
+  },
+  "independentCopy": {
+    "passed": true,
+    "command": "python3 scripts/check_independence.py --build",
+    "evidence": "independence-report.json",
+    "runtimeByteEquality": "independent-runtime-bytes.json",
+    "targeted": {
+      "tests": 73,
+      "pass": 73,
+      "fail": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "durationMs": 2255.810616,
+      "evidence": "independent-targeted.log"
+    },
+    "fixture": {
+      "tests": 9,
+      "pass": 9,
+      "fail": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "durationMs": 990.564452,
+      "evidence": "independent-fixture.log"
+    },
+    "backend": {
+      "tests": 29,
+      "pass": 29,
+      "fail": 0,
+      "skipped": 0,
+      "evidence": "independent-backend.log"
+    },
+    "scopeNote": "Standalone build uses copied installed npm dependencies, not a fresh install. Runtime and host files match current bytes. The two fixture harness files were subsequently refreshed and the fixture regenerated inside the standalone copy; all nine generalization tests passed there."
+  },
+  "assetIntegrity": {
+    "resources": 63,
+    "bytes": 3992165,
+    "integrationManifestFiles": 59,
+    "nativeSourceIdenticalModules": 32,
+    "additionalSourceIdenticalFiles": [
+      "semantic_adapter/authoring.py",
+      "semantic_studio/authoring-model.js"
+    ],
+    "publicDistHttpEqual": true,
+    "evidence": "http-assets.json"
+  },
+  "budgets": {
+    "nodes": 480,
+    "edges": 3600,
+    "documentBytes": 16000000,
+    "sourceModuleBytes": 120000,
+    "constructorBytes": 16000,
+    "wallSeconds": 15,
+    "cpuSeconds": 8,
+    "addressSpaceBytes": 536870912,
+    "openFiles": 48,
+    "concurrentCompilersPerServiceProcess": 1
+  },
+  "initialIssues": [
+    {
+      "issue": "Full suite detected stale AST fixture after capability metadata changed.",
+      "resolution": "Current generated fixture moved out of immutable historical evidence into studio/tests/fixtures; fixture and full suite rerun.",
+      "evidence": "initial-frontend-stale-fixture.log"
+    },
+    {
+      "issue": "Legacy browser invocation omitted --base and used script default 8777 rather than active 8789.",
+      "resolution": "Reran unchanged regression against actual formal test service.",
+      "evidence": "initial-legacy-wrong-port.log"
+    }
+  ],
+  "sourceTransactionWritesInSourceMatrix": [],
+  "scopeNotes": [
+    "Source is statically parsed, never imported or executed. Worker resource limits are not a claim of formal runtime execution isolation.",
+    "Compatible replacement changes parsed facts and retains exact external operand slots; incompatible changes leave document/history/form input intact.",
+    "Delayed source responses pin workspace and document digest, in addition to App load sequence and case.",
+    "Both module and atomic recipes were reconstructed in reverse order and compared against full original IR.",
+    "An exactly reconstructed document still has no formal Python transaction binding.",
+    "Reload restores current source/module facts without implicit compilation; it does not restore the full undo stack.",
+    "Explicit pending/failed routes are not certified as complete legal routing."
+  ],
+  "remaining": [
+    "Local assembly structural recertification",
+    "Current complete generic model catalog",
+    "CPU runtime/merged evidence under formal isolation and receipts",
+    "Measured adaptive-frontier feedback",
+    "Thousand-node budgets, transport, cancellation and stress",
+    "D0/D1 legacy renderer/interaction dependency cleanup"
+  ]
+}

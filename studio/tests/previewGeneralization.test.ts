@@ -101,18 +101,16 @@ function appValue(name: string, environment: Record<string, unknown>) {
   return new Function(...Object.keys(environment), `${compiled};return ${name};`)(...Object.values(environment));
 }
 
-test('normal preview rendering requests zero formal layout builds for every representative graph size', () => {
-  let calls = 0;
-  for (const id of cases) {
-    const document = registeredProjectionFixture(id).initial.document;
-    const result = appValue('committedScene', { current: document, needsFormalScene: false, useMemo: (build: () => unknown) => build(), buildScene() { calls++; throw Error('unexpected hidden layout'); } });
-    assert.equal(result, null);
+test('preview render and navigation have no formal Scene build; source-editor projection remains explicit', () => {
+  const text = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8'), ast = ts.createSourceFile('App.tsx', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const owners: string[] = [];
+  function visit(node: ts.Node, owner = 'render') {
+    const name = ts.isFunctionDeclaration(node) ? node.name?.text : undefined;
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'buildScene') owners.push(owner);
+    ts.forEachChild(node, child => visit(child, name && name !== 'App' ? name : owner));
   }
-  for (const size of [12, 480]) {
-    const result = appValue('committedScene', { current: syntheticProjectionFixture(size).initial.document, needsFormalScene: false, useMemo: (build: () => unknown) => build(), buildScene() { calls++; throw Error('unexpected hidden layout'); } });
-    assert.equal(result, null);
-  }
-  assert.equal(calls, 0);
+  visit(ast);
+  assert.deepEqual(owners, ['continueModelAuthoring'], 'formal geometry is only constructed on explicit source-editor entry');
 });
 
 test('native annotation selection and placement inspect the visible 480-node graph without formal layout', () => {
@@ -123,10 +121,6 @@ test('native annotation selection and placement inspect the visible 480-node gra
   graph.studioPresentation = { annotations: { [annotation.id]: annotation }, legend: [] };
   assert.deepEqual(previewAnnotationBody(annotation), { x: 105, y: 103, width: 100, height: 67 });
   assert.deepEqual(previewAnnotationConflicts(graph, annotation.id), [{ kind: 'node', id: 'call/a' }]);
-  const needsFormalScene = appValue('needsFormalScene', { selection: { kind: 'annotation' }, recoveryPreview: null, portLayoutPreview: null, preview: null });
-  assert.equal(needsFormalScene, false);
-  let formalCalls = 0;
-  assert.equal(appValue('committedScene', { current: fixture.initial.document, needsFormalScene, useMemo: (build: () => unknown) => build(), buildScene() { formalCalls++; throw Error('native note rebuilt formal scene'); } }), null);
   const source = JSON.stringify(fixture.initial.document.architecture), operations: any[] = [], focused: string[] = [];
   const move = appValue('moveAnnotationBelow', { scene: null, selectedAnnotation: annotation, previewSnapshot: { current: { graph } },
     previewAnnotationPosition, apply: (items: any[]) => operations.push(...items), focusAnnotation: (id: string) => focused.push(id),
@@ -137,14 +131,14 @@ test('native annotation selection and placement inspect the visible 480-node gra
   (graph.studioPresentation as any).annotations[annotation.id] = moved;
   assert.deepEqual(previewAnnotationConflicts(graph, annotation.id), []);
   assert.deepEqual(previewAnnotationPosition(graph, annotation.id), { x: moved.x, y: moved.y }, 'repeat placement ignores the selected note');
-  assert.equal(JSON.stringify(fixture.initial.document.architecture), source); assert.equal(formalCalls, 0);
+  assert.equal(JSON.stringify(fixture.initial.document.architecture), source);
   const root = graph.nodes.find(node => node.id === 'net/root')!;
   Object.assign(root, { x: 0, y: 0, w: 2000, h: 50000 });
   (graph.studioPresentation as any).annotations[annotation.id] = { ...annotation, x: 1800, y: 300 };
   assert.deepEqual(previewAnnotationConflicts(graph, annotation.id), [], 'empty interior of expanded root remains available');
   (graph as any).canvas = [2000, 50000]; (graph.studioPresentation as any).legend = [{ id: 'legend:linear', label: 'Linear' }];
   (graph.studioPresentation as any).annotations[annotation.id] = { ...annotation, x: 1750, y: 49950 };
-  assert.deepEqual(previewAnnotationConflicts(graph, annotation.id), [{ kind: 'legend', id: 'studio:legend' }]);
+  assert.deepEqual(previewAnnotationConflicts(graph, annotation.id), [], 'inspector-only node legends do not occupy the canvas');
 });
 
 test('different parser IDs map two calls of one shared instance by multifile source evidence without merging tuple slots', () => {
@@ -187,7 +181,7 @@ test('actual formal AST parsers preserve multifile shared calls and keep ambiguo
     'net/model.py': 'from torch import nn\nfrom .ops import Branch\nclass Model(nn.Module):\n def __init__(self):\n  super().__init__()\n  self.shared = Branch()\n def forward(self,x):\n  a = self.shared(x)\n  b = self.shared(x)\n  return a,b\n',
   };
   const src = fileURLToPath(new URL('../../src', import.meta.url));
-  const parsed = JSON.parse(readFileSync(new URL('../../docs/evidence/preview-generalization-20261014/ast-multifile-fixture.json', import.meta.url), 'utf8'));
+  const parsed = JSON.parse(readFileSync(new URL('./fixtures/preview-formal-ast.json', import.meta.url), 'utf8'));
   assert.equal(parsed.schema, 'archcanvas-preview-formal-ast-fixture/1');
   assert.deepEqual(parsed.inputs, { files, entry: 'net.model:Model' });
   for (const [path, digest] of Object.entries(parsed.implementation)) {

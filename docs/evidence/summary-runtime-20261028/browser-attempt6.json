@@ -1,0 +1,1433 @@
+{
+  "ok": true,
+  "checks": [
+    "retained Studio source import and CPU fold never execute before an explicit profile/run action",
+    "real isolated HTTP job records Summary ATen/producers/source-stack and four unknown-call regions while retaining the original view",
+    "explicit native result open, CPU/merged/source modes and F0/F1 retain every fact and unknown boundary",
+    "full receipt/source/profile survives save, refresh and actual portable JSON file import without re-execution",
+    "real CPU cancellation preserves graph/history and returns a failed receipt without a replacement",
+    "observed result enters retained edit/view modes with the full immutable baseline and no source write authority"
+  ],
+  "starts": 2,
+  "receipt": {
+    "schema": "semantic-runtime/1",
+    "profile": "summary-aten-observed/1",
+    "status": "passed",
+    "model_executed": true,
+    "runtimeVerified": true,
+    "input_spec": {
+      "schema": "semantic-inputs/1",
+      "constructor": {
+        "width": 3
+      },
+      "modes": [
+        "eval"
+      ],
+      "cases": [
+        {
+          "id": "positive",
+          "seed": 7,
+          "inputs": {
+            "x": {
+              "shape": [
+                2,
+                3
+              ],
+              "dtype": "float32",
+              "fill": "ones"
+            },
+            "flag": {
+              "value": true
+            }
+          }
+        },
+        {
+          "id": "negative",
+          "seed": 7,
+          "inputs": {
+            "x": {
+              "shape": [
+                2,
+                3
+              ],
+              "dtype": "float32",
+              "fill": "ones"
+            },
+            "flag": {
+              "value": false
+            }
+          }
+        }
+      ]
+    },
+    "source_files": {
+      "model.py": "from torch import nn\n\n\nclass RuntimeFixture(nn.Module):\n    def __init__(self, width=3):\n        super().__init__()\n        # Deliberately dynamic constructor: static analysis keeps the boundary.\n        self.projection = getattr(nn, 'Linear')(width, width, bias=False)\n\n    def forward(self, x, flag):\n        left = self.projection(x)\n        right = self.projection(x)\n        if flag:\n            return left + right\n        return left - right\n"
+    },
+    "binding": {
+      "entry": "model:RuntimeFixture",
+      "source_root": ".",
+      "source_sha256": "5a37358cf133cf4eaa368be91deb786e47d66ad2e8b2a551e4fb98290e41358e",
+      "source_generation": {
+        "model.py": "5a37358cf133cf4eaa368be91deb786e47d66ad2e8b2a551e4fb98290e41358e"
+      },
+      "source_manifest_sha256": "c433d24568d27af459cecebb56297bf9a8ff5d6275efc017c1d8c3f93dd781be",
+      "static_ir_digest": "8eb775699e16e5d1775f0e25336290320da9e5814372ae5bf95d4d044fc5c489",
+      "spec_digest": "14c0b624ec9f9fcce4ef6c0cdcde4152342bde8d174ec27cc872e08f018c7be6",
+      "device": "cpu",
+      "interpreter": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/.venv-runtime/bin/python",
+      "executable_sha256": "2886962487597d9eac12094e21a4a7ba749e9a2a7293734fbafd231b102a546c",
+      "worker_digest": "0a9724157a2729ae9c84cd4c6f5932e8364dd2a17b43862898669f22741d4e55"
+    },
+    "limitations": [
+      "Declared samples and modes only; not arbitrary-input coverage or old/new equivalence.",
+      "Model and instrumentation share the isolated process; not adversarial attestation.",
+      "No checkpoint, optimizer or training progress is loaded or migrated."
+    ],
+    "manifest": {
+      "environment": {
+        "interpreter": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/.venv-runtime/bin/python",
+        "virtualEnvironment": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/.venv-runtime",
+        "basePrefix": "/home/fzg/anaconda3",
+        "executable": "/home/fzg/anaconda3/bin/python3.11",
+        "executableDigest": "2886962487597d9eac12094e21a4a7ba749e9a2a7293734fbafd231b102a546c",
+        "virtualEnvironmentContentDigest": "2e0209a1f075546207b0666b2c9b461f84eb0d53956a4be2bad0a5082c8f1117",
+        "virtualEnvironmentFileCount": 19040,
+        "venvConfigDigest": "19d635d770a4932e43402446fc04e4ce08d97394e021bf00db1885218ab11ea0",
+        "stdlibPath": "/home/fzg/anaconda3/lib/python3.11",
+        "stdlibContentDigest": "8411535290bbd704f7764d59d3be69cd2337b20d506e4a7037b56ca42451db9f",
+        "stdlibFileCount": 1908,
+        "sharedLibraryMounts": [
+          {
+            "path": "/home/fzg/anaconda3/lib/libbz2.so.1.0",
+            "digest": "2aa4427cfdbae9ef95a402de9291102dd293e58d29409df9812c3c8fa9216ccd"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libcrypto.so.3",
+            "digest": "024b526dbcfea7594368d8bd847d907a6d352015e32dea5c89f750460ba312da"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libffi.so.8",
+            "digest": "a5d54aeb8ed2fd5e0ccf9d38b28cad6dec76517f69224a5d9687c1970b57b194"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/liblzma.so.5",
+            "digest": "0e5ab3623d8586efcddbe51cf7ad444bcd75092382bc781d30567699a4a6ba08"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libncursesw.so.6",
+            "digest": "7fa4e5e93804d78660b0eef727cdb4211209e1742e4ad3669348022668d90962"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libpanelw.so.6",
+            "digest": "d26f0c9d2c182d5de700a369a7ba4850be3ccb36bab4936addfc9551ef28526a"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libreadline.so.8",
+            "digest": "0b6a9d66a73115c872272bb479c8f29df1bf7d9b16e5913e083d64b7753ce1c6"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libsqlite3.so.0",
+            "digest": "6fea60dd09de040809ad67663e18f7c1f247535950e89a81290f567f2fe41565"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libssl.so.3",
+            "digest": "e69c92d062a0c048b4d8c8d08809ace6aa8269ee54986e68adab71da23129da3"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libtcl8.6.so",
+            "digest": "0cf512a333c12a0826c5ce8a7355798c2fbbda60f10d82078c5cdf33a07b3a49"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libtinfow.so.6",
+            "digest": "f15834b208dd1441c48f35009ebbb96c574c2658fba8adc98b8f53dbf37d7e19"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libtk8.6.so",
+            "digest": "d6f9e4af876bfad3c56c075e1b07237354d5e06c9a55e9c266b222dfb2959080"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libuuid.so.1",
+            "digest": "b42fa6cf1dcaca6b84e8155c4649d6bad561eaca2e8fa9473db178dbaa4aec53"
+          },
+          {
+            "path": "/home/fzg/anaconda3/lib/libz.so.1",
+            "digest": "0b0e682a9dc7fd4895a6783288f851b793dc89633f28714027974fa4d66f3914"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+            "digest": "9eb34cb2da3ae2a9398cc09b3cd2d069563ec40d9858cb711af15cd23fa80abf"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libX11.so.6",
+            "digest": "34b7869a1ba702462a1aa862fc0afe5b2608a7d5a09552c07796802fcf0c684b"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libXau.so.6",
+            "digest": "98343a8324ea62ed75a13c923ed5dea96b7a8ad41aeba9f18126c4cbf7178064"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libXdmcp.so.6",
+            "digest": "1dc3ff1269a5ede69ef9a8ec2436d73fccbcd10531055b359292e0bde4e29b46"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libbsd.so.0",
+            "digest": "e4ad21c203d8e8b9b7f49071311339af6b438026e1ad236403e3b379b022f23d"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libc.so.6",
+            "digest": "c53819710b163d3f1d2541778590d58d3ef31cb0ed75adcbe059faac68c1e72d"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libcrypt.so.1",
+            "digest": "d8b34ade1d95c6243a48e90f2873d65399dfb0cd3fa4ee2af45afc9e6cb8642b"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libdl.so.2",
+            "digest": "bf1783273aa79484bf5f70eddc013bc3982785d8aadef224aa09beb08fa95b42"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libgcc_s.so.1",
+            "digest": "fc9d43b2f6c20e53b009238f767c5b949d202389e20de9e202ea684b4ba3729a"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libm.so.6",
+            "digest": "00830df310aac5023e10bd7b715149ab8ddc682277fd8ae3539a7a44fcdd6c38"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libmd.so.0",
+            "digest": "bb376813876bb214535bbbdac70f2c0c4b00baecb81557dab78a79518248df06"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libnsl.so.1",
+            "digest": "59ddce25d15fac6e0b510791736cc4633f1eb5f786eb22e940132397ab70b06c"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libpthread.so.0",
+            "digest": "16e807d47ff2441f0203fb2b8805d471e555d932d3d8d262ec6a58ea1d640fd8"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/librt.so.1",
+            "digest": "c8124d69d67c4f94c162c36550c9244d60e2e368ecae98857754e3ba11824677"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libstdc++.so.6",
+            "digest": "ff0825e113603c3866680d5d52216bc6d8eedf3a59f52a0aef67ff01994db128"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libutil.so.1",
+            "digest": "8647a84d95565d4676d8fd8fa79569f3a81dedd19f9212029ac9225b546e25f1"
+          },
+          {
+            "path": "/lib/x86_64-linux-gnu/libxcb.so.1",
+            "digest": "aabc489094abd96c876d1c989a2da8a8aa6d28f5a676c4a84dd6d0a0c34aec5d"
+          },
+          {
+            "path": "/lib64/ld-linux-x86-64.so.2",
+            "digest": "9eb34cb2da3ae2a9398cc09b3cd2d069563ec40d9858cb711af15cd23fa80abf"
+          }
+        ],
+        "sharedLibraryContentDigest": "87f5c3671caf7727589845897755a775b337ffe76921c6d265b920e487ab1956",
+        "baseHiddenProbe": "/home/fzg/anaconda3/conda-meta/history",
+        "baseHiddenProbeExists": true,
+        "workerDigest": "5883aabd9f9079787ecc82c3f8b5023eb27d2151d02195dbcbfc0c92b2467eae",
+        "summaryProfileDigest": "662c83d9c6583aa42a5a491d0cae7d7a7225a2bcc615493a38300e3dfe77426c",
+        "summaryWorkerDigest": "0a9724157a2729ae9c84cd4c6f5932e8364dd2a17b43862898669f22741d4e55",
+        "controllerDigest": "3af21c5116df7e2018ff8430e44cf3b2678ccf15aba54af36d8a068078f2325e",
+        "seccompDigest": "04524e22f1fdbd5d194a9a88acdfe176c2998122a32b5ac381b3c938df0fc6fd",
+        "dependencyLockDigest": "91f79e88742d4df88631dea675b893b43b9dc0d7fab58600435ce28aa0b9fbb1",
+        "dependencyPins": {
+          "filelock": "3.32.3",
+          "fsspec": "2026.7.0",
+          "jinja2": "3.1.6",
+          "markupsafe": "3.0.3",
+          "mpmath": "1.3.0",
+          "networkx": "3.6.1",
+          "sympy": "1.13.1",
+          "torch": "2.5.1+cpu",
+          "typing-extensions": "4.16.0"
+        },
+        "backend": "pytorch",
+        "device": "cpu",
+        "environmentFreezeScope": "all venv files including bytecode, resolved Python executable, standard library excluding base site-packages, ELF dependency closure, config, dependency lock and trusted adapter; executable/stdlib/ELF mounts are private read-only copies, venv bytes are rechecked after execution",
+        "frameworkOrigin": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/.venv-runtime/lib/python3.11/site-packages/torch/__init__.py",
+        "frameworkVersion": "2.5.1+cpu",
+        "installedPackages": {
+          "filelock": "3.32.3",
+          "fsspec": "2026.7.0",
+          "jinja2": "3.1.6",
+          "markupsafe": "3.0.3",
+          "mpmath": "1.3.0",
+          "networkx": "3.6.1",
+          "pip": "23.2.1",
+          "setuptools": "65.5.0",
+          "sympy": "1.13.1",
+          "torch": "2.5.1+cpu",
+          "typing-extensions": "4.16.0"
+        },
+        "pythonVersion": "3.11.5",
+        "sysBasePrefix": "/home/fzg/anaconda3",
+        "sysPrefix": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/.venv-runtime"
+      },
+      "limits": {
+        "wallSeconds": 20,
+        "cpuSeconds": 20,
+        "addressSpaceBytes": 4294967296,
+        "fileBytes": 8000000,
+        "openFiles": 96,
+        "modelTaskLimit": 1,
+        "torchThreads": 1,
+        "uidTaskLimit": 256,
+        "threadLimitScope": "RLIMIT_NPROC counts all tasks for the real host UID; seccomp separately denies new processes",
+        "memoryScope": "per-process virtual address space; no cgroup RSS or aggregate tmpfs quota"
+      },
+      "sourceGeneration": {
+        "model.py": "5a37358cf133cf4eaa368be91deb786e47d66ad2e8b2a551e4fb98290e41358e"
+      },
+      "inputSpecDigest": "14c0b624ec9f9fcce4ef6c0cdcde4152342bde8d174ec27cc872e08f018c7be6",
+      "observationMechanism": "original Summary AST branches + nn.Module calls + TorchDispatchMode ATen operands/source stack"
+    },
+    "isolation": {
+      "status": "passed",
+      "formalProbe": {
+        "available": true,
+        "checks": {
+          "addressSpaceLimitApplied": true,
+          "baseEnvironmentUnexposed": true,
+          "cpuLimitApplied": true,
+          "frozenSourceReadOnly": true,
+          "hostFileAbsent": true,
+          "hostHomeAbsent": true,
+          "kernelSeccompFilter": true,
+          "namespacesDistinct": true,
+          "privateWritable": true,
+          "processCreationDenied": true,
+          "socketDenied": true
+        },
+        "mechanism": "Linux Bubblewrap user/mount/pid/net/ipc/uts namespaces and mandatory x86-64 seccomp",
+        "namespaces": {
+          "mnt": "mnt:[4026532765]",
+          "net": "net:[4026532772]",
+          "pid": "pid:[4026532770]",
+          "user": "user:[4026532950]"
+        },
+        "network": "separate namespace plus socket/socketpair syscall denial",
+        "processLimit": "non-thread clone/fork/vfork denied; clone3 ENOSYS; RLIMIT_NPROC thread budget",
+        "reason": ""
+      }
+    },
+    "environmentDigest": "081585bc7edca60f1cd62d2f4da3e2a28d10452e43b2a632c4962b7fc4f96f57",
+    "framework": "2.5.1+cpu",
+    "framework_origin": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/.venv-runtime/lib/python3.11/site-packages/torch/__init__.py",
+    "device": "cpu",
+    "runs": [
+      {
+        "branches": [
+          {
+            "column": 8,
+            "file": "model.py",
+            "line": 13,
+            "outcome": "true"
+          }
+        ],
+        "buffers": [],
+        "capture": {},
+        "case": "positive",
+        "events": [
+          {
+            "id": "op0",
+            "inputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t0",
+                "producer": "parameter:projection.weight",
+                "requires_grad": true,
+                "shape": [
+                  3,
+                  3
+                ],
+                "slot": "projection.weight"
+              }
+            ],
+            "module_call": "call1",
+            "module_path": "projection",
+            "mutable": false,
+            "operator": "aten.t.default",
+            "outputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t2",
+                "producer": "op0",
+                "requires_grad": false,
+                "shape": [
+                  3,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "source": {
+              "column": 15,
+              "end_column": 33,
+              "end_line": 11,
+              "file": "model.py",
+              "line": 11,
+              "symbol": "RuntimeFixture.forward"
+            },
+            "source_stack": [
+              {
+                "column": 15,
+                "end_column": 33,
+                "end_line": 11,
+                "file": "model.py",
+                "line": 11,
+                "symbol": "RuntimeFixture.forward"
+              }
+            ]
+          },
+          {
+            "id": "op1",
+            "inputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t1",
+                "producer": "input:x",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": "x"
+              },
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t2",
+                "producer": "op0",
+                "requires_grad": false,
+                "shape": [
+                  3,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "module_call": "call1",
+            "module_path": "projection",
+            "mutable": false,
+            "operator": "aten.mm.default",
+            "outputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t3",
+                "producer": "op1",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "source": {
+              "column": 15,
+              "end_column": 33,
+              "end_line": 11,
+              "file": "model.py",
+              "line": 11,
+              "symbol": "RuntimeFixture.forward"
+            },
+            "source_stack": [
+              {
+                "column": 15,
+                "end_column": 33,
+                "end_line": 11,
+                "file": "model.py",
+                "line": 11,
+                "symbol": "RuntimeFixture.forward"
+              }
+            ]
+          },
+          {
+            "id": "op2",
+            "inputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t0",
+                "producer": "parameter:projection.weight",
+                "requires_grad": true,
+                "shape": [
+                  3,
+                  3
+                ],
+                "slot": "projection.weight"
+              }
+            ],
+            "module_call": "call3",
+            "module_path": "projection",
+            "mutable": false,
+            "operator": "aten.t.default",
+            "outputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t4",
+                "producer": "op2",
+                "requires_grad": false,
+                "shape": [
+                  3,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "source": {
+              "column": 16,
+              "end_column": 34,
+              "end_line": 12,
+              "file": "model.py",
+              "line": 12,
+              "symbol": "RuntimeFixture.forward"
+            },
+            "source_stack": [
+              {
+                "column": 16,
+                "end_column": 34,
+                "end_line": 12,
+                "file": "model.py",
+                "line": 12,
+                "symbol": "RuntimeFixture.forward"
+              }
+            ]
+          },
+          {
+            "id": "op3",
+            "inputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t1",
+                "producer": "input:x",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": "x"
+              },
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t4",
+                "producer": "op2",
+                "requires_grad": false,
+                "shape": [
+                  3,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "module_call": "call3",
+            "module_path": "projection",
+            "mutable": false,
+            "operator": "aten.mm.default",
+            "outputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t5",
+                "producer": "op3",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "source": {
+              "column": 16,
+              "end_column": 34,
+              "end_line": 12,
+              "file": "model.py",
+              "line": 12,
+              "symbol": "RuntimeFixture.forward"
+            },
+            "source_stack": [
+              {
+                "column": 16,
+                "end_column": 34,
+                "end_line": 12,
+                "file": "model.py",
+                "line": 12,
+                "symbol": "RuntimeFixture.forward"
+              }
+            ]
+          },
+          {
+            "id": "op4",
+            "inputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t3",
+                "producer": "op1",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": 0
+              },
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t5",
+                "producer": "op3",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "module_call": "call0",
+            "module_path": "",
+            "mutable": false,
+            "operator": "aten.add.Tensor",
+            "outputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t6",
+                "producer": "op4",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "source": {
+              "column": 19,
+              "end_column": 31,
+              "end_line": 14,
+              "file": "model.py",
+              "line": 14,
+              "symbol": "RuntimeFixture.forward"
+            },
+            "source_stack": [
+              {
+                "column": 19,
+                "end_column": 31,
+                "end_line": 14,
+                "file": "model.py",
+                "line": 14,
+                "symbol": "RuntimeFixture.forward"
+              }
+            ]
+          }
+        ],
+        "mode": "eval",
+        "module_events": [
+          {
+            "event": "enter",
+            "id": "call0",
+            "input_bindings": [
+              {
+                "component": false,
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t1",
+                "port": "kw:x",
+                "producer": "input:x",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": "x"
+              }
+            ],
+            "inputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t1",
+                "producer": "input:x",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": "x"
+              }
+            ],
+            "module_type": "model.RuntimeFixture",
+            "parent_call": null,
+            "path": "",
+            "source_stack": []
+          },
+          {
+            "event": "enter",
+            "id": "call1",
+            "input_bindings": [
+              {
+                "component": false,
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t1",
+                "port": "arg:0",
+                "producer": "input:x",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": "x"
+              }
+            ],
+            "inputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t1",
+                "producer": "input:x",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": "x"
+              }
+            ],
+            "module_type": "torch.nn.modules.linear.Linear",
+            "parent_call": "call0",
+            "path": "projection",
+            "source_stack": [
+              {
+                "column": 15,
+                "end_column": 33,
+                "end_line": 11,
+                "file": "model.py",
+                "line": 11,
+                "symbol": "RuntimeFixture.forward"
+              }
+            ]
+          },
+          {
+            "event": "exit",
+            "id": "call1",
+            "output_is_tensor": true,
+            "outputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t3",
+                "producer": "op1",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "path": "projection"
+          },
+          {
+            "event": "enter",
+            "id": "call3",
+            "input_bindings": [
+              {
+                "component": false,
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t1",
+                "port": "arg:0",
+                "producer": "input:x",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": "x"
+              }
+            ],
+            "inputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t1",
+                "producer": "input:x",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": "x"
+              }
+            ],
+            "module_type": "torch.nn.modules.linear.Linear",
+            "parent_call": "call0",
+            "path": "projection",
+            "source_stack": [
+              {
+                "column": 16,
+                "end_column": 34,
+                "end_line": 12,
+                "file": "model.py",
+                "line": 12,
+                "symbol": "RuntimeFixture.forward"
+              }
+            ]
+          },
+          {
+            "event": "exit",
+            "id": "call3",
+            "output_is_tensor": true,
+            "outputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t5",
+                "producer": "op3",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "path": "projection"
+          },
+          {
+            "event": "exit",
+            "id": "call0",
+            "output_is_tensor": true,
+            "outputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t6",
+                "producer": "op4",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "path": ""
+          }
+        ],
+        "outputs": [
+          {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "id": "t6",
+            "producer": "op4",
+            "requires_grad": false,
+            "shape": [
+              2,
+              3
+            ],
+            "slot": 0
+          }
+        ],
+        "parameters": [
+          {
+            "aliases": [
+              "projection.weight"
+            ],
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "name": "projection.weight",
+            "requires_grad": true,
+            "shape": [
+              3,
+              3
+            ]
+          }
+        ],
+        "replay": {
+          "matched": true,
+          "output_digest": "645073c7e04e096c7a39100e0043a96209fc372705b2a3a37cd50e46d210a8bf"
+        },
+        "seed": 7,
+        "status": "passed",
+        "truncated": false
+      },
+      {
+        "branches": [
+          {
+            "column": 8,
+            "file": "model.py",
+            "line": 13,
+            "outcome": "false"
+          }
+        ],
+        "buffers": [],
+        "capture": {},
+        "case": "negative",
+        "events": [
+          {
+            "id": "op0",
+            "inputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t0",
+                "producer": "parameter:projection.weight",
+                "requires_grad": true,
+                "shape": [
+                  3,
+                  3
+                ],
+                "slot": "projection.weight"
+              }
+            ],
+            "module_call": "call1",
+            "module_path": "projection",
+            "mutable": false,
+            "operator": "aten.t.default",
+            "outputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t2",
+                "producer": "op0",
+                "requires_grad": false,
+                "shape": [
+                  3,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "source": {
+              "column": 15,
+              "end_column": 33,
+              "end_line": 11,
+              "file": "model.py",
+              "line": 11,
+              "symbol": "RuntimeFixture.forward"
+            },
+            "source_stack": [
+              {
+                "column": 15,
+                "end_column": 33,
+                "end_line": 11,
+                "file": "model.py",
+                "line": 11,
+                "symbol": "RuntimeFixture.forward"
+              }
+            ]
+          },
+          {
+            "id": "op1",
+            "inputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t1",
+                "producer": "input:x",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": "x"
+              },
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t2",
+                "producer": "op0",
+                "requires_grad": false,
+                "shape": [
+                  3,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "module_call": "call1",
+            "module_path": "projection",
+            "mutable": false,
+            "operator": "aten.mm.default",
+            "outputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t3",
+                "producer": "op1",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "source": {
+              "column": 15,
+              "end_column": 33,
+              "end_line": 11,
+              "file": "model.py",
+              "line": 11,
+              "symbol": "RuntimeFixture.forward"
+            },
+            "source_stack": [
+              {
+                "column": 15,
+                "end_column": 33,
+                "end_line": 11,
+                "file": "model.py",
+                "line": 11,
+                "symbol": "RuntimeFixture.forward"
+              }
+            ]
+          },
+          {
+            "id": "op2",
+            "inputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t0",
+                "producer": "parameter:projection.weight",
+                "requires_grad": true,
+                "shape": [
+                  3,
+                  3
+                ],
+                "slot": "projection.weight"
+              }
+            ],
+            "module_call": "call3",
+            "module_path": "projection",
+            "mutable": false,
+            "operator": "aten.t.default",
+            "outputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t4",
+                "producer": "op2",
+                "requires_grad": false,
+                "shape": [
+                  3,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "source": {
+              "column": 16,
+              "end_column": 34,
+              "end_line": 12,
+              "file": "model.py",
+              "line": 12,
+              "symbol": "RuntimeFixture.forward"
+            },
+            "source_stack": [
+              {
+                "column": 16,
+                "end_column": 34,
+                "end_line": 12,
+                "file": "model.py",
+                "line": 12,
+                "symbol": "RuntimeFixture.forward"
+              }
+            ]
+          },
+          {
+            "id": "op3",
+            "inputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t1",
+                "producer": "input:x",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": "x"
+              },
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t4",
+                "producer": "op2",
+                "requires_grad": false,
+                "shape": [
+                  3,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "module_call": "call3",
+            "module_path": "projection",
+            "mutable": false,
+            "operator": "aten.mm.default",
+            "outputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t5",
+                "producer": "op3",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "source": {
+              "column": 16,
+              "end_column": 34,
+              "end_line": 12,
+              "file": "model.py",
+              "line": 12,
+              "symbol": "RuntimeFixture.forward"
+            },
+            "source_stack": [
+              {
+                "column": 16,
+                "end_column": 34,
+                "end_line": 12,
+                "file": "model.py",
+                "line": 12,
+                "symbol": "RuntimeFixture.forward"
+              }
+            ]
+          },
+          {
+            "id": "op4",
+            "inputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t3",
+                "producer": "op1",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": 0
+              },
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t5",
+                "producer": "op3",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "module_call": "call0",
+            "module_path": "",
+            "mutable": false,
+            "operator": "aten.sub.Tensor",
+            "outputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t6",
+                "producer": "op4",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "source": {
+              "column": 15,
+              "end_column": 27,
+              "end_line": 15,
+              "file": "model.py",
+              "line": 15,
+              "symbol": "RuntimeFixture.forward"
+            },
+            "source_stack": [
+              {
+                "column": 15,
+                "end_column": 27,
+                "end_line": 15,
+                "file": "model.py",
+                "line": 15,
+                "symbol": "RuntimeFixture.forward"
+              }
+            ]
+          }
+        ],
+        "mode": "eval",
+        "module_events": [
+          {
+            "event": "enter",
+            "id": "call0",
+            "input_bindings": [
+              {
+                "component": false,
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t1",
+                "port": "kw:x",
+                "producer": "input:x",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": "x"
+              }
+            ],
+            "inputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t1",
+                "producer": "input:x",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": "x"
+              }
+            ],
+            "module_type": "model.RuntimeFixture",
+            "parent_call": null,
+            "path": "",
+            "source_stack": []
+          },
+          {
+            "event": "enter",
+            "id": "call1",
+            "input_bindings": [
+              {
+                "component": false,
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t1",
+                "port": "arg:0",
+                "producer": "input:x",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": "x"
+              }
+            ],
+            "inputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t1",
+                "producer": "input:x",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": "x"
+              }
+            ],
+            "module_type": "torch.nn.modules.linear.Linear",
+            "parent_call": "call0",
+            "path": "projection",
+            "source_stack": [
+              {
+                "column": 15,
+                "end_column": 33,
+                "end_line": 11,
+                "file": "model.py",
+                "line": 11,
+                "symbol": "RuntimeFixture.forward"
+              }
+            ]
+          },
+          {
+            "event": "exit",
+            "id": "call1",
+            "output_is_tensor": true,
+            "outputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t3",
+                "producer": "op1",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "path": "projection"
+          },
+          {
+            "event": "enter",
+            "id": "call3",
+            "input_bindings": [
+              {
+                "component": false,
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t1",
+                "port": "arg:0",
+                "producer": "input:x",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": "x"
+              }
+            ],
+            "inputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t1",
+                "producer": "input:x",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": "x"
+              }
+            ],
+            "module_type": "torch.nn.modules.linear.Linear",
+            "parent_call": "call0",
+            "path": "projection",
+            "source_stack": [
+              {
+                "column": 16,
+                "end_column": 34,
+                "end_line": 12,
+                "file": "model.py",
+                "line": 12,
+                "symbol": "RuntimeFixture.forward"
+              }
+            ]
+          },
+          {
+            "event": "exit",
+            "id": "call3",
+            "output_is_tensor": true,
+            "outputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t5",
+                "producer": "op3",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "path": "projection"
+          },
+          {
+            "event": "exit",
+            "id": "call0",
+            "output_is_tensor": true,
+            "outputs": [
+              {
+                "device": "cpu",
+                "dtype": "torch.float32",
+                "id": "t6",
+                "producer": "op4",
+                "requires_grad": false,
+                "shape": [
+                  2,
+                  3
+                ],
+                "slot": 0
+              }
+            ],
+            "path": ""
+          }
+        ],
+        "outputs": [
+          {
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "id": "t6",
+            "producer": "op4",
+            "requires_grad": false,
+            "shape": [
+              2,
+              3
+            ],
+            "slot": 0
+          }
+        ],
+        "parameters": [
+          {
+            "aliases": [
+              "projection.weight"
+            ],
+            "device": "cpu",
+            "dtype": "torch.float32",
+            "name": "projection.weight",
+            "requires_grad": true,
+            "shape": [
+              3,
+              3
+            ]
+          }
+        ],
+        "replay": {
+          "matched": true,
+          "output_digest": "0d1c2a2f691fc3999246361e45f5153de770c422f921454cdb874c1be2121d31"
+        },
+        "seed": 7,
+        "status": "passed",
+        "truncated": false
+      }
+    ],
+    "instrumentation": "AST if/ifexp outcomes + nn.Module hooks + TorchDispatchMode ATen operands",
+    "source_unchanged": true,
+    "finite_domain": {
+      "exhaustive": false,
+      "reason": "no explicit finite input set"
+    },
+    "trace_digest": "2ac45cb7d6112f0baf789715d25e1bc82d405f3e7159e6ae9926fe87f0bf0c0d"
+  },
+  "documentFacts": {
+    "nodes": 40,
+    "edges": 33,
+    "regions": 4
+  },
+  "browserErrors": [],
+  "sourceWrites": []
+}

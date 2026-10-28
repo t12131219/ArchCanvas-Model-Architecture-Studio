@@ -28,6 +28,22 @@ function graph(nodes: any[], edges: any[]) {
   return value;
 }
 
+test('flexible aligned operators get the same straight legal route on expansion; fixed sides and knots remain protected', () => {
+  for (const horizontal of [false, true]) for (const protection of ['flexible', 'fixed', 'manual']) {
+    const a = node('a', 100, 100, 120, 60), b = node('b', horizontal ? 340 : 100, horizontal ? 100 : 280, 120, 60);
+    const points = horizontal ? [[160,160],[160,200],[400,200],[400,160]] : [[220,130],[250,130],[250,310],[220,310]];
+    const e = edge('a','b',horizontal?'bottom':'right',horizontal?'bottom':'right',points);
+    if (protection !== 'fixed') for (const side of ['source','target']) e.portPolicy[side].mode = 'perimeter';
+    if (protection === 'manual') e.waypoints = [e.route[1],e.route[2]];
+    const g = graph([a,b],[e]), authority = JSON.stringify([e.binding,e.fixedSource,e.fixedTarget,e.waypoints]);
+    assert.equal(F.route(g,{preserve:true}).failed,0);
+    assert.equal(e.route.length,protection==='flexible'?2:4);
+    assert.equal(C.validate(g,e,e.route).ok,true);
+    assert.equal(JSON.stringify([e.binding,e.fixedSource,e.fixedTarget,e.waypoints]),authority);
+    const route = JSON.stringify(e.route); F.route(E.clone(g),{preserve:true}); assert.equal(JSON.stringify(e.route),route);
+  }
+});
+
 test('expanded headings are geometric obstacles for original routes and repaired routes', () => {
   const owner = node('owner', 200, 100, 600, 400, null, true);
   owner.labelObstacles = [{ x: 10, y: 6, w: 300, h: 28 }];
@@ -206,4 +222,27 @@ test('optional cleanup has a graph budget and a cloned frontier does not continu
     assert.equal(F.route(clone).failed, 0);
     assert.ok(clone.edges.filter((e: any) => e.route.length === 6).length < remaining, 'changing peer geometry invalidates optional cleanup receipt');
   } finally { C.validate = validate; }
+});
+
+test('long dashed lanes receive the same bounded cleanup as solid lanes', () => {
+  const source = node('producer', 0, 200, 60, 30);
+  const target = node('consumer', 400, 50, 60, 30);
+  const points: any[] = [];
+  for (let i = 0; i <= 30; i++) points.push({ x: 60 + i * 10, y: 215 });
+  points.push({ x: 360, y: 215 }, { x: 360, y: 65 }, { x: 380, y: 65 }, { x: 400, y: 65 });
+  const value = edge('producer', 'consumer', 'right', 'left', points.map(point => [point.x, point.y]));
+  value.id = 'long-dashed'; value.dashed = true;
+  const g = graph([source, target], [value]);
+  assert.equal(C.validate(g, value, value.route).ok, true);
+  const binding = JSON.stringify(value.binding);
+  const doc = F.build(F.create({ detailed: g }));
+  assert.equal(F.route(doc).failed, 0);
+  const optimized = doc.edges[0];
+  assert.ok(optimized.route.length < points.length, `route kept ${optimized.route.length} of ${points.length} points`);
+  assert.equal(optimized.dashed, true);
+  assert.equal(JSON.stringify(optimized.binding), binding);
+  assert.equal(C.validate(doc, optimized, optimized.route).ok, true);
+  const stable = JSON.stringify(optimized.route);
+  F.route(doc);
+  assert.equal(JSON.stringify(optimized.route), stable, 'reopening the same frontier is deterministic');
 });

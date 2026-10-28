@@ -6,8 +6,9 @@
   const P=root.SummaryPhysicalPorts || (typeof require==='function'?require('./physical-ports.js'):null);
   const inside=(p,n)=>p.x>n.x+EPS&&p.x<n.x+n.w-EPS&&p.y>n.y+EPS&&p.y<n.y+n.h-EPS;
   const pointIn=(p,n)=>p.x>=n.x-EPS&&p.x<=n.x+n.w+EPS&&p.y>=n.y-EPS&&p.y<=n.y+n.h+EPS;
-  function ancestors(graph,id){const map=new Map(graph.nodes.map(n=>[n.id,n])),ids=[];let n=map.get(id),seen=new Set();while(n&&!seen.has(n.id)){seen.add(n.id);if(n.expanded)ids.push(n.id);n=map.get(n.parent);}return ids;}
+  function ancestors(graph,id,context){const map=context?.nodeIndex||new Map(graph.nodes.map(n=>[n.id,n])),ids=[];let n=map.get(id),seen=new Set();while(n&&!seen.has(n.id)){seen.add(n.id);if(n.expanded&&!n.modelHeading)ids.push(n.id);n=map.get(n.parent);}return ids;}
   function crossings(points,n){
+    if(n.modelHeading)return [];
     const events=[];
     for(let i=1;i<points.length;i++){
       const a=points[i-1],b=points[i],dx=b.x-a.x,dy=b.y-a.y;
@@ -127,7 +128,7 @@
       const vertical=side==='left'||side==='right',axis=vertical?'x':'y',along=vertical?'y':'x',size=vertical?'w':'h',span=vertical?'h':'w',sign=['right','bottom'].includes(side)?1:-1,value=n[axis]+(sign>0?n[size]:0);
       const gap={inside:Infinity,outside:Infinity};
       const consider=(coordinate)=>{const distance=(coordinate-value)*sign,key=distance<0?'inside':'outside';if(Math.abs(distance)>EPS)gap[key]=Math.min(gap[key],Math.abs(distance));};
-      for(const b of graph.nodes){if(b===n||b.junction)continue;
+      for(const b of graph.nodes){if(b===n||b.junction||b.modelHeading)continue;
         if(Math.min(n[along]+n[span],b[along]+b[span])-Math.max(n[along],b[along])<=EPS)continue;
         if(b.expanded){consider(b[axis]);consider(b[axis]+b[size]);}
         else if(b[axis]>=value-EPS||b[axis]+b[size]<=value+EPS){consider(b[axis]);consider(b[axis]+b[size]);}
@@ -145,9 +146,17 @@
     return out;
   }
   const geometryKey=graph=>{const text=JSON.stringify(graph.nodes.map(n=>[n.id,n.x,n.y,n.w,n.h]));let hash=2166136261;for(let i=0;i<text.length;i++)hash=Math.imul(hash^text.charCodeAt(i),16777619);return graph.nodes.length+':'+(hash>>>0).toString(16);};
-  function laneContacts(graph,e,points=e.route,context){return graph.nodes.filter(n=>n.expanded).flatMap(n=>borderContacts(e,n,points,laneClearances(graph,e,n,context)));}
+  // Conservative broad phase only: the exact body, caption, frame and lane
+  // checks below still decide validity. Include every caption and the widest
+  // painted border clearance in this synchronous geometry snapshot.
+  function routeNodes(graph,points,context){
+    if(!context?.spatialNodes||!points.length||points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)))return graph.nodes;
+    const pad=context.spatialPadding,minX=Math.min(...points.map(p=>p.x))-pad,maxX=Math.max(...points.map(p=>p.x))+pad,minY=Math.min(...points.map(p=>p.y))-pad,maxY=Math.max(...points.map(p=>p.y))+pad,out=[];
+    for(const box of context.spatialNodes){if(box.x>maxX)break;if(box.right>=minX&&box.y<=maxY&&box.bottom>=minY)out.push(box.node);}return out;
+  }
+  function laneContacts(graph,e,points=e.route,context){return routeNodes(graph,points,context).filter(n=>n.expanded&&!n.modelHeading).flatMap(n=>borderContacts(e,n,points,laneClearances(graph,e,n,context)));}
   function needsLaneRepair(graph,e,context){return e.boundaryLane?.constrainedAt!==(context?.geometryKey||geometryKey(graph))&&laneContacts(graph,e,e.route,context).length>0;}
-  function borderContacts(e,n,points,padding=borderClearance(e,n)){const hits=[];
+  function borderContacts(e,n,points,padding=borderClearance(e,n)){const hits=[];if(n.modelHeading)return hits;
     for(const side of ['left','right','top','bottom']){
       const vertical=side==='left'||side==='right',axis=vertical?'x':'y',along=vertical?'y':'x';
       const value=n[axis]+(['right','bottom'].includes(side)?n[vertical?'w':'h']:0),low=n[along],high=low+n[vertical?'h':'w'];
@@ -163,6 +172,7 @@
     }return hits;
   }
   function walls(n,gates,padding=2){
+    if(n.modelHeading)return [];
     const result=[];
     for(const side of ['left','right','top','bottom']){
       const pad=typeof padding==='number'?{inside:padding,outside:padding}:padding[side],extent=Math.max(pad.inside,pad.outside),thickness=pad.inside+pad.outside;
@@ -174,6 +184,7 @@
     return result;
   }
   function constraints(graph,e,opts,context){
+    if(graph.generic&&root.SummaryNativeSemantic)return root.SummaryNativeSemantic.constraints(graph,e,opts,context,api);
     initialize(graph);
     const frames=graph.nodes.filter(n=>n.expanded),related=new Set([...ancestors(graph,e.source),...ancestors(graph,e.target)]),extra=[];
     for(const n of frames){
@@ -204,12 +215,16 @@
     ]:graph.semanticBaseline?.edges);
   }
   function validationContext(graph){return {nodeErrors:S?S.nodeErrors(graph):[],geometryKey:geometryKey(graph),frameGaps:new Map(graph.nodes.filter(n=>n.expanded).map(n=>[n.id,frameGaps(graph,n)])),
+    nodeIndex:new Map(graph.nodes.map(n=>[n.id,n])),
+    spatialPadding:Math.max(12,...graph.edges.map(e=>(e.width||2.2)/2))+Math.max(2,...graph.nodes.flatMap(n=>[...n.html?.matchAll(/stroke-width="([\d.]+)"/g)||[]].map(m=>+m[1])))/2+2,
+    spatialNodes:graph.nodes.map(n=>({node:n,x:Math.min(n.x,...(n.labelObstacles||[]).map(b=>n.x+b.x)),y:Math.min(n.y,...(n.labelObstacles||[]).map(b=>n.y+b.y)),right:Math.max(n.x+n.w,...(n.labelObstacles||[]).map(b=>n.x+b.x+b.w)),bottom:Math.max(n.y+n.h,...(n.labelObstacles||[]).map(b=>n.y+b.y+b.h))})).sort((a,b)=>a.x-b.x),
     // The complete source scope is immutable for this synchronous routing
     // transaction, including all variant gate licences. Never reuse the
     // context across a hierarchy/source edit or for another graph.
     sourceGraph:graph,sourceScope:sourceScope(graph),sourceEdgeErrors:new Map()};}
   function sourceErrors(graph,e,points,context){
     if(!S)return [];
+    if(graph.generic)return S.edgeErrors(graph,e,points);
     if(context?.sourceGraph!==graph||!context.sourceEdgeErrors)return S.edgeErrors(graph,e,points);
     // Alternate physical ports and candidate polylines leave these source
     // fields unchanged. Sign all of them on every call, so even an in-place
@@ -227,7 +242,7 @@
     if(!e.contract)violations.push('missing routing/source contract');
     if(!e.contract)return {ok:false,violations};
     if(points.length<2||points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)))violations.push('invalid route geometry');
-    const related=new Set([...ancestors(graph,e.source),...ancestors(graph,e.target)]);
+    const related=new Set([...ancestors(graph,e.source,context),...ancestors(graph,e.target,context)]),nearby=routeNodes(graph,points,context);
     if(!e.draft&&(e.source!==e.contract.source||e.target!==e.contract.target))violations.push('producer/consumer changed without a declared draft');
     for(let i=1;i<points.length;i++){
       const a=points[i-1],b=points[i];
@@ -244,11 +259,12 @@
       if((e.contract.enforcePortApproach??!!graph.irSha256)&&a&&b&&n&&((b.x-a.x)*n[0]+(b.y-a.y)*n[1])*(f.inward?-1:1)<=EPS)violations.push('wrong '+which+' port approach');
     }
     if(e.style!=='octilinear'&&e.arrow!=='none'&&clean.length>=2&&R.dist(clean.at(-1),clean.at(-2))+EPS<(e.contract.minimumTerminal||0))violations.push('insufficient arrow terminal');
-    for(const n of graph.nodes){
+    for(const n of nearby){
       if(n.junction)continue;
       if(n.expanded||n.glyphPresentation)for(const box of n.labelObstacles||[]){const caption={x:n.x+box.x,y:n.y+box.y,w:box.w,h:box.h};
         if(points.slice(1).some((p,i)=>R.intersectsRect(points[i],p,caption)))violations.push('route enters '+(n.glyphPresentation?'glyph caption ':'expanded heading ')+n.id);
       }
+      if(n.modelHeading)continue;
       if(!n.expanded){
         for(let i=1;i<points.length;i++)if(n.id!==e.source&&n.id!==e.target&&R.intersectsRect(points[i-1],points[i],n))violations.push('unrelated leaf '+n.id);
         if(e.contract.enforcePortApproach&&(n.id===e.source||n.id===e.target)&&points.slice(1).some((p,i)=>R.intersectsRect(points[i],p,n)))violations.push('route enters endpoint body '+n.id);
@@ -256,13 +272,14 @@
       }
       if(!related.has(n.id)&&points.slice(1).some((p,i)=>R.intersectsRect(points[i],p,n)))violations.push('unrelated container '+n.id);
       const actual=crossings(points,n),allowed=activeGates(graph,e).filter(g=>g.frame===n.id);
-      for(const g of actual)if(!allowed.some(v=>v.side===g.side&&v.direction===g.direction&&R.dist(gatePoint(n,g),gatePoint(n,v))<3.01))violations.push('undeclared boundary '+n.id);
+      for(const g of actual)if(!graph.generic&&!allowed.some(v=>v.side===g.side&&v.direction===g.direction&&R.dist(gatePoint(n,g),gatePoint(n,v))<3.01))violations.push('undeclared boundary '+n.id);
       for(const hit of borderContacts(e,n,points))violations.push('border stroke clearance '+n.id+':'+hit.side);
     }
     // A route may remove an unnecessary exit/re-entry detour in the original
     // SVG. Its remaining crossings must still follow the recorded order; a
     // repeated gate is not a license to bounce across a container indefinitely.
-    const actual=graph.nodes.filter(n=>n.expanded).flatMap(n=>crossings(points,n)).sort((a,b)=>a.order-b.order);
+    const actual=nearby.filter(n=>n.expanded).flatMap(n=>crossings(points,n)).sort((a,b)=>a.order-b.order);
+    if(graph.generic){violations.push(...root.SummaryNativeSemantic.boundaryErrors(graph,e,actual,points,context));return {ok:!violations.length,violations:[...new Set(violations)]};}
     const allowed=activeGates(graph,e).sort((a,b)=>a.order-b.order);let cursor=0;
     for(const g of actual){let found=false;while(cursor<allowed.length){const v=allowed[cursor++],n=graph.nodes.find(n=>n.id===g.frame);if(v.frame===g.frame&&v.side===g.side&&v.direction===g.direction&&R.dist(gatePoint(n,g),gatePoint(n,v))<3.01){found=true;break;}}if(!found){violations.push('boundary crossing order changed');break;}}
     return {ok:violations.length===0,violations:[...new Set(violations)]};

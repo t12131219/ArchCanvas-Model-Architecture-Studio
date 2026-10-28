@@ -455,7 +455,10 @@ test('actual source-view preserves Studio panels, mode switch and legend control
   assert.match(html, /<iframe[^>]+title="ArchCanvas 模型预览与连线编辑器"[^>]+surface=canvas/);
   for (const panel of ['navigator', 'inspector', 'canvas-toolbar']) assert.ok(html.includes(`class="${panel}"`), panel);
   const menu = html.slice(html.indexOf('class="workspace-menu"'), html.indexOf('</details>'));
-  assert.match(menu, /示例与模块库/);
+  assert.match(menu, /Summary 模型库/);
+  assert.doesNotMatch(menu, /内置示例|示例与模块库/);
+  assert.match(html, /<button[^>]*>Summary<\/button>/);
+  assert.doesNotMatch(html, /summary-interaction/);
   assert.doesNotMatch(html, /data-scene-node="module:model.AuthoredModel"/);
 });
 

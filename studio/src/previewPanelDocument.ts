@@ -1,12 +1,12 @@
 import { validateDocument } from './core/validate.ts';
 import { CATEGORY_STYLES } from './core/tokens.ts';
-import { previewCanvasOperations, previewSelectionNodeIds, previewSourceLocation, previewUniqueNodeBindings } from './previewInterop.ts';
+import { previewDetailGraph, previewCanvasOperations, previewSelectionNodeIds, previewSourceLocation, previewUniqueNodeBindings } from './previewInterop.ts';
 import { previewPresentationFields } from './previewPresentation.ts';
 import type { PreviewEvidenceSource, PreviewVisualGraph } from './previewInterop.ts';
 import type { Architecture, ArchitectureNode, CanvasDocument, HistoryState } from './core/types.ts';
 import type { PreviewSnapshot } from './PreviewStudio';
 
-const panelCategories: Record<string, string> = { group: 'container', container: 'container', module: 'module', input: 'input', output: 'output',
+const panelCategories: Record<string, string> = { group: 'container', composite: 'container', container: 'container', module: 'module', input: 'input', output: 'output',
   attention: 'attention', linear: 'linear', activation: 'activation', normalization: 'norm', norm: 'norm', add: 'residual', residual: 'residual', tensor: 'tensor' };
 
 export function isPreviewPanelDocument(document: CanvasDocument): boolean {
@@ -17,7 +17,7 @@ export function isPreviewPanelDocument(document: CanvasDocument): boolean {
  * different AST parser cannot turn into unique executable source objects. */
 export function previewMappingCoverage(snapshot: PreviewSnapshot, architecture: Architecture, source?: PreviewEvidenceSource) {
   const graph = snapshot.graph as unknown as PreviewVisualGraph & { recursive?: { authority?: { detail?: PreviewVisualGraph } } };
-  const nodes = (graph.recursive?.authority?.detail ?? graph).nodes.filter(node => !node.junction);
+  const nodes = previewDetailGraph(graph).nodes.filter(node => !node.junction);
   const canonical = new Set(architecture.nodes.map(node => node.id));
   const identities = new Map<string, string[]>(), unmapped: string[] = [], ambiguous: string[] = [];
   for (const node of nodes) {
@@ -37,7 +37,7 @@ export function previewNeedsPanelDocument(snapshot: PreviewSnapshot, architectur
 /** Evidence coverage depends on source objects, never their changing geometry. */
 export function previewMappingSignature(snapshot: PreviewSnapshot): string {
   const graph = snapshot.graph as unknown as PreviewVisualGraph & { recursive?: { authority?: { detail?: PreviewVisualGraph } } };
-  return JSON.stringify((graph.recursive?.authority?.detail ?? graph).nodes.filter(node => !node.junction).map(node => {
+  return JSON.stringify(previewDetailGraph(graph).nodes.filter(node => !node.junction).map(node => {
     const raw = node.semantic ?? node;
     return [node.id, raw.id, raw.kind, raw.instance, raw.moduleType, raw.expression, raw.source_evidence,
       raw.sourceStructure, raw.sourceParameters?.callSites];
@@ -84,7 +84,7 @@ export function previewPanelDocument(snapshot: PreviewSnapshot, source?: Preview
     caseId?: string; irSha256?: string; edges: { id: string; source: string; target: string; role?: string }[];
     recursive?: { authority?: { mandatory?: string[]; detail?: PreviewVisualGraph & { edges: { id: string; source: string; target: string; role?: string }[] } }; state?: { open?: string[]; folded?: string[] } };
   };
-  const detail = graph.recursive?.authority?.detail ?? graph;
+  const detail = previewDetailGraph(graph);
   const ids = new Set(detail.nodes.map(node => node.id));
   const children = new Map<string, string[]>();
   for (const node of detail.nodes) if (node.parent && ids.has(node.parent)) {

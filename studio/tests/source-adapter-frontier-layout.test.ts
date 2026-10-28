@@ -99,3 +99,36 @@ test('detailed-only source fallback cards keep readable captions rather than int
     assert.deepEqual(plain(node.semantic), raw.ir.nodes.find((n: any) => n.id === node.id));
   }
 });
+
+test('RiverNet nested binary glyph frontier keeps edge-10 canonical and caption-safe through reopen', () => {
+  const riverPath = path.join(preview, 'verification/source-adapter/river-net.json');
+  const river = JSON.parse(readFileSync(riverPath, 'utf8'));
+  const sources = S.sources(river);
+  assert.ok(sources.overview && sources.detailed);
+  let graph = checked(F.build(F.create(sources)));
+  const group = graph.nodes.find((n: any) => n.id.endsWith('/group-27-17-3'));
+  assert.ok(group, 'LanternUnit must be present in the overview frontier');
+  graph = checked(F.toggle(graph, group.id, true));
+  const edge = graph.edges.find((e: any) => e.projection?.original === 'edge-10');
+  assert.ok(edge, 'edge-10 must remain visible after nested expansion');
+  const raw = river.ir.edges.find((e: any) => e.id === 'edge-10');
+  assert.deepEqual(plain(edge.binding), plain({
+    src: `${raw.source}:${raw.sourcePort}`,
+    dst: `${raw.target}:${raw.targetPort}`,
+    canonical_src: `${raw.source}:${raw.sourcePort}`,
+    canonical_dst: `${raw.target}:${raw.targetPort}`,
+    wire_identity: raw.wire,
+    semantic_edges: ['edge-10'],
+    source_evidence: raw.source_evidence,
+    semantic_kind: raw.role,
+  }));
+  const validation = E.validateView(graph), edgeCheck = validation.edges.find(([id]: any) => id === 'edge-10')?.[1] as any;
+  assert.equal(edgeCheck.ok, true, edgeCheck.violations?.join('; '));
+  assert.doesNotMatch(edgeCheck.violations?.join('; ') || '', /caption|endpoint body/);
+  const expandedRoute = plain(edge.route);
+  graph = checked(F.toggle(graph, group.id, false));
+  graph = checked(F.toggle(graph, group.id, true));
+  const reopened = graph.edges.find((e: any) => e.projection?.original === 'edge-10');
+  assert.deepEqual(plain(reopened?.route), expandedRoute, 'collapse/reopen keeps the repaired presentation route');
+  assert.deepEqual(plain(reopened?.binding), plain(edge.binding), 'collapse/reopen keeps canonical source identity');
+});

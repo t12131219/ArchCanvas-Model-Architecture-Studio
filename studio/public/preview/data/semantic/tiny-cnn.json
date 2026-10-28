@@ -1,0 +1,2235 @@
+{
+  "schema": "archcanvas-source-semantic/2",
+  "title": "TinyCNN",
+  "entry": {
+    "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+    "class": "TinyCNN",
+    "cell": null,
+    "constructor": {}
+  },
+  "coverage_contract": "在明确限定的模型、输入范围和运行模式内，完整覆盖并验证所有分支。任何任意 PyTorch 模型均无 opaque 无法保证：未知自定义算子、外部依赖或动态 Python 行为可能无法从现有证据中还原。",
+  "sources": [
+    {
+      "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+      "physical": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+      "cell": null,
+      "sha256": "380ba612d236f58d41cd54531a58d296d2f9522da8be3cea50ae6d4567d32834",
+      "unit_sha256": "380ba612d236f58d41cd54531a58d296d2f9522da8be3cea50ae6d4567d32834"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "model/29:4:composite:1",
+      "kind": "composite",
+      "label": "TinyCNN",
+      "parent": null,
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 29,
+          "end_line": 33,
+          "column": 4,
+          "end_column": 43,
+          "symbol": "TinyCNN.forward",
+          "expression": "def forward(self, image):\n    features = self.conv(image)\n    activated = torch.relu(features)\n    pooled = self.pool(activated)\n    return self.head(pooled.flatten(1))"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "composite",
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "runtime_evidence": [],
+      "semantic_type": "convolutional network",
+      "module_path": ""
+    },
+    {
+      "id": "model/29:4:composite:1/29:22:interface:1",
+      "kind": "interface",
+      "label": "image",
+      "parent": "model/29:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 29,
+          "end_line": 29,
+          "column": 22,
+          "end_column": 27,
+          "symbol": "TinyCNN.forward",
+          "expression": "image"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "port",
+        "fill": "#e7edf4"
+      },
+      "runtime_evidence": [],
+      "role": "input",
+      "slot": "image"
+    },
+    {
+      "id": "model/29:4:composite:1/30:19:compute:1",
+      "kind": "compute",
+      "label": "conv · Conv2d",
+      "parent": "motif:CNN block:0",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 30,
+          "end_line": 30,
+          "column": 19,
+          "end_column": 35,
+          "symbol": "TinyCNN.forward",
+          "expression": "self.conv(image)"
+        }
+      ],
+      "evidence_status": "source-runtime-associated",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "runtime_evidence": [
+        {
+          "run": 0,
+          "event": "op0",
+          "node": "runtime:0:op0",
+          "match": "source-line-associated; not operator-equivalence proof"
+        }
+      ],
+      "operator": "convolution",
+      "module_path": "conv",
+      "framework_type": "torch.nn.Conv2d",
+      "constructor": {}
+    },
+    {
+      "id": "model/29:4:composite:1/25:20:parameter:1",
+      "kind": "parameter",
+      "label": "conv.parameters",
+      "parent": "motif:CNN block:0",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 25,
+          "end_line": 25,
+          "column": 20,
+          "end_column": 38,
+          "symbol": "TinyCNN.forward",
+          "expression": "nn.Conv2d(1, 3, 3)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "runtime_evidence": [],
+      "parameter_scope": "conv",
+      "identity_status": "declared-scope; sharing-unresolved"
+    },
+    {
+      "id": "model/29:4:composite:1/30:8:value-alias:1",
+      "kind": "value-alias",
+      "label": "features",
+      "parent": "motif:CNN block:0",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 30,
+          "end_line": 30,
+          "column": 8,
+          "end_column": 16,
+          "symbol": "TinyCNN.forward",
+          "expression": "features"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "value",
+        "fill": "#e8f6ef"
+      },
+      "runtime_evidence": [],
+      "slot": null
+    },
+    {
+      "id": "model/29:4:composite:1/31:20:compute:1",
+      "kind": "compute",
+      "label": "relu",
+      "parent": "motif:CNN block:0",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 31,
+          "end_line": 31,
+          "column": 20,
+          "end_column": 40,
+          "symbol": "TinyCNN.forward",
+          "expression": "torch.relu(features)"
+        }
+      ],
+      "evidence_status": "source-runtime-associated",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "runtime_evidence": [
+        {
+          "run": 0,
+          "event": "op1",
+          "node": "runtime:0:op1",
+          "match": "source-line-associated; not operator-equivalence proof"
+        }
+      ],
+      "operator": "activation",
+      "reason": null
+    },
+    {
+      "id": "model/29:4:composite:1/31:8:value-alias:1",
+      "kind": "value-alias",
+      "label": "activated",
+      "parent": "motif:CNN block:0",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 31,
+          "end_line": 31,
+          "column": 8,
+          "end_column": 17,
+          "symbol": "TinyCNN.forward",
+          "expression": "activated"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "value",
+        "fill": "#e8f6ef"
+      },
+      "runtime_evidence": [],
+      "slot": null
+    },
+    {
+      "id": "model/29:4:composite:1/32:17:compute:1",
+      "kind": "compute",
+      "label": "pool · AdaptiveAvgPool2d",
+      "parent": "motif:CNN block:0",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 32,
+          "end_line": 32,
+          "column": 17,
+          "end_column": 37,
+          "symbol": "TinyCNN.forward",
+          "expression": "self.pool(activated)"
+        }
+      ],
+      "evidence_status": "source-runtime-associated",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "runtime_evidence": [
+        {
+          "run": 0,
+          "event": "op2",
+          "node": "runtime:0:op2",
+          "match": "source-line-associated; not operator-equivalence proof"
+        }
+      ],
+      "operator": "pooling",
+      "module_path": "pool",
+      "framework_type": "torch.nn.AdaptiveAvgPool2d",
+      "constructor": {}
+    },
+    {
+      "id": "model/29:4:composite:1/32:8:value-alias:1",
+      "kind": "value-alias",
+      "label": "pooled",
+      "parent": "model/29:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 32,
+          "end_line": 32,
+          "column": 8,
+          "end_column": 14,
+          "symbol": "TinyCNN.forward",
+          "expression": "pooled"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "value",
+        "fill": "#e8f6ef"
+      },
+      "runtime_evidence": [],
+      "slot": null
+    },
+    {
+      "id": "model/29:4:composite:1/33:25:compute:1",
+      "kind": "compute",
+      "label": "flatten",
+      "parent": "model/29:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 33,
+          "end_line": 33,
+          "column": 25,
+          "end_column": 42,
+          "symbol": "TinyCNN.forward",
+          "expression": "pooled.flatten(1)"
+        }
+      ],
+      "evidence_status": "source-runtime-associated",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "runtime_evidence": [
+        {
+          "run": 0,
+          "event": "op3",
+          "node": "runtime:0:op3",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op4",
+          "node": "runtime:0:op4",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op5",
+          "node": "runtime:0:op5",
+          "match": "source-line-associated; not operator-equivalence proof"
+        }
+      ],
+      "operator": "reshape",
+      "reason": null
+    },
+    {
+      "id": "model/29:4:composite:1/33:15:compute:1",
+      "kind": "compute",
+      "label": "head · Linear",
+      "parent": "model/29:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 33,
+          "end_line": 33,
+          "column": 15,
+          "end_column": 43,
+          "symbol": "TinyCNN.forward",
+          "expression": "self.head(pooled.flatten(1))"
+        }
+      ],
+      "evidence_status": "source-runtime-associated",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "runtime_evidence": [
+        {
+          "run": 0,
+          "event": "op3",
+          "node": "runtime:0:op3",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op4",
+          "node": "runtime:0:op4",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op5",
+          "node": "runtime:0:op5",
+          "match": "source-line-associated; not operator-equivalence proof"
+        }
+      ],
+      "operator": "linear",
+      "module_path": "head",
+      "framework_type": "torch.nn.Linear",
+      "constructor": {}
+    },
+    {
+      "id": "model/29:4:composite:1/27:20:parameter:1",
+      "kind": "parameter",
+      "label": "head.parameters",
+      "parent": "model/29:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 27,
+          "end_line": 27,
+          "column": 20,
+          "end_column": 35,
+          "symbol": "TinyCNN.forward",
+          "expression": "nn.Linear(3, 2)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "runtime_evidence": [],
+      "parameter_scope": "head",
+      "identity_status": "declared-scope; sharing-unresolved"
+    },
+    {
+      "id": "model/29:4:composite:1/33:8:interface:1",
+      "kind": "interface",
+      "label": "return",
+      "parent": "model/29:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 33,
+          "end_line": 33,
+          "column": 8,
+          "end_column": 43,
+          "symbol": "TinyCNN.forward",
+          "expression": "return self.head(pooled.flatten(1))"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "port",
+        "fill": "#e7edf4"
+      },
+      "runtime_evidence": [],
+      "role": "output"
+    },
+    {
+      "id": "motif:CNN block:0",
+      "kind": "composite",
+      "label": "CNN block",
+      "parent": "model/29:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 30,
+          "end_line": 30,
+          "column": 19,
+          "end_column": 35,
+          "symbol": "TinyCNN.forward",
+          "expression": "self.conv(image)"
+        },
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 30,
+          "end_line": 30,
+          "column": 8,
+          "end_column": 16,
+          "symbol": "TinyCNN.forward",
+          "expression": "features"
+        },
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 31,
+          "end_line": 31,
+          "column": 20,
+          "end_column": 40,
+          "symbol": "TinyCNN.forward",
+          "expression": "torch.relu(features)"
+        },
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 31,
+          "end_line": 31,
+          "column": 8,
+          "end_column": 17,
+          "symbol": "TinyCNN.forward",
+          "expression": "activated"
+        },
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 32,
+          "end_line": 32,
+          "column": 17,
+          "end_column": 37,
+          "symbol": "TinyCNN.forward",
+          "expression": "self.pool(activated)"
+        },
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 25,
+          "end_line": 25,
+          "column": 20,
+          "end_column": 38,
+          "symbol": "TinyCNN.forward",
+          "expression": "nn.Conv2d(1, 3, 3)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "composite",
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "semantic_type": "CNN block",
+      "runtime_evidence": [],
+      "motif": "motif:CNN block:0"
+    },
+    {
+      "id": "runtime-observations",
+      "kind": "composite",
+      "label": "CPU observed execution",
+      "parent": "model/29:4:composite:1",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "receipt": "b5f6c82e97001ec33441fc8e311b69ce5d6555f618a65b4b50642dc30cbb5e8b"
+        }
+      ],
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "granularity": "composite",
+      "evidence_status": "runtime-only"
+    },
+    {
+      "id": "runtime:0:run",
+      "kind": "composite",
+      "label": "image8 · eval",
+      "parent": "runtime-observations",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "image8",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "granularity": "composite",
+      "evidence_status": "runtime-only"
+    },
+    {
+      "id": "runtime:0:call0",
+      "kind": "composite",
+      "label": "TinyCNN",
+      "parent": "runtime:0:run",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "image8",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "granularity": "composite",
+      "evidence_status": "runtime-only",
+      "semantic_type": "observed-module-call",
+      "module_path": "",
+      "framework_type": "models.TinyCNN"
+    },
+    {
+      "id": "runtime:0:call1",
+      "kind": "composite",
+      "label": "conv",
+      "parent": "runtime:0:call0",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "image8",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "granularity": "composite",
+      "evidence_status": "runtime-only",
+      "semantic_type": "observed-module-call",
+      "module_path": "conv",
+      "framework_type": "torch.nn.modules.conv.Conv2d"
+    },
+    {
+      "id": "runtime:0:call3",
+      "kind": "composite",
+      "label": "pool",
+      "parent": "runtime:0:call0",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "image8",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "granularity": "composite",
+      "evidence_status": "runtime-only",
+      "semantic_type": "observed-module-call",
+      "module_path": "pool",
+      "framework_type": "torch.nn.modules.pooling.AdaptiveAvgPool2d"
+    },
+    {
+      "id": "runtime:0:call5",
+      "kind": "composite",
+      "label": "head",
+      "parent": "runtime:0:call0",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "image8",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "granularity": "composite",
+      "evidence_status": "runtime-only",
+      "semantic_type": "observed-module-call",
+      "module_path": "head",
+      "framework_type": "torch.nn.modules.linear.Linear"
+    },
+    {
+      "id": "runtime:0:parameter:conv.weight",
+      "kind": "parameter",
+      "label": "conv.weight",
+      "parent": "runtime:0:run",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "image8",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "parameter_identity": "conv.weight",
+      "aliases": [
+        "conv.weight"
+      ],
+      "tensor": {
+        "name": "conv.weight",
+        "aliases": [
+          "conv.weight"
+        ],
+        "shape": [
+          3,
+          1,
+          3,
+          3
+        ],
+        "dtype": "torch.float32",
+        "device": "cpu",
+        "requires_grad": true
+      }
+    },
+    {
+      "id": "runtime:0:parameter:conv.bias",
+      "kind": "parameter",
+      "label": "conv.bias",
+      "parent": "runtime:0:run",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "image8",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "parameter_identity": "conv.bias",
+      "aliases": [
+        "conv.bias"
+      ],
+      "tensor": {
+        "name": "conv.bias",
+        "aliases": [
+          "conv.bias"
+        ],
+        "shape": [
+          3
+        ],
+        "dtype": "torch.float32",
+        "device": "cpu",
+        "requires_grad": true
+      }
+    },
+    {
+      "id": "runtime:0:parameter:head.weight",
+      "kind": "parameter",
+      "label": "head.weight",
+      "parent": "runtime:0:run",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "image8",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "parameter_identity": "head.weight",
+      "aliases": [
+        "head.weight"
+      ],
+      "tensor": {
+        "name": "head.weight",
+        "aliases": [
+          "head.weight"
+        ],
+        "shape": [
+          2,
+          3
+        ],
+        "dtype": "torch.float32",
+        "device": "cpu",
+        "requires_grad": true
+      }
+    },
+    {
+      "id": "runtime:0:parameter:head.bias",
+      "kind": "parameter",
+      "label": "head.bias",
+      "parent": "runtime:0:run",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "image8",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "parameter_identity": "head.bias",
+      "aliases": [
+        "head.bias"
+      ],
+      "tensor": {
+        "name": "head.bias",
+        "aliases": [
+          "head.bias"
+        ],
+        "shape": [
+          2
+        ],
+        "dtype": "torch.float32",
+        "device": "cpu",
+        "requires_grad": true
+      }
+    },
+    {
+      "id": "runtime:0:op0",
+      "kind": "compute",
+      "label": "aten.convolution.default",
+      "parent": "runtime:0:call1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 30,
+          "end_line": 30,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "TinyCNN.forward",
+          "expression": "aten.convolution.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "image8",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op0"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.convolution.default",
+      "inputs": [
+        {
+          "id": "t4",
+          "producer": "input:image",
+          "slot": "image",
+          "shape": [
+            1,
+            1,
+            8,
+            8
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        },
+        {
+          "id": "t0",
+          "producer": "parameter:conv.weight",
+          "slot": "conv.weight",
+          "shape": [
+            3,
+            1,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": true
+        },
+        {
+          "id": "t1",
+          "producer": "parameter:conv.bias",
+          "slot": "conv.bias",
+          "shape": [
+            3
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t5",
+          "producer": "op0",
+          "slot": 0,
+          "shape": [
+            1,
+            3,
+            6,
+            6
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:input:image",
+      "kind": "interface",
+      "label": "input:image",
+      "parent": "runtime:0:run",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "image8",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "port",
+        "fill": "#e7edf4"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "tensor": {
+        "id": "t4",
+        "producer": "input:image",
+        "slot": "image",
+        "shape": [
+          1,
+          1,
+          8,
+          8
+        ],
+        "dtype": "torch.float32",
+        "device": "cpu",
+        "requires_grad": false
+      },
+      "reason": null
+    },
+    {
+      "id": "runtime:0:op1",
+      "kind": "compute",
+      "label": "aten.relu.default",
+      "parent": "runtime:0:call0",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 31,
+          "end_line": 31,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "TinyCNN.forward",
+          "expression": "aten.relu.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "image8",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op1"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.relu.default",
+      "inputs": [
+        {
+          "id": "t5",
+          "producer": "op0",
+          "slot": 0,
+          "shape": [
+            1,
+            3,
+            6,
+            6
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t6",
+          "producer": "op1",
+          "slot": 0,
+          "shape": [
+            1,
+            3,
+            6,
+            6
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op2",
+      "kind": "compute",
+      "label": "aten.mean.dim",
+      "parent": "runtime:0:call3",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 32,
+          "end_line": 32,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "TinyCNN.forward",
+          "expression": "aten.mean.dim"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "image8",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op2"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.mean.dim",
+      "inputs": [
+        {
+          "id": "t6",
+          "producer": "op1",
+          "slot": 0,
+          "shape": [
+            1,
+            3,
+            6,
+            6
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t7",
+          "producer": "op2",
+          "slot": 0,
+          "shape": [
+            1,
+            3,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op3",
+      "kind": "compute",
+      "label": "aten.view.default",
+      "parent": "runtime:0:call0",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 33,
+          "end_line": 33,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "TinyCNN.forward",
+          "expression": "aten.view.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "image8",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op3"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.view.default",
+      "inputs": [
+        {
+          "id": "t7",
+          "producer": "op2",
+          "slot": 0,
+          "shape": [
+            1,
+            3,
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t8",
+          "producer": "op3",
+          "slot": 0,
+          "shape": [
+            1,
+            3
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op4",
+      "kind": "compute",
+      "label": "aten.t.default",
+      "parent": "runtime:0:call5",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 33,
+          "end_line": 33,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "TinyCNN.forward",
+          "expression": "aten.t.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "image8",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op4"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.t.default",
+      "inputs": [
+        {
+          "id": "t2",
+          "producer": "parameter:head.weight",
+          "slot": "head.weight",
+          "shape": [
+            2,
+            3
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t9",
+          "producer": "op4",
+          "slot": 0,
+          "shape": [
+            3,
+            2
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op5",
+      "kind": "compute",
+      "label": "aten.addmm.default",
+      "parent": "runtime:0:call5",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 33,
+          "end_line": 33,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "TinyCNN.forward",
+          "expression": "aten.addmm.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "image8",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op5"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.addmm.default",
+      "inputs": [
+        {
+          "id": "t3",
+          "producer": "parameter:head.bias",
+          "slot": "head.bias",
+          "shape": [
+            2
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": true
+        },
+        {
+          "id": "t8",
+          "producer": "op3",
+          "slot": 0,
+          "shape": [
+            1,
+            3
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        },
+        {
+          "id": "t9",
+          "producer": "op4",
+          "slot": 0,
+          "shape": [
+            3,
+            2
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t10",
+          "producer": "op5",
+          "slot": 0,
+          "shape": [
+            1,
+            2
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:outputs",
+      "kind": "interface",
+      "label": "model outputs",
+      "parent": "runtime:0:run",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "image8",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "port",
+        "fill": "#e7edf4"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "role": "output"
+    }
+  ],
+  "edges": [
+    {
+      "source": "model/29:4:composite:1/25:20:parameter:1",
+      "target": "model/29:4:composite:1/30:19:compute:1",
+      "kind": "parameter-read",
+      "source_port": "out",
+      "target_port": "in",
+      "evidence": "framework-contract",
+      "id": "e00000"
+    },
+    {
+      "source": "model/29:4:composite:1/29:22:interface:1",
+      "target": "model/29:4:composite:1/30:19:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "arg:0",
+      "evidence": "source-dependency",
+      "id": "e00001"
+    },
+    {
+      "source": "model/29:4:composite:1/30:19:compute:1",
+      "target": "model/29:4:composite:1/30:8:value-alias:1",
+      "kind": "alias",
+      "source_port": "out",
+      "target_port": "value",
+      "evidence": "source-dependency",
+      "id": "e00002"
+    },
+    {
+      "source": "model/29:4:composite:1/30:8:value-alias:1",
+      "target": "model/29:4:composite:1/31:20:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "arg:0",
+      "evidence": "source-dependency",
+      "id": "e00003"
+    },
+    {
+      "source": "model/29:4:composite:1/31:20:compute:1",
+      "target": "model/29:4:composite:1/31:8:value-alias:1",
+      "kind": "alias",
+      "source_port": "out",
+      "target_port": "value",
+      "evidence": "source-dependency",
+      "id": "e00004"
+    },
+    {
+      "source": "model/29:4:composite:1/31:8:value-alias:1",
+      "target": "model/29:4:composite:1/32:17:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "arg:0",
+      "evidence": "source-dependency",
+      "id": "e00005"
+    },
+    {
+      "source": "model/29:4:composite:1/32:17:compute:1",
+      "target": "model/29:4:composite:1/32:8:value-alias:1",
+      "kind": "alias",
+      "source_port": "out",
+      "target_port": "value",
+      "evidence": "source-dependency",
+      "id": "e00006"
+    },
+    {
+      "source": "model/29:4:composite:1/32:8:value-alias:1",
+      "target": "model/29:4:composite:1/33:25:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "receiver",
+      "evidence": "source-dependency",
+      "id": "e00007"
+    },
+    {
+      "source": "model/29:4:composite:1/27:20:parameter:1",
+      "target": "model/29:4:composite:1/33:15:compute:1",
+      "kind": "parameter-read",
+      "source_port": "out",
+      "target_port": "in",
+      "evidence": "framework-contract",
+      "id": "e00008"
+    },
+    {
+      "source": "model/29:4:composite:1/33:25:compute:1",
+      "target": "model/29:4:composite:1/33:15:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "arg:0",
+      "evidence": "source-dependency",
+      "id": "e00009"
+    },
+    {
+      "source": "model/29:4:composite:1/33:15:compute:1",
+      "target": "model/29:4:composite:1/33:8:interface:1",
+      "kind": "interface-binding",
+      "source_port": "out",
+      "target_port": "in",
+      "evidence": "source-dependency",
+      "id": "e00010"
+    },
+    {
+      "id": "rt-edge:0",
+      "source": "runtime:0:input:image",
+      "target": "runtime:0:op0",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:1",
+      "source": "runtime:0:parameter:conv.weight",
+      "target": "runtime:0:op0",
+      "source_port": "out",
+      "target_port": "1",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:2",
+      "source": "runtime:0:parameter:conv.bias",
+      "target": "runtime:0:op0",
+      "source_port": "out",
+      "target_port": "2",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:3",
+      "source": "runtime:0:op0",
+      "target": "runtime:0:op1",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:4",
+      "source": "runtime:0:op1",
+      "target": "runtime:0:op2",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:5",
+      "source": "runtime:0:op2",
+      "target": "runtime:0:op3",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:6",
+      "source": "runtime:0:parameter:head.weight",
+      "target": "runtime:0:op4",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:7",
+      "source": "runtime:0:parameter:head.bias",
+      "target": "runtime:0:op5",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:8",
+      "source": "runtime:0:op3",
+      "target": "runtime:0:op5",
+      "source_port": "out",
+      "target_port": "1",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:9",
+      "source": "runtime:0:op4",
+      "target": "runtime:0:op5",
+      "source_port": "out",
+      "target_port": "2",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:10",
+      "source": "runtime:0:op5",
+      "target": "runtime:0:outputs",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    }
+  ],
+  "branches": [],
+  "motifs": [
+    {
+      "id": "motif:CNN block:0",
+      "semantic_type": "CNN block",
+      "members": [
+        "model/29:4:composite:1/30:19:compute:1",
+        "model/29:4:composite:1/30:8:value-alias:1",
+        "model/29:4:composite:1/31:20:compute:1",
+        "model/29:4:composite:1/31:8:value-alias:1",
+        "model/29:4:composite:1/32:17:compute:1",
+        "model/29:4:composite:1/25:20:parameter:1"
+      ],
+      "evidence": [
+        "convolution → activation → pooling",
+        "source operand dependencies"
+      ],
+      "confidence": "rule-confirmed",
+      "rule_version": "dataflow-motifs/1"
+    }
+  ],
+  "diagnostics": [],
+  "runtime": {
+    "schema": "semantic-runtime/1",
+    "status": "passed",
+    "model_executed": true,
+    "binding": {
+      "interpreter": "/home/fzg/anaconda3/envs/ArchCanvas/bin/python",
+      "executable_sha256": "d1d72f62ffc60bba301a0a18a9116677733157eb75c2e1aa05be4ddd0631bfb4",
+      "environment": "/home/fzg/anaconda3/envs/ArchCanvas",
+      "source_root": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures",
+      "source_sha256": "380ba612d236f58d41cd54531a58d296d2f9522da8be3cea50ae6d4567d32834",
+      "spec_digest": "1e28c1f67c1fe6f223082b69450e0454550d00ae4b1f338896f9c29e9f17794a",
+      "worker_digest": "149550b0e400a1b34081d3becd4452edf86832c19c0b0851b34bca814c401a19",
+      "device": "cpu",
+      "source_generation": {
+        "models.py": "380ba612d236f58d41cd54531a58d296d2f9522da8be3cea50ae6d4567d32834"
+      }
+    },
+    "input_spec": {
+      "schema": "semantic-inputs/1",
+      "modes": [
+        "eval"
+      ],
+      "constructor": {},
+      "cases": [
+        {
+          "id": "image8",
+          "inputs": {
+            "image": {
+              "shape": [
+                1,
+                1,
+                8,
+                8
+              ],
+              "fill": "ones"
+            }
+          }
+        }
+      ],
+      "export": true
+    },
+    "isolation": {
+      "status": "passed",
+      "checks": {
+        "namespace_isolation": true,
+        "host_root_hidden": true,
+        "gpu_hidden": true,
+        "network_denied": true,
+        "process_denied": true,
+        "source_readonly": true
+      },
+      "mechanism": "Bubblewrap namespaces + x86-64 seccomp; no network, new tasks or host HOME"
+    },
+    "framework": "2.7.1+cu118",
+    "framework_origin": "/home/fzg/anaconda3/envs/ArchCanvas/lib/python3.11/site-packages/torch/__init__.py",
+    "device": "cpu",
+    "runs": [
+      {
+        "case": "image8",
+        "mode": "eval",
+        "seed": 0,
+        "status": "passed",
+        "events": [
+          {
+            "id": "op0",
+            "operator": "aten.convolution.default",
+            "module_path": "conv",
+            "module_call": "call1",
+            "source": {
+              "file": "models.py",
+              "line": 30,
+              "symbol": "TinyCNN.forward"
+            },
+            "inputs": [
+              {
+                "id": "t4",
+                "producer": "input:image",
+                "slot": "image",
+                "shape": [
+                  1,
+                  1,
+                  8,
+                  8
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              },
+              {
+                "id": "t0",
+                "producer": "parameter:conv.weight",
+                "slot": "conv.weight",
+                "shape": [
+                  3,
+                  1,
+                  3,
+                  3
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": true
+              },
+              {
+                "id": "t1",
+                "producer": "parameter:conv.bias",
+                "slot": "conv.bias",
+                "shape": [
+                  3
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": true
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t5",
+                "producer": "op0",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  6,
+                  6
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op1",
+            "operator": "aten.relu.default",
+            "module_path": "",
+            "module_call": "call0",
+            "source": {
+              "file": "models.py",
+              "line": 31,
+              "symbol": "TinyCNN.forward"
+            },
+            "inputs": [
+              {
+                "id": "t5",
+                "producer": "op0",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  6,
+                  6
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t6",
+                "producer": "op1",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  6,
+                  6
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op2",
+            "operator": "aten.mean.dim",
+            "module_path": "pool",
+            "module_call": "call3",
+            "source": {
+              "file": "models.py",
+              "line": 32,
+              "symbol": "TinyCNN.forward"
+            },
+            "inputs": [
+              {
+                "id": "t6",
+                "producer": "op1",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  6,
+                  6
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t7",
+                "producer": "op2",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  1,
+                  1
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op3",
+            "operator": "aten.view.default",
+            "module_path": "",
+            "module_call": "call0",
+            "source": {
+              "file": "models.py",
+              "line": 33,
+              "symbol": "TinyCNN.forward"
+            },
+            "inputs": [
+              {
+                "id": "t7",
+                "producer": "op2",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  1,
+                  1
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t8",
+                "producer": "op3",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op4",
+            "operator": "aten.t.default",
+            "module_path": "head",
+            "module_call": "call5",
+            "source": {
+              "file": "models.py",
+              "line": 33,
+              "symbol": "TinyCNN.forward"
+            },
+            "inputs": [
+              {
+                "id": "t2",
+                "producer": "parameter:head.weight",
+                "slot": "head.weight",
+                "shape": [
+                  2,
+                  3
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": true
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t9",
+                "producer": "op4",
+                "slot": 0,
+                "shape": [
+                  3,
+                  2
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op5",
+            "operator": "aten.addmm.default",
+            "module_path": "head",
+            "module_call": "call5",
+            "source": {
+              "file": "models.py",
+              "line": 33,
+              "symbol": "TinyCNN.forward"
+            },
+            "inputs": [
+              {
+                "id": "t3",
+                "producer": "parameter:head.bias",
+                "slot": "head.bias",
+                "shape": [
+                  2
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": true
+              },
+              {
+                "id": "t8",
+                "producer": "op3",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              },
+              {
+                "id": "t9",
+                "producer": "op4",
+                "slot": 0,
+                "shape": [
+                  3,
+                  2
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t10",
+                "producer": "op5",
+                "slot": 0,
+                "shape": [
+                  1,
+                  2
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          }
+        ],
+        "module_events": [
+          {
+            "event": "enter",
+            "id": "call0",
+            "path": "",
+            "parent_call": null,
+            "module_type": "models.TinyCNN",
+            "inputs": []
+          },
+          {
+            "event": "enter",
+            "id": "call1",
+            "path": "conv",
+            "parent_call": "call0",
+            "module_type": "torch.nn.modules.conv.Conv2d",
+            "inputs": [
+              {
+                "id": "t4",
+                "producer": "input:image",
+                "slot": "image",
+                "shape": [
+                  1,
+                  1,
+                  8,
+                  8
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ]
+          },
+          {
+            "event": "exit",
+            "path": "conv",
+            "outputs": [
+              {
+                "id": "t5",
+                "producer": "op0",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  6,
+                  6
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ]
+          },
+          {
+            "event": "enter",
+            "id": "call3",
+            "path": "pool",
+            "parent_call": "call0",
+            "module_type": "torch.nn.modules.pooling.AdaptiveAvgPool2d",
+            "inputs": [
+              {
+                "id": "t6",
+                "producer": "op1",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  6,
+                  6
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ]
+          },
+          {
+            "event": "exit",
+            "path": "pool",
+            "outputs": [
+              {
+                "id": "t7",
+                "producer": "op2",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  1,
+                  1
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ]
+          },
+          {
+            "event": "enter",
+            "id": "call5",
+            "path": "head",
+            "parent_call": "call0",
+            "module_type": "torch.nn.modules.linear.Linear",
+            "inputs": [
+              {
+                "id": "t8",
+                "producer": "op3",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ]
+          },
+          {
+            "event": "exit",
+            "path": "head",
+            "outputs": [
+              {
+                "id": "t10",
+                "producer": "op5",
+                "slot": 0,
+                "shape": [
+                  1,
+                  2
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ]
+          },
+          {
+            "event": "exit",
+            "path": "",
+            "outputs": [
+              {
+                "id": "t10",
+                "producer": "op5",
+                "slot": 0,
+                "shape": [
+                  1,
+                  2
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conv.weight",
+            "aliases": [
+              "conv.weight"
+            ],
+            "shape": [
+              3,
+              1,
+              3,
+              3
+            ],
+            "dtype": "torch.float32",
+            "device": "cpu",
+            "requires_grad": true
+          },
+          {
+            "name": "conv.bias",
+            "aliases": [
+              "conv.bias"
+            ],
+            "shape": [
+              3
+            ],
+            "dtype": "torch.float32",
+            "device": "cpu",
+            "requires_grad": true
+          },
+          {
+            "name": "head.weight",
+            "aliases": [
+              "head.weight"
+            ],
+            "shape": [
+              2,
+              3
+            ],
+            "dtype": "torch.float32",
+            "device": "cpu",
+            "requires_grad": true
+          },
+          {
+            "name": "head.bias",
+            "aliases": [
+              "head.bias"
+            ],
+            "shape": [
+              2
+            ],
+            "dtype": "torch.float32",
+            "device": "cpu",
+            "requires_grad": true
+          }
+        ],
+        "buffers": [],
+        "outputs": [
+          {
+            "id": "t10",
+            "producer": "op5",
+            "slot": 0,
+            "shape": [
+              1,
+              2
+            ],
+            "dtype": "torch.float32",
+            "device": "cpu",
+            "requires_grad": false
+          }
+        ],
+        "replay": {
+          "matched": true,
+          "output_digest": "745d048431bc13a343d0d47eec728f20face58c3c6fc797f062b85928502f4d3"
+        },
+        "branches": [],
+        "capture": {
+          "status": "captured",
+          "nodes": [
+            {
+              "name": "p_conv_weight",
+              "op": "placeholder",
+              "target": "p_conv_weight",
+              "inputs": [],
+              "module_stack": "{}",
+              "stack_trace": ""
+            },
+            {
+              "name": "p_conv_bias",
+              "op": "placeholder",
+              "target": "p_conv_bias",
+              "inputs": [],
+              "module_stack": "{}",
+              "stack_trace": ""
+            },
+            {
+              "name": "p_head_weight",
+              "op": "placeholder",
+              "target": "p_head_weight",
+              "inputs": [],
+              "module_stack": "{}",
+              "stack_trace": ""
+            },
+            {
+              "name": "p_head_bias",
+              "op": "placeholder",
+              "target": "p_head_bias",
+              "inputs": [],
+              "module_stack": "{}",
+              "stack_trace": ""
+            },
+            {
+              "name": "image",
+              "op": "placeholder",
+              "target": "image",
+              "inputs": [],
+              "module_stack": "{}",
+              "stack_trace": ""
+            },
+            {
+              "name": "conv2d",
+              "op": "call_function",
+              "target": "aten.conv2d.default",
+              "inputs": [
+                "image",
+                "p_conv_weight",
+                "p_conv_bias"
+              ],
+              "module_stack": "{'L__self__': ('', 'models.TinyCNN'), 'L__self___conv': ('conv', 'torch.nn.modules.conv.Conv2d')}",
+              "stack_trace": "  File \"/model/models.py\", line 30, in forward\n    features = self.conv(image)\n"
+            },
+            {
+              "name": "relu",
+              "op": "call_function",
+              "target": "aten.relu.default",
+              "inputs": [
+                "conv2d"
+              ],
+              "module_stack": "{'L__self__': ('', 'models.TinyCNN')}",
+              "stack_trace": "  File \"/model/models.py\", line 31, in forward\n    activated = torch.relu(features)\n"
+            },
+            {
+              "name": "adaptive_avg_pool2d",
+              "op": "call_function",
+              "target": "aten.adaptive_avg_pool2d.default",
+              "inputs": [
+                "relu"
+              ],
+              "module_stack": "{'L__self__': ('', 'models.TinyCNN'), 'L__self___pool': ('pool', 'torch.nn.modules.pooling.AdaptiveAvgPool2d')}",
+              "stack_trace": "  File \"/model/models.py\", line 32, in forward\n    pooled = self.pool(activated)\n"
+            },
+            {
+              "name": "flatten",
+              "op": "call_function",
+              "target": "aten.flatten.using_ints",
+              "inputs": [
+                "adaptive_avg_pool2d"
+              ],
+              "module_stack": "{'L__self__': ('', 'models.TinyCNN')}",
+              "stack_trace": "  File \"/model/models.py\", line 33, in forward\n    return self.head(pooled.flatten(1))\n"
+            },
+            {
+              "name": "linear",
+              "op": "call_function",
+              "target": "aten.linear.default",
+              "inputs": [
+                "flatten",
+                "p_head_weight",
+                "p_head_bias"
+              ],
+              "module_stack": "{'L__self__': ('', 'models.TinyCNN'), 'L__self___head': ('head', 'torch.nn.modules.linear.Linear')}",
+              "stack_trace": "  File \"/model/models.py\", line 33, in forward\n    return self.head(pooled.flatten(1))\n"
+            },
+            {
+              "name": "output",
+              "op": "output",
+              "target": "output",
+              "inputs": [
+                "linear"
+              ],
+              "module_stack": "{}",
+              "stack_trace": ""
+            }
+          ],
+          "range_constraints": "{}"
+        },
+        "truncated": false
+      }
+    ],
+    "instrumentation": "AST if/ifexp outcomes + nn.Module hooks + TorchDispatchMode ATen operands",
+    "limitations": [
+      "Sample/finite-domain evidence only; not arbitrary Python verification.",
+      "Constructor/init branches observed; loops/exception/short-circuit paths not certified.",
+      "Instrumentation and model share the isolated process; receipts are not adversarial attestation."
+    ],
+    "limits": {
+      "memory_mb": 8192,
+      "cpu_seconds": 45,
+      "max_events": 6000,
+      "wall_seconds": 45
+    },
+    "source_unchanged": true,
+    "finite_domain": {
+      "exhaustive": false,
+      "reason": "no explicit finite input set"
+    },
+    "trace_digest": "b5f6c82e97001ec33441fc8e311b69ce5d6555f618a65b4b50642dc30cbb5e8b"
+  },
+  "coverage_blockers": [],
+  "coverage": {
+    "status": "partial",
+    "complete": false,
+    "scope": "declared concrete input set × declared modes; selected forward and expanded local helper source",
+    "finite_domain": {
+      "exhaustive": false,
+      "reason": "no explicit finite input set"
+    },
+    "branches": [],
+    "opaque_nodes": 0,
+    "coverage_blockers": [],
+    "all_runs_passed": true,
+    "claimed_for_arbitrary_inputs": false,
+    "reason": "unobserved/unsupported source, failed run, or input domain not exhaustively declared"
+  },
+  "limitations": [
+    "Static edges express source dependencies, not observed tensor bindings.",
+    "Unresolved calls/loops/external definitions remain explicit opaque boundaries.",
+    "Notebook cells are parsed as data; notebook setup/training cells are never executed."
+  ],
+  "ir_digest": "200991ba751876a52f5334ef2c355f39479813145a1e3c587266562d77fba456"
+}

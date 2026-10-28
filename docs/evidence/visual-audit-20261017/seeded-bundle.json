@@ -1,0 +1,1044 @@
+{
+  "schema": "summary-source-adapter/1",
+  "id": "source-cf39f31d373012c3",
+  "title": "SeededFanout",
+  "entry": "seeded_fanout:SeededFanout",
+  "files": [
+    {
+      "path": "seeded_fanout.py",
+      "sha256": "fed2ed2bd1f85685bcb627943c8bd7ce370c5e2400f20e7bc99a13c28426de13",
+      "text": "# Generated static source only; do not execute. Seed: 20261017.\nfrom torch import nn\n\nclass 共享残差单元_LongMixedLanguageResidualCell(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.linear = nn.Linear(16,16)\n        self.activation = nn.GELU()\n    def forward(self,x):\n        h=self.linear(x)\n        return self.activation(h)+x\n\nclass NestedBranch(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.cell=共享残差单元_LongMixedLanguageResidualCell()\n    def forward(self,x):\n        return self.cell(x)\n\nclass SeededFanout(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.nested=NestedBranch()\n        self.branch_0=nn.ReLU()\n        self.branch_1=nn.Sigmoid()\n        self.branch_2=nn.GELU()\n        self.branch_3=nn.ReLU()\n        self.branch_4=nn.Sigmoid()\n        self.branch_5=nn.Identity()\n        self.branch_6=nn.Identity()\n    def forward(self,x):\n        z=self.nested(x)\n        b0=self.branch_0(z)\n        b1=self.branch_1(z)\n        b2=self.branch_2(z)\n        b3=self.branch_3(z)\n        b4=self.branch_4(z)\n        b5=self.branch_5(z)\n        b6=self.branch_6(z)\n        return b0+b1+b2+b3+b4+b5+b6\n"
+    },
+    {
+      "path": "transformed_mlp.py",
+      "sha256": "5aeaacd334ef34fa08b6ec1a858162c3905a6497d55961df525bbd4dee720816",
+      "text": "# Structural holdout: MLP fixture duplicated into nested branches + conditional join.\n# Original fixture: fixtures/mlp/model.py. No model code was executed.\nfrom torch import nn\n\nclass MLP(nn.Module):\n    def __init__(self,input_dim=16,hidden_dim=32,output_dim=16):\n        super().__init__()\n        self.network=nn.Sequential(nn.Linear(input_dim,hidden_dim),nn.GELU(),nn.Dropout(0.1),nn.Linear(hidden_dim,output_dim))\n    def forward(self,features):\n        return self.network(features)\n\nclass Wrapper(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.left=MLP()\n        self.right=MLP()\n        self.project=nn.Linear(16,4)\n        self.fallback=nn.Identity()\n    def forward(self,x,flag=True):\n        a=self.left(x)\n        b=self.right(x)\n        if flag:\n            c=a+b\n            y=self.project(c)\n        else:\n            c=self.fallback(b)\n            y=self.project(c)\n        return y\n"
+    }
+  ],
+  "sourceSha256": "73eba508a58eb3db69b021bb7c38a20f3957864127a2d348b5fe2372ac31c5fc",
+  "ir": {
+    "schema": "summary-source-ir/1",
+    "entry": "seeded_fanout:SeededFanout",
+    "nodes": [
+      {
+        "id": "model/group-20-0-1",
+        "parent": null,
+        "kind": "group",
+        "label": "SeededFanout",
+        "source_evidence": [
+          "e-f7389c2fbb8ace16"
+        ],
+        "expression": "class SeededFanout(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.nested = NestedBranch()\n        self.branch_0 = nn.ReLU()\n        self.branch_1 = nn.Sigmoid()\n        self.branch_2 = nn.GELU()\n        self.branch_3 = nn.ReLU()\n        self.branch_4 = nn.Sigmoid()\n        self.branch_5 = nn.Identity()\n        self.branch_6 = nn.Identity()\n\n    def forward(self, x):\n        z = self.nested(x)\n        b0 = self.branch_0(z)\n        b1 = self.branch_1(z)\n        b2 = self.branch_2(z)\n        b3 = self.branch_3(z)\n        b4 = self.branch_4(z)\n        b5 = self.branch_5(z)\n        b6 = self.branch_6(z)\n        return b0 + b1 + b2 + b3 + b4 + b5 + b6",
+        "instance": "seeded_fanout:SeededFanout",
+        "certainty": "static",
+        "constructor": "seeded_fanout:SeededFanout",
+        "moduleType": "SeededFanout",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-20-0-1/input-31-21-2",
+        "parent": "model/group-20-0-1",
+        "kind": "input",
+        "label": "x",
+        "source_evidence": [
+          "e-c0b927a2bfee9184"
+        ],
+        "expression": "x"
+      },
+      {
+        "id": "model/group-20-0-1/group-32-10-3",
+        "parent": "model/group-20-0-1",
+        "kind": "group",
+        "label": "NestedBranch",
+        "source_evidence": [
+          "e-281e26acb917b040"
+        ],
+        "expression": "self.nested(x)",
+        "instance": "seeded_fanout:SeededFanout.nested",
+        "certainty": "static",
+        "constructor": "NestedBranch()",
+        "moduleType": "NestedBranch",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-20-0-1/group-32-10-3/input-17-21-4",
+        "parent": "model/group-20-0-1/group-32-10-3",
+        "kind": "input",
+        "label": "x",
+        "source_evidence": [
+          "e-30297f4d74ce99d0"
+        ],
+        "expression": "x"
+      },
+      {
+        "id": "model/group-20-0-1/group-32-10-3/group-18-15-5",
+        "parent": "model/group-20-0-1/group-32-10-3",
+        "kind": "group",
+        "label": "共享残差单元_LongMixedLanguageResidualCell",
+        "source_evidence": [
+          "e-1e3634cee1a22c9c"
+        ],
+        "expression": "self.cell(x)",
+        "instance": "seeded_fanout:SeededFanout.nested.cell",
+        "certainty": "static",
+        "constructor": "共享残差单元_LongMixedLanguageResidualCell()",
+        "moduleType": "共享残差单元_LongMixedLanguageResidualCell",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-20-0-1/group-32-10-3/group-18-15-5/input-9-21-6",
+        "parent": "model/group-20-0-1/group-32-10-3/group-18-15-5",
+        "kind": "input",
+        "label": "x",
+        "source_evidence": [
+          "e-9ccd3ed6970ee96e"
+        ],
+        "expression": "x"
+      },
+      {
+        "id": "model/group-20-0-1/group-32-10-3/group-18-15-5/linear-10-10-7",
+        "parent": "model/group-20-0-1/group-32-10-3/group-18-15-5",
+        "kind": "linear",
+        "label": "Linear",
+        "source_evidence": [
+          "e-4590690cd8f42be6"
+        ],
+        "expression": "self.linear(x)",
+        "instance": "seeded_fanout:SeededFanout.nested.cell.linear",
+        "certainty": "static",
+        "constructor": "nn.Linear(16, 16)",
+        "moduleType": "Linear",
+        "constructorArgs": [
+          16,
+          16
+        ],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-20-0-1/group-32-10-3/group-18-15-5/activation-11-15-8",
+        "parent": "model/group-20-0-1/group-32-10-3/group-18-15-5",
+        "kind": "activation",
+        "label": "GELU",
+        "source_evidence": [
+          "e-54224f8920f5bc62"
+        ],
+        "expression": "self.activation(h)",
+        "instance": "seeded_fanout:SeededFanout.nested.cell.activation",
+        "certainty": "static",
+        "constructor": "nn.GELU()",
+        "moduleType": "GELU",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-20-0-1/group-32-10-3/group-18-15-5/add-11-15-9",
+        "parent": "model/group-20-0-1/group-32-10-3/group-18-15-5",
+        "kind": "add",
+        "label": "self.activation(h) + x",
+        "source_evidence": [
+          "e-7f08d2efc891f9cf"
+        ],
+        "expression": "self.activation(h) + x",
+        "certainty": "syntax"
+      },
+      {
+        "id": "model/group-20-0-1/group-32-10-3/group-18-15-5/output-11-8-10",
+        "parent": "model/group-20-0-1/group-32-10-3/group-18-15-5",
+        "kind": "output",
+        "label": "return",
+        "source_evidence": [
+          "e-6e71d23435a54e23"
+        ],
+        "expression": "return self.activation(h) + x"
+      },
+      {
+        "id": "model/group-20-0-1/group-32-10-3/output-18-8-11",
+        "parent": "model/group-20-0-1/group-32-10-3",
+        "kind": "output",
+        "label": "return",
+        "source_evidence": [
+          "e-2523be0657577b67"
+        ],
+        "expression": "return self.cell(x)"
+      },
+      {
+        "id": "model/group-20-0-1/activation-33-11-12",
+        "parent": "model/group-20-0-1",
+        "kind": "activation",
+        "label": "ReLU",
+        "source_evidence": [
+          "e-135cd0db52288b1e"
+        ],
+        "expression": "self.branch_0(z)",
+        "instance": "seeded_fanout:SeededFanout.branch_0",
+        "certainty": "static",
+        "constructor": "nn.ReLU()",
+        "moduleType": "ReLU",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-20-0-1/activation-34-11-13",
+        "parent": "model/group-20-0-1",
+        "kind": "activation",
+        "label": "Sigmoid",
+        "source_evidence": [
+          "e-d9bd8fd69e66d392"
+        ],
+        "expression": "self.branch_1(z)",
+        "instance": "seeded_fanout:SeededFanout.branch_1",
+        "certainty": "static",
+        "constructor": "nn.Sigmoid()",
+        "moduleType": "Sigmoid",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-20-0-1/activation-35-11-14",
+        "parent": "model/group-20-0-1",
+        "kind": "activation",
+        "label": "GELU",
+        "source_evidence": [
+          "e-edbbdf8dfa920ce9"
+        ],
+        "expression": "self.branch_2(z)",
+        "instance": "seeded_fanout:SeededFanout.branch_2",
+        "certainty": "static",
+        "constructor": "nn.GELU()",
+        "moduleType": "GELU",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-20-0-1/activation-36-11-15",
+        "parent": "model/group-20-0-1",
+        "kind": "activation",
+        "label": "ReLU",
+        "source_evidence": [
+          "e-cfd85c65fb252f51"
+        ],
+        "expression": "self.branch_3(z)",
+        "instance": "seeded_fanout:SeededFanout.branch_3",
+        "certainty": "static",
+        "constructor": "nn.ReLU()",
+        "moduleType": "ReLU",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-20-0-1/activation-37-11-16",
+        "parent": "model/group-20-0-1",
+        "kind": "activation",
+        "label": "Sigmoid",
+        "source_evidence": [
+          "e-8fe092e0f6e537b9"
+        ],
+        "expression": "self.branch_4(z)",
+        "instance": "seeded_fanout:SeededFanout.branch_4",
+        "certainty": "static",
+        "constructor": "nn.Sigmoid()",
+        "moduleType": "Sigmoid",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-20-0-1/identity-38-11-17",
+        "parent": "model/group-20-0-1",
+        "kind": "identity",
+        "label": "Identity",
+        "source_evidence": [
+          "e-33f565a2b1ae15f4"
+        ],
+        "expression": "self.branch_5(z)",
+        "instance": "seeded_fanout:SeededFanout.branch_5",
+        "certainty": "static",
+        "constructor": "nn.Identity()",
+        "moduleType": "Identity",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-20-0-1/identity-39-11-18",
+        "parent": "model/group-20-0-1",
+        "kind": "identity",
+        "label": "Identity",
+        "source_evidence": [
+          "e-5308802ea63507a3"
+        ],
+        "expression": "self.branch_6(z)",
+        "instance": "seeded_fanout:SeededFanout.branch_6",
+        "certainty": "static",
+        "constructor": "nn.Identity()",
+        "moduleType": "Identity",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-20-0-1/add-40-15-19",
+        "parent": "model/group-20-0-1",
+        "kind": "add",
+        "label": "b0 + b1",
+        "source_evidence": [
+          "e-8e517ab0c4a3cd38"
+        ],
+        "expression": "b0 + b1",
+        "certainty": "syntax"
+      },
+      {
+        "id": "model/group-20-0-1/add-40-15-20",
+        "parent": "model/group-20-0-1",
+        "kind": "add",
+        "label": "b0 + b1 + b2",
+        "source_evidence": [
+          "e-4704927a7b349318"
+        ],
+        "expression": "b0 + b1 + b2",
+        "certainty": "syntax"
+      },
+      {
+        "id": "model/group-20-0-1/add-40-15-21",
+        "parent": "model/group-20-0-1",
+        "kind": "add",
+        "label": "b0 + b1 + b2 + b3",
+        "source_evidence": [
+          "e-3ced4226af57d17f"
+        ],
+        "expression": "b0 + b1 + b2 + b3",
+        "certainty": "syntax"
+      },
+      {
+        "id": "model/group-20-0-1/add-40-15-22",
+        "parent": "model/group-20-0-1",
+        "kind": "add",
+        "label": "b0 + b1 + b2 + b3 + b4",
+        "source_evidence": [
+          "e-f061572fda60b3dc"
+        ],
+        "expression": "b0 + b1 + b2 + b3 + b4",
+        "certainty": "syntax"
+      },
+      {
+        "id": "model/group-20-0-1/add-40-15-23",
+        "parent": "model/group-20-0-1",
+        "kind": "add",
+        "label": "b0 + b1 + b2 + b3 + b4 + b5",
+        "source_evidence": [
+          "e-695645b636ac2397"
+        ],
+        "expression": "b0 + b1 + b2 + b3 + b4 + b5",
+        "certainty": "syntax"
+      },
+      {
+        "id": "model/group-20-0-1/add-40-15-24",
+        "parent": "model/group-20-0-1",
+        "kind": "add",
+        "label": "b0 + b1 + b2 + b3 + b4 + b5 + b6",
+        "source_evidence": [
+          "e-844e0f7d03e02b43"
+        ],
+        "expression": "b0 + b1 + b2 + b3 + b4 + b5 + b6",
+        "certainty": "syntax"
+      },
+      {
+        "id": "model/group-20-0-1/output-40-8-25",
+        "parent": "model/group-20-0-1",
+        "kind": "output",
+        "label": "return",
+        "source_evidence": [
+          "e-d3bd48e2d0b82e16"
+        ],
+        "expression": "return b0 + b1 + b2 + b3 + b4 + b5 + b6"
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-1",
+        "source": "model/group-20-0-1/input-31-21-2",
+        "target": "model/group-20-0-1/group-32-10-3/input-17-21-4",
+        "sourcePort": "out",
+        "targetPort": "in",
+        "wire": "model/group-20-0-1/input-31-21-2:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-281e26acb917b040"
+        ]
+      },
+      {
+        "id": "edge-2",
+        "source": "model/group-20-0-1/group-32-10-3/input-17-21-4",
+        "target": "model/group-20-0-1/group-32-10-3/group-18-15-5/input-9-21-6",
+        "sourcePort": "out",
+        "targetPort": "in",
+        "wire": "model/group-20-0-1/group-32-10-3/input-17-21-4:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-1e3634cee1a22c9c"
+        ]
+      },
+      {
+        "id": "edge-3",
+        "source": "model/group-20-0-1/group-32-10-3/group-18-15-5/input-9-21-6",
+        "target": "model/group-20-0-1/group-32-10-3/group-18-15-5/linear-10-10-7",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-20-0-1/group-32-10-3/group-18-15-5/input-9-21-6:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-4590690cd8f42be6"
+        ]
+      },
+      {
+        "id": "edge-4",
+        "source": "model/group-20-0-1/group-32-10-3/group-18-15-5/linear-10-10-7",
+        "target": "model/group-20-0-1/group-32-10-3/group-18-15-5/activation-11-15-8",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-20-0-1/group-32-10-3/group-18-15-5/linear-10-10-7:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-54224f8920f5bc62"
+        ]
+      },
+      {
+        "id": "edge-5",
+        "source": "model/group-20-0-1/group-32-10-3/group-18-15-5/activation-11-15-8",
+        "target": "model/group-20-0-1/group-32-10-3/group-18-15-5/add-11-15-9",
+        "sourcePort": "out",
+        "targetPort": "lhs",
+        "wire": "model/group-20-0-1/group-32-10-3/group-18-15-5/activation-11-15-8:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-7f08d2efc891f9cf"
+        ]
+      },
+      {
+        "id": "edge-6",
+        "source": "model/group-20-0-1/group-32-10-3/group-18-15-5/input-9-21-6",
+        "target": "model/group-20-0-1/group-32-10-3/group-18-15-5/add-11-15-9",
+        "sourcePort": "out",
+        "targetPort": "rhs",
+        "wire": "model/group-20-0-1/group-32-10-3/group-18-15-5/input-9-21-6:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-7f08d2efc891f9cf"
+        ]
+      },
+      {
+        "id": "edge-7",
+        "source": "model/group-20-0-1/group-32-10-3/group-18-15-5/add-11-15-9",
+        "target": "model/group-20-0-1/group-32-10-3/group-18-15-5/output-11-8-10",
+        "sourcePort": "out",
+        "targetPort": "value",
+        "wire": "model/group-20-0-1/group-32-10-3/group-18-15-5/add-11-15-9:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-6e71d23435a54e23"
+        ]
+      },
+      {
+        "id": "edge-8",
+        "source": "model/group-20-0-1/group-32-10-3/group-18-15-5/output-11-8-10",
+        "target": "model/group-20-0-1/group-32-10-3/output-18-8-11",
+        "sourcePort": "out",
+        "targetPort": "value",
+        "wire": "model/group-20-0-1/group-32-10-3/group-18-15-5/output-11-8-10:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-2523be0657577b67"
+        ]
+      },
+      {
+        "id": "edge-9",
+        "source": "model/group-20-0-1/group-32-10-3/output-18-8-11",
+        "target": "model/group-20-0-1/activation-33-11-12",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-20-0-1/group-32-10-3/output-18-8-11:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-135cd0db52288b1e"
+        ]
+      },
+      {
+        "id": "edge-10",
+        "source": "model/group-20-0-1/group-32-10-3/output-18-8-11",
+        "target": "model/group-20-0-1/activation-34-11-13",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-20-0-1/group-32-10-3/output-18-8-11:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-d9bd8fd69e66d392"
+        ]
+      },
+      {
+        "id": "edge-11",
+        "source": "model/group-20-0-1/group-32-10-3/output-18-8-11",
+        "target": "model/group-20-0-1/activation-35-11-14",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-20-0-1/group-32-10-3/output-18-8-11:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-edbbdf8dfa920ce9"
+        ]
+      },
+      {
+        "id": "edge-12",
+        "source": "model/group-20-0-1/group-32-10-3/output-18-8-11",
+        "target": "model/group-20-0-1/activation-36-11-15",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-20-0-1/group-32-10-3/output-18-8-11:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-cfd85c65fb252f51"
+        ]
+      },
+      {
+        "id": "edge-13",
+        "source": "model/group-20-0-1/group-32-10-3/output-18-8-11",
+        "target": "model/group-20-0-1/activation-37-11-16",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-20-0-1/group-32-10-3/output-18-8-11:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-8fe092e0f6e537b9"
+        ]
+      },
+      {
+        "id": "edge-14",
+        "source": "model/group-20-0-1/group-32-10-3/output-18-8-11",
+        "target": "model/group-20-0-1/identity-38-11-17",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-20-0-1/group-32-10-3/output-18-8-11:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-33f565a2b1ae15f4"
+        ]
+      },
+      {
+        "id": "edge-15",
+        "source": "model/group-20-0-1/group-32-10-3/output-18-8-11",
+        "target": "model/group-20-0-1/identity-39-11-18",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-20-0-1/group-32-10-3/output-18-8-11:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-5308802ea63507a3"
+        ]
+      },
+      {
+        "id": "edge-16",
+        "source": "model/group-20-0-1/activation-33-11-12",
+        "target": "model/group-20-0-1/add-40-15-19",
+        "sourcePort": "out",
+        "targetPort": "lhs",
+        "wire": "model/group-20-0-1/activation-33-11-12:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-8e517ab0c4a3cd38"
+        ]
+      },
+      {
+        "id": "edge-17",
+        "source": "model/group-20-0-1/activation-34-11-13",
+        "target": "model/group-20-0-1/add-40-15-19",
+        "sourcePort": "out",
+        "targetPort": "rhs",
+        "wire": "model/group-20-0-1/activation-34-11-13:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-8e517ab0c4a3cd38"
+        ]
+      },
+      {
+        "id": "edge-18",
+        "source": "model/group-20-0-1/add-40-15-19",
+        "target": "model/group-20-0-1/add-40-15-20",
+        "sourcePort": "out",
+        "targetPort": "lhs",
+        "wire": "model/group-20-0-1/add-40-15-19:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-4704927a7b349318"
+        ]
+      },
+      {
+        "id": "edge-19",
+        "source": "model/group-20-0-1/activation-35-11-14",
+        "target": "model/group-20-0-1/add-40-15-20",
+        "sourcePort": "out",
+        "targetPort": "rhs",
+        "wire": "model/group-20-0-1/activation-35-11-14:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-4704927a7b349318"
+        ]
+      },
+      {
+        "id": "edge-20",
+        "source": "model/group-20-0-1/add-40-15-20",
+        "target": "model/group-20-0-1/add-40-15-21",
+        "sourcePort": "out",
+        "targetPort": "lhs",
+        "wire": "model/group-20-0-1/add-40-15-20:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-3ced4226af57d17f"
+        ]
+      },
+      {
+        "id": "edge-21",
+        "source": "model/group-20-0-1/activation-36-11-15",
+        "target": "model/group-20-0-1/add-40-15-21",
+        "sourcePort": "out",
+        "targetPort": "rhs",
+        "wire": "model/group-20-0-1/activation-36-11-15:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-3ced4226af57d17f"
+        ]
+      },
+      {
+        "id": "edge-22",
+        "source": "model/group-20-0-1/add-40-15-21",
+        "target": "model/group-20-0-1/add-40-15-22",
+        "sourcePort": "out",
+        "targetPort": "lhs",
+        "wire": "model/group-20-0-1/add-40-15-21:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-f061572fda60b3dc"
+        ]
+      },
+      {
+        "id": "edge-23",
+        "source": "model/group-20-0-1/activation-37-11-16",
+        "target": "model/group-20-0-1/add-40-15-22",
+        "sourcePort": "out",
+        "targetPort": "rhs",
+        "wire": "model/group-20-0-1/activation-37-11-16:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-f061572fda60b3dc"
+        ]
+      },
+      {
+        "id": "edge-24",
+        "source": "model/group-20-0-1/add-40-15-22",
+        "target": "model/group-20-0-1/add-40-15-23",
+        "sourcePort": "out",
+        "targetPort": "lhs",
+        "wire": "model/group-20-0-1/add-40-15-22:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-695645b636ac2397"
+        ]
+      },
+      {
+        "id": "edge-25",
+        "source": "model/group-20-0-1/identity-38-11-17",
+        "target": "model/group-20-0-1/add-40-15-23",
+        "sourcePort": "out",
+        "targetPort": "rhs",
+        "wire": "model/group-20-0-1/identity-38-11-17:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-695645b636ac2397"
+        ]
+      },
+      {
+        "id": "edge-26",
+        "source": "model/group-20-0-1/add-40-15-23",
+        "target": "model/group-20-0-1/add-40-15-24",
+        "sourcePort": "out",
+        "targetPort": "lhs",
+        "wire": "model/group-20-0-1/add-40-15-23:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-844e0f7d03e02b43"
+        ]
+      },
+      {
+        "id": "edge-27",
+        "source": "model/group-20-0-1/identity-39-11-18",
+        "target": "model/group-20-0-1/add-40-15-24",
+        "sourcePort": "out",
+        "targetPort": "rhs",
+        "wire": "model/group-20-0-1/identity-39-11-18:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-844e0f7d03e02b43"
+        ]
+      },
+      {
+        "id": "edge-28",
+        "source": "model/group-20-0-1/add-40-15-24",
+        "target": "model/group-20-0-1/output-40-8-25",
+        "sourcePort": "out",
+        "targetPort": "value",
+        "wire": "model/group-20-0-1/add-40-15-24:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-d3bd48e2d0b82e16"
+        ]
+      }
+    ],
+    "instances": {
+      "seeded_fanout:SeededFanout": [
+        "model/group-20-0-1"
+      ],
+      "seeded_fanout:SeededFanout.nested": [
+        "model/group-20-0-1/group-32-10-3"
+      ],
+      "seeded_fanout:SeededFanout.nested.cell": [
+        "model/group-20-0-1/group-32-10-3/group-18-15-5"
+      ],
+      "seeded_fanout:SeededFanout.nested.cell.linear": [
+        "model/group-20-0-1/group-32-10-3/group-18-15-5/linear-10-10-7"
+      ],
+      "seeded_fanout:SeededFanout.nested.cell.activation": [
+        "model/group-20-0-1/group-32-10-3/group-18-15-5/activation-11-15-8"
+      ],
+      "seeded_fanout:SeededFanout.branch_0": [
+        "model/group-20-0-1/activation-33-11-12"
+      ],
+      "seeded_fanout:SeededFanout.branch_1": [
+        "model/group-20-0-1/activation-34-11-13"
+      ],
+      "seeded_fanout:SeededFanout.branch_2": [
+        "model/group-20-0-1/activation-35-11-14"
+      ],
+      "seeded_fanout:SeededFanout.branch_3": [
+        "model/group-20-0-1/activation-36-11-15"
+      ],
+      "seeded_fanout:SeededFanout.branch_4": [
+        "model/group-20-0-1/activation-37-11-16"
+      ],
+      "seeded_fanout:SeededFanout.branch_5": [
+        "model/group-20-0-1/identity-38-11-17"
+      ],
+      "seeded_fanout:SeededFanout.branch_6": [
+        "model/group-20-0-1/identity-39-11-18"
+      ]
+    },
+    "analysis": "static-source-dependencies",
+    "modelExecuted": false,
+    "shapePolicy": "No tensor dimensions or execution path inferred",
+    "registrySha256": "9c153d45ae26c27b1f5da8becde63af92eb51883b8e8ad1b00860151802f7e5f"
+  },
+  "canonicalIR": "{\"analysis\":\"static-source-dependencies\",\"edges\":[{\"id\":\"edge-1\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/input-31-21-2\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-281e26acb917b040\"],\"target\":\"model/group-20-0-1/group-32-10-3/input-17-21-4\",\"targetPort\":\"in\",\"wire\":\"model/group-20-0-1/input-31-21-2:out\"},{\"id\":\"edge-2\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/group-32-10-3/input-17-21-4\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-1e3634cee1a22c9c\"],\"target\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/input-9-21-6\",\"targetPort\":\"in\",\"wire\":\"model/group-20-0-1/group-32-10-3/input-17-21-4:out\"},{\"id\":\"edge-3\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/input-9-21-6\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-4590690cd8f42be6\"],\"target\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/linear-10-10-7\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/input-9-21-6:out\"},{\"id\":\"edge-4\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/linear-10-10-7\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-54224f8920f5bc62\"],\"target\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/activation-11-15-8\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/linear-10-10-7:out\"},{\"id\":\"edge-5\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/activation-11-15-8\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-7f08d2efc891f9cf\"],\"target\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/add-11-15-9\",\"targetPort\":\"lhs\",\"wire\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/activation-11-15-8:out\"},{\"id\":\"edge-6\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/input-9-21-6\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-7f08d2efc891f9cf\"],\"target\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/add-11-15-9\",\"targetPort\":\"rhs\",\"wire\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/input-9-21-6:out\"},{\"id\":\"edge-7\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/add-11-15-9\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-6e71d23435a54e23\"],\"target\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/output-11-8-10\",\"targetPort\":\"value\",\"wire\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/add-11-15-9:out\"},{\"id\":\"edge-8\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/output-11-8-10\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-2523be0657577b67\"],\"target\":\"model/group-20-0-1/group-32-10-3/output-18-8-11\",\"targetPort\":\"value\",\"wire\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/output-11-8-10:out\"},{\"id\":\"edge-9\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/group-32-10-3/output-18-8-11\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-135cd0db52288b1e\"],\"target\":\"model/group-20-0-1/activation-33-11-12\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-20-0-1/group-32-10-3/output-18-8-11:out\"},{\"id\":\"edge-10\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/group-32-10-3/output-18-8-11\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-d9bd8fd69e66d392\"],\"target\":\"model/group-20-0-1/activation-34-11-13\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-20-0-1/group-32-10-3/output-18-8-11:out\"},{\"id\":\"edge-11\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/group-32-10-3/output-18-8-11\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-edbbdf8dfa920ce9\"],\"target\":\"model/group-20-0-1/activation-35-11-14\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-20-0-1/group-32-10-3/output-18-8-11:out\"},{\"id\":\"edge-12\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/group-32-10-3/output-18-8-11\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-cfd85c65fb252f51\"],\"target\":\"model/group-20-0-1/activation-36-11-15\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-20-0-1/group-32-10-3/output-18-8-11:out\"},{\"id\":\"edge-13\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/group-32-10-3/output-18-8-11\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-8fe092e0f6e537b9\"],\"target\":\"model/group-20-0-1/activation-37-11-16\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-20-0-1/group-32-10-3/output-18-8-11:out\"},{\"id\":\"edge-14\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/group-32-10-3/output-18-8-11\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-33f565a2b1ae15f4\"],\"target\":\"model/group-20-0-1/identity-38-11-17\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-20-0-1/group-32-10-3/output-18-8-11:out\"},{\"id\":\"edge-15\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/group-32-10-3/output-18-8-11\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-5308802ea63507a3\"],\"target\":\"model/group-20-0-1/identity-39-11-18\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-20-0-1/group-32-10-3/output-18-8-11:out\"},{\"id\":\"edge-16\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/activation-33-11-12\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-8e517ab0c4a3cd38\"],\"target\":\"model/group-20-0-1/add-40-15-19\",\"targetPort\":\"lhs\",\"wire\":\"model/group-20-0-1/activation-33-11-12:out\"},{\"id\":\"edge-17\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/activation-34-11-13\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-8e517ab0c4a3cd38\"],\"target\":\"model/group-20-0-1/add-40-15-19\",\"targetPort\":\"rhs\",\"wire\":\"model/group-20-0-1/activation-34-11-13:out\"},{\"id\":\"edge-18\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/add-40-15-19\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-4704927a7b349318\"],\"target\":\"model/group-20-0-1/add-40-15-20\",\"targetPort\":\"lhs\",\"wire\":\"model/group-20-0-1/add-40-15-19:out\"},{\"id\":\"edge-19\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/activation-35-11-14\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-4704927a7b349318\"],\"target\":\"model/group-20-0-1/add-40-15-20\",\"targetPort\":\"rhs\",\"wire\":\"model/group-20-0-1/activation-35-11-14:out\"},{\"id\":\"edge-20\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/add-40-15-20\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-3ced4226af57d17f\"],\"target\":\"model/group-20-0-1/add-40-15-21\",\"targetPort\":\"lhs\",\"wire\":\"model/group-20-0-1/add-40-15-20:out\"},{\"id\":\"edge-21\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/activation-36-11-15\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-3ced4226af57d17f\"],\"target\":\"model/group-20-0-1/add-40-15-21\",\"targetPort\":\"rhs\",\"wire\":\"model/group-20-0-1/activation-36-11-15:out\"},{\"id\":\"edge-22\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/add-40-15-21\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-f061572fda60b3dc\"],\"target\":\"model/group-20-0-1/add-40-15-22\",\"targetPort\":\"lhs\",\"wire\":\"model/group-20-0-1/add-40-15-21:out\"},{\"id\":\"edge-23\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/activation-37-11-16\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-f061572fda60b3dc\"],\"target\":\"model/group-20-0-1/add-40-15-22\",\"targetPort\":\"rhs\",\"wire\":\"model/group-20-0-1/activation-37-11-16:out\"},{\"id\":\"edge-24\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/add-40-15-22\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-695645b636ac2397\"],\"target\":\"model/group-20-0-1/add-40-15-23\",\"targetPort\":\"lhs\",\"wire\":\"model/group-20-0-1/add-40-15-22:out\"},{\"id\":\"edge-25\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/identity-38-11-17\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-695645b636ac2397\"],\"target\":\"model/group-20-0-1/add-40-15-23\",\"targetPort\":\"rhs\",\"wire\":\"model/group-20-0-1/identity-38-11-17:out\"},{\"id\":\"edge-26\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/add-40-15-23\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-844e0f7d03e02b43\"],\"target\":\"model/group-20-0-1/add-40-15-24\",\"targetPort\":\"lhs\",\"wire\":\"model/group-20-0-1/add-40-15-23:out\"},{\"id\":\"edge-27\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/identity-39-11-18\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-844e0f7d03e02b43\"],\"target\":\"model/group-20-0-1/add-40-15-24\",\"targetPort\":\"rhs\",\"wire\":\"model/group-20-0-1/identity-39-11-18:out\"},{\"id\":\"edge-28\",\"role\":\"source_dependency\",\"source\":\"model/group-20-0-1/add-40-15-24\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-d3bd48e2d0b82e16\"],\"target\":\"model/group-20-0-1/output-40-8-25\",\"targetPort\":\"value\",\"wire\":\"model/group-20-0-1/add-40-15-24:out\"}],\"entry\":\"seeded_fanout:SeededFanout\",\"instances\":{\"seeded_fanout:SeededFanout\":[\"model/group-20-0-1\"],\"seeded_fanout:SeededFanout.branch_0\":[\"model/group-20-0-1/activation-33-11-12\"],\"seeded_fanout:SeededFanout.branch_1\":[\"model/group-20-0-1/activation-34-11-13\"],\"seeded_fanout:SeededFanout.branch_2\":[\"model/group-20-0-1/activation-35-11-14\"],\"seeded_fanout:SeededFanout.branch_3\":[\"model/group-20-0-1/activation-36-11-15\"],\"seeded_fanout:SeededFanout.branch_4\":[\"model/group-20-0-1/activation-37-11-16\"],\"seeded_fanout:SeededFanout.branch_5\":[\"model/group-20-0-1/identity-38-11-17\"],\"seeded_fanout:SeededFanout.branch_6\":[\"model/group-20-0-1/identity-39-11-18\"],\"seeded_fanout:SeededFanout.nested\":[\"model/group-20-0-1/group-32-10-3\"],\"seeded_fanout:SeededFanout.nested.cell\":[\"model/group-20-0-1/group-32-10-3/group-18-15-5\"],\"seeded_fanout:SeededFanout.nested.cell.activation\":[\"model/group-20-0-1/group-32-10-3/group-18-15-5/activation-11-15-8\"],\"seeded_fanout:SeededFanout.nested.cell.linear\":[\"model/group-20-0-1/group-32-10-3/group-18-15-5/linear-10-10-7\"]},\"modelExecuted\":false,\"nodes\":[{\"certainty\":\"static\",\"constructor\":\"seeded_fanout:SeededFanout\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"class SeededFanout(nn.Module):\\n\\n    def __init__(self):\\n        super().__init__()\\n        self.nested = NestedBranch()\\n        self.branch_0 = nn.ReLU()\\n        self.branch_1 = nn.Sigmoid()\\n        self.branch_2 = nn.GELU()\\n        self.branch_3 = nn.ReLU()\\n        self.branch_4 = nn.Sigmoid()\\n        self.branch_5 = nn.Identity()\\n        self.branch_6 = nn.Identity()\\n\\n    def forward(self, x):\\n        z = self.nested(x)\\n        b0 = self.branch_0(z)\\n        b1 = self.branch_1(z)\\n        b2 = self.branch_2(z)\\n        b3 = self.branch_3(z)\\n        b4 = self.branch_4(z)\\n        b5 = self.branch_5(z)\\n        b6 = self.branch_6(z)\\n        return b0 + b1 + b2 + b3 + b4 + b5 + b6\",\"id\":\"model/group-20-0-1\",\"instance\":\"seeded_fanout:SeededFanout\",\"kind\":\"group\",\"label\":\"SeededFanout\",\"moduleType\":\"SeededFanout\",\"parent\":null,\"source_evidence\":[\"e-f7389c2fbb8ace16\"]},{\"expression\":\"x\",\"id\":\"model/group-20-0-1/input-31-21-2\",\"kind\":\"input\",\"label\":\"x\",\"parent\":\"model/group-20-0-1\",\"source_evidence\":[\"e-c0b927a2bfee9184\"]},{\"certainty\":\"static\",\"constructor\":\"NestedBranch()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.nested(x)\",\"id\":\"model/group-20-0-1/group-32-10-3\",\"instance\":\"seeded_fanout:SeededFanout.nested\",\"kind\":\"group\",\"label\":\"NestedBranch\",\"moduleType\":\"NestedBranch\",\"parent\":\"model/group-20-0-1\",\"source_evidence\":[\"e-281e26acb917b040\"]},{\"expression\":\"x\",\"id\":\"model/group-20-0-1/group-32-10-3/input-17-21-4\",\"kind\":\"input\",\"label\":\"x\",\"parent\":\"model/group-20-0-1/group-32-10-3\",\"source_evidence\":[\"e-30297f4d74ce99d0\"]},{\"certainty\":\"static\",\"constructor\":\"共享残差单元_LongMixedLanguageResidualCell()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.cell(x)\",\"id\":\"model/group-20-0-1/group-32-10-3/group-18-15-5\",\"instance\":\"seeded_fanout:SeededFanout.nested.cell\",\"kind\":\"group\",\"label\":\"共享残差单元_LongMixedLanguageResidualCell\",\"moduleType\":\"共享残差单元_LongMixedLanguageResidualCell\",\"parent\":\"model/group-20-0-1/group-32-10-3\",\"source_evidence\":[\"e-1e3634cee1a22c9c\"]},{\"expression\":\"x\",\"id\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/input-9-21-6\",\"kind\":\"input\",\"label\":\"x\",\"parent\":\"model/group-20-0-1/group-32-10-3/group-18-15-5\",\"source_evidence\":[\"e-9ccd3ed6970ee96e\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Linear(16, 16)\",\"constructorArgs\":[16,16],\"constructorKwargs\":{},\"expression\":\"self.linear(x)\",\"id\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/linear-10-10-7\",\"instance\":\"seeded_fanout:SeededFanout.nested.cell.linear\",\"kind\":\"linear\",\"label\":\"Linear\",\"moduleType\":\"Linear\",\"parent\":\"model/group-20-0-1/group-32-10-3/group-18-15-5\",\"source_evidence\":[\"e-4590690cd8f42be6\"]},{\"certainty\":\"static\",\"constructor\":\"nn.GELU()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.activation(h)\",\"id\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/activation-11-15-8\",\"instance\":\"seeded_fanout:SeededFanout.nested.cell.activation\",\"kind\":\"activation\",\"label\":\"GELU\",\"moduleType\":\"GELU\",\"parent\":\"model/group-20-0-1/group-32-10-3/group-18-15-5\",\"source_evidence\":[\"e-54224f8920f5bc62\"]},{\"certainty\":\"syntax\",\"expression\":\"self.activation(h) + x\",\"id\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/add-11-15-9\",\"kind\":\"add\",\"label\":\"self.activation(h) + x\",\"parent\":\"model/group-20-0-1/group-32-10-3/group-18-15-5\",\"source_evidence\":[\"e-7f08d2efc891f9cf\"]},{\"expression\":\"return self.activation(h) + x\",\"id\":\"model/group-20-0-1/group-32-10-3/group-18-15-5/output-11-8-10\",\"kind\":\"output\",\"label\":\"return\",\"parent\":\"model/group-20-0-1/group-32-10-3/group-18-15-5\",\"source_evidence\":[\"e-6e71d23435a54e23\"]},{\"expression\":\"return self.cell(x)\",\"id\":\"model/group-20-0-1/group-32-10-3/output-18-8-11\",\"kind\":\"output\",\"label\":\"return\",\"parent\":\"model/group-20-0-1/group-32-10-3\",\"source_evidence\":[\"e-2523be0657577b67\"]},{\"certainty\":\"static\",\"constructor\":\"nn.ReLU()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.branch_0(z)\",\"id\":\"model/group-20-0-1/activation-33-11-12\",\"instance\":\"seeded_fanout:SeededFanout.branch_0\",\"kind\":\"activation\",\"label\":\"ReLU\",\"moduleType\":\"ReLU\",\"parent\":\"model/group-20-0-1\",\"source_evidence\":[\"e-135cd0db52288b1e\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Sigmoid()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.branch_1(z)\",\"id\":\"model/group-20-0-1/activation-34-11-13\",\"instance\":\"seeded_fanout:SeededFanout.branch_1\",\"kind\":\"activation\",\"label\":\"Sigmoid\",\"moduleType\":\"Sigmoid\",\"parent\":\"model/group-20-0-1\",\"source_evidence\":[\"e-d9bd8fd69e66d392\"]},{\"certainty\":\"static\",\"constructor\":\"nn.GELU()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.branch_2(z)\",\"id\":\"model/group-20-0-1/activation-35-11-14\",\"instance\":\"seeded_fanout:SeededFanout.branch_2\",\"kind\":\"activation\",\"label\":\"GELU\",\"moduleType\":\"GELU\",\"parent\":\"model/group-20-0-1\",\"source_evidence\":[\"e-edbbdf8dfa920ce9\"]},{\"certainty\":\"static\",\"constructor\":\"nn.ReLU()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.branch_3(z)\",\"id\":\"model/group-20-0-1/activation-36-11-15\",\"instance\":\"seeded_fanout:SeededFanout.branch_3\",\"kind\":\"activation\",\"label\":\"ReLU\",\"moduleType\":\"ReLU\",\"parent\":\"model/group-20-0-1\",\"source_evidence\":[\"e-cfd85c65fb252f51\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Sigmoid()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.branch_4(z)\",\"id\":\"model/group-20-0-1/activation-37-11-16\",\"instance\":\"seeded_fanout:SeededFanout.branch_4\",\"kind\":\"activation\",\"label\":\"Sigmoid\",\"moduleType\":\"Sigmoid\",\"parent\":\"model/group-20-0-1\",\"source_evidence\":[\"e-8fe092e0f6e537b9\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Identity()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.branch_5(z)\",\"id\":\"model/group-20-0-1/identity-38-11-17\",\"instance\":\"seeded_fanout:SeededFanout.branch_5\",\"kind\":\"identity\",\"label\":\"Identity\",\"moduleType\":\"Identity\",\"parent\":\"model/group-20-0-1\",\"source_evidence\":[\"e-33f565a2b1ae15f4\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Identity()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.branch_6(z)\",\"id\":\"model/group-20-0-1/identity-39-11-18\",\"instance\":\"seeded_fanout:SeededFanout.branch_6\",\"kind\":\"identity\",\"label\":\"Identity\",\"moduleType\":\"Identity\",\"parent\":\"model/group-20-0-1\",\"source_evidence\":[\"e-5308802ea63507a3\"]},{\"certainty\":\"syntax\",\"expression\":\"b0 + b1\",\"id\":\"model/group-20-0-1/add-40-15-19\",\"kind\":\"add\",\"label\":\"b0 + b1\",\"parent\":\"model/group-20-0-1\",\"source_evidence\":[\"e-8e517ab0c4a3cd38\"]},{\"certainty\":\"syntax\",\"expression\":\"b0 + b1 + b2\",\"id\":\"model/group-20-0-1/add-40-15-20\",\"kind\":\"add\",\"label\":\"b0 + b1 + b2\",\"parent\":\"model/group-20-0-1\",\"source_evidence\":[\"e-4704927a7b349318\"]},{\"certainty\":\"syntax\",\"expression\":\"b0 + b1 + b2 + b3\",\"id\":\"model/group-20-0-1/add-40-15-21\",\"kind\":\"add\",\"label\":\"b0 + b1 + b2 + b3\",\"parent\":\"model/group-20-0-1\",\"source_evidence\":[\"e-3ced4226af57d17f\"]},{\"certainty\":\"syntax\",\"expression\":\"b0 + b1 + b2 + b3 + b4\",\"id\":\"model/group-20-0-1/add-40-15-22\",\"kind\":\"add\",\"label\":\"b0 + b1 + b2 + b3 + b4\",\"parent\":\"model/group-20-0-1\",\"source_evidence\":[\"e-f061572fda60b3dc\"]},{\"certainty\":\"syntax\",\"expression\":\"b0 + b1 + b2 + b3 + b4 + b5\",\"id\":\"model/group-20-0-1/add-40-15-23\",\"kind\":\"add\",\"label\":\"b0 + b1 + b2 + b3 + b4 + b5\",\"parent\":\"model/group-20-0-1\",\"source_evidence\":[\"e-695645b636ac2397\"]},{\"certainty\":\"syntax\",\"expression\":\"b0 + b1 + b2 + b3 + b4 + b5 + b6\",\"id\":\"model/group-20-0-1/add-40-15-24\",\"kind\":\"add\",\"label\":\"b0 + b1 + b2 + b3 + b4 + b5 + b6\",\"parent\":\"model/group-20-0-1\",\"source_evidence\":[\"e-844e0f7d03e02b43\"]},{\"expression\":\"return b0 + b1 + b2 + b3 + b4 + b5 + b6\",\"id\":\"model/group-20-0-1/output-40-8-25\",\"kind\":\"output\",\"label\":\"return\",\"parent\":\"model/group-20-0-1\",\"source_evidence\":[\"e-d3bd48e2d0b82e16\"]}],\"registrySha256\":\"9c153d45ae26c27b1f5da8becde63af92eb51883b8e8ad1b00860151802f7e5f\",\"schema\":\"summary-source-ir/1\",\"shapePolicy\":\"No tensor dimensions or execution path inferred\"}",
+  "irSha256": "0fafc9c39bc2a0a55bad02016478c9bc1340a21dac0a252920f058db2d04651f",
+  "evidence": {
+    "e-f7389c2fbb8ace16": {
+      "file": "seeded_fanout.py",
+      "line": 20,
+      "endLine": 40,
+      "column": 0,
+      "endColumn": 35,
+      "expression": "class SeededFanout(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.nested=NestedBranch()\n        self.branch_0=nn.ReLU()\n        self.branch_1=nn.Sigmoid()\n        self.branch_2=nn.GELU()\n        self.branch_3=nn.ReLU()\n        self.branch_4=nn.Sigmoid()\n        self.branch_5=nn.Identity()\n        self.branch_6=nn.Identity()\n    def forward(self,x):\n        z=self.nested(x)\n        b0=self.branch_0(z)\n        b1=self.branch_1(z)\n        b2=self.branch_2(z)\n        b3=self.branch_3(z)\n        b4=self.branch_4(z)\n        b5=self.branch_5(z)\n        b6=self.branch_6(z)\n        return b0+b1+b2+b3+b4+b5+b6"
+    },
+    "e-110373c2f2188fea": {
+      "file": "seeded_fanout.py",
+      "line": 23,
+      "endLine": 23,
+      "column": 20,
+      "endColumn": 34,
+      "expression": "NestedBranch()"
+    },
+    "e-e56fbd5a6a148c89": {
+      "file": "seeded_fanout.py",
+      "line": 24,
+      "endLine": 24,
+      "column": 22,
+      "endColumn": 31,
+      "expression": "nn.ReLU()"
+    },
+    "e-a5941b61c5967dab": {
+      "file": "seeded_fanout.py",
+      "line": 25,
+      "endLine": 25,
+      "column": 22,
+      "endColumn": 34,
+      "expression": "nn.Sigmoid()"
+    },
+    "e-684a4375258b7d09": {
+      "file": "seeded_fanout.py",
+      "line": 26,
+      "endLine": 26,
+      "column": 22,
+      "endColumn": 31,
+      "expression": "nn.GELU()"
+    },
+    "e-a638e3a1dcd30040": {
+      "file": "seeded_fanout.py",
+      "line": 27,
+      "endLine": 27,
+      "column": 22,
+      "endColumn": 31,
+      "expression": "nn.ReLU()"
+    },
+    "e-0638efb47077b99c": {
+      "file": "seeded_fanout.py",
+      "line": 28,
+      "endLine": 28,
+      "column": 22,
+      "endColumn": 34,
+      "expression": "nn.Sigmoid()"
+    },
+    "e-d168270e8cb0813a": {
+      "file": "seeded_fanout.py",
+      "line": 29,
+      "endLine": 29,
+      "column": 22,
+      "endColumn": 35,
+      "expression": "nn.Identity()"
+    },
+    "e-3c9a8b7c9ea6af4f": {
+      "file": "seeded_fanout.py",
+      "line": 30,
+      "endLine": 30,
+      "column": 22,
+      "endColumn": 35,
+      "expression": "nn.Identity()"
+    },
+    "e-c0b927a2bfee9184": {
+      "file": "seeded_fanout.py",
+      "line": 31,
+      "endLine": 31,
+      "column": 21,
+      "endColumn": 22,
+      "expression": "x"
+    },
+    "e-281e26acb917b040": {
+      "file": "seeded_fanout.py",
+      "line": 32,
+      "endLine": 32,
+      "column": 10,
+      "endColumn": 24,
+      "expression": "self.nested(x)"
+    },
+    "e-a08207b02bf1ab1b": {
+      "file": "seeded_fanout.py",
+      "line": 16,
+      "endLine": 16,
+      "column": 18,
+      "endColumn": 68,
+      "expression": "共享残差单元_LongMixedLanguageResidualCell()"
+    },
+    "e-30297f4d74ce99d0": {
+      "file": "seeded_fanout.py",
+      "line": 17,
+      "endLine": 17,
+      "column": 21,
+      "endColumn": 22,
+      "expression": "x"
+    },
+    "e-1e3634cee1a22c9c": {
+      "file": "seeded_fanout.py",
+      "line": 18,
+      "endLine": 18,
+      "column": 15,
+      "endColumn": 27,
+      "expression": "self.cell(x)"
+    },
+    "e-35a80dc0288d1267": {
+      "file": "seeded_fanout.py",
+      "line": 7,
+      "endLine": 7,
+      "column": 22,
+      "endColumn": 38,
+      "expression": "nn.Linear(16,16)"
+    },
+    "e-cdc645af5ca3e62b": {
+      "file": "seeded_fanout.py",
+      "line": 8,
+      "endLine": 8,
+      "column": 26,
+      "endColumn": 35,
+      "expression": "nn.GELU()"
+    },
+    "e-9ccd3ed6970ee96e": {
+      "file": "seeded_fanout.py",
+      "line": 9,
+      "endLine": 9,
+      "column": 21,
+      "endColumn": 22,
+      "expression": "x"
+    },
+    "e-4590690cd8f42be6": {
+      "file": "seeded_fanout.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 10,
+      "endColumn": 24,
+      "expression": "self.linear(x)"
+    },
+    "e-54224f8920f5bc62": {
+      "file": "seeded_fanout.py",
+      "line": 11,
+      "endLine": 11,
+      "column": 15,
+      "endColumn": 33,
+      "expression": "self.activation(h)"
+    },
+    "e-7f08d2efc891f9cf": {
+      "file": "seeded_fanout.py",
+      "line": 11,
+      "endLine": 11,
+      "column": 15,
+      "endColumn": 35,
+      "expression": "self.activation(h)+x"
+    },
+    "e-6e71d23435a54e23": {
+      "file": "seeded_fanout.py",
+      "line": 11,
+      "endLine": 11,
+      "column": 8,
+      "endColumn": 35,
+      "expression": "return self.activation(h)+x"
+    },
+    "e-2523be0657577b67": {
+      "file": "seeded_fanout.py",
+      "line": 18,
+      "endLine": 18,
+      "column": 8,
+      "endColumn": 27,
+      "expression": "return self.cell(x)"
+    },
+    "e-135cd0db52288b1e": {
+      "file": "seeded_fanout.py",
+      "line": 33,
+      "endLine": 33,
+      "column": 11,
+      "endColumn": 27,
+      "expression": "self.branch_0(z)"
+    },
+    "e-d9bd8fd69e66d392": {
+      "file": "seeded_fanout.py",
+      "line": 34,
+      "endLine": 34,
+      "column": 11,
+      "endColumn": 27,
+      "expression": "self.branch_1(z)"
+    },
+    "e-edbbdf8dfa920ce9": {
+      "file": "seeded_fanout.py",
+      "line": 35,
+      "endLine": 35,
+      "column": 11,
+      "endColumn": 27,
+      "expression": "self.branch_2(z)"
+    },
+    "e-cfd85c65fb252f51": {
+      "file": "seeded_fanout.py",
+      "line": 36,
+      "endLine": 36,
+      "column": 11,
+      "endColumn": 27,
+      "expression": "self.branch_3(z)"
+    },
+    "e-8fe092e0f6e537b9": {
+      "file": "seeded_fanout.py",
+      "line": 37,
+      "endLine": 37,
+      "column": 11,
+      "endColumn": 27,
+      "expression": "self.branch_4(z)"
+    },
+    "e-33f565a2b1ae15f4": {
+      "file": "seeded_fanout.py",
+      "line": 38,
+      "endLine": 38,
+      "column": 11,
+      "endColumn": 27,
+      "expression": "self.branch_5(z)"
+    },
+    "e-5308802ea63507a3": {
+      "file": "seeded_fanout.py",
+      "line": 39,
+      "endLine": 39,
+      "column": 11,
+      "endColumn": 27,
+      "expression": "self.branch_6(z)"
+    },
+    "e-8e517ab0c4a3cd38": {
+      "file": "seeded_fanout.py",
+      "line": 40,
+      "endLine": 40,
+      "column": 15,
+      "endColumn": 20,
+      "expression": "b0+b1"
+    },
+    "e-4704927a7b349318": {
+      "file": "seeded_fanout.py",
+      "line": 40,
+      "endLine": 40,
+      "column": 15,
+      "endColumn": 23,
+      "expression": "b0+b1+b2"
+    },
+    "e-3ced4226af57d17f": {
+      "file": "seeded_fanout.py",
+      "line": 40,
+      "endLine": 40,
+      "column": 15,
+      "endColumn": 26,
+      "expression": "b0+b1+b2+b3"
+    },
+    "e-f061572fda60b3dc": {
+      "file": "seeded_fanout.py",
+      "line": 40,
+      "endLine": 40,
+      "column": 15,
+      "endColumn": 29,
+      "expression": "b0+b1+b2+b3+b4"
+    },
+    "e-695645b636ac2397": {
+      "file": "seeded_fanout.py",
+      "line": 40,
+      "endLine": 40,
+      "column": 15,
+      "endColumn": 32,
+      "expression": "b0+b1+b2+b3+b4+b5"
+    },
+    "e-844e0f7d03e02b43": {
+      "file": "seeded_fanout.py",
+      "line": 40,
+      "endLine": 40,
+      "column": 15,
+      "endColumn": 35,
+      "expression": "b0+b1+b2+b3+b4+b5+b6"
+    },
+    "e-d3bd48e2d0b82e16": {
+      "file": "seeded_fanout.py",
+      "line": 40,
+      "endLine": 40,
+      "column": 8,
+      "endColumn": 35,
+      "expression": "return b0+b1+b2+b3+b4+b5+b6"
+    }
+  },
+  "diagnostics": [],
+  "config": {},
+  "adapterVersion": 1,
+  "adaptationRequests": [],
+  "coverage": {
+    "scope": "static-source-and-source-inspection",
+    "opaqueBoundaries": 0,
+    "inspectedOpaqueBoundaries": 0,
+    "truncatedInspections": 0,
+    "tensorExecutionVerified": false,
+    "modelExecuted": false,
+    "agentAuthoredSourceRules": true,
+    "sourceRuleApplications": 0,
+    "generationAuthority": "Adapters do not authorize structural generation; use independently checked source-preserving generation when eligible."
+  }
+}

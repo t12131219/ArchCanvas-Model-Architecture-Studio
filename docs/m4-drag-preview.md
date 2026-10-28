@@ -1,5 +1,7 @@
 # M4 拖动预览计算路径
 
+> 历史实现记录：2026-10-28 已由 Summary 原生画布接管拖动与位置修复。`movePreview.ts`、`layoutRecovery.ts` 已退出生产源码，仅在 `studio/tests/retired-preview/` 保留测试辅助；旧 CPU benchmark 入口也已移除，原脚本冻结于 [D1 删除前归档](evidence/summary-d1-retirement-20261028/before/scripts/benchmark_move_preview.mjs)。下方旧路径、性能数字和调用链属于当时快照，不代表当前 Summary 实现。当前替换与验证见 [D1 退出报告](summary-d1-retirement-integration-20261028.md)。
+
 拖动每一帧原先把临时 move 交给 `applyVisualBatch`，完整校验文档、复制含源码全文的文档、物化 scene，再另建 scene 与 SVG。新路径在 pointerdown 一次校验、复制和冻结 gesture snapshot，并确定有效移动根节点；每帧只复制 layout 索引并修改这些根节点的局部坐标，随后仍调用同一 `buildScene` 和 `renderSvg`。
 
 正式提交仍调用 `reduceHistory → applyVisualBatch`，执行两次完整文档校验、更新所有保存的 frontier 布局、复制历史快照，并保留一次拖动对应一次 undo 的合同。临时预览不生成可存储的 CanvasDocument，不更新 source、IR、frontier、document revision 或历史。预览 scene 的 revision 与即将提交的 move 相同，用于同一 renderer 的完整等价比较。
@@ -29,7 +31,7 @@
 
 这些是 CPU 分阶段数据，不能代替浏览器的 native 输入、DOM 渲染、FPS、INP 或 Event Timing。开始拖动新增了一次 snapshot preparation；整个 scene 布局和完整 SVG serialization 仍每帧执行。浏览器应优先实测 300 层展开后的单层拖动、network 子树拖动、祖先+后代多选、pin 子层后拖祖先、拖过容器边界后的 resize，以及松开后一次 undo/redo 和拖动期间版本变化取消。
 
-复现命令：
+历史快照的复现命令（当前工作树已移除该入口）：
 
 ```bash
 node scripts/benchmark_move_preview.mjs --architecture <正式静态分析的300层architecture.json> --samples 60 --warmup 10

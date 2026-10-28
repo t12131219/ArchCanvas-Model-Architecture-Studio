@@ -1,45 +1,51 @@
 (function() {
   'use strict';
   const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
-  const catalog=window.SummaryCatalog,R=window.EdgeRouterLabRouting,E=window.SummaryEngine,C=window.SummaryConstraints,M=window.SummaryInteractionMode,F=window.SummaryRecursive,svg=$('graph');
-  const names={module_programmatic_guide:'模块 · 76 案例',model_zoo_programmatic_guide:'Model Zoo · 完整模型',timeseries_programmatic_guide:'时序模型',transformer_programmatic_guide:'Transformer 与残差',pytorch_transformer_original:'PyTorch 原始架构',arrow_semantic_audit:'箭头审查与展开视图',yworks_edge_router_lab:'Edge Router 实验',source_adapter:'用户源码 · 静态适配'};
-  const importedPackages=new Map(),importedSources=new Map(),A=window.SummarySourceAdapter;
+  const catalog=window.SummaryCatalog,R=window.EdgeRouterLabRouting,E=window.SummaryEngine,C=window.SummaryConstraints,M=window.SummaryInteractionMode,F=window.SummaryRecursive,G=window.SummaryNativeSemantic,N=window.ArchCanvasSemanticView,svg=$('graph');
+  const names={module_programmatic_guide:'模块 · 76 案例',model_zoo_programmatic_guide:'Model Zoo · 完整模型',timeseries_programmatic_guide:'时序模型',transformer_programmatic_guide:'Transformer 与残差',pytorch_transformer_original:'PyTorch 原始架构',arrow_semantic_audit:'箭头审查与展开视图',yworks_edge_router_lab:'Edge Router 实验',source_adapter:'用户源码 · 静态适配',summary_documents:'Summary 文档'};
+  const importedPackages=new Map(),importedSources=new Map(),importedDocuments=new Map(),A=window.SummarySourceAdapter,D=window.ArchCanvasSummaryDocuments;
   const studioCanvas=new URLSearchParams(location.search).get('surface')==='canvas';
   let studioBridge=null,startupPromise=null,catalogSources=null,canvasGridVisible=true;
-  const sourceAssets=new Map();
+  const sourceAssets=new Map(),hostSource=window.ArchCanvasSharedSource.pool();
   let current=null,view=null,graph=null,original=null,tool='select',selectedNodes=new Set(),selectedEdges=new Set(),selectedAnnotation=null;
   // Every model is edited as one detailed graph. The compact source views are
   // used only as the initial projection and summary routing reference.
-  let unifiedSources=null,unifiedState=null;
+  let unifiedSources=null,unifiedState=null,frontierPreset='overview';
   let history=[],future=[],ghost=[],drag=null,connection=null,busy=false,dirty=false,loadToken=0,epoch=0;
-  let sourceCheck={ok:true,violations:[]},dragFrame=0,dragPoint=null,worker=null,workerId=0,persistTimer=0;
+  let sourceCheck={ok:true,violations:[]},dragFrame=0,dragPoint=null,persistTimer=0;
   let interactionMode=(()=>{try{return M.normalize(localStorage.getItem(M.key));}catch(_){return 'compat';}})();
-  const pendingTasks=new Map();
+  const workerChannel=window.ArchCanvasNativeWorkerTransport.client(()=>location.protocol==='file:'||typeof Worker==='undefined'?null:new Worker('routing-worker.js'),()=>{const button=$('cancelOperation');if(button)button.hidden=!workerChannel.isPending();studioBridge?.progress({canCancel:workerChannel.isPending(),message:'正在校验保存的模型视图…'});studioBridge?.state();});
   let camera={x:0,y:0,w:1100,h:720},metrics={routed:0,time:0},timer,sessions=new Map();
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const element=(tag,attrs={},text)=>{const n=document.createElementNS(NS,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text!==undefined)n.textContent=text;return n;};
+  // Align the last dash with the arrow terminal. SVG otherwise leaves a gap
+  // immediately before the marker whenever the route length ends in the
+  // pattern's blank half, which makes long dependency/auxiliary arrows look
+  // disconnected even though their geometry is valid.
+  const dashOffset=(points,pattern)=>{const values=String(pattern||'').match(/[0-9.]+/g)?.map(Number)||[];if(values.length<2)return '0';const dash=values[0],period=values[0]+values[1],length=points.slice(1).reduce((sum,p,i)=>sum+Math.hypot(p.x-points[i].x,p.y-points[i].y),0),phase=length%period;/* Put the terminal in the middle of a dash, rather than on its boundary. */return String((dash*.5-phase+period)%period);};
   const key=()=>current.id+':unified';
   const unifiedVisible=()=>new Set(graph?.nodes?.map(n=>n.id)||[]);
-  const unifiedChildren=id=>graph?.recursive?F.children(graph.recursive.authority,id):[];
-  const unifiedHasChildren=id=>unifiedChildren(id).length>0&&!graph.recursive.authority.mandatory.includes(id);
+  const unifiedChildren=id=>graph?.generic?G.children(graph,id):graph?.recursive?F.children(graph.recursive.authority,id):[];
+  const unifiedHasChildren=id=>!node(id)?.modelHeading&&unifiedChildren(id).length>0&&(!!graph.generic||!graph.recursive.authority.mandatory.includes(id));
   const unifiedDisplayEdges=()=>graph.edges;
-  function syncUnifiedState(){unifiedState=graph?.recursive?{expandedIds:graph.nodes.filter(n=>n.expanded).map(n=>n.id)}:null;}
+  function syncUnifiedState(){if(graph?.generic)frontierPreset=graph.frontierPreset||'custom';unifiedState=graph?.generic||graph?.recursive?{expandedIds:graph.nodes.filter(n=>n.expanded).map(n=>n.id)}:null;}
   function updateUnifiedStatus(){
-    syncUnifiedState();if(!graph)return;const a=graph.recursive.authority,total=a.detail.nodes.filter(n=>!n.junction).length,opened=graph.nodes.filter(n=>n.expanded&&!a.mandatory.includes(n.id)).length;
+    syncUnifiedState();if(!graph)return;if(graph.generic){const total=graph.generic.ir.nodes.length,opened=graph.nodes.filter(n=>n.expanded).length;$('recursiveStatus').textContent=`Summary 语义切面 · ${graph.nodes.length}/${total} 个节点 · ${graph.generic.ir.edges.length} 条原始依赖${graph.nativeRouting?.pending?' · '+graph.nativeRouting.pending+' 条待布线':''}`;$('collapseAll').disabled=busy||!!drag||!opened;$('expandAll').disabled=busy||!!drag||graph.generic.state.paperCanonical===true;return;}const a=graph.recursive.authority,total=a.detail.nodes.filter(n=>!n.junction).length,opened=graph.nodes.filter(n=>n.expanded&&!a.mandatory.includes(n.id)).length;
     $('recursiveStatus').textContent=`递归图：已展开 ${opened} 个模块 · 显示 ${graph.nodes.filter(n=>!n.junction).length}/${total} 个节点`;
     $('collapseAll').disabled=busy||!!drag||!opened;$('expandAll').disabled=busy||!!drag||graph.nodes.length===a.detail.nodes.length;
   }
   async function changeFrontier(transition,propagateError=false){
-    if(busy||drag||!graph)return;const before=graph,start=performance.now();busy=true;let committed=false,validation=null;
+    if(busy||drag||!graph)return;const before=graph,start=performance.now();if(before.generic)before.studioCamera=E.clone(camera);busy=true;let committed=false,validation=null;
     try{
       render({presentationOnly:true});$('dirtyBadge').textContent='正在展开与整理边界连接…';
       studioBridge?.state();
       const result=await runGraphTask({task:'frontier',graph:before,transition,options:options()});if(!result.ok)throw new Error(result.error);if(result.unchanged)return;
       history.push(before);if(history.length>30)history.shift();future=[];
-      graph=result.graph;syncUnifiedState();selectedNodes=new Set([...selectedNodes].filter(id=>node(id)));selectedEdges.clear();ghost=[];dirty=true;
+      graph=result.graph;if(graph.generic&&transition&&['preset','semantic','module','focus','back','all'].includes(transition.type)){const restored=N.restoreCamera(before,graph,camera);if(restored){camera=restored;cameraUpdate();}else fit();graph.studioCamera=E.clone(camera);}
+      frontierPreset=transition?.preset==='overview'||transition?.preset==='detail'?transition.preset:'custom';syncUnifiedState();selectedNodes=new Set([...selectedNodes].filter(id=>node(id)));selectedEdges.clear();ghost=[];dirty=true;
       metrics={routed:result.routed||0,time:Math.round(performance.now()-start)};validation=result.validation;committed=true;
       svg.setAttribute('data-frontier-ms',metrics.time);svg.setAttribute('data-frontier-worker-ms',JSON.stringify(result.timing||{}));
-      toast('展开状态与局部布局已保存；可继续选择内部模块。');
+      toast(result.pending?`语义切面已载入，还有 ${result.pending} 条连接待布线。请在语义切面面板继续布线。`:result.failed?`语义切面已载入，${result.failed} 条路线存在冲突，已明确标记。`:'展开状态与局部布局已保存；可继续选择内部模块。');
     }catch(error){graph=before;toast('展开未提交：'+error.message);if(propagateError)throw error;}finally{busy=false;render(committed?{validation}:{presentationOnly:true});if(committed)persist();studioBridge?.state();}
   }
   const toggleUnifiedNode=(id,force)=>changeFrontier({type:'toggle',id,expanded:force});
@@ -49,7 +55,7 @@
   const stageScale=()=>$('stage').clientWidth/camera.w;
   const point=event=>{const p=svg.createSVGPoint();p.x=event.clientX;p.y=event.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());};
   const node=id=>graph.nodes.find(n=>n.id===id);
-  function toast(message){$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(timer);timer=setTimeout(()=>$('toast').classList.remove('visible'),4500);}
+  function toast(message){studioBridge?.emit('notice',{message,error:/^(未应用|未移动|移动已恢复|展开未提交|自动保存失败|源码语义校验失败)|条约束冲突|无法保留合法连接/.test(message)});$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(timer);timer=setTimeout(()=>$('toast').classList.remove('visible'),4500);}
   function updateInteractionModeUi(){
     const select=$('interactionMode'),badge=$('interactionModeBadge'),description=$('interactionModeDescription'),hint=$('interactionHint');
     if(select)select.value=interactionMode;
@@ -66,14 +72,14 @@
     updateInteractionModeUi();
     if(notify)toast(interactionMode==='realtime'?'已切换到实时模式：拖动中同步更新箭头与连线。':'已切换到兼容模式：拖动结束后后台校验并整理连线。');
   }
-  function save(){history.push(E.clone(graph));if(history.length>30)history.shift();future=[];}
-  function flushPersist(){clearTimeout(persistTimer);persistTimer=0;if(!graph||!current||busy||drag)return;F.remember(graph);const state={graph:E.clone(graph),history:history.slice(),future:future.slice(),dirty};sessions.set(key(),state);
-    const payload={version:5,ir:original.irSha256||null,graph:E.clone(graph),dirty};delete payload.graph.recursive.authority;
+  function save(){if(graph.generic)graph.studioCamera=E.clone(camera);history.push(N.snapshot(graph));if(history.length>30)history.shift();future=[];}
+  function flushPersist(){void persistWorkspace().catch(error=>toast('自动保存失败，请导出 JSON：'+error.message));clearTimeout(persistTimer);persistTimer=0;if(!graph||!current||busy||drag)return;if(graph.generic){graph.studioCamera=E.clone(camera);G.remember(graph);}else F.remember(graph);const state={graph:N.snapshot(graph),history:history.slice(),future:future.slice(),dirty,frontierPreset};sessions.set(key(),state);
+    const payload={version:5,ir:(graph.authoringWorkspace?graph.irSha256:original.irSha256)||null,graph:N.snapshot(graph),dirty,frontierPreset};if(payload.graph.recursive)delete payload.graph.recursive.authority;
     const modelKey=key();window.SummaryRecursiveStorage.put(modelKey,payload).then(()=>{if(current&&key()===modelKey){svg.setAttribute('data-storage-status','saved');$('recursiveStatus').title='展开树、局部布局和当前图已保存到浏览器。';studioBridge?.state();}}).catch(error=>{svg.setAttribute('data-storage-status','error');studioBridge?.emit('error',{command:'save',message:error.message});toast('自动保存失败，请导出 JSON 保留当前状态：'+error.message);});
   }
   function persist(){clearTimeout(persistTimer);persistTimer=setTimeout(flushPersist,180);}
-  function options(){return {margin:+$('clearance').value,stub:28,bendCost:40,crossingCost:$('crossings').checked?450:0,overlapCost:$('crossings').checked?2:0,edgeSpacing:$('crossings').checked?12:0,preserve:$('keepBends').checked,sides:$('portSides').value,grid:$('gridEnabled').checked?24:0,style:$('routingStyle').value};}
-  function label(n){return graph?.recursive?.state?.studioPresentation?.nodes?.[n.id]?.alias||n.label||n.id;}
+  function options(){return {margin:+$('clearance').value,stub:28,bendCost:40,crossingCost:$('crossings').checked?450:0,overlapCost:$('crossings').checked?2:0,edgeSpacing:$('crossings').checked?12:0,preserve:$('keepBends').checked,sides:$('portSides').value,grid:$('gridEnabled').checked?24:0,style:$('routingStyle').value,optimizeReadability:true};}
+  function label(n){return window.ArchCanvasStudioPresentation.state(graph).nodes?.[n.id]?.alias||n.label||n.id;}
   function lab(){
     const nodes=[['A','Source','输入',75,166,132,66],['B','Transform','变换',380,80,138,66],['C','Merge','汇合',748,148,138,66],['D','Output','输出',900,335,132,76],['E','Archive','存储',755,557,138,66],['F','Residual','旁路',82,518,132,66],['G','Observer','观察',371,549,138,66],['O1','Obstacle','拖动我',475,271,142,160],['O2','Block','固定障碍',245,326,118,78]].map(([id,name,sub,x,y,w,h])=>({id,label:name,x,y,w,h,base:[x,y],parent:null,expanded:false,routingObstacle:true,semantic:{kind:'routing sandbox'},html:`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="9" fill="${id.startsWith('O')?'#e5eeec':'#0e9b9f'}" stroke="${id.startsWith('O')?'#c7d9d5':'#078b91'}"/><text x="${x+15}" y="${y+27}" fill="${id.startsWith('O')?'#64867f':'white'}" font-size="16">${name}</text><text x="${x+15}" y="${y+47}" fill="${id.startsWith('O')?'#7c9891':'#b7e5e3'}" font-size="10">${sub}</text>`}));
     const edges=[['A','B'],['B','C'],['C','D'],['A','C'],['A','D'],['F','G'],['G','D'],['G','E'],['D','E'],['A','F'],['B','G']].map(([source,target],i)=>({id:'e'+(i+1),source,target,arrow:'target',style:'orthogonal',route:[],waypoints:[],binding:{evidence:'independent routing sandbox'},draft:false}));
@@ -86,7 +92,10 @@
     return routed;
   }
   function renderCatalog(){
-    const query=$('search').value.toLowerCase(),collection=$('collection').value,historyVisible=$('includeHistory').checked;
+    const select=$('collection'),prior=select.value,collections=[...new Set(catalog.cases.map(c=>c.collection))];
+    select.replaceChildren(new Option('全部分类','all'),...collections.map(id=>new Option(names[id]||id,id)));select.value=collections.includes(prior)?prior:'all';
+    $('includeHistory').closest('label').hidden=!catalog.cases.some(c=>c.historical);
+    const query=$('search').value.toLowerCase(),collection=select.value,historyVisible=$('includeHistory').checked;
     const filtered=catalog.cases.filter(c=>(historyVisible||!c.historical)&&(collection==='all'||collection===c.collection)&&[c.title,c.origin].join(' ').toLowerCase().includes(query));
     $('catalogCount').textContent=`显示 ${filtered.length} 个案例 · 每个模型独立保存展开状态`;
     const list=$('caseList');list.replaceChildren();let previous='';
@@ -96,13 +105,16 @@
       b.onclick=()=>openCase(c,c.views[0]);list.append(b);
     }
   }
-  function asset(descriptor,c){if(importedSources.has(c.id))return Promise.resolve(importedSources.get(c.id)[descriptor.key]);return new Promise((resolve,reject)=>{const id=c.id+':'+descriptor.key;if(window.SummaryCaseData?.[id])return resolve(window.SummaryCaseData[id]);const script=document.createElement('script');script.src='../'+descriptor.asset;script.onload=()=>resolve(window.SummaryCaseData[id]);script.onerror=()=>reject(new Error('无法读取 '+descriptor.asset));document.head.append(script);});}
+  function asset(descriptor,c){if(importedSources.has(c.id))return Promise.resolve(importedSources.get(c.id)[descriptor.key]);return new Promise((resolve,reject)=>{const id=descriptor.dataKey||c.id+':'+descriptor.key;if(window.SummaryCaseData?.[id])return resolve(window.SummaryCaseData[id]);const script=document.createElement('script');script.src='../'+descriptor.asset;script.onload=()=>resolve(window.SummaryCaseData[id]);script.onerror=()=>reject(new Error('无法读取 '+descriptor.asset));document.head.append(script);});}
   async function caseSources(c,builtin=false){
     // The menu exposes overview/detail, while imported sources also supply
     // compact receipts for every nested depth. All receipts are authoritative
     // inputs to folding, reopening and routing; menu entries are not that list.
     if(importedSources.has(c.id))return importedSources.get(c.id);
-    return builtin?{overview:lab()}:Object.fromEntries(await Promise.all(c.views.map(async d=>[d.key,await asset(d,c)])));
+    if(importedDocuments.has(c.id))return {overview:importedDocuments.get(c.id).initial?.graph||{nodes:[],edges:[],canvas:[1100,720],caseId:c.id}};
+    const descriptors=c.routeTemplates?[...c.views,...c.routeTemplates]:c.sourceAtomic?[...c.views,
+      ...['overview','modules','detailed'].map(key=>({key,asset:'data/cases/01093cc06a87b35a-'+key+'.js',dataKey:'01093cc06a87b35a:'+key}))]:c.views;
+    return builtin?{overview:lab()}:Object.fromEntries(await Promise.all(descriptors.map(async d=>[d.key,await asset(d,c)])));
   }
   async function openCase(c,v,restore){
     if(busy||drag){toast('正在处理图操作，完成后可切换示例。');return false;}
@@ -113,21 +125,29 @@
       const sources=await caseSources(c,builtin);
       if(token!==loadToken)return false;
       const nextSources=Object.fromEntries(Object.entries(sources).map(([k,g])=>[k,C.initialize(E.clone(g))]));
-      const initial=await runGraphTask({task:'frontier',graph:F.build(F.create(nextSources)),options:{}});
-      if(!initial.ok||initial.failed)throw new Error(initial.error||'初始递归图存在无法布线的边界连接');
-      const base=initial.graph;let saved=restore||sessions.get(modelKey);
-      if(!saved){const stored=await window.SummaryRecursiveStorage.get(modelKey);if(token!==loadToken)return false;if(stored?.version===5&&stored.ir===(base.irSha256||null))saved={graph:stored.graph,history:[],future:[],dirty:stored.dirty};}
+      const bundle=importedPackages.get(c.id),document=importedDocuments.get(c.id),native=!!document||N.enabled(bundle)&&!(restore?.graph?.recursive);
+      const initial=document?.initial?E.clone(document.initial):await runGraphTask(document?{task:'generic-build',ir:document.parsed.ir,state:document.parsed.state,extra:{authoring:document.parsed.authoring,migration:document.parsed.migration,layouts:document.parsed.layouts},nativeLayout:document.parsed.nativeLayout,options:{}}:native?{task:'generic-build',ir:bundle.ir.semantic_ir,binding:bundle,options:{}}:{task:'frontier',graph:F.build(F.create(nextSources)),options:{}});
+      if(!initial.ok||native&&!N.accepts(initial.graph,initial.validation)||!native&&initial.failed)throw new Error(initial.error||'初始递归图存在无法布线的边界连接');
+      const base=initial.graph;if(document){if(document.record.schema==='archcanvas-summary-authoring/1')window.ArchCanvasSummaryAuthoring.attach(base,document.record);else D.attach(base,document.record);document.initial=initial;}let saved=restore||sessions.get(modelKey);
+      if(!saved){const stored=await window.SummaryRecursiveStorage.get(modelKey);if(token!==loadToken)return false;if(stored?.version===5&&(document?.record.schema==='archcanvas-summary-authoring/1'||stored.ir===(base.irSha256||null)))saved={graph:stored.graph,history:[],future:[],dirty:stored.dirty};}
       if(!saved)try{const disk=JSON.parse(localStorage.getItem('summary-merge:'+modelKey));if(disk?.version===4&&disk.ir===(base.irSha256||null))saved={graph:disk.graph,history:[],future:[],dirty:disk.dirty};
         else if(disk?.version){localStorage.setItem('summary-merge:archived:'+modelKey+':'+Date.now(),JSON.stringify(disk));toast('早期递归草稿已保留归档，当前使用新的递归文档。');}
       }catch(_){}
       let nextGraph=E.clone(saved?.graph||base);validation=initial.validation;
-      if(saved){nextGraph.recursive.authority=E.clone(base.recursive.authority);const prior=nextGraph;nextGraph=F.upgrade(nextGraph);if(nextGraph!==prior){const updated=await runGraphTask({task:'frontier',graph:nextGraph,options:{}});if(!updated.ok||updated.failed)throw new Error(updated.error||'保存的展开图无法恢复合法连接');nextGraph=updated.graph;validation=updated.validation;saved={...saved,history:[],future:[]};}else {const checked=await runGraphTask({task:'validate',graph:nextGraph});if(!checked.ok)throw new Error(checked.error);nextGraph=checked.graph;validation=checked.validation;}if(!validation.source.ok||!validation.layout.ok||invalidSourceRoutes(nextGraph,validation)){
+      if(saved&&native&&nextGraph.generic?.version!==G.VERSION&&(nextGraph.generic?.state.moduleCuts?.length||nextGraph.generic?.state.paperCanonical)&&!(['native-semantic/16','native-semantic/17'].includes(nextGraph.generic?.version)&&!nextGraph.generic?.state.paperCanonical&&!nextGraph.generic?.state.moduleCuts?.some(c=>c.level==='source'))){
+        const upgraded=await runGraphTask({task:'frontier',graph:nextGraph,transition:{type:'upgrade'},options:{}});
+        if(!upgraded.ok||!N.accepts(upgraded.graph,upgraded.validation))throw Error(upgraded.error||'旧语义前沿无法重新编译');
+        nextGraph=upgraded.graph;validation=upgraded.validation;
+        saved={...saved,graph:nextGraph,history:[],future:[]};
+      }
+      if(saved&&native){let currentDocument=document;if(document?.record.schema==='archcanvas-summary-authoring/1'){const record=window.ArchCanvasSummaryAuthoring.record(nextGraph);if(record?.id!==c.id)throw Error('编辑副本身份与保存案例不一致。');currentDocument=await D.restore(record);}if(currentDocument?!D.matches(nextGraph,currentDocument.parsed):!nextGraph.generic||G.stable(nextGraph.generic.ir)!==G.stable(bundle.ir.semantic_ir))throw new Error('保存视图的原生语义与当前来源不一致。');N.decorate(nextGraph,null,bundle);if(document){D.checkRendering(nextGraph);if(currentDocument.record.schema==='archcanvas-summary-authoring/1')window.ArchCanvasSummaryAuthoring.attach(nextGraph,currentDocument.record);else D.attach(nextGraph,currentDocument.record);}const checked=await runGraphTask({task:'validate',graph:nextGraph});if(!checked.ok)throw new Error(checked.error);validation=checked.validation;if(!N.accepts(nextGraph,validation))throw new Error('保存的语义切面没有通过完整校验。');window.ArchCanvasAdaptiveView?.restored(nextGraph);}
+      if(saved&&!native){nextGraph.recursive.authority=E.clone(base.recursive.authority);const prior=nextGraph;nextGraph=F.upgrade(nextGraph);if(nextGraph!==prior){const updated=await runGraphTask({task:'frontier',graph:nextGraph,options:{}});if(!updated.ok||updated.failed)throw new Error(updated.error||'保存的展开图无法恢复合法连接');nextGraph=updated.graph;validation=updated.validation;saved={...saved,history:[],future:[]};}else {const checked=await runGraphTask({task:'validate',graph:nextGraph});if(!checked.ok)throw new Error(checked.error);nextGraph=checked.graph;validation=checked.validation;}if(!validation.source.ok||!validation.layout.ok||invalidSourceRoutes(nextGraph,validation)){
         const archiveKey='summary-merge:archived:'+modelKey+':'+Date.now();localStorage.setItem(archiveKey,JSON.stringify(saved));nextGraph=E.clone(base);validation=initial.validation;saved=null;toast('旧草稿不符合当前层级或连接契约，已保留归档。');}}
       const evidencePath=catalogSources?.cases?.[c.id]?.evidence;if(evidencePath)try{await sourceAsset(evidencePath,true);}catch(error){console.warn('Case evidence:',error.message);}if(token!==loadToken)return false;
       // Publish case identity, source authority and graph together. Loading
       // never lends the old graph a new persistence key or editable source.
-      current=c;view={key:'unified',label:'递归图'};unifiedSources=nextSources;original=E.clone(base);graph=nextGraph;committed=true;
-      syncUnifiedState();history=saved?.history||[];future=saved?.future||[];dirty=saved?.dirty||false;ghost=[];selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;connection=null;drag=null;metrics={routed:0,time:0};
+      current=c;view={key:'unified',label:'递归图'};unifiedSources=nextSources;original=N.snapshot(base);graph=nextGraph;committed=true;
+      syncUnifiedState();frontierPreset=restore?.frontierPreset||saved?.frontierPreset||'overview';history=saved?.history||[];future=saved?.future||[];dirty=saved?.dirty||false;ghost=[];selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;connection=null;drag=null;metrics={routed:0,time:0};
       $('routingStyle').value='orthogonal';$('keepBends').checked=false;$('showPorts').checked=c.id==='routing-lab';$('clearance').value=c.id==='routing-lab'?14:6;$('clearanceValue').value=$('clearance').value+' px';
       $('modelTitle').textContent=c.title;$('modelCollection').textContent=names[c.collection]||c.collection;$('modelOrigin').textContent=(c.historical?'历史快照 / ':'')+c.origin;
       
@@ -137,15 +157,37 @@
       $('sourceFacts').innerHTML=data.sourceFacts?.length?'<ul>'+data.sourceFacts.map(f=>'<li>'+esc(f)+'</li>').join('')+'</ul>':'<p>保留原始图元、层次和连接映射。点击容器逐级展开，视觉编辑可撤销，源模型未执行。</p>';
       if(Object.keys(data.sourceProfile||{}).length)$('sourceFacts').innerHTML+='<pre>'+esc(JSON.stringify(data.sourceProfile,null,2))+'</pre>';
       const imported=importedPackages.get(c.id);$('exportSourcePackage').disabled=!imported;
+      if(document){$('sourceLinks').innerHTML='<button id="downloadOriginalDocument">下载原始 Summary 文档</button>';$('downloadOriginalDocument').onclick=()=>download(JSON.stringify(document.record.document,null,2),'application/json',c.title+'-original.json');$('sourceFacts').innerHTML='<p>导入文档中的源码、运行记录和证书是声明的证据；没有重新校验 Python 源码，也没有执行模型。当前视觉编辑可随编辑 JSON 导出。</p><pre>'+esc(JSON.stringify(graph.importedDocument,null,2))+'</pre>';}
       if(imported){$('sourceLinks').innerHTML='<button id="downloadAdapterIR">下载统一 IR</button><button id="downloadAdapterBundle">下载源码与证据包</button>';$('downloadAdapterIR').onclick=()=>download(JSON.stringify(imported.ir,null,2),'application/json',c.title+'-source-ir.json');$('downloadAdapterBundle').onclick=()=>download(JSON.stringify(imported,null,2),'application/json',c.title+'-source-adapter.json');
+        if(imported.ir.semantic_ir){$('sourceLinks').insertAdjacentHTML('beforeend','<button id="downloadSemanticIR">下载 Summary 语义 IR v2</button>');$('downloadSemanticIR').onclick=()=>download(A.semanticDocument(imported),'application/json',c.title+'-semantic-ir.json');$('sourceFacts').innerHTML+='<details><summary>Summary 契约、模式与覆盖</summary><pre>'+esc(JSON.stringify({coverage:imported.ir.semantic_ir.coverage,contracts:imported.ir.semantic_ir.semantic_contracts||[],motifs:imported.ir.semantic_ir.motifs,branches:imported.ir.semantic_ir.branches,limitations:imported.ir.semantic_ir.limitations},null,2))+'</pre></details>';}
         $('sourceFacts').innerHTML+='<details><summary>源码证据与待解析区域</summary>'+Object.values(imported.evidence).slice(0,60).map(e=>`<p>${esc(e.file)}:${e.line}–${e.endLine}</p><pre>${esc(e.expression)}</pre>`).join('')+'</details>';}
       const url=new URL(location.href);url.searchParams.set('case',c.id);url.searchParams.delete('view');window.history.replaceState(null,'',url);
-      renderCatalog();fit();return true;
+      renderCatalog();if(native&&N.validCamera(nextGraph.studioCamera)){camera=E.clone(nextGraph.studioCamera);cameraUpdate();}else fit();return true;
     }catch(error){toast('示例未切换：'+error.message);if(!graph)$('modelTitle').textContent='示例加载失败';return false;}
     finally{busy=false;render(committed?{validation}:{presentationOnly:true});if(committed)persist();studioBridge?.state();}
   }
-  function cameraUpdate(){svg.setAttribute('viewBox',`${camera.x} ${camera.y} ${camera.w} ${camera.h}`);$('zoomLabel').textContent=Math.round(stageScale()*100)+'%';}
-  function fit(widthOnly=false){if(!graph)return;const ratio=$('stage').clientWidth/$('stage').clientHeight,w=graph.canvas[0],h=graph.canvas[1];camera=widthOnly?{x:0,y:0,w,h:w/ratio}:w/h>ratio?{x:0,y:(h-w/ratio)/2,w,h:w/ratio}:{x:(w-h*ratio)/2,y:0,w:h*ratio,h};cameraUpdate();}
+  function cameraUpdate(){svg.setAttribute('viewBox',`${camera.x} ${camera.y} ${camera.w} ${camera.h}`);$('zoomLabel').textContent=Math.round(stageScale()*100)+'%';updateNavigation();}
+  function fit(widthOnly=false){if(!graph)return;const viewport={width:$('stage').clientWidth,height:$('stage').clientHeight},w=graph.canvas[0];camera=widthOnly?{x:0,y:0,w,h:w*viewport.height/viewport.width}:window.ArchCanvasViewNavigation.overview(graph.canvas,viewport);cameraUpdate();}
+  let navigationKey='';
+  function updateNavigation(){
+    if(!graph||!$('overviewMap'))return;
+    const map=$('overviewMap'),panel=$('viewNavigation'),[w,h]=graph.canvas;
+    panel.hidden=stageScale()>=.5&&camera.w>=w&&camera.h>=h;
+    $('navigationStatus').textContent=stageScale()<.4?'总览 · 选择模块阅读细节':'点击缩略图跳转 · 方向键移动';
+    const key=JSON.stringify([current?.id,w,h,graph.nodes.map(n=>[n.id,n.x,n.y,n.w,n.h,n.expanded])]);
+    if(navigationKey!==key){
+      navigationKey=key;map.setAttribute('viewBox',`0 0 ${w} ${h}`);$('overviewNodes').replaceChildren();
+      const stroke=Math.max(w/160,h/100);
+      for(const n of graph.nodes.filter(n=>!n.junction))$('overviewNodes').append(element('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:n.expanded?'none':'#b9d8cf',stroke:n.expanded?'#91aca3':'none','stroke-width':stroke}));
+    }
+    setAttrs($('overviewViewport'),{x:Math.max(0,camera.x),y:Math.max(0,camera.y),width:Math.max(0,Math.min(w,camera.x+camera.w)-Math.max(0,camera.x)),height:Math.max(0,Math.min(h,camera.y+camera.h)-Math.max(0,camera.y)),'stroke-width':Math.max(w/80,h/50)});
+  }
+  function readDetail(){
+    if(!graph)return;
+    const target=[...selectedNodes].map(node).find(Boolean)||graph.nodes.find(n=>!n.expanded&&!n.junction);
+    if(!target)return;
+    camera=window.ArchCanvasViewNavigation.readable(target,{width:$('stage').clientWidth,height:$('stage').clientHeight},graph.nodes);cameraUpdate();render({cameraOnly:true});
+  }
   function zoom(factor,at){const p=at||{x:camera.x+camera.w/2,y:camera.y+camera.h/2},newWidth=Math.min(graph.canvas[0]*8,Math.max(120,camera.w/factor)),f=newWidth/camera.w;camera={x:p.x-(p.x-camera.x)*f,y:p.y-(p.y-camera.y)*f,w:newWidth,h:camera.h*f};cameraUpdate();render({cameraOnly:true});}
   const scene={key:null,nodes:new Map(),edges:new Map(),labels:new Map(),attachments:new Map(),junctions:new Map(),obstacles:new Map(),checks:new Map(),placements:null};
   const setAttrs=(el,attrs)=>{for(const [k,v] of Object.entries(attrs))if(el.getAttribute(k)!==String(v))el.setAttribute(k,v);};
@@ -172,6 +214,7 @@
   }
   function render({interactive=false,presentationOnly=false,cameraOnly=false,validation=null,validationOrigin='worker'}={}){
     const measuredStart=performance.now();if(!graph)return;syncUnifiedState();
+    if(!interactive)updateNavigation();
     if(cameraOnly){const scale=stageScale();for(const v of scene.edges.values())setAttrs(v.hit,{'stroke-width':Math.min(45,12/scale)});refreshHandles(scale);svg.setAttribute('data-camera-ms',(performance.now()-measuredStart).toFixed(2));return;}
     if(scene.key!==key()){
       for(const name of ['frameLayer','obstacleLayer','ghostLayer','edgeLayer','nodeLayer','labelLayer','handleLayer'])$(name).replaceChildren();
@@ -195,7 +238,7 @@
       // Preserve native click targets and stacking order on selection-only
       // renders. Reparent only when a module changes between node and frame.
       if(v.g.parentNode!==ownerLayer)ownerLayer.append(v.g);
-      setAttrs(v.content,{transform:`translate(${n.x-n.base[0]} ${n.y-n.base[1]})`});if(v.html!==n.html){v.content.innerHTML=n.html;v.html=n.html;}if(n.expanded||graph.recursive?.state?.studioPresentation?.nodes?.[n.id]?.width){const rect=v.content.querySelector('rect');if(rect){rect.setAttribute('width',n.w);rect.setAttribute('height',n.h);}}applyStudioPresentation(n,v);
+      setAttrs(v.content,{transform:`translate(${n.x-n.base[0]} ${n.y-n.base[1]})`});if(v.html!==n.html){v.content.innerHTML=n.html;v.html=n.html;}if(n.expanded||window.ArchCanvasStudioPresentation.state(graph).nodes?.[n.id]?.width){const rect=v.content.querySelector('rect');if(rect){rect.setAttribute('width',n.w);rect.setAttribute('height',n.h);}}applyStudioPresentation(n,v);
       setAttrs(v.hit,{x:n.x,y:n.y,width:n.w,height:n.h,class:n.expanded?'frame-hit':'node-hit'});v.g.onpointerdown=ev=>nodeDown(ev,n);v.g.ondblclick=ev=>{if(!busy&&!drag&&tool==='select'&&unifiedHasChildren(n.id)){ev.preventDefault();ev.stopPropagation();toggleUnifiedNode(n.id);}};
       if(unifiedHasChildren(n.id)){if(!v.toggle){v.toggle=element('g',{class:'expansion-control',role:'button',tabindex:'0'});v.toggle.append(element('rect',{width:22,height:22,rx:5,fill:'#fff',stroke:'#198e90'}),element('text',{x:11,y:16,'text-anchor':'middle','font-size':18,fill:'#198e90'}));v.g.append(v.toggle);}setAttrs(v.toggle,{transform:`translate(${n.x+n.w-28} ${n.y+5})`,'aria-label':`${n.expanded?'收起':'展开'} ${label(n)}`});v.toggle.querySelector('text').textContent=n.expanded?'−':'＋';v.toggle.onpointerdown=ev=>ev.stopPropagation();v.toggle.onclick=ev=>{ev.preventDefault();ev.stopPropagation();toggleUnifiedNode(n.id);};v.toggle.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();toggleUnifiedNode(n.id);}};}else if(v.toggle){v.toggle.remove();v.toggle=null;}
       if($('showObstacles').checked&&n.routingObstacle!==false){const b=R.expand(n,+$('clearance').value);let obstacle=scene.obstacles.get(n.id);if(!obstacle){obstacle=element('rect',{fill:'none',stroke:'#c9925680','pointer-events':'none'});scene.obstacles.set(n.id,obstacle);$('obstacleLayer').append(obstacle);}setAttrs(obstacle,{x:b.x,y:b.y,width:b.w,height:b.h,'stroke-width':1/scale,'stroke-dasharray':`${4/scale} ${4/scale}`});}
@@ -221,7 +264,7 @@
       setAttrs(v.g,{'data-edge-id':e.id,'data-source':e.source,'data-target':e.target,'data-role':e.role||'tensor','data-draft':String(!!e.draft),'data-physical-source':JSON.stringify(E.endpoint(edgeGraph,e,'source')),'data-physical-target':JSON.stringify(E.endpoint(edgeGraph,e,'target')),'data-constraint-valid':interactive?'pending':String(check.ok&&!e.failed),'data-constraint-reason':interactive?'drag preview':e.reason||check.violations.join('; '),'data-semantic-binding':JSON.stringify(e.binding),'data-boundary-gates':JSON.stringify(e.contract?.gates||[]),'aria-label':`边 ${e.id} ${e.source} 到 ${e.target}`});
       if(appearance.sourceRelation){v.g.setAttribute('data-source-relation-id',e.id);v.g.setAttribute('aria-label',`源码数据依赖 ${e.id} ${e.source} 到 ${e.target}；执行路径未确定`);}else v.g.removeAttribute('data-source-relation-id');
       const d=interactive?R.polylinePath(ps):presentationOnly&&v.path?v.path:E.path(ps,e.style,edgeGraph,e);
-      if(!interactive&&!presentationOnly){v.points=ps;v.path=d;}setAttrs(v.shaft,{d,stroke:color,'stroke-width':selected?2.8:appearance.width,'stroke-dasharray':appearance.dashArray});
+      if(!interactive&&!presentationOnly){v.points=ps;v.path=d;}setAttrs(v.shaft,{d,stroke:color,'stroke-width':selected?2.8:appearance.width,'stroke-dasharray':appearance.dashArray,'stroke-dashoffset':appearance.dashArray==='none'?'0':dashOffset(ps,appearance.dashArray),'stroke-linecap':appearance.dashArray==='none'?'butt':'round','stroke-linejoin':'round'});
       setAttrs(v.head,{display:end?'inline':'none',d:end?E.arrow(ps.at(-1),ps.at(-2),e.arrow==='open'):'',fill:e.arrow==='open'?'none':color,stroke:e.arrow==='open'?color:'none','stroke-width':e.arrow==='open'?1.7:0});
       setAttrs(v.tail,{display:start?'inline':'none',d:start?E.arrow(ps[0],ps[1]):'',fill:color,stroke:'none'});
       setAttrs(v.hit,{d,'stroke-width':Math.min(45,12/scale)});v.hit.onpointerdown=ev=>edgeDown(ev,e);
@@ -247,7 +290,7 @@
   }
   function nearestSide(n,p){const sides=[['left',Math.abs(p.x-n.x),(p.y-n.y)/n.h],['right',Math.abs(p.x-n.x-n.w),(p.y-n.y)/n.h],['top',Math.abs(p.y-n.y),(p.x-n.x)/n.w],['bottom',Math.abs(p.y-n.y-n.h),(p.x-n.x)/n.w]],b=sides.sort((a,b)=>a[1]-b[1])[0];return{side:b[0],fraction:Math.max(.02,Math.min(.98,b[2]))};}
   function hitNode(p){const visible=unifiedVisible();return graph.nodes.filter(n=>!n.junction&&visible.has(n.id)&&p.x>=n.x-4&&p.x<=n.x+n.w+4&&p.y>=n.y-4&&p.y<=n.y+n.h+4).sort((a,b)=>a.w*a.h-b.w*b.h)[0];}
-  function begin(ev,item){if(busy||(ev.button!==0&&!(item.kind==='pan'&&ev.button===1)))return;ev.stopPropagation();ev.preventDefault();drag={...item,start:point(ev),last:point(ev),clientX:ev.clientX,clientY:ev.clientY,saved:false};svg.classList.toggle('is-panning',item.kind==='pan');svg.setPointerCapture(ev.pointerId);studioBridge?.state();}
+  function begin(ev,item){if(busy||(ev.button!==0&&!(item.kind==='pan'&&ev.button===1)))return;ev.stopPropagation();ev.preventDefault();drag={...item,pointerId:ev.pointerId,start:point(ev),last:point(ev),clientX:ev.clientX,clientY:ev.clientY,saved:false};svg.classList.toggle('is-panning',item.kind==='pan');svg.setPointerCapture(ev.pointerId);studioBridge?.state();}
   function restoreGesture(gesture){graph=gesture.before;history=gesture.history;future=gesture.future;dirty=gesture.dirty;}
   function unchangedGesture(gesture){
     const near=(a,b)=>Math.abs(a-b)<1e-5,samePoints=(a,b)=>a?.length===b?.length&&a.every((p,i)=>near(p.x,b[i].x)&&near(p.y,b[i].y));
@@ -260,12 +303,16 @@
   function selectEdge(e,additive=false){selectedAnnotation=null;if(!additive){selectedEdges.clear();selectedNodes.clear();}if(additive&&selectedEdges.has(e.id))selectedEdges.delete(e.id);else selectedEdges.add(e.id);}
   function nodeDown(ev,n){if(busy||ev.button!==0)return;ev.stopPropagation();if(tool==='pan'){begin(ev,{kind:'pan',camera:{...camera}});return;}selectedAnnotation=null;
     if(tool==='connect'){if(!connection){connection={node:n,fixed:null};selectedNodes=new Set([n.id]);selectedEdges.clear();toast('选择目标节点，或从端口拖动连接。');}else completeConnection(n,nearestSide(n,point(ev)));render();return;}
-    if(ev.shiftKey){selectedNodes.has(n.id)?selectedNodes.delete(n.id):selectedNodes.add(n.id);render({presentationOnly:true});return;}
+    if(ev.shiftKey||ev.ctrlKey||ev.metaKey){selectedNodes=window.ArchCanvasStudioSelection.update(selectedNodes,[n.id],'toggle');selectedEdges.clear();render({presentationOnly:true});return;}
+    if(selectedNodes.size>1&&selectedNodes.has(n.id)){
+      const ids=[...selectedNodes];if(ids.some(id=>window.ArchCanvasStudioPresentation.state(graph).nodes[id]?.pinned)){toast('选区包含固定节点；请解锁后整体拖动。');return;}
+      selectedEdges.clear();begin(ev,{kind:'group',ids,clicked:n.id});return;
+    }
     selectedNodes=new Set([n.id]);selectedEdges.clear();if(!window.ArchCanvasStudioPresentation?.state(graph).nodes[n.id]?.pinned)begin(ev,{kind:'node',node:n});else toast('已固定直接移动；点击工具栏解锁后可拖动。该节点仍随父容器移动。');render({presentationOnly:true});
   }
   function edgeDown(ev,e){if(busy||ev.button!==0)return;ev.stopPropagation();if(tool==='pan'){begin(ev,{kind:'pan',camera:{...camera}});return;}
     if(tool==='bend'&&selectedEdges.has(e.id)){save();const p=point(ev);let closest=Infinity,index=1;for(let i=1;i<e.route.length;i++){const a=e.route[i-1],b=e.route[i],den=(b.x-a.x)**2+(b.y-a.y)**2,t=den?Math.max(0,Math.min(1,((p.x-a.x)*(b.x-a.x)+(p.y-a.y)*(b.y-a.y))/den)):0,d=Math.hypot(p.x-a.x-(b.x-a.x)*t,p.y-a.y-(b.y-a.y)*t);if(d<closest){closest=d;index=i;}}e.route.splice(index,0,{x:p.x,y:p.y});e.waypoints.push({x:p.x,y:p.y});e.style='orthogonal';dirty=true;toast('已添加折点；启用保留途经点后 Apply。');persist();}
-    else selectEdge(e,ev.shiftKey);render({presentationOnly:tool!=='bend'});
+    else selectEdge(e,ev.shiftKey||ev.ctrlKey||ev.metaKey);render({presentationOnly:tool!=='bend'});
   }
   function startConnection(ev,n,fixed){connection={node:n,fixed};begin(ev,{kind:'connection',origin:E.port(n,fixed)});}
   function completeConnection(n,fixed){if(!connection)return;save();const e={id:'draft-'+Date.now().toString(36)+'-'+(++epoch),source:connection.node.id,target:n.id,arrow:$('arrowStyle').value,style:'orthogonal',waypoints:[],route:[],fixedSource:connection.fixed||undefined,fixedTarget:fixed||undefined,draft:true,binding:{evidence:'visual edit draft; no source model writeback'}};e.route=[E.endpoint(graph,e,'source'),E.endpoint(graph,e,'target')];graph.edges.push(e);selectedNodes.clear();selectedEdges=new Set([e.id]);connection=null;dirty=true;persist();toast('连接已创建，Apply 计算避障路径。');}
@@ -286,11 +333,20 @@
     const n=hitNode(point(ev));if(!n||!unifiedHasChildren(n.id))return;
     ev.preventDefault();ev.stopPropagation();toggleUnifiedNode(n.id);
   });
-  svg.addEventListener('pointerdown',ev=>{if(ev.button!==0)return;if(tool==='pan'){begin(ev,{kind:'pan',camera:{...camera}});return;}if(busy)return;if(ev.target===svg||ev.target.closest('#annotationLayer')){selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;connection=null;render({presentationOnly:true});}});
+  svg.addEventListener('pointerdown',ev=>{if(ev.button!==0)return;if(tool==='pan'){begin(ev,{kind:'pan',camera:{...camera}});return;}if(busy)return;if(ev.target===svg||ev.target.closest('#annotationLayer')){const additive=ev.shiftKey||ev.ctrlKey||ev.metaKey;if(!additive){selectedNodes.clear();selectedEdges.clear();}selectedAnnotation=null;connection=null;if(tool==='select')begin(ev,{kind:'marquee',initial:[...selectedNodes],additive});render({presentationOnly:true});}});
   function processDragPoint(p){
     if(!drag)return;
     if(Math.hypot(p.x-drag.last.x,p.y-drag.last.y)<.01)return;
     const frameStart=performance.now();
+    if(drag.kind==='group'){
+      const dx=p.x-drag.start.x,dy=p.y-drag.start.y;drag.last=p;
+      $('previewLayer').replaceChildren(...drag.ids.map(id=>{const n=node(id);return element('rect',{x:n.x+dx,y:n.y+dy,width:n.w,height:n.h,fill:'#287c7510',stroke:'#287c75','stroke-width':1.5/stageScale(),'stroke-dasharray':'5 3','pointer-events':'none'});}));return;
+    }
+    if(drag.kind==='marquee'){
+      selectedNodes=window.ArchCanvasStudioSelection.update(drag.initial,window.ArchCanvasStudioSelection.inBox(graph.nodes,drag.start,p),drag.additive?'add':'replace');
+      drag.last=p;render({presentationOnly:true});
+      $('previewLayer').replaceChildren(element('rect',{x:Math.min(drag.start.x,p.x),y:Math.min(drag.start.y,p.y),width:Math.abs(p.x-drag.start.x),height:Math.abs(p.y-drag.start.y),fill:'#287c7515',stroke:'#287c75','stroke-width':1.5/stageScale(),'stroke-dasharray':'5 3','pointer-events':'none'}));return;
+    }
     if((drag.kind==='node'||drag.kind==='bend'||drag.kind==='route-label'||drag.kind==='studio-annotation')&&!drag.saved){drag.history=history.slice();drag.future=future;drag.dirty=dirty;save();drag.saved=true;drag.before=history.at(-1);}
     if(drag.kind==='node'){
       const n=drag.node;
@@ -328,7 +384,16 @@
   });
   svg.addEventListener('pointerup',async ev=>{if(!drag)return;const p=point(ev),n=hitNode(p),kind=drag.kind;
     if(dragFrame){cancelAnimationFrame(dragFrame);dragFrame=0;dragPoint=null;processDragPoint(p);}
-    else if(drag.saved)processDragPoint(p);
+    else if(drag.saved||kind==='marquee'||kind==='group')processDragPoint(p);
+    if(kind==='group'){
+      const gesture=drag,dx=p.x-gesture.start.x,dy=p.y-gesture.start.y;drag=null;dragPoint=null;$('previewLayer').replaceChildren();
+      if(svg.hasPointerCapture(ev.pointerId))svg.releasePointerCapture(ev.pointerId);
+      try{if(Math.hypot(dx,dy)>.5){const horizontal=Math.abs(dx)>Math.abs(dy),axis=horizontal?'x':'y',delta=horizontal?dx:dy;
+        const ids=gesture.ids.slice().sort((a,b)=>(node(b)[axis]-node(a)[axis])*Math.sign(delta));
+        await studioVisual({operations:[{type:'move',ids,dx,dy,exact:true}]});toast('已整体移动选区；可一次撤销。');}
+        else selectedNodes=new Set([gesture.clicked]);}
+      catch(error){toast('未移动选区：'+error.message+' 原位置已保留。');}render({presentationOnly:true});studioBridge?.state();return;
+    }
     if(kind==='connection'){if(n)completeConnection(n,nearestSide(n,p));else{connection=null;toast('连接取消：请释放在目标节点或端口上。');}}
     else if(kind==='endpoint'){if(n){save();E.reconnect(graph,drag.edge,drag.side,n.id,nearestSide(n,p));dirty=true;toast('端点已重接；Apply 更新这条路径。');}else toast('端点未落在节点上，保留原连接。');}
     if(kind==='route-label'&&drag.saved)toast('文字已吸附到所属连线；拖动模块与重新布线时自动跟随。');
@@ -343,7 +408,7 @@
       const validation=E.validateView(graph);
       const valid=validation.source.ok&&validation.layout.ok&&validation.edges.every(([,check])=>check.ok);
       if(!valid){restoreGesture(gesture);toast('实时移动已恢复：最终位置未通过完整约束校验。');}
-      else {F.captureMove(base,graph,gesture.node.id);toast(graph.lastMove?.blocked?'此位置无法保留合法连接，已停留在上一合法位置。':'实时更新已提交：节点、箭头、所属文字与连接同步保存。');}
+      else {if(graph.generic)G.remember(graph);else F.captureMove(base,graph,gesture.node.id);toast(graph.lastMove?.blocked?'此位置无法保留合法连接，已停留在上一合法位置。':'实时更新已提交：节点、箭头、所属文字与连接同步保存。');}
       drag=null;dragPoint=null;$('previewLayer').replaceChildren();if(svg.hasPointerCapture(ev.pointerId))svg.releasePointerCapture(ev.pointerId);
       window.SummarySourceControls?.refresh(graph);render({validation:valid?validation:null,validationOrigin:'main'});persist();studioBridge?.state();return;
     }
@@ -354,35 +419,46 @@
       let validation=null;try{const start=performance.now(),result=await runGraphTask({task:'move',graph:base,id:old.id,dx,dy,options:options()});if(!result.ok)throw new Error(result.error);
         const committed=result.graph.nodes.find(n=>n.id===old.id);
         if(Math.abs(committed.x-old.x)<1e-5&&Math.abs(committed.y-old.y)<1e-5){restoreGesture(gesture);toast('此位置无法保留合法连接，已保留原位置。');}
-        else {graph=result.graph;F.captureMove(base,graph,old.id);svg.setAttribute('data-move-ms',(performance.now()-start).toFixed(2));toast(graph.lastMove?.blocked?'此位置无法保留合法连接，已限制移动。':'节点、所属文字与连接已同步更新。');validation=result.validation;}
+        else {graph=result.graph;if(graph.generic)G.remember(graph);else F.captureMove(base,graph,old.id);svg.setAttribute('data-move-ms',(performance.now()-start).toFixed(2));toast(graph.lastMove?.blocked?'此位置无法保留合法连接，已限制移动。':'节点、所属文字与连接已同步更新。');validation=result.validation;}
       }catch(error){restoreGesture(gesture);toast('移动已恢复：'+error.message);}finally{busy=false;render({validation});persist();studioBridge?.state();}return;
     }
     const changed=drag.saved||kind==='connection'||kind==='endpoint';drag=null;svg.classList.remove('is-panning');$('previewLayer').replaceChildren();if(svg.hasPointerCapture(ev.pointerId))svg.releasePointerCapture(ev.pointerId);if(changed&&(kind==='route-label'||kind==='studio-annotation'))window.SummarySourceControls?.refresh(graph);if(changed)persist();render({presentationOnly:!changed});studioBridge?.state();
   });
-  svg.addEventListener('pointercancel',()=>{if(dragFrame)cancelAnimationFrame(dragFrame);dragFrame=0;dragPoint=null;if(drag?.saved)restoreGesture(drag);drag=null;svg.classList.remove('is-panning');connection=null;$('previewLayer').replaceChildren();render();studioBridge?.state();});
-  svg.addEventListener('wheel',ev=>{if(!graph)return;ev.preventDefault();zoom(ev.deltaY<0?1.15:1/1.15,point(ev));},{passive:false});
-  function ensureWorker(){if(worker||location.protocol==='file:'||typeof Worker==='undefined')return worker;
-    try{worker=new Worker('routing-worker.js');worker.onmessage=event=>{const resolve=pendingTasks.get(event.data.requestId);if(resolve){pendingTasks.delete(event.data.requestId);resolve(event.data);}};
-      worker.onerror=()=>{worker.terminate();worker=null;for(const resolve of pendingTasks.values())resolve(null);pendingTasks.clear();};
-    }catch(_){worker=null;}return worker;
+  function cancelActiveGesture(){
+    const active=drag;
+    if(dragFrame)cancelAnimationFrame(dragFrame);dragFrame=0;dragPoint=null;
+    // Release capture after clearing the owner; a late pointerup cannot commit it.
+    drag=null;connection=null;
+    if(active?.saved)restoreGesture(active);
+    if(active?.kind==='pan'){camera={...active.camera};cameraUpdate();}
+    if(active?.kind==='marquee')selectedNodes=new Set(active.initial);
+    if(active&&svg.hasPointerCapture(active.pointerId))svg.releasePointerCapture(active.pointerId);
+    svg.classList.remove('is-panning');$('previewLayer').replaceChildren();
+    if(active){render({presentationOnly:!active.saved});studioBridge?.state();}
   }
-  async function runGraphTask(message){const active=ensureWorker();if(active){const result=await new Promise(resolve=>{const requestId=++workerId;pendingTasks.set(requestId,resolve);try{active.postMessage({...message,requestId});}catch(_){pendingTasks.delete(requestId);resolve(null);}});if(result)return result;}
-    await new Promise(resolve=>setTimeout(resolve,0));const copy=E.clone(message.graph);
+  svg.addEventListener('pointercancel',cancelActiveGesture);
+  svg.addEventListener('wheel',ev=>{if(!graph)return;ev.preventDefault();zoom(ev.deltaY<0?1.15:1/1.15,point(ev));},{passive:false});
+  function ensureWorker(){return workerChannel.ensure();}
+  async function runGraphTask(message){const workerResult=await workerChannel.run(message);
+    // Cancellation is an explicit refusal to commit, never an infrastructure
+    // failure: do not rerun the abandoned input on the main thread.
+    if(workerResult?.cancelled){const error=new Error('操作已取消，保留操作前状态。');error.name='AbortError';throw error;}
+    if(workerResult)return workerResult;
+    await new Promise(resolve=>setTimeout(resolve,0));if(message.task==='generic-build'||message.task==='generic-route'||message.task==='frontier'&&message.graph?.generic)return N.prepare(E.clone(message));const copy=E.clone(message.graph);
     if(message.task==='frontier')return window.SummaryFrontierTask.run(copy,message.transition,message.options);
     if(message.task==='validate'){window.SummarySourceControls?.refresh(copy);return {ok:true,graph:copy,validation:E.validateView(copy)};}
     if(message.task==='move'){E.move(copy,message.id,message.dx,message.dy,message.options);const validation=E.validateView(copy);if(!validation.source.ok||!validation.layout.ok||validation.edges.some(([,check])=>!check.ok))return {ok:false,error:'移动后的图未通过完整校验'};window.SummarySourceControls?.refresh(copy);return{ok:true,graph:copy,validation};}
-    const result=E.routeBatch(copy,message.ids,message.options);window.SummarySourceControls?.refresh(result.graph);return {ok:true,...result,validation:E.validateView(copy)};
+    const result=E.routeBatch(copy,message.ids,{...message.options,edgeIds:message.ids});window.SummarySourceControls?.refresh(result.graph);return {ok:true,...result,validation:E.validateView(copy)};
   }
   async function runRouting(ids,opts){C.initialize(graph);return runGraphTask({task:'route',graph,ids,options:opts});}
   async function apply(){if(!graph||busy)return;restoreSourceBaseline();const sourceCheck=C.validateSource(graph);if(!sourceCheck.ok){render();toast('源码语义校验失败：'+sourceCheck.violations[0]);return;}let targets=$('scope').value==='all'?graph.edges:$('scope').value==='selected'?graph.edges.filter(e=>selectedEdges.has(e.id)):graph.edges.filter(e=>selectedNodes.has(e.source)||selectedNodes.has(e.target));
     if(!targets.length){toast('作用范围为空，请先选择节点或边。');return;}if($('policy').value==='never'){metrics={routed:0,time:0};render();toast('Never：保留当前路径。');return;}
     const opts=options();if($('policy').value==='needed')targets=targets.filter(e=>E.conflicts(graph,e,opts));if(!targets.length){metrics={routed:0,time:0};render();toast('当前路径满足约束，无需重算。');return;}
-    save();ghost=graph.edges.map(e=>({route:E.clone(e.route),style:e.style}));busy=true;render({presentationOnly:true});const begin=performance.now(),before=JSON.stringify(graph.nodes.map(n=>[n.id,n.x,n.y]));let validation=null;
-    try{const result=await runRouting(targets.map(e=>e.id),opts);if(!result.ok)throw new Error(result.error);graph=result.graph;validation=result.validation;if(before!==JSON.stringify(graph.nodes.map(n=>[n.id,n.x,n.y])))throw new Error('布线不应移动节点');metrics={routed:result.routed,time:Math.round(performance.now()-begin)};dirty=result.failed>0;toast(result.failed?`${result.routed} 条完成，${result.failed} 条约束冲突（红色），原路径保留。请检查容器接口、端口或安全距离。`:`${result.routed} 条边已布线${result.retained?' · '+result.retained+' 段原始合法通道/汇流骨架保留':''} · 节点位置不变`);}catch(error){toast(error.message);}finally{busy=false;render({validation});persist();}
+    busy=true;render({presentationOnly:true});const begin=performance.now(),before=JSON.stringify(graph.nodes.map(n=>[n.id,n.x,n.y]));let validation=null,committed=false;
+    try{const result=await runRouting(targets.map(e=>e.id),opts);if(!result.ok)throw new Error(result.error);if(before!==JSON.stringify(result.graph.nodes.map(n=>[n.id,n.x,n.y])))throw new Error('布线不应移动节点');save();ghost=graph.edges.map(e=>({route:E.clone(e.route),style:e.style}));graph=result.graph;validation=result.validation;committed=true;metrics={routed:result.routed,time:Math.round(performance.now()-begin)};dirty=true;toast(result.failed?`${result.routed} 条完成，${result.failed} 条约束冲突（红色），原路径保留。请检查容器接口、端口或安全距离。`:`${result.routed} 条边已布线${result.retained?' · '+result.retained+' 段原始合法通道/汇流骨架保留':''} · 节点位置不变`);}catch(error){toast(error.message);}finally{busy=false;render(committed?{validation}:{presentationOnly:true});if(committed)persist();studioBridge?.state();}
   }
   function download(text,type,name){const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);}
   function exportSvg(){const out=svg.cloneNode(true);out.setAttribute('xmlns',NS);out.setAttribute('width',graph.canvas[0]);out.setAttribute('height',graph.canvas[1]);out.setAttribute('viewBox','0 0 '+graph.canvas.join(' '));out.removeAttribute('tabindex');out.querySelector('#previewLayer').remove();out.querySelector('#handleLayer').remove();out.querySelector('#obstacleLayer').remove();out.querySelector('#ghostLayer').remove();out.querySelectorAll('.wire-hit,.node-hit,.frame-hit,.expansion-control,[data-editor-only]').forEach(n=>n.remove());const style=element('style',{},'.wire-path{fill:none;stroke-linecap:butt;stroke-linejoin:round}.scene-node text{font-family:DejaVu Sans,Arial,sans-serif}');out.querySelector('defs').append(style);out.prepend(element('rect',{x:0,y:0,width:graph.canvas[0],height:graph.canvas[1],fill:'white'}));out.prepend(element('metadata',{'id':'summary-merge-binding'},JSON.stringify({case:current.id,view:view.key,interactionMode,source:graph.source,irSha256:graph.irSha256,edited:dirty,sourceDraftOperations:graph.sourceDraftOperations||[],sourceValidation:C.validateSource?.(graph),attachments:graph.attachments||[],routeLabels:graph.routeLabels||[],junctionMarkers:graph.junctionMarkers||[],nodes:graph.nodes.map(n=>({id:n.id,parent:n.parent,semantic:n.semantic,visualBinding:n.visualBinding,glyphPresentation:n.glyphPresentation,labelObstacles:n.glyphPresentation?n.labelObstacles:undefined})),edges:graph.edges.map(e=>({id:e.id,source:e.source,target:e.target,draft:e.draft,binding:e.binding,portPolicy:e.portPolicy,physicalSource:e.physicalSource,physicalTarget:e.physicalTarget}))})));download(new XMLSerializer().serializeToString(out),'image/svg+xml',current.title+'-'+view.key+'.svg');toast('已生成当前视图 SVG。');}
-  for(const collection of Object.keys(names)){const o=document.createElement('option');o.value=collection;o.textContent=names[collection];$('collection').append(o);}
   $('coverage').textContent=`${catalog.counts.active} 当前案例 / ${catalog.counts.historical} 历史案例`;
   for(const id of ['search','collection','includeHistory'])$(id).addEventListener(id==='search'?'input':'change',renderCatalog);
   function selectTool(value){if(busy||drag)throw new Error('请先完成当前图操作。');if(!['select','connect','bend','pan'].includes(value)||(studioCanvas&&value==='pan'))throw new Error('该工具不可用；按住鼠标中键平移画布。');tool=value;connection=null;for(const x of document.querySelectorAll('[data-tool]'))x.classList.toggle('active',x.dataset.tool===tool);if(tool==='connect')$('showPorts').checked=true;svg.setAttribute('data-active-tool',tool);render({presentationOnly:true});studioBridge?.state();}
@@ -391,19 +467,94 @@
   for(const id of ['showGhost','showObstacles','showPorts'])$(id).onchange=()=>render({presentationOnly:true});
   $('clearance').oninput=()=>{$('clearanceValue').value=$('clearance').value+' px';};$('applyLayout').onclick=apply;
   $('setArrow').onclick=()=>{if(busy||drag)return;if(!selectedEdges.size){toast('先选择一条或多条边。');return;}save();for(const e of graph.edges)if(selectedEdges.has(e.id))e.arrow=$('arrowStyle').value;render();persist();toast('箭头已更新；路线模型保持不变。');};
-  $('undo').onclick=()=>{if(busy||drag||!history.length)return;future.push(E.clone(graph));graph=history.pop();selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;connection=null;dirty=true;ghost=[];render();persist();studioBridge?.state();};
-  $('redo').onclick=()=>{if(busy||drag||!future.length)return;history.push(E.clone(graph));graph=future.pop();selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;connection=null;dirty=true;ghost=[];render();persist();studioBridge?.state();};
-  $('reset').onclick=()=>{if(busy||drag)return;save();graph=E.clone(original);syncUnifiedState();selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;connection=null;ghost=[];dirty=false;fit();render();persist();studioBridge?.state();toast('当前模型已恢复到最精简递归状态，仍可撤销。');};
+  $('undo').onclick=()=>{if(busy||drag||!history.length)return;if(graph.generic)graph.studioCamera=E.clone(camera);future.push(N.snapshot(graph));graph=history.pop();if(graph.generic&&N.validCamera(graph.studioCamera)){camera=E.clone(graph.studioCamera);cameraUpdate();}selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;connection=null;dirty=true;ghost=[];render();persist();studioBridge?.state();};
+  $('redo').onclick=()=>{if(busy||drag||!future.length)return;if(graph.generic)graph.studioCamera=E.clone(camera);history.push(N.snapshot(graph));graph=future.pop();if(graph.generic&&N.validCamera(graph.studioCamera)){camera=E.clone(graph.studioCamera);cameraUpdate();}selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;connection=null;dirty=true;ghost=[];render();persist();studioBridge?.state();};
+  $('reset').onclick=()=>{if(busy||drag)return;save();graph=N.snapshot(original);frontierPreset='overview';syncUnifiedState();selectedNodes.clear();selectedEdges.clear();selectedAnnotation=null;connection=null;ghost=[];dirty=false;fit();render();persist();studioBridge?.state();toast('当前模型已恢复到最精简递归状态，仍可撤销。');};
   $('collapseAll').onclick=collapseUnifiedAll;$('expandAll').onclick=expandUnifiedAll;
   $('fit').onclick=()=>{fit();render({cameraOnly:true});};$('fitWidth').onclick=()=>{fit(true);render({cameraOnly:true});};$('zoomIn').onclick=()=>zoom(1.3);$('zoomOut').onclick=()=>zoom(1/1.3);$('exportSvg').onclick=()=>download(studioSvg(),'image/svg+xml',current.title+'-unified.svg');
-  $('exportJson').onclick=()=>{const text=JSON.stringify({schema:'summary-merge-recursive/1',case:current.id,view:view.key,interactionMode,graph,...(importedPackages.has(current.id)?{adapter:importedPackages.get(current.id)}:{})},null,2);
+  $('readDetail').onclick=readDetail;$('returnOverview').onclick=()=>{fit();render({cameraOnly:true});};
+  $('overviewMap').onpointerdown=ev=>{
+    if(!graph)return;ev.preventDefault();ev.stopPropagation();
+    const p=new DOMPoint(ev.clientX,ev.clientY).matrixTransform($('overviewMap').getScreenCTM().inverse());
+    camera.x=p.x-camera.w/2;camera.y=p.y-camera.h/2;cameraUpdate();render({cameraOnly:true});
+  };
+  $('overviewMap').onkeydown=ev=>{
+    const delta={ArrowUp:[0,-.7],ArrowDown:[0,.7],ArrowLeft:[-.7,0],ArrowRight:[.7,0]}[ev.key];
+    if(!delta&&ev.key!=='Home'&&ev.key!=='Enter')return;ev.preventDefault();ev.stopPropagation();
+    if(delta){camera.x+=camera.w*delta[0];camera.y+=camera.h*delta[1];cameraUpdate();render({cameraOnly:true});}
+    else if(ev.key==='Home'){fit();render({cameraOnly:true});}else readDetail();
+  };
+  $('exportJson').onclick=()=>{const text=JSON.stringify(studioDocument(),null,2);
     if(importedPackages.has(current.id)){$('sourceExportText').value=text;$('sourceExportDialog').showModal();}else download(text,'application/json',current.id+'-'+view.key+'.json');};
   $('closeSourceExport').onclick=()=>$('sourceExportDialog').close();$('downloadSourceDocument').onclick=()=>download($('sourceExportText').value,'application/json',current.id+'-unified.json');
+  async function persistWorkspace(){
+    const record=window.ArchCanvasSummaryAuthoring?.record(graph);if(!record||!current)return;
+    await window.SummaryRecursiveStorage.put('summary-document:v1:'+record.id,record);
+    await window.SummaryRecursiveStorage.put('summary-document:index:v1',[...importedDocuments.keys()]);
+  }
+  async function studioAuthoring(message){
+    if(busy||drag)throw Error('请先完成当前图操作。');
+    const W=window.ArchCanvasSummaryAuthoring;
+    if(message.action==='begin'){
+      if(graph?.authoringWorkspace&&!message.blank)return;
+      const presentation=!message.blank&&graph?.studioPresentation?E.clone(graph.studioPresentation):null;
+      const cuts=!message.blank?E.clone(graph?.generic?.state.moduleCuts||[]):[];
+      const result=await W.begin(graph,message);
+      await installDocument({nativeDocument:result.record});
+      const retained=cuts.filter(c=>graph.generic.ir.nodes.some(n=>n.id===c.id&&n.kind==='composite'));
+      if(retained.length)await changeFrontier({type:'semantic',patch:{moduleCuts:retained}},true);
+      if(presentation){graph.studioPresentation=presentation;render({presentationOnly:true});persist();studioBridge?.state();}
+      return;
+    }
+    if(!graph?.authoringWorkspace)throw Error('请先进入 Summary 编辑副本。');
+    if(message.action==='source'){const id=graph.authoringWorkspace.origin?.caseId,c=catalog.cases.find(c=>c.id===id);if(!c)throw Error('原始 Python 案例不在当前工作区；请导入原始源码或已验证适配包。');if(!await openCase(c,c.views[0]))throw Error('原始源码视图未打开。');return;}
+    const before=graph,caseId=current.id;busy=true;render({presentationOnly:true});studioBridge?.state();let committed=false,validation;
+    try{
+      const presets=(await sourceAsset('data/semantic/authoring-presets.json',true)).modules;
+      const result=await W.apply(before,message,presets),{record,parsed}=result;
+      const built=await runGraphTask({task:'generic-build',ir:parsed.ir,state:parsed.state,extra:{authoring:parsed.authoring},options:options()});
+      if(!built.ok||!N.accepts(built.graph,built.validation))throw Error(built.error||'编辑后的原生视图未通过校验。');
+      const next=W.attach(built.graph,record);
+      // Retain Studio's aliases, legend and page; generated semantics and SVG
+      // always come from Summary. Layout caches belong to the edited IR.
+      if(before.studioPresentation)next.studioPresentation=E.clone(before.studioPresentation);
+      for(const [oldId,newId]of Object.entries(result.rebindings||{}))if(next.studioPresentation?.nodes?.[oldId]){next.studioPresentation.nodes[newId]=next.studioPresentation.nodes[oldId];delete next.studioPresentation.nodes[oldId];}
+      next.semanticRevision=(before.semanticRevision||0)+1;
+      before.studioCamera=E.clone(camera);history.push(before);if(history.length>30)history.shift();future=[];
+      graph=next;selectedNodes=new Set((result.selection||[]).filter(id=>node(id)));selectedEdges.clear();selectedAnnotation=null;connection=null;dirty=true;ghost=[];
+      importedDocuments.set(caseId,{...result,initial:built});current.title=record.title;
+      syncUnifiedState();fit();graph.studioCamera=E.clone(camera);validation=built.validation;committed=true;
+      toast('Summary 编辑副本已更新；可撤销，模型未执行。');
+    }finally{busy=false;render(committed?{validation}:{presentationOnly:true});if(committed)persist();studioBridge?.state();}
+  }
   const invalidSourceRoutes=(graph,validation)=>validation.edges.some(([id,v])=>!v.ok&&!graph.edges.find(e=>e.id===id)?.draft);
-  async function registerSource(bundle,edited){await A.verify(bundle);const sources=A.sources(bundle),preflight=await runGraphTask({task:'frontier',graph:F.build(F.create(sources)),options:{}});
-    if(!preflight.ok||preflight.failed)throw new Error(preflight.error||'适配结果未通过连接/布局校验，请查看源码适配支持范围。');
-    if(edited){const restored=E.clone(edited);if(!restored.recursive)throw new Error('编辑 JSON 缺少递归状态。');restored.recursive.authority=F.create(sources).authority;const check=await runGraphTask({task:'validate',graph:restored});if(!check.ok)throw new Error(check.error);const result=check.validation;
-      if(restored.irSha256!==bundle.irSha256||!result.source.ok||!result.layout.ok||invalidSourceRoutes(restored,result))throw new Error('编辑 JSON 与源码适配契约不一致。');}
+  async function registerDocument(value,edited,deferBuild=false){
+    const document=['archcanvas-summary-import/1','archcanvas-summary-authoring/1'].includes(value?.schema)?await D.restore(value):await D.read(value),{record,parsed}=document;
+    const initial=deferBuild?null:await runGraphTask({task:'generic-build',ir:parsed.ir,state:parsed.state,extra:{authoring:parsed.authoring,migration:parsed.migration,layouts:parsed.layouts},nativeLayout:parsed.nativeLayout,options:{}});
+    if(initial){if(!initial.ok||!N.accepts(initial.graph,initial.validation))throw new Error(initial.error||'Summary 文档没有通过原生视图校验。');
+    if(record.schema==='archcanvas-summary-authoring/1')window.ArchCanvasSummaryAuthoring.attach(initial.graph,record);else D.attach(initial.graph,record);}
+    if(edited){if(!D.matches(edited,parsed))throw new Error('编辑 JSON 改变了原始文档语义。');D.checkRendering(edited);const restored=record.schema==='archcanvas-summary-authoring/1'?window.ArchCanvasSummaryAuthoring.attach(E.clone(edited),record):D.attach(E.clone(edited),record),check=await runGraphTask({task:'validate',graph:restored});if(!check.ok||!N.accepts(restored,check.validation))throw new Error(check.error||'编辑 JSON 与文档来源契约不一致。');}
+    importedDocuments.set(record.id,{...document,initial});let c=catalog.cases.find(c=>c.id===record.id);
+    if(!c){c={id:record.id,title:record.title,collection:'summary_documents',origin:record.document.schema,historical:false,views:[{key:'overview',label:'原生语义图'}]};catalog.cases.push(c);}return c;
+  }
+  async function installDocument(payload){
+    if(busy||drag)throw new Error('请先完成当前操作。');flushPersist();busy=true;render({presentationOnly:true});studioBridge?.state();let c;
+    try{
+      if(payload.nativeDocument&&[payload.graph?.caseId,payload.caseId||payload.case].some(id=>id!==undefined&&id!==payload.nativeDocument.id))throw new Error('编辑 JSON 案例身份与导入文档不一致。');
+      c=await registerDocument(payload.nativeDocument||payload,payload.nativeDocument&&payload.graph);
+      await window.SummaryRecursiveStorage.put('summary-document:v1:'+c.id,importedDocuments.get(c.id).record);
+      await window.SummaryRecursiveStorage.put('summary-document:index:v1',[...importedDocuments.keys()]);
+    }finally{busy=false;render({presentationOnly:true});studioBridge?.state();}
+    $('collection').value='all';$('search').value='';$('sourceImportDialog').close();
+    const restored=payload.nativeDocument?{graph:payload.graph,history:[],future:[],dirty:!!payload.dirty,frontierPreset:payload.frontierPreset}:undefined;
+    if(!await openCase(c,c.views[0],restored))throw new Error('Summary 文档已验证，但视图加载失败。');
+    toast(`已导入 ${c.title}；文档证据未绑定 Python 源码，模型未执行。`);
+  }
+  async function registerSource(bundle,edited){await A.verify(bundle);const sources=A.sources(bundle),native=N.enabled(bundle),preflight=await runGraphTask(native?{task:'generic-build',ir:bundle.ir.semantic_ir,binding:bundle,options:{}}:{task:'frontier',graph:F.build(F.create(sources)),options:{}});
+    if(edited?.authoringWorkspace)throw Error('源码适配视图不能伪装为独立编辑副本。');
+    if(!preflight.ok||!native&&preflight.failed)throw new Error(preflight.error||'适配结果未通过连接/布局校验，请查看源码适配支持范围。');
+    if(edited){const restored=E.clone(edited);if(native&&restored.generic){if(G.stable(restored.generic.ir)!==G.stable(bundle.ir.semantic_ir))throw new Error('编辑 JSON 改变了原始语义。');const validation=E.validateView(restored);if(!N.accepts(restored,validation))throw new Error('原生语义编辑 JSON 与来源契约不一致。');}else {if(!restored.recursive)throw new Error('编辑 JSON 缺少递归状态。');restored.recursive.authority=F.create(sources).authority;const check=await runGraphTask({task:'validate',graph:restored});if(!check.ok)throw new Error(check.error);const result=check.validation;
+      if(restored.irSha256!==bundle.irSha256||!result.source.ok||!result.layout.ok||invalidSourceRoutes(restored,result))throw new Error('编辑 JSON 与源码适配契约不一致。');}}
     importedPackages.set(bundle.id,bundle);importedSources.set(bundle.id,sources);let c=catalog.cases.find(v=>v.id===bundle.id);
     if(!c){c={id:bundle.id,title:bundle.title,collection:'source_adapter',origin:bundle.entry,historical:false,views:[{key:'overview',label:'递归图'},{key:'detailed',label:'源码细节'}]};catalog.cases.push(c);}return c;
   }
@@ -414,15 +565,15 @@
     try{
     c=await registerSource(bundle,payload.adapter&&payload.graph);
     // Restore a portable edited frontier only against fresh, verified authority.
-    if(payload.adapter&&payload.graph){restored=E.clone(payload.graph);restored.recursive.authority=F.create(importedSources.get(c.id)).authority;}
+    if(payload.adapter&&payload.graph){restored=E.clone(payload.graph);if(restored.recursive)restored.recursive.authority=F.create(importedSources.get(c.id)).authority;}
     await window.SummaryRecursiveStorage.put('source-adapter:bundle:'+c.id,bundle);await window.SummaryRecursiveStorage.put('source-adapter:index',[...importedPackages.keys()]);
     }finally{busy=false;render({presentationOnly:true});studioBridge?.state();}
     $('collection').value='all';$('search').value='';$('sourceImportDialog').close();if(!await openCase(c,c.views[0],restored?{graph:restored,history:[],future:[],dirty:true}:undefined))throw new Error('源码包已验证，但递归视图加载失败。');toast(`已接入 ${c.title}：${bundle.ir.nodes.length} 个源码节点，${bundle.diagnostics.length} 个待解析区域。`);
   }
   const sourceError=error=>{$('sourceImportStatus').textContent=error.message;toast(error.message);};
   function applyStudioPresentation(n,v){window.ArchCanvasStudioPresentation?.applyNode(graph,n,v);}
-  function studioDocument(){return graph&&current?{schema:'summary-merge-recursive/1',case:current.id,caseId:current.id,title:current.title,collection:current.collection,view:view.key,interactionMode,tool,showPorts:$('showPorts').checked,gridVisible:canvasGridVisible,dirty,busy:busy||!!drag,dragging:!!drag,canUndo:!!history.length,canRedo:!!future.length,undo:history.length,redo:future.length,presentationVersion:1,sourceAvailable:!!(importedPackages.has(current.id)||catalogSources?.cases?.[current.id]?.available),selectedNodes:[...selectedNodes],selectedEdges:[...selectedEdges],selection:studioSelection(),graph:E.clone(graph),...(importedPackages.has(current.id)?{adapter:E.clone(importedPackages.get(current.id))}:{})}:null;}
-  function studioState(){const document=studioDocument();return {document,graph:document?.graph||null,case:current?{id:current.id,title:current.title,collection:current.collection,historical:!!current.historical}:null,bundle:document?.adapter||null,sourceAvailable:!!(document?.adapter||catalogSources?.cases?.[current?.id]?.available),dirty,tool,showPorts:$('showPorts').checked,gridVisible:canvasGridVisible,busy:busy||!!drag,dragging:!!drag,undo:history.length,redo:future.length,selectedNodes:[...selectedNodes],selectedEdges:[...selectedEdges],presentationVersion:1,selection:studioSelection(),camera:{...camera}};}
+  function studioDocument(){const workspace=window.ArchCanvasSummaryAuthoring?.record(graph);return graph&&current?hostSource.copy({schema:'summary-merge-recursive/1',case:current.id,caseId:current.id,title:workspace?.title||current.title,collection:current.collection,view:view.key,frontierPreset,snapshotRevision:graph.semanticRevision||graph.recursive?.revision||0,semanticView:N.inspector(graph,[...selectedNodes]),authoring:window.ArchCanvasSummaryAuthoring?.inspector(graph),...(graph.importedDocument?{importedDocument:graph.importedDocument}:{}),sourceIdentity:{caseId:current.id,sourceSha256:graph.sourceAdapter?.sourceSha256||null,irSha256:graph.sourceAdapter?.irSha256||graph.irSha256||null},interactionMode,tool,showPorts:$('showPorts').checked,showGhost:$('showGhost').checked,showObstacles:$('showObstacles').checked,gridVisible:canvasGridVisible,dirty,busy:busy||!!drag,canCancel:workerChannel.isPending(),dragging:!!drag,canUndo:!!history.length,canRedo:!!future.length,undo:history.length,redo:future.length,presentationVersion:1,sourceAvailable:!!(importedPackages.has(current.id)||catalogSources?.cases?.[current.id]?.available),selectedNodes:[...selectedNodes],selectedEdges:[...selectedEdges],selection:studioSelection(),graph:graph.generic?{...graph,studioCamera:camera}:graph,...(importedPackages.has(current.id)?{adapter:importedPackages.get(current.id)}:{}),...(importedDocuments.has(current.id)?{nativeDocument:workspace||importedDocuments.get(current.id).record}:{})}):null;}
+  function studioState(){const document=studioDocument();return {document,graph:document?.graph||null,case:current?{id:current.id,title:current.title,collection:current.collection,historical:!!current.historical}:null,bundle:document?.adapter||null,sourceAvailable:!!(document?.adapter||catalogSources?.cases?.[current?.id]?.available),dirty,tool,showPorts:$('showPorts').checked,gridVisible:canvasGridVisible,busy:busy||!!drag,canCancel:workerChannel.isPending(),dragging:!!drag,undo:history.length,redo:future.length,selectedNodes:[...selectedNodes],selectedEdges:[...selectedEdges],presentationVersion:1,selection:studioSelection(),camera:{...camera}};}
   async function sourceAsset(path,json=false){
     const cacheKey=path+':'+json;if(sourceAssets.has(cacheKey))return sourceAssets.get(cacheKey);
     if(typeof path!=='string'||path.startsWith('/')||path.split('/').includes('..'))throw new Error('源码资源路径无效。');
@@ -433,6 +584,7 @@
   function nodeEvidence(n){
     if(!n)return[];const evidence=caseEvidence(),ids=n.semantic?.source_evidence||[],symbols=evidence.symbols||{};
     const matches=ids.flatMap(id=>evidence[id]?[evidence[id]]:symbols[id]?[symbols[id]]:Object.values(symbols).filter(e=>e.evidence_id===id));
+    if(n.semantic?.source?.some(ref=>ref&&typeof ref==='object'))return n.semantic.source.map(ref=>({file:ref.file,line:ref.line,endLine:ref.end_line||ref.line,column:ref.column||0,endColumn:ref.end_column||0,expression:ref.expression||''}));
     if(!matches.length){const references=n.semantic?.source||[];for(const [key,e]of Object.entries(symbols))if(references.some(ref=>ref===key||ref.endsWith('::'+key)||ref.endsWith('::'+e.symbol)))matches.push(e);}
     return matches;
   }
@@ -448,7 +600,7 @@
   function studioSelection(){
     const annotation=!graph||selectedNodes.size||selectedEdges.size?null:window.ArchCanvasStudioPresentation?.state(graph).annotations[selectedAnnotation];
     const n=selectedNodes.size===1?node([...selectedNodes][0]):null,e=selectedEdges.size===1?graph?.edges.find(e=>selectedEdges.has(e.id)):null,evidence=nodeEvidence(n),first=evidence[0];
-    const path=normalizeSourcePath(first?.file||first?.path||first?.source||(n?.semantic?.source?.[0]?.split('::')[0]));
+    const path=normalizeSourcePath(first?.file||first?.path||first?.source||((typeof n?.semantic?.source?.[0]==='string'?n.semantic.source[0].split('::')[0]:n?.semantic?.source?.[0]?.file)));
     const line=first?.line||first?.start,endLine=first?.endLine||first?.end||line;
     return {caseId:current?.id||null,nodeId:n?.id||null,annotationId:annotation?.id||null,annotation:annotation?E.clone(annotation):null,node:n?{id:n.id,label:label(n),parent:n.parent,semantic:E.clone(n.semantic||{}),x:n.x,y:n.y,w:n.w,h:n.h,expanded:!!n.expanded}:null,edge:e?{id:e.id,source:e.source,target:e.target,binding:E.clone(e.binding||{}),arrow:e.arrow,style:e.style,width:e.width,stroke:e.stroke,dashed:e.dashed}:null,nodeIds:[...selectedNodes],edgeIds:[...selectedEdges],selectedNodes:[...selectedNodes],selectedEdges:[...selectedEdges],sourcePath:path,line:line||null,span:line?{startLine:line,endLine,startColumn:first?.column||0,column:first?.column||0,endColumn:first?.endColumn||0,line,expression:first?.expression||first?.snippet}:null,evidence:E.clone(evidence)};
   }
@@ -456,14 +608,16 @@
   function normalizedEvidence(raw){const result={};for(const [id,e]of Object.entries(raw.symbols||raw)){if(!e||typeof e!=='object'||!Number.isFinite(e.line||e.start))continue;const file=normalizeSourcePath(e.file||e.path||e.source||raw.origin);if(!file)continue;const entry={file,line:e.line||e.start,endLine:e.endLine||e.end||e.line||e.start,expression:e.expression||e.snippet||'',column:e.column||0,endColumn:e.endColumn||0};result[e.evidence_id||id]=entry;}return result;}
   async function studioSource(){
     const caseId=current?.id;if(!caseId)return {message:'尚未加载模型。'};const document=studioDocument(),bundle=importedPackages.get(caseId);
+    if(importedDocuments.has(caseId))return {document,message:'当前为 Summary 导入文档；源码证据尚未与 Python 文本验证绑定。请导入原始 Python 或已验证适配包。'};
     if(bundle)return {bundle:E.clone(bundle),source:{schema:'archcanvas-preview-source/1',caseId,title:bundle.title,entry:bundle.entry,files:Object.fromEntries(bundle.files.map(f=>[f.path,f.text])),evidence:E.clone(bundle.evidence),profile:E.clone(bundle.ir.profile||{}),sourceSha256:bundle.sourceSha256},document};
-    const descriptor=catalogSources?.cases?.[caseId];if(!descriptor?.available)return {message:'当前案例为路由实验或教学 SVG，没有绑定可编辑的模型源码。'};
+    const descriptor=catalogSources?.cases?.[caseId];if(!descriptor?.available)return {message:current?.runtimeExpansion?'当前 CPU 轨迹案例保留运行证据，未建立可编辑的 Python 源码绑定。':'当前案例为路由实验或教学 SVG，没有绑定可编辑的模型源码。'};
     const files=Object.create(null);
     for(const file of descriptor.files){const content=await sourceAsset(file.asset),hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(content)))).map(b=>b.toString(16).padStart(2,'0')).join('');if(hash!==file.sha256)throw new Error('案例源码 SHA256 校验失败：'+file.path);files[file.path]=content;}
     if(current?.id!==caseId)throw new Error('模型已切换，请重新打开编辑。');
     return {source:{schema:'archcanvas-preview-source/1',caseId,title:descriptor.title,entry:normalizedEntry(descriptor.entry),files,evidence:normalizedEvidence(descriptor.evidence?await sourceAsset(descriptor.evidence,true):{}),profile:descriptor.profile||{}},document};
   }
   async function studioLoad(payload){
+    if(!payload?.adapter&&(D.supports(payload)||payload?.nativeDocument))return installDocument(payload);
     if(payload?.schema!=='summary-merge-recursive/1'||payload.adapter)return installSource(payload);
     if(busy||drag)throw new Error('请先完成当前图操作。');const c=catalog.cases.find(c=>c.id===(payload.caseId||payload.case));if(!c||!payload.graph?.recursive)throw new Error('编辑 JSON 没有对应的案例或递归状态。');
     flushPersist();busy=true;render({presentationOnly:true});studioBridge?.state();let restored;
@@ -471,16 +625,16 @@
       const sources=await caseSources(c,!!c.views[0]?.builtin),base=F.build(F.create(sources));restored=E.clone(payload.graph);restored.recursive.authority=E.clone(base.recursive.authority);const checked=await runGraphTask({task:'validate',graph:restored});if(!checked.ok)throw new Error(checked.error);const validation=checked.validation;
       if(restored.irSha256!==base.irSha256||!validation.source.ok||!validation.layout.ok||invalidSourceRoutes(restored,validation))throw new Error('编辑 JSON 与当前案例的源码契约不一致。');
     }finally{busy=false;render({presentationOnly:true});studioBridge?.state();}
-    if(!await openCase(c,c.views[0],{graph:restored,history:[],future:[],dirty:!!payload.dirty}))throw new Error('编辑 JSON 的递归视图加载失败。');
+    if(!await openCase(c,c.views[0],{graph:restored,history:[],future:[],dirty:!!payload.dirty,frontierPreset:payload.frontierPreset}))throw new Error('编辑 JSON 的递归视图加载失败。');
   }
   function sourceNodes(message){
-    const all=graph?.recursive?.authority?.detail?.nodes||graph?.nodes||[];
+    const all=graph?N.nodes(graph):[];
     if(message.nodeId){const exact=all.filter(n=>n.id===message.nodeId);if(exact.length)return exact;}
     const locations=message.locations||message.sourceLocations||message.source_locations||[message];
     return all.filter(n=>locations.some(location=>{
       const path=location.sourcePath||location.file||location.path,line=location.line||location.startLine;
       if(!path&&!line)return false;
-      return nodeEvidence(n).some(e=>{const p=normalizeSourcePath(e.file||e.path||e.source);const start=e.line||e.start,end=e.endLine||e.end||start;return (!path||p===path||p?.endsWith('/'+path)||path.endsWith('/'+p))&&(!line||line>=start&&line<=end);})||n.semantic?.source?.some(ref=>path&&ref.split('::')[0].endsWith(path));
+      return nodeEvidence(n).some(e=>{const p=normalizeSourcePath(e.file||e.path||e.source);const start=e.line||e.start,end=e.endLine||e.end||start;return (!path||p===path||p?.endsWith('/'+path)||path.endsWith('/'+p))&&(!line||line>=start&&line<=end);})||n.semantic?.source?.some(ref=>path&&(typeof ref==='string'?ref.split('::')[0]:ref.file)?.endsWith(path));
     }));
   }
   async function studioFocus(message){
@@ -491,8 +645,12 @@
       camera.x=annotation.x+(annotation.width||380)/2-camera.w/2;camera.y=annotation.y-camera.h/2;cameraUpdate();render({presentationOnly:true});studioBridge?.state();return;
     }
     const target=sourceNodes(message)[0];if(!target)throw new Error('当前预览没有匹配的源码图元。');selectedAnnotation=null;
-    if(!node(target.id)){const all=graph.recursive.authority.detail.nodes,ancestors=[];let item=target;while(item.parent){item=all.find(n=>n.id===item.parent);if(!item)break;ancestors.unshift(item.id);}await changeFrontier({type:'expand',ids:ancestors,expanded:true});}
-    const visible=node(target.id);if(!visible)throw new Error('图元尚未显示。');selectedNodes=new Set([target.id]);selectedEdges.clear();camera.x=visible.x+visible.w/2-camera.w/2;camera.y=visible.y+visible.h/2-camera.h/2;cameraUpdate();render({presentationOnly:true});studioBridge?.state();
+    if(graph.generic&&!node(target.id))await changeFrontier({type:'focus',id:target.id},true);
+    if(!node(target.id)){const all=N.nodes(graph),ancestors=[];let item=target;while(item.parent){item=all.find(n=>n.id===item.parent);if(!item)break;ancestors.unshift(item.id);}await changeFrontier({type:'expand',ids:ancestors,expanded:true});}
+    const visible=node(target.id);if(!visible)throw new Error('图元尚未显示。');selectedNodes=window.ArchCanvasStudioSelection.update(selectedNodes,[target.id],message.additive?'toggle':'replace');selectedEdges.clear();
+    if(!message.additive)camera=window.ArchCanvasViewNavigation.readable(visible,{width:$('stage').clientWidth,height:$('stage').clientHeight},graph.nodes);
+    else {camera.x=visible.x+visible.w/2-camera.w/2;camera.y=visible.y+visible.h/2-camera.h/2;}
+    cameraUpdate();render({presentationOnly:true});studioBridge?.state();
   }
   function selectedLayoutNodes(){
     if(!graph||busy||drag)throw new Error('请先完成当前图操作。');
@@ -541,18 +699,18 @@
       return (negativeA?1:-1)*(a[axis]-b[axis])||a.id.localeCompare(b.id);
     });
     if(message.scope!==undefined&&!['current-frontier','all-frontiers'].includes(message.scope))throw new Error('移动范围无效。');
-    await studioVisual({operations:moving.map(n=>({type:'nodeLayout',id:n.id,position:{[axis]:targets.get(n.id)},scope:message.scope||'all-frontiers',exact:true}))});
+    try { await studioVisual({operations:moving.map(n=>({type:'nodeLayout',id:n.id,position:{[axis]:targets.get(n.id)},scope:message.scope||'all-frontiers',exact:true}))}); } catch(error) { throw new Error('未应用排列：'+error.message+' 请尝试另一方向、增加间距或解锁基准节点。原位置已保留。'); }
     toast(distribution?'已按节点间距等距分布；模型连接与源码保持绑定。':'已对齐所选节点；固定节点作为基准，模型连接与源码保持绑定。');
   }
   async function studioVisual(message){
     if(!graph||busy||drag)throw new Error('请先完成当前图操作。');if(!Array.isArray(message.operations)||!message.operations.length||message.operations.length>200)throw new Error('视觉操作清单无效。');
     if(message.operations.every(op=>op.type==='expand'&&op.expanded===message.operations[0].expanded)){
-      for(const operation of message.operations)if(!graph.recursive.authority.detail.nodes.some(n=>n.id===operation.id))throw new Error('找不到预览图元：'+operation.id);
+      for(const operation of message.operations)if(!N.nodes(graph).some(n=>n.id===operation.id))throw new Error('找不到预览图元：'+operation.id);
       return changeFrontier({type:'expand',ids:message.operations.map(op=>op.id),expanded:!!message.operations[0].expanded},true);
     }
-    const before=E.clone(graph);let candidate=E.clone(graph),geometry=false;const P=window.ArchCanvasStudioPresentation,portOverrides={};
+    if(graph.generic)graph.studioCamera=E.clone(camera);const before=N.snapshot(graph);let candidate=N.snapshot(graph),geometry=false;const P=window.ArchCanvasStudioPresentation,portOverrides={};
     for(const operation of message.operations){
-      const all=candidate.recursive.authority.detail.nodes,n=all.find(n=>n.id===operation.id),visible=candidate.nodes.find(n=>n.id===operation.id),p=P.editable(candidate);
+      const all=N.nodes(candidate),n=all.find(n=>n.id===operation.id),visible=candidate.nodes.find(n=>n.id===operation.id),p=P.editable(candidate);
       if(['alias','nodeStyle','nodeLayout','expand'].includes(operation.type)&&!n)throw new Error('找不到预览图元：'+operation.id);
       if(operation.type==='title'){if(typeof operation.title!=='string'||operation.title.length>500)throw new Error('图标题无效。');p.title=operation.title;}
       else if(operation.type==='syncPresentation'){
@@ -567,7 +725,7 @@
           const edge=candidate.edges.find(e=>e.id===id);if(!edge||!desired||typeof desired!=='object')throw new Error('同步的连接身份无效：'+id);
           if(edge.draft)continue;
           if(desired.stroke!==undefined&&!P.color(desired.stroke)||desired.width!==undefined&&(!Number.isFinite(desired.width)||desired.width<.5||desired.width>12))throw new Error('同步的连接样式无效。');
-          const original=all&&candidate.recursive.authority.detail.edges.find(e=>e.id===(edge.projection?.original||id));
+          const original=(candidate.recursive?.authority.detail.edges||candidate.edges).find(e=>e.id===(edge.projection?.original||id));
           for(const key of ['stroke','width','dashed']){if(original?.[key]!==undefined)edge[key]=E.clone(original[key]);else delete edge[key];if(desired[key]!==undefined)edge[key]=desired[key];}
           for(const overlayId of new Set([edge.id,edge.projection?.original].filter(Boolean))){const retained={...(p.edges[overlayId]||{})};for(const key of ['stroke','width','dashed'])delete retained[key];p.edges[overlayId]={...retained,...E.clone(desired)};}
         }
@@ -578,19 +736,19 @@
       }
       else if(operation.type==='alias'){if(typeof operation.label!=='string'||operation.label.length>500)throw new Error('显示名称无效。');p.nodes[n.id]={...p.nodes[n.id],alias:operation.label};}
       else if(operation.type==='nodeStyle'){const style=operation.style||{};for(const c of ['fill','stroke'])if(style[c]!==undefined&&!P.color(style[c]))throw new Error('颜色值无效。');p.nodes[n.id]={...p.nodes[n.id],...style};}
-      else if(operation.type==='expand'){candidate=F.toggle(candidate,n.id,!!operation.expanded)||candidate;geometry=true;}
+      else if(operation.type==='expand'){candidate=candidate.generic?N.decorate(G.operate(candidate,{kind:'toggle',id:n.id,force:!!operation.expanded}),candidate):F.toggle(candidate,n.id,!!operation.expanded)||candidate;geometry=true;}
       else if(operation.type==='pin'){for(const id of operation.ids||[]){if(!all.some(n=>n.id===id))throw new Error('找不到预览图元：'+id);p.nodes[id]={...p.nodes[id],pinned:!!operation.pinned};}}
       else if(operation.type==='nodeLayout'){
         if(!visible)throw new Error('请先展开并显示要调整的图元。');const position=operation.position||{};
         if(p.nodes[n.id]?.pinned)throw new Error('图元已固定，请先解锁。');
-        if(position.x!==undefined||position.y!==undefined){const dx=position.x===undefined?0:position.x-visible.x,dy=position.y===undefined?0:position.y-visible.y;if(!Number.isFinite(dx)||!Number.isFinite(dy))throw new Error('坐标无效。');const prior=E.clone(candidate);E.move(candidate,n.id,dx,dy,options());if(candidate.lastMove?.blocked)throw new Error('位置受到节点、容器或连接约束。');if(operation.exact&&(position.x!==undefined&&Math.abs(visible.x-position.x)>1e-5||position.y!==undefined&&Math.abs(visible.y-position.y)>1e-5))throw new Error('容器边界限制了位置，排列未提交。');if(operation.scope!=='current-frontier')F.captureMove(prior,candidate,n.id);}
+        if(position.x!==undefined||position.y!==undefined){const dx=position.x===undefined?0:position.x-visible.x,dy=position.y===undefined?0:position.y-visible.y;if(!Number.isFinite(dx)||!Number.isFinite(dy))throw new Error('坐标无效。');const prior=E.clone(candidate);E.move(candidate,n.id,dx,dy,options());if(candidate.lastMove?.blocked)throw new Error('位置受到节点、容器或连接约束。');if(operation.exact&&(position.x!==undefined&&Math.abs(visible.x-position.x)>1e-5||position.y!==undefined&&Math.abs(visible.y-position.y)>1e-5))throw new Error('容器边界限制了位置，排列未提交。');if(candidate.generic)G.remember(candidate);else if(operation.scope!=='current-frontier')F.captureMove(prior,candidate,n.id);}
         for(const [field,key]of [['width','w'],['height','h']])if(position[field]!==undefined){const value=position[field];if(!Number.isFinite(value)||value<32||value>10000)throw new Error('图元尺寸无效。');if(visible.glyphPresentation&&value!==visible[key])throw new Error('源码运算符图元的尺寸受语义契约保护。');visible[key]=value;p.nodes[n.id]={...p.nodes[n.id],[field]:value};}
         geometry=true;
       }else if(operation.type==='move'){
         if(!Number.isFinite(operation.dx)||!Number.isFinite(operation.dy))throw new Error('位移无效。');
         const ids=operation.ids||[];for(const id of ids){if(!candidate.nodes.some(n=>n.id===id))throw new Error('要移动的图元不可见：'+id);if(p.nodes[id]?.pinned)throw new Error('图元已固定，请先解锁。');}
         const roots=ids.filter(id=>{let parent=candidate.nodes.find(n=>n.id===id)?.parent;while(parent){if(ids.includes(parent))return false;parent=candidate.nodes.find(n=>n.id===parent)?.parent;}return true;});
-        for(const id of roots){const prior=E.clone(candidate);E.move(candidate,id,operation.dx,operation.dy,options());if(candidate.lastMove?.blocked)throw new Error('位置受到节点、容器或连接约束。');if(operation.scope!=='current-frontier')F.captureMove(prior,candidate,id);}geometry=true;
+        for(const id of roots){const prior=E.clone(candidate);E.move(candidate,id,operation.dx,operation.dy,options());if(candidate.lastMove?.blocked)throw new Error('位置受到节点、容器或连接约束。');const moved=candidate.nodes.find(n=>n.id===id),origin=prior.nodes.find(n=>n.id===id);if(operation.exact&&(Math.abs(moved.x-origin.x-operation.dx)>1e-5||Math.abs(moved.y-origin.y-operation.dy)>1e-5))throw new Error('容器边界限制了整体移动。');if(candidate.generic)G.remember(candidate);else if(operation.scope!=='current-frontier')F.captureMove(prior,candidate,id);}geometry=true;
       }else if(operation.type==='portLayout'){
         const owner=candidate.nodes.find(n=>n.id===operation.ownerId)||candidate.nodes.find(n=>n.id===operation.nodeId);if(!owner)throw new Error('连接点的所属图元当前不可见。');
         const endpointMatches=(edge,side)=>{
@@ -610,7 +768,7 @@
             if(!window.SummaryPhysicalPorts.permitted(candidate,edge,side,physical))throw new Error('请求的连接点违反原图接口或端口间距；请用预览中的端口控制点逐条调整。');
             edge[field]=physical;portOverrides[edge.id]={...portOverrides[edge.id],[side]:physical};
           }
-          edge.needsRecursiveRouting=true;
+          edge.needsRecursiveRouting=true;if(candidate.generic)edge.pendingRouting=true;
         }geometry=true;
       }else if(operation.type==='edgeStyle'){
         const edge=candidate.edges.find(e=>e.id===operation.id);if(!edge)throw new Error('找不到当前预览连接：'+operation.id);const style=operation.style||{};if(style.stroke!==undefined&&!P.color(style.stroke))throw new Error('连接颜色无效。');if(style.width!==undefined&&(!Number.isFinite(style.width)||style.width<.5||style.width>12))throw new Error('连接线宽无效。');p.edges[edge.id]={...p.edges[edge.id],...style};if(edge.projection?.original)p.edges[edge.projection.original]={...p.edges[edge.projection.original],...style};for(const k of ['stroke','width','dashed','style','arrow'])if(style[k]!==undefined)edge[k]=style[k];
@@ -623,7 +781,7 @@
     busy=true;studioBridge?.state();let validation=null,committed=false;
     try{
       if(geometry){const result=await runGraphTask({task:'frontier',graph:candidate,options:{...options(),portOverrides}});if(!result.ok)throw new Error(result.error||'图元布局未通过完整校验。');candidate=result.graph;validation=result.validation;}
-      validation=validation||E.validateView(candidate);const invalidEdges=validation.edges.filter(([id,v])=>!v.ok&&(geometry||!candidate.edges.find(e=>e.id===id)?.draft));if(!validation.source.ok||!validation.layout.ok||invalidEdges.length)throw new Error([...validation.source.violations,...validation.layout.violations,...invalidEdges.map(([id])=>'连接无效 '+id)].slice(0,4).join('; '));
+      validation=validation||E.validateView(candidate);const invalidEdges=validation.edges.filter(([id,v])=>!v.ok&&(geometry||!candidate.edges.find(e=>e.id===id)?.draft));if(candidate.generic?!N.accepts(candidate,validation):!validation.source.ok||!validation.layout.ok||invalidEdges.length)throw new Error([...validation.source.violations,...validation.layout.violations,...invalidEdges.map(([id])=>'连接无效 '+id)].slice(0,4).join('; '));
       if(!geometry)window.SummarySourceControls?.refresh(candidate);
       history.push(before);if(history.length>30)history.shift();future=[];graph=candidate;dirty=true;syncUnifiedState();committed=true;
     }finally{busy=false;render(committed?{validation}:{presentationOnly:true});if(committed)persist();studioBridge?.state();}
@@ -647,15 +805,39 @@
     out.prepend(element('rect',{x:bounds.x,y:bounds.y,width:bounds.w,height:bounds.h,fill:p.page.background||'#ffffff'}));out.prepend(element('metadata',{id:'archcanvas-preview-document'},JSON.stringify({schema:'summary-merge-recursive/1',case:current.id,view:view.key,selection:message.nodeId||null,interactionMode,source:graph.source,irSha256:graph.irSha256,edited:dirty,presentation:p,sourceDraftOperations:graph.sourceDraftOperations||[],sourceValidation:C.validateSource(graph),attachments:graph.attachments||[],routeLabels:graph.routeLabels||[],junctionMarkers:graph.junctionMarkers||[],nodes:graph.nodes.map(n=>({id:n.id,parent:n.parent,semantic:n.semantic,visualBinding:n.visualBinding,glyphPresentation:n.glyphPresentation})),edges:graph.edges.map(e=>({id:e.id,source:e.source,target:e.target,draft:e.draft,binding:e.binding,portPolicy:e.portPolicy,physicalSource:e.physicalSource,physicalTarget:e.physicalTarget}))})));return new XMLSerializer().serializeToString(out);
   }
   async function studioCommand(command,message){
+    if(command==='cancel-gesture')return cancelActiveGesture();
+    if(command==='cancel-operation')return workerChannel.cancel();
+    if(command==='authoring')return studioAuthoring(message);
+    if(command==='open-case'){
+      const item=catalog.cases.find(c=>c.id===message.caseId);
+      if(!item)throw Error('Summary 模型库中没有这个案例。');
+      if(!await openCase(item,item.views[0]))throw Error('Summary 案例未切换，当前画布已保留。');
+      return;
+    }
+
     if(command==='visual'||command==='presentation')return studioVisual(message.operations?message:{operations:[{type:'nodeStyle',id:message.nodeId,style:message.style||message.presentation||{}}]});
-    if(command==='set-frontier'){const nodes=sourceNodes(message);if(!nodes.length)throw new Error('没有匹配的源码模块。');return studioVisual({operations:nodes.filter(n=>F.children(graph.recursive.authority,n.id).length).map(n=>({type:'expand',id:n.id,expanded:!!message.expanded}))});}
+    if(command==='set-frontier'){
+      if(message.preset==='overview'||message.preset==='detail')return changeFrontier({type:'preset',preset:message.preset},true);
+      const nodes=sourceNodes(message);if(!nodes.length)throw new Error('没有匹配的源码模块。');return studioVisual({operations:nodes.filter(n=>unifiedChildren(n.id).length).map(n=>({type:'expand',id:n.id,expanded:!!message.expanded}))});
+    }
+    if(command==='continue-routing'){if(!graph?.generic)throw new Error('当前图没有原生语义 IR。');return changeFrontier(null,true);}
+    if(command==='semantic-view'){if(!graph?.generic&&!message.moduleCut)throw new Error('当前图没有原生语义 IR。');return changeFrontier(message.moduleCut?{type:'module',request:message.moduleCut}:message.back?{type:'back'}:{type:'semantic',patch:message.patch||{}},true);}
     if(command==='show-library'||command==='show-routing'){document.documentElement.classList.remove('studio-library-open','studio-routing-open');document.documentElement.classList.add(command==='show-library'?'studio-library-open':'studio-routing-open');return;}
     if(command==='show-import')return $('showSourceImport').click();if(command==='show-evidence')return $('showEvidence').click();
     if(command==='undo'||command==='redo'||command==='reset'){if(busy||drag)throw new Error('请先完成当前图操作。');$(command).click();return;}
     if(command==='fit'){$('fit').click();return;}if(command==='zoom'){zoom(message.factor||1.3);return;}
     if(['select-tool','connect-tool','pan-tool','bend-tool'].includes(command)){selectTool(command.replace('-tool',''));return;}
     if(command==='show-ports'){$('showPorts').checked=message.visible??message.enabled??!$('showPorts').checked;render({presentationOnly:true});return;}
+    if(command==='show-ghost'){$('showGhost').checked=message.visible??message.enabled??!$('showGhost').checked;render({presentationOnly:true});return;}
+    if(command==='show-obstacles'){$('showObstacles').checked=message.visible??message.enabled??!$('showObstacles').checked;render({presentationOnly:true});return;}
+    if(command==='interaction-mode'){if(!['compat','realtime'].includes(message.mode))throw new Error('交互模式无效。');setInteractionMode(message.mode);return;}
     if(command==='grid'){canvasGridVisible=message.visible??message.enabled??!canvasGridVisible;$('stage').style.backgroundImage=canvasGridVisible?'':'none';return;}
+    if(command==='select-nodes'){
+      const S=window.ArchCanvasStudioSelection;
+      const ids=message.scope==='clear'?[]:message.scope?S.targets(graph.nodes,selectedNodes,message.scope):message.ids;
+      if(!Array.isArray(ids)||ids.some(id=>!node(id)||node(id).junction))throw new Error('所选对象未显示，请先展开对应层级。');
+      selectedNodes=S.update(selectedNodes,ids,message.mode||'replace');selectedEdges.clear();selectedAnnotation=null;render({presentationOnly:true});return;
+    }
     if(command==='arrange-selection')return arrangeSelection(message);if(command==='pin-selection')return pinSelection(message);
     if(command==='apply-layout')return apply();if(command==='collapse-all'||command==='expand-all'){if(busy||drag)throw new Error('请先完成当前图操作。');return changeFrontier({type:'all',expanded:command==='expand-all'},true);}
     throw new Error('不支持的预览命令：'+command);
@@ -697,19 +879,34 @@
     }catch(error){sourceError(error);$('sourceDiscoveryStatus').textContent='扫描未完成；源码未改变。';}finally{button.disabled=false;}};
   $('exportSourcePackage').onclick=()=>{const b=importedPackages.get(current?.id);if(b)download(JSON.stringify(b,null,2),'application/json',b.title+'-source-adapter.json');};
   $('openSourceExample').onclick=async()=>{try{const r=await fetch('../verification/source-adapter/river-net.json');if(!r.ok)throw new Error('无法读取示例适配包');await installSource(await r.json());}catch(e){sourceError(e);}};
-    $('sourcePackage').onchange=async event=>{const file=event.target.files[0];if(!file)return;try{if(file.size>16000000)throw new Error('适配包超过 16 MB');await studioLoad(JSON.parse(await file.text()));}catch(e){sourceError(e);}finally{event.target.value='';}};
+    $('sourcePackage').onchange=async event=>{const file=event.target.files[0];if(!file)return;try{if(file.size>D.limits.fileBytes)throw new Error('文档 JSON 超过 128 MB');await studioLoad(JSON.parse(await file.text()));}catch(e){sourceError(e);}finally{event.target.value='';}};
   $('analyzeSource').onclick=async()=>{const button=$('analyzeSource');button.disabled=true;
     try{const files=await selectedSourceFiles();
-      $('sourceImportStatus').textContent='正在静态解析源码并验证连接…';const response=await fetch('/api/source-adapter/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({files,entry:$('sourceEntry').value.trim()||null,config:JSON.parse($('sourceConfig').value||'{}')})});
+      $('sourceImportStatus').textContent='正在静态解析源码并验证连接…';const response=await fetch('/api/source-adapter/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({files,entry:$('sourceEntry').value.trim()||null,config:JSON.parse($('sourceConfig').value||'{}'),semanticMode:'summary'})});
       if(response.status===404||response.status===405||response.status===501)throw new Error('当前服务不支持源码解析。请使用 ArchCanvas Studio 服务，或导入 CLI 生成的适配包。');const payload=await response.json();if(!response.ok)throw new Error(payload.error||'源码解析失败');await installSource(payload);
     }catch(e){sourceError(e);}finally{button.disabled=false;}};
   function evidence(){const q=$('evidenceSearch').value.toLowerCase();$('evidenceList').innerHTML=catalog.evidence.filter(e=>e.title.toLowerCase().includes(q)).map(e=>`<a class="evidence-row" href="../${esc(e.path)}" target="_blank">${esc(e.title)} <small>${Math.round(e.bytes/1024)} KB</small></a>`).join('');}
-  $('showEvidence').onclick=()=>{evidence();$('evidenceDialog').showModal();};$('closeEvidence').onclick=()=>$('evidenceDialog').close();$('evidenceSearch').oninput=evidence;
+  function currentSourceEvidence(){
+    let section=$('currentSourceEvidence');if(!section){section=document.createElement('section');section.id='currentSourceEvidence';$('evidenceSearch').before(section);}
+    section.replaceChildren();const bundle=importedPackages.get(current?.id);section.hidden=!bundle;if(!bundle)return;
+    const title=document.createElement('h3');title.textContent='当前模型 · '+bundle.title;section.append(title);
+    const links=document.createElement('div');links.className='evidence-shortcuts';
+    const add=(label,content,name)=>{const button=document.createElement('button');button.textContent=label;button.onclick=()=>download(content(),'application/json',bundle.title+name);links.append(button);};
+    add('下载统一 IR',()=>bundle.canonicalIR,'-source-ir.json');
+    if(bundle.ir.semantic_ir)add('下载 Summary 语义 IR v2',()=>A.semanticDocument(bundle),'-semantic-ir.json');
+    section.append(links);
+    const facts=$('sourceFacts').cloneNode(true);facts.removeAttribute('id');section.append(facts);
+  }
+  $('showEvidence').onclick=()=>{currentSourceEvidence();evidence();$('evidenceDialog').showModal();};$('closeEvidence').onclick=()=>$('evidenceDialog').close();$('evidenceSearch').oninput=evidence;
   document.addEventListener('keydown',ev=>{
+    if(document.querySelector('dialog[open]'))return;
     const key=ev.key.toLowerCase(),modifier=ev.ctrlKey||ev.metaKey;
+    if(ev.key==='Escape'&&workerChannel.isPending()){workerChannel.cancel();ev.preventDefault();return;}
+    if(ev.key==='Escape'&&drag){cancelActiveGesture();ev.preventDefault();return;}
     if(studioCanvas&&modifier&&key==='s'){ev.preventDefault();ev.stopPropagation();studioBridge?.emit('shortcut',{action:'save'});return;}
     if(ev.target.closest('input,select,textarea,[contenteditable="true"]'))return;
-    if(modifier&&ev.key==='Enter'){ev.preventDefault();apply();}
+    if(modifier&&key==='a'){ev.preventDefault();studioCommand('select-nodes',{scope:'all'});}
+    else if(modifier&&ev.key==='Enter'){ev.preventDefault();apply();}
     else if(modifier&&key==='z'){ev.preventDefault();(ev.shiftKey?$('redo'):$('undo')).click();}
     else if(modifier&&key==='y'){ev.preventDefault();$('redo').click();}
     else if(!modifier&&!ev.altKey&&['v','c','b'].includes(key)){if(busy||drag)return;ev.preventDefault();selectTool({v:'select',c:'connect',b:'bend'}[key]);}
@@ -718,11 +915,13 @@
     else if(ev.key==='Delete'&&selectedEdges.size&&!busy&&!drag){save();graph.sourceDraftOperations=graph.sourceDraftOperations||[];for(const e of graph.edges)if(selectedEdges.has(e.id))graph.sourceDraftOperations.push({kind:'remove-connection',id:e.id,binding:E.clone(e.binding)});graph.edges=graph.edges.filter(e=>!selectedEdges.has(e.id));selectedEdges.clear();dirty=true;render();persist();studioBridge?.state();}
   });
   window.addEventListener('beforeunload',()=>{if(drag?.saved)restoreGesture(drag);drag=null;flushPersist();});window.addEventListener('resize',()=>{cameraUpdate();render({cameraOnly:true});});
+  $('cancelOperation').onclick=()=>workerChannel.cancel();
   ensureWorker();
   updateInteractionModeUi();
   async function start(){try{catalogSources=await sourceAsset('data/catalog-sources.json',true);}catch(e){console.warn('Catalog source index:',e.message);}try{const ids=await window.SummaryRecursiveStorage.get('source-adapter:index')||[];for(const id of ids){try{const b=await window.SummaryRecursiveStorage.get('source-adapter:bundle:'+id);if(b)await registerSource(b);}catch(e){console.warn('Saved source adapter:',e.message);}}}catch(e){console.warn('Source adapter storage:',e.message);}
+    try{const ids=await window.SummaryRecursiveStorage.get('summary-document:index:v1')||[];for(const id of ids){try{studioBridge?.progress({canCancel:false,message:'正在读取保存的 Summary 文档…'});const value=await window.SummaryRecursiveStorage.get('summary-document:v1:'+id);if(value)await registerDocument(value,undefined,true);}catch(e){console.warn('Saved Summary document:',e.message);}}}catch(e){console.warn('Summary document storage:',e.message);}
     const query=new URLSearchParams(location.search),chosen=catalog.cases.find(c=>c.id===query.get('case'))||catalog.cases.find(c=>c.collection==='transformer_programmatic_guide'&&c.title==='Transformer'&&!c.historical)||catalog.cases[0];
     if(chosen.historical)$('includeHistory').checked=true;renderCatalog();await openCase(chosen,chosen.views.find(v=>v.key===query.get('view'))||chosen.views[0]);studioBridge?.ready();}
-  studioBridge=window.ArchCanvasPreviewBridge?.create({started:()=>startupPromise,isBusy:()=>busy||!!drag,load:studioLoad,state:studioState,selection:studioSelection,source:studioSource,focus:studioFocus,command:studioCommand,svg:studioSvg,save:async()=>{if(busy||drag)throw new Error('请先完成当前图操作。');flushPersist();const document=studioDocument();if(document){const stored=E.clone(document.graph);delete stored.recursive.authority;await window.SummaryRecursiveStorage.put(key(),{version:5,ir:graph.irSha256||null,graph:stored,dirty});}},export:format=>format==='svg'?download(studioSvg(),'image/svg+xml',current.title+'-unified.svg'):$('exportJson').click()});
+  studioBridge=window.ArchCanvasPreviewBridge?.create({started:()=>startupPromise,isBusy:()=>busy||!!drag,load:studioLoad,state:studioState,selection:studioSelection,source:studioSource,focus:studioFocus,command:studioCommand,svg:studioSvg,save:async()=>{if(busy||drag)throw new Error('请先完成当前图操作。');flushPersist();await persistWorkspace();if(graph&&current){const stored=N.snapshot(graph.generic?{...graph,studioCamera:camera}:graph);if(stored.recursive)delete stored.recursive.authority;await window.SummaryRecursiveStorage.put(key(),{version:5,ir:graph.irSha256||null,graph:stored,dirty,frontierPreset});}},export:format=>format==='svg'?download(studioSvg(),'image/svg+xml',current.title+'-unified.svg'):$('exportJson').click()});
   startupPromise=start();
 })();

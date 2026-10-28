@@ -1,6 +1,8 @@
 # ArchCanvas Studio · 视觉与受限双向审核 Alpha
 
-2026-10-14：预览画布已迁入 `Summary_Merge` 的递归模型图、源码 AST 适配、连线编辑和自动布线技术，保留正式 Studio 的顶部工具、左右面板及基于图例的模型编辑。通过“模型 → 示例与模块库”打开完整案例目录；新技术用于中心预览，不增加一级工作台。前端资源、源码快照与证据已复制到正式项目，启动不依赖原型目录或其服务。迁移后的使用方法、双契约源码绑定、保存边界和本次验证范围见 [预览迁移说明](docs/preview-migration.md)。
+2026-10-28：与 `Summary_Merge` 重叠的视图、图元、源码语义与组装编辑以 Summary 为主，Studio 保留顶部菜单、左右面板、对象/图例/页面和正式源码事务。原生模型的“编辑”和“新建空白模型”使用 Summary 编辑副本；右侧折叠区提供模块库、精确槽位、源码模块参数重解析与原始构件重建。Python 工作副本仍通过明确的正式源码菜单进入。前端资源、源码材料与语义包均在正式项目内运行，启动不依赖原型目录或其服务。
+
+本次约定范围的功能迁入及接入验收已完成，逐项入口、替换边界和当前验证见 [功能审计](docs/summary-migration-feature-audit-20261028.md)及[预览迁移说明](docs/preview-migration.md)。43 项完整目录、三大图、测量反馈、Summary 双模式/源码模块/组装、归档及新 CPU 观察均进入 Studio；CPU 仅在显式规格下通过正式隔离运行。D0 及两项重复预览 helper 已退出，正式源码/事务/出版依赖按用途保留。原生组装不等于 Python 写回或全输入执行认证；高 RSS、完整来源跨消息传输与便携 JSON 重复仍是限制。下方早期 M4/M5 和分阶段“未完成”记录只适用于其绑定版本，当前状态以功能审计为准。
 
 在已具备前端依赖和正式 `.venv` 的当前工作树中，可执行 `cd studio && npm run build`，随后在本目录执行 `PYTHONPATH=src .venv/bin/python -B -m archcanvas_cli serve --host 127.0.0.1 --port 8765`，打开 [Studio](http://127.0.0.1:8765)。源码分析不执行模型；PDF/PNG 是否可用以该解释器返回的 `capabilities` 为准。下方各日期的测试数量与构建记录是历史证据，不自动适用于本次迁移。
 
@@ -127,6 +129,8 @@ PYTHONPATH=src python -m archcanvas_cli analyze --root fixtures/residual_cnn --e
 
 ## 可选的显式 CPU 运行
 
+Summary 观察从右侧“新 CPU 观察”折叠区启动，使用独立 `semantic-inputs/1` 规格，支持明确 constructor、tensor/scalar、cases、eval/train、seed 和可选 export；成功后显式“打开本次观察结果”。它与下述正式事务 InputSpec v1 分别保留，复用同一锁定 CPU 环境与强制隔离。详情及实际样例验证见[CPU 接入报告](docs/summary-runtime-integration-20261028.md)。
+
 静态画布无需此环境。实际执行目前只验收 Linux x86-64，要求 `/usr/bin/bwrap`、`/usr/bin/readelf`、可用的 user/mount/pid/net namespaces 和 seccomp。隔离探针失败时 `runtimeProfiles.available` 为 false，结构运行 profile 禁用；不回退为普通 subprocess，也不将 G6 跳过登记为 passed。Codex 的受限执行沙箱可能禁止创建隔离 namespace；在实际允许运行的本地服务宿主上重新检查能力。
 
 在正式项目内建立独立环境。先从官方 PyTorch CPU index 安装准确的 CPU wheel，再从锁文件安装其余依赖；不要修改用户模型环境：
@@ -144,7 +148,7 @@ PYTHONPATH=src .venv/bin/python -m archcanvas_cli runtime \
   --output /tmp/archcanvas-runtime-receipt.json
 ```
 
-InputSpec v1 显式声明所有具名输入的 shape/dtype/fill、seed、eval/train modes 和空 constructor；当前只使用源码默认构造。支持 float32/float64/int64/bool，normal/zeros/ones 有界生成，不下载权重、不加载 pickle/checkpoint。默认每进程地址空间 4 GiB、CPU 20 秒、单次 worker 墙钟 20 秒、文件 8 MB、64 个打开文件；kernel seccomp 禁止子进程和 socket，PyTorch 单线程，RLIMIT_NPROC 限制任务预算。没有 cgroup 聚合 RSS 或 tmpfs 总配额，具体 scope 写在回执中。
+正式源码事务使用的 InputSpec v1 显式声明所有具名输入的 shape/dtype/fill、seed、eval/train modes 和空 constructor；当前只使用源码默认构造。支持 float32/float64/int64/bool，normal/zeros/ones 有界生成，不下载权重、不加载 pickle/checkpoint。默认每进程地址空间 4 GiB、CPU 20 秒、单次 worker 墙钟 20 秒、文件 8 MB、64 个打开文件；kernel seccomp 禁止子进程和 socket，PyTorch 单线程，RLIMIT_NPROC 限制任务预算。没有 cgroup 聚合 RSS 或 tmpfs 总配额，具体 scope 写在回执中。
 
 worker 读取冻结的只读源码 generation，仅映射正式 venv、私有只读 Python 可执行文件/标准库/ELF 动态依赖副本和私有 scratch。环境回执绑定全部 venv 字节、标准库/依赖库、解释器、锁文件及可信 adapter；执行后重新核验 venv freshness。实际 kernel 探针确认隔离 namespaces、宿主文件不可见、源码不可写、socket/进程创建被拒。模式观察记录调用/端口/实际 producer、shape/dtype、forward/backward、同种子重建 replay、parameters/buffers/tied identities 和状态变化。replay 的精确 CPU 相等仅属于该样本；有意连接或激活变更不要求旧/新输出相等。外部 optimizer/scheduler/training progress 未提供，不能称为已迁移。
 
@@ -238,3 +242,14 @@ M4导出面板默认整图。详情范围须显式选择已展开容器，选项
 源码事实、旧CPU/输入/保存链分别保留于[holdout](docs/m4-holdout.md)、[sourceFacts](docs/m4-source-facts.md)、[拖动](docs/m4-drag-preview.md)与[性能](docs/m4-performance.md)，均按其绑定版本阅读。正式工程从头实现，没有失败原型runtime回退。
 
 同一 DPwoy 构建的新[8888 原生诊断](docs/evidence/m4-current-native-diagnostic/README.md)保留三个独立会话：stress300 五试次、小图四项 pilot 与三项目标补采。共九项请求成功、三项未覆盖；pilot 错误命中保留，不拼接分母。两模型全 SVG 撤销/重做（只排除 revision）及保存重开字节一致；各会话离散匹配子集 p95 为2016/2008/2016ms，未达到性能目标。连续输入仍为 DOM/rAF 代理，活动取消、字体/硬件、持续呈现与真人门未认证。测量服务已实际 exit143，原因未知；不宣称在线。既有1475绑定的旧文档字节解析见[本次归档](docs/evidence/before-current-native-diagnostic/README.md)，当前追加验证另见[收据](docs/evidence/m4-current-native-verification.json)。
+
+Summary 模型库：从“模型 → Summary 模型库”进入主程序折叠面板。完整 43 模型目录与资产已迁入并全部可打开，三大图的实测与资源限制见[大图接入](docs/summary-large-operations-integration-20261028.md)。见[目录迁移报告](docs/summary-catalog-integration-20261028.md)。
+
+归档运行记录可在“对象 → Summary 语义切面”选择源码 / CPU 轨迹 / 合并，并选择文档内补证样例。切换不执行模型；合并只接入可核对的原始调用绑定。见[证据视图接入报告](docs/summary-evidence-views-integration-20261028.md)。
+
+大图基础优化已精简导航重复内容，并让原生历史共享不可变语义；完整 IR 和树导航保留。详见[状态精简报告](docs/summary-compact-state-integration-20261028.md)。当前仍为 40 个预算内目录模型，3 个大图尚未开放。
+
+
+## 原生测量驱动局部细化（2026-10-28）
+
+Summary 的原版 adaptive-frontier/5 现由 studio-adaptive.js 接到唯一原生画布；候选比较使用实际图元文字、精确操作数绑定和成功的物理路径。Studio 保留右侧折叠面板，增加开关、策略、采用/拒绝回执和手动收起入口。保存有效请求与开启前基线；关闭恢复原请求，重开独立校验已保存布局。详细范围、来源及验证见 `docs/summary-adaptive-view-integration-20261028.md`。新 CPU、大图完整压力与 D1 仍未完成。

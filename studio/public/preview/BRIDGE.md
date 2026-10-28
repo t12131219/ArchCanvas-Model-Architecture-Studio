@@ -1,10 +1,52 @@
 # Studio preview integration
 
-The preview is a complete local copy of `Summary_Merge`. All 230 catalog cases
+## Mixed semantic frontiers (2026-10-28)
+
+The current Summary model library contains 43 native semantic models and 3
+registered preview cases. `semantic-view` accepts
+`moduleCut: {ids: string[], level, depth?, reset?}`. Native levels are
+`f0/f1/overview/modules/stages/semantic/roles/detailed/source`; registered cases
+support their actual `f0/f1/source` authority. IDs refer to real canonical
+containers, including independently matched runtime bridge containers in merged
+mode. Source depth zero closes the container; an omitted depth exposes all its
+descendants. More specific descendants override ancestor scopes deterministically.
+
+The native inspector publishes `modules`, `moduleCuts`, `suggestedModules` and
+`mixed.scopes`. Studio's Summary tab owns the controls; the child remains the
+semantic authority. The original publication compiler supplies each scope's
+policy before a single canonical dependency projection. No source facts are
+rewritten. Requests for the other evidence mode remain dormant; they cannot
+make source mode display runtime evidence or make CPU mode display source trees.
+
+Native JSON/layout snapshots retain latent visual connections in
+`sourceDraftEdges` and exact visual removals in `sourceDraftOperations`. Semantic
+authoring rebinds surviving module targets and recompiles their openings rather
+than reusing certificates from the previous IR. Global presets clear explicit
+module cuts. Routing completion remains independent of semantic completeness:
+pending/failed routes must remain visible and cannot certify publication.
+
+See `docs/summary-mixed-frontier-integration-20261028.md` for all-case coverage,
+panel interaction, editing contracts and current validation.
+
+The preview contains the recursive assets migrated from `Summary_Merge` on
+2026-10-14 and subsequent Studio integration patches. All 230 catalog cases
 (115 current and 115 historical), 666 source views, snapshots, source files and
 audit evidence are shipped in this directory. Runtime URLs never reference the
 original prototype checkout. `vendor-manifest.json` records the original bytes;
 `integration-manifest.json` records the Studio-specific changes.
+
+## Authority boundary
+
+This copied Summary runtime is the only authority for preview nodes, edges,
+recursive frontiers (including F0/F1), physical ports, routes, gestures,
+camera, selection, source evidence and preview history. React Studio components
+must call this bridge and render the returned snapshot; they must not rebuild a
+second graph, router, frontier or selection store from iframe DOM. The retained
+Studio toolbar, hierarchy tree, object/legend/page panels and folded drawers are
+the host surface for those commands. Formal parameters, activation, input
+rebinding, source-region edits, managed copies, CAS transactions and publication
+receipts remain in the formal Studio workflow and are never inferred from a
+preview visual draft.
 
 Open `yworks_edge_router_lab/index.html` to use the full standalone editor.
 The Studio embeds `index.html?embed=1&surface=canvas`. This surface shows the
@@ -30,21 +72,22 @@ Messages do not write Python source, change model parameters or approve edits.
 | --- | --- | --- |
 | `hello`, `ping` | none | `ready` with version and capabilities, then `state` |
 | `load` | `bundle`: verified source adapter or recursive editing JSON | `loaded`, then `state` |
-| `snapshot` | none | `snapshot` with `document` |
+| `snapshot` | none | `snapshot` with `document`; `document.snapshotRevision` identifies the committed recursive frontier revision |
 | `request-source` | none | `source` with `source`, optional `bundle`, and `document` |
-| `focus` | `nodeId`, `annotationId`, or `sourcePath` and `line` | `focused` with selection |
+| `focus` | `nodeId`, `annotationId`, or `sourcePath` and `line`; optional `additive` | reveals collapsed ancestors and focuses the object; `additive` toggles node membership, then replies `focused` with selection |
 | `save` | none | `saved` after IndexedDB completes |
 | `svg` | optional visible `nodeId` | `svg` with `svg` and `xml` strings |
 | `export-svg`, `export-json` | none | starts existing download flow, then `exported` |
-| `visual` | `operations` | `applied`, then `state` |
-| `set-frontier` | `locations`/`sourceLocations`, `expanded` | `applied`, then `state` |
+| `visual` | `operations` | `applied`, then `state`; every command carries a request id and the state includes `snapshotRevision`/`sourceIdentity` |
+| `set-frontier` | `preset`: `overview` (F0) or `detail` (F1), or legacy `locations`/`sourceLocations` plus `expanded` | `applied`, then `state`; the state document reports `frontierPreset` |
 | `show-library`, `show-routing` | none | opens original drawer |
 | `show-import`, `show-evidence` | none | opens original dialog |
 | `undo`, `redo`, `reset`, `fit`, `apply-layout`, `collapse-all`, `expand-all` | none | invokes original operation; reset restores the initial view and is undoable |
 | `zoom` | `factor` | updates camera |
 | `select-tool`, `connect-tool`, `bend-tool` | none | selects the tool and publishes the actual tool state |
 | `pan-tool` | none | available only on the standalone/non-canvas surface |
-| `show-ports`, `grid` | optional `visible`/`enabled` | updates port or canvas-grid display; the routing candidate-grid setting remains independent |
+| `show-ports`, `show-ghost`, `show-obstacles`, `grid` | optional `visible`/`enabled` | updates preview-only helper overlays; the routing candidate-grid setting remains independent |
+| `interaction-mode` | `mode`: `compat` or `realtime` | changes the Summary drag/route interaction mode and publishes a new state |
 | `arrange-selection` | `kind`: `left`, `hcenter`, `right`, `top`, `vcenter`, `bottom`, `distribute-x`, or `distribute-y`; optional `scope` | arranges actual selected visible sibling nodes as one validated undo step |
 | `pin-selection` | optional boolean `pinned` (otherwise toggles the selected set) | fixes or unlocks direct movement of the actual selected visible nodes |
 
@@ -70,6 +113,13 @@ including its recursive authority. Imported source documents also include the
 verified `adapter` bundle. The parent should keep the iframe mounted when the
 source editor is displayed to retain camera and undo history.
 
+The preview-mode hierarchy uses the recursive authority's real display identities
+and parent relationships, not formal-parser identities. Selection, alias, pins
+and expansion mirror the preview state. Junctions are omitted; mandatory root
+frames stay expanded. Search reveals matching paths in the tree; selecting a
+hidden result or expanding it also reveals its ancestors on the canvas. These
+navigation rows do not replace the managed formal document or grant source facts.
+
 Catalog source replies use this shape:
 
 ```json
@@ -89,6 +139,29 @@ File bytes are SHA256 checked against `data/catalog-sources.json` before sending
 This source index exposes 223 of 230 cases. The remaining cases are a routing
 experiment and teaching-only residual SVGs, which do not claim a model binding.
 Having source evidence does not enlarge either parser's supported semantics.
+
+### Native Summary source semantics (2026-10-28)
+
+Studio source analysis requests select top-level `semanticMode: "summary"`;
+`config` remains the unmodified constructor configuration. The portable bundle
+retains the native `archcanvas-source-semantic/2` document at `ir.semantic_ir`.
+`ir.canonicalSemanticIR` contains its canonical JSON excluding `ir_digest`, so
+the browser verifies the native digest without changing Python float literals
+through JavaScript serialization. Every native node and edge must be represented
+in the portable projection with the same identity, parent and canonical ports.
+Registry-added syntax inspection objects remain explicitly `syntaxOnly` /
+`source_structure`; they never become native semantic facts.
+
+The right Studio inspector reads the same native document for contracts,
+motifs, iteration, coverage and opaque reasons. It sends ordinary bridge focus
+and evidence commands and owns no graph, selection or frontier store. Model
+source is read as AST only. Runtime/probe modules are not invoked by analysis.
+SCC condensation is used only to place cyclic dependencies: loop edges and
+original ports stay in the canonical graph. Control/effect relations use dashed
+presentation. Native v2 bundles now choose original certified semantic cuts; legacy bundles and catalog cases retain recursive depth frontiers;
+the measured adaptive renderer loop and runtime/merged views remain outstanding. `SummarySourceAdapter.semanticDocument(bundle)`
+exports the original canonical Python JSON with its native digest, preserving
+float spellings and integers that JavaScript cannot represent exactly.
 
 ## Shared visual operations
 
@@ -156,6 +229,11 @@ restores with undo/redo, and appears in SVG export. Binary source glyph aliases
 replace their captions while preserving the actual `+`/`×` symbol. Their sizes
 remain protected by source contracts. Layout changes undergo the original
 source, containment, obstacle and route validation before committing.
+
+Studio toolbar commands are fire-and-forget at the React call site, but the
+bridge queues them behind the iframe handshake and serializes their delivery.
+This prevents an early F0/F1, drawer, tool or overlay command from being lost
+while the child is still loading, and keeps successive commands in user order.
 
 ## Verification
 
@@ -247,3 +325,186 @@ The bridge serves snapshots and source reads while a load is pending; other
 commands reject while busy instead of executing later against a different
 model. Stored graphs must satisfy source, layout and non-draft edge checks
 before publication; invalid saved data is archived without replacing authority.
+
+## Studio selection and feedback (2026-10-16)
+
+The selection tool supports both single and multiple selection, with no separate
+mode or toolbar toggle. `select-nodes` accepts visible node `ids` and `mode` (`replace`,
+`add`, `toggle`), or a `scope` of `siblings`, `all`, or `clear`. All selections
+are presentation state: they do not create history, change source facts, or
+select hidden nodes. `all` and the marquee exclude expanded scopes and junctions.
+Selection, alignment, distribution and pinning share the engine's actual IDs;
+source hierarchy rows must map through the host's verified occurrence bindings.
+
+Canvas clicks support Shift, Ctrl and Command. Empty-canvas drags select fully
+contained visible modules; additive marquee preserves the initial selection.
+Dragging a selected member of a multiple selection previews the group, then
+commits one validated visual move; fixed members and invalid placements reject
+without changing the graph. Escape cancels an active gesture before clearing a
+committed selection. Middle-button panning retains its capture-first behavior.
+
+`notice` events carry `{ message, error }`. The host displays immediate contextual
+feedback and clears stale failures after successful operations. They do not
+certify source-generation capabilities or authorize model execution.
+
+## Generic visual audit fixes (2026-10-17)
+
+Independent source-dependency wires receive separate display terminals while
+canonical bindings and the source IR remain unchanged. Mixed frontiers register
+new expanded endpoint interfaces before routing. Default frontier routing applies
+bounded, fully validated lane cleanup, respecting fixed ports, shared stems and
+manual knots. Syntax-only condition controls reject narrow reverse hairpins.
+
+Camera navigation adds a collapsible minimap, readable tree focus, arrow-key
+panning and whole-graph return without graph/history mutations. The added
+`view-navigation.js` is an independently written Studio camera helper.
+
+The host publication adapter distinguishes preview identities from SHA256
+digests and flattens nested SVG definition wrappers before strict publication
+validation. Vendor provenance remains in vendor-manifest.json; current adapted
+asset hashes are recorded in integration-manifest.json. Reproduction, UI/export
+evidence and remaining historical failures: docs/visual-fixes-20261017.md.
+
+
+## Native semantic view commands (2026-10-28)
+
+For a verified bundle containing `ir.semantic_ir.schema === "archcanvas-source-semantic/2"`,
+`set-frontier` dispatches to the original native `frontier` / `certifiedDetails`
+pipeline through `studio-semantic.js`. `graph.generic.ir` is the complete source
+authority; `graph.semanticHierarchy` is a read-only navigation projection, not
+a second graph. The legacy `recursive` authority remains exclusive to catalog
+and compatibility documents.
+
+- `semantic-view({patch})` supports the six original granularities, sequence,
+  read binding, frame, role path/detail, focus, expression and relation policies.
+  Role requests must name an existing certificate and its exact role key.
+  `semantic-view({back:true})` returns through native navigation history.
+- `expand-all` selects native source-unit/canonical presentation. Canonical
+  node/edge accounting remains complete and exactly once at every cut.
+- `continue-routing` retries explicitly pending/failed routes against settled
+  lanes; the default native budget is 8 seconds plus any in-flight route search.
+  It is not a hard wall-clock deadline or an implemented cancellation protocol.
+- `document.semanticView` exposes committed granularity, certified recipe,
+  accounting, role options, relations and routing counts. Routing `complete`
+  requires zero pending and zero failed routes. Incomplete routes remain marked;
+  neither a saved flag nor a visual operation changes canonical bindings.
+- Native layouts and up to four cut cameras restore across navigation; live
+  camera is included in snapshot/save and native undo/redo. Studio panel
+  folding state stays outside this graph.
+
+Only static source evidence is exposed here. `runtime`/`merged`, automatic
+CPU probes and the measured adaptive renderer loop are not enabled by these
+commands. Formal authoring and source transactions retain their existing APIs.
+
+## Summary 文档导入扩展（2026-10-28）
+
+`load.bundle` 除已验证源码 adapter 与旧递归文档外，也接受
+`archcanvas-native-semantic/1`、`semantic-canvas/1`、`archcanvas-architecture-document/1`、
+`semantic-authoring/1` 与 `archcanvas-source-semantic/2`。含 `adapter` 的编辑包仍优先走
+源码验证，不通过普通文档格式绕过证据检查。原生投影、切面与路由只有一个当前 authority。
+
+普通文档 snapshot 的 `importedDocument` 含原始 schema、`documentSha256`、
+`sourceVerified:false`、`modelExecuted:false`；`nativeDocument` 含
+`archcanvas-summary-import/1` 记录（id/title/documentSha256/document）。`document` 是原始 JSON，
+编辑状态仍在 `graph`。case id 来自原始 stable JSON 摘要；导入记录不是服务器源码认证。
+`sourceAvailable` 为 false，`request-source` 返回 `source-unavailable`。
+
+`export-json`、snapshot 和 save 响应携带该记录；重新 `load` 时校验原文、case、IR、authoring
+与编辑图，并核对原生 SVG 是 Summary 生成内容。顶部 preview-only 保存使用当前浏览器
+IndexedDB，不声称完成正式源码 CAS 保存。原始导入文档和当前 graph 可通过编辑 JSON
+一起搬运。完整原生 authoring、CPU 执行与 measured adaptive 尚未由该扩展接入。
+
+## Summary declared authoring (2026-10-28)
+
+The same-origin `authoring` command creates or updates an independent Summary
+workspace. `action: begin` forks the current native IR; `blank: true` starts an
+empty draft. Supported actions are `title`, `scope`, `interface`, `add`
+(preset/library/sourceNode), `duplicate`, `erase`, `group`, `library`, `edit`,
+`connect`, `rewire`, and `remove-edge`. Endpoints require exact `node` and `port`;
+occupied inputs refuse unless `replace: true`. `source` returns to the original
+registered source case, never translating the assembled graph to Python.
+
+Replies use the normal `applied`/`error` protocol. `document.authoring` is a
+read-only inspector projection. `nativeDocument` may carry a digest-checked
+`archcanvas-summary-authoring/1` record; ordinary immutable imports retain
+`archcanvas-summary-import/1`. `generic.authoring` owns declared facts and
+`authoringWorkspace` stores record metadata only. All mutations validate a copy
+and rebuild/route through the current Worker before one history commit.
+
+Source provenance is retained but no adapter or formal source-transaction
+authority is conferred. Browser save and portable editing JSON restore the
+current document, not the complete in-memory undo stack. Current budgets remain
+480 nodes, 3600 dependencies and 16 MB. Studio panels remain the product shell;
+no standalone authoring page or second renderer is embedded.
+
+
+## Summary source modules and exact reconstruction (2026-10-28)
+
+`POST /api/preview/authoring/module` requires the current session and same-origin
+checks. It accepts source text, a single `entry` identifier and optional finite
+JSON `constructor`. It returns `semantic-module/1` from the original static
+Summary compiler in a bounded formal Python process; user source is never
+imported or executed. Capabilities publish `preview.nativeAuthoring`.
+
+New `authoring` actions are `add-source` (`module`), `replace-module` (`id`,
+`module`), `recipe-start` (`atomic?`), `recipe-add` (`part`), and `recipe-wires`.
+Source result application pins optional `workspaceId` and `baseDocumentSha256`;
+stale replies refuse. A compatible replacement preserves exact named boundary
+slots and rebinds the root presentation; dropping a connected input refuses
+without modifying the document. Recipe parts preserve original identities and
+parents; cross-part dependencies restore exact operand slots. The inspector's
+`recipe.exact` compares full node/edge facts, not counts alone.
+
+Module evidence and source text remain in the declared document across save and
+portable restore. A reloaded module is not implicitly compiled or executed.
+These actions confer no source transaction binding. Local structural
+recertification is not yet connected. Limits and validation evidence are in
+`docs/summary-source-authoring-integration-20261028.md`.
+
+
+## Declared local assembly results (2026-10-28)
+
+`POST /api/preview/authoring/certify` accepts `{ir}` under the formal session and
+same-origin boundary. The original Summary `certify_assembly` re-derives only
+local operand contracts in a bounded static process; no saved module source is
+executed. Capabilities publish `preview.nativeAuthoring.localAssembly`.
+
+`authoring` action `certify` accepts `result`, `workspaceId` and
+`baseDocumentSha256`. The result is `archcanvas-summary-local-assembly/1` with
+Python canonical `irText`, `resultSha256` and limited `analysis`. This action does
+not modify `generic.authoring` or its digest. `authoringWorkspace.localAnalysis`
+stores the derived result; `document.authoring.localAnalysis` is a summary.
+
+Restore recomputes base `sourceIR`, verifies declaration/result digests and
+compares all facts except the explicitly derived contract fields/digests. It
+also checks local scope and denied execution/source authority. All subsequent
+declaration edits clear the layer; visual cuts retain it. Undo/redo restores the
+matching declaration and derived layer through the existing history. Imported
+results remain unverified document evidence, not signed server receipts, and
+are not automatically re-analyzed. Python source transactions stay separate.
+
+
+### 2026-10-28 原生手势取消
+
+`cancel-gesture` 可在 active gesture busy 时调用；清除手势 owner/rAF，恢复 baseline 图与两侧历史、框选前选区或 pan camera，随后释放 capture。后续 pointerup 不提交旧手势。其他 mutation 仍遵守 busy 拒绝。该指令不保证取消已开始的 Worker 布线任务。React 仅将 child `dragging` 投影到面板，已握手的取消即时发送，不经过一般 toolbar 命令微任务队列。
+
+App 不再构造 preview Scene、宿主 pointer/port/box 或预览相机；布线和端口面板仍在 Studio，分别发送 `apply-layout` 与 `visual(portLayout: null)`，结果来自同一 Summary snapshot/history。
+
+### Summary generic catalog
+
+The Studio inspector reads the formal static `data/semantic/studio-catalog.json`, bounds streamed asset reads and verifies byte SHA-256 before using the existing `load` document command. No new source-transaction or execution command is granted. Forty of 43 catalog models fit current native document limits; three retained large models are explicitly unavailable until transport/storage/history stress validation. Original source paths and runtime observations remain provenance.
+
+
+### Source / archived CPU / merged evidence views
+
+`semantic-view.patch` accepts `mode: source|runtime|merged` and `runtimeInlineRun` (valid integer object record, merged only). CPU mode requires canonical runtime-observations. Inspector projects availableModes and runtimeEvidence without granting execution or source authority. Exact canonical focus crosses modes when necessary and native back restores the previous cut; history/camera/persistence remain native. Imported records are declared evidence. Empty source_runtime_index.regions stays unbound; no label-based inline mapping. See `docs/summary-evidence-views-integration-20261028.md` for current verification scope.
+
+
+### Compact native hierarchy and session snapshots
+
+Native `semanticHierarchy.nodes` can carry `semanticRef:true`: the host resolves only that row's exact ID in the same graph.generic.ir.nodes. Unknown IDs or other reference values do not resolve. Derived rows retain necessary matching metadata; presentation-only aggregates do not repeat member arrays because their existing exclusion already forbids formal binding. Complete native IR/receipts remain authoritative. N.snapshot freezes canonical evidence and calls the original cloneGeometry for independent mutable geometry/overlays/drafts/layout caches; save/undo/redo/session/reset use it. This is an in-memory optimization, not serialized trust or a raised document budget.
+
+
+## 原生测量驱动局部细化（2026-10-28）
+
+Summary 的原版 adaptive-frontier/5 现由 studio-adaptive.js 接到唯一原生画布；候选比较使用实际图元文字、精确操作数绑定和成功的物理路径。Studio 保留右侧折叠面板，增加开关、策略、采用/拒绝回执和手动收起入口。保存有效请求与开启前基线；关闭恢复原请求，重开独立校验已保存布局。详细范围、来源及验证见 `docs/summary-adaptive-view-integration-20261028.md`。新 CPU、大图完整压力与 D1 仍未完成。

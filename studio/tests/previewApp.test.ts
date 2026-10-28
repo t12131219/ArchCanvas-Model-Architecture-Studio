@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
+import { previewPanelDocument, projectPreviewHistory } from '../src/previewPanelDocument.ts';
+import { previewUniqueNodeBindings } from '../src/previewInterop.ts';
 
 function callback(name: string, environment: Record<string, unknown>) {
   const source = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
@@ -15,11 +17,53 @@ function callback(name: string, environment: Record<string, unknown>) {
   return new Function(...Object.keys(environment), `${code}; return ${name};`)(...Object.values(environment)) as () => Promise<void>;
 }
 
+test('all Summary document formats enter the native bridge instead of the formal architecture parser', async () => {
+  const loaded: unknown[] = [];
+  const importJson = callback('importCanvasJson', {
+    previewEngine: { current: { load: async (value: unknown) => loaded.push(value) } },
+    openArchitecture() { throw Error('Summary document must use its own reader'); },
+    validateArchitecture() { throw Error('not a formal architecture'); }, setExampleId() {}, setImportOpen() {},
+  }) as unknown as (text: string) => Promise<void>;
+  for (const schema of ['archcanvas-native-semantic/1', 'semantic-canvas/1', 'archcanvas-architecture-document/1', 'semantic-authoring/1', 'archcanvas-source-semantic/2']) await importJson(JSON.stringify({ schema }));
+  assert.equal(loaded.length, 5);
+});
+
+test('imported Summary evidence opens Studio panels without requesting or binding Python source', async () => {
+  const historyRef = { current: null as any }, previewSource = { current: { old: true } as any }, notices: string[] = [];
+  const env = {
+    previewSnapshot: { current: null }, synchronizePreviewNodeSelection() {}, setPreviewTool() {}, setPortEditing() {}, setGrid() {}, setPreviewBusy() {},
+    setPreviewDirty() {}, setPreviewUndo() {}, setPreviewRedo() {}, setPreviewVersion() {}, setSelection() {}, savedPreviewGraph: { current: null },
+    initialModelLoading: { current: false }, previewLoading: { current: false }, previewCase: { current: 'old' }, previewSource,
+    previewSequence: { current: 0 }, loadSequence: { current: 0 }, previewBoundSource: { current: 'old' },
+    historyRef, previewPanelDocument: () => ({ sourceBindingDigest: 'preview-only:doc' }), createHistory: (document: any) => ({ document }),
+    setHistory() {}, setBusy() {}, setPreviewConnecting() {}, setExampleId() {}, setProjectId() {}, setNotice: (text: string) => notices.push(text),
+    previewEngine: { current: { source() { throw Error('must not request source for imported IR'); } } },
+  };
+  await (callback('receivePreviewState', env) as unknown as (snapshot: any) => Promise<void>)({ caseId: 'doc', importedDocument: { sourceVerified: false }, graph: { caseId: 'doc' } });
+  assert.equal(previewSource.current, undefined);
+  assert.equal(historyRef.current.document.sourceBindingDigest, 'preview-only:doc');
+  assert.match(notices[0], /文档证据未绑定 Python/);
+});
+
+test('a saved imported preview restores only the matching preview-only identity and never promotes source evidence', async () => {
+  const snapshot = { caseId: 'doc', importedDocument: {}, graph: {} }, previewSource = { current: {} as any };
+  const env = { previewEngine: { current: { snapshot: async () => snapshot, source() { throw Error('unverified document has no Python source'); } } },
+    loadSequence: { current: 3 }, previewSource, previewCase: { current: '' }, previewSnapshot: { current: null }, previewBoundSource: { current: 'old' },
+    matchesPreviewSave: async () => true, localStorage: {}, savedPreviewGraph: { current: null }, setPreviewConnecting() {},
+  };
+  const restore = callback('restoreMatchingPreview', env) as unknown as (document: any, id: string, sequence: number) => Promise<any>;
+  assert.equal(await restore({ sourceBindingDigest: 'preview-only:doc' }, 'doc', 3), snapshot);
+  assert.equal(previewSource.current, undefined);
+  assert.equal(await restore({ sourceBindingDigest: 'source-bound' }, 'doc', 3), null);
+  assert.equal(await restore({ sourceBindingDigest: 'preview-only:other' }, 'doc', 3), null);
+});
+
 function importHarness(formalSupported = true) {
   const calls: string[] = [], notices: string[] = [], failures: string[] = [];
   const snapshot = { caseId: 'new-case', graph: { nodes: [{ id: 'input' }], edges: [] } };
   const historyRef = { current: null as any }, loadSequence = { current: 0 }, previewLoading = { current: false };
   const environment = {
+    busy: false, previewConnecting: false, previewBusy: false,
     cancelGesture() {}, loadSequence, previewSequence: { current: 0 }, previewLoading, filename: 'new.py', sourceText: 'model bytes', entry: 'new:Model',
     previewSource: { current: undefined }, previewCase: { current: '' }, previewSnapshot: { current: null }, previewBoundSource: { current: '' }, historyRef,
     api: { previewAnalyze: async () => { calls.push('preview-parse'); return { id: 'new-case' }; },
@@ -52,6 +96,16 @@ test('actual slow source import cannot load its preview after a different model 
   assert.deepEqual(h.calls, []); assert.equal(h.historyRef.current, null);
 });
 
+test('source import while the current graph is loading or busy preserves its generation and source', async () => {
+  for (const state of ['busy', 'previewConnecting', 'previewBusy']) {
+    const h = importHarness(); Object.assign(h.environment, { [state]: true });
+    await callback('importSource', h.environment)();
+    assert.deepEqual(h.calls, []); assert.equal(h.loadSequence.current, 0);
+    assert.equal(h.historyRef.current, null); assert.equal(h.previewLoading.current, false);
+    assert.match(h.failures.at(-1)!, /等待当前模型载入或图操作完成/);
+  }
+});
+
 test('actual edit entry awaits the latest preview snapshot and never opens an editor after a stale model response', async () => {
   const calls: string[] = [], sequence = { current: 4 };
   let finish!: (value: object) => void;
@@ -68,7 +122,7 @@ test('actual save freezes the synchronized preview revision and records a stable
   const historyRef = { current: { document: { id: 'doc', revision: 2, sourceBindingDigest: 'source' } } };
   const snapshot = { graph: { nodes: [{ id: 'moved', x: 128 }] } }, savedPreviewGraph = { current: null as string | null };
   const sent: any[] = [], revisions: number[] = [];
-  const env = { activeRecovery: null, historyRef, saving: { current: false }, loadSequence: { current: 1 }, storageRevision: 3, savedPreviewGraph,
+  const env = { rememberPreviewSave: async () => {}, localStorage: {}, activeRecovery: null, historyRef, saving: { current: false }, loadSequence: { current: 1 }, storageRevision: 3, savedPreviewGraph,
     useCallback: (value: unknown) => value,
     previewEngine: { current: { save: async () => {}, snapshot: async () => snapshot } },
     receivePreviewState: async () => { historyRef.current = { document: { ...historyRef.current.document, revision: 9 } }; },
@@ -79,6 +133,21 @@ test('actual save freezes the synchronized preview revision and records a stable
   await callback('save', env)();
   assert.equal(sent[0][0].revision, 9); assert.equal(sent[0][2].document.revision, 9);
   assert.equal(sent[0][1], 3); assert.deepEqual(revisions, [9]); assert.equal(savedPreviewGraph.current, JSON.stringify(snapshot.graph));
+});
+
+test('successful preview-only save clears prior rejected-import feedback without calling formal source persistence', async () => {
+  const calls: string[] = [], failures: string[] = [], notices: string[] = [], snapshot = { graph: { caseId: 'doc' } };
+  const env = {
+    useCallback: (fn: unknown) => fn, storageRevision: 0, activeRecovery: null, saving: { current: false }, readyPreview: () => true,
+    historyRef: { current: { document: { sourceBindingDigest: 'preview-only:doc', revision: 4 } } }, savedPreviewGraph: { current: '' },
+    previewEngine: { current: { save: async () => calls.push('child-save'), snapshot: async () => snapshot } },
+    receivePreviewState: async () => calls.push('snapshot'), rememberPreviewSave: async () => calls.push('marker'), localStorage: {},
+    setPreviewDirty() {}, setSavedVisualRevision() {}, setNotice: (value: string) => notices.push(value), setFailure: (value: string) => failures.push(value),
+    api: { save() { throw Error('a preview-only graph is not a formal source document'); } },
+  };
+  await callback('save', env)();
+  assert.deepEqual(calls, ['child-save', 'snapshot', 'marker']);
+  assert.deepEqual(failures, ['']); assert.match(notices[0], /已保存到浏览器/);
 });
 
 test('actual hierarchy focus keeps unmatched catalog aggregates explicit and sends only a mapped node ID', () => {
@@ -293,4 +362,34 @@ test('actual catalog source request rejects an old A response after an A to B to
   await receive({ caseId: 'B', busy: true, graph: { caseId: 'B', nodes: [] } });
   assert.equal(previewCase.current, 'A'); assert.equal(deferred.length, 3);
   assert.equal(historyRef.current, before, 'a busy candidate cannot claim a new model before commit');
+});
+
+
+test('saved native graph keeps a derived panel projection saved while real alias or geometry edits remain dirty', async () => {
+  for (const edit of ['none', 'alias', 'geometry', 'formal']) {
+    const savedGraph = { caseId: 'case', nodes: [{ id: 'a', label: 'A', kind: 'linear', x: 10, y: 20, w: 120, h: 60 }], edges: [],
+      studioPresentation: { nodes: { a: { alias: 'Saved alias' } } } };
+    const graph = structuredClone(savedGraph);
+    if (edit === 'alias') graph.studioPresentation.nodes.a.alias = 'New alias';
+    if (edit === 'geometry') graph.nodes[0].x = 80;
+    const document = previewPanelDocument({ caseId: 'case', graph: savedGraph });
+    if (edit === 'formal') { document.sourceBindingDigest = 'formal-source'; document.architecture.sourceDigest = 'formal-source'; }
+    const historyRef = { current: { document, past: [], future: [] } as any };
+    let dirty = false, savedRevision = document.revision;
+    const environment = {
+      previewSnapshot: { current: null }, synchronizePreviewNodeSelection() {}, setPreviewTool() {}, setPortEditing() {}, setGrid() {}, setPreviewBusy() {},
+      savedPreviewGraph: { current: JSON.stringify(savedGraph) }, setPreviewDirty: (value: boolean) => { dirty = value; },
+      setSavedVisualRevision: (value: number) => { savedRevision = value; }, setPreviewUndo() {}, setPreviewRedo() {}, setPreviewVersion() {}, setSelection() {},
+      initialModelLoading: { current: false }, previewLoading: { current: false }, previewCase: { current: 'case' },
+      synchronizingPreview: { current: false }, previewSource: { current: { schema: 'fixture', caseId: 'case' } }, historyRef,
+      currentPreviewSourceMatches: () => true, graphFromSnapshot: (value: any) => value.graph,
+      currentPreviewNodeBindings: () => previewUniqueNodeBindings(historyRef.current.document.architecture, graph),
+      projectPreviewHistory, setHistory() {},
+    };
+    await (callback('receivePreviewState', environment) as unknown as (snapshot: any) => Promise<void>)({ caseId: 'case', dirty: true, graph });
+    assert.equal(historyRef.current.document.displayAliases.a, graph.studioPresentation.nodes.a.alias);
+    assert.ok(historyRef.current.document.revision > document.revision, 'actual panel projection changed its revision');
+    assert.equal(dirty || savedRevision !== historyRef.current.document.revision, edit !== 'none', edit);
+    if (edit === 'formal') assert.equal(savedRevision, document.revision, 'formal document edits retain their own save contract');
+  }
 });

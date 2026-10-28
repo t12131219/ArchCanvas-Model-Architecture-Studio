@@ -45,9 +45,10 @@ function inspector(html: string) {
   return found[1];
 }
 
-test('the actual blank authoring component exposes visible steps, a static-check entry and the draft count', () => {
+test('the blank authoring inspector keeps onboarding in an accessible disclosure and exposes checks and counts', () => {
   const actual = inspector(markup());
-  assert.match(actual, /每一步都在图上完成/);
+  assert.match(actual, /<h2>选择一个模块<\/h2>/);
+  assert.match(actual, /<details class="editor-guide"><summary>搭建与连接方法<\/summary>/);
   for (const step of ['拖入 Input，设置输入形状。', '拖入常用模块，编辑参数。', '连接端口，加入 Output。', '保存草稿，生成模型与论文图。']) assert.ok(actual.includes(step));
   assert.match(actual, /aria-label="模型静态检查"/);
   assert.match(actual, /<button[^>]*>检查模型<\/button>/);

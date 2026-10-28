@@ -1,6 +1,10 @@
 import type { CSSProperties } from 'react';
 export function Icon({ name, size = 18, style }: { name: string; size?: number; style?: CSSProperties }) {
   const paths: Record<string, React.ReactNode> = {
+    search: <><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></>,
+    panelLeft: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" /></>,
+    panelRight: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M15 4v16" /></>,
+    more: <><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></>,
     arrow: <><path d="m5 3 13 8-6 2-2 6Z" /></>,
     hand: <><path d="M8 12V6a2 2 0 0 1 4 0v5-7a2 2 0 0 1 4 0v7-5a2 2 0 0 1 4 0v9c0 4-3 7-7 7h-1c-2 0-4-1-5-3l-4-6a2 2 0 0 1 3-2l2 2" /></>,
     undo: <><path d="M3 10h11a6 6 0 0 1 0 12M3 10l5-5M3 10l5 5" /></>,

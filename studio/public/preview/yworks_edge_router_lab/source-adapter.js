@@ -27,18 +27,33 @@
     }
     const checkEvidence=n=>{if(!Array.isArray(n.source_evidence)||!n.source_evidence.length||n.source_evidence.some(id=>!evidence[id]))fail('缺少源码证据 '+n.id);};
     for(const n of ir.nodes){checkEvidence(n);let p=n,seen=new Set();while(p.parent){if(!by.has(p.parent)||seen.has(p.parent))fail('包含关系无效');seen.add(p.parent);p=by.get(p.parent);if(seen.size>12)fail('包含深度超限');}}
-    const ids=new Set();for(const e of ir.edges){checkEvidence(e);if(typeof e.id!=='string'||ids.has(e.id)||!by.has(e.source)||!by.has(e.target)||e.sourcePort!=='out'||typeof e.targetPort!=='string'||!['source_dependency','shape_dependency'].includes(e.role)||e.wire!==e.source+':out')fail('连接身份无效');ids.add(e.id);}
+    const semantic=ir.semanticSchema==='archcanvas-source-semantic/2';
+    if(semantic){const native=ir.semantic_ir;if(native?.schema!==ir.semanticSchema||native.runtime?.model_executed!==false||!Array.isArray(native.nodes)||!Array.isArray(native.edges))fail('Summary 语义声明无效');
+      const nodes=new Map(native.nodes.map(n=>[n.id,n])),edges=new Map(native.edges.map(e=>[e.id,e]));
+      if(native.nodes.some(n=>!by.has(n.id))||native.edges.some(e=>!ir.edges.some(p=>p.id===e.id)))fail('Summary 事实缺失');
+      for(const n of ir.nodes){const fact=nodes.get(n.id);if(fact?(stable(n.semantic)!==stable(fact)||n.parent!==fact.parent):!(n.kind==='source_structure'&&n.sourceStructure&&n.sourceAdapterId&&n.generationContract===null))fail('Summary 节点投影不一致');}
+      for(const e of ir.edges){const n=edges.get(e.id);if(n?(stable(e.semantic)!==stable(n)||e.source!==n.source||e.target!==n.target||e.sourcePort!==String(n.source_port??'out')||e.targetPort!==String(n.target_port??'in')):!(e.syntaxOnly&&e.sourceAdapterId&&!e.semantic))fail('Summary 连接投影不一致');}
+    }
+    const ids=new Set();for(const e of ir.edges){checkEvidence(e);if(typeof e.id!=='string'||ids.has(e.id)||!by.has(e.source)||!by.has(e.target)||(semantic?typeof e.sourcePort!=='string'||!e.sourcePort.length:e.sourcePort!=='out')||typeof e.targetPort!=='string'||!['source_dependency','shape_dependency'].includes(e.role)||e.wire!==e.source+':'+e.sourcePort)fail('连接身份无效');ids.add(e.id);}
     if(ir.nodes.filter(n=>!n.parent).length!==1)fail('需要唯一模型根节点');
     return bundle;
   }
   async function verify(bundle){validate(bundle);const digest=async s=>Array.from(new Uint8Array(await root.crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(b=>b.toString(16).padStart(2,'0')).join('');
     if(await digest(bundle.canonicalIR)!==bundle.irSha256)fail('IR SHA256 不匹配');
+    if(bundle.ir.semanticSchema){const native=bundle.ir.semantic_ir,{ir_digest,...facts}=native;if(typeof bundle.ir.canonicalSemanticIR!=='string'||stable(JSON.parse(bundle.ir.canonicalSemanticIR))!==stable(facts)||await digest(bundle.ir.canonicalSemanticIR)!==ir_digest)fail('Summary 语义 IR SHA256 不匹配');}
     for(const f of bundle.files)if(await digest(f.text)!==f.sha256)fail('源码 SHA256 不匹配 '+f.path);
     if(await digest(stable(bundle.files.map(({path,sha256})=>({path,sha256}))))!==bundle.sourceSha256)fail('源码清单 SHA256 不匹配');
     return bundle;
   }
+  // Export the original Python JSON bytes. Re-serializing parsed JS numbers
+  // changes 1.0 to 1 and rounds integers beyond 2**53, invalidating native
+  // certificates even though the canonical transport still retains them.
+  function semanticDocument(bundle){validate(bundle);const canonical=bundle.ir.canonicalSemanticIR,native=bundle.ir.semantic_ir;
+    if(!native||typeof canonical!=='string'||!canonical.endsWith('}'))fail('缺少原生语义文档');
+    return canonical.slice(0,-1)+',"ir_digest":'+JSON.stringify(native.ir_digest)+'}';
+  }
   const colors={group:'#e7f5fe',input:'#e3f3ef',output:'#e3f3ef',opaque:'#fff0d9',normalization:'#fff6bd',activation:'#c9f1cd',linear:'#dfdff8',convolution:'#dbeafa',literal:'#f2f3f5'};
-  const presentationVersion=8;
+  const presentationVersion=9;
   // Conservative glyph advances keep the obstacle close to the actual text;
   // reserving a 180/300 px box for every short caption falsely blocks ports.
   const textWidth=(s,size)=>Math.ceil([...s].reduce((sum,c)=>sum+size*(/[^\u0000-\u00ff]/.test(c)?1:.64),0))+8;
@@ -66,7 +81,17 @@
         for(const n of kids)measure(n);const kidIds=new Set(kids.map(n=>n.id));
         const owner=id=>{let n=by.get(id);while(n&&!kidIds.has(n.id)&&n.id!==raw.id)n=by.get(n.parent);return kidIds.has(n?.id)?n.id:null;};
         const deps=new Map(kids.map(n=>[n.id,new Set()]));for(const e of projected){const s=owner(e.source),t=owner(e.target);if(s&&t&&s!==t)deps.get(t).add(s);}
-        const rank=new Map(),visiting=new Set();function level(id){if(rank.has(id))return rank.get(id);if(visiting.has(id))fail('数据依赖有环；需要不透明循环边界');visiting.add(id);const value=Math.max(-1,...[...deps.get(id)].map(level))+1;visiting.delete(id);rank.set(id,value);return value;}
+        // Native Summary iteration contracts retain real source backedges.
+        // Collapse strongly connected components only for rank assignment;
+        // every original node, port and edge remains in the canonical graph.
+        const components=new Map(),low=new Map(),indices=new Map(),stack=[],active=new Set();let serial=0,component=0;
+        function connect(id){indices.set(id,serial);low.set(id,serial++);stack.push(id);active.add(id);for(const source of deps.get(id)){if(!indices.has(source)){connect(source);low.set(id,Math.min(low.get(id),low.get(source)));}else if(active.has(source))low.set(id,Math.min(low.get(id),indices.get(source)));}if(low.get(id)===indices.get(id)){let node;do{node=stack.pop();active.delete(node);components.set(node,component);}while(node!==id);component++;}}
+        kids.forEach(n=>{if(!indices.has(n.id))connect(n.id);});
+        if(ir.semanticSchema!=='archcanvas-source-semantic/2'&&new Set(components.values()).size!==kids.length)fail('数据依赖有环；需要不透明循环边界');
+        const componentDeps=new Map([...components.values()].map(id=>[id,new Set()]));
+        for(const [id,sources]of deps)for(const source of sources)if(components.get(id)!==components.get(source))componentDeps.get(components.get(id)).add(components.get(source));
+        const ranksByComponent=new Map();function componentLevel(id){if(ranksByComponent.has(id))return ranksByComponent.get(id);const value=Math.max(-1,...[...componentDeps.get(id)].map(componentLevel))+1;ranksByComponent.set(id,value);return value;}
+        const rank=new Map();function level(id){const value=componentLevel(components.get(id));rank.set(id,value);return value;}
         kids.forEach(n=>level(n.id));const ranks=[];for(const n of kids){const index=rank.get(n.id);(ranks[index]||=([])).push(n);}
         // A syntax inspection can contain many independent statements. They
         // share a dependency rank, not an obligation to occupy one unbounded
@@ -167,13 +192,40 @@
       }
       decorateBinaryGlyphs();
 
+      // Binary glyph outputs are presentation ports too.  A fixed bottom
+      // output is unsafe when the caption pass places the operator title
+      // below the circle (the common multiply case): the first terminal ray
+      // would enter its own caption before it can reach the consumer.  Pick
+      // one legal side per outgoing visual edge, preferring the consumer's
+      // outward direction and excluding the caption side.  This changes only
+      // the recorded display port; canonical source bindings remain in the
+      // binding object below.
+      const binarySourcePorts=new Map();
+      for(const n of nodes.filter(v=>v.glyphPresentation?.kind==='binary-circle')){
+        const outgoing=projected.filter(e=>e.source===n.id);
+        if(!outgoing.length)continue;
+        const choices=['top','right','bottom','left'].filter(side=>side!==n.glyphPresentation.labelSide);
+        const centreOf=v=>({x:v.x+v.w/2,y:v.y+v.h/2}),nc=centreOf(n),normal=side=>side==='left'?[-1,0]:side==='right'?[1,0]:side==='top'?[0,-1]:[0,1];
+        const score=side=>{const p={x:n.x+(side==='left'?0:side==='right'?n.w:n.w*.5),y:n.y+(side==='top'?0:side==='bottom'?n.h:n.h*.5)},v=normal(side);return outgoing.reduce((total,e)=>{const target=positions.get(e.target),tc=target&&centreOf(target);if(!tc)return total;const dx=tc.x-nc.x,dy=tc.y-nc.y,approach=dx*v[0]+dy*v[1];return total+Math.abs(tc.x-p.x)+Math.abs(tc.y-p.y)+(approach>0?0:260);},0)+({right:0,left:.01,top:.02,bottom:.03}[side]||0);};
+        const side=choices.slice().sort((a,b)=>score(a)-score(b)||a.localeCompare(b))[0]||'top';
+        for(const e of outgoing)binarySourcePorts.set(e.id,{side,fraction:.5});
+      }
+
       // Allocate binary input sides jointly. The first source keeps the
       // closest canonical slot; a second source may use the nearest right or
       // left side when that removes an avoidable vertical loop. The assignment
       // is stable for equal costs and never changes the semantic targetPort.
       const binaryTargetPorts=new Map();
       for(const n of nodes.filter(v=>v.glyphPresentation?.kind==='binary-circle')){
-        const incoming=projected.filter(e=>e.target===n.id).sort((a,b)=>String(a.targetPort).localeCompare(String(b.targetPort)));
+        // Allocate the closest producer first.  When several values approach
+        // a binary glyph from the same side, this keeps the short direct
+        // lane on that side and lets the longer branch take a lateral slot;
+        // lexical target-port order can reserve the direct slot for the
+        // distant branch and force the near branch into a backwards port.
+        const incoming=projected.filter(e=>e.target===n.id).sort((a,b)=>{
+          const ac=positions.get(a.source),bc=positions.get(b.source),nc=centre(n),ad=ac?Math.abs(ac.x-nc.x)+Math.abs(ac.y-nc.y):Infinity,bd=bc?Math.abs(bc.x-nc.x)+Math.abs(bc.y-nc.y):Infinity;
+          return ad-bd||String(a.targetPort).localeCompare(String(b.targetPort));
+        });
         const choices=['top','right','bottom','left'].filter(side=>side!==n.glyphPresentation.labelSide);
         const combinations=[];
         const recurse=(i,used,current)=>{if(i===incoming.length){combinations.push(current.slice());return;}const source=positions.get(incoming[i].source),sc=centre(source),nc=centre(n);
@@ -183,21 +235,32 @@
         const best=combinations[0]||incoming.map((e,i)=>({side:i?'right':'top',fraction:.5,cost:0}));incoming.forEach((e,i)=>binaryTargetPorts.set(e.id,{side:best[i].side,fraction:best[i].fraction}));
       }
       const port=(n,f)=>({x:n.x+(f.side==='left'?0:f.side==='right'?n.w:n.w*f.fraction),y:n.y+(f.side==='top'?0:f.side==='bottom'?n.h:n.h*f.fraction)});
-      const edges=projected.map(e=>{const s=positions.get(e.source),t=positions.get(e.target),targets=projected.filter(v=>v.target===e.target),fields=[...new Set(targets.map(v=>v.targetPort))],index=fields.indexOf(e.targetPort),binary=t.glyphPresentation?.kind==='binary-circle';
-        const fixedSource={side:'bottom',fraction:.5},fixedTarget=binary?(binaryTargetPorts.get(e.id)||{side:index===0?'top':'right',fraction:.5}):{side:'top',fraction:(index+1)/(fields.length+1)};
+      // Several independent syntax dependencies may name the same logical
+      // field (e.g. alternatives consumed by a return). They are not one
+      // value: give each wire a presentation slot without rewriting the IR.
+      const targetSlot=e=>JSON.stringify([e.targetPort,e.raw.wire]);
+      const edges=projected.map(e=>{const s=positions.get(e.source),t=positions.get(e.target),targets=projected.filter(v=>v.target===e.target),fields=[...new Set(targets.map(targetSlot))],index=fields.indexOf(targetSlot(e)),binary=t.glyphPresentation?.kind==='binary-circle';
+        const fixedSource=binarySourcePorts.get(e.id)||{side:'bottom',fraction:.5},fixedTarget=binary?(binaryTargetPorts.get(e.id)||{side:index===0?'top':'right',fraction:.5}):{side:'top',fraction:(index+1)/(fields.length+1)};
         const a=port(s,fixedSource),b=port(t,fixedTarget);
         const ancestors=id=>{const out=[];let n=positions.get(id);while(n?.parent){n=positions.get(n.parent);if(n?.expanded)out.push(n);}return out;};
         const sa=ancestors(s.id),ta=ancestors(t.id),exit=sa.filter(n=>!ta.some(v=>v.id===n.id)),enter=ta.filter(n=>!sa.some(v=>v.id===n.id));
         const low=Math.max(a.y+24,...exit.map(n=>n.y+n.h+24)),high=Math.min(b.y-24,...enter.map(n=>n.y-24)),lane=(low+high)/2;
         const ps=[a,{x:a.x,y:lane},{x:fixedTarget.side==='left'?b.x-24:b.x,y:lane},fixedTarget.side==='left'?{x:b.x-24,y:b.y}:b,b].filter((p,i,arr)=>!i||p.x!==arr[i-1].x||p.y!==arr[i-1].y);
         const binding={src:e.raw.source+':'+e.sourcePort,dst:e.raw.target+':'+e.targetPort,canonical_src:e.raw.source+':'+e.sourcePort,canonical_dst:e.raw.target+':'+e.targetPort,wire_identity:e.raw.wire,semantic_edges:[e.id],source_evidence:e.source_evidence,semantic_kind:e.role};
-        const policy=(n,side)=>({mode:'perimeter',shape:n.glyphPresentation?'circle':'rectangle',spacing:12,gates:[],sharedStem:null,authority:'typed source dependency; display side is movable'});
-        return {id:e.id,source:e.source,target:e.target,role:e.role,...(e.raw.syntaxOnly?{syntaxOnly:true}:{}),binding,fixedSource,fixedTarget,portPolicy:{source:policy(s),target:policy(t)},route:ps,waypoints:[],style:'orthogonal',width:2.2,arrow:'target',dashed:!!e.raw.syntaxOnly||e.role==='shape_dependency',draft:false,needsRecursiveRouting:true};
+        const policy=(n,side)=>({mode:'perimeter',shape:n.glyphPresentation?'circle':'rectangle',spacing:12,gates:[],sharedStem:null,...(side==='target'?{presentationSlot:JSON.stringify([binding.canonical_dst,e.raw.wire])}:{}),authority:'typed source dependency; display side is movable'});
+        const relation=e.raw.semantic?.kind,auxiliary=relation&&['control','state-write','effect'].includes(relation);
+        return {id:e.id,source:e.source,target:e.target,role:e.role,...(relation?{semanticRelation:relation}:{}),...(e.raw.syntaxOnly?{syntaxOnly:true}:{}),binding,fixedSource,fixedTarget,portPolicy:{source:policy(s,'source'),target:policy(t,'target')},route:ps,waypoints:[],style:'orthogonal',width:auxiliary?1.6:2.2,arrow:'target',dashed:!!auxiliary||!!e.raw.syntaxOnly||e.role==='shape_dependency',draft:false,needsRecursiveRouting:true};
       });
       const g={nodes,edges,canvas:[sizing.get(rootNode.id).w+180,Math.max(720,sizing.get(rootNode.id).h+180)],definitions:'',extras:'',attachments:[],junctionMarkers:[],routeLabels:[],sourceDraftOperations:[],caseId:bundle.id,viewKey:limit===1?'overview':Number.isFinite(limit)?'source-depth-'+limit:'detailed',irSha256:bundle.irSha256,
-        sourceAdapter:{version:1,presentationVersion,entry:bundle.entry,sourceSha256:bundle.sourceSha256,irSha256:bundle.irSha256},sourceProfile:{analysis:'static source dependencies',modelExecuted:false,entry:bundle.entry,opaqueRegions:bundle.diagnostics.length,tensorShapes:'未推断'},
+        sourceAdapter:{version:1,presentationVersion,entry:bundle.entry,sourceSha256:bundle.sourceSha256,irSha256:bundle.irSha256},sourceProfile:{analysis:ir.semanticAnalysis||'static source dependencies',modelExecuted:false,entry:bundle.entry,opaqueRegions:bundle.diagnostics.length,tensorShapes:'未推断',...(ir.semanticSchema?{semanticSchema:ir.semanticSchema,coverage:ir.semantic_ir.coverage,contracts:ir.semantic_ir.semantic_contracts?.length||0,motifs:ir.semantic_ir.motifs?.length||0,branches:ir.semantic_ir.branches?.length||0}:{})},
         sourceFacts:['源码经 Python AST 静态解析，未导入或执行模型。','箭头表示可证明的源码值依赖；不代表已验证的张量形状或运行轨迹。','相同 instance 标识保留源码中的模块复用；未知调用和动态控制流使用虚线边框。',...bundle.diagnostics.slice(0,12).map(d=>d.message)]};
       C.initialize(g);
+      // Source adapter geometry is an initial projection, but it must still
+      // satisfy the same physical/caption/endpoint constraints as a
+      // recursive frontier.  Repair only presentation routes and physical
+      // ports before recording the immutable semantic baseline; fixed source
+      // ports and canonical bindings remain untouched.
+      E.routeBatch(g,g.edges.map(e=>e.id),{margin:6,stub:16,bendCost:40,crossingCost:180,overlapCost:2,edgeSpacing:12,sides:'any',style:'orthogonal'});
       g.semanticBaseline={schema:'imported-source-baseline/1',irSha256:g.irSha256,nodes:Object.fromEntries(nodes.map(n=>[n.id,{parent:n.parent,semantic:clone(n.semantic),visualBinding:null,...(n.glyphPresentation?{glyphPresentation:clone(n.glyphPresentation),glyphMarkupHash:hash(n.html),labelObstacles:clone(n.labelObstacles)}:{})}])),edges:Object.fromEntries(edges.map(e=>[e.id,{source:e.source,target:e.target,binding:clone(e.binding),fixedSource:clone(e.fixedSource),fixedTarget:clone(e.fixedTarget),portPolicy:clone(e.portPolicy)}])),attachments:{},routeLabels:{},junctionMarkers:[]};
       return g;
     }
@@ -213,5 +276,5 @@
     return result;
   }
   function hash(s){let h=2166136261;for(let i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619)>>>0;return h.toString(16).padStart(8,'0');}
-  const api={validate,verify,sources};root.SummarySourceAdapter=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
+  const api={validate,verify,sources,semanticDocument};root.SummarySourceAdapter=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -146,7 +146,7 @@ def _environment(config: dict[str, Any]) -> dict[str, Any]:
     extension_roots.extend(path for path in env_dir.rglob("*.so*") if path.is_file() and (path.suffix == ".so" or ".so." in path.name))
     dependencies = _dependency_closure([executable, *extension_roots], base, env_dir, file_digest)
     hidden = next((path for path in (base / "conda-meta/history", base / "bin/pip", stdlib / "site-packages") if path.exists()), base / "conda-meta")
-    return {"interpreter": str(interpreter), "virtualEnvironment": str(env_dir), "basePrefix": str(base), "executable": str(executable), "executableDigest": file_digest(executable), "virtualEnvironmentContentDigest": digest(package_files), "virtualEnvironmentFileCount": len(package_files), "venvConfigDigest": digest(cfg.read_bytes()), "stdlibPath": str(stdlib), "stdlibContentDigest": digest(stdlib_files), "stdlibFileCount": len(stdlib_files), "sharedLibraryMounts": dependencies, "sharedLibraryContentDigest": digest(dependencies), "baseHiddenProbe": str(hidden), "baseHiddenProbeExists": hidden.exists(), "workerDigest": file_digest(Path(__file__).with_name("worker.py")), "controllerDigest": file_digest(Path(__file__)), "seccompDigest": digest(_seccomp()), "dependencyLockDigest": digest(raw_lock), "dependencyPins": pins, "backend": "pytorch", "device": "cpu", "environmentFreezeScope": "all venv files including bytecode, resolved Python executable, standard library excluding base site-packages, ELF dependency closure, config, dependency lock and trusted adapter; executable/stdlib/ELF mounts are private read-only copies, venv bytes are rechecked after execution"}
+    return {"interpreter": str(interpreter), "virtualEnvironment": str(env_dir), "basePrefix": str(base), "executable": str(executable), "executableDigest": file_digest(executable), "virtualEnvironmentContentDigest": digest(package_files), "virtualEnvironmentFileCount": len(package_files), "venvConfigDigest": digest(cfg.read_bytes()), "stdlibPath": str(stdlib), "stdlibContentDigest": digest(stdlib_files), "stdlibFileCount": len(stdlib_files), "sharedLibraryMounts": dependencies, "sharedLibraryContentDigest": digest(dependencies), "baseHiddenProbe": str(hidden), "baseHiddenProbeExists": hidden.exists(), "workerDigest": file_digest(Path(__file__).with_name("worker.py")), "summaryProfileDigest": file_digest(Path(__file__).with_name("summary.py")), "summaryWorkerDigest": file_digest(Path(__file__).resolve().parents[1] / "archcanvas_summary_semantic/runtime_worker.py"), "controllerDigest": file_digest(Path(__file__)), "seccompDigest": digest(_seccomp()), "dependencyLockDigest": digest(raw_lock), "dependencyPins": pins, "backend": "pytorch", "device": "cpu", "environmentFreezeScope": "all venv files including bytecode, resolved Python executable, standard library excluding base site-packages, ELF dependency closure, config, dependency lock and trusted adapter; executable/stdlib/ELF mounts are private read-only copies, venv bytes are rechecked after execution"}
 
 
 def _dependency_closure(roots, base, env_dir, file_digest):
@@ -208,6 +208,10 @@ def _prepare_base(environment, temporary):
         os.chmod(destination, 0o555)
         if digest(destination.read_bytes()) != dependency["digest"]:
             raise RuntimeProfileError("Runtime library changed while freezing its snapshot.")
+    summary_worker = Path(__file__).resolve().parents[1] / "archcanvas_summary_semantic/runtime_worker.py"
+    shutil.copyfile(summary_worker, snapshot / "summary-worker.py")
+    if digest((snapshot / "summary-worker.py").read_bytes()) != environment["summaryWorkerDigest"]:
+        raise RuntimeProfileError("Summary observer changed while freezing its snapshot.")
     return snapshot
 
 
@@ -280,7 +284,7 @@ def _command(environment: dict[str, Any], temporary: Path, request: Path, source
     command.extend(("--ro-bind", str(snapshot / "python"), environment["executable"], "--ro-bind", str(snapshot / "stdlib"), environment["stdlibPath"], "--ro-bind", environment["virtualEnvironment"], environment["virtualEnvironment"]))
     for index, dependency in enumerate(environment["sharedLibraryMounts"]):
         command.extend(("--ro-bind", str(snapshot / f"library-{index}"), dependency["path"]))
-    command.extend(("--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp", "--tmpfs", "/work", "--ro-bind", str(source), "/model", "--ro-bind", str(Path(__file__).with_name("worker.py")), "/worker.py", "--ro-bind", str(request), "/request.json", "--chdir", "/work"))
+    command.extend(("--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp", "--tmpfs", "/work", "--ro-bind", str(source), "/model", "--ro-bind", str(Path(__file__).with_name("worker.py")), "/worker.py", "--ro-bind", str(snapshot / "summary-worker.py"), "/summary-worker.py", "--ro-bind", str(request), "/request.json", "--chdir", "/work"))
     for key, value in {"HOME": "/work", "TMPDIR": "/tmp", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "PYTHONDONTWRITEBYTECODE": "1", "PYTHONHASHSEED": "0"}.items():
         command.extend(("--setenv", key, value))
     command.extend(("--seccomp", str(seccomp_fd), environment["interpreter"], "-I", "-B", "/worker.py", "/request.json"))

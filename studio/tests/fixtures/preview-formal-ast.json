@@ -1,0 +1,1023 @@
+{
+  "schema": "archcanvas-preview-formal-ast-fixture/1",
+  "generatedAt": "2026-10-27T20:04:33.063107+00:00",
+  "inputs": {
+    "files": {
+      "net/__init__.py": "",
+      "net/ops.py": "from torch import nn\nraise RuntimeError(\"Source text must never execute\")\nclass Branch(nn.Module):\n def __init__(self):\n  super().__init__()\n  self.proj = nn.Linear(4,4)\n  self.act = nn.ReLU()\n def forward(self,x):\n  return self.act(self.proj(x))\n",
+      "net/model.py": "from torch import nn\nfrom .ops import Branch\nclass Model(nn.Module):\n def __init__(self):\n  super().__init__()\n  self.shared = Branch()\n def forward(self,x):\n  a = self.shared(x)\n  b = self.shared(x)\n  return a,b\n"
+    },
+    "entry": "net.model:Model"
+  },
+  "parser": "/home/fzg/PycharmProjects/ArchCanvas/ArchCanvas_Model_Architecture_Studio/src/archcanvas_preview/__init__.py",
+  "implementation": {
+    "src/archcanvas_adapters/__init__.py": "68c982322fc63ebf8b9785d7e0935d5760fb0584ed8721c93cfa1416c5207ab7",
+    "src/archcanvas_adapters/registry.py": "eedca3ef0578a4ee3687676c59e8b398f064e255e5ce9378d2a4ce094f388318",
+    "src/archcanvas_adapters/source_rules.py": "78828ca1bfa3bd7050aaed145b1c02baa1bdec92d01c89ce9211c0a6753966f9",
+    "src/archcanvas_preview/__init__.py": "bc6e2d7c29349ac108df90544122cb6faa4966292ab08b7f5407582cdb5c579b",
+    "src/archcanvas_preview/analyze.py": "dbe8b886097825d51b3e214d9a5200ba3f007525ae7509b14c2e1f568cb60e08",
+    "src/archcanvas_preview/semantic_bridge.py": "c0409972d688bee618ee0f256ca1f769d759b507cdcefbcd8363afc65dad9815",
+    "src/archcanvas_python/__init__.py": "125d5112117b4267b6000f4d8c720210ade0d3717ec3cd421cdef36bc99373bd",
+    "src/archcanvas_python/discovery.py": "182c6992bf6ac0d62651b07e767ee2176d15960421133114b509daf1c24ce4a1",
+    "src/archcanvas_python/frontend.py": "48333e024756c0ac319bbd449bfb1a69bca0b721f3468c3f7ac899a9b635d907",
+    "src/archcanvas_python/source_dependencies.py": "ea6c4b7fc60b48638afb215bdf98d7f47a948446a92751bdd08e2d6664a81210",
+    "src/archcanvas_python/source_structure.py": "80f27c3542bd54ccef6b089ec1b8b28f6534dd611a627c68f198ed8975ce70e5",
+    "src/archcanvas_summary_semantic/__init__.py": "f4f33e65b955999ed7b006ba8b50f4c1ee49c36d6ac7c3c6029046e1a5cf5959",
+    "src/archcanvas_summary_semantic/analyzer.py": "7bcfa2517bced541fd467069764e75ceda202305fdd89a998da53fa3868f1ec2",
+    "src/archcanvas_summary_semantic/contracts.py": "baaccf47fd8cdd68a63600a9c8664680b99b51f07dcb06293838ffd0b1a1d5ba",
+    "src/archcanvas_summary_semantic/schema.py": "1d0f661c706b88402279bcfc9ca03fa1577174c49f96cbca3f1b5ff0e606e5b9",
+    "src/archcanvas_summary_semantic/sources.py": "5b7280a0b65553ffc85baded577aa43524c7e7d639caf568000817c15645d568",
+    "studio/scripts/generate-preview-ast-fixture.py": "ba6387d9c014575ea4adb173b563f7a7ac6ab15046e67344d368e4d71c3a7cc3"
+  },
+  "modelExecuted": false,
+  "torchLoaded": false,
+  "bundle": {
+    "schema": "summary-source-adapter/1",
+    "id": "source-23b9d585735e0611",
+    "title": "Model",
+    "entry": "net.model:Model",
+    "files": [
+      {
+        "path": "net/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "text": ""
+      },
+      {
+        "path": "net/model.py",
+        "sha256": "3c1337b8e80c7d7da8f4c53aa4bcec0fb546a900fc0bb31b3968d9cea5f12257",
+        "text": "from torch import nn\nfrom .ops import Branch\nclass Model(nn.Module):\n def __init__(self):\n  super().__init__()\n  self.shared = Branch()\n def forward(self,x):\n  a = self.shared(x)\n  b = self.shared(x)\n  return a,b\n"
+      },
+      {
+        "path": "net/ops.py",
+        "sha256": "0ae27c2d6a630ee16c1ffd480258b92cf1117a2a016be0cad31ee26e6ff4b848",
+        "text": "from torch import nn\nraise RuntimeError(\"Source text must never execute\")\nclass Branch(nn.Module):\n def __init__(self):\n  super().__init__()\n  self.proj = nn.Linear(4,4)\n  self.act = nn.ReLU()\n def forward(self,x):\n  return self.act(self.proj(x))\n"
+      }
+    ],
+    "sourceSha256": "feb3e198af8a90367ebe21a81f5e6b8ea6c9e5a2e740830d9c41e9a533ccc70d",
+    "ir": {
+      "schema": "summary-source-ir/1",
+      "entry": "net.model:Model",
+      "nodes": [
+        {
+          "id": "model/group-3-0-1",
+          "parent": null,
+          "kind": "group",
+          "label": "Model",
+          "source_evidence": [
+            "e-305092458d006e6c"
+          ],
+          "expression": "class Model(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.shared = Branch()\n\n    def forward(self, x):\n        a = self.shared(x)\n        b = self.shared(x)\n        return (a, b)",
+          "instance": "net.model:Model",
+          "certainty": "static",
+          "constructor": "net.model:Model",
+          "moduleType": "Model",
+          "constructorArgs": [],
+          "constructorKwargs": {}
+        },
+        {
+          "id": "model/group-3-0-1/input-7-18-2",
+          "parent": "model/group-3-0-1",
+          "kind": "input",
+          "label": "x",
+          "source_evidence": [
+            "e-28f790010fb84e07"
+          ],
+          "expression": "x"
+        },
+        {
+          "id": "model/group-3-0-1/group-8-6-3",
+          "parent": "model/group-3-0-1",
+          "kind": "group",
+          "label": "Branch",
+          "source_evidence": [
+            "e-db97b7c9f2626714"
+          ],
+          "expression": "self.shared(x)",
+          "instance": "net.model:Model.shared",
+          "certainty": "static",
+          "constructor": "Branch()",
+          "moduleType": "Branch",
+          "constructorArgs": [],
+          "constructorKwargs": {}
+        },
+        {
+          "id": "model/group-3-0-1/group-8-6-3/input-8-18-4",
+          "parent": "model/group-3-0-1/group-8-6-3",
+          "kind": "input",
+          "label": "x",
+          "source_evidence": [
+            "e-159f943ff9f4021b"
+          ],
+          "expression": "x"
+        },
+        {
+          "id": "model/group-3-0-1/group-8-6-3/linear-9-18-5",
+          "parent": "model/group-3-0-1/group-8-6-3",
+          "kind": "linear",
+          "label": "Linear",
+          "source_evidence": [
+            "e-2d71d2931c8f725e"
+          ],
+          "expression": "self.proj(x)",
+          "instance": "net.model:Model.shared.proj",
+          "certainty": "static",
+          "constructor": "nn.Linear(4, 4)",
+          "moduleType": "Linear",
+          "constructorArgs": [
+            4,
+            4
+          ],
+          "constructorKwargs": {}
+        },
+        {
+          "id": "model/group-3-0-1/group-8-6-3/activation-9-9-6",
+          "parent": "model/group-3-0-1/group-8-6-3",
+          "kind": "activation",
+          "label": "ReLU",
+          "source_evidence": [
+            "e-0ed804c7e2b73d8c"
+          ],
+          "expression": "self.act(self.proj(x))",
+          "instance": "net.model:Model.shared.act",
+          "certainty": "static",
+          "constructor": "nn.ReLU()",
+          "moduleType": "ReLU",
+          "constructorArgs": [],
+          "constructorKwargs": {}
+        },
+        {
+          "id": "model/group-3-0-1/group-8-6-3/output-9-2-7",
+          "parent": "model/group-3-0-1/group-8-6-3",
+          "kind": "output",
+          "label": "return",
+          "source_evidence": [
+            "e-e03857cac621b541"
+          ],
+          "expression": "return self.act(self.proj(x))"
+        },
+        {
+          "id": "model/group-3-0-1/group-9-6-8",
+          "parent": "model/group-3-0-1",
+          "kind": "group",
+          "label": "Branch",
+          "source_evidence": [
+            "e-739928247d99627f"
+          ],
+          "expression": "self.shared(x)",
+          "instance": "net.model:Model.shared",
+          "certainty": "static",
+          "constructor": "Branch()",
+          "moduleType": "Branch",
+          "constructorArgs": [],
+          "constructorKwargs": {}
+        },
+        {
+          "id": "model/group-3-0-1/group-9-6-8/input-8-18-9",
+          "parent": "model/group-3-0-1/group-9-6-8",
+          "kind": "input",
+          "label": "x",
+          "source_evidence": [
+            "e-159f943ff9f4021b"
+          ],
+          "expression": "x"
+        },
+        {
+          "id": "model/group-3-0-1/group-9-6-8/linear-9-18-10",
+          "parent": "model/group-3-0-1/group-9-6-8",
+          "kind": "linear",
+          "label": "Linear",
+          "source_evidence": [
+            "e-2d71d2931c8f725e"
+          ],
+          "expression": "self.proj(x)",
+          "instance": "net.model:Model.shared.proj",
+          "certainty": "static",
+          "constructor": "nn.Linear(4, 4)",
+          "moduleType": "Linear",
+          "constructorArgs": [
+            4,
+            4
+          ],
+          "constructorKwargs": {}
+        },
+        {
+          "id": "model/group-3-0-1/group-9-6-8/activation-9-9-11",
+          "parent": "model/group-3-0-1/group-9-6-8",
+          "kind": "activation",
+          "label": "ReLU",
+          "source_evidence": [
+            "e-0ed804c7e2b73d8c"
+          ],
+          "expression": "self.act(self.proj(x))",
+          "instance": "net.model:Model.shared.act",
+          "certainty": "static",
+          "constructor": "nn.ReLU()",
+          "moduleType": "ReLU",
+          "constructorArgs": [],
+          "constructorKwargs": {}
+        },
+        {
+          "id": "model/group-3-0-1/group-9-6-8/output-9-2-12",
+          "parent": "model/group-3-0-1/group-9-6-8",
+          "kind": "output",
+          "label": "return",
+          "source_evidence": [
+            "e-e03857cac621b541"
+          ],
+          "expression": "return self.act(self.proj(x))"
+        },
+        {
+          "id": "model/group-3-0-1/output-10-2-13",
+          "parent": "model/group-3-0-1",
+          "kind": "output",
+          "label": "return[0]",
+          "source_evidence": [
+            "e-24a5bd242dd21622"
+          ],
+          "expression": "return (a, b)"
+        },
+        {
+          "id": "model/group-3-0-1/output-10-2-14",
+          "parent": "model/group-3-0-1",
+          "kind": "output",
+          "label": "return[1]",
+          "source_evidence": [
+            "e-24a5bd242dd21622"
+          ],
+          "expression": "return (a, b)"
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge-1",
+          "source": "model/group-3-0-1/input-7-18-2",
+          "target": "model/group-3-0-1/group-8-6-3/input-8-18-4",
+          "sourcePort": "out",
+          "targetPort": "in",
+          "wire": "model/group-3-0-1/input-7-18-2:out",
+          "role": "source_dependency",
+          "source_evidence": [
+            "e-db97b7c9f2626714"
+          ]
+        },
+        {
+          "id": "edge-2",
+          "source": "model/group-3-0-1/group-8-6-3/input-8-18-4",
+          "target": "model/group-3-0-1/group-8-6-3/linear-9-18-5",
+          "sourcePort": "out",
+          "targetPort": "arg[0]",
+          "wire": "model/group-3-0-1/group-8-6-3/input-8-18-4:out",
+          "role": "source_dependency",
+          "source_evidence": [
+            "e-2d71d2931c8f725e"
+          ]
+        },
+        {
+          "id": "edge-3",
+          "source": "model/group-3-0-1/group-8-6-3/linear-9-18-5",
+          "target": "model/group-3-0-1/group-8-6-3/activation-9-9-6",
+          "sourcePort": "out",
+          "targetPort": "arg[0]",
+          "wire": "model/group-3-0-1/group-8-6-3/linear-9-18-5:out",
+          "role": "source_dependency",
+          "source_evidence": [
+            "e-0ed804c7e2b73d8c"
+          ]
+        },
+        {
+          "id": "edge-4",
+          "source": "model/group-3-0-1/group-8-6-3/activation-9-9-6",
+          "target": "model/group-3-0-1/group-8-6-3/output-9-2-7",
+          "sourcePort": "out",
+          "targetPort": "value",
+          "wire": "model/group-3-0-1/group-8-6-3/activation-9-9-6:out",
+          "role": "source_dependency",
+          "source_evidence": [
+            "e-e03857cac621b541"
+          ]
+        },
+        {
+          "id": "edge-5",
+          "source": "model/group-3-0-1/input-7-18-2",
+          "target": "model/group-3-0-1/group-9-6-8/input-8-18-9",
+          "sourcePort": "out",
+          "targetPort": "in",
+          "wire": "model/group-3-0-1/input-7-18-2:out",
+          "role": "source_dependency",
+          "source_evidence": [
+            "e-739928247d99627f"
+          ]
+        },
+        {
+          "id": "edge-6",
+          "source": "model/group-3-0-1/group-9-6-8/input-8-18-9",
+          "target": "model/group-3-0-1/group-9-6-8/linear-9-18-10",
+          "sourcePort": "out",
+          "targetPort": "arg[0]",
+          "wire": "model/group-3-0-1/group-9-6-8/input-8-18-9:out",
+          "role": "source_dependency",
+          "source_evidence": [
+            "e-2d71d2931c8f725e"
+          ]
+        },
+        {
+          "id": "edge-7",
+          "source": "model/group-3-0-1/group-9-6-8/linear-9-18-10",
+          "target": "model/group-3-0-1/group-9-6-8/activation-9-9-11",
+          "sourcePort": "out",
+          "targetPort": "arg[0]",
+          "wire": "model/group-3-0-1/group-9-6-8/linear-9-18-10:out",
+          "role": "source_dependency",
+          "source_evidence": [
+            "e-0ed804c7e2b73d8c"
+          ]
+        },
+        {
+          "id": "edge-8",
+          "source": "model/group-3-0-1/group-9-6-8/activation-9-9-11",
+          "target": "model/group-3-0-1/group-9-6-8/output-9-2-12",
+          "sourcePort": "out",
+          "targetPort": "value",
+          "wire": "model/group-3-0-1/group-9-6-8/activation-9-9-11:out",
+          "role": "source_dependency",
+          "source_evidence": [
+            "e-e03857cac621b541"
+          ]
+        },
+        {
+          "id": "edge-9",
+          "source": "model/group-3-0-1/group-8-6-3/output-9-2-7",
+          "target": "model/group-3-0-1/output-10-2-13",
+          "sourcePort": "out",
+          "targetPort": "value",
+          "wire": "model/group-3-0-1/group-8-6-3/output-9-2-7:out",
+          "role": "source_dependency",
+          "source_evidence": [
+            "e-24a5bd242dd21622"
+          ]
+        },
+        {
+          "id": "edge-10",
+          "source": "model/group-3-0-1/group-9-6-8/output-9-2-12",
+          "target": "model/group-3-0-1/output-10-2-14",
+          "sourcePort": "out",
+          "targetPort": "value",
+          "wire": "model/group-3-0-1/group-9-6-8/output-9-2-12:out",
+          "role": "source_dependency",
+          "source_evidence": [
+            "e-24a5bd242dd21622"
+          ]
+        }
+      ],
+      "instances": {
+        "net.model:Model": [
+          "model/group-3-0-1"
+        ],
+        "net.model:Model.shared": [
+          "model/group-3-0-1/group-8-6-3",
+          "model/group-3-0-1/group-9-6-8"
+        ],
+        "net.model:Model.shared.proj": [
+          "model/group-3-0-1/group-8-6-3/linear-9-18-5",
+          "model/group-3-0-1/group-9-6-8/linear-9-18-10"
+        ],
+        "net.model:Model.shared.act": [
+          "model/group-3-0-1/group-8-6-3/activation-9-9-6",
+          "model/group-3-0-1/group-9-6-8/activation-9-9-11"
+        ]
+      },
+      "analysis": "static-source-dependencies",
+      "modelExecuted": false,
+      "shapePolicy": "No tensor dimensions or execution path inferred",
+      "registrySha256": "9c153d45ae26c27b1f5da8becde63af92eb51883b8e8ad1b00860151802f7e5f"
+    },
+    "canonicalIR": "{\"analysis\":\"static-source-dependencies\",\"edges\":[{\"id\":\"edge-1\",\"role\":\"source_dependency\",\"source\":\"model/group-3-0-1/input-7-18-2\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-db97b7c9f2626714\"],\"target\":\"model/group-3-0-1/group-8-6-3/input-8-18-4\",\"targetPort\":\"in\",\"wire\":\"model/group-3-0-1/input-7-18-2:out\"},{\"id\":\"edge-2\",\"role\":\"source_dependency\",\"source\":\"model/group-3-0-1/group-8-6-3/input-8-18-4\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-2d71d2931c8f725e\"],\"target\":\"model/group-3-0-1/group-8-6-3/linear-9-18-5\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-3-0-1/group-8-6-3/input-8-18-4:out\"},{\"id\":\"edge-3\",\"role\":\"source_dependency\",\"source\":\"model/group-3-0-1/group-8-6-3/linear-9-18-5\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-0ed804c7e2b73d8c\"],\"target\":\"model/group-3-0-1/group-8-6-3/activation-9-9-6\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-3-0-1/group-8-6-3/linear-9-18-5:out\"},{\"id\":\"edge-4\",\"role\":\"source_dependency\",\"source\":\"model/group-3-0-1/group-8-6-3/activation-9-9-6\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-e03857cac621b541\"],\"target\":\"model/group-3-0-1/group-8-6-3/output-9-2-7\",\"targetPort\":\"value\",\"wire\":\"model/group-3-0-1/group-8-6-3/activation-9-9-6:out\"},{\"id\":\"edge-5\",\"role\":\"source_dependency\",\"source\":\"model/group-3-0-1/input-7-18-2\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-739928247d99627f\"],\"target\":\"model/group-3-0-1/group-9-6-8/input-8-18-9\",\"targetPort\":\"in\",\"wire\":\"model/group-3-0-1/input-7-18-2:out\"},{\"id\":\"edge-6\",\"role\":\"source_dependency\",\"source\":\"model/group-3-0-1/group-9-6-8/input-8-18-9\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-2d71d2931c8f725e\"],\"target\":\"model/group-3-0-1/group-9-6-8/linear-9-18-10\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-3-0-1/group-9-6-8/input-8-18-9:out\"},{\"id\":\"edge-7\",\"role\":\"source_dependency\",\"source\":\"model/group-3-0-1/group-9-6-8/linear-9-18-10\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-0ed804c7e2b73d8c\"],\"target\":\"model/group-3-0-1/group-9-6-8/activation-9-9-11\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-3-0-1/group-9-6-8/linear-9-18-10:out\"},{\"id\":\"edge-8\",\"role\":\"source_dependency\",\"source\":\"model/group-3-0-1/group-9-6-8/activation-9-9-11\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-e03857cac621b541\"],\"target\":\"model/group-3-0-1/group-9-6-8/output-9-2-12\",\"targetPort\":\"value\",\"wire\":\"model/group-3-0-1/group-9-6-8/activation-9-9-11:out\"},{\"id\":\"edge-9\",\"role\":\"source_dependency\",\"source\":\"model/group-3-0-1/group-8-6-3/output-9-2-7\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-24a5bd242dd21622\"],\"target\":\"model/group-3-0-1/output-10-2-13\",\"targetPort\":\"value\",\"wire\":\"model/group-3-0-1/group-8-6-3/output-9-2-7:out\"},{\"id\":\"edge-10\",\"role\":\"source_dependency\",\"source\":\"model/group-3-0-1/group-9-6-8/output-9-2-12\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-24a5bd242dd21622\"],\"target\":\"model/group-3-0-1/output-10-2-14\",\"targetPort\":\"value\",\"wire\":\"model/group-3-0-1/group-9-6-8/output-9-2-12:out\"}],\"entry\":\"net.model:Model\",\"instances\":{\"net.model:Model\":[\"model/group-3-0-1\"],\"net.model:Model.shared\":[\"model/group-3-0-1/group-8-6-3\",\"model/group-3-0-1/group-9-6-8\"],\"net.model:Model.shared.act\":[\"model/group-3-0-1/group-8-6-3/activation-9-9-6\",\"model/group-3-0-1/group-9-6-8/activation-9-9-11\"],\"net.model:Model.shared.proj\":[\"model/group-3-0-1/group-8-6-3/linear-9-18-5\",\"model/group-3-0-1/group-9-6-8/linear-9-18-10\"]},\"modelExecuted\":false,\"nodes\":[{\"certainty\":\"static\",\"constructor\":\"net.model:Model\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"class Model(nn.Module):\\n\\n    def __init__(self):\\n        super().__init__()\\n        self.shared = Branch()\\n\\n    def forward(self, x):\\n        a = self.shared(x)\\n        b = self.shared(x)\\n        return (a, b)\",\"id\":\"model/group-3-0-1\",\"instance\":\"net.model:Model\",\"kind\":\"group\",\"label\":\"Model\",\"moduleType\":\"Model\",\"parent\":null,\"source_evidence\":[\"e-305092458d006e6c\"]},{\"expression\":\"x\",\"id\":\"model/group-3-0-1/input-7-18-2\",\"kind\":\"input\",\"label\":\"x\",\"parent\":\"model/group-3-0-1\",\"source_evidence\":[\"e-28f790010fb84e07\"]},{\"certainty\":\"static\",\"constructor\":\"Branch()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.shared(x)\",\"id\":\"model/group-3-0-1/group-8-6-3\",\"instance\":\"net.model:Model.shared\",\"kind\":\"group\",\"label\":\"Branch\",\"moduleType\":\"Branch\",\"parent\":\"model/group-3-0-1\",\"source_evidence\":[\"e-db97b7c9f2626714\"]},{\"expression\":\"x\",\"id\":\"model/group-3-0-1/group-8-6-3/input-8-18-4\",\"kind\":\"input\",\"label\":\"x\",\"parent\":\"model/group-3-0-1/group-8-6-3\",\"source_evidence\":[\"e-159f943ff9f4021b\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Linear(4, 4)\",\"constructorArgs\":[4,4],\"constructorKwargs\":{},\"expression\":\"self.proj(x)\",\"id\":\"model/group-3-0-1/group-8-6-3/linear-9-18-5\",\"instance\":\"net.model:Model.shared.proj\",\"kind\":\"linear\",\"label\":\"Linear\",\"moduleType\":\"Linear\",\"parent\":\"model/group-3-0-1/group-8-6-3\",\"source_evidence\":[\"e-2d71d2931c8f725e\"]},{\"certainty\":\"static\",\"constructor\":\"nn.ReLU()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.act(self.proj(x))\",\"id\":\"model/group-3-0-1/group-8-6-3/activation-9-9-6\",\"instance\":\"net.model:Model.shared.act\",\"kind\":\"activation\",\"label\":\"ReLU\",\"moduleType\":\"ReLU\",\"parent\":\"model/group-3-0-1/group-8-6-3\",\"source_evidence\":[\"e-0ed804c7e2b73d8c\"]},{\"expression\":\"return self.act(self.proj(x))\",\"id\":\"model/group-3-0-1/group-8-6-3/output-9-2-7\",\"kind\":\"output\",\"label\":\"return\",\"parent\":\"model/group-3-0-1/group-8-6-3\",\"source_evidence\":[\"e-e03857cac621b541\"]},{\"certainty\":\"static\",\"constructor\":\"Branch()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.shared(x)\",\"id\":\"model/group-3-0-1/group-9-6-8\",\"instance\":\"net.model:Model.shared\",\"kind\":\"group\",\"label\":\"Branch\",\"moduleType\":\"Branch\",\"parent\":\"model/group-3-0-1\",\"source_evidence\":[\"e-739928247d99627f\"]},{\"expression\":\"x\",\"id\":\"model/group-3-0-1/group-9-6-8/input-8-18-9\",\"kind\":\"input\",\"label\":\"x\",\"parent\":\"model/group-3-0-1/group-9-6-8\",\"source_evidence\":[\"e-159f943ff9f4021b\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Linear(4, 4)\",\"constructorArgs\":[4,4],\"constructorKwargs\":{},\"expression\":\"self.proj(x)\",\"id\":\"model/group-3-0-1/group-9-6-8/linear-9-18-10\",\"instance\":\"net.model:Model.shared.proj\",\"kind\":\"linear\",\"label\":\"Linear\",\"moduleType\":\"Linear\",\"parent\":\"model/group-3-0-1/group-9-6-8\",\"source_evidence\":[\"e-2d71d2931c8f725e\"]},{\"certainty\":\"static\",\"constructor\":\"nn.ReLU()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.act(self.proj(x))\",\"id\":\"model/group-3-0-1/group-9-6-8/activation-9-9-11\",\"instance\":\"net.model:Model.shared.act\",\"kind\":\"activation\",\"label\":\"ReLU\",\"moduleType\":\"ReLU\",\"parent\":\"model/group-3-0-1/group-9-6-8\",\"source_evidence\":[\"e-0ed804c7e2b73d8c\"]},{\"expression\":\"return self.act(self.proj(x))\",\"id\":\"model/group-3-0-1/group-9-6-8/output-9-2-12\",\"kind\":\"output\",\"label\":\"return\",\"parent\":\"model/group-3-0-1/group-9-6-8\",\"source_evidence\":[\"e-e03857cac621b541\"]},{\"expression\":\"return (a, b)\",\"id\":\"model/group-3-0-1/output-10-2-13\",\"kind\":\"output\",\"label\":\"return[0]\",\"parent\":\"model/group-3-0-1\",\"source_evidence\":[\"e-24a5bd242dd21622\"]},{\"expression\":\"return (a, b)\",\"id\":\"model/group-3-0-1/output-10-2-14\",\"kind\":\"output\",\"label\":\"return[1]\",\"parent\":\"model/group-3-0-1\",\"source_evidence\":[\"e-24a5bd242dd21622\"]}],\"registrySha256\":\"9c153d45ae26c27b1f5da8becde63af92eb51883b8e8ad1b00860151802f7e5f\",\"schema\":\"summary-source-ir/1\",\"shapePolicy\":\"No tensor dimensions or execution path inferred\"}",
+    "irSha256": "23a35f9b3b7fcbcf49ade78486756bf00b4184fe3bf8f025e0e5fa30d5b3575a",
+    "evidence": {
+      "e-305092458d006e6c": {
+        "file": "net/model.py",
+        "line": 3,
+        "endLine": 10,
+        "column": 0,
+        "endColumn": 12,
+        "expression": "class Model(nn.Module):\n def __init__(self):\n  super().__init__()\n  self.shared = Branch()\n def forward(self,x):\n  a = self.shared(x)\n  b = self.shared(x)\n  return a,b"
+      },
+      "e-8e9f46b93a251c61": {
+        "file": "net/model.py",
+        "line": 6,
+        "endLine": 6,
+        "column": 16,
+        "endColumn": 24,
+        "expression": "Branch()"
+      },
+      "e-28f790010fb84e07": {
+        "file": "net/model.py",
+        "line": 7,
+        "endLine": 7,
+        "column": 18,
+        "endColumn": 19,
+        "expression": "x"
+      },
+      "e-db97b7c9f2626714": {
+        "file": "net/model.py",
+        "line": 8,
+        "endLine": 8,
+        "column": 6,
+        "endColumn": 20,
+        "expression": "self.shared(x)"
+      },
+      "e-40f0009856f9f7ab": {
+        "file": "net/ops.py",
+        "line": 6,
+        "endLine": 6,
+        "column": 14,
+        "endColumn": 28,
+        "expression": "nn.Linear(4,4)"
+      },
+      "e-3cbd6073df74a129": {
+        "file": "net/ops.py",
+        "line": 7,
+        "endLine": 7,
+        "column": 13,
+        "endColumn": 22,
+        "expression": "nn.ReLU()"
+      },
+      "e-159f943ff9f4021b": {
+        "file": "net/ops.py",
+        "line": 8,
+        "endLine": 8,
+        "column": 18,
+        "endColumn": 19,
+        "expression": "x"
+      },
+      "e-2d71d2931c8f725e": {
+        "file": "net/ops.py",
+        "line": 9,
+        "endLine": 9,
+        "column": 18,
+        "endColumn": 30,
+        "expression": "self.proj(x)"
+      },
+      "e-0ed804c7e2b73d8c": {
+        "file": "net/ops.py",
+        "line": 9,
+        "endLine": 9,
+        "column": 9,
+        "endColumn": 31,
+        "expression": "self.act(self.proj(x))"
+      },
+      "e-e03857cac621b541": {
+        "file": "net/ops.py",
+        "line": 9,
+        "endLine": 9,
+        "column": 2,
+        "endColumn": 31,
+        "expression": "return self.act(self.proj(x))"
+      },
+      "e-739928247d99627f": {
+        "file": "net/model.py",
+        "line": 9,
+        "endLine": 9,
+        "column": 6,
+        "endColumn": 20,
+        "expression": "self.shared(x)"
+      },
+      "e-24a5bd242dd21622": {
+        "file": "net/model.py",
+        "line": 10,
+        "endLine": 10,
+        "column": 2,
+        "endColumn": 12,
+        "expression": "return a,b"
+      }
+    },
+    "diagnostics": [],
+    "config": {},
+    "adapterVersion": 1,
+    "adaptationRequests": [],
+    "coverage": {
+      "scope": "static-source-and-source-inspection",
+      "opaqueBoundaries": 0,
+      "inspectedOpaqueBoundaries": 0,
+      "truncatedInspections": 0,
+      "tensorExecutionVerified": false,
+      "modelExecuted": false,
+      "agentAuthoredSourceRules": true,
+      "sourceRuleApplications": 0,
+      "generationAuthority": "Adapters do not authorize structural generation; use independently checked source-preserving generation when eligible."
+    }
+  },
+  "architecture": {
+    "schemaVersion": 1,
+    "id": "architecture:net.model.Model",
+    "label": "Model",
+    "sourceDigest": "7d7f41e98fac0c7f3ea85f588d73ae07004a34c7296a24e509c11412da30ae5b",
+    "irDigest": "4adb095076bdeaaf21f0806cebc32de425072e3b46b97a362835a30b82dccbb4",
+    "entry": "net.model:Model",
+    "nodes": [
+      {
+        "id": "input:net.model.Model:x",
+        "label": "x",
+        "kind": "Input",
+        "category": "input",
+        "children": [],
+        "ports": [
+          {
+            "id": "input:net.model.Model:x:out:x",
+            "name": "x",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "net/model.py",
+          "line": 7,
+          "endLine": 10,
+          "expression": "def forward(self,x):\n  a = self.shared(x)\n  b = self.shared(x)\n  return a,b"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:net.model.Model"
+      },
+      {
+        "id": "call:instance:net.model.Model",
+        "label": "Model",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "input:net.model.Model:x",
+          "call:instance:net.model.Model.shared",
+          "call:instance:net.model.Model.shared@2",
+          "output:net.model.Model:0",
+          "output:net.model.Model:1"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:net.model.Model:in:x",
+            "name": "x",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "net/model.py",
+          "line": 3,
+          "endLine": 10,
+          "expression": "class Model(nn.Module):\n def __init__(self):\n  super().__init__()\n  self.shared = Branch()\n def forward(self,x):\n  a = self.shared(x)\n  b = self.shared(x)\n  return a,b"
+        },
+        "evidence": "source",
+        "instanceId": "instance:net.model.Model",
+        "callId": "call:instance:net.model.Model"
+      },
+      {
+        "id": "call:instance:net.model.Model.shared",
+        "label": "shared",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "call:instance:net.model.Model.shared.proj",
+          "call:instance:net.model.Model.shared.act"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:net.model.Model.shared:in:x",
+            "name": "x",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "net/model.py",
+          "line": 8,
+          "endLine": 8,
+          "expression": "self.shared(x)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:net.model.Model",
+        "instanceId": "instance:net.model.Model.shared",
+        "callId": "call:instance:net.model.Model.shared"
+      },
+      {
+        "id": "call:instance:net.model.Model.shared.proj",
+        "label": "proj",
+        "kind": "Linear",
+        "category": "linear",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:net.model.Model.shared.proj:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:net.model.Model.shared.proj:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "in_features": 4,
+          "out_features": 4
+        },
+        "source": {
+          "path": "net/ops.py",
+          "line": 9,
+          "endLine": 9,
+          "expression": "self.proj(x)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:net.model.Model.shared",
+        "instanceId": "instance:net.model.Model.shared.proj",
+        "callId": "call:instance:net.model.Model.shared.proj",
+        "parameterOrigins": {
+          "in_features": {
+            "kind": "literal",
+            "path": "net/ops.py",
+            "line": 6,
+            "endLine": 6,
+            "expression": "4",
+            "column": 24,
+            "endColumn": 25
+          },
+          "out_features": {
+            "kind": "literal",
+            "path": "net/ops.py",
+            "line": 6,
+            "endLine": 6,
+            "expression": "4",
+            "column": 26,
+            "endColumn": 27
+          }
+        }
+      },
+      {
+        "id": "call:instance:net.model.Model.shared.act",
+        "label": "act",
+        "kind": "ReLU",
+        "category": "activation",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:net.model.Model.shared.act:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:net.model.Model.shared.act:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "net/ops.py",
+          "line": 9,
+          "endLine": 9,
+          "expression": "self.act(self.proj(x))"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:net.model.Model.shared",
+        "instanceId": "instance:net.model.Model.shared.act",
+        "callId": "call:instance:net.model.Model.shared.act"
+      },
+      {
+        "id": "call:instance:net.model.Model.shared@2",
+        "label": "shared",
+        "kind": "Module",
+        "category": "container",
+        "children": [
+          "call:instance:net.model.Model.shared.proj@2",
+          "call:instance:net.model.Model.shared.act@2"
+        ],
+        "ports": [
+          {
+            "id": "call:instance:net.model.Model.shared@2:in:x",
+            "name": "x",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "net/model.py",
+          "line": 9,
+          "endLine": 9,
+          "expression": "self.shared(x)"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:net.model.Model",
+        "instanceId": "instance:net.model.Model.shared",
+        "callId": "call:instance:net.model.Model.shared@2"
+      },
+      {
+        "id": "call:instance:net.model.Model.shared.proj@2",
+        "label": "proj",
+        "kind": "Linear",
+        "category": "linear",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:net.model.Model.shared.proj@2:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:net.model.Model.shared.proj@2:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {
+          "in_features": 4,
+          "out_features": 4
+        },
+        "source": {
+          "path": "net/ops.py",
+          "line": 9,
+          "endLine": 9,
+          "expression": "self.proj(x)"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:net.model.Model.shared@2",
+        "instanceId": "instance:net.model.Model.shared.proj",
+        "callId": "call:instance:net.model.Model.shared.proj@2",
+        "parameterOrigins": {
+          "in_features": {
+            "kind": "literal",
+            "path": "net/ops.py",
+            "line": 6,
+            "endLine": 6,
+            "expression": "4",
+            "column": 24,
+            "endColumn": 25
+          },
+          "out_features": {
+            "kind": "literal",
+            "path": "net/ops.py",
+            "line": 6,
+            "endLine": 6,
+            "expression": "4",
+            "column": 26,
+            "endColumn": 27
+          }
+        }
+      },
+      {
+        "id": "call:instance:net.model.Model.shared.act@2",
+        "label": "act",
+        "kind": "ReLU",
+        "category": "activation",
+        "children": [],
+        "ports": [
+          {
+            "id": "call:instance:net.model.Model.shared.act@2:in:input",
+            "name": "input",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          },
+          {
+            "id": "call:instance:net.model.Model.shared.act@2:out:output",
+            "name": "output",
+            "direction": "out",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "net/ops.py",
+          "line": 9,
+          "endLine": 9,
+          "expression": "self.act(self.proj(x))"
+        },
+        "evidence": "contract",
+        "parentId": "call:instance:net.model.Model.shared@2",
+        "instanceId": "instance:net.model.Model.shared.act",
+        "callId": "call:instance:net.model.Model.shared.act@2"
+      },
+      {
+        "id": "output:net.model.Model:0",
+        "label": "output 1",
+        "kind": "Output",
+        "category": "output",
+        "children": [],
+        "ports": [
+          {
+            "id": "output:net.model.Model:0:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "net/model.py",
+          "line": 7,
+          "endLine": 10,
+          "expression": "def forward(self,x):\n  a = self.shared(x)\n  b = self.shared(x)\n  return a,b"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:net.model.Model",
+        "outputPath": [
+          {
+            "kind": "index",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "id": "output:net.model.Model:1",
+        "label": "output 2",
+        "kind": "Output",
+        "category": "output",
+        "children": [],
+        "ports": [
+          {
+            "id": "output:net.model.Model:1:in:value",
+            "name": "value",
+            "direction": "in",
+            "role": "data",
+            "ordinal": 0
+          }
+        ],
+        "parameters": {},
+        "source": {
+          "path": "net/model.py",
+          "line": 7,
+          "endLine": 10,
+          "expression": "def forward(self,x):\n  a = self.shared(x)\n  b = self.shared(x)\n  return a,b"
+        },
+        "evidence": "source",
+        "parentId": "call:instance:net.model.Model",
+        "outputPath": [
+          {
+            "kind": "index",
+            "index": 1
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:0",
+        "source": {
+          "nodeId": "input:net.model.Model:x",
+          "portId": "input:net.model.Model:x:out:x"
+        },
+        "target": {
+          "nodeId": "call:instance:net.model.Model",
+          "portId": "call:instance:net.model.Model:in:x"
+        },
+        "tensorId": "tensor:input:net.model.Model:x:x",
+        "role": "data"
+      },
+      {
+        "id": "edge:1",
+        "source": {
+          "nodeId": "input:net.model.Model:x",
+          "portId": "input:net.model.Model:x:out:x"
+        },
+        "target": {
+          "nodeId": "call:instance:net.model.Model.shared",
+          "portId": "call:instance:net.model.Model.shared:in:x"
+        },
+        "tensorId": "tensor:input:net.model.Model:x:x",
+        "role": "data"
+      },
+      {
+        "id": "edge:2",
+        "source": {
+          "nodeId": "input:net.model.Model:x",
+          "portId": "input:net.model.Model:x:out:x"
+        },
+        "target": {
+          "nodeId": "call:instance:net.model.Model.shared.proj",
+          "portId": "call:instance:net.model.Model.shared.proj:in:input"
+        },
+        "tensorId": "tensor:input:net.model.Model:x:x",
+        "role": "data"
+      },
+      {
+        "id": "edge:3",
+        "source": {
+          "nodeId": "call:instance:net.model.Model.shared.proj",
+          "portId": "call:instance:net.model.Model.shared.proj:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:net.model.Model.shared.act",
+          "portId": "call:instance:net.model.Model.shared.act:in:input"
+        },
+        "tensorId": "tensor:call:instance:net.model.Model.shared.proj:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:4",
+        "source": {
+          "nodeId": "input:net.model.Model:x",
+          "portId": "input:net.model.Model:x:out:x"
+        },
+        "target": {
+          "nodeId": "call:instance:net.model.Model.shared@2",
+          "portId": "call:instance:net.model.Model.shared@2:in:x"
+        },
+        "tensorId": "tensor:input:net.model.Model:x:x",
+        "role": "data"
+      },
+      {
+        "id": "edge:5",
+        "source": {
+          "nodeId": "input:net.model.Model:x",
+          "portId": "input:net.model.Model:x:out:x"
+        },
+        "target": {
+          "nodeId": "call:instance:net.model.Model.shared.proj@2",
+          "portId": "call:instance:net.model.Model.shared.proj@2:in:input"
+        },
+        "tensorId": "tensor:input:net.model.Model:x:x",
+        "role": "data"
+      },
+      {
+        "id": "edge:6",
+        "source": {
+          "nodeId": "call:instance:net.model.Model.shared.proj@2",
+          "portId": "call:instance:net.model.Model.shared.proj@2:out:output"
+        },
+        "target": {
+          "nodeId": "call:instance:net.model.Model.shared.act@2",
+          "portId": "call:instance:net.model.Model.shared.act@2:in:input"
+        },
+        "tensorId": "tensor:call:instance:net.model.Model.shared.proj@2:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:7",
+        "source": {
+          "nodeId": "call:instance:net.model.Model.shared.act",
+          "portId": "call:instance:net.model.Model.shared.act:out:output"
+        },
+        "target": {
+          "nodeId": "output:net.model.Model:0",
+          "portId": "output:net.model.Model:0:in:value"
+        },
+        "tensorId": "tensor:call:instance:net.model.Model.shared.act:output",
+        "role": "data"
+      },
+      {
+        "id": "edge:8",
+        "source": {
+          "nodeId": "call:instance:net.model.Model.shared.act@2",
+          "portId": "call:instance:net.model.Model.shared.act@2:out:output"
+        },
+        "target": {
+          "nodeId": "output:net.model.Model:1",
+          "portId": "output:net.model.Model:1:in:value"
+        },
+        "tensorId": "tensor:call:instance:net.model.Model.shared.act@2:output",
+        "role": "data"
+      }
+    ],
+    "diagnostics": [
+      {
+        "level": "info",
+        "message": "Static AST subset only. User code was not imported or executed; no inferred shapes or runtime verification. Source editing uses separately reviewed registered transactions."
+      }
+    ],
+    "sources": [
+      {
+        "path": "net/__init__.py",
+        "content": "",
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "net/model.py",
+        "content": "from torch import nn\nfrom .ops import Branch\nclass Model(nn.Module):\n def __init__(self):\n  super().__init__()\n  self.shared = Branch()\n def forward(self,x):\n  a = self.shared(x)\n  b = self.shared(x)\n  return a,b\n",
+        "digest": "3c1337b8e80c7d7da8f4c53aa4bcec0fb546a900fc0bb31b3968d9cea5f12257"
+      },
+      {
+        "path": "net/ops.py",
+        "content": "from torch import nn\nraise RuntimeError(\"Source text must never execute\")\nclass Branch(nn.Module):\n def __init__(self):\n  super().__init__()\n  self.proj = nn.Linear(4,4)\n  self.act = nn.ReLU()\n def forward(self,x):\n  return self.act(self.proj(x))\n",
+        "digest": "0ae27c2d6a630ee16c1ffd480258b92cf1117a2a016be0cad31ee26e6ff4b848"
+      }
+    ]
+  }
+}

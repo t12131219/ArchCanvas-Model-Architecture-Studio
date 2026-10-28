@@ -1,8 +1,9 @@
+// Formal-core regression with retired preview test support; not evidence of current Summary gesture performance.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { applyVisualBatch, buildScene, createHistory, reduceHistory } from '../src/core/index.ts';
-import { prepareMovePreview, previewMoveScene } from '../src/core/movePreview.ts';
+import { prepareMovePreview, previewMoveScene } from './retired-preview/movePreview.ts';
 import { createOrthogonalRouter, ROUTE_COMPONENT_BUDGET } from '../src/core/orthogonalRouter.ts';
 import type { RouteRequest } from '../src/core/orthogonalRouter.ts';
 import { intrusions, metrics, parsePath, verifyEndpoints } from '../../docs/evidence/m4-routing-refinement/independent/oracle.ts';

@@ -1,0 +1,108 @@
+{
+  "schema": "archcanvas-summary-document-validation/1",
+  "recordedAt": "2026-10-27T18:59:54.572275+00:00",
+  "phase": "Summary multiformat documents, provenance, Studio import panels and D2 production entry retirement",
+  "phaseStatus": "validated",
+  "overallMigrationStatus": "in-progress",
+  "frontendFull": {
+    "tests": 879,
+    "pass": 878,
+    "fail": 0,
+    "skipped": 1,
+    "cancelled": 0,
+    "durationMs": 579013.688182,
+    "command": "npm test",
+    "evidence": "frontend.log",
+    "scopeNote": "Clean full rerun after all runtime changes and the extracted hierarchy-test harness dependency fix.",
+    "skipReason": "Standalone SVG DOM Chromium test cannot launch in sandbox; separate real Chromium matrices passed."
+  },
+  "targeted": {
+    "tests": 49,
+    "pass": 49,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "durationMs": 1301.873936,
+    "command": "node --experimental-strip-types --test --test-isolation=none tests/summaryDocuments.test.ts tests/previewApp.test.ts tests/previewSourceControls.test.ts tests/previewHierarchy.test.ts",
+    "evidence": "targeted.log",
+    "scopeNote": "Included in the full suite; counts are not additive."
+  },
+  "browser": {
+    "documents": {
+      "passed": 14,
+      "browserErrors": 0,
+      "evidence": "browser-documents.json"
+    },
+    "native": {
+      "passed": 16,
+      "browserErrors": 0,
+      "evidence": "browser-native.json"
+    },
+    "legacy": {
+      "passed": 23,
+      "browserErrors": 0,
+      "evidence": "browser-legacy.json"
+    }
+  },
+  "browserTotalChecks": 53,
+  "browserSourceWrites": [],
+  "build": {
+    "passed": true,
+    "evidence": "build.log"
+  },
+  "independentCopy": {
+    "passed": true,
+    "command": "python3 scripts/check_independence.py --build",
+    "evidence": "independence-report.json",
+    "currentRuntimeHashesMatch": true,
+    "newDocumentAndHostTests": {
+      "tests": 42,
+      "pass": 42,
+      "fail": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "durationMs": 1206.014819,
+      "evidence": "independent-targeted.log"
+    },
+    "scopeNote": "Source/build independence with copied installed npm dependencies. Runtime hashes are checked against the final source; final evidence files are produced after that copy."
+  },
+  "assetIntegrity": {
+    "evidence": "http-assets.json",
+    "resources": 61,
+    "bytes": 3723598,
+    "publicDistHttpEqual": true,
+    "integrationManifestFiles": 57,
+    "sourceIdenticalNativeModules": 32
+  },
+  "fixtureMatrix": {
+    "fixtures": 5,
+    "cuts": 15,
+    "allRoutesValid": true,
+    "evidence": "fixture-cuts.json",
+    "scopeNote": "Source native pipeline regression. Five-format browser import matrix uses a small four-node, three-dependency document; it is not every model/format/state combination."
+  },
+  "formats": [
+    "archcanvas-native-semantic/1",
+    "semantic-canvas/1",
+    "archcanvas-architecture-document/1",
+    "semantic-authoring/1",
+    "archcanvas-source-semantic/2",
+    "summary-merge-recursive/1 with nativeDocument"
+  ],
+  "storageBoundary": "Imported documents are preview-only browser documents. Top save does not imply server CAS/source persistence. Editing JSON restores in a fresh browser context without prior storage.",
+  "evidenceBoundary": "Imported IR, authoring, certificates and runtime records are declared evidence; no verified Python source or execution authority is granted.",
+  "history": {
+    "frontendBeforeHarnessFix": "frontend-before-harness-fix.log",
+    "failure": "The existing extracted studioDocument test did not inject the newly introduced importedDocuments Map. Test harness fixed; 49 targeted checks and this complete full rerun pass.",
+    "productIssueFixed": "Successful preview-only save now clears prior rejected-import feedback.",
+    "notCurrentCertification": true
+  },
+  "remaining": [
+    "Full Summary AuthoringModel atomic nodes, exact slots, module replacement, shared identities, templates, source modules and recipe adaptation in the retained Studio shell",
+    "Current generic model catalog",
+    "CPU runtime/merged evidence UI through formal explicit isolation and receipts",
+    "Measured adaptive-frontier renderer feedback",
+    "Thousand-node budget, transport, cancellation and stress support",
+    "D0/D1 old renderer and interaction dependency cleanup"
+  ]
+}

@@ -1,6 +1,17 @@
 import type { ExportArtifact } from './api.ts';
 
 export type PreviewExportBinding = { caseId: string; sourceDigest?: string; irDigest?: string; revision?: number };
+/** A preview-only identity is not a digest. Keep it in caseId, never forge a source hash. */
+export function previewExportBinding(binding: PreviewExportBinding): PreviewExportBinding {
+  const result: PreviewExportBinding = { caseId: binding.caseId, revision: binding.revision };
+  for (const field of ['sourceDigest', 'irDigest'] as const) {
+    const value = binding[field];
+    if (value === undefined || value === `preview-only:${binding.caseId}`) continue;
+    if (!/^[a-f0-9]{64}$/.test(value)) throw new Error(`预览 ${field} 不是有效的 SHA256 摘要。`);
+    result[field] = value;
+  }
+  return result;
+}
 export type PreviewExportSource = { svg: (nodeId?: string) => Promise<string>; binding: PreviewExportBinding; detailChoices?: { nodeId: string; pathLabel: string }[]; editingDocument?: string; sourcePackage?: string };
 export type PreviewPublicationMetrics = { widthMm: number; heightMm: number; minTextPt: number; nodeLabelPt: number; minMainLinePt: number;
   suggestedWidthFor7Pt: number; suggestedHeightFor7Pt: number };
@@ -91,6 +102,17 @@ export function sanitizePreviewPublication(raw: string, widthMm: number): Previe
     // Hit targets have already been removed; pointer-events is reserved by
     // the server for identified caption-guide paths.
     if (element.hasAttribute('pointer-events') && !element.hasAttribute('data-caption-guide-id')) element.removeAttribute('pointer-events');
+  }
+  // Vendored scenes can wrap a complete <defs> inside #definitions.
+  // Flatten definition wrappers, retaining inherited marker paint, before
+  // sending the same strict publication vocabulary to the server.
+  for (const definition of [...root.querySelectorAll('defs defs')].reverse()) {
+    for (const child of [...definition.children]) {
+      for (const attribute of styleAttributes) {
+        if (!child.hasAttribute(attribute) && definition.hasAttribute(attribute)) child.setAttribute(attribute, definition.getAttribute(attribute)!);
+      }
+    }
+    definition.replaceWith(...definition.childNodes);
   }
   const unitPt = widthMm * 72 / 25.4 / viewBox[2];
   const fonts = [...root.querySelectorAll('text,tspan')].filter(element => element.textContent?.trim() && !element.closest('defs') && visible(element))

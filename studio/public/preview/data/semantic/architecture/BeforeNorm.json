@@ -1,0 +1,486 @@
+{
+  "schema": "archcanvas-source-semantic/2",
+  "title": "BeforeNorm",
+  "entry": {
+    "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/composed_models.py",
+    "class": "BeforeNorm",
+    "cell": null,
+    "constructor": {}
+  },
+  "coverage_contract": "在明确限定的模型、输入范围和运行模式内，完整覆盖并验证所有分支。任何任意 PyTorch 模型均无 opaque 无法保证：未知自定义算子、外部依赖或动态 Python 行为可能无法从现有证据中还原。",
+  "sources": [
+    {
+      "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/composed_models.py",
+      "physical": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/composed_models.py",
+      "cell": null,
+      "sha256": "1c7431ae493dae9e95f72fe39f601957565b0033b273a36aa8e09925d4e9ce08",
+      "unit_sha256": "1c7431ae493dae9e95f72fe39f601957565b0033b273a36aa8e09925d4e9ce08"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "model/85:4:composite:1",
+      "kind": "composite",
+      "label": "BeforeNorm",
+      "parent": null,
+      "source_parent": null,
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/composed_models.py",
+          "line": 85,
+          "end_line": 86,
+          "column": 4,
+          "end_column": 59,
+          "symbol": "BeforeNorm.forward",
+          "expression": "def forward(self, x):\n    return x + self.b(torch.relu(self.a(self.norm(x))))"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "composite",
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "runtime_evidence": [],
+      "semantic_type": "source-module",
+      "module_path": "",
+      "constructor": {},
+      "source_class": "BeforeNorm"
+    },
+    {
+      "id": "model/85:4:composite:1/85:22:interface:1",
+      "kind": "interface",
+      "label": "x",
+      "parent": "model/85:4:composite:1",
+      "source_parent": "model/85:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/composed_models.py",
+          "line": 85,
+          "end_line": 85,
+          "column": 22,
+          "end_column": 23,
+          "symbol": "BeforeNorm.forward",
+          "expression": "x"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "port",
+        "fill": "#e7edf4"
+      },
+      "runtime_evidence": [],
+      "role": "input",
+      "slot": "x"
+    },
+    {
+      "id": "model/85:4:composite:1/86:15:compute:1",
+      "kind": "compute",
+      "label": "add",
+      "parent": "model/85:4:composite:1",
+      "source_parent": "model/85:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/composed_models.py",
+          "line": 86,
+          "end_line": 86,
+          "column": 15,
+          "end_column": 59,
+          "symbol": "BeforeNorm.forward",
+          "expression": "x + self.b(torch.relu(self.a(self.norm(x))))"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "runtime_evidence": [],
+      "operator": "add"
+    },
+    {
+      "id": "model/85:4:composite:1/86:44:compute:1",
+      "kind": "compute",
+      "label": "norm · LayerNorm",
+      "parent": "model/85:4:composite:1",
+      "source_parent": "model/85:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/composed_models.py",
+          "line": 86,
+          "end_line": 86,
+          "column": 44,
+          "end_column": 56,
+          "symbol": "BeforeNorm.forward",
+          "expression": "self.norm(x)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "runtime_evidence": [],
+      "operator": "normalization",
+      "module_path": "norm",
+      "framework_type": "torch.nn.LayerNorm",
+      "constructor": {
+        "args": [
+          8
+        ],
+        "kwargs": {}
+      }
+    },
+    {
+      "id": "model/85:4:composite:1/81:20:parameter:1",
+      "kind": "parameter",
+      "label": "norm.parameters",
+      "parent": "model/85:4:composite:1",
+      "source_parent": "model/85:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/composed_models.py",
+          "line": 81,
+          "end_line": 81,
+          "column": 20,
+          "end_column": 35,
+          "symbol": "BeforeNorm.forward",
+          "expression": "nn.LayerNorm(8)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "runtime_evidence": [],
+      "parameter_scope": "norm",
+      "identity_status": "declared-scope; sharing-unresolved"
+    },
+    {
+      "id": "model/85:4:composite:1/86:37:compute:1",
+      "kind": "compute",
+      "label": "a · Linear",
+      "parent": "model/85:4:composite:1",
+      "source_parent": "model/85:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/composed_models.py",
+          "line": 86,
+          "end_line": 86,
+          "column": 37,
+          "end_column": 57,
+          "symbol": "BeforeNorm.forward",
+          "expression": "self.a(self.norm(x))"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "runtime_evidence": [],
+      "operator": "linear",
+      "module_path": "a",
+      "framework_type": "torch.nn.Linear",
+      "constructor": {
+        "args": [
+          8,
+          16
+        ],
+        "kwargs": {}
+      }
+    },
+    {
+      "id": "model/85:4:composite:1/82:17:parameter:1",
+      "kind": "parameter",
+      "label": "a.parameters",
+      "parent": "model/85:4:composite:1",
+      "source_parent": "model/85:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/composed_models.py",
+          "line": 82,
+          "end_line": 82,
+          "column": 17,
+          "end_column": 33,
+          "symbol": "BeforeNorm.forward",
+          "expression": "nn.Linear(8, 16)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "runtime_evidence": [],
+      "parameter_scope": "a",
+      "identity_status": "declared-scope; sharing-unresolved"
+    },
+    {
+      "id": "model/85:4:composite:1/86:26:compute:1",
+      "kind": "compute",
+      "label": "relu",
+      "parent": "model/85:4:composite:1",
+      "source_parent": "model/85:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/composed_models.py",
+          "line": 86,
+          "end_line": 86,
+          "column": 26,
+          "end_column": 58,
+          "symbol": "BeforeNorm.forward",
+          "expression": "torch.relu(self.a(self.norm(x)))"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "runtime_evidence": [],
+      "operator": "activation",
+      "function_target": "torch.relu",
+      "arguments": {
+        "args": [
+          {
+            "unresolved": "self.a(self.norm(x))"
+          }
+        ],
+        "kwargs": {}
+      },
+      "reason": null
+    },
+    {
+      "id": "model/85:4:composite:1/86:19:compute:1",
+      "kind": "compute",
+      "label": "b · Linear",
+      "parent": "model/85:4:composite:1",
+      "source_parent": "model/85:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/composed_models.py",
+          "line": 86,
+          "end_line": 86,
+          "column": 19,
+          "end_column": 59,
+          "symbol": "BeforeNorm.forward",
+          "expression": "self.b(torch.relu(self.a(self.norm(x))))"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "runtime_evidence": [],
+      "operator": "linear",
+      "module_path": "b",
+      "framework_type": "torch.nn.Linear",
+      "constructor": {
+        "args": [
+          16,
+          8
+        ],
+        "kwargs": {}
+      }
+    },
+    {
+      "id": "model/85:4:composite:1/83:17:parameter:1",
+      "kind": "parameter",
+      "label": "b.parameters",
+      "parent": "model/85:4:composite:1",
+      "source_parent": "model/85:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/composed_models.py",
+          "line": 83,
+          "end_line": 83,
+          "column": 17,
+          "end_column": 33,
+          "symbol": "BeforeNorm.forward",
+          "expression": "nn.Linear(16, 8)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "runtime_evidence": [],
+      "parameter_scope": "b",
+      "identity_status": "declared-scope; sharing-unresolved"
+    },
+    {
+      "id": "model/85:4:composite:1/86:8:interface:1",
+      "kind": "interface",
+      "label": "return",
+      "parent": "model/85:4:composite:1",
+      "source_parent": "model/85:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/composed_models.py",
+          "line": 86,
+          "end_line": 86,
+          "column": 8,
+          "end_column": 59,
+          "symbol": "BeforeNorm.forward",
+          "expression": "return x + self.b(torch.relu(self.a(self.norm(x))))"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "port",
+        "fill": "#e7edf4"
+      },
+      "runtime_evidence": [],
+      "role": "output"
+    }
+  ],
+  "edges": [
+    {
+      "source": "model/85:4:composite:1/85:22:interface:1",
+      "target": "model/85:4:composite:1/86:15:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "0",
+      "evidence": "source-dependency",
+      "id": "e00000"
+    },
+    {
+      "source": "model/85:4:composite:1/81:20:parameter:1",
+      "target": "model/85:4:composite:1/86:44:compute:1",
+      "kind": "parameter-read",
+      "source_port": "out",
+      "target_port": "in",
+      "evidence": "framework-contract",
+      "id": "e00001"
+    },
+    {
+      "source": "model/85:4:composite:1/85:22:interface:1",
+      "target": "model/85:4:composite:1/86:44:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "arg:0",
+      "evidence": "source-dependency",
+      "id": "e00002"
+    },
+    {
+      "source": "model/85:4:composite:1/82:17:parameter:1",
+      "target": "model/85:4:composite:1/86:37:compute:1",
+      "kind": "parameter-read",
+      "source_port": "out",
+      "target_port": "in",
+      "evidence": "framework-contract",
+      "id": "e00003"
+    },
+    {
+      "source": "model/85:4:composite:1/86:44:compute:1",
+      "target": "model/85:4:composite:1/86:37:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "arg:0",
+      "evidence": "source-dependency",
+      "id": "e00004"
+    },
+    {
+      "source": "model/85:4:composite:1/86:37:compute:1",
+      "target": "model/85:4:composite:1/86:26:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "arg:0",
+      "evidence": "source-dependency",
+      "id": "e00005"
+    },
+    {
+      "source": "model/85:4:composite:1/83:17:parameter:1",
+      "target": "model/85:4:composite:1/86:19:compute:1",
+      "kind": "parameter-read",
+      "source_port": "out",
+      "target_port": "in",
+      "evidence": "framework-contract",
+      "id": "e00006"
+    },
+    {
+      "source": "model/85:4:composite:1/86:26:compute:1",
+      "target": "model/85:4:composite:1/86:19:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "arg:0",
+      "evidence": "source-dependency",
+      "id": "e00007"
+    },
+    {
+      "source": "model/85:4:composite:1/86:19:compute:1",
+      "target": "model/85:4:composite:1/86:15:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "2",
+      "evidence": "source-dependency",
+      "id": "e00008"
+    },
+    {
+      "source": "model/85:4:composite:1/86:15:compute:1",
+      "target": "model/85:4:composite:1/86:8:interface:1",
+      "kind": "interface-binding",
+      "source_port": "out",
+      "target_port": "in",
+      "evidence": "source-dependency",
+      "id": "e00009"
+    }
+  ],
+  "branches": [],
+  "motifs": [
+    {
+      "id": "motif:add-and-normalization candidate:0",
+      "semantic_type": "add-and-normalization candidate",
+      "members": [
+        "model/85:4:composite:1/85:22:interface:1",
+        "model/85:4:composite:1/86:15:compute:1",
+        "model/85:4:composite:1/86:44:compute:1",
+        "model/85:4:composite:1/81:20:parameter:1",
+        "model/85:4:composite:1/86:37:compute:1",
+        "model/85:4:composite:1/82:17:parameter:1",
+        "model/85:4:composite:1/86:26:compute:1",
+        "model/85:4:composite:1/86:19:compute:1",
+        "model/85:4:composite:1/83:17:parameter:1",
+        "model/85:4:composite:1/86:8:interface:1"
+      ],
+      "evidence": [
+        "add + normalization; residual origin unproven"
+      ],
+      "confidence": "rule-confirmed",
+      "rule_version": "dataflow-motifs/1"
+    }
+  ],
+  "diagnostics": [],
+  "runtime": {
+    "status": "not-requested",
+    "model_executed": false
+  },
+  "coverage_blockers": [],
+  "coverage": {
+    "status": "not-verified",
+    "scope": "static-source",
+    "complete": false,
+    "reason": "static dependencies are not execution proof"
+  },
+  "limitations": [
+    "Static edges express source dependencies, not observed tensor bindings.",
+    "Unresolved calls/loops/external definitions remain explicit opaque boundaries.",
+    "Mutation updates proven direct aliases only; views, external aliases and interprocedural effects remain unresolved.",
+    "Notebook cells are parsed as data; notebook setup/training cells are never executed."
+  ],
+  "ir_digest": "3e959ff94ed805cfce466c47e49b37d8623b8dc94213915642dc5d47224b9b42"
+}

@@ -1,0 +1,1623 @@
+{
+  "schema": "summary-source-adapter/1",
+  "id": "source-50bbc446b4b6d417",
+  "title": "Wrapper",
+  "entry": "transformed_mlp:Wrapper",
+  "files": [
+    {
+      "path": "seeded_fanout.py",
+      "sha256": "fed2ed2bd1f85685bcb627943c8bd7ce370c5e2400f20e7bc99a13c28426de13",
+      "text": "# Generated static source only; do not execute. Seed: 20261017.\nfrom torch import nn\n\nclass 共享残差单元_LongMixedLanguageResidualCell(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.linear = nn.Linear(16,16)\n        self.activation = nn.GELU()\n    def forward(self,x):\n        h=self.linear(x)\n        return self.activation(h)+x\n\nclass NestedBranch(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.cell=共享残差单元_LongMixedLanguageResidualCell()\n    def forward(self,x):\n        return self.cell(x)\n\nclass SeededFanout(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.nested=NestedBranch()\n        self.branch_0=nn.ReLU()\n        self.branch_1=nn.Sigmoid()\n        self.branch_2=nn.GELU()\n        self.branch_3=nn.ReLU()\n        self.branch_4=nn.Sigmoid()\n        self.branch_5=nn.Identity()\n        self.branch_6=nn.Identity()\n    def forward(self,x):\n        z=self.nested(x)\n        b0=self.branch_0(z)\n        b1=self.branch_1(z)\n        b2=self.branch_2(z)\n        b3=self.branch_3(z)\n        b4=self.branch_4(z)\n        b5=self.branch_5(z)\n        b6=self.branch_6(z)\n        return b0+b1+b2+b3+b4+b5+b6\n"
+    },
+    {
+      "path": "transformed_mlp.py",
+      "sha256": "5aeaacd334ef34fa08b6ec1a858162c3905a6497d55961df525bbd4dee720816",
+      "text": "# Structural holdout: MLP fixture duplicated into nested branches + conditional join.\n# Original fixture: fixtures/mlp/model.py. No model code was executed.\nfrom torch import nn\n\nclass MLP(nn.Module):\n    def __init__(self,input_dim=16,hidden_dim=32,output_dim=16):\n        super().__init__()\n        self.network=nn.Sequential(nn.Linear(input_dim,hidden_dim),nn.GELU(),nn.Dropout(0.1),nn.Linear(hidden_dim,output_dim))\n    def forward(self,features):\n        return self.network(features)\n\nclass Wrapper(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.left=MLP()\n        self.right=MLP()\n        self.project=nn.Linear(16,4)\n        self.fallback=nn.Identity()\n    def forward(self,x,flag=True):\n        a=self.left(x)\n        b=self.right(x)\n        if flag:\n            c=a+b\n            y=self.project(c)\n        else:\n            c=self.fallback(b)\n            y=self.project(c)\n        return y\n"
+    }
+  ],
+  "sourceSha256": "73eba508a58eb3db69b021bb7c38a20f3957864127a2d348b5fe2372ac31c5fc",
+  "ir": {
+    "schema": "summary-source-ir/1",
+    "entry": "transformed_mlp:Wrapper",
+    "nodes": [
+      {
+        "id": "model/group-12-0-1",
+        "parent": null,
+        "kind": "group",
+        "label": "Wrapper",
+        "source_evidence": [
+          "e-830299cc7088df9d"
+        ],
+        "expression": "class Wrapper(nn.Module):\n\n    def __init__(self):\n        super().__init__()\n        self.left = MLP()\n        self.right = MLP()\n        self.project = nn.Linear(16, 4)\n        self.fallback = nn.Identity()\n\n    def forward(self, x, flag=True):\n        a = self.left(x)\n        b = self.right(x)\n        if flag:\n            c = a + b\n            y = self.project(c)\n        else:\n            c = self.fallback(b)\n            y = self.project(c)\n        return y",
+        "instance": "transformed_mlp:Wrapper",
+        "certainty": "static",
+        "constructor": "transformed_mlp:Wrapper",
+        "moduleType": "Wrapper",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-12-0-1/input-19-21-2",
+        "parent": "model/group-12-0-1",
+        "kind": "input",
+        "label": "x",
+        "source_evidence": [
+          "e-c69ff0955eec0b1f"
+        ],
+        "expression": "x"
+      },
+      {
+        "id": "model/group-12-0-1/literal-19-28-3",
+        "parent": "model/group-12-0-1",
+        "kind": "literal",
+        "label": "True",
+        "source_evidence": [
+          "e-ea607a6fdfdff18f"
+        ],
+        "expression": "True"
+      },
+      {
+        "id": "model/group-12-0-1/input-19-23-4",
+        "parent": "model/group-12-0-1",
+        "kind": "input",
+        "label": "flag",
+        "source_evidence": [
+          "e-eaf076d00e65e4e5"
+        ],
+        "expression": "flag"
+      },
+      {
+        "id": "model/group-12-0-1/group-20-10-5",
+        "parent": "model/group-12-0-1",
+        "kind": "group",
+        "label": "MLP",
+        "source_evidence": [
+          "e-084eeb7f9f395df5"
+        ],
+        "expression": "self.left(x)",
+        "instance": "transformed_mlp:Wrapper.left",
+        "certainty": "static",
+        "constructor": "MLP()",
+        "moduleType": "MLP",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-12-0-1/group-20-10-5/input-9-21-6",
+        "parent": "model/group-12-0-1/group-20-10-5",
+        "kind": "input",
+        "label": "features",
+        "source_evidence": [
+          "e-81285061f5a97927"
+        ],
+        "expression": "features"
+      },
+      {
+        "id": "model/group-12-0-1/group-20-10-5/group-10-15-7",
+        "parent": "model/group-12-0-1/group-20-10-5",
+        "kind": "group",
+        "label": "Sequential",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ],
+        "expression": "self.network(features)",
+        "instance": "transformed_mlp:Wrapper.left.network",
+        "certainty": "static",
+        "constructor": "nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.GELU(), nn.Dropout(0.1), nn.Linear(hidden_dim, output_dim))",
+        "moduleType": "Sequential",
+        "constructorArgs": [
+          {
+            "unresolved": "nn.Linear(input_dim, hidden_dim)"
+          },
+          {
+            "unresolved": "nn.GELU()"
+          },
+          {
+            "unresolved": "nn.Dropout(0.1)"
+          },
+          {
+            "unresolved": "nn.Linear(hidden_dim, output_dim)"
+          }
+        ],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-12-0-1/group-20-10-5/group-10-15-7/input-10-15-8",
+        "parent": "model/group-12-0-1/group-20-10-5/group-10-15-7",
+        "kind": "input",
+        "label": "Sequential input",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ],
+        "expression": "self.network(features)"
+      },
+      {
+        "id": "model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-9",
+        "parent": "model/group-12-0-1/group-20-10-5/group-10-15-7",
+        "kind": "linear",
+        "label": "Linear",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ],
+        "expression": "self.network(features)",
+        "instance": "transformed_mlp:Wrapper.left.network.0",
+        "certainty": "static",
+        "constructor": "nn.Linear(input_dim, hidden_dim)",
+        "moduleType": "Linear",
+        "constructorArgs": [
+          16,
+          32
+        ],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-12-0-1/group-20-10-5/group-10-15-7/activation-10-15-10",
+        "parent": "model/group-12-0-1/group-20-10-5/group-10-15-7",
+        "kind": "activation",
+        "label": "GELU",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ],
+        "expression": "self.network(features)",
+        "instance": "transformed_mlp:Wrapper.left.network.1",
+        "certainty": "static",
+        "constructor": "nn.GELU()",
+        "moduleType": "GELU",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-12-0-1/group-20-10-5/group-10-15-7/dropout-10-15-11",
+        "parent": "model/group-12-0-1/group-20-10-5/group-10-15-7",
+        "kind": "dropout",
+        "label": "Dropout",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ],
+        "expression": "self.network(features)",
+        "instance": "transformed_mlp:Wrapper.left.network.2",
+        "certainty": "static",
+        "constructor": "nn.Dropout(0.1)",
+        "moduleType": "Dropout",
+        "constructorArgs": [
+          0.1
+        ],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-12",
+        "parent": "model/group-12-0-1/group-20-10-5/group-10-15-7",
+        "kind": "linear",
+        "label": "Linear",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ],
+        "expression": "self.network(features)",
+        "instance": "transformed_mlp:Wrapper.left.network.3",
+        "certainty": "static",
+        "constructor": "nn.Linear(hidden_dim, output_dim)",
+        "moduleType": "Linear",
+        "constructorArgs": [
+          32,
+          16
+        ],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-12-0-1/group-20-10-5/group-10-15-7/output-10-15-13",
+        "parent": "model/group-12-0-1/group-20-10-5/group-10-15-7",
+        "kind": "output",
+        "label": "Sequential output",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ],
+        "expression": "self.network(features)"
+      },
+      {
+        "id": "model/group-12-0-1/group-20-10-5/output-10-8-14",
+        "parent": "model/group-12-0-1/group-20-10-5",
+        "kind": "output",
+        "label": "return",
+        "source_evidence": [
+          "e-40ab13dfa564b13a"
+        ],
+        "expression": "return self.network(features)"
+      },
+      {
+        "id": "model/group-12-0-1/group-21-10-15",
+        "parent": "model/group-12-0-1",
+        "kind": "group",
+        "label": "MLP",
+        "source_evidence": [
+          "e-545a6d67a8beb049"
+        ],
+        "expression": "self.right(x)",
+        "instance": "transformed_mlp:Wrapper.right",
+        "certainty": "static",
+        "constructor": "MLP()",
+        "moduleType": "MLP",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-12-0-1/group-21-10-15/input-9-21-16",
+        "parent": "model/group-12-0-1/group-21-10-15",
+        "kind": "input",
+        "label": "features",
+        "source_evidence": [
+          "e-81285061f5a97927"
+        ],
+        "expression": "features"
+      },
+      {
+        "id": "model/group-12-0-1/group-21-10-15/group-10-15-17",
+        "parent": "model/group-12-0-1/group-21-10-15",
+        "kind": "group",
+        "label": "Sequential",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ],
+        "expression": "self.network(features)",
+        "instance": "transformed_mlp:Wrapper.right.network",
+        "certainty": "static",
+        "constructor": "nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.GELU(), nn.Dropout(0.1), nn.Linear(hidden_dim, output_dim))",
+        "moduleType": "Sequential",
+        "constructorArgs": [
+          {
+            "unresolved": "nn.Linear(input_dim, hidden_dim)"
+          },
+          {
+            "unresolved": "nn.GELU()"
+          },
+          {
+            "unresolved": "nn.Dropout(0.1)"
+          },
+          {
+            "unresolved": "nn.Linear(hidden_dim, output_dim)"
+          }
+        ],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-12-0-1/group-21-10-15/group-10-15-17/input-10-15-18",
+        "parent": "model/group-12-0-1/group-21-10-15/group-10-15-17",
+        "kind": "input",
+        "label": "Sequential input",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ],
+        "expression": "self.network(features)"
+      },
+      {
+        "id": "model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-19",
+        "parent": "model/group-12-0-1/group-21-10-15/group-10-15-17",
+        "kind": "linear",
+        "label": "Linear",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ],
+        "expression": "self.network(features)",
+        "instance": "transformed_mlp:Wrapper.right.network.0",
+        "certainty": "static",
+        "constructor": "nn.Linear(input_dim, hidden_dim)",
+        "moduleType": "Linear",
+        "constructorArgs": [
+          16,
+          32
+        ],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-12-0-1/group-21-10-15/group-10-15-17/activation-10-15-20",
+        "parent": "model/group-12-0-1/group-21-10-15/group-10-15-17",
+        "kind": "activation",
+        "label": "GELU",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ],
+        "expression": "self.network(features)",
+        "instance": "transformed_mlp:Wrapper.right.network.1",
+        "certainty": "static",
+        "constructor": "nn.GELU()",
+        "moduleType": "GELU",
+        "constructorArgs": [],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-12-0-1/group-21-10-15/group-10-15-17/dropout-10-15-21",
+        "parent": "model/group-12-0-1/group-21-10-15/group-10-15-17",
+        "kind": "dropout",
+        "label": "Dropout",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ],
+        "expression": "self.network(features)",
+        "instance": "transformed_mlp:Wrapper.right.network.2",
+        "certainty": "static",
+        "constructor": "nn.Dropout(0.1)",
+        "moduleType": "Dropout",
+        "constructorArgs": [
+          0.1
+        ],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-22",
+        "parent": "model/group-12-0-1/group-21-10-15/group-10-15-17",
+        "kind": "linear",
+        "label": "Linear",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ],
+        "expression": "self.network(features)",
+        "instance": "transformed_mlp:Wrapper.right.network.3",
+        "certainty": "static",
+        "constructor": "nn.Linear(hidden_dim, output_dim)",
+        "moduleType": "Linear",
+        "constructorArgs": [
+          32,
+          16
+        ],
+        "constructorKwargs": {}
+      },
+      {
+        "id": "model/group-12-0-1/group-21-10-15/group-10-15-17/output-10-15-23",
+        "parent": "model/group-12-0-1/group-21-10-15/group-10-15-17",
+        "kind": "output",
+        "label": "Sequential output",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ],
+        "expression": "self.network(features)"
+      },
+      {
+        "id": "model/group-12-0-1/group-21-10-15/output-10-8-24",
+        "parent": "model/group-12-0-1/group-21-10-15",
+        "kind": "output",
+        "label": "return",
+        "source_evidence": [
+          "e-40ab13dfa564b13a"
+        ],
+        "expression": "return self.network(features)"
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25",
+        "parent": "model/group-12-0-1",
+        "kind": "opaque",
+        "label": "待解析 · Module",
+        "source_evidence": [
+          "e-9288ac301d5bd970"
+        ],
+        "expression": "if flag:\n    c = a + b\n    y = self.project(c)\nelse:\n    c = self.fallback(b)\n    y = self.project(c)\nreturn y",
+        "certainty": "opaque",
+        "sourceInspection": {
+          "adapterId": "adapter-fe852cd48ca863285ac3a426",
+          "authority": "source-structure-only",
+          "truncated": false,
+          "origin": "automatic",
+          "presentationSha256": "87b84985b364f134a6485fd6b24acd8cae7b5a5a676d224d9fdbc40f8e4416cd"
+        }
+      },
+      {
+        "id": "model/group-12-0-1/output-28-8-26",
+        "parent": "model/group-12-0-1",
+        "kind": "output",
+        "label": "return",
+        "source_evidence": [
+          "e-9c034537dbca39b4"
+        ],
+        "expression": "return y"
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-f574f59b8ec9cf4d",
+        "parent": "model/group-12-0-1/opaque-22-8-25",
+        "kind": "source_structure",
+        "label": "left · MLP",
+        "sourceParameters": {
+          "sourceType": "MLP",
+          "construction": "MLP()",
+          "definition": "transformed_mlp:MLP",
+          "callSites": [
+            {
+              "path": "transformed_mlp.py",
+              "line": 20,
+              "endLine": 20,
+              "column": 10,
+              "endColumn": 22,
+              "expression": "self.left(x)"
+            }
+          ]
+        },
+        "source_evidence": [
+          "e-65e4e6885a9cd93e"
+        ],
+        "expression": "MLP()",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceModule",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-571a088e02578830",
+        "parent": "model/group-12-0-1/opaque-22-8-25",
+        "kind": "source_structure",
+        "label": "right · MLP",
+        "sourceParameters": {
+          "sourceType": "MLP",
+          "construction": "MLP()",
+          "definition": "transformed_mlp:MLP",
+          "callSites": [
+            {
+              "path": "transformed_mlp.py",
+              "line": 21,
+              "endLine": 21,
+              "column": 10,
+              "endColumn": 23,
+              "expression": "self.right(x)"
+            }
+          ]
+        },
+        "source_evidence": [
+          "e-2519a7dfcfd92d67"
+        ],
+        "expression": "MLP()",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceModule",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-8af053bbfd27cae8",
+        "parent": "model/group-12-0-1/opaque-22-8-25",
+        "kind": "source_structure",
+        "label": "if flag",
+        "sourceParameters": {},
+        "source_evidence": [
+          "e-9be9bd130eb6a356"
+        ],
+        "expression": "if flag:\n            c=a+b\n            y=self.project(c)\n        else:\n            c=self.fallback(b)\n            y=self.project(c)",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceConditional",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-acad3e4b32c94b4a",
+        "parent": "model/group-12-0-1/opaque-22-8-25",
+        "kind": "source_structure",
+        "label": "return",
+        "sourceParameters": {},
+        "source_evidence": [
+          "e-9c034537dbca39b4"
+        ],
+        "expression": "return y",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceCode",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-7b6cd5ffcf2e0b62",
+        "parent": "model/group-12-0-1/opaque-22-8-25/adapter-f574f59b8ec9cf4d",
+        "kind": "source_structure",
+        "label": "network · nn.Sequential",
+        "sourceParameters": {
+          "sourceType": "nn.Sequential",
+          "construction": "nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.GELU(), nn.Dropout(0.1), nn.Linear(hidden_dim, output_dim))",
+          "callSites": [
+            {
+              "path": "transformed_mlp.py",
+              "line": 10,
+              "endLine": 10,
+              "column": 15,
+              "endColumn": 37,
+              "expression": "self.network(features)"
+            }
+          ]
+        },
+        "source_evidence": [
+          "e-6218af0b27bd4619"
+        ],
+        "expression": "nn.Sequential(nn.Linear(input_dim,hidden_dim),nn.GELU(),nn.Dropout(0.1),nn.Linear(hidden_dim,output_dim))",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceModule",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-4b792b42359e7f52",
+        "parent": "model/group-12-0-1/opaque-22-8-25/adapter-571a088e02578830",
+        "kind": "source_structure",
+        "label": "network · nn.Sequential",
+        "sourceParameters": {
+          "sourceType": "nn.Sequential",
+          "construction": "nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.GELU(), nn.Dropout(0.1), nn.Linear(hidden_dim, output_dim))",
+          "callSites": [
+            {
+              "path": "transformed_mlp.py",
+              "line": 10,
+              "endLine": 10,
+              "column": 15,
+              "endColumn": 37,
+              "expression": "self.network(features)"
+            }
+          ]
+        },
+        "source_evidence": [
+          "e-6218af0b27bd4619"
+        ],
+        "expression": "nn.Sequential(nn.Linear(input_dim,hidden_dim),nn.GELU(),nn.Dropout(0.1),nn.Linear(hidden_dim,output_dim))",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceModule",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-73abf4b3d562eece",
+        "parent": "model/group-12-0-1/opaque-22-8-25/adapter-8af053bbfd27cae8",
+        "kind": "source_structure",
+        "label": "if flag",
+        "sourceParameters": {
+          "condition": "flag"
+        },
+        "source_evidence": [
+          "e-9be9bd130eb6a356"
+        ],
+        "expression": "if flag:\n            c=a+b\n            y=self.project(c)\n        else:\n            c=self.fallback(b)\n            y=self.project(c)",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceBranch",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-d63a091eef971dd9",
+        "parent": "model/group-12-0-1/opaque-22-8-25/adapter-8af053bbfd27cae8",
+        "kind": "source_structure",
+        "label": "else",
+        "sourceParameters": {
+          "condition": "not (flag)"
+        },
+        "source_evidence": [
+          "e-9be9bd130eb6a356"
+        ],
+        "expression": "if flag:\n            c=a+b\n            y=self.project(c)\n        else:\n            c=self.fallback(b)\n            y=self.project(c)",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceBranch",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-2b407bc74a4256cb",
+        "parent": "model/group-12-0-1/opaque-22-8-25/adapter-7b6cd5ffcf2e0b62",
+        "kind": "source_structure",
+        "label": "nn.Linear",
+        "sourceParameters": {
+          "sourceType": "nn.Linear",
+          "construction": "nn.Linear(input_dim, hidden_dim)"
+        },
+        "source_evidence": [
+          "e-0e8e0de75d9c887f"
+        ],
+        "expression": "nn.Linear(input_dim,hidden_dim)",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceModule",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-5d67bf711075636f",
+        "parent": "model/group-12-0-1/opaque-22-8-25/adapter-7b6cd5ffcf2e0b62",
+        "kind": "source_structure",
+        "label": "nn.GELU",
+        "sourceParameters": {
+          "sourceType": "nn.GELU",
+          "construction": "nn.GELU()"
+        },
+        "source_evidence": [
+          "e-e2c6dfb3ea4c662c"
+        ],
+        "expression": "nn.GELU()",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceModule",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-8e05dd92d06889a4",
+        "parent": "model/group-12-0-1/opaque-22-8-25/adapter-7b6cd5ffcf2e0b62",
+        "kind": "source_structure",
+        "label": "nn.Dropout",
+        "sourceParameters": {
+          "sourceType": "nn.Dropout",
+          "construction": "nn.Dropout(0.1)"
+        },
+        "source_evidence": [
+          "e-f100591f7fdb701b"
+        ],
+        "expression": "nn.Dropout(0.1)",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceModule",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-f318429b4d4931d2",
+        "parent": "model/group-12-0-1/opaque-22-8-25/adapter-7b6cd5ffcf2e0b62",
+        "kind": "source_structure",
+        "label": "nn.Linear",
+        "sourceParameters": {
+          "sourceType": "nn.Linear",
+          "construction": "nn.Linear(hidden_dim, output_dim)"
+        },
+        "source_evidence": [
+          "e-076409f0e6dfcbf5"
+        ],
+        "expression": "nn.Linear(hidden_dim,output_dim)",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceModule",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-b2c0ad50dba37e39",
+        "parent": "model/group-12-0-1/opaque-22-8-25/adapter-4b792b42359e7f52",
+        "kind": "source_structure",
+        "label": "nn.Linear",
+        "sourceParameters": {
+          "sourceType": "nn.Linear",
+          "construction": "nn.Linear(input_dim, hidden_dim)"
+        },
+        "source_evidence": [
+          "e-0e8e0de75d9c887f"
+        ],
+        "expression": "nn.Linear(input_dim,hidden_dim)",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceModule",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-1cf8ce2955944288",
+        "parent": "model/group-12-0-1/opaque-22-8-25/adapter-4b792b42359e7f52",
+        "kind": "source_structure",
+        "label": "nn.GELU",
+        "sourceParameters": {
+          "sourceType": "nn.GELU",
+          "construction": "nn.GELU()"
+        },
+        "source_evidence": [
+          "e-e2c6dfb3ea4c662c"
+        ],
+        "expression": "nn.GELU()",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceModule",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-628b6db613d70d4c",
+        "parent": "model/group-12-0-1/opaque-22-8-25/adapter-4b792b42359e7f52",
+        "kind": "source_structure",
+        "label": "nn.Dropout",
+        "sourceParameters": {
+          "sourceType": "nn.Dropout",
+          "construction": "nn.Dropout(0.1)"
+        },
+        "source_evidence": [
+          "e-f100591f7fdb701b"
+        ],
+        "expression": "nn.Dropout(0.1)",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceModule",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-0033a42510413eb0",
+        "parent": "model/group-12-0-1/opaque-22-8-25/adapter-4b792b42359e7f52",
+        "kind": "source_structure",
+        "label": "nn.Linear",
+        "sourceParameters": {
+          "sourceType": "nn.Linear",
+          "construction": "nn.Linear(hidden_dim, output_dim)"
+        },
+        "source_evidence": [
+          "e-076409f0e6dfcbf5"
+        ],
+        "expression": "nn.Linear(hidden_dim,output_dim)",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceModule",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-5d6f40077b0e9942",
+        "parent": "model/group-12-0-1/opaque-22-8-25/adapter-73abf4b3d562eece",
+        "kind": "source_structure",
+        "label": "project · nn.Linear",
+        "sourceParameters": {
+          "sourceType": "nn.Linear",
+          "construction": "nn.Linear(16, 4)",
+          "callSites": [
+            {
+              "path": "transformed_mlp.py",
+              "line": 24,
+              "endLine": 24,
+              "column": 14,
+              "endColumn": 29,
+              "expression": "self.project(c)"
+            }
+          ]
+        },
+        "source_evidence": [
+          "e-22999ad30970fbc9"
+        ],
+        "expression": "nn.Linear(16,4)",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceModule",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-96a49ff44ddf6f98",
+        "parent": "model/group-12-0-1/opaque-22-8-25/adapter-73abf4b3d562eece",
+        "kind": "source_structure",
+        "label": "c",
+        "sourceParameters": {},
+        "source_evidence": [
+          "e-086843258fbf9b3e"
+        ],
+        "expression": "c=a+b",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceCode",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-baaa705c0c863acb",
+        "parent": "model/group-12-0-1/opaque-22-8-25/adapter-d63a091eef971dd9",
+        "kind": "source_structure",
+        "label": "fallback · nn.Identity",
+        "sourceParameters": {
+          "sourceType": "nn.Identity",
+          "construction": "nn.Identity()",
+          "callSites": [
+            {
+              "path": "transformed_mlp.py",
+              "line": 26,
+              "endLine": 26,
+              "column": 14,
+              "endColumn": 30,
+              "expression": "self.fallback(b)"
+            }
+          ]
+        },
+        "source_evidence": [
+          "e-49ca67e65c58e485"
+        ],
+        "expression": "nn.Identity()",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceModule",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      },
+      {
+        "id": "model/group-12-0-1/opaque-22-8-25/adapter-33e2ffc088eb3451",
+        "parent": "model/group-12-0-1/opaque-22-8-25/adapter-d63a091eef971dd9",
+        "kind": "source_structure",
+        "label": "project · nn.Linear",
+        "sourceParameters": {
+          "sourceType": "nn.Linear",
+          "construction": "nn.Linear(16, 4)",
+          "callSites": [
+            {
+              "path": "transformed_mlp.py",
+              "line": 27,
+              "endLine": 27,
+              "column": 14,
+              "endColumn": 29,
+              "expression": "self.project(c)"
+            }
+          ]
+        },
+        "source_evidence": [
+          "e-22999ad30970fbc9"
+        ],
+        "expression": "nn.Linear(16,4)",
+        "certainty": "syntax",
+        "sourceStructure": true,
+        "sourceKind": "SourceModule",
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426",
+        "generationContract": null
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-1",
+        "source": "model/group-12-0-1/literal-19-28-3",
+        "target": "model/group-12-0-1/input-19-23-4",
+        "sourcePort": "out",
+        "targetPort": "in",
+        "wire": "model/group-12-0-1/literal-19-28-3:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-830299cc7088df9d"
+        ]
+      },
+      {
+        "id": "edge-2",
+        "source": "model/group-12-0-1/input-19-21-2",
+        "target": "model/group-12-0-1/group-20-10-5/input-9-21-6",
+        "sourcePort": "out",
+        "targetPort": "in",
+        "wire": "model/group-12-0-1/input-19-21-2:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-084eeb7f9f395df5"
+        ]
+      },
+      {
+        "id": "edge-3",
+        "source": "model/group-12-0-1/group-20-10-5/input-9-21-6",
+        "target": "model/group-12-0-1/group-20-10-5/group-10-15-7/input-10-15-8",
+        "sourcePort": "out",
+        "targetPort": "in",
+        "wire": "model/group-12-0-1/group-20-10-5/input-9-21-6:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ]
+      },
+      {
+        "id": "edge-4",
+        "source": "model/group-12-0-1/group-20-10-5/group-10-15-7/input-10-15-8",
+        "target": "model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-9",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-12-0-1/group-20-10-5/group-10-15-7/input-10-15-8:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ]
+      },
+      {
+        "id": "edge-5",
+        "source": "model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-9",
+        "target": "model/group-12-0-1/group-20-10-5/group-10-15-7/activation-10-15-10",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-9:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ]
+      },
+      {
+        "id": "edge-6",
+        "source": "model/group-12-0-1/group-20-10-5/group-10-15-7/activation-10-15-10",
+        "target": "model/group-12-0-1/group-20-10-5/group-10-15-7/dropout-10-15-11",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-12-0-1/group-20-10-5/group-10-15-7/activation-10-15-10:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ]
+      },
+      {
+        "id": "edge-7",
+        "source": "model/group-12-0-1/group-20-10-5/group-10-15-7/dropout-10-15-11",
+        "target": "model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-12",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-12-0-1/group-20-10-5/group-10-15-7/dropout-10-15-11:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ]
+      },
+      {
+        "id": "edge-8",
+        "source": "model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-12",
+        "target": "model/group-12-0-1/group-20-10-5/group-10-15-7/output-10-15-13",
+        "sourcePort": "out",
+        "targetPort": "value",
+        "wire": "model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-12:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ]
+      },
+      {
+        "id": "edge-9",
+        "source": "model/group-12-0-1/group-20-10-5/group-10-15-7/output-10-15-13",
+        "target": "model/group-12-0-1/group-20-10-5/output-10-8-14",
+        "sourcePort": "out",
+        "targetPort": "value",
+        "wire": "model/group-12-0-1/group-20-10-5/group-10-15-7/output-10-15-13:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-40ab13dfa564b13a"
+        ]
+      },
+      {
+        "id": "edge-10",
+        "source": "model/group-12-0-1/input-19-21-2",
+        "target": "model/group-12-0-1/group-21-10-15/input-9-21-16",
+        "sourcePort": "out",
+        "targetPort": "in",
+        "wire": "model/group-12-0-1/input-19-21-2:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-545a6d67a8beb049"
+        ]
+      },
+      {
+        "id": "edge-11",
+        "source": "model/group-12-0-1/group-21-10-15/input-9-21-16",
+        "target": "model/group-12-0-1/group-21-10-15/group-10-15-17/input-10-15-18",
+        "sourcePort": "out",
+        "targetPort": "in",
+        "wire": "model/group-12-0-1/group-21-10-15/input-9-21-16:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ]
+      },
+      {
+        "id": "edge-12",
+        "source": "model/group-12-0-1/group-21-10-15/group-10-15-17/input-10-15-18",
+        "target": "model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-19",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-12-0-1/group-21-10-15/group-10-15-17/input-10-15-18:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ]
+      },
+      {
+        "id": "edge-13",
+        "source": "model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-19",
+        "target": "model/group-12-0-1/group-21-10-15/group-10-15-17/activation-10-15-20",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-19:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ]
+      },
+      {
+        "id": "edge-14",
+        "source": "model/group-12-0-1/group-21-10-15/group-10-15-17/activation-10-15-20",
+        "target": "model/group-12-0-1/group-21-10-15/group-10-15-17/dropout-10-15-21",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-12-0-1/group-21-10-15/group-10-15-17/activation-10-15-20:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ]
+      },
+      {
+        "id": "edge-15",
+        "source": "model/group-12-0-1/group-21-10-15/group-10-15-17/dropout-10-15-21",
+        "target": "model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-22",
+        "sourcePort": "out",
+        "targetPort": "arg[0]",
+        "wire": "model/group-12-0-1/group-21-10-15/group-10-15-17/dropout-10-15-21:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ]
+      },
+      {
+        "id": "edge-16",
+        "source": "model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-22",
+        "target": "model/group-12-0-1/group-21-10-15/group-10-15-17/output-10-15-23",
+        "sourcePort": "out",
+        "targetPort": "value",
+        "wire": "model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-22:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-284bc754091856be"
+        ]
+      },
+      {
+        "id": "edge-17",
+        "source": "model/group-12-0-1/group-21-10-15/group-10-15-17/output-10-15-23",
+        "target": "model/group-12-0-1/group-21-10-15/output-10-8-24",
+        "sourcePort": "out",
+        "targetPort": "value",
+        "wire": "model/group-12-0-1/group-21-10-15/group-10-15-17/output-10-15-23:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-40ab13dfa564b13a"
+        ]
+      },
+      {
+        "id": "edge-18",
+        "source": "model/group-12-0-1/input-19-23-4",
+        "target": "model/group-12-0-1/opaque-22-8-25",
+        "sourcePort": "out",
+        "targetPort": "dependency[0]",
+        "wire": "model/group-12-0-1/input-19-23-4:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-9288ac301d5bd970"
+        ]
+      },
+      {
+        "id": "edge-19",
+        "source": "model/group-12-0-1/group-20-10-5/output-10-8-14",
+        "target": "model/group-12-0-1/opaque-22-8-25",
+        "sourcePort": "out",
+        "targetPort": "dependency[1]",
+        "wire": "model/group-12-0-1/group-20-10-5/output-10-8-14:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-9288ac301d5bd970"
+        ]
+      },
+      {
+        "id": "edge-20",
+        "source": "model/group-12-0-1/group-21-10-15/output-10-8-24",
+        "target": "model/group-12-0-1/opaque-22-8-25",
+        "sourcePort": "out",
+        "targetPort": "dependency[2]",
+        "wire": "model/group-12-0-1/group-21-10-15/output-10-8-24:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-9288ac301d5bd970"
+        ]
+      },
+      {
+        "id": "edge-21",
+        "source": "model/group-12-0-1/opaque-22-8-25",
+        "target": "model/group-12-0-1/output-28-8-26",
+        "sourcePort": "out",
+        "targetPort": "value",
+        "wire": "model/group-12-0-1/opaque-22-8-25:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-9c034537dbca39b4"
+        ]
+      },
+      {
+        "id": "adapter-edge-c5cc2c8cad8007629c57",
+        "source": "model/group-12-0-1/opaque-22-8-25/adapter-2b407bc74a4256cb",
+        "target": "model/group-12-0-1/opaque-22-8-25/adapter-5d67bf711075636f",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-12-0-1/opaque-22-8-25/adapter-2b407bc74a4256cb:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-6218af0b27bd4619"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426"
+      },
+      {
+        "id": "adapter-edge-a6094a0a42b124ad2657",
+        "source": "model/group-12-0-1/opaque-22-8-25/adapter-5d67bf711075636f",
+        "target": "model/group-12-0-1/opaque-22-8-25/adapter-8e05dd92d06889a4",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-12-0-1/opaque-22-8-25/adapter-5d67bf711075636f:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-6218af0b27bd4619"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426"
+      },
+      {
+        "id": "adapter-edge-b6d8bd2dbe37f57ea59b",
+        "source": "model/group-12-0-1/opaque-22-8-25/adapter-8e05dd92d06889a4",
+        "target": "model/group-12-0-1/opaque-22-8-25/adapter-f318429b4d4931d2",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-12-0-1/opaque-22-8-25/adapter-8e05dd92d06889a4:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-6218af0b27bd4619"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426"
+      },
+      {
+        "id": "adapter-edge-f2658eb3dbf24e76429c",
+        "source": "model/group-12-0-1/opaque-22-8-25/adapter-b2c0ad50dba37e39",
+        "target": "model/group-12-0-1/opaque-22-8-25/adapter-1cf8ce2955944288",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-12-0-1/opaque-22-8-25/adapter-b2c0ad50dba37e39:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-6218af0b27bd4619"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426"
+      },
+      {
+        "id": "adapter-edge-62c8c65d7c168cae1c8a",
+        "source": "model/group-12-0-1/opaque-22-8-25/adapter-1cf8ce2955944288",
+        "target": "model/group-12-0-1/opaque-22-8-25/adapter-628b6db613d70d4c",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-12-0-1/opaque-22-8-25/adapter-1cf8ce2955944288:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-6218af0b27bd4619"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426"
+      },
+      {
+        "id": "adapter-edge-e78dfffa2666b3d21fec",
+        "source": "model/group-12-0-1/opaque-22-8-25/adapter-628b6db613d70d4c",
+        "target": "model/group-12-0-1/opaque-22-8-25/adapter-0033a42510413eb0",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-12-0-1/opaque-22-8-25/adapter-628b6db613d70d4c:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-6218af0b27bd4619"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426"
+      },
+      {
+        "id": "adapter-edge-a8ead2133c452c15826d",
+        "source": "model/group-12-0-1/opaque-22-8-25/adapter-f318429b4d4931d2",
+        "target": "model/group-12-0-1/opaque-22-8-25/adapter-96a49ff44ddf6f98",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-12-0-1/opaque-22-8-25/adapter-f318429b4d4931d2:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-086843258fbf9b3e"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426"
+      },
+      {
+        "id": "adapter-edge-9de872b97ddd02a6bcdc",
+        "source": "model/group-12-0-1/opaque-22-8-25/adapter-0033a42510413eb0",
+        "target": "model/group-12-0-1/opaque-22-8-25/adapter-96a49ff44ddf6f98",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-12-0-1/opaque-22-8-25/adapter-0033a42510413eb0:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-086843258fbf9b3e"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426"
+      },
+      {
+        "id": "adapter-edge-8a7e1c164fcc95773845",
+        "source": "model/group-12-0-1/opaque-22-8-25/adapter-f318429b4d4931d2",
+        "target": "model/group-12-0-1/opaque-22-8-25/adapter-5d6f40077b0e9942",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-12-0-1/opaque-22-8-25/adapter-f318429b4d4931d2:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-434f62ceee7f5259"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426"
+      },
+      {
+        "id": "adapter-edge-709506db3a8c43cf5888",
+        "source": "model/group-12-0-1/opaque-22-8-25/adapter-0033a42510413eb0",
+        "target": "model/group-12-0-1/opaque-22-8-25/adapter-5d6f40077b0e9942",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-12-0-1/opaque-22-8-25/adapter-0033a42510413eb0:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-434f62ceee7f5259"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426"
+      },
+      {
+        "id": "adapter-edge-017e2c55f6655a655272",
+        "source": "model/group-12-0-1/opaque-22-8-25/adapter-0033a42510413eb0",
+        "target": "model/group-12-0-1/opaque-22-8-25/adapter-baaa705c0c863acb",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-12-0-1/opaque-22-8-25/adapter-0033a42510413eb0:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-70da5086c349f230"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426"
+      },
+      {
+        "id": "adapter-edge-27b7476a154374747d41",
+        "source": "model/group-12-0-1/opaque-22-8-25/adapter-baaa705c0c863acb",
+        "target": "model/group-12-0-1/opaque-22-8-25/adapter-33e2ffc088eb3451",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-12-0-1/opaque-22-8-25/adapter-baaa705c0c863acb:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-7557476c98176e94"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426"
+      },
+      {
+        "id": "adapter-edge-aa0ec0d2886f22e8e994",
+        "source": "model/group-12-0-1/opaque-22-8-25/adapter-5d6f40077b0e9942",
+        "target": "model/group-12-0-1/opaque-22-8-25/adapter-acad3e4b32c94b4a",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-12-0-1/opaque-22-8-25/adapter-5d6f40077b0e9942:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-9c034537dbca39b4"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426"
+      },
+      {
+        "id": "adapter-edge-ba16ecd12d6c21221e0b",
+        "source": "model/group-12-0-1/opaque-22-8-25/adapter-33e2ffc088eb3451",
+        "target": "model/group-12-0-1/opaque-22-8-25/adapter-acad3e4b32c94b4a",
+        "sourcePort": "out",
+        "targetPort": "source-dependency",
+        "wire": "model/group-12-0-1/opaque-22-8-25/adapter-33e2ffc088eb3451:out",
+        "role": "source_dependency",
+        "source_evidence": [
+          "e-9c034537dbca39b4"
+        ],
+        "syntaxOnly": true,
+        "sourceAdapterId": "adapter-fe852cd48ca863285ac3a426"
+      }
+    ],
+    "instances": {
+      "transformed_mlp:Wrapper": [
+        "model/group-12-0-1"
+      ],
+      "transformed_mlp:Wrapper.left": [
+        "model/group-12-0-1/group-20-10-5"
+      ],
+      "transformed_mlp:Wrapper.left.network": [
+        "model/group-12-0-1/group-20-10-5/group-10-15-7"
+      ],
+      "transformed_mlp:Wrapper.left.network.0": [
+        "model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-9"
+      ],
+      "transformed_mlp:Wrapper.left.network.1": [
+        "model/group-12-0-1/group-20-10-5/group-10-15-7/activation-10-15-10"
+      ],
+      "transformed_mlp:Wrapper.left.network.2": [
+        "model/group-12-0-1/group-20-10-5/group-10-15-7/dropout-10-15-11"
+      ],
+      "transformed_mlp:Wrapper.left.network.3": [
+        "model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-12"
+      ],
+      "transformed_mlp:Wrapper.right": [
+        "model/group-12-0-1/group-21-10-15"
+      ],
+      "transformed_mlp:Wrapper.right.network": [
+        "model/group-12-0-1/group-21-10-15/group-10-15-17"
+      ],
+      "transformed_mlp:Wrapper.right.network.0": [
+        "model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-19"
+      ],
+      "transformed_mlp:Wrapper.right.network.1": [
+        "model/group-12-0-1/group-21-10-15/group-10-15-17/activation-10-15-20"
+      ],
+      "transformed_mlp:Wrapper.right.network.2": [
+        "model/group-12-0-1/group-21-10-15/group-10-15-17/dropout-10-15-21"
+      ],
+      "transformed_mlp:Wrapper.right.network.3": [
+        "model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-22"
+      ]
+    },
+    "analysis": "static-source-dependencies",
+    "modelExecuted": false,
+    "shapePolicy": "No tensor dimensions or execution path inferred",
+    "registrySha256": "9c153d45ae26c27b1f5da8becde63af92eb51883b8e8ad1b00860151802f7e5f"
+  },
+  "canonicalIR": "{\"analysis\":\"static-source-dependencies\",\"edges\":[{\"id\":\"edge-1\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/literal-19-28-3\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-830299cc7088df9d\"],\"target\":\"model/group-12-0-1/input-19-23-4\",\"targetPort\":\"in\",\"wire\":\"model/group-12-0-1/literal-19-28-3:out\"},{\"id\":\"edge-2\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/input-19-21-2\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-084eeb7f9f395df5\"],\"target\":\"model/group-12-0-1/group-20-10-5/input-9-21-6\",\"targetPort\":\"in\",\"wire\":\"model/group-12-0-1/input-19-21-2:out\"},{\"id\":\"edge-3\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/group-20-10-5/input-9-21-6\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-284bc754091856be\"],\"target\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/input-10-15-8\",\"targetPort\":\"in\",\"wire\":\"model/group-12-0-1/group-20-10-5/input-9-21-6:out\"},{\"id\":\"edge-4\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/input-10-15-8\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-284bc754091856be\"],\"target\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-9\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/input-10-15-8:out\"},{\"id\":\"edge-5\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-9\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-284bc754091856be\"],\"target\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/activation-10-15-10\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-9:out\"},{\"id\":\"edge-6\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/activation-10-15-10\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-284bc754091856be\"],\"target\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/dropout-10-15-11\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/activation-10-15-10:out\"},{\"id\":\"edge-7\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/dropout-10-15-11\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-284bc754091856be\"],\"target\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-12\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/dropout-10-15-11:out\"},{\"id\":\"edge-8\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-12\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-284bc754091856be\"],\"target\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/output-10-15-13\",\"targetPort\":\"value\",\"wire\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-12:out\"},{\"id\":\"edge-9\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/output-10-15-13\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-40ab13dfa564b13a\"],\"target\":\"model/group-12-0-1/group-20-10-5/output-10-8-14\",\"targetPort\":\"value\",\"wire\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/output-10-15-13:out\"},{\"id\":\"edge-10\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/input-19-21-2\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-545a6d67a8beb049\"],\"target\":\"model/group-12-0-1/group-21-10-15/input-9-21-16\",\"targetPort\":\"in\",\"wire\":\"model/group-12-0-1/input-19-21-2:out\"},{\"id\":\"edge-11\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/group-21-10-15/input-9-21-16\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-284bc754091856be\"],\"target\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/input-10-15-18\",\"targetPort\":\"in\",\"wire\":\"model/group-12-0-1/group-21-10-15/input-9-21-16:out\"},{\"id\":\"edge-12\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/input-10-15-18\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-284bc754091856be\"],\"target\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-19\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/input-10-15-18:out\"},{\"id\":\"edge-13\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-19\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-284bc754091856be\"],\"target\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/activation-10-15-20\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-19:out\"},{\"id\":\"edge-14\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/activation-10-15-20\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-284bc754091856be\"],\"target\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/dropout-10-15-21\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/activation-10-15-20:out\"},{\"id\":\"edge-15\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/dropout-10-15-21\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-284bc754091856be\"],\"target\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-22\",\"targetPort\":\"arg[0]\",\"wire\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/dropout-10-15-21:out\"},{\"id\":\"edge-16\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-22\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-284bc754091856be\"],\"target\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/output-10-15-23\",\"targetPort\":\"value\",\"wire\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-22:out\"},{\"id\":\"edge-17\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/output-10-15-23\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-40ab13dfa564b13a\"],\"target\":\"model/group-12-0-1/group-21-10-15/output-10-8-24\",\"targetPort\":\"value\",\"wire\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/output-10-15-23:out\"},{\"id\":\"edge-18\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/input-19-23-4\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-9288ac301d5bd970\"],\"target\":\"model/group-12-0-1/opaque-22-8-25\",\"targetPort\":\"dependency[0]\",\"wire\":\"model/group-12-0-1/input-19-23-4:out\"},{\"id\":\"edge-19\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/group-20-10-5/output-10-8-14\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-9288ac301d5bd970\"],\"target\":\"model/group-12-0-1/opaque-22-8-25\",\"targetPort\":\"dependency[1]\",\"wire\":\"model/group-12-0-1/group-20-10-5/output-10-8-14:out\"},{\"id\":\"edge-20\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/group-21-10-15/output-10-8-24\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-9288ac301d5bd970\"],\"target\":\"model/group-12-0-1/opaque-22-8-25\",\"targetPort\":\"dependency[2]\",\"wire\":\"model/group-12-0-1/group-21-10-15/output-10-8-24:out\"},{\"id\":\"edge-21\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/opaque-22-8-25\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-9c034537dbca39b4\"],\"target\":\"model/group-12-0-1/output-28-8-26\",\"targetPort\":\"value\",\"wire\":\"model/group-12-0-1/opaque-22-8-25:out\"},{\"id\":\"adapter-edge-c5cc2c8cad8007629c57\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/opaque-22-8-25/adapter-2b407bc74a4256cb\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-6218af0b27bd4619\"],\"syntaxOnly\":true,\"target\":\"model/group-12-0-1/opaque-22-8-25/adapter-5d67bf711075636f\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-12-0-1/opaque-22-8-25/adapter-2b407bc74a4256cb:out\"},{\"id\":\"adapter-edge-a6094a0a42b124ad2657\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/opaque-22-8-25/adapter-5d67bf711075636f\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-6218af0b27bd4619\"],\"syntaxOnly\":true,\"target\":\"model/group-12-0-1/opaque-22-8-25/adapter-8e05dd92d06889a4\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-12-0-1/opaque-22-8-25/adapter-5d67bf711075636f:out\"},{\"id\":\"adapter-edge-b6d8bd2dbe37f57ea59b\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/opaque-22-8-25/adapter-8e05dd92d06889a4\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-6218af0b27bd4619\"],\"syntaxOnly\":true,\"target\":\"model/group-12-0-1/opaque-22-8-25/adapter-f318429b4d4931d2\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-12-0-1/opaque-22-8-25/adapter-8e05dd92d06889a4:out\"},{\"id\":\"adapter-edge-f2658eb3dbf24e76429c\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/opaque-22-8-25/adapter-b2c0ad50dba37e39\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-6218af0b27bd4619\"],\"syntaxOnly\":true,\"target\":\"model/group-12-0-1/opaque-22-8-25/adapter-1cf8ce2955944288\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-12-0-1/opaque-22-8-25/adapter-b2c0ad50dba37e39:out\"},{\"id\":\"adapter-edge-62c8c65d7c168cae1c8a\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/opaque-22-8-25/adapter-1cf8ce2955944288\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-6218af0b27bd4619\"],\"syntaxOnly\":true,\"target\":\"model/group-12-0-1/opaque-22-8-25/adapter-628b6db613d70d4c\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-12-0-1/opaque-22-8-25/adapter-1cf8ce2955944288:out\"},{\"id\":\"adapter-edge-e78dfffa2666b3d21fec\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/opaque-22-8-25/adapter-628b6db613d70d4c\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-6218af0b27bd4619\"],\"syntaxOnly\":true,\"target\":\"model/group-12-0-1/opaque-22-8-25/adapter-0033a42510413eb0\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-12-0-1/opaque-22-8-25/adapter-628b6db613d70d4c:out\"},{\"id\":\"adapter-edge-a8ead2133c452c15826d\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/opaque-22-8-25/adapter-f318429b4d4931d2\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-086843258fbf9b3e\"],\"syntaxOnly\":true,\"target\":\"model/group-12-0-1/opaque-22-8-25/adapter-96a49ff44ddf6f98\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-12-0-1/opaque-22-8-25/adapter-f318429b4d4931d2:out\"},{\"id\":\"adapter-edge-9de872b97ddd02a6bcdc\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/opaque-22-8-25/adapter-0033a42510413eb0\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-086843258fbf9b3e\"],\"syntaxOnly\":true,\"target\":\"model/group-12-0-1/opaque-22-8-25/adapter-96a49ff44ddf6f98\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-12-0-1/opaque-22-8-25/adapter-0033a42510413eb0:out\"},{\"id\":\"adapter-edge-8a7e1c164fcc95773845\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/opaque-22-8-25/adapter-f318429b4d4931d2\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-434f62ceee7f5259\"],\"syntaxOnly\":true,\"target\":\"model/group-12-0-1/opaque-22-8-25/adapter-5d6f40077b0e9942\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-12-0-1/opaque-22-8-25/adapter-f318429b4d4931d2:out\"},{\"id\":\"adapter-edge-709506db3a8c43cf5888\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/opaque-22-8-25/adapter-0033a42510413eb0\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-434f62ceee7f5259\"],\"syntaxOnly\":true,\"target\":\"model/group-12-0-1/opaque-22-8-25/adapter-5d6f40077b0e9942\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-12-0-1/opaque-22-8-25/adapter-0033a42510413eb0:out\"},{\"id\":\"adapter-edge-017e2c55f6655a655272\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/opaque-22-8-25/adapter-0033a42510413eb0\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-70da5086c349f230\"],\"syntaxOnly\":true,\"target\":\"model/group-12-0-1/opaque-22-8-25/adapter-baaa705c0c863acb\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-12-0-1/opaque-22-8-25/adapter-0033a42510413eb0:out\"},{\"id\":\"adapter-edge-27b7476a154374747d41\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/opaque-22-8-25/adapter-baaa705c0c863acb\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-7557476c98176e94\"],\"syntaxOnly\":true,\"target\":\"model/group-12-0-1/opaque-22-8-25/adapter-33e2ffc088eb3451\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-12-0-1/opaque-22-8-25/adapter-baaa705c0c863acb:out\"},{\"id\":\"adapter-edge-aa0ec0d2886f22e8e994\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/opaque-22-8-25/adapter-5d6f40077b0e9942\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-9c034537dbca39b4\"],\"syntaxOnly\":true,\"target\":\"model/group-12-0-1/opaque-22-8-25/adapter-acad3e4b32c94b4a\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-12-0-1/opaque-22-8-25/adapter-5d6f40077b0e9942:out\"},{\"id\":\"adapter-edge-ba16ecd12d6c21221e0b\",\"role\":\"source_dependency\",\"source\":\"model/group-12-0-1/opaque-22-8-25/adapter-33e2ffc088eb3451\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourcePort\":\"out\",\"source_evidence\":[\"e-9c034537dbca39b4\"],\"syntaxOnly\":true,\"target\":\"model/group-12-0-1/opaque-22-8-25/adapter-acad3e4b32c94b4a\",\"targetPort\":\"source-dependency\",\"wire\":\"model/group-12-0-1/opaque-22-8-25/adapter-33e2ffc088eb3451:out\"}],\"entry\":\"transformed_mlp:Wrapper\",\"instances\":{\"transformed_mlp:Wrapper\":[\"model/group-12-0-1\"],\"transformed_mlp:Wrapper.left\":[\"model/group-12-0-1/group-20-10-5\"],\"transformed_mlp:Wrapper.left.network\":[\"model/group-12-0-1/group-20-10-5/group-10-15-7\"],\"transformed_mlp:Wrapper.left.network.0\":[\"model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-9\"],\"transformed_mlp:Wrapper.left.network.1\":[\"model/group-12-0-1/group-20-10-5/group-10-15-7/activation-10-15-10\"],\"transformed_mlp:Wrapper.left.network.2\":[\"model/group-12-0-1/group-20-10-5/group-10-15-7/dropout-10-15-11\"],\"transformed_mlp:Wrapper.left.network.3\":[\"model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-12\"],\"transformed_mlp:Wrapper.right\":[\"model/group-12-0-1/group-21-10-15\"],\"transformed_mlp:Wrapper.right.network\":[\"model/group-12-0-1/group-21-10-15/group-10-15-17\"],\"transformed_mlp:Wrapper.right.network.0\":[\"model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-19\"],\"transformed_mlp:Wrapper.right.network.1\":[\"model/group-12-0-1/group-21-10-15/group-10-15-17/activation-10-15-20\"],\"transformed_mlp:Wrapper.right.network.2\":[\"model/group-12-0-1/group-21-10-15/group-10-15-17/dropout-10-15-21\"],\"transformed_mlp:Wrapper.right.network.3\":[\"model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-22\"]},\"modelExecuted\":false,\"nodes\":[{\"certainty\":\"static\",\"constructor\":\"transformed_mlp:Wrapper\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"class Wrapper(nn.Module):\\n\\n    def __init__(self):\\n        super().__init__()\\n        self.left = MLP()\\n        self.right = MLP()\\n        self.project = nn.Linear(16, 4)\\n        self.fallback = nn.Identity()\\n\\n    def forward(self, x, flag=True):\\n        a = self.left(x)\\n        b = self.right(x)\\n        if flag:\\n            c = a + b\\n            y = self.project(c)\\n        else:\\n            c = self.fallback(b)\\n            y = self.project(c)\\n        return y\",\"id\":\"model/group-12-0-1\",\"instance\":\"transformed_mlp:Wrapper\",\"kind\":\"group\",\"label\":\"Wrapper\",\"moduleType\":\"Wrapper\",\"parent\":null,\"source_evidence\":[\"e-830299cc7088df9d\"]},{\"expression\":\"x\",\"id\":\"model/group-12-0-1/input-19-21-2\",\"kind\":\"input\",\"label\":\"x\",\"parent\":\"model/group-12-0-1\",\"source_evidence\":[\"e-c69ff0955eec0b1f\"]},{\"expression\":\"True\",\"id\":\"model/group-12-0-1/literal-19-28-3\",\"kind\":\"literal\",\"label\":\"True\",\"parent\":\"model/group-12-0-1\",\"source_evidence\":[\"e-ea607a6fdfdff18f\"]},{\"expression\":\"flag\",\"id\":\"model/group-12-0-1/input-19-23-4\",\"kind\":\"input\",\"label\":\"flag\",\"parent\":\"model/group-12-0-1\",\"source_evidence\":[\"e-eaf076d00e65e4e5\"]},{\"certainty\":\"static\",\"constructor\":\"MLP()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.left(x)\",\"id\":\"model/group-12-0-1/group-20-10-5\",\"instance\":\"transformed_mlp:Wrapper.left\",\"kind\":\"group\",\"label\":\"MLP\",\"moduleType\":\"MLP\",\"parent\":\"model/group-12-0-1\",\"source_evidence\":[\"e-084eeb7f9f395df5\"]},{\"expression\":\"features\",\"id\":\"model/group-12-0-1/group-20-10-5/input-9-21-6\",\"kind\":\"input\",\"label\":\"features\",\"parent\":\"model/group-12-0-1/group-20-10-5\",\"source_evidence\":[\"e-81285061f5a97927\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.GELU(), nn.Dropout(0.1), nn.Linear(hidden_dim, output_dim))\",\"constructorArgs\":[{\"unresolved\":\"nn.Linear(input_dim, hidden_dim)\"},{\"unresolved\":\"nn.GELU()\"},{\"unresolved\":\"nn.Dropout(0.1)\"},{\"unresolved\":\"nn.Linear(hidden_dim, output_dim)\"}],\"constructorKwargs\":{},\"expression\":\"self.network(features)\",\"id\":\"model/group-12-0-1/group-20-10-5/group-10-15-7\",\"instance\":\"transformed_mlp:Wrapper.left.network\",\"kind\":\"group\",\"label\":\"Sequential\",\"moduleType\":\"Sequential\",\"parent\":\"model/group-12-0-1/group-20-10-5\",\"source_evidence\":[\"e-284bc754091856be\"]},{\"expression\":\"self.network(features)\",\"id\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/input-10-15-8\",\"kind\":\"input\",\"label\":\"Sequential input\",\"parent\":\"model/group-12-0-1/group-20-10-5/group-10-15-7\",\"source_evidence\":[\"e-284bc754091856be\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Linear(input_dim, hidden_dim)\",\"constructorArgs\":[16,32],\"constructorKwargs\":{},\"expression\":\"self.network(features)\",\"id\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-9\",\"instance\":\"transformed_mlp:Wrapper.left.network.0\",\"kind\":\"linear\",\"label\":\"Linear\",\"moduleType\":\"Linear\",\"parent\":\"model/group-12-0-1/group-20-10-5/group-10-15-7\",\"source_evidence\":[\"e-284bc754091856be\"]},{\"certainty\":\"static\",\"constructor\":\"nn.GELU()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.network(features)\",\"id\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/activation-10-15-10\",\"instance\":\"transformed_mlp:Wrapper.left.network.1\",\"kind\":\"activation\",\"label\":\"GELU\",\"moduleType\":\"GELU\",\"parent\":\"model/group-12-0-1/group-20-10-5/group-10-15-7\",\"source_evidence\":[\"e-284bc754091856be\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Dropout(0.1)\",\"constructorArgs\":[0.1],\"constructorKwargs\":{},\"expression\":\"self.network(features)\",\"id\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/dropout-10-15-11\",\"instance\":\"transformed_mlp:Wrapper.left.network.2\",\"kind\":\"dropout\",\"label\":\"Dropout\",\"moduleType\":\"Dropout\",\"parent\":\"model/group-12-0-1/group-20-10-5/group-10-15-7\",\"source_evidence\":[\"e-284bc754091856be\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Linear(hidden_dim, output_dim)\",\"constructorArgs\":[32,16],\"constructorKwargs\":{},\"expression\":\"self.network(features)\",\"id\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/linear-10-15-12\",\"instance\":\"transformed_mlp:Wrapper.left.network.3\",\"kind\":\"linear\",\"label\":\"Linear\",\"moduleType\":\"Linear\",\"parent\":\"model/group-12-0-1/group-20-10-5/group-10-15-7\",\"source_evidence\":[\"e-284bc754091856be\"]},{\"expression\":\"self.network(features)\",\"id\":\"model/group-12-0-1/group-20-10-5/group-10-15-7/output-10-15-13\",\"kind\":\"output\",\"label\":\"Sequential output\",\"parent\":\"model/group-12-0-1/group-20-10-5/group-10-15-7\",\"source_evidence\":[\"e-284bc754091856be\"]},{\"expression\":\"return self.network(features)\",\"id\":\"model/group-12-0-1/group-20-10-5/output-10-8-14\",\"kind\":\"output\",\"label\":\"return\",\"parent\":\"model/group-12-0-1/group-20-10-5\",\"source_evidence\":[\"e-40ab13dfa564b13a\"]},{\"certainty\":\"static\",\"constructor\":\"MLP()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.right(x)\",\"id\":\"model/group-12-0-1/group-21-10-15\",\"instance\":\"transformed_mlp:Wrapper.right\",\"kind\":\"group\",\"label\":\"MLP\",\"moduleType\":\"MLP\",\"parent\":\"model/group-12-0-1\",\"source_evidence\":[\"e-545a6d67a8beb049\"]},{\"expression\":\"features\",\"id\":\"model/group-12-0-1/group-21-10-15/input-9-21-16\",\"kind\":\"input\",\"label\":\"features\",\"parent\":\"model/group-12-0-1/group-21-10-15\",\"source_evidence\":[\"e-81285061f5a97927\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.GELU(), nn.Dropout(0.1), nn.Linear(hidden_dim, output_dim))\",\"constructorArgs\":[{\"unresolved\":\"nn.Linear(input_dim, hidden_dim)\"},{\"unresolved\":\"nn.GELU()\"},{\"unresolved\":\"nn.Dropout(0.1)\"},{\"unresolved\":\"nn.Linear(hidden_dim, output_dim)\"}],\"constructorKwargs\":{},\"expression\":\"self.network(features)\",\"id\":\"model/group-12-0-1/group-21-10-15/group-10-15-17\",\"instance\":\"transformed_mlp:Wrapper.right.network\",\"kind\":\"group\",\"label\":\"Sequential\",\"moduleType\":\"Sequential\",\"parent\":\"model/group-12-0-1/group-21-10-15\",\"source_evidence\":[\"e-284bc754091856be\"]},{\"expression\":\"self.network(features)\",\"id\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/input-10-15-18\",\"kind\":\"input\",\"label\":\"Sequential input\",\"parent\":\"model/group-12-0-1/group-21-10-15/group-10-15-17\",\"source_evidence\":[\"e-284bc754091856be\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Linear(input_dim, hidden_dim)\",\"constructorArgs\":[16,32],\"constructorKwargs\":{},\"expression\":\"self.network(features)\",\"id\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-19\",\"instance\":\"transformed_mlp:Wrapper.right.network.0\",\"kind\":\"linear\",\"label\":\"Linear\",\"moduleType\":\"Linear\",\"parent\":\"model/group-12-0-1/group-21-10-15/group-10-15-17\",\"source_evidence\":[\"e-284bc754091856be\"]},{\"certainty\":\"static\",\"constructor\":\"nn.GELU()\",\"constructorArgs\":[],\"constructorKwargs\":{},\"expression\":\"self.network(features)\",\"id\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/activation-10-15-20\",\"instance\":\"transformed_mlp:Wrapper.right.network.1\",\"kind\":\"activation\",\"label\":\"GELU\",\"moduleType\":\"GELU\",\"parent\":\"model/group-12-0-1/group-21-10-15/group-10-15-17\",\"source_evidence\":[\"e-284bc754091856be\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Dropout(0.1)\",\"constructorArgs\":[0.1],\"constructorKwargs\":{},\"expression\":\"self.network(features)\",\"id\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/dropout-10-15-21\",\"instance\":\"transformed_mlp:Wrapper.right.network.2\",\"kind\":\"dropout\",\"label\":\"Dropout\",\"moduleType\":\"Dropout\",\"parent\":\"model/group-12-0-1/group-21-10-15/group-10-15-17\",\"source_evidence\":[\"e-284bc754091856be\"]},{\"certainty\":\"static\",\"constructor\":\"nn.Linear(hidden_dim, output_dim)\",\"constructorArgs\":[32,16],\"constructorKwargs\":{},\"expression\":\"self.network(features)\",\"id\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/linear-10-15-22\",\"instance\":\"transformed_mlp:Wrapper.right.network.3\",\"kind\":\"linear\",\"label\":\"Linear\",\"moduleType\":\"Linear\",\"parent\":\"model/group-12-0-1/group-21-10-15/group-10-15-17\",\"source_evidence\":[\"e-284bc754091856be\"]},{\"expression\":\"self.network(features)\",\"id\":\"model/group-12-0-1/group-21-10-15/group-10-15-17/output-10-15-23\",\"kind\":\"output\",\"label\":\"Sequential output\",\"parent\":\"model/group-12-0-1/group-21-10-15/group-10-15-17\",\"source_evidence\":[\"e-284bc754091856be\"]},{\"expression\":\"return self.network(features)\",\"id\":\"model/group-12-0-1/group-21-10-15/output-10-8-24\",\"kind\":\"output\",\"label\":\"return\",\"parent\":\"model/group-12-0-1/group-21-10-15\",\"source_evidence\":[\"e-40ab13dfa564b13a\"]},{\"certainty\":\"opaque\",\"expression\":\"if flag:\\n    c = a + b\\n    y = self.project(c)\\nelse:\\n    c = self.fallback(b)\\n    y = self.project(c)\\nreturn y\",\"id\":\"model/group-12-0-1/opaque-22-8-25\",\"kind\":\"opaque\",\"label\":\"待解析 · Module\",\"parent\":\"model/group-12-0-1\",\"sourceInspection\":{\"adapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"authority\":\"source-structure-only\",\"origin\":\"automatic\",\"presentationSha256\":\"87b84985b364f134a6485fd6b24acd8cae7b5a5a676d224d9fdbc40f8e4416cd\",\"truncated\":false},\"source_evidence\":[\"e-9288ac301d5bd970\"]},{\"expression\":\"return y\",\"id\":\"model/group-12-0-1/output-28-8-26\",\"kind\":\"output\",\"label\":\"return\",\"parent\":\"model/group-12-0-1\",\"source_evidence\":[\"e-9c034537dbca39b4\"]},{\"certainty\":\"syntax\",\"expression\":\"MLP()\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-f574f59b8ec9cf4d\",\"kind\":\"source_structure\",\"label\":\"left · MLP\",\"parent\":\"model/group-12-0-1/opaque-22-8-25\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceModule\",\"sourceParameters\":{\"callSites\":[{\"column\":10,\"endColumn\":22,\"endLine\":20,\"expression\":\"self.left(x)\",\"line\":20,\"path\":\"transformed_mlp.py\"}],\"construction\":\"MLP()\",\"definition\":\"transformed_mlp:MLP\",\"sourceType\":\"MLP\"},\"sourceStructure\":true,\"source_evidence\":[\"e-65e4e6885a9cd93e\"]},{\"certainty\":\"syntax\",\"expression\":\"MLP()\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-571a088e02578830\",\"kind\":\"source_structure\",\"label\":\"right · MLP\",\"parent\":\"model/group-12-0-1/opaque-22-8-25\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceModule\",\"sourceParameters\":{\"callSites\":[{\"column\":10,\"endColumn\":23,\"endLine\":21,\"expression\":\"self.right(x)\",\"line\":21,\"path\":\"transformed_mlp.py\"}],\"construction\":\"MLP()\",\"definition\":\"transformed_mlp:MLP\",\"sourceType\":\"MLP\"},\"sourceStructure\":true,\"source_evidence\":[\"e-2519a7dfcfd92d67\"]},{\"certainty\":\"syntax\",\"expression\":\"if flag:\\n            c=a+b\\n            y=self.project(c)\\n        else:\\n            c=self.fallback(b)\\n            y=self.project(c)\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-8af053bbfd27cae8\",\"kind\":\"source_structure\",\"label\":\"if flag\",\"parent\":\"model/group-12-0-1/opaque-22-8-25\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceConditional\",\"sourceParameters\":{},\"sourceStructure\":true,\"source_evidence\":[\"e-9be9bd130eb6a356\"]},{\"certainty\":\"syntax\",\"expression\":\"return y\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-acad3e4b32c94b4a\",\"kind\":\"source_structure\",\"label\":\"return\",\"parent\":\"model/group-12-0-1/opaque-22-8-25\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceCode\",\"sourceParameters\":{},\"sourceStructure\":true,\"source_evidence\":[\"e-9c034537dbca39b4\"]},{\"certainty\":\"syntax\",\"expression\":\"nn.Sequential(nn.Linear(input_dim,hidden_dim),nn.GELU(),nn.Dropout(0.1),nn.Linear(hidden_dim,output_dim))\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-7b6cd5ffcf2e0b62\",\"kind\":\"source_structure\",\"label\":\"network · nn.Sequential\",\"parent\":\"model/group-12-0-1/opaque-22-8-25/adapter-f574f59b8ec9cf4d\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceModule\",\"sourceParameters\":{\"callSites\":[{\"column\":15,\"endColumn\":37,\"endLine\":10,\"expression\":\"self.network(features)\",\"line\":10,\"path\":\"transformed_mlp.py\"}],\"construction\":\"nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.GELU(), nn.Dropout(0.1), nn.Linear(hidden_dim, output_dim))\",\"sourceType\":\"nn.Sequential\"},\"sourceStructure\":true,\"source_evidence\":[\"e-6218af0b27bd4619\"]},{\"certainty\":\"syntax\",\"expression\":\"nn.Sequential(nn.Linear(input_dim,hidden_dim),nn.GELU(),nn.Dropout(0.1),nn.Linear(hidden_dim,output_dim))\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-4b792b42359e7f52\",\"kind\":\"source_structure\",\"label\":\"network · nn.Sequential\",\"parent\":\"model/group-12-0-1/opaque-22-8-25/adapter-571a088e02578830\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceModule\",\"sourceParameters\":{\"callSites\":[{\"column\":15,\"endColumn\":37,\"endLine\":10,\"expression\":\"self.network(features)\",\"line\":10,\"path\":\"transformed_mlp.py\"}],\"construction\":\"nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.GELU(), nn.Dropout(0.1), nn.Linear(hidden_dim, output_dim))\",\"sourceType\":\"nn.Sequential\"},\"sourceStructure\":true,\"source_evidence\":[\"e-6218af0b27bd4619\"]},{\"certainty\":\"syntax\",\"expression\":\"if flag:\\n            c=a+b\\n            y=self.project(c)\\n        else:\\n            c=self.fallback(b)\\n            y=self.project(c)\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-73abf4b3d562eece\",\"kind\":\"source_structure\",\"label\":\"if flag\",\"parent\":\"model/group-12-0-1/opaque-22-8-25/adapter-8af053bbfd27cae8\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceBranch\",\"sourceParameters\":{\"condition\":\"flag\"},\"sourceStructure\":true,\"source_evidence\":[\"e-9be9bd130eb6a356\"]},{\"certainty\":\"syntax\",\"expression\":\"if flag:\\n            c=a+b\\n            y=self.project(c)\\n        else:\\n            c=self.fallback(b)\\n            y=self.project(c)\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-d63a091eef971dd9\",\"kind\":\"source_structure\",\"label\":\"else\",\"parent\":\"model/group-12-0-1/opaque-22-8-25/adapter-8af053bbfd27cae8\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceBranch\",\"sourceParameters\":{\"condition\":\"not (flag)\"},\"sourceStructure\":true,\"source_evidence\":[\"e-9be9bd130eb6a356\"]},{\"certainty\":\"syntax\",\"expression\":\"nn.Linear(input_dim,hidden_dim)\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-2b407bc74a4256cb\",\"kind\":\"source_structure\",\"label\":\"nn.Linear\",\"parent\":\"model/group-12-0-1/opaque-22-8-25/adapter-7b6cd5ffcf2e0b62\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceModule\",\"sourceParameters\":{\"construction\":\"nn.Linear(input_dim, hidden_dim)\",\"sourceType\":\"nn.Linear\"},\"sourceStructure\":true,\"source_evidence\":[\"e-0e8e0de75d9c887f\"]},{\"certainty\":\"syntax\",\"expression\":\"nn.GELU()\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-5d67bf711075636f\",\"kind\":\"source_structure\",\"label\":\"nn.GELU\",\"parent\":\"model/group-12-0-1/opaque-22-8-25/adapter-7b6cd5ffcf2e0b62\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceModule\",\"sourceParameters\":{\"construction\":\"nn.GELU()\",\"sourceType\":\"nn.GELU\"},\"sourceStructure\":true,\"source_evidence\":[\"e-e2c6dfb3ea4c662c\"]},{\"certainty\":\"syntax\",\"expression\":\"nn.Dropout(0.1)\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-8e05dd92d06889a4\",\"kind\":\"source_structure\",\"label\":\"nn.Dropout\",\"parent\":\"model/group-12-0-1/opaque-22-8-25/adapter-7b6cd5ffcf2e0b62\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceModule\",\"sourceParameters\":{\"construction\":\"nn.Dropout(0.1)\",\"sourceType\":\"nn.Dropout\"},\"sourceStructure\":true,\"source_evidence\":[\"e-f100591f7fdb701b\"]},{\"certainty\":\"syntax\",\"expression\":\"nn.Linear(hidden_dim,output_dim)\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-f318429b4d4931d2\",\"kind\":\"source_structure\",\"label\":\"nn.Linear\",\"parent\":\"model/group-12-0-1/opaque-22-8-25/adapter-7b6cd5ffcf2e0b62\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceModule\",\"sourceParameters\":{\"construction\":\"nn.Linear(hidden_dim, output_dim)\",\"sourceType\":\"nn.Linear\"},\"sourceStructure\":true,\"source_evidence\":[\"e-076409f0e6dfcbf5\"]},{\"certainty\":\"syntax\",\"expression\":\"nn.Linear(input_dim,hidden_dim)\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-b2c0ad50dba37e39\",\"kind\":\"source_structure\",\"label\":\"nn.Linear\",\"parent\":\"model/group-12-0-1/opaque-22-8-25/adapter-4b792b42359e7f52\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceModule\",\"sourceParameters\":{\"construction\":\"nn.Linear(input_dim, hidden_dim)\",\"sourceType\":\"nn.Linear\"},\"sourceStructure\":true,\"source_evidence\":[\"e-0e8e0de75d9c887f\"]},{\"certainty\":\"syntax\",\"expression\":\"nn.GELU()\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-1cf8ce2955944288\",\"kind\":\"source_structure\",\"label\":\"nn.GELU\",\"parent\":\"model/group-12-0-1/opaque-22-8-25/adapter-4b792b42359e7f52\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceModule\",\"sourceParameters\":{\"construction\":\"nn.GELU()\",\"sourceType\":\"nn.GELU\"},\"sourceStructure\":true,\"source_evidence\":[\"e-e2c6dfb3ea4c662c\"]},{\"certainty\":\"syntax\",\"expression\":\"nn.Dropout(0.1)\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-628b6db613d70d4c\",\"kind\":\"source_structure\",\"label\":\"nn.Dropout\",\"parent\":\"model/group-12-0-1/opaque-22-8-25/adapter-4b792b42359e7f52\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceModule\",\"sourceParameters\":{\"construction\":\"nn.Dropout(0.1)\",\"sourceType\":\"nn.Dropout\"},\"sourceStructure\":true,\"source_evidence\":[\"e-f100591f7fdb701b\"]},{\"certainty\":\"syntax\",\"expression\":\"nn.Linear(hidden_dim,output_dim)\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-0033a42510413eb0\",\"kind\":\"source_structure\",\"label\":\"nn.Linear\",\"parent\":\"model/group-12-0-1/opaque-22-8-25/adapter-4b792b42359e7f52\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceModule\",\"sourceParameters\":{\"construction\":\"nn.Linear(hidden_dim, output_dim)\",\"sourceType\":\"nn.Linear\"},\"sourceStructure\":true,\"source_evidence\":[\"e-076409f0e6dfcbf5\"]},{\"certainty\":\"syntax\",\"expression\":\"nn.Linear(16,4)\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-5d6f40077b0e9942\",\"kind\":\"source_structure\",\"label\":\"project · nn.Linear\",\"parent\":\"model/group-12-0-1/opaque-22-8-25/adapter-73abf4b3d562eece\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceModule\",\"sourceParameters\":{\"callSites\":[{\"column\":14,\"endColumn\":29,\"endLine\":24,\"expression\":\"self.project(c)\",\"line\":24,\"path\":\"transformed_mlp.py\"}],\"construction\":\"nn.Linear(16, 4)\",\"sourceType\":\"nn.Linear\"},\"sourceStructure\":true,\"source_evidence\":[\"e-22999ad30970fbc9\"]},{\"certainty\":\"syntax\",\"expression\":\"c=a+b\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-96a49ff44ddf6f98\",\"kind\":\"source_structure\",\"label\":\"c\",\"parent\":\"model/group-12-0-1/opaque-22-8-25/adapter-73abf4b3d562eece\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceCode\",\"sourceParameters\":{},\"sourceStructure\":true,\"source_evidence\":[\"e-086843258fbf9b3e\"]},{\"certainty\":\"syntax\",\"expression\":\"nn.Identity()\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-baaa705c0c863acb\",\"kind\":\"source_structure\",\"label\":\"fallback · nn.Identity\",\"parent\":\"model/group-12-0-1/opaque-22-8-25/adapter-d63a091eef971dd9\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceModule\",\"sourceParameters\":{\"callSites\":[{\"column\":14,\"endColumn\":30,\"endLine\":26,\"expression\":\"self.fallback(b)\",\"line\":26,\"path\":\"transformed_mlp.py\"}],\"construction\":\"nn.Identity()\",\"sourceType\":\"nn.Identity\"},\"sourceStructure\":true,\"source_evidence\":[\"e-49ca67e65c58e485\"]},{\"certainty\":\"syntax\",\"expression\":\"nn.Linear(16,4)\",\"generationContract\":null,\"id\":\"model/group-12-0-1/opaque-22-8-25/adapter-33e2ffc088eb3451\",\"kind\":\"source_structure\",\"label\":\"project · nn.Linear\",\"parent\":\"model/group-12-0-1/opaque-22-8-25/adapter-d63a091eef971dd9\",\"sourceAdapterId\":\"adapter-fe852cd48ca863285ac3a426\",\"sourceKind\":\"SourceModule\",\"sourceParameters\":{\"callSites\":[{\"column\":14,\"endColumn\":29,\"endLine\":27,\"expression\":\"self.project(c)\",\"line\":27,\"path\":\"transformed_mlp.py\"}],\"construction\":\"nn.Linear(16, 4)\",\"sourceType\":\"nn.Linear\"},\"sourceStructure\":true,\"source_evidence\":[\"e-22999ad30970fbc9\"]}],\"registrySha256\":\"9c153d45ae26c27b1f5da8becde63af92eb51883b8e8ad1b00860151802f7e5f\",\"schema\":\"summary-source-ir/1\",\"shapePolicy\":\"No tensor dimensions or execution path inferred\"}",
+  "irSha256": "385db8f551aa16c70054f509a8aeb3921152fbb62d59e5b498d1ed76263dfc8d",
+  "evidence": {
+    "e-830299cc7088df9d": {
+      "file": "transformed_mlp.py",
+      "line": 12,
+      "endLine": 28,
+      "column": 0,
+      "endColumn": 16,
+      "expression": "class Wrapper(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.left=MLP()\n        self.right=MLP()\n        self.project=nn.Linear(16,4)\n        self.fallback=nn.Identity()\n    def forward(self,x,flag=True):\n        a=self.left(x)\n        b=self.right(x)\n        if flag:\n            c=a+b\n            y=self.project(c)\n        else:\n            c=self.fallback(b)\n            y=self.project(c)\n        return y"
+    },
+    "e-65e4e6885a9cd93e": {
+      "file": "transformed_mlp.py",
+      "line": 15,
+      "endLine": 15,
+      "column": 18,
+      "endColumn": 23,
+      "expression": "MLP()"
+    },
+    "e-2519a7dfcfd92d67": {
+      "file": "transformed_mlp.py",
+      "line": 16,
+      "endLine": 16,
+      "column": 19,
+      "endColumn": 24,
+      "expression": "MLP()"
+    },
+    "e-22999ad30970fbc9": {
+      "file": "transformed_mlp.py",
+      "line": 17,
+      "endLine": 17,
+      "column": 21,
+      "endColumn": 36,
+      "expression": "nn.Linear(16,4)"
+    },
+    "e-49ca67e65c58e485": {
+      "file": "transformed_mlp.py",
+      "line": 18,
+      "endLine": 18,
+      "column": 22,
+      "endColumn": 35,
+      "expression": "nn.Identity()"
+    },
+    "e-c69ff0955eec0b1f": {
+      "file": "transformed_mlp.py",
+      "line": 19,
+      "endLine": 19,
+      "column": 21,
+      "endColumn": 22,
+      "expression": "x"
+    },
+    "e-ea607a6fdfdff18f": {
+      "file": "transformed_mlp.py",
+      "line": 19,
+      "endLine": 19,
+      "column": 28,
+      "endColumn": 32,
+      "expression": "True"
+    },
+    "e-eaf076d00e65e4e5": {
+      "file": "transformed_mlp.py",
+      "line": 19,
+      "endLine": 19,
+      "column": 23,
+      "endColumn": 27,
+      "expression": "flag"
+    },
+    "e-084eeb7f9f395df5": {
+      "file": "transformed_mlp.py",
+      "line": 20,
+      "endLine": 20,
+      "column": 10,
+      "endColumn": 22,
+      "expression": "self.left(x)"
+    },
+    "e-6218af0b27bd4619": {
+      "file": "transformed_mlp.py",
+      "line": 8,
+      "endLine": 8,
+      "column": 21,
+      "endColumn": 126,
+      "expression": "nn.Sequential(nn.Linear(input_dim,hidden_dim),nn.GELU(),nn.Dropout(0.1),nn.Linear(hidden_dim,output_dim))"
+    },
+    "e-0e8e0de75d9c887f": {
+      "file": "transformed_mlp.py",
+      "line": 8,
+      "endLine": 8,
+      "column": 35,
+      "endColumn": 66,
+      "expression": "nn.Linear(input_dim,hidden_dim)"
+    },
+    "e-e2c6dfb3ea4c662c": {
+      "file": "transformed_mlp.py",
+      "line": 8,
+      "endLine": 8,
+      "column": 67,
+      "endColumn": 76,
+      "expression": "nn.GELU()"
+    },
+    "e-f100591f7fdb701b": {
+      "file": "transformed_mlp.py",
+      "line": 8,
+      "endLine": 8,
+      "column": 77,
+      "endColumn": 92,
+      "expression": "nn.Dropout(0.1)"
+    },
+    "e-076409f0e6dfcbf5": {
+      "file": "transformed_mlp.py",
+      "line": 8,
+      "endLine": 8,
+      "column": 93,
+      "endColumn": 125,
+      "expression": "nn.Linear(hidden_dim,output_dim)"
+    },
+    "e-81285061f5a97927": {
+      "file": "transformed_mlp.py",
+      "line": 9,
+      "endLine": 9,
+      "column": 21,
+      "endColumn": 29,
+      "expression": "features"
+    },
+    "e-284bc754091856be": {
+      "file": "transformed_mlp.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 15,
+      "endColumn": 37,
+      "expression": "self.network(features)"
+    },
+    "e-40ab13dfa564b13a": {
+      "file": "transformed_mlp.py",
+      "line": 10,
+      "endLine": 10,
+      "column": 8,
+      "endColumn": 37,
+      "expression": "return self.network(features)"
+    },
+    "e-545a6d67a8beb049": {
+      "file": "transformed_mlp.py",
+      "line": 21,
+      "endLine": 21,
+      "column": 10,
+      "endColumn": 23,
+      "expression": "self.right(x)"
+    },
+    "e-9288ac301d5bd970": {
+      "file": "transformed_mlp.py",
+      "line": 22,
+      "endLine": 28,
+      "column": 8,
+      "endColumn": 16,
+      "expression": "if flag:\n            c=a+b\n            y=self.project(c)\n        else:\n            c=self.fallback(b)\n            y=self.project(c)\n        return y"
+    },
+    "e-9c034537dbca39b4": {
+      "file": "transformed_mlp.py",
+      "line": 28,
+      "endLine": 28,
+      "column": 8,
+      "endColumn": 16,
+      "expression": "return y"
+    },
+    "e-9be9bd130eb6a356": {
+      "file": "transformed_mlp.py",
+      "line": 22,
+      "endLine": 27,
+      "column": 8,
+      "endColumn": 29,
+      "expression": "if flag:\n            c=a+b\n            y=self.project(c)\n        else:\n            c=self.fallback(b)\n            y=self.project(c)"
+    },
+    "e-086843258fbf9b3e": {
+      "file": "transformed_mlp.py",
+      "line": 23,
+      "endLine": 23,
+      "column": 12,
+      "endColumn": 17,
+      "expression": "c=a+b"
+    },
+    "e-434f62ceee7f5259": {
+      "file": "transformed_mlp.py",
+      "line": 24,
+      "endLine": 24,
+      "column": 14,
+      "endColumn": 29,
+      "expression": "self.project(c)"
+    },
+    "e-70da5086c349f230": {
+      "file": "transformed_mlp.py",
+      "line": 26,
+      "endLine": 26,
+      "column": 14,
+      "endColumn": 30,
+      "expression": "self.fallback(b)"
+    },
+    "e-7557476c98176e94": {
+      "file": "transformed_mlp.py",
+      "line": 27,
+      "endLine": 27,
+      "column": 14,
+      "endColumn": 29,
+      "expression": "self.project(c)"
+    }
+  },
+  "diagnostics": [
+    {
+      "node": "model/group-12-0-1/opaque-22-8-25",
+      "evidence": "e-9288ac301d5bd970",
+      "message": "动态控制流或副作用；此后计算整体保留，不猜测执行路径。"
+    },
+    {
+      "node": "model/group-12-0-1",
+      "evidence": "e-830299cc7088df9d",
+      "message": "Added 20 source inspection cards. Source arrows describe authored dependencies; execution paths, tensor ports and generation authority remain unresolved."
+    }
+  ],
+  "config": {},
+  "adapterVersion": 1,
+  "sourceAdapters": [
+    {
+      "boundary": "model/group-12-0-1/opaque-22-8-25",
+      "adapter": "adapter-fe852cd48ca863285ac3a426",
+      "nodes": 20,
+      "truncated": false
+    }
+  ],
+  "adaptationRequests": [
+    {
+      "nodeId": "model/group-12-0-1/opaque-22-8-25",
+      "sourceEvidence": [
+        "e-9288ac301d5bd970"
+      ],
+      "sourceSymbols": [
+        "transformed_mlp:Wrapper"
+      ],
+      "status": "source-inspected",
+      "generationContract": "unresolved",
+      "truncated": false,
+      "next": {
+        "command": "adapter scaffold",
+        "entry": "transformed_mlp:Wrapper",
+        "workflow": [
+          "scaffold",
+          "review-source-evidence",
+          "validate",
+          "register",
+          "preview"
+        ],
+        "format": "archcanvas-source-adapter/1",
+        "ruleFormat": "archcanvas-source-rule/1",
+        "ruleWorkflow": [
+          "read-source",
+          "author-rule",
+          "rule-validate",
+          "scaffold --rules",
+          "validate",
+          "register",
+          "preview"
+        ],
+        "ruleApplications": []
+      }
+    }
+  ],
+  "coverage": {
+    "scope": "static-source-and-source-inspection",
+    "opaqueBoundaries": 1,
+    "inspectedOpaqueBoundaries": 1,
+    "truncatedInspections": 0,
+    "tensorExecutionVerified": false,
+    "modelExecuted": false,
+    "agentAuthoredSourceRules": true,
+    "sourceRuleApplications": 0,
+    "generationAuthority": "Adapters do not authorize structural generation; use independently checked source-preserving generation when eligible."
+  }
+}

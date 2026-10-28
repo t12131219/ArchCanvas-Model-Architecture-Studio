@@ -1,0 +1,119 @@
+{
+  "schema": "archcanvas-summary-authoring-validation/1",
+  "recordedAt": "2026-10-27T19:30:31.271340+00:00",
+  "phase": "Summary declared native editing replaces overlapping assembly editing in retained Studio panels",
+  "phaseStatus": "validated",
+  "overallMigrationStatus": "in-progress",
+  "frontendFull": {
+    "tests": 885,
+    "pass": 884,
+    "fail": 0,
+    "skipped": 1,
+    "cancelled": 0,
+    "durationMs": 600122.476616,
+    "command": "npm test",
+    "evidence": "frontend.log",
+    "scopeNote": "All runtime changes preceded this run. Later edits only update validation scripts, manifests and documentation.",
+    "skipReason": "Standalone SVG DOM Chromium launch is blocked in sandbox; separate real Chromium matrices passed."
+  },
+  "targeted": {
+    "tests": 69,
+    "pass": 69,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "durationMs": 1380.851679,
+    "evidence": "targeted.log",
+    "command": "node --experimental-strip-types --test --test-isolation=none tests/summaryAuthoring.test.ts tests/summaryDocuments.test.ts tests/previewApp.test.ts tests/previewInterop.test.ts tests/previewSourceControls.test.ts tests/previewHierarchy.test.ts",
+    "scopeNote": "Earlier targeted run; the full run covers the final constructor and visible-root regression assertions. Counts are not additive."
+  },
+  "browser": {
+    "authoring": {
+      "passed": 12,
+      "browserErrors": 0,
+      "evidence": "browser-authoring.json"
+    },
+    "documents": {
+      "passed": 14,
+      "browserErrors": 0,
+      "evidence": "browser-documents.json"
+    },
+    "native": {
+      "passed": 16,
+      "browserErrors": 0,
+      "evidence": "browser-native.json"
+    },
+    "legacy": {
+      "passed": 23,
+      "browserErrors": 0,
+      "evidence": "browser-legacy.json"
+    }
+  },
+  "browserTotalChecks": 65,
+  "sourceTransactionWritesInAuthoringMatrix": [],
+  "build": {
+    "passed": true,
+    "evidence": "build.log"
+  },
+  "independentCopy": {
+    "passed": true,
+    "command": "python3 scripts/check_independence.py --build",
+    "evidence": "independence-report.json",
+    "runtimeByteEquality": "independent-runtime-bytes.json",
+    "targeted": {
+      "tests": 69,
+      "pass": 69,
+      "fail": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "durationMs": 1553.235362,
+      "evidence": "independent-targeted.log"
+    },
+    "scopeNote": "Build uses copied installed npm dependencies, not a fresh dependency installation. All ten authoring runtime/host files match current bytes; later documentation, manifests and browser-script edits are excluded from that claim."
+  },
+  "assetIntegrity": {
+    "resources": 63,
+    "bytes": 3983034,
+    "integrationManifestFiles": 59,
+    "nativeSourceIdenticalModules": 32,
+    "authoringSourceIdenticalFiles": 2,
+    "evidence": "http-assets.json",
+    "publicDistHttpEqual": true
+  },
+  "presets": {
+    "modules": 16,
+    "sourceUnits": 113,
+    "path": "studio/public/preview/data/semantic/authoring-presets.json"
+  },
+  "budgets": {
+    "nodes": 480,
+    "edges": 3600,
+    "documentBytes": 16000000,
+    "historyEntries": 30
+  },
+  "scopeNotes": [
+    "Immutable imports remain immutable; explicit editing creates an independently digest-checked workspace.",
+    "Declared edits do not execute models, write Python, or acquire formal source transaction binding.",
+    "Original Python parsing requests observed in the browser are asserted byte-equal to the original source bundle.",
+    "N.accepts allows honestly marked pending/failed routes; this phase does not claim every authored assembly has a strictly legal complete route set.",
+    "Browser persistence stores the current document and view, not the full undo stack across page reloads.",
+    "New worker/controller APIs, custom-source compilation, source parameter reparse/replacement, exact recipe reconstruction and local assembly recertification are not all migrated."
+  ],
+  "initialIssues": [
+    "Extracted hierarchy snapshot harness required a window stub after adding the new optional authoring projection; targeted and full reruns pass.",
+    "Browser found inherited Object constructor leaked into the inspector snapshot; own-field projection and structuredClone regression fixed it.",
+    "Browser found new nodes hidden by generic import defaults; workspace state now follows original Summary authoring root/scope opening.",
+    "Workspace persistence must validate its current declared IR rather than the original fork IR digest.",
+    "Concurrent browser startup attempts timed out under resource contention; their failed records are preserved; final browser matrices passed.",
+    "The first source-fork observation incorrectly categorized the read-only formal parsing endpoint as a source write; final matrix checks original bytes separately from transactions/runtime."
+  ],
+  "remaining": [
+    "Custom-source Summary compile API, parameter reparse and compatible replaceModule UI",
+    "Exact recipe reconstruction and local authored-assembly recertification",
+    "Current generic model catalog",
+    "CPU runtime/merged evidence under formal isolation and receipts",
+    "Measured adaptive-frontier feedback",
+    "Thousand-node budgets, transport, cancellation and stress",
+    "D0/D1 legacy renderer/interaction dependency cleanup"
+  ]
+}

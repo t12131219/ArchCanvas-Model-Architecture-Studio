@@ -5,7 +5,7 @@
   const key=side=>side[0].toUpperCase()+side.slice(1);
   const active=(e,side)=>e['physical'+key(side)]||e['fixed'+key(side)];
   function point(n,f){const p=R.port(n,f.side,f.fraction);return f.offset?{...p,x:n.x+f.offset.x,y:n.y+f.offset.y}:p;}
-  function slot(e,side){if(e.projection?.presentationSlots?.[side])return e.projection.presentationSlots[side];const b=e.binding||{},c=b.endpoint_binding?.canonical,which=side==='source'?'src':'dst';
+  function slot(e,side){if(e.projection?.presentationSlots?.[side])return e.projection.presentationSlots[side];if(e.portPolicy?.[side]?.presentationSlot)return e.portPolicy[side].presentationSlot;const b=e.binding||{},c=b.endpoint_binding?.canonical,which=side==='source'?'src':'dst';
     return b['canonical_'+which]||(c?.[which]?c[which]+':'+c[which+'_port']:null)||
       (b['semantic_'+which]?b['semantic_'+which]+':'+b['semantic_'+which+'_port']:null)||b[which]||e.id+':'+side;}
   function peers(graph,e,side){return graph.edges.flatMap(v=>['source','target'].filter(s=>v!==e&&v[s]===e[side]).map(s=>({edge:v,side:s})));}
@@ -13,7 +13,14 @@
   function permitted(graph,e,side,f){
     const n=graph.nodes.find(n=>n.id===e[side]),p=policy(graph,e,side),original=e['fixed'+key(side)];
     if(!n||!f||!R.SIDE[f.side]||!Number.isFinite(f.fraction)||f.fraction<0||f.fraction>1)return false;
-    if(JSON.stringify(f)===JSON.stringify(original))return true;
+    if(JSON.stringify(f)===JSON.stringify(original)){
+      // Registered original slots may be closer than the free-port spacing.
+      // That exemption does not license returning onto a peer which moved
+      // into this slot while it was vacant earlier in the routing batch.
+      const xy=point(n,f),identity=(v,s)=>n.visualBinding?.canonical||slot(v,s);
+      return !peers(graph,e,side).some(({edge:v,side:s})=>!v.draft&&identity(v,s)!==identity(e,side)&&
+        JSON.stringify(active(v,s))!==JSON.stringify(v['fixed'+key(s)])&&R.dist(xy,point(n,active(v,s)))<(p.spacing||12)-EPS);
+    }
     if(p.mode==='fixed')return JSON.stringify(f)===JSON.stringify(original);
     if(f.inward!==original?.inward||p.mode==='side'&&f.side!==original?.side)return false;
     const xy=point(n,f),boundary=R.port(n,f.side,f.fraction);

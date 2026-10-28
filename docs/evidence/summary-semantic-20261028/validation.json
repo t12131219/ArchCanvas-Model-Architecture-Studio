@@ -1,0 +1,289 @@
+{
+  "schema": "archcanvas-summary-migration-validation/1",
+  "recordedAt": "2026-10-27T16:59:26.387254+00:00",
+  "status": "implemented-scope-verified; full-migration-incomplete",
+  "direction": "Summary_Merge owns overlapping preview and source semantics; retain Studio panels and formal authoring contracts",
+  "frontend": {
+    "full": {
+      "tests": 851,
+      "passed": 850,
+      "failed": 0,
+      "skipped": 1,
+      "durationMs": 539664.217448,
+      "log": "frontend-full-current.log",
+      "skipReason": "Sandbox Chromium DOM check; real browser coverage recorded separately"
+    },
+    "targeted": {
+      "tests": 33,
+      "passed": 33,
+      "failed": 0,
+      "log": "frontend-final-targeted.log"
+    },
+    "nativeSemantic": {
+      "tests": 7,
+      "note": "Included in full suite; export independently validated by Python validate_ir"
+    }
+  },
+  "backend": {
+    "regression": {
+      "tests": 97,
+      "passed": 92,
+      "failed": 0,
+      "skipped": 5,
+      "log": "backend-regression.log",
+      "skipReason": "Sandbox loopback listener restrictions"
+    },
+    "httpPreview": {
+      "tests": 14,
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0,
+      "log": "backend-http-final.log",
+      "note": "Separate rerun with local loopback permission; overlaps broader suite, do not sum"
+    }
+  },
+  "build": {
+    "ok": true,
+    "log": "build.log",
+    "warning": "Vite main chunk exceeds 500 kB",
+    "assets": [
+      {
+        "path": "studio/dist/assets/index-B4ua47PG.css",
+        "bytes": 66034,
+        "sha256": "65f0db81433362bc93e4ce0467e0f9cd2478f2704f34c6b45b132eef1f713c00"
+      },
+      {
+        "path": "studio/dist/assets/index-C-l00ORd.js",
+        "bytes": 747090,
+        "sha256": "ca982920030cd15cece1b25d69d8b7670e74b9d0f88393117919d09d65d7965f"
+      },
+      {
+        "path": "studio/dist/assets/sourceEditingClient-bAOQIo2f.js",
+        "bytes": 754,
+        "sha256": "61ccfe2f54f7191dfb28a86b0cb0be00f13654cee217fcf3a74db35e2e69ee0d"
+      },
+      {
+        "path": "studio/dist/assets/sourceEditingWorker-LjCReA2V.js",
+        "bytes": 122976,
+        "sha256": "be4c180e197df25e07f5ba46271972296576a7992351a6161105513261eb3c53"
+      }
+    ]
+  },
+  "browser": {
+    "bridge": {
+      "checks": 23,
+      "ok": true,
+      "browserErrors": [],
+      "evidence": "browser-bridge.json"
+    },
+    "studio": {
+      "checks": 7,
+      "ok": true,
+      "browserErrors": [],
+      "evidence": "browser-studio.json"
+    },
+    "totalChecks": 30
+  },
+  "fixtures": {
+    "count": 5,
+    "evidence": "fixture-analysis.json",
+    "scope": "MLP, ResidualCNN, Transformer, ViT, temporal fixtures only"
+  },
+  "independence": {
+    "source": {
+      "ok": true,
+      "isolation": "-I -S; copied src and fixture only",
+      "origins": {
+        "archcanvas_preview": "/tmp/summary-independent-k30asqzg/src/archcanvas_preview/__init__.py",
+        "archcanvas_summary_semantic": "/tmp/summary-independent-k30asqzg/src/archcanvas_summary_semantic/__init__.py",
+        "archcanvas_python": "/tmp/summary-independent-k30asqzg/src/archcanvas_python/__init__.py"
+      },
+      "schema": "archcanvas-source-semantic/2",
+      "nodes": 9,
+      "torchLoaded": false
+    },
+    "wheel": {
+      "ok": true,
+      "package": "/tmp/summary-wheel-check-ui7ypn10/archcanvas_summary_semantic/__init__.py",
+      "nativeNodes": 4,
+      "modelExecuted": false,
+      "wheel": "/tmp/summary-semantic-wheel/archcanvas_studio-0.1.0-py3-none-any.whl",
+      "semanticPythonFiles": 21,
+      "isolation": "extracted wheel; -I -S; no prototype or site-packages"
+    },
+    "wheelBuildLog": "wheel-offline-build.log",
+    "projectVenvAttempt": {
+      "ok": false,
+      "reason": "bdist_wheel unavailable",
+      "log": "wheel-project-venv-attempt.log"
+    }
+  },
+  "provenance": {
+    "previewManifest": "../../../studio/public/preview/integration-manifest.json",
+    "verifiedPreviewFiles": 23,
+    "publicEqualsDist": true,
+    "semanticManifest": "../../summary-semantic-manifest-20261028.json",
+    "verifiedSemanticFiles": 21,
+    "verifiedIntegrationFiles": 8,
+    "httpAssets": [
+      {
+        "url": "http://127.0.0.1:8789/",
+        "bytes": 477,
+        "sha256": "751bd6d91cbd53415eac256e8d6170be82b62ed5b6355c2d3118e992c4463c91",
+        "contentType": "text/html",
+        "match": true
+      },
+      {
+        "url": "http://127.0.0.1:8789/preview/yworks_edge_router_lab/app.js",
+        "bytes": 120712,
+        "sha256": "249c4b321de0d2b15643339f3f27151fc1b6b3f4f64be1bd524fafeada7b5027",
+        "contentType": "text/javascript",
+        "match": true
+      },
+      {
+        "url": "http://127.0.0.1:8789/preview/yworks_edge_router_lab/source-adapter.js",
+        "bytes": 30792,
+        "sha256": "8b0ab2a3c34da0fbe3240d12a8403a0db96bc29c3c3c91a7a82e48c210634f25",
+        "contentType": "text/javascript",
+        "match": true
+      },
+      {
+        "url": "http://127.0.0.1:8789/preview/BRIDGE.md",
+        "bytes": 22088,
+        "sha256": "e6cae9779d749db34c0b2929f736332d11385a071493b1cc83b36ba7be9e68bd",
+        "contentType": "text/markdown",
+        "match": true
+      }
+    ]
+  },
+  "historicalFailures": [
+    {
+      "log": "frontend-before-fixture-refresh.log",
+      "tests": 849,
+      "passed": 847,
+      "failed": 1,
+      "skipped": 1,
+      "fix": "Generated new AST fixture for native semantic package; historical fixture preserved"
+    },
+    {
+      "log": "frontend-before-harness-refresh.log",
+      "tests": 849,
+      "passed": 846,
+      "failed": 2,
+      "skipped": 1,
+      "fix": "Updated callback test harness busy flags and added import race regression"
+    }
+  ],
+  "limits": {
+    "files": 80,
+    "bytes": 2000000,
+    "nodes": 480,
+    "edges": 3600,
+    "depth": 10
+  },
+  "remainingMigration": [
+    "certifiedDetails adaptive semantic F0/F1 cuts and role/stage/path/value-chain projections; current F0/F1 are recursive depth frontiers",
+    "runtime/merged evidence UI and explicit CPU probe integration",
+    "Thousand-node native graphs and incremental routing",
+    "Full generic model catalog and native document formats",
+    "All AuthoringModel semantic edit operations",
+    "D0/D1 deletion after formal authoring/export dependency separation"
+  ],
+  "evidenceFiles": [
+    {
+      "path": "ast-multifile-fixture.json",
+      "bytes": 42819,
+      "sha256": "61c9086bd35967dfcecb875d27974fdf02a5a5aca734cedc5d66e5988468577f"
+    },
+    {
+      "path": "backend-http-final.log",
+      "bytes": 2641,
+      "sha256": "56856f115fbfb18a1717f977a091e613ac82b04530b4f795af5b5be6f7791001"
+    },
+    {
+      "path": "backend-regression.log",
+      "bytes": 19087,
+      "sha256": "e0951c21f58b66396863a128e2365ad2367165cc235ee2a60f7a0839daab1eaf"
+    },
+    {
+      "path": "browser-bridge.json",
+      "bytes": 1853,
+      "sha256": "1104170e6c106939487d4eeed2f6871fc06959fab86ddb2fed623d9fa7bf96e7"
+    },
+    {
+      "path": "browser-studio.json",
+      "bytes": 865,
+      "sha256": "45b75b547b17d51fec46ee1091792805844953152be239326500cc0a2404bb6f"
+    },
+    {
+      "path": "build.log",
+      "bytes": 944,
+      "sha256": "75c5de1c3652798ae8a0bedabc4806bcce24beb87b394bbd3403df4156242502"
+    },
+    {
+      "path": "capabilities.json",
+      "bytes": 18625,
+      "sha256": "624758a4c9b7fa246a4a04f01981a221414ff97f0c0eea3b095fac0644ee48b9"
+    },
+    {
+      "path": "fixture-analysis.json",
+      "bytes": 712,
+      "sha256": "7c1653389b5fa464d8e5234857668e35955ead4e9b4283570e1b1df16f7ca0b9"
+    },
+    {
+      "path": "frontend-before-fixture-refresh.log",
+      "bytes": 99288,
+      "sha256": "3e635f342be50a0575d37a757d0e54428a2ca832875634e703bda3ad8a1d806f"
+    },
+    {
+      "path": "frontend-before-harness-refresh.log",
+      "bytes": 100002,
+      "sha256": "899b467aada5ef2a8b6303490d2e276bde09e88e2bdae46f0625f99c3cf67086"
+    },
+    {
+      "path": "frontend-final-targeted.log",
+      "bytes": 4080,
+      "sha256": "037490a53603c1bd94b4bae5665830776f9a2a90773d6f751f49003d0e5effdc"
+    },
+    {
+      "path": "frontend-full-current.log",
+      "bytes": 98190,
+      "sha256": "25ceb62c9d933273c8259e5ba26413d53cc6bb4fdc53cd5d255a1083f913462c"
+    },
+    {
+      "path": "http-assets.json",
+      "bytes": 912,
+      "sha256": "87e963a41bcea61847da796f43334207749852a91368f9c6a0e9e9f527d6870a"
+    },
+    {
+      "path": "native-export-regression.log",
+      "bytes": 808,
+      "sha256": "ed0ff429164fd7981822d567d9600f59262d527a66f58ea8fcbc44e9b0f07062"
+    },
+    {
+      "path": "source-independence.json",
+      "bytes": 451,
+      "sha256": "c36d1027405666925c0065760f1e1c16cd277d0bd8b74be76385e791f34fa3c8"
+    },
+    {
+      "path": "studio.png",
+      "bytes": 152859,
+      "sha256": "3ef695c72d584b5e89d9514713d15786f8a0c226c0e8e1c12816abe56fb74a75"
+    },
+    {
+      "path": "wheel-independence.json",
+      "bytes": 337,
+      "sha256": "97d34bcbd9d96335b82859efeded9fff6e2498850ed216a6155345749a67c042"
+    },
+    {
+      "path": "wheel-offline-build.log",
+      "bytes": 1005,
+      "sha256": "c1c4b5b9d870dea59cd54b94fba430df81a41aecbaf4ce847a532ca1e896abb8"
+    },
+    {
+      "path": "wheel-project-venv-attempt.log",
+      "bytes": 2358,
+      "sha256": "ed70dc9b23cf5fa70797f22713cbb038a7505eff31a78557aafad2de4b87f24f"
+    }
+  ]
+}

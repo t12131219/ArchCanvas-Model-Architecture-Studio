@@ -1,0 +1,106 @@
+{
+  "schema": "archcanvas-summary-native-view-validation/1",
+  "recordedAt": "2026-10-27T18:23:10.011861+00:00",
+  "phase": "Summary native static view, certified cuts and Studio panel integration",
+  "phaseStatus": "validated",
+  "overallMigrationStatus": "in-progress",
+  "frontendFull": {
+    "tests": 866,
+    "pass": 865,
+    "fail": 0,
+    "skipped": 1,
+    "cancelled": 0,
+    "durationMs": 594478.154878,
+    "command": "npm test",
+    "evidence": "frontend.log",
+    "scopeNote": "After native router fix. A final presentation-only change made the empty inspector read counts from native IR; current targeted and browser runs below include that last change.",
+    "skipReason": "Standalone DOM SVG Chromium test could not launch in sandbox; separate real Chromium matrices were run explicitly."
+  },
+  "targeted": {
+    "tests": 65,
+    "pass": 65,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "durationMs": 39857.431588,
+    "command": "node --experimental-strip-types --test --test-isolation=none tests/summaryNativeView.test.ts tests/previewHierarchy.test.ts tests/previewApp.test.ts tests/previewInterop.test.ts tests/previewSourceControls.test.ts",
+    "evidence": "targeted.log"
+  },
+  "nativeStrict": {
+    "tests": 15,
+    "pass": 15,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "durationMs": 38297.022806,
+    "evidence": "native-strict.log",
+    "scopeNote": "These 15 tests also belong to the current 65-test targeted run; counts are not additive."
+  },
+  "browser": {
+    "native": {
+      "passed": 16,
+      "errors": 0,
+      "evidence": "browser-native.json"
+    },
+    "legacy": {
+      "passed": 23,
+      "errors": 0,
+      "evidence": "browser-legacy.json"
+    },
+    "transformer": {
+      "passed": 3,
+      "errors": 0,
+      "evidence": "browser-transformer.json"
+    }
+  },
+  "browserTotalChecks": 42,
+  "build": {
+    "passed": true,
+    "evidence": "build.log"
+  },
+  "independentCopy": {
+    "passed": true,
+    "command": "python3 scripts/check_independence.py --build",
+    "evidence": "independence-report.json",
+    "allCurrentRuntimeHashesMatch": true
+  },
+  "assetIntegrity": {
+    "evidence": "http-assets.json",
+    "resources": 60,
+    "bytes": 3733106,
+    "publicDistHttpEqual": true,
+    "integrationManifestFiles": 56,
+    "sourceIdenticalNativeModules": 32
+  },
+  "fixtureMatrix": {
+    "fixtures": 5,
+    "cuts": 15,
+    "allRoutesValid": true,
+    "evidence": "fixture-cuts.json",
+    "budgetMsPerRound": 30000,
+    "maxContinuations": 1
+  },
+  "transformerRegression": {
+    "before": "source-unit had 11 invalid edge IDs; see transformer-routing-diagnostic.json",
+    "after": "All three cuts pass strict unit and actual browser route guards. Final browser run used zero continuations.",
+    "canonicalNodes": 102,
+    "canonicalEdges": 105,
+    "browserEvidence": "browser-transformer.json",
+    "budgetLimit": "Product default remains 8000ms between searches, not a hard interruption deadline; under contention pending can remain. Invalid routes stay explicit and can continue."
+  },
+  "history": {
+    "frontendBeforeRouter": "frontend-before-router.log",
+    "harnessFailure": "frontend-before-harness-fix.log",
+    "transformerBrowserWaitRace": "browser-transformer-before-wait-fix.log",
+    "notCurrentCertification": true
+  },
+  "remaining": [
+    "Full Summary AuthoringModel atomic/slot/shared-instance/recipe/module-replacement adaptation in Studio editing shell",
+    "Native/semantic-canvas/architecture/authoring multi-format import",
+    "Current generic model catalog",
+    "Runtime/merged and CPU evidence UI via formal isolation/receipts",
+    "Measured adaptive-frontier feedback",
+    "Thousand-node bridge/budget/transport/cancellation support",
+    "D0/D1 obsolete renderer/interaction dependency cleanup"
+  ]
+}

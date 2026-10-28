@@ -10,7 +10,7 @@ export type ImportedSourceDraft = { draft: AuthoredDraft; sourceNodeBindings: Re
 export type SourceRegion = { regionId: string; canonicalId: string; path: string; source: string; baselineDigest: string; startLine: number; endLine: number; entry: string; baseSourceDigest: string; baseIrDigest: string };
 export type EditedSourceRegion = { architecture: Architecture; source: string; entry: string; sourceEdit: { path: string; beforeDigest: string; afterDigest: string; baselineDigest: string }; verification: Record<string, unknown> };
 
-export type Capabilities = { semanticWriteback: boolean; supportedIntents: string[]; publicationExport: { svg: boolean; pdf: boolean; png: boolean; unavailableReason?: string } };
+export type Capabilities = { runtimeProfiles?: { available: boolean; summaryObserved?: boolean; unavailableReason?: string }; semanticWriteback: boolean; supportedIntents: string[]; publicationExport: { svg: boolean; pdf: boolean; png: boolean; unavailableReason?: string } };
 export type ManagedProject = { id: string; entry: string; scope: 'managed-copy'; architecture: Architecture; sourceDigest: string; irDigest: string };
 export type Binding = { nodeId: string; portId: string; tensorId: string; variable?: string };
 export type InputSpec = { schemaVersion: 1; inputs: Record<string, { shape: number[]; dtype: string }>; seed: number; modes: ('eval' | 'train')[]; constructor?: Record<string, unknown> };
@@ -58,6 +58,23 @@ async function runtimePreview(project: string, action: string, payload: unknown,
   return state.transaction;
 }
 
+export type SummaryRuntimeResult = { receipt: Record<string, unknown>; document: Record<string, unknown> | null; source: PreviewSourceBundle };
+type SummaryRuntimeJob = { id: string; status: 'running' | 'complete' | 'failed'; result?: SummaryRuntimeResult; error?: string };
+async function observeSummary(value: { files: Record<string, string>; entry: string; inputSpec: Record<string, unknown>; sourceSha256?: string }, onStart: (cancel: () => Promise<void>) => void): Promise<SummaryRuntimeResult> {
+  let state = await mutation<SummaryRuntimeJob>('/preview/runtime-jobs', value);
+  const id = state.id, cancel = async () => { await mutation(`/preview/runtime-jobs/${id}/cancel`, {}); };
+  onStart(cancel);
+  const deadline = Date.now() + 180000;
+  while (state.status === 'running') {
+    if (Date.now() >= deadline) { await cancel(); throw Error('CPU 观察超时，已发送取消。'); }
+    await new Promise(resolve => setTimeout(resolve, 400));
+    const token = await session!;
+    state = await request<SummaryRuntimeJob>(`/preview/runtime-jobs/${id}`, { headers: { 'X-ArchCanvas-Session': token } });
+  }
+  if (!state.result) throw Error(state.error ?? 'CPU 观察未返回收据');
+  return state.result;
+}
+
 export type Example = { id: string; name: string; description: string };
 export class ApiError extends Error {
   readonly status: number;
@@ -71,9 +88,12 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
   return result as T;
 }
 export const api = {
+  observeSummary,
+  summaryModule: (value: { source: string; entry: string; constructor: Record<string, unknown> }) => mutation<Record<string, unknown>>('/preview/authoring/module', value),
+  summaryAssembly: (ir: Record<string, unknown>) => mutation<Record<string, unknown>>('/preview/authoring/certify', { ir }),
   previewAnalyze: (value: PreviewSourceRequest) => request<PreviewSourceBundle>('/preview/analyze', { method: 'POST', body: JSON.stringify(value) }),
   previewEditSource: (value: PreviewSourceRequest) => mutation<Architecture>('/preview/edit-source', { files: value.files, entry: value.entry }),
-  projectPreview: (project: string, sourceDigest?: string, irDigest?: string) => mutation<PreviewSourceBundle>(`/projects/${encodeURIComponent(project)}/preview`, { ...(sourceDigest ? { baseSourceDigest: sourceDigest } : {}), ...(irDigest ? { baseIrDigest: irDigest } : {}) }),
+  projectPreview: (project: string, sourceDigest?: string, irDigest?: string) => mutation<PreviewSourceBundle>(`/projects/${encodeURIComponent(project)}/preview`, { semanticMode: 'summary', ...(sourceDigest ? { baseSourceDigest: sourceDigest } : {}), ...(irDigest ? { baseIrDigest: irDigest } : {}) }),
   previewCustomModule: (value: { source: string; entry: string; label: string; constructorValues: Record<string, unknown> }) => mutation<CustomModulePreview>('/authoring/custom-modules/preview', value),
   importSourceDraft: async (document: CanvasDocument, scene: Scene) => {
     const { sourceEditingProjection } = await import('./sourceEditingClient.ts');

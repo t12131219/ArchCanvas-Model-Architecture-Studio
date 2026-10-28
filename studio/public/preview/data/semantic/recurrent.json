@@ -1,0 +1,4132 @@
+{
+  "schema": "archcanvas-source-semantic/2",
+  "title": "ReusedRecurrent",
+  "entry": {
+    "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+    "class": "ReusedRecurrent",
+    "cell": null,
+    "constructor": {}
+  },
+  "coverage_contract": "在明确限定的模型、输入范围和运行模式内，完整覆盖并验证所有分支。任何任意 PyTorch 模型均无 opaque 无法保证：未知自定义算子、外部依赖或动态 Python 行为可能无法从现有证据中还原。",
+  "sources": [
+    {
+      "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+      "physical": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+      "cell": null,
+      "sha256": "380ba612d236f58d41cd54531a58d296d2f9522da8be3cea50ae6d4567d32834",
+      "unit_sha256": "380ba612d236f58d41cd54531a58d296d2f9522da8be3cea50ae6d4567d32834"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "model/43:4:composite:1",
+      "kind": "composite",
+      "label": "ReusedRecurrent",
+      "parent": null,
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 43,
+          "end_line": 47,
+          "column": 4,
+          "end_column": 28,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "def forward(self, sequence):\n    sequence_out, state = self.recurrent(sequence)\n    first = self.shared(sequence_out)\n    second = self.alias(first)\n    return (second, state)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "composite",
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "runtime_evidence": [],
+      "semantic_type": "source-module",
+      "module_path": ""
+    },
+    {
+      "id": "model/43:4:composite:1/43:22:interface:1",
+      "kind": "interface",
+      "label": "sequence",
+      "parent": "model/43:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 43,
+          "end_line": 43,
+          "column": 22,
+          "end_column": 30,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "sequence"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "port",
+        "fill": "#e7edf4"
+      },
+      "runtime_evidence": [],
+      "role": "input",
+      "slot": "sequence"
+    },
+    {
+      "id": "model/43:4:composite:1/44:30:compute:1",
+      "kind": "compute",
+      "label": "recurrent · LSTM",
+      "parent": "model/43:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 44,
+          "end_line": 44,
+          "column": 30,
+          "end_column": 54,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "self.recurrent(sequence)"
+        }
+      ],
+      "evidence_status": "source-runtime-associated",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "runtime_evidence": [
+        {
+          "run": 0,
+          "event": "op0",
+          "node": "runtime:0:op0",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op1",
+          "node": "runtime:0:op1",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op2",
+          "node": "runtime:0:op2",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op3",
+          "node": "runtime:0:op3",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op4",
+          "node": "runtime:0:op4",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op5",
+          "node": "runtime:0:op5",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op6",
+          "node": "runtime:0:op6",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op7",
+          "node": "runtime:0:op7",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op8",
+          "node": "runtime:0:op8",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op9",
+          "node": "runtime:0:op9",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op10",
+          "node": "runtime:0:op10",
+          "match": "source-line-associated; not operator-equivalence proof"
+        }
+      ],
+      "operator": "lstm",
+      "module_path": "recurrent",
+      "framework_type": "torch.nn.LSTM",
+      "constructor": {
+        "batch_first": true
+      }
+    },
+    {
+      "id": "model/43:4:composite:1/44:8:value-alias:1",
+      "kind": "value-alias",
+      "label": "sequence_out",
+      "parent": "model/43:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 44,
+          "end_line": 44,
+          "column": 8,
+          "end_column": 20,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "sequence_out"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "value",
+        "fill": "#e8f6ef"
+      },
+      "runtime_evidence": [],
+      "slot": "0"
+    },
+    {
+      "id": "model/43:4:composite:1/44:22:value-alias:1",
+      "kind": "value-alias",
+      "label": "state",
+      "parent": "model/43:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 44,
+          "end_line": 44,
+          "column": 22,
+          "end_column": 27,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "state"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "value",
+        "fill": "#e8f6ef"
+      },
+      "runtime_evidence": [],
+      "slot": "1"
+    },
+    {
+      "id": "model/43:4:composite:1/45:16:compute:1",
+      "kind": "compute",
+      "label": "shared · Linear",
+      "parent": "model/43:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 45,
+          "end_line": 45,
+          "column": 16,
+          "end_column": 41,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "self.shared(sequence_out)"
+        }
+      ],
+      "evidence_status": "source-runtime-associated",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "runtime_evidence": [
+        {
+          "run": 0,
+          "event": "op11",
+          "node": "runtime:0:op11",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op12",
+          "node": "runtime:0:op12",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op13",
+          "node": "runtime:0:op13",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op14",
+          "node": "runtime:0:op14",
+          "match": "source-line-associated; not operator-equivalence proof"
+        }
+      ],
+      "operator": "linear",
+      "module_path": "shared",
+      "framework_type": "torch.nn.Linear",
+      "constructor": {}
+    },
+    {
+      "id": "model/43:4:composite:1/40:22:parameter:1",
+      "kind": "parameter",
+      "label": "shared.parameters",
+      "parent": "model/43:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 40,
+          "end_line": 40,
+          "column": 22,
+          "end_column": 37,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "nn.Linear(4, 4)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "runtime_evidence": [],
+      "parameter_scope": "shared",
+      "identity_status": "declared-scope; sharing-unresolved"
+    },
+    {
+      "id": "model/43:4:composite:1/45:8:value-alias:1",
+      "kind": "value-alias",
+      "label": "first",
+      "parent": "model/43:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 45,
+          "end_line": 45,
+          "column": 8,
+          "end_column": 13,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "first"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "value",
+        "fill": "#e8f6ef"
+      },
+      "runtime_evidence": [],
+      "slot": null
+    },
+    {
+      "id": "model/43:4:composite:1/46:17:compute:1",
+      "kind": "compute",
+      "label": "alias · Linear",
+      "parent": "model/43:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 46,
+          "end_line": 46,
+          "column": 17,
+          "end_column": 34,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "self.alias(first)"
+        }
+      ],
+      "evidence_status": "source-runtime-associated",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "runtime_evidence": [
+        {
+          "run": 0,
+          "event": "op15",
+          "node": "runtime:0:op15",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op16",
+          "node": "runtime:0:op16",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op17",
+          "node": "runtime:0:op17",
+          "match": "source-line-associated; not operator-equivalence proof"
+        },
+        {
+          "run": 0,
+          "event": "op18",
+          "node": "runtime:0:op18",
+          "match": "source-line-associated; not operator-equivalence proof"
+        }
+      ],
+      "operator": "linear",
+      "module_path": "alias",
+      "framework_type": "torch.nn.Linear",
+      "constructor": {}
+    },
+    {
+      "id": "model/43:4:composite:1/40:22:parameter:2",
+      "kind": "parameter",
+      "label": "alias.parameters",
+      "parent": "model/43:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 40,
+          "end_line": 40,
+          "column": 22,
+          "end_column": 37,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "nn.Linear(4, 4)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "runtime_evidence": [],
+      "parameter_scope": "alias",
+      "identity_status": "declared-scope; sharing-unresolved"
+    },
+    {
+      "id": "model/43:4:composite:1/46:8:value-alias:1",
+      "kind": "value-alias",
+      "label": "second",
+      "parent": "model/43:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 46,
+          "end_line": 46,
+          "column": 8,
+          "end_column": 14,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "second"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "value",
+        "fill": "#e8f6ef"
+      },
+      "runtime_evidence": [],
+      "slot": null
+    },
+    {
+      "id": "model/43:4:composite:1/47:15:compute:1",
+      "kind": "compute",
+      "label": "structured value",
+      "parent": "model/43:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 47,
+          "end_line": 47,
+          "column": 15,
+          "end_column": 28,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "(second, state)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "runtime_evidence": [],
+      "operator": "structure"
+    },
+    {
+      "id": "model/43:4:composite:1/47:8:interface:1",
+      "kind": "interface",
+      "label": "return",
+      "parent": "model/43:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 47,
+          "end_line": 47,
+          "column": 8,
+          "end_column": 28,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "return (second, state)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "port",
+        "fill": "#e7edf4"
+      },
+      "runtime_evidence": [],
+      "role": "output"
+    },
+    {
+      "id": "runtime-observations",
+      "kind": "composite",
+      "label": "CPU observed execution",
+      "parent": "model/43:4:composite:1",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "receipt": "f2b9f31860ada079e660655ba3da6e79b12d88af05187b8e3ca5316f0d50bafb"
+        }
+      ],
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "granularity": "composite",
+      "evidence_status": "runtime-only"
+    },
+    {
+      "id": "runtime:0:run",
+      "kind": "composite",
+      "label": "seq3 · eval",
+      "parent": "runtime-observations",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "granularity": "composite",
+      "evidence_status": "runtime-only"
+    },
+    {
+      "id": "runtime:0:call0",
+      "kind": "composite",
+      "label": "ReusedRecurrent",
+      "parent": "runtime:0:run",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "granularity": "composite",
+      "evidence_status": "runtime-only",
+      "semantic_type": "observed-module-call",
+      "module_path": "",
+      "framework_type": "models.ReusedRecurrent"
+    },
+    {
+      "id": "runtime:0:call1",
+      "kind": "composite",
+      "label": "recurrent",
+      "parent": "runtime:0:call0",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "granularity": "composite",
+      "evidence_status": "runtime-only",
+      "semantic_type": "LSTM · observed framework module",
+      "module_path": "recurrent",
+      "framework_type": "torch.nn.modules.rnn.LSTM"
+    },
+    {
+      "id": "runtime:0:call3",
+      "kind": "composite",
+      "label": "shared",
+      "parent": "runtime:0:call0",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "granularity": "composite",
+      "evidence_status": "runtime-only",
+      "semantic_type": "observed-module-call",
+      "module_path": "shared",
+      "framework_type": "torch.nn.modules.linear.Linear"
+    },
+    {
+      "id": "runtime:0:call5",
+      "kind": "composite",
+      "label": "shared",
+      "parent": "runtime:0:call0",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "granularity": "composite",
+      "evidence_status": "runtime-only",
+      "semantic_type": "observed-module-call",
+      "module_path": "shared",
+      "framework_type": "torch.nn.modules.linear.Linear"
+    },
+    {
+      "id": "runtime:0:parameter:recurrent.weight_ih_l0",
+      "kind": "parameter",
+      "label": "recurrent.weight_ih_l0",
+      "parent": "runtime:0:run",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "parameter_identity": "recurrent.weight_ih_l0",
+      "aliases": [
+        "recurrent.weight_ih_l0"
+      ],
+      "tensor": {
+        "name": "recurrent.weight_ih_l0",
+        "aliases": [
+          "recurrent.weight_ih_l0"
+        ],
+        "shape": [
+          16,
+          3
+        ],
+        "dtype": "torch.float32",
+        "device": "cpu",
+        "requires_grad": true
+      }
+    },
+    {
+      "id": "runtime:0:parameter:recurrent.weight_hh_l0",
+      "kind": "parameter",
+      "label": "recurrent.weight_hh_l0",
+      "parent": "runtime:0:run",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "parameter_identity": "recurrent.weight_hh_l0",
+      "aliases": [
+        "recurrent.weight_hh_l0"
+      ],
+      "tensor": {
+        "name": "recurrent.weight_hh_l0",
+        "aliases": [
+          "recurrent.weight_hh_l0"
+        ],
+        "shape": [
+          16,
+          4
+        ],
+        "dtype": "torch.float32",
+        "device": "cpu",
+        "requires_grad": true
+      }
+    },
+    {
+      "id": "runtime:0:parameter:recurrent.bias_ih_l0",
+      "kind": "parameter",
+      "label": "recurrent.bias_ih_l0",
+      "parent": "runtime:0:run",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "parameter_identity": "recurrent.bias_ih_l0",
+      "aliases": [
+        "recurrent.bias_ih_l0"
+      ],
+      "tensor": {
+        "name": "recurrent.bias_ih_l0",
+        "aliases": [
+          "recurrent.bias_ih_l0"
+        ],
+        "shape": [
+          16
+        ],
+        "dtype": "torch.float32",
+        "device": "cpu",
+        "requires_grad": true
+      }
+    },
+    {
+      "id": "runtime:0:parameter:recurrent.bias_hh_l0",
+      "kind": "parameter",
+      "label": "recurrent.bias_hh_l0",
+      "parent": "runtime:0:run",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "parameter_identity": "recurrent.bias_hh_l0",
+      "aliases": [
+        "recurrent.bias_hh_l0"
+      ],
+      "tensor": {
+        "name": "recurrent.bias_hh_l0",
+        "aliases": [
+          "recurrent.bias_hh_l0"
+        ],
+        "shape": [
+          16
+        ],
+        "dtype": "torch.float32",
+        "device": "cpu",
+        "requires_grad": true
+      }
+    },
+    {
+      "id": "runtime:0:parameter:shared.weight",
+      "kind": "parameter",
+      "label": "shared.weight",
+      "parent": "runtime:0:run",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "parameter_identity": "shared.weight",
+      "aliases": [
+        "shared.weight",
+        "alias.weight"
+      ],
+      "tensor": {
+        "name": "shared.weight",
+        "aliases": [
+          "shared.weight",
+          "alias.weight"
+        ],
+        "shape": [
+          4,
+          4
+        ],
+        "dtype": "torch.float32",
+        "device": "cpu",
+        "requires_grad": true
+      }
+    },
+    {
+      "id": "runtime:0:parameter:shared.bias",
+      "kind": "parameter",
+      "label": "shared.bias",
+      "parent": "runtime:0:run",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "parameter_identity": "shared.bias",
+      "aliases": [
+        "shared.bias",
+        "alias.bias"
+      ],
+      "tensor": {
+        "name": "shared.bias",
+        "aliases": [
+          "shared.bias",
+          "alias.bias"
+        ],
+        "shape": [
+          4
+        ],
+        "dtype": "torch.float32",
+        "device": "cpu",
+        "requires_grad": true
+      }
+    },
+    {
+      "id": "runtime:0:op0",
+      "kind": "compute",
+      "label": "aten.zeros.default",
+      "parent": "runtime:0:call1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 44,
+          "end_line": 44,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.zeros.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op0"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.zeros.default",
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "t9",
+          "producer": "op0",
+          "slot": 0,
+          "shape": [
+            1,
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op1",
+      "kind": "compute",
+      "label": "aten.detach.default",
+      "parent": "runtime:0:call1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 44,
+          "end_line": 44,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.detach.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op1"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.detach.default",
+      "inputs": [
+        {
+          "id": "t9",
+          "producer": "op0",
+          "slot": 0,
+          "shape": [
+            1,
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t10",
+          "producer": "op1",
+          "slot": 0,
+          "shape": [
+            1,
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op2",
+      "kind": "compute",
+      "label": "aten.zeros.default",
+      "parent": "runtime:0:call1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 44,
+          "end_line": 44,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.zeros.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op2"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.zeros.default",
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "t11",
+          "producer": "op2",
+          "slot": 0,
+          "shape": [
+            1,
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op3",
+      "kind": "compute",
+      "label": "aten.detach.default",
+      "parent": "runtime:0:call1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 44,
+          "end_line": 44,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.detach.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op3"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.detach.default",
+      "inputs": [
+        {
+          "id": "t11",
+          "producer": "op2",
+          "slot": 0,
+          "shape": [
+            1,
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t12",
+          "producer": "op3",
+          "slot": 0,
+          "shape": [
+            1,
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op4",
+      "kind": "compute",
+      "label": "aten.transpose.int",
+      "parent": "runtime:0:call1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 44,
+          "end_line": 44,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.transpose.int"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op4"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.transpose.int",
+      "inputs": [
+        {
+          "id": "t8",
+          "producer": "input:sequence",
+          "slot": "sequence",
+          "shape": [
+            1,
+            3,
+            3
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t13",
+          "producer": "op4",
+          "slot": 0,
+          "shape": [
+            3,
+            1,
+            3
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:input:sequence",
+      "kind": "interface",
+      "label": "input:sequence",
+      "parent": "runtime:0:run",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "port",
+        "fill": "#e7edf4"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "tensor": {
+        "id": "t8",
+        "producer": "input:sequence",
+        "slot": "sequence",
+        "shape": [
+          1,
+          3,
+          3
+        ],
+        "dtype": "torch.float32",
+        "device": "cpu",
+        "requires_grad": false
+      },
+      "reason": null
+    },
+    {
+      "id": "runtime:0:op5",
+      "kind": "compute",
+      "label": "aten.select.int",
+      "parent": "runtime:0:call1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 44,
+          "end_line": 44,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.select.int"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op5"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.select.int",
+      "inputs": [
+        {
+          "id": "t10",
+          "producer": "op1",
+          "slot": 0,
+          "shape": [
+            1,
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t14",
+          "producer": "op5",
+          "slot": 0,
+          "shape": [
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op6",
+      "kind": "compute",
+      "label": "aten.select.int",
+      "parent": "runtime:0:call1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 44,
+          "end_line": 44,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.select.int"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op6"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.select.int",
+      "inputs": [
+        {
+          "id": "t12",
+          "producer": "op3",
+          "slot": 0,
+          "shape": [
+            1,
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t15",
+          "producer": "op6",
+          "slot": 0,
+          "shape": [
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op7",
+      "kind": "compute",
+      "label": "aten.mkldnn_rnn_layer.default",
+      "parent": "runtime:0:call1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 44,
+          "end_line": 44,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.mkldnn_rnn_layer.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op7"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.mkldnn_rnn_layer.default",
+      "inputs": [
+        {
+          "id": "t13",
+          "producer": "op4",
+          "slot": 0,
+          "shape": [
+            3,
+            1,
+            3
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        },
+        {
+          "id": "t0",
+          "producer": "parameter:recurrent.weight_ih_l0",
+          "slot": "recurrent.weight_ih_l0",
+          "shape": [
+            16,
+            3
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": true
+        },
+        {
+          "id": "t1",
+          "producer": "parameter:recurrent.weight_hh_l0",
+          "slot": "recurrent.weight_hh_l0",
+          "shape": [
+            16,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": true
+        },
+        {
+          "id": "t2",
+          "producer": "parameter:recurrent.bias_ih_l0",
+          "slot": "recurrent.bias_ih_l0",
+          "shape": [
+            16
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": true
+        },
+        {
+          "id": "t3",
+          "producer": "parameter:recurrent.bias_hh_l0",
+          "slot": "recurrent.bias_hh_l0",
+          "shape": [
+            16
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": true
+        },
+        {
+          "id": "t14",
+          "producer": "op5",
+          "slot": 0,
+          "shape": [
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        },
+        {
+          "id": "t15",
+          "producer": "op6",
+          "slot": 0,
+          "shape": [
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t16",
+          "producer": "op7",
+          "slot": 0,
+          "shape": [
+            3,
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        },
+        {
+          "id": "t17",
+          "producer": "op7",
+          "slot": 1,
+          "shape": [
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        },
+        {
+          "id": "t18",
+          "producer": "op7",
+          "slot": 2,
+          "shape": [
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op8",
+      "kind": "compute",
+      "label": "aten.stack.default",
+      "parent": "runtime:0:call1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 44,
+          "end_line": 44,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.stack.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op8"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.stack.default",
+      "inputs": [
+        {
+          "id": "t17",
+          "producer": "op7",
+          "slot": 1,
+          "shape": [
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t19",
+          "producer": "op8",
+          "slot": 0,
+          "shape": [
+            1,
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op9",
+      "kind": "compute",
+      "label": "aten.stack.default",
+      "parent": "runtime:0:call1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 44,
+          "end_line": 44,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.stack.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op9"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.stack.default",
+      "inputs": [
+        {
+          "id": "t18",
+          "producer": "op7",
+          "slot": 2,
+          "shape": [
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t20",
+          "producer": "op9",
+          "slot": 0,
+          "shape": [
+            1,
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op10",
+      "kind": "compute",
+      "label": "aten.transpose.int",
+      "parent": "runtime:0:call1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 44,
+          "end_line": 44,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.transpose.int"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op10"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.transpose.int",
+      "inputs": [
+        {
+          "id": "t16",
+          "producer": "op7",
+          "slot": 0,
+          "shape": [
+            3,
+            1,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t21",
+          "producer": "op10",
+          "slot": 0,
+          "shape": [
+            1,
+            3,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op11",
+      "kind": "compute",
+      "label": "aten.view.default",
+      "parent": "runtime:0:call3",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 45,
+          "end_line": 45,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.view.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op11"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.view.default",
+      "inputs": [
+        {
+          "id": "t21",
+          "producer": "op10",
+          "slot": 0,
+          "shape": [
+            1,
+            3,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t22",
+          "producer": "op11",
+          "slot": 0,
+          "shape": [
+            3,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op12",
+      "kind": "compute",
+      "label": "aten.t.default",
+      "parent": "runtime:0:call3",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 45,
+          "end_line": 45,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.t.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op12"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.t.default",
+      "inputs": [
+        {
+          "id": "t6",
+          "producer": "parameter:shared.weight",
+          "slot": "alias.weight",
+          "shape": [
+            4,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t23",
+          "producer": "op12",
+          "slot": 0,
+          "shape": [
+            4,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op13",
+      "kind": "compute",
+      "label": "aten.addmm.default",
+      "parent": "runtime:0:call3",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 45,
+          "end_line": 45,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.addmm.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op13"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.addmm.default",
+      "inputs": [
+        {
+          "id": "t7",
+          "producer": "parameter:shared.bias",
+          "slot": "alias.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": true
+        },
+        {
+          "id": "t22",
+          "producer": "op11",
+          "slot": 0,
+          "shape": [
+            3,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        },
+        {
+          "id": "t23",
+          "producer": "op12",
+          "slot": 0,
+          "shape": [
+            4,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t24",
+          "producer": "op13",
+          "slot": 0,
+          "shape": [
+            3,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op14",
+      "kind": "compute",
+      "label": "aten.view.default",
+      "parent": "runtime:0:call3",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 45,
+          "end_line": 45,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.view.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op14"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.view.default",
+      "inputs": [
+        {
+          "id": "t24",
+          "producer": "op13",
+          "slot": 0,
+          "shape": [
+            3,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t25",
+          "producer": "op14",
+          "slot": 0,
+          "shape": [
+            1,
+            3,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op15",
+      "kind": "compute",
+      "label": "aten.view.default",
+      "parent": "runtime:0:call5",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 46,
+          "end_line": 46,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.view.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op15"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.view.default",
+      "inputs": [
+        {
+          "id": "t25",
+          "producer": "op14",
+          "slot": 0,
+          "shape": [
+            1,
+            3,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t26",
+          "producer": "op15",
+          "slot": 0,
+          "shape": [
+            3,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op16",
+      "kind": "compute",
+      "label": "aten.t.default",
+      "parent": "runtime:0:call5",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 46,
+          "end_line": 46,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.t.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op16"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.t.default",
+      "inputs": [
+        {
+          "id": "t6",
+          "producer": "parameter:shared.weight",
+          "slot": "alias.weight",
+          "shape": [
+            4,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": true
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t27",
+          "producer": "op16",
+          "slot": 0,
+          "shape": [
+            4,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op17",
+      "kind": "compute",
+      "label": "aten.addmm.default",
+      "parent": "runtime:0:call5",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 46,
+          "end_line": 46,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.addmm.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op17"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.addmm.default",
+      "inputs": [
+        {
+          "id": "t7",
+          "producer": "parameter:shared.bias",
+          "slot": "alias.bias",
+          "shape": [
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": true
+        },
+        {
+          "id": "t26",
+          "producer": "op15",
+          "slot": 0,
+          "shape": [
+            3,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        },
+        {
+          "id": "t27",
+          "producer": "op16",
+          "slot": 0,
+          "shape": [
+            4,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t28",
+          "producer": "op17",
+          "slot": 0,
+          "shape": [
+            3,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:op18",
+      "kind": "compute",
+      "label": "aten.view.default",
+      "parent": "runtime:0:call5",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/models.py",
+          "line": 46,
+          "end_line": 46,
+          "column": 0,
+          "end_column": 0,
+          "symbol": "ReusedRecurrent.forward",
+          "expression": "aten.view.default"
+        }
+      ],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        },
+        {
+          "event": "op18"
+        }
+      ],
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "operator": "aten.view.default",
+      "inputs": [
+        {
+          "id": "t28",
+          "producer": "op17",
+          "slot": 0,
+          "shape": [
+            3,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "outputs": [
+        {
+          "id": "t29",
+          "producer": "op18",
+          "slot": 0,
+          "shape": [
+            1,
+            3,
+            4
+          ],
+          "dtype": "torch.float32",
+          "device": "cpu",
+          "requires_grad": false
+        }
+      ],
+      "mutable": false
+    },
+    {
+      "id": "runtime:0:outputs",
+      "kind": "interface",
+      "label": "model outputs",
+      "parent": "runtime:0:run",
+      "source": [],
+      "runtime_evidence": [
+        {
+          "case": "seq3",
+          "mode": "eval",
+          "status": "passed"
+        }
+      ],
+      "glyph": {
+        "shape": "port",
+        "fill": "#e7edf4"
+      },
+      "granularity": "atomic",
+      "evidence_status": "runtime-only",
+      "role": "output"
+    }
+  ],
+  "edges": [
+    {
+      "source": "model/43:4:composite:1/43:22:interface:1",
+      "target": "model/43:4:composite:1/44:30:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "arg:0",
+      "evidence": "source-dependency",
+      "id": "e00000"
+    },
+    {
+      "source": "model/43:4:composite:1/44:30:compute:1",
+      "target": "model/43:4:composite:1/44:8:value-alias:1",
+      "kind": "alias",
+      "source_port": "out",
+      "target_port": "0",
+      "evidence": "source-dependency",
+      "id": "e00001"
+    },
+    {
+      "source": "model/43:4:composite:1/44:30:compute:1",
+      "target": "model/43:4:composite:1/44:22:value-alias:1",
+      "kind": "alias",
+      "source_port": "out",
+      "target_port": "1",
+      "evidence": "source-dependency",
+      "id": "e00002"
+    },
+    {
+      "source": "model/43:4:composite:1/40:22:parameter:1",
+      "target": "model/43:4:composite:1/45:16:compute:1",
+      "kind": "parameter-read",
+      "source_port": "out",
+      "target_port": "in",
+      "evidence": "framework-contract",
+      "id": "e00003"
+    },
+    {
+      "source": "model/43:4:composite:1/44:8:value-alias:1",
+      "target": "model/43:4:composite:1/45:16:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "arg:0",
+      "evidence": "source-dependency",
+      "id": "e00004"
+    },
+    {
+      "source": "model/43:4:composite:1/45:16:compute:1",
+      "target": "model/43:4:composite:1/45:8:value-alias:1",
+      "kind": "alias",
+      "source_port": "out",
+      "target_port": "value",
+      "evidence": "source-dependency",
+      "id": "e00005"
+    },
+    {
+      "source": "model/43:4:composite:1/40:22:parameter:2",
+      "target": "model/43:4:composite:1/46:17:compute:1",
+      "kind": "parameter-read",
+      "source_port": "out",
+      "target_port": "in",
+      "evidence": "framework-contract",
+      "id": "e00006"
+    },
+    {
+      "source": "model/43:4:composite:1/45:8:value-alias:1",
+      "target": "model/43:4:composite:1/46:17:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "arg:0",
+      "evidence": "source-dependency",
+      "id": "e00007"
+    },
+    {
+      "source": "model/43:4:composite:1/46:17:compute:1",
+      "target": "model/43:4:composite:1/46:8:value-alias:1",
+      "kind": "alias",
+      "source_port": "out",
+      "target_port": "value",
+      "evidence": "source-dependency",
+      "id": "e00008"
+    },
+    {
+      "source": "model/43:4:composite:1/46:8:value-alias:1",
+      "target": "model/43:4:composite:1/47:15:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "0",
+      "evidence": "source-dependency",
+      "id": "e00009"
+    },
+    {
+      "source": "model/43:4:composite:1/44:22:value-alias:1",
+      "target": "model/43:4:composite:1/47:15:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "1",
+      "evidence": "source-dependency",
+      "id": "e00010"
+    },
+    {
+      "source": "model/43:4:composite:1/47:15:compute:1",
+      "target": "model/43:4:composite:1/47:8:interface:1",
+      "kind": "interface-binding",
+      "source_port": "out",
+      "target_port": "in",
+      "evidence": "source-dependency",
+      "id": "e00011"
+    },
+    {
+      "id": "rt-edge:0",
+      "source": "runtime:0:op0",
+      "target": "runtime:0:op1",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:1",
+      "source": "runtime:0:op2",
+      "target": "runtime:0:op3",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:2",
+      "source": "runtime:0:input:sequence",
+      "target": "runtime:0:op4",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:3",
+      "source": "runtime:0:op1",
+      "target": "runtime:0:op5",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:4",
+      "source": "runtime:0:op3",
+      "target": "runtime:0:op6",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:5",
+      "source": "runtime:0:op4",
+      "target": "runtime:0:op7",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:6",
+      "source": "runtime:0:parameter:recurrent.weight_ih_l0",
+      "target": "runtime:0:op7",
+      "source_port": "out",
+      "target_port": "1",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:7",
+      "source": "runtime:0:parameter:recurrent.weight_hh_l0",
+      "target": "runtime:0:op7",
+      "source_port": "out",
+      "target_port": "2",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:8",
+      "source": "runtime:0:parameter:recurrent.bias_ih_l0",
+      "target": "runtime:0:op7",
+      "source_port": "out",
+      "target_port": "3",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:9",
+      "source": "runtime:0:parameter:recurrent.bias_hh_l0",
+      "target": "runtime:0:op7",
+      "source_port": "out",
+      "target_port": "4",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:10",
+      "source": "runtime:0:op5",
+      "target": "runtime:0:op7",
+      "source_port": "out",
+      "target_port": "5",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:11",
+      "source": "runtime:0:op6",
+      "target": "runtime:0:op7",
+      "source_port": "out",
+      "target_port": "6",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:12",
+      "source": "runtime:0:op7",
+      "target": "runtime:0:op8",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:13",
+      "source": "runtime:0:op7",
+      "target": "runtime:0:op9",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:14",
+      "source": "runtime:0:op7",
+      "target": "runtime:0:op10",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:15",
+      "source": "runtime:0:op10",
+      "target": "runtime:0:op11",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:16",
+      "source": "runtime:0:parameter:shared.weight",
+      "target": "runtime:0:op12",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:17",
+      "source": "runtime:0:parameter:shared.bias",
+      "target": "runtime:0:op13",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:18",
+      "source": "runtime:0:op11",
+      "target": "runtime:0:op13",
+      "source_port": "out",
+      "target_port": "1",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:19",
+      "source": "runtime:0:op12",
+      "target": "runtime:0:op13",
+      "source_port": "out",
+      "target_port": "2",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:20",
+      "source": "runtime:0:op13",
+      "target": "runtime:0:op14",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:21",
+      "source": "runtime:0:op14",
+      "target": "runtime:0:op15",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:22",
+      "source": "runtime:0:parameter:shared.weight",
+      "target": "runtime:0:op16",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:23",
+      "source": "runtime:0:parameter:shared.bias",
+      "target": "runtime:0:op17",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:24",
+      "source": "runtime:0:op15",
+      "target": "runtime:0:op17",
+      "source_port": "out",
+      "target_port": "1",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:25",
+      "source": "runtime:0:op16",
+      "target": "runtime:0:op17",
+      "source_port": "out",
+      "target_port": "2",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:26",
+      "source": "runtime:0:op17",
+      "target": "runtime:0:op18",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:27",
+      "source": "runtime:0:op18",
+      "target": "runtime:0:outputs",
+      "source_port": "out",
+      "target_port": "0",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:28",
+      "source": "runtime:0:op8",
+      "target": "runtime:0:outputs",
+      "source_port": "out",
+      "target_port": "1",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    },
+    {
+      "id": "rt-edge:29",
+      "source": "runtime:0:op9",
+      "target": "runtime:0:outputs",
+      "source_port": "out",
+      "target_port": "2",
+      "kind": "data",
+      "evidence": "runtime-tensor"
+    }
+  ],
+  "branches": [],
+  "motifs": [
+    {
+      "id": "motif:LSTM:0",
+      "semantic_type": "LSTM",
+      "members": [
+        "model/43:4:composite:1/44:30:compute:1"
+      ],
+      "evidence": [
+        "versioned torch.nn framework type; gates not inferred"
+      ],
+      "confidence": "rule-confirmed",
+      "rule_version": "dataflow-motifs/1"
+    }
+  ],
+  "diagnostics": [],
+  "runtime": {
+    "schema": "semantic-runtime/1",
+    "status": "passed",
+    "model_executed": true,
+    "binding": {
+      "interpreter": "/home/fzg/anaconda3/envs/ArchCanvas/bin/python",
+      "executable_sha256": "d1d72f62ffc60bba301a0a18a9116677733157eb75c2e1aa05be4ddd0631bfb4",
+      "environment": "/home/fzg/anaconda3/envs/ArchCanvas",
+      "source_root": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures",
+      "source_sha256": "380ba612d236f58d41cd54531a58d296d2f9522da8be3cea50ae6d4567d32834",
+      "spec_digest": "97c283fec1597b48b7c3d5a2331452f2c1a2353bb24724739faf6be324e1eba9",
+      "worker_digest": "149550b0e400a1b34081d3becd4452edf86832c19c0b0851b34bca814c401a19",
+      "device": "cpu",
+      "source_generation": {
+        "models.py": "380ba612d236f58d41cd54531a58d296d2f9522da8be3cea50ae6d4567d32834"
+      }
+    },
+    "input_spec": {
+      "schema": "semantic-inputs/1",
+      "modes": [
+        "eval"
+      ],
+      "constructor": {},
+      "cases": [
+        {
+          "id": "seq3",
+          "inputs": {
+            "sequence": {
+              "shape": [
+                1,
+                3,
+                3
+              ],
+              "fill": "zeros"
+            }
+          }
+        }
+      ],
+      "export": true
+    },
+    "isolation": {
+      "status": "passed",
+      "checks": {
+        "namespace_isolation": true,
+        "host_root_hidden": true,
+        "gpu_hidden": true,
+        "network_denied": true,
+        "process_denied": true,
+        "source_readonly": true
+      },
+      "mechanism": "Bubblewrap namespaces + x86-64 seccomp; no network, new tasks or host HOME"
+    },
+    "framework": "2.7.1+cu118",
+    "framework_origin": "/home/fzg/anaconda3/envs/ArchCanvas/lib/python3.11/site-packages/torch/__init__.py",
+    "device": "cpu",
+    "runs": [
+      {
+        "case": "seq3",
+        "mode": "eval",
+        "seed": 0,
+        "status": "passed",
+        "events": [
+          {
+            "id": "op0",
+            "operator": "aten.zeros.default",
+            "module_path": "recurrent",
+            "module_call": "call1",
+            "source": {
+              "file": "models.py",
+              "line": 44,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [],
+            "outputs": [
+              {
+                "id": "t9",
+                "producer": "op0",
+                "slot": 0,
+                "shape": [
+                  1,
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op1",
+            "operator": "aten.detach.default",
+            "module_path": "recurrent",
+            "module_call": "call1",
+            "source": {
+              "file": "models.py",
+              "line": 44,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [
+              {
+                "id": "t9",
+                "producer": "op0",
+                "slot": 0,
+                "shape": [
+                  1,
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t10",
+                "producer": "op1",
+                "slot": 0,
+                "shape": [
+                  1,
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op2",
+            "operator": "aten.zeros.default",
+            "module_path": "recurrent",
+            "module_call": "call1",
+            "source": {
+              "file": "models.py",
+              "line": 44,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [],
+            "outputs": [
+              {
+                "id": "t11",
+                "producer": "op2",
+                "slot": 0,
+                "shape": [
+                  1,
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op3",
+            "operator": "aten.detach.default",
+            "module_path": "recurrent",
+            "module_call": "call1",
+            "source": {
+              "file": "models.py",
+              "line": 44,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [
+              {
+                "id": "t11",
+                "producer": "op2",
+                "slot": 0,
+                "shape": [
+                  1,
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t12",
+                "producer": "op3",
+                "slot": 0,
+                "shape": [
+                  1,
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op4",
+            "operator": "aten.transpose.int",
+            "module_path": "recurrent",
+            "module_call": "call1",
+            "source": {
+              "file": "models.py",
+              "line": 44,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [
+              {
+                "id": "t8",
+                "producer": "input:sequence",
+                "slot": "sequence",
+                "shape": [
+                  1,
+                  3,
+                  3
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t13",
+                "producer": "op4",
+                "slot": 0,
+                "shape": [
+                  3,
+                  1,
+                  3
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op5",
+            "operator": "aten.select.int",
+            "module_path": "recurrent",
+            "module_call": "call1",
+            "source": {
+              "file": "models.py",
+              "line": 44,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [
+              {
+                "id": "t10",
+                "producer": "op1",
+                "slot": 0,
+                "shape": [
+                  1,
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t14",
+                "producer": "op5",
+                "slot": 0,
+                "shape": [
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op6",
+            "operator": "aten.select.int",
+            "module_path": "recurrent",
+            "module_call": "call1",
+            "source": {
+              "file": "models.py",
+              "line": 44,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [
+              {
+                "id": "t12",
+                "producer": "op3",
+                "slot": 0,
+                "shape": [
+                  1,
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t15",
+                "producer": "op6",
+                "slot": 0,
+                "shape": [
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op7",
+            "operator": "aten.mkldnn_rnn_layer.default",
+            "module_path": "recurrent",
+            "module_call": "call1",
+            "source": {
+              "file": "models.py",
+              "line": 44,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [
+              {
+                "id": "t13",
+                "producer": "op4",
+                "slot": 0,
+                "shape": [
+                  3,
+                  1,
+                  3
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              },
+              {
+                "id": "t0",
+                "producer": "parameter:recurrent.weight_ih_l0",
+                "slot": "recurrent.weight_ih_l0",
+                "shape": [
+                  16,
+                  3
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": true
+              },
+              {
+                "id": "t1",
+                "producer": "parameter:recurrent.weight_hh_l0",
+                "slot": "recurrent.weight_hh_l0",
+                "shape": [
+                  16,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": true
+              },
+              {
+                "id": "t2",
+                "producer": "parameter:recurrent.bias_ih_l0",
+                "slot": "recurrent.bias_ih_l0",
+                "shape": [
+                  16
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": true
+              },
+              {
+                "id": "t3",
+                "producer": "parameter:recurrent.bias_hh_l0",
+                "slot": "recurrent.bias_hh_l0",
+                "shape": [
+                  16
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": true
+              },
+              {
+                "id": "t14",
+                "producer": "op5",
+                "slot": 0,
+                "shape": [
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              },
+              {
+                "id": "t15",
+                "producer": "op6",
+                "slot": 0,
+                "shape": [
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t16",
+                "producer": "op7",
+                "slot": 0,
+                "shape": [
+                  3,
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              },
+              {
+                "id": "t17",
+                "producer": "op7",
+                "slot": 1,
+                "shape": [
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              },
+              {
+                "id": "t18",
+                "producer": "op7",
+                "slot": 2,
+                "shape": [
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op8",
+            "operator": "aten.stack.default",
+            "module_path": "recurrent",
+            "module_call": "call1",
+            "source": {
+              "file": "models.py",
+              "line": 44,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [
+              {
+                "id": "t17",
+                "producer": "op7",
+                "slot": 1,
+                "shape": [
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t19",
+                "producer": "op8",
+                "slot": 0,
+                "shape": [
+                  1,
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op9",
+            "operator": "aten.stack.default",
+            "module_path": "recurrent",
+            "module_call": "call1",
+            "source": {
+              "file": "models.py",
+              "line": 44,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [
+              {
+                "id": "t18",
+                "producer": "op7",
+                "slot": 2,
+                "shape": [
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t20",
+                "producer": "op9",
+                "slot": 0,
+                "shape": [
+                  1,
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op10",
+            "operator": "aten.transpose.int",
+            "module_path": "recurrent",
+            "module_call": "call1",
+            "source": {
+              "file": "models.py",
+              "line": 44,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [
+              {
+                "id": "t16",
+                "producer": "op7",
+                "slot": 0,
+                "shape": [
+                  3,
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t21",
+                "producer": "op10",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op11",
+            "operator": "aten.view.default",
+            "module_path": "shared",
+            "module_call": "call3",
+            "source": {
+              "file": "models.py",
+              "line": 45,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [
+              {
+                "id": "t21",
+                "producer": "op10",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t22",
+                "producer": "op11",
+                "slot": 0,
+                "shape": [
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op12",
+            "operator": "aten.t.default",
+            "module_path": "shared",
+            "module_call": "call3",
+            "source": {
+              "file": "models.py",
+              "line": 45,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [
+              {
+                "id": "t6",
+                "producer": "parameter:shared.weight",
+                "slot": "alias.weight",
+                "shape": [
+                  4,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": true
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t23",
+                "producer": "op12",
+                "slot": 0,
+                "shape": [
+                  4,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op13",
+            "operator": "aten.addmm.default",
+            "module_path": "shared",
+            "module_call": "call3",
+            "source": {
+              "file": "models.py",
+              "line": 45,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [
+              {
+                "id": "t7",
+                "producer": "parameter:shared.bias",
+                "slot": "alias.bias",
+                "shape": [
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": true
+              },
+              {
+                "id": "t22",
+                "producer": "op11",
+                "slot": 0,
+                "shape": [
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              },
+              {
+                "id": "t23",
+                "producer": "op12",
+                "slot": 0,
+                "shape": [
+                  4,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t24",
+                "producer": "op13",
+                "slot": 0,
+                "shape": [
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op14",
+            "operator": "aten.view.default",
+            "module_path": "shared",
+            "module_call": "call3",
+            "source": {
+              "file": "models.py",
+              "line": 45,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [
+              {
+                "id": "t24",
+                "producer": "op13",
+                "slot": 0,
+                "shape": [
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t25",
+                "producer": "op14",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op15",
+            "operator": "aten.view.default",
+            "module_path": "shared",
+            "module_call": "call5",
+            "source": {
+              "file": "models.py",
+              "line": 46,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [
+              {
+                "id": "t25",
+                "producer": "op14",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t26",
+                "producer": "op15",
+                "slot": 0,
+                "shape": [
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op16",
+            "operator": "aten.t.default",
+            "module_path": "shared",
+            "module_call": "call5",
+            "source": {
+              "file": "models.py",
+              "line": 46,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [
+              {
+                "id": "t6",
+                "producer": "parameter:shared.weight",
+                "slot": "alias.weight",
+                "shape": [
+                  4,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": true
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t27",
+                "producer": "op16",
+                "slot": 0,
+                "shape": [
+                  4,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op17",
+            "operator": "aten.addmm.default",
+            "module_path": "shared",
+            "module_call": "call5",
+            "source": {
+              "file": "models.py",
+              "line": 46,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [
+              {
+                "id": "t7",
+                "producer": "parameter:shared.bias",
+                "slot": "alias.bias",
+                "shape": [
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": true
+              },
+              {
+                "id": "t26",
+                "producer": "op15",
+                "slot": 0,
+                "shape": [
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              },
+              {
+                "id": "t27",
+                "producer": "op16",
+                "slot": 0,
+                "shape": [
+                  4,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t28",
+                "producer": "op17",
+                "slot": 0,
+                "shape": [
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          },
+          {
+            "id": "op18",
+            "operator": "aten.view.default",
+            "module_path": "shared",
+            "module_call": "call5",
+            "source": {
+              "file": "models.py",
+              "line": 46,
+              "symbol": "ReusedRecurrent.forward"
+            },
+            "inputs": [
+              {
+                "id": "t28",
+                "producer": "op17",
+                "slot": 0,
+                "shape": [
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "outputs": [
+              {
+                "id": "t29",
+                "producer": "op18",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ],
+            "mutable": false
+          }
+        ],
+        "module_events": [
+          {
+            "event": "enter",
+            "id": "call0",
+            "path": "",
+            "parent_call": null,
+            "module_type": "models.ReusedRecurrent",
+            "inputs": []
+          },
+          {
+            "event": "enter",
+            "id": "call1",
+            "path": "recurrent",
+            "parent_call": "call0",
+            "module_type": "torch.nn.modules.rnn.LSTM",
+            "inputs": [
+              {
+                "id": "t8",
+                "producer": "input:sequence",
+                "slot": "sequence",
+                "shape": [
+                  1,
+                  3,
+                  3
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ]
+          },
+          {
+            "event": "exit",
+            "path": "recurrent",
+            "outputs": [
+              {
+                "id": "t21",
+                "producer": "op10",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              },
+              {
+                "id": "t19",
+                "producer": "op8",
+                "slot": 0,
+                "shape": [
+                  1,
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              },
+              {
+                "id": "t20",
+                "producer": "op9",
+                "slot": 0,
+                "shape": [
+                  1,
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ]
+          },
+          {
+            "event": "enter",
+            "id": "call3",
+            "path": "shared",
+            "parent_call": "call0",
+            "module_type": "torch.nn.modules.linear.Linear",
+            "inputs": [
+              {
+                "id": "t21",
+                "producer": "op10",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ]
+          },
+          {
+            "event": "exit",
+            "path": "shared",
+            "outputs": [
+              {
+                "id": "t25",
+                "producer": "op14",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ]
+          },
+          {
+            "event": "enter",
+            "id": "call5",
+            "path": "shared",
+            "parent_call": "call0",
+            "module_type": "torch.nn.modules.linear.Linear",
+            "inputs": [
+              {
+                "id": "t25",
+                "producer": "op14",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ]
+          },
+          {
+            "event": "exit",
+            "path": "shared",
+            "outputs": [
+              {
+                "id": "t29",
+                "producer": "op18",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ]
+          },
+          {
+            "event": "exit",
+            "path": "",
+            "outputs": [
+              {
+                "id": "t29",
+                "producer": "op18",
+                "slot": 0,
+                "shape": [
+                  1,
+                  3,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              },
+              {
+                "id": "t19",
+                "producer": "op8",
+                "slot": 0,
+                "shape": [
+                  1,
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              },
+              {
+                "id": "t20",
+                "producer": "op9",
+                "slot": 0,
+                "shape": [
+                  1,
+                  1,
+                  4
+                ],
+                "dtype": "torch.float32",
+                "device": "cpu",
+                "requires_grad": false
+              }
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "recurrent.weight_ih_l0",
+            "aliases": [
+              "recurrent.weight_ih_l0"
+            ],
+            "shape": [
+              16,
+              3
+            ],
+            "dtype": "torch.float32",
+            "device": "cpu",
+            "requires_grad": true
+          },
+          {
+            "name": "recurrent.weight_hh_l0",
+            "aliases": [
+              "recurrent.weight_hh_l0"
+            ],
+            "shape": [
+              16,
+              4
+            ],
+            "dtype": "torch.float32",
+            "device": "cpu",
+            "requires_grad": true
+          },
+          {
+            "name": "recurrent.bias_ih_l0",
+            "aliases": [
+              "recurrent.bias_ih_l0"
+            ],
+            "shape": [
+              16
+            ],
+            "dtype": "torch.float32",
+            "device": "cpu",
+            "requires_grad": true
+          },
+          {
+            "name": "recurrent.bias_hh_l0",
+            "aliases": [
+              "recurrent.bias_hh_l0"
+            ],
+            "shape": [
+              16
+            ],
+            "dtype": "torch.float32",
+            "device": "cpu",
+            "requires_grad": true
+          },
+          {
+            "name": "shared.weight",
+            "aliases": [
+              "shared.weight",
+              "alias.weight"
+            ],
+            "shape": [
+              4,
+              4
+            ],
+            "dtype": "torch.float32",
+            "device": "cpu",
+            "requires_grad": true
+          },
+          {
+            "name": "shared.bias",
+            "aliases": [
+              "shared.bias",
+              "alias.bias"
+            ],
+            "shape": [
+              4
+            ],
+            "dtype": "torch.float32",
+            "device": "cpu",
+            "requires_grad": true
+          },
+          {
+            "name": "alias.weight",
+            "aliases": [
+              "shared.weight",
+              "alias.weight"
+            ],
+            "shape": [
+              4,
+              4
+            ],
+            "dtype": "torch.float32",
+            "device": "cpu",
+            "requires_grad": true
+          },
+          {
+            "name": "alias.bias",
+            "aliases": [
+              "shared.bias",
+              "alias.bias"
+            ],
+            "shape": [
+              4
+            ],
+            "dtype": "torch.float32",
+            "device": "cpu",
+            "requires_grad": true
+          }
+        ],
+        "buffers": [],
+        "outputs": [
+          {
+            "id": "t29",
+            "producer": "op18",
+            "slot": 0,
+            "shape": [
+              1,
+              3,
+              4
+            ],
+            "dtype": "torch.float32",
+            "device": "cpu",
+            "requires_grad": false
+          },
+          {
+            "id": "t19",
+            "producer": "op8",
+            "slot": 0,
+            "shape": [
+              1,
+              1,
+              4
+            ],
+            "dtype": "torch.float32",
+            "device": "cpu",
+            "requires_grad": false
+          },
+          {
+            "id": "t20",
+            "producer": "op9",
+            "slot": 0,
+            "shape": [
+              1,
+              1,
+              4
+            ],
+            "dtype": "torch.float32",
+            "device": "cpu",
+            "requires_grad": false
+          }
+        ],
+        "replay": {
+          "matched": true,
+          "output_digest": "f3a2bdf3de4247dd5a7c04a20ed2817b2673522c9e14f628f60aa4c28288a008"
+        },
+        "branches": [],
+        "capture": {
+          "status": "captured",
+          "nodes": [
+            {
+              "name": "p_recurrent_weight_ih_l0",
+              "op": "placeholder",
+              "target": "p_recurrent_weight_ih_l0",
+              "inputs": [],
+              "module_stack": "{}",
+              "stack_trace": ""
+            },
+            {
+              "name": "p_recurrent_weight_hh_l0",
+              "op": "placeholder",
+              "target": "p_recurrent_weight_hh_l0",
+              "inputs": [],
+              "module_stack": "{}",
+              "stack_trace": ""
+            },
+            {
+              "name": "p_recurrent_bias_ih_l0",
+              "op": "placeholder",
+              "target": "p_recurrent_bias_ih_l0",
+              "inputs": [],
+              "module_stack": "{}",
+              "stack_trace": ""
+            },
+            {
+              "name": "p_recurrent_bias_hh_l0",
+              "op": "placeholder",
+              "target": "p_recurrent_bias_hh_l0",
+              "inputs": [],
+              "module_stack": "{}",
+              "stack_trace": ""
+            },
+            {
+              "name": "p_shared_weight",
+              "op": "placeholder",
+              "target": "p_shared_weight",
+              "inputs": [],
+              "module_stack": "{}",
+              "stack_trace": ""
+            },
+            {
+              "name": "p_shared_bias",
+              "op": "placeholder",
+              "target": "p_shared_bias",
+              "inputs": [],
+              "module_stack": "{}",
+              "stack_trace": ""
+            },
+            {
+              "name": "sequence",
+              "op": "placeholder",
+              "target": "sequence",
+              "inputs": [],
+              "module_stack": "{}",
+              "stack_trace": ""
+            },
+            {
+              "name": "zeros",
+              "op": "call_function",
+              "target": "aten.zeros.default",
+              "inputs": [],
+              "module_stack": "{'L__self__': ('', 'models.ReusedRecurrent'), 'L__self___recurrent': ('recurrent', 'torch.nn.modules.rnn.LSTM')}",
+              "stack_trace": "  File \"/model/models.py\", line 44, in forward\n    sequence_out, state = self.recurrent(sequence)\n"
+            },
+            {
+              "name": "zeros_1",
+              "op": "call_function",
+              "target": "aten.zeros.default",
+              "inputs": [],
+              "module_stack": "{'L__self__': ('', 'models.ReusedRecurrent'), 'L__self___recurrent': ('recurrent', 'torch.nn.modules.rnn.LSTM')}",
+              "stack_trace": "  File \"/model/models.py\", line 44, in forward\n    sequence_out, state = self.recurrent(sequence)\n"
+            },
+            {
+              "name": "lstm",
+              "op": "call_function",
+              "target": "aten.lstm.input",
+              "inputs": [
+                "sequence",
+                "zeros",
+                "zeros_1",
+                "p_recurrent_weight_ih_l0",
+                "p_recurrent_weight_hh_l0",
+                "p_recurrent_bias_ih_l0",
+                "p_recurrent_bias_hh_l0"
+              ],
+              "module_stack": "{'L__self__': ('', 'models.ReusedRecurrent'), 'L__self___recurrent': ('recurrent', 'torch.nn.modules.rnn.LSTM')}",
+              "stack_trace": "  File \"/model/models.py\", line 44, in forward\n    sequence_out, state = self.recurrent(sequence)\n"
+            },
+            {
+              "name": "getitem",
+              "op": "call_function",
+              "target": "<built-in function getitem>",
+              "inputs": [
+                "lstm"
+              ],
+              "module_stack": "{'L__self__': ('', 'models.ReusedRecurrent'), 'L__self___recurrent': ('recurrent', 'torch.nn.modules.rnn.LSTM')}",
+              "stack_trace": "  File \"/model/models.py\", line 44, in forward\n    sequence_out, state = self.recurrent(sequence)\n"
+            },
+            {
+              "name": "getitem_1",
+              "op": "call_function",
+              "target": "<built-in function getitem>",
+              "inputs": [
+                "lstm"
+              ],
+              "module_stack": "{'L__self__': ('', 'models.ReusedRecurrent'), 'L__self___recurrent': ('recurrent', 'torch.nn.modules.rnn.LSTM')}",
+              "stack_trace": "  File \"/model/models.py\", line 44, in forward\n    sequence_out, state = self.recurrent(sequence)\n"
+            },
+            {
+              "name": "getitem_2",
+              "op": "call_function",
+              "target": "<built-in function getitem>",
+              "inputs": [
+                "lstm"
+              ],
+              "module_stack": "{'L__self__': ('', 'models.ReusedRecurrent'), 'L__self___recurrent': ('recurrent', 'torch.nn.modules.rnn.LSTM')}",
+              "stack_trace": "  File \"/model/models.py\", line 44, in forward\n    sequence_out, state = self.recurrent(sequence)\n"
+            },
+            {
+              "name": "linear",
+              "op": "call_function",
+              "target": "aten.linear.default",
+              "inputs": [
+                "getitem",
+                "p_shared_weight",
+                "p_shared_bias"
+              ],
+              "module_stack": "{'L__self__': ('', 'models.ReusedRecurrent'), 'L__self___shared': ('shared', 'torch.nn.modules.linear.Linear')}",
+              "stack_trace": "  File \"/model/models.py\", line 45, in forward\n    first = self.shared(sequence_out)\n"
+            },
+            {
+              "name": "linear_1",
+              "op": "call_function",
+              "target": "aten.linear.default",
+              "inputs": [
+                "linear",
+                "p_shared_weight",
+                "p_shared_bias"
+              ],
+              "module_stack": "{'L__self__': ('', 'models.ReusedRecurrent'), 'L__self___shared': ('alias', 'torch.nn.modules.linear.Linear')}",
+              "stack_trace": "  File \"/model/models.py\", line 46, in forward\n    second = self.alias(first)\n"
+            },
+            {
+              "name": "output",
+              "op": "output",
+              "target": "output",
+              "inputs": [
+                "linear_1",
+                "getitem_1",
+                "getitem_2"
+              ],
+              "module_stack": "{}",
+              "stack_trace": ""
+            }
+          ],
+          "range_constraints": "{}"
+        },
+        "truncated": false
+      }
+    ],
+    "instrumentation": "AST if/ifexp outcomes + nn.Module hooks + TorchDispatchMode ATen operands",
+    "limitations": [
+      "Sample/finite-domain evidence only; not arbitrary Python verification.",
+      "Constructor/init branches observed; loops/exception/short-circuit paths not certified.",
+      "Instrumentation and model share the isolated process; receipts are not adversarial attestation."
+    ],
+    "limits": {
+      "memory_mb": 8192,
+      "cpu_seconds": 45,
+      "max_events": 6000,
+      "wall_seconds": 45
+    },
+    "source_unchanged": true,
+    "finite_domain": {
+      "exhaustive": false,
+      "reason": "no explicit finite input set"
+    },
+    "trace_digest": "f2b9f31860ada079e660655ba3da6e79b12d88af05187b8e3ca5316f0d50bafb"
+  },
+  "coverage_blockers": [],
+  "coverage": {
+    "status": "partial",
+    "complete": false,
+    "scope": "declared concrete input set × declared modes; selected forward and expanded local helper source",
+    "finite_domain": {
+      "exhaustive": false,
+      "reason": "no explicit finite input set"
+    },
+    "branches": [],
+    "opaque_nodes": 0,
+    "coverage_blockers": [],
+    "all_runs_passed": true,
+    "claimed_for_arbitrary_inputs": false,
+    "reason": "unobserved/unsupported source, failed run, or input domain not exhaustively declared"
+  },
+  "limitations": [
+    "Static edges express source dependencies, not observed tensor bindings.",
+    "Unresolved calls/loops/external definitions remain explicit opaque boundaries.",
+    "Notebook cells are parsed as data; notebook setup/training cells are never executed."
+  ],
+  "ir_digest": "10a8014637dcb1c8b663cafc0dfa90e1d45bd037bb514381d3043670f772e1bd"
+}

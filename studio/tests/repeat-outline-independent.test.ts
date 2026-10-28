@@ -1,3 +1,4 @@
+// Formal-core regression with retired preview test support; not evidence of current Summary gesture performance.
 // Historical M4 policy regression: this suite intentionally freezes the pre-atomic
 // projection (coarse container arrows and mask top ports). Current behavior is
 // independently checked by atomic-frontier-routing.test.ts; archived gold stays intact.
@@ -19,7 +20,7 @@ const core = process.env.ARCHCANVAS_REPEAT_ORACLE_BASELINE === 'sealed-ChS'
   ? new URL('../../docs/evidence/before-m4-repeat-outline/files/studio/src/core/', import.meta.url) : new URL('../../docs/evidence/atomic-frontier-routing-v1/before-core/', import.meta.url);
 const { buildScene, buildExportScene, createDocument, applyVisualBatch, createHistory, reduceHistory, renderSvg } = await import(new URL('index.ts', core).href) as typeof import('../src/core/index.ts');
 const { createOrthogonalRouter } = await import(new URL('orthogonalRouter.ts', core).href) as typeof import('../src/core/orthogonalRouter.ts');
-const { prepareMovePreview, previewMoveScene } = await import(new URL('movePreview.ts', core).href) as typeof import('../src/core/movePreview.ts');
+const { prepareMovePreview, previewMoveScene } = await import(new URL('movePreview.ts', core).href) as typeof import('./retired-preview/movePreview.ts');
 const evidence = new URL('../../docs/evidence/m4-repeat-outline-work/oracle/', import.meta.url);
 const project = new URL('../../', import.meta.url);
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');

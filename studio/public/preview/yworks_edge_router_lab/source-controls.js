@@ -2,7 +2,7 @@
 (function(root){
   'use strict';
   const R=root.EdgeRouterLabRouting,E=root.SummaryEngine,C=root.SummaryConstraints,L=root.SummaryRouteLabels;
-  const NS='http://www.w3.org/2000/svg',VERSION=2,cache=new Map(),clone=E.clone;
+  const NS='http://www.w3.org/2000/svg',VERSION=3,cache=new Map(),clone=E.clone;
   const kind=n=>n.semantic?.sourceStructure===true?n.semantic.sourceKind:null;
   const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   const overlay=graph=>graph.recursive?.state?.studioPresentation||graph.studioPresentation||{};
@@ -73,8 +73,15 @@
         portPolicy:{source:{mode:'fixed',shape:'rectangle',spacing:0},target:{mode:'fixed',shape:'rectangle',spacing:0}},
         route:R.simplify([a,{x:a.x,y:lane},{x:b.x,y:lane},b]),waypoints:[]};
       geometry.edges.push(edge);C.initialize(geometry);
-      const options={margin:3,stub:12,bendCost:40,crossingCost:450,overlapCost:2,edgeSpacing:4,style:'orthogonal',sides:'any',boundaryLanes:false};
+      const options={margin:3,stub:12,bendCost:40,crossingCost:450,overlapCost:2,edgeSpacing:10,style:'orthogonal',sides:'any',boundaryLanes:false};
+      const readable=points=>points.slice(0,-3).every((a,i)=>{
+        const b=points[i+1],c=points[i+2],d=points[i+3];
+        if(Math.abs(a.y-b.y)<1e-5&&Math.abs(c.y-d.y)<1e-5&&(b.x-a.x)*(d.x-c.x)<0)return Math.abs(b.y-c.y)>=options.edgeSpacing;
+        if(Math.abs(a.x-b.x)<1e-5&&Math.abs(c.x-d.x)<1e-5&&(b.y-a.y)*(d.y-c.y)<0)return Math.abs(b.x-c.x)>=options.edgeSpacing;
+        return true;
+      });
       const safe=points=>C.validate(geometry,edge,points).ok&&
+        readable(points)&&
         !prior.some(path=>path.wire!==edge.contract.wire&&path.slice(1).some((b,i)=>points.slice(1).some((d,j)=>R.overlap(path[i],b,points[j],d)>1e-5)))&&
         !E.overlapsWire(geometry,edge,points)&&points.every(p=>p.x>=owner.x+2&&p.y>=owner.y+2&&p.x<=owner.x+owner.w-2&&p.y<=owner.y+owner.h-2);
       const routed=E.routeOne(geometry,edge,prior,options);
@@ -91,10 +98,12 @@
         edge.portPolicy.target.mode='side';
         const candidates=[.5,.25,.75].flatMap(fraction=>{
           const endpoint={x:target.x+target.w*fraction,y:target.y};
-          return [owner.x+inset,owner.x+owner.w-inset].flatMap(x=>[0,6,12,24].map(extra=>({fraction,points:R.simplify([
+          const direct=[0,6,12,24].map(extra=>({fraction,points:R.simplify([a,{x:a.x,y:a.y+terminal+extra},{x:endpoint.x,y:a.y+terminal+extra},endpoint])}));
+          return direct.concat([owner.x+inset,owner.x+owner.w-inset].flatMap(x=>[0,6,12,24].map(extra=>({fraction,points:R.simplify([
             a,{x:a.x,y:a.y+terminal},{x,y:a.y+terminal},
-            {x,y:endpoint.y-terminal-extra},{x:endpoint.x,y:endpoint.y-terminal-extra},endpoint])})));
+            {x,y:endpoint.y-terminal-extra},{x:endpoint.x,y:endpoint.y-terminal-extra},endpoint])}))));
         });
+        candidates.sort((a,b)=>R.routeCost(a.points,prior,options)-R.routeCost(b.points,prior,options));
         const fallback=candidates.find(candidate=>{edge.physicalTarget={side:'top',fraction:candidate.fraction};return safe(candidate.points);});
         if(fallback){edge.route=fallback.points;edge.failed=false;delete edge.reason;valid=true;}
       }

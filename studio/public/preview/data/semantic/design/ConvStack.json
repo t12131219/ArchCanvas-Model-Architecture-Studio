@@ -1,0 +1,537 @@
+{
+  "schema": "archcanvas-source-semantic/2",
+  "title": "ConvStack",
+  "entry": {
+    "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+    "class": "ConvStack",
+    "cell": null,
+    "constructor": {}
+  },
+  "coverage_contract": "在明确限定的模型、输入范围和运行模式内，完整覆盖并验证所有分支。任何任意 PyTorch 模型均无 opaque 无法保证：未知自定义算子、外部依赖或动态 Python 行为可能无法从现有证据中还原。",
+  "sources": [
+    {
+      "path": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+      "physical": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+      "cell": null,
+      "sha256": "82eefccfe9187aab96f8d48e81c7c778d97c14d2fa4991e881cb36230b956346",
+      "unit_sha256": "82eefccfe9187aab96f8d48e81c7c778d97c14d2fa4991e881cb36230b956346"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "model/109:4:composite:1",
+      "kind": "composite",
+      "label": "ConvStack",
+      "parent": null,
+      "source_parent": null,
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+          "line": 109,
+          "end_line": 112,
+          "column": 4,
+          "end_column": 16,
+          "symbol": "ConvStack.forward",
+          "expression": "def forward(self, x):\n    for block in self.units:\n        x = block(x)\n    return x"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "composite",
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "runtime_evidence": [],
+      "semantic_type": "source-module",
+      "module_path": "",
+      "constructor": {},
+      "source_class": "ConvStack"
+    },
+    {
+      "id": "model/109:4:composite:1/109:22:interface:1",
+      "kind": "interface",
+      "label": "x",
+      "parent": "model/109:4:composite:1",
+      "source_parent": "model/109:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+          "line": 109,
+          "end_line": 109,
+          "column": 22,
+          "end_column": 23,
+          "symbol": "ConvStack.forward",
+          "expression": "x"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "port",
+        "fill": "#e7edf4"
+      },
+      "runtime_evidence": [],
+      "role": "input",
+      "slot": "x"
+    },
+    {
+      "id": "model/109:4:composite:1/110:8:composite:1",
+      "kind": "composite",
+      "label": "Repeated block × 2",
+      "parent": "model/109:4:composite:1",
+      "source_parent": "model/109:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+          "line": 110,
+          "end_line": 111,
+          "column": 8,
+          "end_column": 24,
+          "symbol": "ConvStack.forward",
+          "expression": "for block in self.units:\n    x = block(x)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "composite",
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "runtime_evidence": [],
+      "semantic_type": "serial-repeat",
+      "repeat_contract": {
+        "rule_version": "bounded-module-sequence/1",
+        "count": 2,
+        "state": "x",
+        "iterator": "block",
+        "collection": "self.units",
+        "instances": [
+          "units.0",
+          "units.1"
+        ],
+        "module_sharing": "independent",
+        "parameter_sharing": "independent",
+        "homogeneous": true,
+        "allocation_evidence": [
+          "fresh-framework-construction",
+          "fresh-framework-construction"
+        ],
+        "construction_evidence": [
+          {
+            "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+            "line": 107,
+            "end_line": 107,
+            "column": 21,
+            "end_column": 103,
+            "symbol": "constructor",
+            "expression": "nn.ModuleList([nn.Conv2d(channels, channels, 3, padding=1) for _ in range(count)])"
+          },
+          {
+            "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+            "line": 107,
+            "end_line": 107,
+            "column": 36,
+            "end_column": 79,
+            "symbol": "constructor",
+            "expression": "nn.Conv2d(channels, channels, 3, padding=1)"
+          },
+          {
+            "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+            "line": 107,
+            "end_line": 107,
+            "column": 36,
+            "end_column": 79,
+            "symbol": "constructor",
+            "expression": "nn.Conv2d(channels, channels, 3, padding=1)"
+          }
+        ],
+        "scope": "fixed construction; straight serial body; all instances retained",
+        "not_asserted": [
+          "output equivalence between layers",
+          "arbitrary constructor side effects"
+        ]
+      }
+    },
+    {
+      "id": "model/109:4:composite:1/110:8:composite:1/110:8:composite:1",
+      "kind": "composite",
+      "label": "Layer 1",
+      "parent": "model/109:4:composite:1/110:8:composite:1",
+      "source_parent": "model/109:4:composite:1/110:8:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+          "line": 110,
+          "end_line": 111,
+          "column": 8,
+          "end_column": 24,
+          "symbol": "ConvStack.forward",
+          "expression": "for block in self.units:\n    x = block(x)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "composite",
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "runtime_evidence": [],
+      "semantic_type": "repeat-instance",
+      "module_identity": "units.0",
+      "repeat_index": 0
+    },
+    {
+      "id": "model/109:4:composite:1/110:8:composite:1/110:8:composite:1/111:16:compute:1",
+      "kind": "compute",
+      "label": "block · Conv2d",
+      "parent": "model/109:4:composite:1/110:8:composite:1/110:8:composite:1",
+      "source_parent": "model/109:4:composite:1/110:8:composite:1/110:8:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+          "line": 111,
+          "end_line": 111,
+          "column": 16,
+          "end_column": 24,
+          "symbol": "ConvStack.forward",
+          "expression": "block(x)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "runtime_evidence": [],
+      "operator": "convolution",
+      "module_path": "units.0",
+      "framework_type": "torch.nn.Conv2d",
+      "constructor": {
+        "args": [
+          4,
+          4,
+          3
+        ],
+        "kwargs": {
+          "padding": 1
+        }
+      },
+      "module_identity": "units.0"
+    },
+    {
+      "id": "model/109:4:composite:1/110:8:composite:1/110:8:composite:1/107:36:parameter:1",
+      "kind": "parameter",
+      "label": ".parameters",
+      "parent": "model/109:4:composite:1/110:8:composite:1/110:8:composite:1",
+      "source_parent": "model/109:4:composite:1/110:8:composite:1/110:8:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+          "line": 107,
+          "end_line": 107,
+          "column": 36,
+          "end_column": 79,
+          "symbol": "ConvStack.forward",
+          "expression": "nn.Conv2d(channels, channels, 3, padding=1)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "runtime_evidence": [],
+      "parameter_scope": "units.0",
+      "identity_status": "declared-scope; sharing-unresolved",
+      "module_identity": "units.0"
+    },
+    {
+      "id": "model/109:4:composite:1/110:8:composite:1/110:8:composite:1/111:12:value-alias:1",
+      "kind": "value-alias",
+      "label": "x",
+      "parent": "model/109:4:composite:1/110:8:composite:1/110:8:composite:1",
+      "source_parent": "model/109:4:composite:1/110:8:composite:1/110:8:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+          "line": 111,
+          "end_line": 111,
+          "column": 12,
+          "end_column": 13,
+          "symbol": "ConvStack.forward",
+          "expression": "x"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "value",
+        "fill": "#e8f6ef"
+      },
+      "runtime_evidence": [],
+      "slot": null
+    },
+    {
+      "id": "model/109:4:composite:1/110:8:composite:1/110:8:composite:2",
+      "kind": "composite",
+      "label": "Layer 2",
+      "parent": "model/109:4:composite:1/110:8:composite:1",
+      "source_parent": "model/109:4:composite:1/110:8:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+          "line": 110,
+          "end_line": 111,
+          "column": 8,
+          "end_column": 24,
+          "symbol": "ConvStack.forward",
+          "expression": "for block in self.units:\n    x = block(x)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "composite",
+      "glyph": {
+        "shape": "frame",
+        "fill": "#edf2ff"
+      },
+      "runtime_evidence": [],
+      "semantic_type": "repeat-instance",
+      "module_identity": "units.1",
+      "repeat_index": 1
+    },
+    {
+      "id": "model/109:4:composite:1/110:8:composite:1/110:8:composite:2/111:16:compute:1",
+      "kind": "compute",
+      "label": "block · Conv2d",
+      "parent": "model/109:4:composite:1/110:8:composite:1/110:8:composite:2",
+      "source_parent": "model/109:4:composite:1/110:8:composite:1/110:8:composite:2",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+          "line": 111,
+          "end_line": 111,
+          "column": 16,
+          "end_column": 24,
+          "symbol": "ConvStack.forward",
+          "expression": "block(x)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "rounded-rect",
+        "fill": "#dceffc"
+      },
+      "runtime_evidence": [],
+      "operator": "convolution",
+      "module_path": "units.1",
+      "framework_type": "torch.nn.Conv2d",
+      "constructor": {
+        "args": [
+          4,
+          4,
+          3
+        ],
+        "kwargs": {
+          "padding": 1
+        }
+      },
+      "module_identity": "units.1"
+    },
+    {
+      "id": "model/109:4:composite:1/110:8:composite:1/110:8:composite:2/107:36:parameter:1",
+      "kind": "parameter",
+      "label": ".parameters",
+      "parent": "model/109:4:composite:1/110:8:composite:1/110:8:composite:2",
+      "source_parent": "model/109:4:composite:1/110:8:composite:1/110:8:composite:2",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+          "line": 107,
+          "end_line": 107,
+          "column": 36,
+          "end_column": 79,
+          "symbol": "ConvStack.forward",
+          "expression": "nn.Conv2d(channels, channels, 3, padding=1)"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "resource",
+        "fill": "#f3dff1"
+      },
+      "runtime_evidence": [],
+      "parameter_scope": "units.1",
+      "identity_status": "declared-scope; sharing-unresolved",
+      "module_identity": "units.1"
+    },
+    {
+      "id": "model/109:4:composite:1/110:8:composite:1/110:8:composite:2/111:12:value-alias:1",
+      "kind": "value-alias",
+      "label": "x",
+      "parent": "model/109:4:composite:1/110:8:composite:1/110:8:composite:2",
+      "source_parent": "model/109:4:composite:1/110:8:composite:1/110:8:composite:2",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+          "line": 111,
+          "end_line": 111,
+          "column": 12,
+          "end_column": 13,
+          "symbol": "ConvStack.forward",
+          "expression": "x"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "value",
+        "fill": "#e8f6ef"
+      },
+      "runtime_evidence": [],
+      "slot": null
+    },
+    {
+      "id": "model/109:4:composite:1/110:8:composite:1/110:12:state:1",
+      "kind": "state",
+      "label": "block · module reference",
+      "parent": "model/109:4:composite:1/110:8:composite:1",
+      "source_parent": "model/109:4:composite:1/110:8:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+          "line": 110,
+          "end_line": 110,
+          "column": 12,
+          "end_column": 17,
+          "symbol": "ConvStack.forward",
+          "expression": "block"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "resource",
+        "fill": "#fbe8d3"
+      },
+      "runtime_evidence": [],
+      "role": "module-reference",
+      "module_identity": "units.1"
+    },
+    {
+      "id": "model/109:4:composite:1/112:8:interface:1",
+      "kind": "interface",
+      "label": "return",
+      "parent": "model/109:4:composite:1",
+      "source_parent": "model/109:4:composite:1",
+      "source": [
+        {
+          "file": "/home/fzg/PycharmProjects/ArchCanvas/prototype/Summary_Merge/tests/semantic_fixtures/module_sequences.py",
+          "line": 112,
+          "end_line": 112,
+          "column": 8,
+          "end_column": 16,
+          "symbol": "ConvStack.forward",
+          "expression": "return x"
+        }
+      ],
+      "evidence_status": "static-only",
+      "granularity": "atomic",
+      "glyph": {
+        "shape": "port",
+        "fill": "#e7edf4"
+      },
+      "runtime_evidence": [],
+      "role": "output"
+    }
+  ],
+  "edges": [
+    {
+      "source": "model/109:4:composite:1/110:8:composite:1/110:8:composite:1/107:36:parameter:1",
+      "target": "model/109:4:composite:1/110:8:composite:1/110:8:composite:1/111:16:compute:1",
+      "kind": "parameter-read",
+      "source_port": "out",
+      "target_port": "in",
+      "evidence": "framework-contract",
+      "id": "e00000"
+    },
+    {
+      "source": "model/109:4:composite:1/109:22:interface:1",
+      "target": "model/109:4:composite:1/110:8:composite:1/110:8:composite:1/111:16:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "arg:0",
+      "evidence": "source-dependency",
+      "id": "e00001"
+    },
+    {
+      "source": "model/109:4:composite:1/110:8:composite:1/110:8:composite:1/111:16:compute:1",
+      "target": "model/109:4:composite:1/110:8:composite:1/110:8:composite:1/111:12:value-alias:1",
+      "kind": "alias",
+      "source_port": "out",
+      "target_port": "value",
+      "evidence": "source-dependency",
+      "id": "e00002"
+    },
+    {
+      "source": "model/109:4:composite:1/110:8:composite:1/110:8:composite:2/107:36:parameter:1",
+      "target": "model/109:4:composite:1/110:8:composite:1/110:8:composite:2/111:16:compute:1",
+      "kind": "parameter-read",
+      "source_port": "out",
+      "target_port": "in",
+      "evidence": "framework-contract",
+      "id": "e00003"
+    },
+    {
+      "source": "model/109:4:composite:1/110:8:composite:1/110:8:composite:1/111:12:value-alias:1",
+      "target": "model/109:4:composite:1/110:8:composite:1/110:8:composite:2/111:16:compute:1",
+      "kind": "data",
+      "source_port": "out",
+      "target_port": "arg:0",
+      "evidence": "source-dependency",
+      "id": "e00004"
+    },
+    {
+      "source": "model/109:4:composite:1/110:8:composite:1/110:8:composite:2/111:16:compute:1",
+      "target": "model/109:4:composite:1/110:8:composite:1/110:8:composite:2/111:12:value-alias:1",
+      "kind": "alias",
+      "source_port": "out",
+      "target_port": "value",
+      "evidence": "source-dependency",
+      "id": "e00005"
+    },
+    {
+      "source": "model/109:4:composite:1/110:8:composite:1/110:8:composite:2/111:12:value-alias:1",
+      "target": "model/109:4:composite:1/112:8:interface:1",
+      "kind": "interface-binding",
+      "source_port": "out",
+      "target_port": "in",
+      "evidence": "source-dependency",
+      "id": "e00006"
+    }
+  ],
+  "branches": [],
+  "motifs": [],
+  "diagnostics": [],
+  "runtime": {
+    "status": "not-requested",
+    "model_executed": false
+  },
+  "coverage_blockers": [],
+  "coverage": {
+    "status": "not-verified",
+    "scope": "static-source",
+    "complete": false,
+    "reason": "static dependencies are not execution proof"
+  },
+  "limitations": [
+    "Static edges express source dependencies, not observed tensor bindings.",
+    "Unresolved calls/loops/external definitions remain explicit opaque boundaries.",
+    "Mutation updates proven direct aliases only; views, external aliases and interprocedural effects remain unresolved.",
+    "Notebook cells are parsed as data; notebook setup/training cells are never executed."
+  ],
+  "ir_digest": "21ce8075ec7d870df2fddd23aba4904da0a5db29c13d29a51508ac85574d792c"
+}

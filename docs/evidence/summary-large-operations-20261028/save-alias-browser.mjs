@@ -1,0 +1,46 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import {pathToFileURL} from 'node:url';
+const args=process.argv.slice(2),option=(key,fallback)=>args.includes(key)?args[args.indexOf(key)+1]:fallback;
+const {chromium}=await import(option('--playwright')?pathToFileURL(option('--playwright')).href:'playwright');
+const base=option('--base','http://127.0.0.1:8789'),output=option('--output','/tmp/summary-large-operations.json');
+const browser=await chromium.launch({headless:true,...(option('--chromium')?{executablePath:option('--chromium')} : {}),args:['--no-sandbox']});
+const page=await browser.newPage({viewport:{width:1600,height:1100},acceptDownloads:true}),checks=[],errors=[],sourceWrites=[],measurements=[],models=[];
+page.setDefaultTimeout(180000);page.setDefaultNavigationTimeout(180000);
+page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.method()==='POST'&&/edit-source|transactions|runtime|preview\/analyze/.test(r.url()))sourceWrites.push(r.url());});
+checks.push=(...values)=>{for(const v of values)console.log('PASS',v);return Array.prototype.push.apply(checks,values);};
+await page.addInitScript(()=>{
+ const hash=async v=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(v))))).map(v=>v.toString(16).padStart(2,'0')).join('');
+ window.__largeCommand=async(name,payload={},facts=false)=>{
+  const response=await new Promise((resolve,reject)=>{const child=document.querySelector('iframe').contentWindow,requestId=crypto.randomUUID(),timer=setTimeout(()=>{window.removeEventListener('message',listen);reject(Error('timeout '+name));},180000);
+   function listen(e){if(e.source!==child||e.origin!==location.origin||e.data?.requestId!==requestId)return;clearTimeout(timer);window.removeEventListener('message',listen);e.data.type.endsWith(':error')?reject(Error(e.data.message)):resolve(e.data);}window.addEventListener('message',listen);child.postMessage({type:'archcanvas:preview:'+name,...payload,requestId},location.origin);
+  });
+  const d=response.document;if(!d)return {};
+  window.__largeLast=d;const ir=d.graph.generic.ir;
+  if(facts){const ref=window.__largeReference;if(!ref||JSON.stringify(ref)!==JSON.stringify(ir))throw Error('complete source facts changed');for(const [ledger,items]of [[d.semanticView.nodeAccounting,ir.nodes],[d.semanticView.edgeAccounting,ir.edges]]){const a=Object.values(ledger).flat().sort(),b=items.map(n=>n.id).sort();if(new Set(a).size!==b.length||JSON.stringify(a)!==JSON.stringify(b))throw Error('complete accounting changed');}}
+  return {caseId:d.caseId,title:d.title,dirty:d.dirty,busy:d.busy,canCancel:d.canCancel,undo:d.undo,redo:d.redo,preset:d.frontierPreset,digest:ir.ir_digest,total:[ir.nodes.length,ir.edges.length],visible:[d.graph.nodes.length,d.graph.edges.length],routing:d.graph.nativeRouting,
+   geometry:await hash({nodes:d.graph.nodes,edges:d.graph.edges}),camera:d.graph.studioCamera,firstNode:d.graph.nodes.find(n=>!n.modelHeading)?.id,presentation:d.graph.studioPresentation||null,authoring:d.authoring?{nodes:d.authoring.nodes.length,edges:d.authoring.edges.length,workspace:d.authoring.workspaceId}:null};
+ };
+});
+const command=(name,payload={},facts=false)=>page.evaluate(({name,payload,facts})=>window.__largeCommand(name,payload,facts),{name,payload,facts});
+const snapshot=()=>command('snapshot');
+async function ready(){await page.waitForFunction(()=>document.querySelector('iframe')&&document.querySelector('.semantic-frontier .segmented button')&&!document.querySelector('.semantic-frontier .segmented button').disabled,{timeout:180000});}
+async function idle(){await page.waitForFunction(()=>document.querySelector('.semantic-frontier .segmented button')&&!document.querySelector('.semantic-frontier .segmented button').disabled,{timeout:180000});return snapshot();}
+async function menu(name){await page.locator('.workspace-menu > summary').click();await page.getByRole('button',{name,exact:true}).click();}
+const cdp=await browser.newBrowserCDPSession();
+async function memory(label){const {processInfo}=await cdp.send('SystemInfo.getProcessInfo');let aggregateRssBytes=0;for(const p of processInfo){try{const text=await fs.readFile('/proc/'+p.id+'/status','utf8'),kb=Number(text.match(/^VmRSS:\s+(\d+)/m)?.[1]||0);aggregateRssBytes+=kb*1024;}catch{}}const value={label,aggregateRssBytes,processes:processInfo.length,note:'sum of live Chromium process RSS; shared pages can be counted more than once; includes test probes'};measurements.push(value);console.log('MEMORY',JSON.stringify(value));}
+async function routeComplete(doc){for(let i=0;i<5&&!doc.routing?.complete;i++){doc=await command('continue-routing',{},true);console.log('ROUTE',JSON.stringify(doc.routing));}assert.equal(doc.routing.complete,true);return doc;}
+async function saveReload(){console.log('SAVE begin');await page.getByRole('button',{name:'保存',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.save-state')?.textContent.includes('已保存'));const saved=await snapshot();console.log('SAVE marked',saved.caseId);await page.reload({waitUntil:'networkidle'});await ready();console.log('RELOAD ready');const doc=await snapshot();assert.equal(doc.caseId,saved.caseId);assert.equal(doc.geometry,saved.geometry);assert.deepEqual(doc.camera,saved.camera);await page.waitForFunction(()=>document.querySelector('.save-state')?.textContent.includes('已保存'));assert.equal(await page.locator('.save-state').innerText(),'已保存');return doc;}
+async function fields(){return page.evaluate(async()=>{const hash=async v=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(v))))).map(v=>v.toString(16).padStart(2,'0')).join('');const g=window.__largeLast.graph,out={};for(const [k,v]of Object.entries(g))out[k]={hash:await hash(v),value:JSON.stringify(v).length<3000?v:undefined};for(const [k,v]of Object.entries(g.generic||{}))out['generic.'+k]={hash:await hash(v),value:JSON.stringify(v).length<3000?v:undefined};return out;});}
+try{
+ await page.goto(base,{waitUntil:'networkidle'});await ready();sourceWrites.length=0;
+ const catalog=await(await page.request.get(base+'/preview/data/semantic/studio-catalog.json')).json(),model=catalog.models.find(m=>m.title==='Transformer · 语义架构');
+ await menu('Summary 模型库');await page.locator('.summary-catalog select').selectOption(model.id);await page.getByRole('button',{name:'打开 Summary 模型',exact:true}).click();await ready();
+ for(const preset of ['detail','overview'])await command('set-frontier',{preset});
+ const hidden=await page.evaluate(()=>{const d=window.__largeLast,visible=new Set(d.graph.nodes.map(n=>n.id));return d.graph.generic.ir.nodes.find(n=>!visible.has(n.id)&&!d.graph.generic.ir.nodes.some(c=>c.parent===n.id))?.id;});await command('focus',{nodeId:hidden});await command('set-frontier',{preset:'overview'});
+ const before=await snapshot();await command('visual',{operations:[{type:'alias',id:before.firstNode,label:'保存诊断'}]});
+ await page.getByRole('button',{name:'保存',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.save-state')?.textContent.includes('已保存'));await snapshot();const savedFields=await fields();console.log('SAVED');
+ await page.reload({waitUntil:'networkidle'});await ready();await snapshot();const restoredFields=await fields();const differences=Object.keys({...savedFields,...restoredFields}).filter(k=>savedFields[k]?.hash!==restoredFields[k]?.hash).map(k=>({key:k,before:savedFields[k],after:restoredFields[k]}));
+ await page.waitForFunction(()=>document.querySelector('.save-state')?.textContent==='已保存');
+ const ui=await page.evaluate(()=>({save:document.querySelector('.save-state')?.textContent,status:document.querySelector('.statusbar')?.textContent,active:localStorage.getItem('archcanvas.active-canvas.v2'),markers:Object.keys(localStorage).filter(k=>k.startsWith('archcanvas.preview-saved.v1:')).map(k=>[k,localStorage.getItem(k)])}));await fs.writeFile(output,JSON.stringify({ok:!differences.length&&ui.save==='已保存',ui,differences,savedFields,restoredFields,browserErrors:errors,sourceWrites},null,2)+'\n');assert.deepEqual(differences,[]); await page.waitForFunction(()=>document.querySelector('.save-state')?.textContent==='已保存'); assert.equal(ui.save,'已保存'); assert.deepEqual(errors,[]); assert.deepEqual(sourceWrites,[]); await page.screenshot({path:output.replace(/\.json$/,'.png'),fullPage:true}); console.log('PASS exact native graph, saved panel marker, alias and geometry after refresh');
+}catch(error){const state=await page.evaluate(()=>({status:document.querySelector('.statusbar')?.textContent,save:document.querySelector('.save-state')?.textContent,active:localStorage.getItem('archcanvas.active-canvas.v2'),markers:Object.keys(localStorage).filter(k=>k.startsWith('archcanvas.preview-saved.v1:')).map(k=>[k,localStorage.getItem(k)]),lastCase:window.__largeLast?.caseId})).catch(()=>null);console.log('FAIL STATE',JSON.stringify(state));await page.screenshot({path:output.replace(/\.json$/,'-failure.png'),fullPage:true}).catch(()=>{});await fs.writeFile(output,JSON.stringify({ok:false,checks,models,measurements,browserErrors:errors,sourceWrites,state,error:String(error)},null,2)+'\n');throw error;}finally{await browser.close();}

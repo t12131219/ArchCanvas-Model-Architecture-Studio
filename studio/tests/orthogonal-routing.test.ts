@@ -1,8 +1,9 @@
+// Formal-core regression with retired preview test support; not evidence of current Summary gesture performance.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { applyVisualBatch, buildExportScene, buildScene, createHistory, reduceHistory, renderSvg } from '../src/core/index.ts';
-import { prepareMovePreview, previewMoveScene } from '../src/core/movePreview.ts';
+import { prepareMovePreview, previewMoveScene } from './retired-preview/movePreview.ts';
 import { createOrthogonalRouter } from '../src/core/orthogonalRouter.ts';
 import type { CanvasDocument, Scene, SceneNode } from '../src/core/types.ts';
 

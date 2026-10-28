@@ -1,3 +1,4 @@
+// Formal-core regression with retired preview test support; not evidence of current Summary gesture performance.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -40,7 +41,7 @@ function overlapDiagnostic(first: string, second: string) {
 // is controlled infrastructure: recorded final geometry isolates safety gates
 // from routing revisions. This is not router or rendered-pixel acceptance.
 function proposal(before: Scene, document: CanvasDocument, after: (dx: number, dy: number) => Scene) {
-  const source = readFileSync(new URL('../src/core/layoutRecovery.ts', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('./retired-preview/layoutRecovery.ts', import.meta.url), 'utf8');
   const ast = ts.createSourceFile('layoutRecovery.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   const program = ast.statements.filter(statement => !ts.isImportDeclaration(statement)).map(statement =>
     statement.getText(ast).replace(/^export\s+/, '')).join('\n');
@@ -49,7 +50,7 @@ function proposal(before: Scene, document: CanvasDocument, after: (dx: number, d
     nodeVisualOutline, TOKENS, buildScene: () => structuredClone(before), prepareMovePreview: () => ({}),
     previewMoveScene: (_session: unknown, dx: number, dy: number) => after(dx, dy) };
   const plan = new Function(...Object.keys(environment), `${compiled}\nreturn planLayoutRecovery;`)(...Object.values(environment)) as
-    (document: CanvasDocument, id: string) => ReturnType<typeof import('../src/core/layoutRecovery.ts').planLayoutRecovery>;
+    (document: CanvasDocument, id: string) => ReturnType<typeof import('./retired-preview/layoutRecovery.ts').planLayoutRecovery>;
   return plan(document, 'chosen');
 }
 function moved(before: Scene, dx: number, dy: number): Scene {

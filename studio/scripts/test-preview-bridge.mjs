@@ -108,6 +108,10 @@ try {
   const container = snapshot.graph.nodes.find(node => node.parent && node.semantic.kind === 'group');
   await command('visual', { operations: [{ type: 'expand', id: container.id, expanded: true }] }); snapshot = (await command('snapshot')).document;
   assert.equal(snapshot.graph.nodes.find(node => node.id === container.id).expanded, true); assert.equal(snapshot.graph.studioPresentation.nodes[id].alias, '桥接显示名称');
+  const riverEdge = snapshot.graph.edges.find(edge => edge.projection?.original === 'edge-10'); assert.ok(riverEdge); const riverRoute = structuredClone(riverEdge.route); const riverBinding = structuredClone(riverEdge.binding);
+  await command('undo'); let riverUndo = (await command('snapshot')).document; assert.equal(riverUndo.graph.nodes.find(node => node.id === container.id).expanded, false); assert.equal(riverUndo.graph.edges.some(edge => edge.projection?.original === 'edge-10'), false);
+  await command('redo'); let riverRedo = (await command('snapshot')).document; const riverRedoEdge = riverRedo.graph.edges.find(edge => edge.projection?.original === 'edge-10'); assert.deepEqual(riverRedoEdge.route, riverRoute); assert.deepEqual(riverRedoEdge.binding, riverBinding);
+  checks.push('RiverNet nested edge-10 keeps canonical binding and repaired caption-safe route across undo/redo');
   await command('visual', { operations: [{ type: 'expand', id: container.id, expanded: false }] }); checks.push('recursive expansion retains shared visual overlays');
   snapshot = (await command('snapshot')).document;
   const sourceEdge = snapshot.graph.edges[0], sourceEdgeDefaults = snapshot.graph.recursive.authority.detail.edges.find(edge => edge.id === sourceEdge.projection.original);
@@ -163,8 +167,8 @@ try {
   assert.ok(before > 0); checks.push('invalid operation rejects without source changes');
   await frame.evaluate(() => window.postMessage({ type: 'archcanvas:preview:snapshot', requestId: 'wrong-source' }, location.origin));
   await command('snapshot'); assert.equal(await page.evaluate(() => window.messages.some(message => message.requestId === 'wrong-source')), false); checks.push('non-parent sender is ignored');
-  await command('show-library'); await frame.locator('button[data-case-id="routing-lab"]').click(); await frame.waitForFunction(() => document.querySelector('#modelTitle')?.textContent === 'Edge Router · 避障实验'); await frame.locator('.library .studio-drawer-close').click();
-  const routing = (await command('snapshot')).document; assert.equal(routing.caseId, 'routing-lab'); assert.equal(routing.graph.nodes.length, 9); assert.equal(routing.graph.edges.length, 11); assert.equal(routing.sourceAvailable, false); await assert.rejects(command('request-source'), /路由实验|教学 SVG/); await command('save'); await command('load', { bundle: routing }); checks.push('source-free routing experiment loads, saves and restores without prior model source');
+  await command('open-case', { caseId: '01093cc06a87b35c' });
+  const runtime = (await command('snapshot')).document; assert.equal(runtime.caseId, '01093cc06a87b35c'); assert.equal(runtime.graph.recursive.authority.detail.nodes.length, 306); assert.equal(runtime.sourceAvailable, false); await assert.rejects(command('request-source'), /CPU 轨迹|源码绑定/); await command('save'); await command('load', { bundle: runtime }); checks.push('current Summary CPU case loads, saves and restores without inventing an editable Python source binding');
   const standalone=await browser.newPage({viewport:{width:1500,height:1000}});standalone.on('pageerror',error=>errors.push(error.message));await standalone.goto(base+'/preview/yworks_edge_router_lab/index.html');await standalone.waitForFunction(()=>document.querySelector('#graph')?.getAttribute('data-source-constraint-valid')==='true');assert.equal(await standalone.locator('.toolbar').isVisible(),true);assert.equal(await standalone.locator('[data-tool="pan"]').isVisible(),true);await standalone.locator('[data-tool="pan"]').click();assert.equal(await standalone.locator('#graph').getAttribute('data-active-tool'),'pan');await standalone.close();checks.push('standalone prototype surface retains its original toolbar and pan tool');
   assert.deepEqual(errors, []);
   await fs.writeFile(output, JSON.stringify({ ok: true, checks, browserErrors: errors }, null, 2) + '\n');

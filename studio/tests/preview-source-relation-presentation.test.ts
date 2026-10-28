@@ -84,7 +84,7 @@ test('user paint and line choices survive syntax defaults and monochrome only ch
   assert.equal(P.edgeAppearance(graph, edge).dashArray, '2 4'); assert.equal(P.edgeAppearance(graph, edge).dashed, true);
 });
 
-test('renderer merges one source legend row into the existing diagram legend without mutating source bindings', () => {
+test('renderer omits node categories while retaining source evidence labels without mutating source bindings', () => {
   const graph = fixture(), P = runtime(), before = JSON.stringify(graph), svg = svgFor(graph);
   graph.studioPresentation.legend = [{ id: 'linear', label: 'Linear', color: '#abcdef', glyph: 'module' }];
   const sourceFacts = JSON.stringify([graph.nodes, graph.edges]);
@@ -92,14 +92,14 @@ test('renderer merges one source legend row into the existing diagram legend wit
   assert.equal(svg.querySelectorAll('[data-studio-legend]').length, 1);
   assert.equal(svg.querySelectorAll('[data-source-relation-legend]').length, 1);
   const text = svg.querySelectorAll('text').map(node => node.textContent);
-  assert.deepEqual(text, ['Linear', '源码数据依赖 · 执行路径未确定']);
+  assert.deepEqual(text, ['源码数据依赖 · 执行路径未确定']);
   const relation = svg.querySelector('[data-source-relation-legend]')!;
   assert.equal(relation.querySelector('path')!.getAttribute('stroke-dasharray'), '2 4');
   assert.equal(JSON.stringify([graph.nodes, graph.edges]), sourceFacts);
   graph.studioPresentation.legend = []; P.render(graph, svg);
   assert.equal(svg.querySelectorAll('[data-studio-legend]').length, 1);
   assert.equal(JSON.stringify(graph), before);
-  graph.edges = []; P.render(graph, svg);
+  graph.edges = []; graph.studioPresentation.legend = [{ id: 'linear', label: 'Linear', color: '#abcdef', glyph: 'module' }]; P.render(graph, svg);
   assert.equal(svg.querySelectorAll('[data-studio-legend]').length, 0);
 });
 

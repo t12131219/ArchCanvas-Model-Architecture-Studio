@@ -125,6 +125,14 @@
   const heading = (a, b) => Math.abs(a.x - b.x) < EPS ? (b.y > a.y ? 2 : 4) : (b.x > a.x ? 1 : 3);
   const reverses = (a, b) => a !== 0 && b !== 0 && Math.abs(a - b) === 2;
   function search(start, end, obstacles, priorPaths, settings, boundary, incoming = 0, outgoing = 0) {
+    if(settings.deadline!==undefined&&performance.now()>=settings.deadline)return null;
+    // Summary native cuts supply bounded search corridors and exact frame
+    // constraints. The final candidate still checks the complete geometry.
+    if(settings.searchPadding){const pad=settings.searchPadding,x=Math.max(boundary.x,Math.min(start.x,end.x)-pad),y=Math.max(boundary.y,Math.min(start.y,end.y)-pad);
+      boundary={x,y,w:Math.min(boundary.x+boundary.w,Math.max(start.x,end.x)+pad)-x,h:Math.min(boundary.y+boundary.h,Math.max(start.y,end.y)+pad)-y};
+      obstacles=obstacles.filter(r=>r.x<=boundary.x+boundary.w&&r.x+r.w>=boundary.x&&r.y<=boundary.y+boundary.h&&r.y+r.h>=boundary.y);
+    }
+    if(settings.pruneContainedObstacles)obstacles=obstacles.filter((a,i)=>!obstacles.some((b,j)=>i!==j&&b.x<=a.x&&b.y<=a.y&&b.x+b.w>=a.x+a.w&&b.y+b.h>=a.y+a.h&&(b.w*b.h>a.w*a.h||j<i)));
     if (inside(start, boundary) === false || inside(end, boundary) === false || obstacles.some(r => inside(start, r) || inside(end, r))) return null;
     // A straight leg or one elbow can already attain the obstacle-free
     // lower bound, including its signed arrival and departure headings.
@@ -145,14 +153,15 @@
         const turns = Math.max(0, points.length - 2) + (incoming && incoming !== first ? 1 : 0) + (outgoing && outgoing !== last ? 1 : 0);
         const free = Math.abs(start.x - end.x) + Math.abs(start.y - end.y) + turns * settings.bendCost;
         lower = Math.min(lower, free);
-        if (points.slice(1).some((p, i) => obstacles.some(r => intersectsRect(points[i], p, r)))) continue;
+        if (points.slice(1).some((p, i) => (settings.segmentAllowed&&!settings.segmentAllowed(points[i],p))||obstacles.some(r => intersectsRect(points[i], p, r)))) continue;
         const cost = routeCost(points, priorPaths, settings) + (turns - Math.max(0, points.length - 2)) * settings.bendCost;
         if (Number.isFinite(cost) && (!best || cost < best.cost)) best = { points, cost, expanded: 0 };
       }
-      if (best && best.cost <= lower + EPS) return best;
+      if (best && (settings.firstLegal || best.cost <= lower + EPS)) return best;
     }
     let xs = [start.x, end.x, boundary.x, boundary.x + boundary.w], ys = [start.y, end.y, boundary.y, boundary.y + boundary.h];
     for (const r of obstacles) { xs.push(r.x, r.x + r.w); ys.push(r.y, r.y + r.h); }
+    xs.push(...(settings.extraCoordinates?.xs||[]));ys.push(...(settings.extraCoordinates?.ys||[]));
     // Give overlapping edges a parallel lane, rather than pricing a conflict
     // on a graph that contains only the same obstacle-boundary coordinates.
     if (settings.edgeSpacing > 0) {
@@ -192,6 +201,15 @@
         return [...new Set([...values,...faces.slice(1).flatMap((v,i)=>v-faces[i]>.1&&v-faces[i]<settings.edgeSpacing?[(v+faces[i])/2]:[])])].sort((a,b)=>a-b);};
       xs=centers(xs,'x','w');ys=centers(ys,'y','h');
     }
+    if(settings.compactCoordinates){
+      // A long dependency need not visit every operator's Cartesian grid.
+      // Try endpoint-adjacent lanes plus all semantic frame coordinates first.
+      // Obstacles and segment predicates remain complete; solveLeg falls back
+      // to the full coordinate set when this smaller proposal has no path.
+      const reduce=(values,required,a,b)=>[...new Set([...required,...values.filter(v=>!required.includes(v)).sort((x,y)=>Math.min(Math.abs(x-a),Math.abs(x-b))-Math.min(Math.abs(y-a),Math.abs(y-b))).slice(0,settings.compactCoordinates)])].sort((a,b)=>a-b);
+      xs=reduce(xs,[start.x,end.x,boundary.x,boundary.x+boundary.w,...(settings.extraCoordinates?.xs||[])].filter(x=>x>=boundary.x&&x<=boundary.x+boundary.w),start.x,end.x);
+      ys=reduce(ys,[start.y,end.y,boundary.y,boundary.y+boundary.h,...(settings.extraCoordinates?.ys||[])].filter(y=>y>=boundary.y&&y<=boundary.y+boundary.h),start.y,end.y);
+    }
     if(settings.maxSearchVertices&&xs.length*ys.length>settings.maxSearchVertices)return null;
     // A visibility link is horizontal or vertical. Filter by its fixed axis
     // first, then retain the original exact inside/intersection predicates.
@@ -200,12 +218,13 @@
     const verticalObstacles = xs.map(x=>obstacles.filter(r=>x>=r.x && x<=r.x+r.w));
     const pts = [], ids = new Map(), neighbors = [];
     for (let yi = 0; yi < ys.length; yi++) for (let xi = 0; xi < xs.length; xi++) {
+      if(xi===0&&settings.deadline!==undefined&&performance.now()>=settings.deadline)return null;
       const p = { x: xs[xi], y: ys[yi] };
       if (!horizontalObstacles[yi].some(r => inside(p, r))) { ids.set(xi + ':' + yi, pts.length); pts.push(p); neighbors.push([]); }
     }
     function link(u, v, localObstacles) {
       if (u === undefined || v === undefined) return;
-      if (!localObstacles.some(r => intersectsRect(pts[u], pts[v], r))) { neighbors[u].push(v); neighbors[v].push(u); }
+      if ((!settings.segmentAllowed||settings.segmentAllowed(pts[u],pts[v]))&&!localObstacles.some(r => intersectsRect(pts[u], pts[v], r))) { neighbors[u].push(v); neighbors[v].push(u); }
     }
     for (let y = 0; y < ys.length; y++) { let last; for (let x = 0; x < xs.length; x++) { const id = ids.get(x + ':' + y); if (id !== undefined) { if (last !== undefined) link(last, id, horizontalObstacles[y]); last = id; } } }
     for (let x = 0; x < xs.length; x++) { let last; for (let y = 0; y < ys.length; y++) { const id = ids.get(x + ':' + y); if (id !== undefined) { if (last !== undefined) link(last, id, verticalObstacles[x]); last = id; } } }
@@ -224,7 +243,16 @@
       const key = Math.min(u, v) * pts.length + Math.max(u, v);
       if (linkCosts.has(key)) return linkCosts.get(key);
       const a = pts[u], b = pts[v]; let penalty = 0, blocked = false;
-      for (const path of priorPaths) for (let i = 1; i < path.length; i++) {
+      let peers=priorPaths;
+      if(settings.priorSource===priorPaths&&settings.priorBounds){
+        // wireContact also admits fuzzy near-collinear endpoint contacts.
+        // Its distance-sum tolerance is bounded by sqrt(EPS * length), so
+        // retain that envelope before applying the unchanged exact predicate.
+        const pad=Math.sqrt(EPS*(Math.max(settings.priorMaxLength||0,dist(a,b))+EPS))+EPS;
+        const left=Math.min(a.x,b.x)-pad,right=Math.max(a.x,b.x)+pad,top=Math.min(a.y,b.y)-pad,bottom=Math.max(a.y,b.y)+pad;
+        peers=settings.priorBounds.filter(p=>p.left<=right&&p.right>=left&&p.top<=bottom&&p.bottom>=top).map(p=>p.path);
+      }
+      for (const path of peers) for (let i = 1; i < path.length; i++) {
         if (wireContact(a, b, path[i - 1], path[i])) penalty += settings.crossingCost;
         const shared = overlap(a, b, path[i - 1], path[i]);
         const commonTerminal = shared > EPS && (settings.terminalStems || []).some(stem => {
@@ -242,6 +270,7 @@
     }
     let finalKey = null, finalCost = Infinity, expanded = 0;
     while (heap.length) {
+      if(expanded%128===0&&settings.deadline!==undefined&&performance.now()>=settings.deadline)return null;
       const current = heap.pop(), base = costs.get(current.key);
       if (current.distance > base + EPS) continue;
       if (current.cost >= finalCost - EPS) break;
@@ -249,6 +278,10 @@
       if (u === t && !reverses(direction, outgoing)) {
         const cost = base + (direction && outgoing && direction !== outgoing ? settings.bendCost : 0);
         if (cost < finalCost) { finalKey = current.key; finalCost = cost; }
+        // Batched source expansion asks for a legal route, so the first
+        // reachable terminal is sufficient. Do not exhaust the grid to prove
+        // an aesthetic cost optimum after that terminal has been reached.
+        if(settings.firstLegal)break;
       }
       for (const v of neighbors[u]) {
         const a = pts[u], b = pts[v], nextDirection = heading(a, b);
@@ -279,9 +312,14 @@
   }
   function routeCost(points,priorPaths,settings){
     const ps=simplify(points);let cost=Math.max(0,ps.length-2)*settings.bendCost;
+    let peers=priorPaths;
+    if(settings.priorSource===priorPaths&&settings.priorBounds){
+      const left=Math.min(...ps.map(p=>p.x))-EPS,right=Math.max(...ps.map(p=>p.x))+EPS,top=Math.min(...ps.map(p=>p.y))-EPS,bottom=Math.max(...ps.map(p=>p.y))+EPS;
+      peers=settings.priorBounds.filter(b=>b.left<=right&&b.right>=left&&b.top<=bottom&&b.bottom>=top).map(b=>b.path);
+    }
     for(let i=1;i<ps.length;i++){
       cost+=dist(ps[i-1],ps[i]);
-      for(const path of priorPaths)for(let j=1;j<path.length;j++){
+      for(const path of peers)for(let j=1;j<path.length;j++){
         if(wireContact(ps[i-1],ps[i],path[j-1],path[j]))cost+=settings.crossingCost;
         const shared=overlap(ps[i-1],ps[i],path[j-1],path[j]);
         if(shared>EPS&&settings.edgeSpacing>0&&!(path.wire===undefined&&
@@ -293,6 +331,10 @@
   }
   function routeEdge(edge, nodes, priorPaths = [], options = {}) {
     const settings = { margin: 14, stub: 26, bendCost: 36, crossingCost: 0, overlapCost: 2, edgeSpacing: 0, grid: 0, sides: 'any', preserve: false, ...options };
+    // Candidate costs are exact, but distant settled wires cannot intersect
+    // their bounding box. Build this index per call so mutable peer routes
+    // never inherit a stale cache from another routing transaction.
+    if(settings.spatialPrior){settings.priorSource=priorPaths;settings.priorMaxLength=Math.max(0,...priorPaths.flatMap(path=>path.slice(1).map((p,i)=>dist(path[i],p))));settings.priorBounds=priorPaths.map(path=>({path,left:Math.min(...path.map(p=>p.x)),right:Math.max(...path.map(p=>p.x)),top:Math.min(...path.map(p=>p.y)),bottom:Math.max(...path.map(p=>p.y))}));}
     const s = nodes.find(n => n.id === edge.source), t = nodes.find(n => n.id === edge.target);
     if (!s || !t) return { ok: false, reason: 'missing endpoint node' };
     // Expanded containers are traversable only at their registered gates. The
@@ -301,7 +343,7 @@
     // external-to-nested route impossible (and leaves the old diagonal SVG
     // corridor in place). Unrelated expanded frames remain obstacles.
     const gateFrames = new Set((edge.contract?.gates||[]).map(g=>g.frame));
-    const solid = nodes.filter(n => n.routingObstacle !== false && !(n.expanded && gateFrames.has(n.id)));
+    const solid = nodes.filter(n => !settings.excludedObstacleIds?.has(n.id) && n.routingObstacle !== false && !(n.expanded && gateFrames.has(n.id)));
     const obstacles = [...solid.map(n => expand(n, settings.margin)),...(options.extraObstacles||[])], boundary = { x: 1, y: 1, w: options.width ? options.width - 2 : 1098, h: options.height ? options.height - 2 : 718 };
     const candidates=(node,other,fixed,fraction)=>candidateSides(node,other,settings.sides,fixed).map(side=>fixed||{side,fraction:fraction??.5});
     const portsS=options.sourceCandidates||candidates(s,t,edge.fixedSource,options.sourceFraction),portsT=options.targetCandidates||candidates(t,s,edge.fixedTarget,options.targetFraction);
@@ -315,7 +357,8 @@
       const key = JSON.stringify([start.x, start.y, end.x, end.y, incoming, outgoing,
         obstacles.map(r => [r.x, r.y, r.w, r.h]), taggedPeers ? null : settings.terminalStems]);
       if (legCache.has(key)) return legCache.get(key);
-      const result = search(start, end, obstacles, priorPaths, settings, boundary, incoming, outgoing);
+      const result = search(start, end, obstacles, priorPaths, settings, boundary, incoming, outgoing)||
+        (settings.compactCoordinates?search(start,end,obstacles,priorPaths,{...settings,compactCoordinates:0},boundary,incoming,outgoing):null);
       if (legCache.size < 256) legCache.set(key, result);
       return result;
     };
@@ -338,7 +381,7 @@
       const {sp,tp,fs,ft,extra}=pair;ps=simplify(ps);
       if(ps.length<2||ps.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y))||ps.slice(1).some((p,i)=>Math.abs(p.x-ps[i].x)>EPS&&Math.abs(p.y-ps[i].y)>EPS))return false;
       for(let i=1;i<ps.length;i++){
-        const a=ps[i-1],b=ps[i];if(i>1&&reverses(heading(ps[i-2],a),heading(a,b)))return false;
+        const a=ps[i-1],b=ps[i];if(settings.segmentAllowed&&!settings.segmentAllowed(a,b))return false;if(i>1&&reverses(heading(ps[i-2],a),heading(a,b)))return false;
         if(solid.some(n=>intersectsRect(a,b,(i===1&&n.id===s.id||i===ps.length-1&&n.id===t.id)?n:expand(n,settings.margin)))||extra.some(n=>intersectsRect(a,b,n)))return false;
       }
       if(ps.some(p=>!inside(p,boundary)))return false;
@@ -363,7 +406,10 @@
       if(pair){const cost=routeCost(edge.route,priorPaths,settings);if(Number.isFinite(cost))trials.push({points:simplify(edge.route),cost,pair});}}
     if(!waypoints.length)for(const pair of pairs){
       const {sp:s,tp:t,fs,ft}=pair,ns=SIDE[fs.side],nt=SIDE[ft.side],ss=fs.inward?-1:1,ts=ft.inward?-1:1;
-      const add=ps=>{ps=simplify(ps);const cost=routeCost(ps,priorPaths,settings);if(Number.isFinite(cost))trials.push({points:ps,cost,pair});};
+      // Reject geometry before pricing thousands of settled wires. Dense
+      // source cuts have many legal physical slots, but most simple paths
+      // intersect an owner or its caption and cannot be candidates at all.
+      const add=ps=>{ps=simplify(ps);if(settings.firstLegal&&!acceptable(ps,pair))return;const cost=routeCost(ps,priorPaths,settings);if(Number.isFinite(cost))trials.push({points:ps,cost,pair});};
       add([s,t]);add([s,{x:s.x,y:t.y},t]);add([s,{x:t.x,y:s.y},t]);
       add([s,{x:s.x,y:(s.y+t.y)/2},{x:t.x,y:(s.y+t.y)/2},t]);
       add([s,{x:(s.x+t.x)/2,y:s.y},{x:(s.x+t.x)/2,y:t.y},t]);
@@ -376,6 +422,22 @@
     for(const trial of trials)if(acceptable(trial.points,trial.pair)){
       best={ok:true,points:trial.points,cost:trial.cost,expanded:0,sourcePort:trial.pair.sp,targetPort:trial.pair.tp,physicalSource:trial.pair.fs,physicalTarget:trial.pair.ft};break;
     }
+    // Dense folded source sequences frequently need one parallel corridor
+    // around an intervening operand/parameter column. Try actual obstacle
+    // faces before constructing a visibility grid for every port pair.
+    if(!best&&settings.firstLegal&&!waypoints.length)for(const pair of pairs.sort((a,b)=>a.lower-b.lower)){
+      if(settings.deadline!==undefined&&performance.now()>=settings.deadline)break;
+      const {sp:s,tp:t,fs,ft,extra}=pair,stub=Math.max(settings.stub,settings.margin+1,options.minimumTerminal||0),ns=SIDE[fs.side],nt=SIDE[ft.side];
+      const a={x:s.x+ns[0]*(fs.inward?-1:1)*stub,y:s.y+ns[1]*(fs.inward?-1:1)*stub},b={x:t.x+nt[0]*(ft.inward?-1:1)*stub,y:t.y+nt[1]*(ft.inward?-1:1)*stub};
+      const left=Math.min(a.x,b.x)-128,right=Math.max(a.x,b.x)+128,top=Math.min(a.y,b.y)-128,bottom=Math.max(a.y,b.y)+128;
+      const local=[...solid.map(n=>expand(n,settings.margin)),...extra].filter(n=>n.x<=right&&n.x+n.w>=left&&n.y<=bottom&&n.y+n.h>=top);
+      const coordinates=(axis,size,center)=>[...new Set([...(settings.extraCoordinates?.[axis==='x'?'xs':'ys']||[]),...[...new Set(local.flatMap(n=>[n[axis]-1,n[axis]+n[size]+1]))].sort((a,b)=>Math.abs(a-center)-Math.abs(b-center)).slice(0,24)])];
+      const channels=[...coordinates('x','w',(a.x+b.x)/2).map(x=>[s,a,{x,y:a.y},{x,y:b.y},b,t]),...coordinates('y','h',(a.y+b.y)/2).map(y=>[s,a,{x:a.x,y},{x:b.x,y},b,t])];
+      for(const raw of channels){const points=simplify(raw);if(!acceptable(points,pair))continue;const cost=routeCost(points,priorPaths,settings);if(!Number.isFinite(cost))continue;
+        best={ok:true,points,cost,expanded:0,sourcePort:s,targetPort:t,physicalSource:fs,physicalTarget:ft};break;}
+      if(best)break;
+    }
+    if(options.quickCandidatesOnly)return best||{ok:false,reason:'No legal simple port candidate'};
     // Recursive presentation changes need a legal settled frontier promptly.
     // Explicit routing retains the default cost optimization over all ports.
     if(best&&settings.firstLegal)return best;
@@ -383,6 +445,7 @@
     // lower bound. Complex corridors use the visibility graph below.
     if(best&&best.cost<=Math.min(...pairs.map(p=>p.lower))+EPS)return best;
     for (const pair of pairs.sort((a,b)=>a.lower-b.lower)) {
+      if(settings.deadline!==undefined&&performance.now()>=settings.deadline)break;
       const {fs,ft,sp,tp,extra}=pair;
       if(best&&pair.lower>=best.cost-EPS)continue;
       const obstacles=[...solid.map(n=>expand(n,settings.margin)),...extra];
@@ -392,6 +455,12 @@
       settings.terminalStems = [{port:sp,outer:a},{port:tp,outer:b}];
       if (solid.some(n => n.id !== s.id && intersectsRect(sp, a, expand(n, .1))) || solid.some(n => n.id !== t.id && intersectsRect(tp, b, expand(n, .1)))) continue;
       if (extra.some(n=>intersectsRect(sp,a,n)||intersectsRect(tp,b,n))) continue;
+      // Stubs cannot change during the search. Reject a port pair whose
+      // terminal already overlaps an occupied wire before building its grid.
+      if(settings.edgeSpacing>0&&priorPaths.some(path=>path.slice(1).some((d,i)=>{
+        const c=path[i],terminalAt=p=>(i===0&&equal(p,path[0]))||(i===path.length-2&&equal(p,path.at(-1)));
+        return overlap(sp,a,c,d)>EPS&&!(path.wire===undefined&&terminalAt(sp))||overlap(b,tp,c,d)>EPS&&!(path.wire===undefined&&terminalAt(tp));
+      })))continue;
       if (waypoints.some(p => obstacles.some(r => inside(p, r)))) continue;
       const stops = [a, ...waypoints, b]; let points = [sp], cost = dist(sp,a)+dist(b,tp), expanded = 0, failed = false;
       for (let i = 1; i < stops.length; i++) {

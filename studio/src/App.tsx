@@ -1,10 +1,18 @@
+import { rememberPreviewSave, matchesPreviewSave } from './previewSaveState';
+import { SourceImportDialog } from './SourceImportDialog';
+import { SummaryViewPanel } from './SummaryViewPanel';
+import { SummaryRuntimePanel } from './SummaryRuntimePanel';
+import { SummaryAuthoringPanel } from './SummaryAuthoringPanel';
+import { SummarySemanticPanel } from './SummarySemanticPanel';
+import { SummaryCatalogPanel } from './SummaryCatalogPanel';
+import { loadSummaryCatalog, loadSummaryCatalogModel, type SummaryCatalogModel } from './summaryCatalog';
+import { useWorkspaceMenus } from './WorkspaceUI';
 import { sameSourceSemantics, sourcePresentationOperations } from './sourcePresentation';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
-import { applyVisualBatch, buildScene, createDocument, createHistory, reconcileDocument, reduceHistory, validateArchitecture, presentEditorScene, editorSceneBounds, implicitRootIds } from './core';
-import type { Architecture, CanvasDocument, HistoryState, MoveScope, ScenePort, VisualOperation } from './core';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { buildScene, createDocument, createHistory, reconcileDocument, reduceHistory, validateArchitecture } from './core';
+import type { Architecture, CanvasDocument, HistoryState, MoveScope, VisualOperation } from './core';
 import { api } from './api';
-import type { Binding, Capabilities, Example, InputSpec, RebindOptions, Transaction } from './api';
+import type { Binding, Capabilities, InputSpec, RebindOptions, Transaction, SummaryRuntimeResult } from './api';
 import { Icon } from './icons';
 import { ParameterEditor } from './ParameterEditor';
 import { ActivationEditor } from './ActivationEditor';
@@ -14,23 +22,12 @@ import { ReviewDialog } from './ReviewDialog';
 import { ExportDialog } from './ExportDialog';
 import { ObjectFacts } from './ObjectFacts';
 import { HierarchyTree } from './HierarchyTree';
+import { previewFrontier, previewHierarchy, previewHierarchyExpansion } from './previewHierarchy';
 import { studioTelemetry } from './perf';
-import { prepareMovePreview, previewMoveScene } from './core/movePreview';
-import type { MovePreviewSession } from './core/movePreview';
-import { beginCameraPan, cameraAtPanInput } from './cameraGesture';
-import type { CameraState, CameraPan } from './cameraGesture';
-import { canvasDotGrid, clampCanvasZoom, fitCameraToBounds, focusCameraOnPoint, paperTranslation, viewportToWorld, zoomCameraAtPoint } from './cameraProjection';
-import { canApplyCameraViewTicket, readCameraView, sameCameraViewDocument, writeCameraView } from './cameraViewState';
-import type { CameraViewIdentity, CameraViewStorage, CameraViewTicket } from './cameraViewState';
-import { cameraViewportSize, resizeCameraViewport } from './cameraViewport';
-import type { CameraViewport } from './cameraViewport';
-import { edgeAppearance } from './edgeAppearance';
+import type { CameraState } from './cameraGesture';
+import { cameraViewportSize } from './cameraViewport';
 import { edgePatternLabel } from './core/edgePresentation';
-import { findAnnotationBodyConflicts, suggestAnnotationPosition } from './core/annotationPlacement';
-import { layoutWarnings } from './layoutWarnings';
-import { planLayoutRecovery } from './core/layoutRecovery';
 import { parseMoveCommand } from './moveCommand';
-import type { LayoutRecoveryPlan } from './core/layoutRecovery';
 import { AuthoringStudio } from './AuthoringStudio';
 import type { AuthoringWorkspace } from './AuthoringStudio';
 import type { GeneratedDraft } from './api';
@@ -43,7 +40,6 @@ import { resumeGeneratedWorkspace, generatedSourceView, sameGeneratedDraft, read
 import type { GeneratedWorkspaceBinding } from './generatedWorkspace';
 import { blankDraft } from './authoring';
 import type { AuthoredDraft } from './authoring';
-import { nearestPortLayout } from './core/portRouting';
 import { PreviewStudio } from './PreviewStudio';
 import type { PreviewHandle, PreviewSnapshot, PreviewSourceResult } from './PreviewStudio';
 import { architecturePreviewRequest, architecturePreviewFocus, bundlePreviewRequest, rawPreviewSourceRequest, previewSelectionDraftIds, previewNodeLayoutOperation, previewExpansionOperations, previewSourceMatchesArchitecture, previewUniqueNodeBindings, previewSourceLocation } from './previewInterop';
@@ -52,24 +48,13 @@ import { previewMappingSignature, previewNeedsPanelDocument, previewPanelDocumen
 import { isPreviewDraftEdge, previewEdgeAppearance, previewFormalEdgeIds, previewGraphEdges, previewDocumentSyncOperations, previewNodePresentation, previewPresentation, previewAnnotationConflicts, previewAnnotationPosition } from './previewPresentation';
 import type { PreviewVisualEdge } from './previewPresentation';
 import type { PreviewExportSource } from './previewPublication';
+import { previewExportBinding } from './previewPublication';
 
 type Selection = { kind: 'node' | 'edge' | 'preview-edge' | 'legend' | 'annotation'; ids: string[] };
 type Camera = CameraState;
-type Gesture = { type: 'move' | 'port-layout' | 'pan' | 'box'; pointerId: number; x: number; y: number; camera: Camera; pan?: CameraPan; ids: string[]; dx: number; dy: number; document?: CanvasDocument; preview?: MovePreviewSession; moveScope?: MoveScope; port?: ScenePort };
-type MovePreview = { document: CanvasDocument; session: MovePreviewSession; dx: number; dy: number };
-type RecoveryPreview = { document: CanvasDocument; plan: Extract<LayoutRecoveryPlan, { status: 'ready' }> };
 const PALETTE = ['#dcebf6', '#deeee6', '#f4e6d0', '#ece3f4', '#f5dfe3', '#e8ecf0'];
-const KEY = 'archcanvas.active-document.v1';
 const ACTIVE = 'archcanvas.active-canvas.v2';
 const REVIEW = 'archcanvas.source-review.v1';
-
-function cameraViewIdentity(document: CanvasDocument): CameraViewIdentity {
-  return { documentId: document.id, sourceBindingDigest: document.sourceBindingDigest,
-    irDigest: document.architecture.irDigest, visualRevision: document.revision };
-}
-function cameraSessionStorage(): CameraViewStorage | null {
-  try { return sessionStorage; } catch { return null; }
-}
 
 function download(name: string, content: string, type: string) {
   const url = URL.createObjectURL(new Blob([content], { type }));
@@ -90,6 +75,7 @@ export default function App() {
   const previewLoading = useRef(false);
   const [previewConnecting, setPreviewConnecting] = useState(true);
   const [previewBusy, setPreviewBusy] = useState(false);
+  const [summaryCatalogOpen, setSummaryCatalogOpen] = useState(false);
   const synchronizingPreview = useRef(false);
   const initialModelLoading = useRef(true);
   const previewSequence = useRef(0);
@@ -102,27 +88,25 @@ export default function App() {
   const enteringAuthoring = useRef(false);
   const openingExport = useRef(false);
   const [authoringOpen, setAuthoringOpen] = useState(false);
+  const [summaryEditorId, setSummaryEditorId] = useState<string | null>(null);
   const [authoringWorkspace, setAuthoringWorkspace] = useState<AuthoringWorkspace | undefined>();
   const authoringSessions = useRef(new Map<string, AuthoringWorkspace>());
   const authoringSessionKey = useRef<string | null>(null);
   const generatedWorkspaces = useRef(new Map<string, GeneratedWorkspaceBinding>());
   const [browseBaseline, setBrowseBaseline] = useState<AuthoredDraft | undefined>();
   const [history, setHistory] = useState<HistoryState | null>(null);
-  const [examples, setExamples] = useState<Example[]>([]);
-  const [exampleId, setExampleId] = useState('');
   const [selection, setSelection] = useState<Selection>({ kind: 'node', ids: [] });
-  const [camera, setCamera] = useState<Camera>({ x: 35, y: 35, zoom: 0.9 });
   const [tool, setTool] = useState<'select' | 'pan'>('select');
   const [previewTool, setPreviewTool] = useState<'select' | 'connect' | 'bend'>('select');
   const [portEditing, setPortEditing] = useState(false);
-  const [portLayoutPreview, setPortLayoutPreview] = useState<{ base: CanvasDocument; document: CanvasDocument } | null>(null);
   const [layoutMoveScope, setLayoutMoveScope] = useState<MoveScope>('all-frontiers');
-  const [isPanning, setIsPanning] = useState(false);
-  const [preview, setPreview] = useState<MovePreview | null>(null);
-  const [recoveryPreview, setRecoveryPreview] = useState<RecoveryPreview | null>(null);
-  const [box, setBox] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
-  const [panel, setPanel] = useState<'object' | 'legend' | 'page'>('object');
+  const [panel, setPanel] = useState<'object' | 'legend' | 'page' | 'summary'>('object');
   const [sourceOpen, setSourceOpen] = useState(false);
+  useWorkspaceMenus();
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
+  const [treeSearch, setTreeSearch] = useState('');
+  const [actionFeedback, setActionFeedback] = useState<{message: string; error?: boolean} | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [sourceText, setSourceText] = useState('');
   const [entry, setEntry] = useState('Model');
@@ -134,7 +118,6 @@ export default function App() {
   const [storageRevision, setStorageRevision] = useState(0);
   const [savedVisualRevision, setSavedVisualRevision] = useState(-1);
   const [command, setCommand] = useState('');
-  const [inline, setInline] = useState<{ id: string; label: string } | null>(null);
   const [capabilities, setCapabilities] = useState<Capabilities | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [review, setReview] = useState<{ transaction: Transaction; base: CanvasDocument; projectId: string } | null>(null);
@@ -145,37 +128,22 @@ export default function App() {
   const [runtimeOpen, setRuntimeOpen] = useState(false);
   const [runtimeCancel, setRuntimeCancel] = useState<(() => Promise<void>) | null>(null);
   const [cancelling, setCancelling] = useState(false);
-  const [portDraft, setPortDraft] = useState<{ port: ScenePort; x: number; y: number; options: RebindOptions | null } | null>(null);
-  const portRequest = useRef(0);
-  const portGesture = useRef<{ request: number; document: CanvasDocument; pointerId: number; port: ScenePort; sequence: number; promise: Promise<RebindOptions> } | null>(null);
   const [connectionProposal, setConnectionProposal] = useState<{ nodeId: string; portId: string; candidate: RebindOptions['candidates'][number] | null; blockers: string[] } | null>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
-  const gesture = useRef<Gesture | null>(null);
-  const space = useRef(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const inlineCancelled = useRef(false);
   const historyRef = useRef(history); historyRef.current = history;
-  const cameraRef = useRef(camera); cameraRef.current = camera;
+  // Retained formal source-editor view metadata; never controls the Summary canvas.
+  const cameraRef = useRef<Camera>({ x: 30, y: 30, zoom: 1 });
   const loadSequence = useRef(0);
   const saving = useRef(false);
-  const frame = useRef(0);
-  const cameraOwner = useRef<CameraViewIdentity | null>(null);
-  const cameraIntent = useRef(0);
-  const cameraInitializationFrame = useRef(0);
-  const pendingCameraInitialization = useRef<{ ticket: CameraViewTicket; restore: boolean } | null>(null);
-  // The size against which cameraRef's translation is defined. DOM dimensions
-  // can change before an observer or terminal gesture has coordinated them.
-  const cameraViewport = useRef<CameraViewport | null>(null);
-
   const current = history?.document;
-  // The recursive iframe owns preview geometry and routing. Build the formal
-  // scene only when an explicitly requested legacy inspection tool needs it.
-  const needsFormalScene = !!recoveryPreview || !!portLayoutPreview || !!preview;
-  const committedScene = useMemo(() => current && needsFormalScene ? buildScene(current, { presentation: 'editor' }) : null, [current, needsFormalScene]);
-  const activeRecovery = recoveryPreview && recoveryPreview.document === current && selection.kind === 'node' && selection.ids.length === 1 && selection.ids[0] === recoveryPreview.plan.id ? recoveryPreview : null;
-  const scene = useMemo(() => { const result = portLayoutPreview && portLayoutPreview.base === current ? buildScene(portLayoutPreview.document, { presentation: 'editor' }) : activeRecovery ? activeRecovery.plan.scene : preview && preview.document === current ? previewMoveScene(preview.session, preview.dx, preview.dy, { presentation: 'editor' }) : committedScene; return result ? presentEditorScene(result) : null; }, [current, committedScene, preview, activeRecovery, portLayoutPreview]);
-  const implicitRoots = useMemo(() => scene ? implicitRootIds(scene) : new Set<string>(), [scene]);
   const architecture = current?.architecture;
+  const summaryEditing = !!summaryEditorId && summaryEditorId === previewSnapshot.current?.caseId;
+  const summaryIR = (previewSnapshot.current?.graph?.generic as { ir?: { schema?: string; nodes?: unknown[]; edges?: unknown[] } } | undefined)?.ir;
+  const summaryCounts = summaryIR?.schema === 'archcanvas-source-semantic/2' && Array.isArray(summaryIR.nodes) && Array.isArray(summaryIR.edges)
+    ? { nodes: summaryIR.nodes.length, edges: summaryIR.edges.length } : null;
+  const navigation = useMemo(() => previewHierarchy(previewSnapshot.current), [previewVersion]);
+  const frontier = useMemo(() => previewFrontier(previewSnapshot.current, navigation), [previewVersion, navigation]);
+  const previewSourceIdentity = previewSnapshot.current?.sourceIdentity;
   const selectedNode = selection.kind === 'node' ? architecture?.nodes.find(n => n.id === selection.ids[0]) : undefined;
   const formalPreviewBindings = currentPreviewNodeBindings();
   const selectedEdge = selection.kind === 'edge' ? architecture?.edges.find(n => n.id === selection.ids[0]) : undefined;
@@ -184,10 +152,9 @@ export default function App() {
     const ids = previewFormalEdgeIds(architecture, edge, previewSnapshot.current?.graph, previewSource.current, formalPreviewBindings);
     return ids.length === 1 && ids[0] === selectedEdge.id;
   }) : undefined;
-  const selectedEdgeAppearance = selectedEdgePreview ? previewEdgeAppearance(previewSnapshot.current?.graph, selectedEdgePreview) : selectedEdge && current && scene ? edgeAppearance(current, selectedEdge.id, scene) : undefined;
+  const selectedEdgeAppearance = selectedEdgePreview ? previewEdgeAppearance(previewSnapshot.current?.graph, selectedEdgePreview) : undefined;
   const selectedPreviewEdgeAppearance = selectedPreviewEdge ? previewEdgeAppearance(previewSnapshot.current?.graph, selectedPreviewEdge) : undefined;
   const selectedAnnotation = selection.kind === 'annotation' ? current?.annotations.find(n => n.id === selection.ids[0]) : undefined;
-  const selectedSceneNode = scene?.nodes.find(n => n.id === selectedNode?.id);
   const selectedVisiblePreviewNode = selectedNode && architecture ? graphFromSnapshot()?.nodes.find(node => formalPreviewBindings.get(node.id) === selectedNode.id) : undefined;
   const selectedPreviewNodePresentation = selectedVisiblePreviewNode ? previewNodePresentation(previewSnapshot.current?.graph, selectedVisiblePreviewNode) : undefined;
   const previewSelectedNodes = (graphFromSnapshot()?.nodes ?? []).filter(node => previewSelectedNodeIds.includes(node.id) && !node.junction);
@@ -196,18 +163,15 @@ export default function App() {
   const inspectionSource = inspectionNode ? previewSourceLocation({ nodeId: inspectionNode.id, node: inspectionNode }, previewSource.current) : null;
   const previewSourceSpan = selectedNode?.source ?? inspectionSource;
   const inspectionExpandable = inspectionNode && (graphFromSnapshot()?.nodes.some(node => node.parent === inspectionNode.id) ||
-    (previewSnapshot.current?.graph?.recursive as { authority?: { detail?: PreviewVisualGraph } } | undefined)?.authority?.detail?.nodes.some(node => node.parent === inspectionNode.id));
+    navigation?.nodes.some(node => node.parentId === inspectionNode.id));
   const previewPinnedCount = previewSelectedNodes.filter(node => previewPresentation(previewSnapshot.current?.graph)?.nodes?.[node.id]?.pinned).length;
   const previewAllPinned = previewSelectedNodes.length > 0 && previewPinnedCount === previewSelectedNodes.length;
   const previewLayoutDisabled = !current || busy || previewConnecting || previewBusy;
   const previewCanAlign = previewSelectedNodes.length >= 2 && previewSelectedNodes.every(node => (node.parent ?? null) === (previewSelectedNodes[0].parent ?? null));
-  const selectedSceneAnnotation = scene?.annotations.find(n => n.id === selectedAnnotation?.id);
-  const annotationConflicts = selectedAnnotation && previewSnapshot.current?.graph ? previewAnnotationConflicts(previewSnapshot.current.graph, selectedAnnotation.id) :
-    scene && selectedSceneAnnotation ? findAnnotationBodyConflicts(scene, selectedSceneAnnotation) : [];
-  const paperPosition = scene ? paperTranslation(camera, scene.bounds) : null;
-  const dotGrid = canvasDotGrid(camera);
+  const annotationConflicts = selectedAnnotation && previewSnapshot.current?.graph ? previewAnnotationConflicts(previewSnapshot.current.graph, selectedAnnotation.id) : [];
+  const summaryRuntimeReceipt = (previewSnapshot.current?.graph?.generic as { ir?: { runtime?: Record<string, unknown> } } | undefined)?.ir?.runtime;
+  const summaryRuntimeHasSource = Boolean(previewSource.current || summaryRuntimeReceipt?.source_files);
   const dirty = previewDirty || (!!current && current.revision !== savedVisualRevision);
-  const layoutGuidance: string[] = [];
   function sourceFromResult(result: PreviewSourceResult): PreviewEvidenceSource | undefined {
     return (result.bundle ?? result.source ?? result.document?.adapter) as PreviewEvidenceSource | undefined;
   }
@@ -247,10 +211,22 @@ export default function App() {
     try {
       const snapshot = await previewEngine.current!.snapshot();
       if (sequence !== loadSequence.current || snapshot.caseId !== caseId) return null;
+      if (snapshot.importedDocument && document.sourceBindingDigest === `preview-only:${caseId}`) {
+        previewSource.current = undefined; previewCase.current = caseId; previewSnapshot.current = snapshot;
+        previewBoundSource.current = '';
+        const saved = await matchesPreviewSave(localStorage, document, snapshot.graph);
+        if (sequence !== loadSequence.current) return null;
+        if (saved) savedPreviewGraph.current = JSON.stringify(snapshot.graph);
+        setPreviewConnecting(false);
+        return snapshot;
+      }
       const result = await previewEngine.current!.source(), source = sourceFromResult(result);
       if (sequence !== loadSequence.current || result.document?.caseId !== caseId || !source || !previewSourceMatchesArchitecture(source, document.architecture)) return null;
       previewSource.current = source; previewCase.current = caseId; previewSnapshot.current = snapshot;
       previewBoundSource.current = document.architecture.sourceDigest + ':' + document.architecture.irDigest;
+      const saved = await matchesPreviewSave(localStorage, document, snapshot.graph);
+      if (sequence !== loadSequence.current) return null;
+      if (saved) savedPreviewGraph.current = JSON.stringify(snapshot.graph);
       setPreviewConnecting(false);
       return snapshot;
     } catch { return null; }
@@ -338,7 +314,7 @@ export default function App() {
       historyRef.current = createHistory(previewPanelDocument(previewSnapshot.current, source)); setHistory(historyRef.current);
       previewBoundSource.current = ''; setProjectId(null); setStorageRevision(0); setSavedVisualRevision(-1);
       await receivePreviewState(previewSnapshot.current);
-      setExampleId(''); setPreviewConnecting(false);
+      setPreviewConnecting(false);
       setNotice('原型视图与源码已打开；展示对象可独立编辑，进入编辑模式后按源码建立模型绑定。');
       return;
     }
@@ -347,7 +323,7 @@ export default function App() {
     if (sequence !== previewSequence.current || expectedCase !== previewCase.current) return;
     const before = historyRef.current;
     if (before && previewSnapshot.current) await receivePreviewState(previewSnapshot.current);
-    setExampleId('');
+
     setPreviewConnecting(false);
     if (openEditor) await continueModelAuthoring();
   }
@@ -355,7 +331,7 @@ export default function App() {
     if (message.caseId && message.caseId !== previewCase.current) return;
     synchronizePreviewNodeSelection(message.nodeIds ?? message.selectedNodes);
     if (typeof message.annotationId === 'string') {
-      setSelection({ kind: 'annotation', ids: [message.annotationId] }); setPanel('object'); return;
+      setSelection({ kind: 'annotation', ids: [message.annotationId] }); setPanel(before => before === 'summary' ? before : 'object'); return;
     }
     const architecture = historyRef.current?.document.architecture;
     if (!architecture) return;
@@ -365,13 +341,13 @@ export default function App() {
       const raw = previewGraphEdges(previewSnapshot.current?.graph).find(item => item.id === edge.id);
       const ids = raw ? previewFormalEdgeIds(architecture, raw, previewSnapshot.current?.graph, previewSource.current, currentPreviewNodeBindings()) : [];
       setSelection(ids.length === 1 ? { kind: 'edge', ids } : { kind: 'preview-edge', ids: [edge.id] });
-      setPanel('object'); return;
+      setPanel(before => before === 'summary' ? before : 'object'); return;
     }
     const selected = (message.nodeIds ?? message.selectedNodes) as string[] | undefined;
     const bindings = currentPreviewNodeBindings();
     const ids = selected?.length && graph ? [...new Set(selected.flatMap(id => bindings.has(id) ? [bindings.get(id)!] : []))] :
       typeof message.nodeId === 'string' && bindings.has(message.nodeId) ? [bindings.get(message.nodeId)!] : [];
-    setSelection({ kind: 'node', ids }); setPanel('object');
+    setSelection({ kind: 'node', ids }); setPanel(before => before === 'summary' ? before : 'object');
   }
   async function receivePreviewState(snapshot: PreviewSnapshot) {
     previewSnapshot.current = snapshot;
@@ -382,7 +358,8 @@ export default function App() {
     setPreviewBusy(Boolean(snapshot.busy));
     const graph = snapshot.graph;
     const caseId = String(graph?.caseId ?? snapshot.caseId ?? '');
-    setPreviewDirty(Boolean(snapshot.dirty) && JSON.stringify(graph) !== savedPreviewGraph.current);
+    const graphText = JSON.stringify(graph), matchesSavedGraph = graphText === savedPreviewGraph.current;
+    setPreviewDirty(Boolean(snapshot.dirty) && !matchesSavedGraph);
     setPreviewUndo(Boolean(snapshot.canUndo)); setPreviewRedo(Boolean(snapshot.canRedo));
     setPreviewVersion(version => version + 1);
     setSelection(before => before.kind === 'preview-edge' && !previewGraphEdges(graph).some(edge => edge.id === before.ids[0]) ? { kind: 'node', ids: [] } : before);
@@ -397,7 +374,12 @@ export default function App() {
       setBusy(false); setPreviewConnecting(true);
       const panelDocument = previewPanelDocument(snapshot);
       historyRef.current = createHistory(panelDocument); setHistory(historyRef.current);
-      setSelection({ kind: 'node', ids: [] }); setExampleId(''); setProjectId(null);
+      setSelection({ kind: 'node', ids: [] }); setProjectId(null);
+      if (snapshot.importedDocument) {
+        setPreviewConnecting(false);
+        setNotice('已打开 Summary 文档；视觉编辑保存到浏览器，可通过编辑 JSON 搬运。文档证据未绑定 Python 源码。');
+        return;
+      }
       const frozenCase = caseId;
       const generation = previewSequence.current, loadGeneration = loadSequence.current;
       try {
@@ -408,6 +390,9 @@ export default function App() {
       return;
     }
     if (synchronizingPreview.current) return;
+    if (snapshot.authoring && historyRef.current?.document.sourceBindingDigest.startsWith('preview-only:')) {
+      const next = createHistory(previewPanelDocument(snapshot)); historyRef.current = next; setHistory(next); return;
+    }
     const before = historyRef.current;
     const visual = graphFromSnapshot(snapshot);
     if (before && !before.document.sourceBindingDigest.startsWith('preview-only:') && (!previewSource.current ||
@@ -418,7 +403,13 @@ export default function App() {
     if (before && visual) {
       const presentationTitle = ((graph?.recursive as { state?: { studioPresentation?: { title?: string } } } | undefined)?.state?.studioPresentation ?? graph?.studioPresentation) as { title?: string } | undefined;
       const next = projectPreviewHistory(before, visual, previewSource.current, presentationTitle?.title ?? String(snapshot.title ?? before.document.title), currentPreviewNodeBindings());
-      if (next !== before) { historyRef.current = next; setHistory(next); }
+      if (next !== before) {
+        historyRef.current = next; setHistory(next);
+        // A browser restore may project aliases/legend into the panel after
+        // the saved native graph has already been verified. This mirror is
+        // derived state, so its new revision stays saved with that exact graph.
+        if (before.document.sourceBindingDigest.startsWith('preview-only:') && matchesSavedGraph) setSavedVisualRevision(next.document.revision);
+      }
     }
   }
   useEffect(() => {
@@ -467,107 +458,17 @@ export default function App() {
   }
 
   useEffect(() => { document.querySelector('.inspector-content')?.scrollTo({ top: 0 }); }, [selection.ids[0], panel]);
-  useEffect(() => { setRecoveryPreview(null); }, [selection]);
-
   function readCameraViewport() {
     return cameraViewportSize(viewportRef.current?.getBoundingClientRect());
   }
-  function persistCamera(document = historyRef.current?.document, view = cameraRef.current) {
-    if (gesture.current?.type === 'pan') return;
-    const viewport = cameraViewport.current;
-    if (!document || !viewport || !sameCameraViewDocument(cameraOwner.current, cameraViewIdentity(document))) return;
-    writeCameraView(cameraSessionStorage(), cameraViewIdentity(document), view, viewport);
-  }
-  function claimCamera(document = historyRef.current?.document) {
-    cancelAnimationFrame(cameraInitializationFrame.current); cameraInitializationFrame.current = 0;
-    pendingCameraInitialization.current = null;
-    cameraIntent.current++;
-    cameraOwner.current = document ? cameraViewIdentity(document) : null;
-  }
-  function claimGestureCamera() {
-    const document = historyRef.current?.document;
-    if (!document || sameCameraViewDocument(cameraOwner.current, cameraViewIdentity(document))) return;
-    // An early spatial gesture adopts the view actually under the pointer.
-    // A delayed load restore must not move that mapping after its commit.
-    claimCamera(document);
-    cameraViewport.current = readCameraViewport();
-    persistCamera(document);
-  }
-  const commitCamera = useCallback((view: Camera, document = historyRef.current?.document) => {
-    if (!document) return;
-    claimCamera(document);
-    cameraViewport.current = readCameraViewport();
-    cameraRef.current = view; setCamera(view);
-    persistCamera(document, view);
-  }, []);
-  function synchronizeCameraViewport() {
-    // Freeze the original pointer mapping until its final sample or rollback.
-    if (gesture.current || portGesture.current) return;
-    const document = historyRef.current?.document, viewport = readCameraViewport();
-    if (!document || !viewport) return;
-    if (!sameCameraViewDocument(cameraOwner.current, cameraViewIdentity(document))) {
-      const pending = pendingCameraInitialization.current;
-      if (pending && !canApplyCameraViewTicket(pending.ticket, cameraViewIdentity(document), loadSequence.current, cameraIntent.current)) {
-        pendingCameraInitialization.current = null;
-      } else if (pending && !cameraInitializationFrame.current && viewport.width > 96 && viewport.height > 92) {
-        // A previously hidden/unmounted viewport can recover when it becomes
-        // usable. Keep retries bounded while preserving the original intent.
-        initializeCamera(document, pending.ticket.loadSequence, pending.restore);
-      }
-      return;
-    }
-    const previous = cameraViewport.current;
-    if (!previous) { cameraViewport.current = viewport; return; }
-    const view = resizeCameraViewport(cameraRef.current, previous, viewport);
-    if (!view || view === cameraRef.current) return;
-    cameraViewport.current = viewport;
-    cameraRef.current = view; setCamera(view);
-    persistCamera(document, view);
-  }
-  useLayoutEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    synchronizeCameraViewport();
-    let active = true;
-    const resized = () => {
-      if (!active || viewport !== viewportRef.current) return;
-      // ResizeObserver runs before paint. Commit the matching translation in
-      // this delivery, rather than leaving one frame at the old viewport size.
-      flushSync(() => synchronizeCameraViewport());
-    };
-    if (typeof ResizeObserver !== 'undefined') {
-      const observer = new ResizeObserver(resized);
-      observer.observe(viewport);
-      return () => { active = false; observer.disconnect(); };
-    }
-    window.addEventListener('resize', resized);
-    return () => { active = false; window.removeEventListener('resize', resized); };
-  }, [authoringOpen]);
-  useEffect(() => { persistCamera(); }, [current?.id, current?.revision, current?.sourceBindingDigest, current?.architecture.irDigest]);
-
-  const cancelGesture = useCallback(() => {
-    const active = gesture.current;
-    const pointerId = active?.pointerId ?? portGesture.current?.pointerId;
-    // Clear ownership before releasing capture: lostpointercapture is synchronous.
-    gesture.current = null; portGesture.current = null; portRequest.current++;
-    cancelAnimationFrame(frame.current); frame.current = 0;
-    setPreview(null); setPortLayoutPreview(null); setRecoveryPreview(null); setBox(null); setPortDraft(null); setIsPanning(false);
-    if (active?.type === 'pan') { cameraRef.current = active.camera; setCamera(active.camera); }
-    synchronizeCameraViewport();
-    if (active?.type === 'pan') persistCamera();
-    const viewport = viewportRef.current;
-    if (pointerId !== undefined && viewport?.hasPointerCapture(pointerId)) viewport.releasePointerCapture(pointerId);
-  }, []);
+  // Source-editor sessions retain their own camera, independently of preview navigation.
+  const commitCamera = useCallback((view: Camera) => { cameraRef.current = { ...view }; }, []);
+  const cancelGesture = useCallback(() => { if (previewSnapshot.current?.dragging) previewEngine.current?.command('cancel-gesture'); }, []);
   function chooseTool(next: 'select' | 'connect' | 'bend') {
-    cancelGesture(); setTool('select'); setPreviewTool(next);
+    cancelGesture(); setPreviewTool(next);
     previewEngine.current?.command(`${next}-tool`);
   }
   function chooseMoveScope(next: MoveScope) { cancelGesture(); setLayoutMoveScope(next); }
-  useEffect(() => {
-    const blur = () => { space.current = false; cancelGesture(); };
-    window.addEventListener('blur', blur);
-    return () => { window.removeEventListener('blur', blur); cancelAnimationFrame(frame.current); cancelAnimationFrame(cameraInitializationFrame.current); };
-  }, [cancelGesture]);
   useEffect(() => { if (review || exportDocument || importOpen || connectionProposal || runtimeOpen) cancelGesture(); }, [review, exportDocument, importOpen, connectionProposal, runtimeOpen, cancelGesture]);
 
   const apply = useCallback((operations: VisualOperation[], message?: string) => {
@@ -606,87 +507,60 @@ export default function App() {
     try { await engine.visual([{ type: 'edgeStyle', id, style }]); setFailure(''); }
     catch (error) { setFailure(String(error)); }
   }
-  function optimizeAutomaticPorts(id: string) {
-    const document = historyRef.current?.document;
-    if (!document || !readyPreview(document)) return;
-    const ports = buildScene(document, { presentation: 'editor' }).nodes.find(node => node.id === id)?.ports ?? [];
-    const operations = ports.filter(port => port.layoutKey).map(port => {
-      const [ownerId, nodeId, portId, role] = JSON.parse(port.layoutKey!) as [string, string, string, 'data' | 'residual' | 'memory' | 'mask'];
-      return { type: 'portLayout' as const, ownerId, nodeId, portId, role, layout: null };
-    });
-    if (operations.length) apply(operations, '已恢复自动连接点');
+  function optimizeAutomaticPorts(id: string, previewIdentity = false) {
+    if (!readyPreview()) return;
+    const nodeId = previewIdentity ? graphFromSnapshot()?.nodes.find(node => node.id === id)?.id : previewNodeId(id);
+    if (!nodeId) { setFailure('此对象没有唯一对应的可见 Summary 图元。'); return; }
+    const sequence = loadSequence.current;
+    void previewEngine.current?.visual([{ type: 'portLayout', ownerId: nodeId, nodeId, layout: null }]).then(() => {
+      if (sequence === loadSequence.current) { setNotice('已由 Summary 恢复当前图元的自动连接点；可撤销。'); setFailure(''); }
+    }).catch(error => { if (sequence === loadSequence.current) setFailure(String(error)); });
   }
-  const selectHierarchyNode = useCallback((id: string) => { setSelection({ kind: 'node', ids: [id] }); setPanel('object'); focusPreviewNode(id); }, []);
-  const expandHierarchyNode = useCallback((id: string, expanded: boolean) => apply([{ type: 'expand', id, expanded }]), [apply]);
-  const undo = useCallback(() => { cancelGesture(); previewEngine.current?.command('undo'); setNotice('已撤销一次画布操作'); }, [cancelGesture]);
-  const redo = useCallback(() => { cancelGesture(); previewEngine.current?.command('redo'); setNotice('已重做一次画布操作'); }, [cancelGesture]);
-
-  function previewPositionRecovery() {
-    cancelGesture();
-    const document = historyRef.current?.document;
-    if (!document || selection.kind !== 'node' || selection.ids.length !== 1) return;
-    try {
-      const plan = planLayoutRecovery(document, selection.ids[0], layoutMoveScope, { presentation: 'editor' });
-      if (plan.status !== 'ready') { setNotice(plan.reason); return; }
-      setRecoveryPreview({ document, plan });
-      setNotice('正在预览位置修复；应用后才会写入画布，可一次撤销。');
-    } catch (error) { setFailure(String(error)); }
-  }
-  function applyPositionRecovery() {
-    const value = activeRecovery;
-    if (!value || value.document !== historyRef.current?.document) { cancelGesture(); return; }
-    apply([value.plan.operation], '位置修复已应用；Ctrl+Z 可一次撤销。');
-  }
-
-  const initializeCamera = useCallback((document: CanvasDocument, sequence: number, restore = true) => {
-    cancelAnimationFrame(cameraInitializationFrame.current);
-    cameraOwner.current = null;
-    const ticket = { identity: cameraViewIdentity(document), loadSequence: sequence, intentSequence: cameraIntent.current };
-    const request = { ticket, restore }; pendingCameraInitialization.current = request;
-    const schedule = (attempt: number) => {
-      cameraInitializationFrame.current = requestAnimationFrame(() => {
-        cameraInitializationFrame.current = 0;
-        const active = historyRef.current?.document;
-        // createHistory clones its input; the load/revision/identity ticket is
-        // the ownership contract, not the raw loader object's reference.
-        if (!active || !canApplyCameraViewTicket(ticket, cameraViewIdentity(active), loadSequence.current, cameraIntent.current)) {
-          if (pendingCameraInitialization.current === request) pendingCameraInitialization.current = null;
-          return;
-        }
-        if (gesture.current || portGesture.current) return;
-        const rect = viewportRef.current?.getBoundingClientRect();
-        if (!rect || rect.width <= 96 || rect.height <= 92) { if (attempt < 3) schedule(attempt + 1); return; }
-        const viewport = { width: rect.width, height: rect.height };
-        const recovered = restore ? readCameraView(cameraSessionStorage(), ticket.identity, viewport) : null;
-        const view = recovered ?? fitCameraToBounds(editorSceneBounds(buildScene(active, { presentation: 'editor' })), viewport);
-        pendingCameraInitialization.current = null;
-        cameraOwner.current = ticket.identity; cameraViewport.current = viewport;
-        cameraRef.current = view; setCamera(view);
-        persistCamera(active, view);
-      });
-    };
-    schedule(0);
+  const selectHierarchyNode = useCallback((id: string, additive = false) => {
+    const graph = graphFromSnapshot();
+    const detail = (previewSnapshot.current?.graph?.recursive as { authority?: { detail?: PreviewVisualGraph } } | undefined)?.authority?.detail ?? graph;
+    const mapped = detail?.nodes.some(node => node.id === id && !node.junction) ? id : previewNodeId(id);
+    if (!mapped) { setFailure('此源码对象没有唯一对应的画布图元；可直接在画布选择或查看源码。'); return; }
+    setFailure('');
+    setPanel(before => before === 'summary' ? before : 'object');
+    previewEngine.current?.focus({ nodeId: mapped, additive });
   }, []);
-
-  const fit = useCallback((documentToFit?: CanvasDocument) => {
+  const expandHierarchyNode = useCallback((id: string, expanded: boolean) => {
+    const hierarchy = previewHierarchy(previewSnapshot.current);
+    if (!hierarchy?.nodes.some(node => node.id === id)) { apply([{ type: 'expand', id, expanded }]); return; }
+    if (!readyPreview()) { setFailure('预览正在接入当前源码，请完成后再展开。'); return; }
+    setFailure('');
+    const operations = previewHierarchyExpansion(hierarchy, id, expanded);
+    if (!operations.length) return;
+    const sequence = loadSequence.current;
+    void previewEngine.current?.visual(operations).catch(error => {
+      if (sequence === loadSequence.current) setFailure(String(error));
+    });
+  }, [apply]);
+  function setSemanticFrontier(preset: 'overview' | 'detail') {
     cancelGesture();
-    previewEngine.current?.command('fit');
-    if (!documentToFit && previewSnapshot.current?.graph) return;
-    const doc = documentToFit ?? historyRef.current?.document;
-    if (!doc || !viewportRef.current) return;
-    const interaction = studioTelemetry.beginInteraction('fit-canvas');
-    try {
-      const bounds = editorSceneBounds(buildScene(doc, { presentation: 'editor' }));
-      const { width, height } = viewportRef.current.getBoundingClientRect();
-      if (width <= 96 || height <= 92) return;
-      commitCamera(fitCameraToBounds(bounds, { width, height }), doc);
-    } finally { studioTelemetry.endInteraction(interaction); }
-  }, [cancelGesture, commitCamera]);
+    if (!readyPreview()) { setFailure('预览正在接入当前源码，请完成后再切换语义前沿。'); return; }
+    setFailure(''); setNotice(preset === 'overview' ? '正在切换到架构概览（F0）…' : '正在切换到架构详图（F1）…');
+    previewEngine.current?.command('set-frontier', { preset });
+  }
+  function focusCurrentFrontier() {
+    const id = previewSelectedNodeIds[0] ?? frontier?.expandedIds[frontier.expandedIds.length - 1];
+    if (id) { previewEngine.current?.focus({ nodeId: id }); return; }
+    fit();
+  }
+  const undo = useCallback(() => { cancelGesture(); previewEngine.current?.command('undo'); setActionFeedback(null); setNotice('已撤销一次画布操作'); }, [cancelGesture]);
+  const redo = useCallback(() => { cancelGesture(); previewEngine.current?.command('redo'); setActionFeedback(null); setNotice('已重做一次画布操作'); }, [cancelGesture]);
 
-  const openArchitecture = useCallback(async (arch: Architecture, restore = true, requestSequence?: number, initializeView = true) => {
+  function repairSummaryLayout() {
+    if (!readyPreview()) return;
+    cancelGesture();
+    previewEngine.current?.command('apply-layout');
+  }
+  const fit = useCallback(() => { cancelGesture(); previewEngine.current?.command('fit'); }, [cancelGesture]);
+
+  const openArchitecture = useCallback(async (arch: Architecture, restore = true, requestSequence?: number) => {
     const sequence = requestSequence ?? ++loadSequence.current;
     if (sequence !== loadSequence.current) return;
-    cameraOwner.current = null; cameraIntent.current++;
     let document = createDocument(arch);
     let saved = -1; let version = 0;
     if (restore) {
@@ -700,29 +574,16 @@ export default function App() {
     if (sequence !== loadSequence.current) return;
     historyRef.current = createHistory(document); setHistory(historyRef.current); setStorageRevision(version); setSavedVisualRevision(saved);
     setProjectId(null); setReview(null); localStorage.removeItem(REVIEW);
-    setSelection({ kind: 'node', ids: [] }); setPreview(null); setSourceOpen(false);
+    setSelection({ kind: 'node', ids: [] }); setSourceOpen(false);
     setNotice(saved >= 0 ? '已重开保存的画布' : '静态源码已导入；模型未被执行'); setFailure('');
-    if (initializeView) initializeCamera(document, sequence, restore);
-  }, [initializeCamera]);
-
-  const loadExample = useCallback(async (id: string) => {
-    cancelGesture();
-    const sequence = ++loadSequence.current;
-    cameraOwner.current = null; cameraIntent.current++;
-    setBusy(true); setFailure('');
-    try { const arch = await api.example(id); if (sequence !== loadSequence.current) return; setExampleId(id); await openArchitecture(arch, true, sequence); }
-    catch (error) { if (sequence === loadSequence.current) setFailure(String(error)); }
-    finally { if (sequence === loadSequence.current) { setBusy(false); setRuntimeCancel(null); setCancelling(false); } }
-  }, [openArchitecture, cancelGesture]);
+  }, []);
 
   useEffect(() => {
     let alive = true;
     const sequence = ++loadSequence.current;
-    cameraOwner.current = null; cameraIntent.current++;
     api.capabilities().then(result => { if (alive) setCapabilities(result); }).catch(() => {});
-    api.examples().then(async items => {
+    loadSummaryCatalog().then(async catalog => {
       if (!alive || sequence !== loadSequence.current) return;
-      setExamples(items);
       const requested = new URLSearchParams(window.location.search).get('documentId');
       if (requested) {
         try {
@@ -733,8 +594,8 @@ export default function App() {
           if (!alive || sequence !== loadSequence.current) return;
           historyRef.current = stored.history ?? createHistory(stored.document); setHistory(historyRef.current);
           setStorageRevision(stored.revision); setSavedVisualRevision(stored.document.revision);
-          setProjectId(stored.projectId ?? null); setExampleId(''); setReview(null);
-          setNotice('已打开指定模型画布'); setFailure(''); initializeCamera(stored.document, sequence);
+          setProjectId(stored.projectId ?? null); setReview(null);
+          setNotice('已打开指定模型画布'); setFailure('');
           if (restored) { initialModelLoading.current = false; await receivePreviewState(restored); }
         } catch (error) { if (alive) { setFailure(`无法打开指定画布：${String(error)}`); setNotice('请核对文档地址与当前运行时'); } }
         return;
@@ -748,6 +609,14 @@ export default function App() {
             if (snapshot.caseId !== active.previewCaseId || !alive || sequence !== loadSequence.current) throw error;
             initialModelLoading.current = false; previewCase.current = '';
             await receivePreviewState(snapshot);
+            const recovered = historyRef.current?.document, recoveredSequence = loadSequence.current;
+            const saved = recovered && await matchesPreviewSave(localStorage, recovered, snapshot.graph);
+            const latest = historyRef.current?.document;
+            if (!alive || recoveredSequence !== loadSequence.current || !recovered || latest?.id !== recovered.id || latest.sourceBindingDigest !== recovered.sourceBindingDigest || latest.architecture.irDigest !== recovered.architecture.irDigest || previewSnapshot.current?.caseId !== snapshot.caseId || JSON.stringify(previewSnapshot.current?.graph) !== JSON.stringify(snapshot.graph)) return null;
+            if (saved) {
+              savedPreviewGraph.current = JSON.stringify(snapshot.graph);
+              setPreviewDirty(false); setSavedVisualRevision(latest.revision);
+            }
             setNotice('已从浏览器重开递归预览；可通过编辑 JSON 搬运完整图。');
             return null;
           });
@@ -763,7 +632,7 @@ export default function App() {
           const restored = await restoreMatchingPreview(doc, active.previewCaseId, sequence);
           if (!alive || sequence !== loadSequence.current) return;
           historyRef.current = stored.history && doc === stored.document ? stored.history : createHistory(doc); setHistory(historyRef.current); setStorageRevision(version); setSavedVisualRevision(saved); setProjectId(active.projectId);
-          setNotice(active.projectId ? '已重开工作副本及保存的画布' : '已重开保存的画布'); initializeCamera(doc, sequence);
+          setNotice(active.projectId ? '已重开工作副本及保存的画布' : '已重开保存的画布');
           if (restored) { initialModelLoading.current = false; await receivePreviewState(restored); }
           const pending = JSON.parse(localStorage.getItem(REVIEW) ?? 'null') as { projectId: string; id: string } | null;
           if (pending && pending.projectId === active.projectId) {
@@ -772,18 +641,19 @@ export default function App() {
           }
           return;
         }
-      } catch { /* A missing stored snapshot falls back to an analyzed example. */ }
+      } catch { /* A missing stored snapshot falls back to the current Summary catalog. */ }
       if (!alive || sequence !== loadSequence.current) return;
-      const prior = localStorage.getItem(KEY);
-      await loadExample(items.find(x => x.id === prior)?.id ?? items[0]?.id ?? 'transformer');
+      const model = catalog.models[0];
+      if (!model) throw Error('Summary 模型库为空。');
+      await openSummaryCatalog(model, true);
     }).catch(error => { if (alive) { setFailure(`Runtime 未连接：${String(error)}`); setNotice('请按 README 启动正式服务'); } }).finally(() => { if (alive) initialModelLoading.current = false; });
     return () => { alive = false; };
-  }, [loadExample, initializeCamera]);
+  }, []);
   useEffect(() => {
-    if (!current || authoringOpen || busy || exportDocument || review || activeRecovery) return;
+    if (!current || authoringOpen || busy || exportDocument || review) return;
     let alive = true, inFlight = false;
     const synchronize = async () => {
-      if (inFlight || gesture.current || saving.current || openingExport.current || previewLoading.current) return;
+      if (inFlight || saving.current || openingExport.current || previewLoading.current) return;
       const before = historyRef.current;
       if (!before || before.document.id !== current.id) return;
       inFlight = true;
@@ -820,8 +690,7 @@ export default function App() {
     };
     const timer = setInterval(() => void synchronize(), 2000);
     return () => { alive = false; clearInterval(timer); };
-  }, [current?.id, authoringOpen, busy, exportDocument, review, activeRecovery, storageRevision, savedVisualRevision]);
-  useEffect(() => { if (exampleId) localStorage.setItem(KEY, exampleId); }, [exampleId]);
+  }, [current?.id, authoringOpen, busy, exportDocument, review, storageRevision, savedVisualRevision]);
   useEffect(() => { if (current) localStorage.setItem(ACTIVE, JSON.stringify({ documentId: current.id, projectId, previewCaseId: previewCase.current })); }, [current?.id, projectId, previewCase.current]);
 
   function updateDocumentUrl(documentId: string) {
@@ -831,16 +700,15 @@ export default function App() {
   }
 
   const save = useCallback(async () => {
-    if (activeRecovery) { setNotice('请先应用或取消位置修复预览，再保存画布。'); return; }
     if (!historyRef.current || saving.current) return;
     if (!readyPreview()) { setFailure('预览正在接入当前源码，请完成后再保存。'); return; }
     if (historyRef.current.document.sourceBindingDigest.startsWith('preview-only:')) {
       try {
         await previewEngine.current?.save();
         const snapshot = await previewEngine.current?.snapshot();
-        if (snapshot) { await receivePreviewState(snapshot); savedPreviewGraph.current = JSON.stringify(snapshot.graph); }
+        if (snapshot) { await receivePreviewState(snapshot); savedPreviewGraph.current = JSON.stringify(snapshot.graph); if (historyRef.current) await rememberPreviewSave(localStorage, historyRef.current.document, snapshot.graph); }
         setPreviewDirty(false); setSavedVisualRevision(historyRef.current?.document.revision ?? -1);
-        setNotice('当前预览已保存到浏览器；可下载编辑 JSON 搬运完整图。');
+        setNotice('当前预览已保存到浏览器；可下载编辑 JSON 搬运完整图。'); setFailure('');
       }
       catch (error) { setFailure(String(error)); }
       return;
@@ -858,24 +726,25 @@ export default function App() {
       const frozen = frozenHistory.document;
       const result = await api.save(frozen, storageRevision, frozenHistory);
       if (sequence !== loadSequence.current || historyRef.current?.document.id !== frozen.id) return;
-      if (snapshot) savedPreviewGraph.current = JSON.stringify(snapshot.graph);
+      if (snapshot) { savedPreviewGraph.current = JSON.stringify(snapshot.graph); await rememberPreviewSave(localStorage, frozen, snapshot.graph); }
       setPreviewDirty(false);
       setStorageRevision(result.revision); setSavedVisualRevision(frozen.revision);
       updateDocumentUrl(frozen.id);
       setNotice('画布已保存到正式工程 .archcanvas；可重开继续编辑'); setFailure('');
     } catch (error) { if (sequence === loadSequence.current) setFailure(`保存失败，当前编辑已保留：${String(error)}`); }
     finally { saving.current = false; if (sequence === loadSequence.current) setBusy(false); }
-  }, [storageRevision, activeRecovery]);
+  }, [storageRevision]);
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
-      if (authoringOpen || editingTarget(event.target) || review || exportDocument || connectionProposal || runtimeOpen || importOpen) return;
-      if (event.code === 'Space') { space.current = true; event.preventDefault(); }
+      if (event.defaultPrevented || authoringOpen || editingTarget(event.target) || review || exportDocument || connectionProposal || runtimeOpen || importOpen) return;
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); event.shiftKey ? redo() : undo(); }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') { event.preventDefault(); redo(); }
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); previewEngine.current?.command('apply-layout'); }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); void save(); }
-      if (event.key === 'Escape') { cancelGesture(); setSelection({ kind: 'node', ids: [] }); setInline(null); }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') { event.preventDefault(); previewEngine.current?.command('select-nodes', {scope:'all'}); }
+      if (event.key === 'Escape' && previewSnapshot.current?.canCancel) { event.preventDefault(); previewEngine.current?.command('cancel-operation'); return; }
+      if (event.key === 'Escape') { cancelGesture(); previewEngine.current?.command('select-nodes', {scope:'clear'}); setSelection({ kind: 'node', ids: [] }); }
       if (!event.ctrlKey && !event.metaKey && !event.altKey) {
         if (event.key.toLowerCase() === 'f') fit();
         if (event.key.toLowerCase() === 'v') chooseTool('select');
@@ -883,187 +752,9 @@ export default function App() {
         if (event.key.toLowerCase() === 'b') chooseTool('bend');
       }
     };
-    const up = (event: KeyboardEvent) => { if (event.code === 'Space') space.current = false; };
-    window.addEventListener('keydown', down); window.addEventListener('keyup', up);
-    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
+    window.addEventListener('keydown', down);
+    return () => { window.removeEventListener('keydown', down); };
   }, [fit, redo, save, undo, review, exportDocument, connectionProposal, runtimeOpen, importOpen, cancelGesture, authoringOpen]);
-
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    const wheel = (event: WheelEvent) => {
-      if (editingTarget(event.target)) return;
-      event.preventDefault();
-      if (gesture.current || portGesture.current) return;
-      synchronizeCameraViewport();
-      const rect = viewport.getBoundingClientRect();
-      const px = event.clientX - rect.left, py = event.clientY - rect.top;
-      const old = cameraRef.current, zoom = clampCanvasZoom(old.zoom * Math.exp(-Math.max(-2000, Math.min(2000, event.deltaY)) * 0.0015));
-      commitCamera({ x: px - (px - old.x) * zoom / old.zoom, y: py - (py - old.y) * zoom / old.zoom, zoom });
-    };
-    viewport.addEventListener('wheel', wheel, { passive: false });
-    return () => viewport.removeEventListener('wheel', wheel);
-  }, [authoringOpen, commitCamera]);
-
-  function panInput(event: React.PointerEvent<HTMLDivElement>) {
-    const rect = event.currentTarget.getBoundingClientRect();
-    return { pointerId: event.pointerId, clientX: event.clientX, clientY: event.clientY, viewportX: rect.left, viewportY: rect.top };
-  }
-  function pointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    if (activeRecovery) { cancelGesture(); return; }
-    if (editingTarget(event.target) || !scene || gesture.current || portGesture.current) return;
-    synchronizeCameraViewport();
-    portRequest.current++;
-    const input = panInput(event);
-    const x = input.clientX - input.viewportX, y = input.clientY - input.viewportY;
-    const view = cameraRef.current;
-    // Navigation takes priority even over expand handles and input ports.
-    if (event.button === 1 || (event.button === 0 && (tool === 'pan' || space.current))) {
-      claimCamera();
-      cameraViewport.current = readCameraViewport();
-      gesture.current = { type: 'pan', pointerId: event.pointerId, x, y, camera: view, pan: beginCameraPan(view, input), ids: [], dx: 0, dy: 0 };
-      setIsPanning(true); event.currentTarget.setPointerCapture(event.pointerId); event.preventDefault(); return;
-    }
-    if (event.button !== 0) return;
-    const target = event.target as Element;
-    const portId = target.closest('[data-port-id]')?.getAttribute('data-port-id');
-    const port = scene.nodes.flatMap(node => node.ports).find(p => p.id === portId);
-    if (port && portEditing && !busy && current && port.layoutKey) {
-      claimGestureCamera();
-      const [ownerId] = JSON.parse(port.layoutKey) as string[];
-      setSelection({ kind: 'node', ids: [ownerId] });
-      gesture.current = { type: 'port-layout', pointerId: event.pointerId, x, y, camera: view, ids: [ownerId], dx: 0, dy: 0, document: current, port };
-      event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); return;
-    }
-    if (port?.direction === 'in' && !busy && current) {
-      event.preventDefault();
-      if (port.proxy || !inputSpec) {
-        setConnectionProposal({ nodeId: port.canonicalNodeId, portId: port.canonicalPortId, candidate: null, blockers: [!inputSpec ? '先设置运行输入与模式，再检查可用来源。' : '这是折叠层级的投影端口；请展开至准确调用端口。'] });
-        return;
-      }
-      const sequence = loadSequence.current;
-      const promise = inspectRebind(port.canonicalNodeId, port.canonicalPortId);
-      claimGestureCamera();
-      portGesture.current = { request: portRequest.current, document: current, pointerId: event.pointerId, port, sequence, promise };
-      setPortDraft({ port, x: port.x, y: port.y, options: null });
-      void promise.then(options => { if (portGesture.current?.promise === promise) setPortDraft(draft => draft && ({ ...draft, options })); }).catch(() => {});
-      event.currentTarget.setPointerCapture(event.pointerId); return;
-    }
-    const expandId = target.closest('[data-expand-id]')?.getAttribute('data-expand-id');
-    if (expandId) { const n = scene.nodes.find(x => x.id === expandId); if (n) apply([{ type: 'expand', id: expandId, expanded: !n.expanded }], n.expanded ? '已原位收起' : '已原位展开，保留画布位置'); return; }
-    const nodeId = target.closest('[data-node-id]')?.getAttribute('data-node-id');
-    const edgeId = target.closest('[data-edge-id]')?.getAttribute('data-edge-id');
-    const legendId = target.closest('[data-legend-id]')?.getAttribute('data-legend-id');
-    const annotationId = target.closest('[data-annotation-id]')?.getAttribute('data-annotation-id');
-    if (nodeId) {
-      const ids = event.shiftKey ? selection.ids.includes(nodeId) ? selection.ids.filter(id => id !== nodeId) : [...(selection.kind === 'node' ? selection.ids : []), nodeId] : selection.kind === 'node' && selection.ids.includes(nodeId) ? selection.ids : [nodeId];
-      setSelection({ kind: 'node', ids }); setPanel('object');
-      if (!current) return;
-      try {
-        claimGestureCamera();
-        gesture.current = { type: 'move', pointerId: event.pointerId, x, y, camera: view, ids, dx: 0, dy: 0, document: current, preview: prepareMovePreview(current, ids, layoutMoveScope), moveScope: layoutMoveScope };
-      } catch (error) { setFailure(String(error)); return; }
-    } else if (edgeId) { setSelection({ kind: 'edge', ids: [edgeId] }); setPanel('object'); return; }
-    else if (legendId) { setSelection({ kind: 'legend', ids: [legendId] }); setPanel('legend'); return; }
-    else if (annotationId) { setSelection({ kind: 'annotation', ids: [annotationId] }); setPanel('object'); return; }
-    else {
-      if (!event.shiftKey) setSelection({ kind: 'node', ids: [] });
-      claimGestureCamera();
-      gesture.current = { type: 'box', pointerId: event.pointerId, x, y, camera: view, ids: event.shiftKey ? selection.ids : [], dx: 0, dy: 0 };
-    }
-    event.currentTarget.setPointerCapture(event.pointerId); event.preventDefault();
-  }
-  function pointerMove(event: React.PointerEvent<HTMLDivElement>) {
-    if (portGesture.current?.pointerId === event.pointerId && scene) {
-      const input = panInput(event), view = cameraRef.current;
-      const point = viewportToWorld(view, { x: input.clientX - input.viewportX, y: input.clientY - input.viewportY });
-      setPortDraft(draft => draft && ({ ...draft, ...point }));
-      return;
-    }
-    const active = gesture.current; if (!active || active.pointerId !== event.pointerId) return;
-    const input = panInput(event);
-    active.dx = input.clientX - input.viewportX - active.x; active.dy = input.clientY - input.viewportY - active.y;
-    const panCamera = active.pan ? cameraAtPanInput(active.pan, input) : null;
-    cancelAnimationFrame(frame.current);
-    frame.current = requestAnimationFrame(() => {
-      if (gesture.current !== active) return;
-      frame.current = 0;
-      if (panCamera) { cameraRef.current = panCamera; setCamera(panCamera); }
-      else if (active.type === 'move') {
-        if (historyRef.current?.document !== active.document || !active.preview || !active.document) { cancelGesture(); return; }
-        const dx = Math.round(active.dx / active.camera.zoom / 4) * 4, dy = Math.round(active.dy / active.camera.zoom / 4) * 4;
-        const document = active.document, session = active.preview;
-        setPreview(previous => previous && previous.session === session && previous.dx === dx && previous.dy === dy ? previous : { document, session, dx, dy });
-      }
-      else if (active.type === 'port-layout' && active.document) {
-        const operation = portLayoutOperation(active, { x: active.x + active.dx, y: active.y + active.dy });
-        if (operation) setPortLayoutPreview({ base: active.document, document: applyVisualBatch(active.document, [operation]) });
-      }
-      else setBox({ x: Math.min(active.x, active.x + active.dx), y: Math.min(active.y, active.y + active.dy), width: Math.abs(active.dx), height: Math.abs(active.dy) });
-    });
-  }
-  function pointerUp(event: React.PointerEvent<HTMLDivElement>) {
-    const connecting = portGesture.current;
-    if (connecting) {
-      if (connecting.pointerId !== event.pointerId || !scene) return;
-      portGesture.current = null; setPortDraft(null);
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-      const input = panInput(event), view = cameraRef.current;
-      const { x, y } = viewportToWorld(view, { x: input.clientX - input.viewportX, y: input.clientY - input.viewportY });
-      void connecting.promise.then(options => {
-        if (connecting.sequence !== loadSequence.current || connecting.request !== portRequest.current || connecting.document !== historyRef.current?.document) return;
-        const producer = candidatePorts(options).find(p => Math.hypot(p.x - x, p.y - y) < 14 / view.zoom);
-        const candidate = options.candidates.find(c => c.binding.nodeId === producer?.canonicalNodeId && c.binding.portId === producer?.canonicalPortId) ?? null;
-        setConnectionProposal({ nodeId: connecting.port.canonicalNodeId, portId: connecting.port.canonicalPortId, candidate, blockers: candidate ? [] : options.blockers.length ? options.blockers : ['拖线终点不是已证明可用的来源输出端口；原连接保持不变。'] });
-      }).catch(error => { if (connecting.sequence === loadSequence.current && connecting.request === portRequest.current && connecting.document === historyRef.current?.document) setConnectionProposal({ nodeId: connecting.port.canonicalNodeId, portId: connecting.port.canonicalPortId, candidate: null, blockers: [String(error)] }); });
-      synchronizeCameraViewport();
-      return;
-    }
-    const active = gesture.current; if (!active || active.pointerId !== event.pointerId) return;
-    const input = panInput(event);
-    active.dx = input.clientX - input.viewportX - active.x; active.dy = input.clientY - input.viewportY - active.y;
-    cancelAnimationFrame(frame.current); frame.current = 0;
-    gesture.current = null; setPreview(null); setPortLayoutPreview(null); setBox(null); setIsPanning(false);
-    if (active.pan) {
-      const finalCamera = cameraAtPanInput(active.pan, input);
-      if (finalCamera) {
-        cameraRef.current = finalCamera; setCamera(finalCamera);
-        synchronizeCameraViewport();
-        commitCamera(cameraRef.current);
-      }
-    }
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-    if (active.type === 'move' && historyRef.current?.document === active.document && Math.hypot(active.dx, active.dy) > 3) apply([{ type: 'move', ids: active.ids, dx: Math.round(active.dx / active.camera.zoom / 4) * 4, dy: Math.round(active.dy / active.camera.zoom / 4) * 4, ...(active.moveScope === undefined ? {} : { scope: active.moveScope }) }], '位置已调整；一次拖动对应一次撤销');
-    if (active.type === 'port-layout' && historyRef.current?.document === active.document && Math.hypot(active.dx, active.dy) > 3) {
-      const operation = portLayoutOperation(active, { x: active.x + active.dx, y: active.y + active.dy });
-      if (operation) apply([operation], '连接点已调整；自动走线已更新');
-    }
-    if (active.type === 'box' && scene && Math.hypot(active.dx, active.dy) > 4) {
-      const { x, y } = viewportToWorld(active.camera, { x: Math.min(active.x, active.x + active.dx), y: Math.min(active.y, active.y + active.dy) });
-      const right = x + Math.abs(active.dx) / active.camera.zoom, bottom = y + Math.abs(active.dy) / active.camera.zoom;
-      const ids = scene.nodes.filter(n => !implicitRoots.has(n.id) && n.x >= x && n.y >= y && n.x + n.width <= right && n.y + n.height <= bottom).map(n => n.id);
-      setSelection({ kind: 'node', ids: [...new Set([...active.ids, ...ids])] });
-    }
-    synchronizeCameraViewport();
-  }
-  function pointerCancelled(event: React.PointerEvent<HTMLDivElement>) {
-    if (gesture.current?.pointerId === event.pointerId || portGesture.current?.pointerId === event.pointerId) cancelGesture();
-  }
-  function portLayoutOperation(active: Gesture, viewportPoint: { x: number; y: number }): VisualOperation | null {
-    const node = committedScene?.nodes.find(node => node.id === active.ids[0]);
-    if (!node || !active.port?.layoutKey) return null;
-    const [ownerId, nodeId, portId, role] = JSON.parse(active.port.layoutKey) as [string, string, string, 'data' | 'residual' | 'memory' | 'mask'];
-    return { type: 'portLayout', ownerId, nodeId, portId, role, layout: nearestPortLayout(node, viewportToWorld(active.camera, viewportPoint)) };
-  }
-
-  function candidatePorts(options: RebindOptions | null) {
-    return (options?.candidates ?? []).flatMap(candidate => {
-      const node = scene?.nodes.find(n => n.id === candidate.binding.nodeId && !n.expanded);
-      if (!node) return [];
-      const port = node.ports.find(p => p.direction === 'out' && p.canonicalPortId === candidate.binding.portId);
-      return [{ id: `${candidate.binding.nodeId}:${candidate.binding.portId}`, canonicalNodeId: candidate.binding.nodeId, canonicalPortId: candidate.binding.portId, x: port?.x ?? node.x + node.width / 2, y: port?.y ?? node.y + node.height }];
-    });
-  }
 
   async function semanticProject(base: CanvasDocument, sequence: number) {
     if (base.sourceBindingDigest.startsWith('preview-only:')) throw new Error('请先进入编辑模式，从原 Python 建立正式源码绑定。');
@@ -1148,9 +839,8 @@ export default function App() {
       const next = createHistory(reconciled.document);
       if (inputSpec) localStorage.setItem(`archcanvas.runtime-profile:${next.document.id}`, JSON.stringify(inputSpec));
       historyRef.current = next; setHistory(next); setStorageRevision(0); setSavedVisualRevision(-1);
-      claimCamera(next.document); persistCamera(next.document);
       setNotice(`工作副本已提交；保留 ${reconciled.preservedNodeIds.length} 个对象的视觉编辑。源码变更不属于画布撤销。`);
-      setExampleId(''); localStorage.removeItem(REVIEW);
+      localStorage.removeItem(REVIEW);
       try {
         const saved = await api.save(next.document, 0);
         setStorageRevision(saved.revision); setSavedVisualRevision(next.document.revision);
@@ -1174,7 +864,7 @@ export default function App() {
   }
   function arrangePreview(kind: string) {
     if (previewLayoutDisabled || !previewCanAlign) return;
-    setFailure(''); previewEngine.current?.command('arrange-selection', { kind, scope: layoutMoveScope });
+    setFailure(''); setActionFeedback(null); previewEngine.current?.command('arrange-selection', { kind, scope: layoutMoveScope });
   }
   function pinPreviewSelection() {
     if (previewLayoutDisabled || !previewSelectedNodes.length) return;
@@ -1195,21 +885,23 @@ export default function App() {
     const colors: Record<string, string> = { 蓝色: '#dcebf6', 绿色: '#deeee6', 紫色: '#ece3f4', 橙色: '#f4e6d0', 灰色: '#e8ecf0' };
     const color = Object.keys(colors).find(c => text.includes(c));
     const alias = text.match(/(?:命名为|改名为|显示名设为|显示名改为)\s*[“"']?(.+?)[”"']?$/);
-    if (color) ops.push({ type: 'nodeStyle', id: selectedNode.id, style: { fill: colors[color] } });
+    if (color) for (const id of selection.ids) ops.push({ type: 'nodeStyle', id, style: { fill: colors[color] } });
+    if (alias && selection.ids.length !== 1) { setFailure('修改显示名称时请选择一个节点。'); return; }
     if (alias) ops.push({ type: 'alias', id: selectedNode.id, label: alias[1] });
-    if (text.includes('展开') && selectedSceneNode?.expandable) ops.push({ type: 'expand', id: selectedNode.id, expanded: true });
-    if (text.includes('收起') && selectedSceneNode?.expandable) ops.push({ type: 'expand', id: selectedNode.id, expanded: false });
+    if (text.includes('展开') && selectedNode.children.length > 0) ops.push({ type: 'expand', id: selectedNode.id, expanded: true });
+    if (text.includes('收起') && selectedNode.children.length > 0) ops.push({ type: 'expand', id: selectedNode.id, expanded: false });
     if (text.includes('固定')) ops.push({ type: 'pin', ids: selection.ids, pinned: !text.includes('取消固定') });
     if (!ops.length) { setFailure('本地视觉指令支持：向右移动 24、仅当前视图向下移动 16、设为蓝色/绿色/紫色、命名为…、展开、收起、固定。Dropout 参数请在对象面板预览并审核。'); return; }
     apply(ops, '文字指令已写入同一画布操作历史'); setCommand('');
   }
   async function importSource() {
+    if (busy || previewConnecting || previewBusy) { setFailure('请等待当前模型载入或图操作完成后再导入。'); return; }
     cancelGesture();
     const sequence = ++loadSequence.current;
     ++previewSequence.current;
     previewLoading.current = true; setPreviewConnecting(true); setBusy(true); setFailure('');
     try {
-      const request = { files: { [filename]: sourceText }, entry, config: {} };
+      const request = { files: { [filename]: sourceText }, entry, config: {}, semanticMode: 'summary' as const };
       const bundle = await api.previewAnalyze(request);
       if (sequence !== loadSequence.current) return;
       previewSource.current = bundle; previewCase.current = bundle.id;
@@ -1239,41 +931,31 @@ export default function App() {
       if (sequence !== loadSequence.current) return;
       previewLoading.current = false;
       await receivePreviewState(snapshot);
-      setExampleId(''); setImportOpen(false);
+      setImportOpen(false);
     }
     catch (error) { if (sequence === loadSequence.current) setFailure(String(error)); }
     finally { if (sequence === loadSequence.current) { previewLoading.current = false; setPreviewConnecting(false); setBusy(false); } }
   }
   async function importCanvasJson(text: string) {
     const value = JSON.parse(text);
-    if (value?.schema === 'summary-source-adapter/1' || value?.schema === 'summary-merge-recursive/1' || value?.graph?.recursive) {
+    if (['summary-source-adapter/1', 'summary-merge-recursive/1', 'archcanvas-native-semantic/1', 'semantic-canvas/1', 'archcanvas-architecture-document/1', 'semantic-authoring/1', 'archcanvas-source-semantic/2'].includes(value?.schema) || value?.graph?.recursive) {
       await previewEngine.current!.load(value);
     } else {
       await openArchitecture(validateArchitecture(value));
     }
-    setExampleId(''); setImportOpen(false);
+    setImportOpen(false);
   }
   function focusNode(id: string) {
     cancelGesture();
     focusPreviewNode(id);
     setSelection({ kind: 'node', ids: [id] }); setPanel('object');
-    const node = scene?.nodes.find(n => n.id === id);
-    if (!node || !viewportRef.current || !scene) return;
-    const { width, height } = viewportRef.current.getBoundingClientRect();
-    commitCamera(focusCameraOnPoint(cameraRef.current, { x: node.x + node.width / 2, y: node.y + node.height / 2 }, { width, height }));
   }
 
   function focusAnnotation(id: string) {
     cancelGesture();
     previewEngine.current?.focus({ annotationId: id });
-    if (previewSnapshot.current?.graph) return;
-    const document = historyRef.current?.document, viewport = viewportRef.current;
-    if (!document || !viewport) return;
-    const updated = buildScene(document), annotation = updated.annotations.find(item => item.id === id);
-    if (!annotation) return;
-    const { width, height } = viewport.getBoundingClientRect();
-    commitCamera(focusCameraOnPoint(cameraRef.current, { x: annotation.x + annotation.width / 2, y: annotation.y + annotation.height / 2 }, { width, height }));
   }
+
   function addAnnotation() {
     if (!current || !readyPreview()) return;
     const id = `annotation-${crypto.randomUUID()}`;
@@ -1291,18 +973,14 @@ export default function App() {
   function moveAnnotationBelow() {
     if (!selectedAnnotation) return;
     const graph = previewSnapshot.current?.graph;
-    if (!graph && !scene) return;
-    const position = graph ? previewAnnotationPosition(graph, selectedAnnotation.id) : suggestAnnotationPosition(scene!, selectedAnnotation.id);
+    if (!graph) return;
+    const position = previewAnnotationPosition(graph, selectedAnnotation.id);
     if (position.x !== selectedAnnotation.x || position.y !== selectedAnnotation.y) apply([{ type: 'annotation', annotation: { ...selectedAnnotation, ...position } }], '说明已移到图下方；可撤销恢复原位置');
     focusAnnotation(selectedAnnotation.id);
   }
   function zoomCamera(factor: number | 'reset') {
     cancelGesture();
     previewEngine.current?.command('zoom', { factor });
-    const rect = viewportRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const old = cameraRef.current;
-    commitCamera(zoomCameraAtPoint(old, factor === 'reset' ? 1 : clampCanvasZoom(old.zoom * factor), { x: rect.width / 2, y: rect.height / 2 }));
   }
 
   function sourceDraftKey(document: CanvasDocument) { return sourceAuthoringKey(document); }
@@ -1339,7 +1017,7 @@ export default function App() {
   async function continueModelAuthoring() {
     cancelGesture();
     const frozen = historyRef.current?.document;
-    if (!frozen || busy || activeRecovery) return;
+    if (!frozen || busy) return;
     if (frozen.sourceBindingDigest.startsWith('preview-only:')) {
       try { await bindPreviewSource(await previewEngine.current!.source(), true); }
       catch (error) { setFailure(`当前源码暂不能进入现有编辑契约：${String(error)}`); }
@@ -1432,7 +1110,7 @@ export default function App() {
     } finally { if (sequence === loadSequence.current) setBusy(false); }
   }
   async function editCurrentPreview() {
-    if (enteringAuthoring.current || busy || activeRecovery || !historyRef.current) return;
+    if (enteringAuthoring.current || busy || !historyRef.current) return;
     if (!readyPreview()) { setFailure('预览正在接入当前源码，请完成后再进入模型编辑。'); return; }
     enteringAuthoring.current = true;
     const sequence = loadSequence.current;
@@ -1441,12 +1119,107 @@ export default function App() {
       if (sequence !== loadSequence.current) return;
       if (snapshot) await receivePreviewState(snapshot);
       if (sequence !== loadSequence.current) return;
-      await continueModelAuthoring();
+      if (snapshot?.graph?.generic) {
+        const edited = await previewEngine.current!.author({ action: 'begin' });
+        await receivePreviewState(edited); setSummaryEditorId(String(edited.caseId)); setPanel('summary'); setFailure('');
+      } else await continueModelAuthoring();
     } catch (error) { setFailure(`无法同步当前预览，画布与编辑副本均已保留：${String(error)}`); }
     finally { enteringAuthoring.current = false; }
   }
+  async function openSummaryCatalog(model: SummaryCatalogModel, startup = false) {
+    if (!startup && (busy || previewBusy || previewConnecting || review)) throw Error('请先完成当前模型操作。');
+    const sequence = ++loadSequence.current;
+    ++previewSequence.current;
+    previewLoading.current = true; setBusy(true); setPreviewConnecting(true); setFailure('');
+    try {
+      const document = await loadSummaryCatalogModel(model);
+      if (sequence !== loadSequence.current) return;
+      await previewEngine.current!.load(document);
+      const snapshot = await previewEngine.current!.snapshot();
+      if (sequence !== loadSequence.current) return;
+      previewSource.current = undefined; previewBoundSource.current = ''; previewCase.current = String(snapshot.caseId);
+      historyRef.current = createHistory(previewPanelDocument(snapshot)); setHistory(historyRef.current);
+      setSelection({ kind: 'node', ids: [] }); setProjectId(null); setStorageRevision(0); setSavedVisualRevision(-1);
+      setSummaryEditorId(null); if (!startup) setPanel('summary');
+      previewLoading.current = false;
+      await receivePreviewState(snapshot);
+      setNotice(`已打开 ${model.title}；保留原始语义与归档证据，本次未执行模型。`);
+    } finally {
+      if (sequence === loadSequence.current) { previewLoading.current = false; setBusy(false); setPreviewConnecting(false); }
+    }
+  }
+  async function openSummaryPreview(id: string) {
+    if (busy || previewBusy || previewConnecting || review) throw Error('请先完成当前模型操作。');
+    cancelGesture(); setBusy(true); setFailure('');
+    try {
+      const snapshot = await previewEngine.current!.openCase(id);
+      await receivePreviewState(snapshot);
+      setSummaryEditorId(null); setPanel('summary');
+    } finally { setBusy(false); }
+  }
+  async function newSummaryModel() {
+    if (busy || previewBusy || review) return;
+    try {
+      const snapshot = await previewEngine.current!.author({ action: 'begin', blank: true });
+      await receivePreviewState(snapshot); setSummaryEditorId(String(snapshot.caseId)); setPanel('summary'); setFailure('');
+    } catch (error) { setFailure(String(error)); }
+  }
+  async function editSummary(operation: Record<string, unknown>) {
+    const snapshot = await previewEngine.current!.author(operation);
+    await receivePreviewState(snapshot);
+  }
+  async function runSummaryObservation(inputSpec: Record<string, unknown>, onStart: (cancel: () => Promise<void>) => void): Promise<SummaryRuntimeResult> {
+    if (!readyPreview() || previewLayoutDisabled) throw Error('请等待当前模型就绪。');
+    const sequence = loadSequence.current, caseId = previewCase.current;
+    const stored = (previewSnapshot.current?.graph?.generic as { ir?: { runtime?: Record<string, unknown> } } | undefined)?.ir?.runtime;
+    const binding = stored?.binding as Record<string, unknown> | undefined;
+    let files: Record<string, string>, entry: string, sourceSha256: string | undefined;
+    if (stored?.source_files && typeof binding?.entry === 'string') {
+      files = stored.source_files as Record<string, string>; entry = binding.entry;
+      sourceSha256 = typeof binding.source_manifest_sha256 === 'string' ? binding.source_manifest_sha256 : undefined;
+    } else {
+      const source = sourceFromResult(await previewEngine.current!.source());
+      if (!source) throw Error('当前模型没有可执行的 Python 文本。');
+      const request = source.schema === 'summary-source-adapter/1' ? bundlePreviewRequest(source) : rawPreviewSourceRequest(source);
+      files = request.files; entry = request.entry;
+      if (source.schema === 'summary-source-adapter/1') sourceSha256 = source.sourceSha256;
+    }
+    if (sequence !== loadSequence.current || caseId !== previewCase.current) throw Error('模型已切换，未开始 CPU 观察。');
+    const result = await api.observeSummary({ files, entry, inputSpec, ...(sourceSha256 ? { sourceSha256 } : {}) }, onStart);
+    if (sequence !== loadSequence.current || caseId !== previewCase.current) throw Error('模型已切换，CPU 观察结果未应用。');
+    return result;
+  }
+  async function openSummaryObservation(result: SummaryRuntimeResult) {
+    if (!readyPreview() || previewLayoutDisabled) throw Error('请等待当前模型就绪。');
+    if (!result.document || result.receipt.status !== 'passed' || result.receipt.runtimeVerified !== true) throw Error('本次观察未完成，不能作为完整结果打开。');
+    await previewEngine.current!.load(result.document);
+    const snapshot = await previewEngine.current!.snapshot();
+    await receivePreviewState(snapshot);
+    setNotice('已打开本次 CPU 观察的独立结果；原模型保留，源码写回仍使用正式事务。');
+  }
+  async function compileSummaryModule(value: { source: string; entry: string; constructor: Record<string, unknown> }) {
+    const generation = loadSequence.current, caseId = previewCase.current;
+    const module = await api.summaryModule(value);
+    if (generation !== loadSequence.current || caseId !== previewCase.current) throw new Error('模型已切换；源码解析结果未应用。');
+    return module;
+  }
+  async function certifySummaryAssembly(ir: Record<string, unknown>) {
+    const generation = loadSequence.current, caseId = previewCase.current;
+    const result = await api.summaryAssembly(ir);
+    if (generation !== loadSequence.current || caseId !== previewCase.current) throw new Error('模型已切换；局部复核结果未应用。');
+    return result;
+  }
+  async function formalSourceEditor() {
+    try {
+      if (previewSnapshot.current?.authoring) {
+        const snapshot = await previewEngine.current!.author({ action: 'source' });
+        await receivePreviewState(snapshot); setSummaryEditorId(null);
+        await bindPreviewSource(await previewEngine.current!.source(), true);
+      } else await continueModelAuthoring();
+    } catch (error) { setFailure(`正式源码工作副本未打开：${String(error)}`); }
+  }
   async function openPreviewExport() {
-    if (openingExport.current || !readyPreview() || busy || activeRecovery) return;
+    if (openingExport.current || !readyPreview() || busy) return;
     const engine = previewEngine.current!;
     const sequence = loadSequence.current, generation = previewSequence.current;
     openingExport.current = true; setPreviewConnecting(true);
@@ -1477,7 +1250,7 @@ export default function App() {
         }
       }
       const detailSvg = new Map<string, string>();
-      setExportPreview({ binding: { caseId: frozenCase, sourceDigest, irDigest, revision: previewVersion }, detailChoices: choices,
+      setExportPreview({ binding: previewExportBinding({ caseId: frozenCase, sourceDigest, irDigest, revision: previewVersion }), detailChoices: choices,
         editingDocument: JSON.stringify(snapshot, null, 2),
         sourcePackage: snapshot.adapter ? JSON.stringify(snapshot.adapter, null, 2) : undefined,
         svg: async id => {
@@ -1516,15 +1289,13 @@ export default function App() {
       await cacheGeneratedWorkspace(workspace, binding);
     }
     if (sequence !== loadSequence.current) return;
-    cameraOwner.current = null; cameraIntent.current++;
     historyRef.current = next; setHistory(next);
     setStorageRevision(saved.revision); setSavedVisualRevision(document.revision);
-    setReview(null); localStorage.removeItem(REVIEW); setPreview(null); setSourceOpen(false);
+    setReview(null); localStorage.removeItem(REVIEW); setSourceOpen(false);
     setSelection({ kind: 'node', ids: (workspace?.selection ?? []).flatMap(id => retained.nodeBindings[id] ? [retained.nodeBindings[id]] : []) });
-    setProjectId(opened.projectId); setExampleId(''); setAuthoringOpen(false);
+    setProjectId(opened.projectId); setAuthoringOpen(false);
     updateDocumentUrl(document.id);
-    if (workspace?.camera && !workspace.draft.sourceProvenance?.viewCanvas) { commitCamera(workspace.camera, document); setTool(workspace.tool ?? 'select'); }
-    else initializeCamera(document, sequence, false);
+    if (workspace?.camera && !workspace.draft.sourceProvenance?.viewCanvas) { commitCamera(workspace.camera); setTool(workspace.tool ?? 'select'); }
     setNotice(`已打开新模型工作副本。${retained.hierarchyReflowed ? '新源码层级已重新排布，原草稿布局保留。' : '已保留搭建位置与视角。'}模型未执行。${retained.unmappedNodeIds.length ? ` ${retained.unmappedNodeIds.length} 个展示框没有对应的新源码节点。` : ''}${retained.unresolvedEdgeStyles.length ? ` ${retained.unresolvedEdgeStyles.length} 条连线样式待核对。` : ''}`);
   }
   async function openSourceEditedModel(architecture: Architecture) {
@@ -1534,7 +1305,7 @@ export default function App() {
     if (sequence !== loadSequence.current) return;
     await openArchitecture(architecture, true, sequence);
     if (sequence !== loadSequence.current) return;
-    setProjectId(opened.projectId); setExampleId(''); setAuthoringOpen(false);
+    setProjectId(opened.projectId); setAuthoringOpen(false);
     updateDocumentUrl(opened.documentId);
     setNotice('已打开源码修改后的独立模型，并重新建立已解析的模型层级；原草稿与原始项目保留。模型未执行。');
   }
@@ -1566,52 +1337,59 @@ export default function App() {
 
   return <><div className="studio" hidden={authoringOpen}>
     <header className="topbar">
-      <div className="brand"><span className="brand-mark"><i /><i /><i /></span><span>ArchCanvas<small>MODEL ARCHITECTURE STUDIO</small></span></div>
-      <div className="project-breadcrumb"><span className="slash">/</span><Icon name="file" size={15} /><span>{current?.title ?? '模型工作台'}</span><span className="alpha-tag">ALPHA</span></div>
-      <div className="header-actions"><details className="workspace-menu"><summary>模型 <span>⌄</span></summary><div><button disabled={busy || !!review || !!activeRecovery} onClick={openBlankAuthoring}><Icon name="plus" size={15} />新建空白模型</button><button disabled={busy || !!review} onClick={() => setImportOpen(true)}><Icon name="file" size={15} />导入 Python 源码</button><button disabled={!current} onClick={() => setSourceOpen(true)}><Icon name="code" size={15} />查看源码</button><button onClick={() => previewEngine.current?.command("show-library")}><Icon name="layers" size={15} />示例与模块库</button><button onClick={() => previewEngine.current?.command("show-evidence")}><Icon name="info" size={15} />原型来源与审查记录</button></div></details><WorkspaceModeSwitch mode="view" disabled={!current || busy || previewConnecting || previewBusy || !!review || !!activeRecovery} onView={() => {}} onEdit={() => void editCurrentPreview()} /><span className={`save-state ${dirty ? 'dirty' : ''}`}><i />{current ? dirty ? '有未保存编辑' : '已保存' : '等待文档'}</span><button onClick={save} disabled={!current || busy || previewConnecting || previewBusy || !!activeRecovery}><Icon name="save" size={15} />保存</button><button className="primary" onClick={() => void openPreviewExport()} disabled={!current || busy || previewConnecting || previewBusy || !!activeRecovery}><Icon name="export" size={16} />导出</button></div>
+      <div className="brand"><span className="brand-mark"><i /><i /><i /></span><span>ArchCanvas<small>模型架构工作台</small></span></div>
+      <div className="project-breadcrumb"><span className="slash">/</span><Icon name="file" size={15} /><span>{current?.title ?? '模型工作台'}</span></div>
+      <div className="header-actions"><details className="workspace-menu"><summary>模型 <span>⌄</span></summary><div><button disabled={busy || !!review} onClick={() => void newSummaryModel()}><Icon name="plus" size={15} />新建空白模型</button><button disabled={busy || !!review} onClick={openBlankAuthoring}>新建正式源码模型</button><button disabled={!current || busy || previewBusy || previewConnecting} onClick={() => void formalSourceEditor()}>正式源码工作副本</button><button disabled={busy || !!review} onClick={() => { setFailure(''); setImportOpen(true); }}><Icon name="file" size={15} />导入 Python 源码</button><button disabled={!current} onClick={() => setSourceOpen(true)}><Icon name="code" size={15} />查看源码</button><button onClick={() => { setSummaryCatalogOpen(true); setRightCollapsed(false); setPanel('summary'); }}><Icon name="layers" size={15} />Summary 模型库</button><button onClick={() => previewEngine.current?.command("show-evidence")}><Icon name="info" size={15} />原型来源与审查记录</button></div></details><WorkspaceModeSwitch mode={summaryEditing ? "edit" : "view"} disabled={!current || busy || previewConnecting || previewBusy || !!review} onView={() => setSummaryEditorId(null)} onEdit={() => void editCurrentPreview()} /><span className={`save-state ${dirty ? 'dirty' : ''}`}><i />{current ? dirty ? '有未保存编辑' : '已保存' : '等待文档'}</span><button onClick={save} disabled={!current || busy || previewConnecting || previewBusy}><Icon name="save" size={15} />保存</button><button className="primary" onClick={() => void openPreviewExport()} disabled={!current || busy || previewConnecting || previewBusy}><Icon name="export" size={16} />导出</button></div>
     </header>
-    <div className="workspace">
+    <div className={`workspace ${leftCollapsed ? 'left-collapsed' : ''} ${rightCollapsed ? 'right-collapsed' : ''}`}>
       <aside className="navigator">
-        <div className="navigator-top"><div className="eyebrow">SOURCE WORKSPACE</div><div className="model-switch"><Icon name="layers" /><select aria-label="示例模型" value={exampleId} onChange={e => void loadExample(e.target.value)} disabled={busy}><option value="" disabled>导入的模型</option>{examples.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}</select></div><button className="import-button" disabled={busy} onClick={() => setImportOpen(true)}><Icon name="plus" size={15} />导入 Python 源码</button></div>
-        <div className="nav-section-title">模型层级<span>{architecture?.nodes.length ?? 0}</span></div>
-        <div className="tree" role="tree" aria-label="模型层级">
-          {architecture && current && <HierarchyTree architecture={architecture} document={current} selected={selection.ids} onSelect={selectHierarchyNode} onExpand={expandHierarchyNode} />}
+        <div className="navigator-top"><div className="panel-title"><Icon name="layers" size={16} /><b>模型层级</b><span>{navigation?.nodes.length ?? architecture?.nodes.length ?? 0}</span></div><label className="tree-search"><Icon name="search" size={14} /><input aria-label="搜索模型层级" placeholder="搜索模块…" value={treeSearch} onChange={e => setTreeSearch(e.target.value)} />{treeSearch && <button className="tool" aria-label="清除层级搜索" onClick={() => setTreeSearch('')}><Icon name="close" size={12} /></button>}</label></div>
+        <div className="tree" role="tree" aria-label="模型层级" aria-multiselectable="true">
+          {architecture && current && <HierarchyTree architecture={navigation ?? architecture} document={navigation ?? current} mandatoryIds={navigation?.mandatoryIds} selected={navigation ? previewSelectedNodeIds : selection.ids} onSelect={selectHierarchyNode} onExpand={expandHierarchyNode} query={treeSearch} />}
         </div>
-        <div className="navigator-bottom"><button className={sourceOpen ? 'active' : ''} onClick={() => setSourceOpen(x => !x)} disabled={!current}><Icon name="code" size={16} />查看源码证据<Icon name="chevron" size={13} /></button><div className="source-note"><span className="live-dot" />静态分析 · 未执行模型<p>{projectId ? '当前为 Studio 工作副本。' : '样式和显示名仅修改画布。'}</p></div></div>
+        <div className="navigator-bottom"><button className={sourceOpen ? 'active' : ''} onClick={() => setSourceOpen(x => !x)} disabled={!current}><Icon name="code" size={16} />查看源码证据<Icon name="chevron" size={13} /></button><div className="source-note"><span className="live-dot" />{previewSnapshot.current?.importedDocument ? '导入文档证据' : '静态源码视图'}</div></div>
       </aside>
       <main className="main">
-        <div className="workspace-caption"><b>{current?.title ?? '模型工作台'}</b><span>MODEL ARCHITECTURE · 静态源码视图</span></div>
+        <div className="workspace-caption"><button className="tool" aria-label={leftCollapsed ? '展开模型层级面板' : '收起模型层级面板'} aria-pressed={!leftCollapsed} onClick={() => setLeftCollapsed(value => !value)} title="模型层级面板"><Icon name="panelLeft" size={16} /></button><b>{current?.title ?? '模型工作台'}</b><span>{summaryEditing ? "Summary 编辑副本" : "预览"}</span><button className="tool" aria-label={rightCollapsed ? '展开属性面板' : '收起属性面板'} aria-pressed={!rightCollapsed} onClick={() => setRightCollapsed(value => !value)} title="属性面板"><Icon name="panelRight" size={16} /></button></div>
         <div className="canvas-toolbar" role="toolbar" aria-label="画布编辑工具">
           <div className="tool-group">
-            {([{ id: 'select', icon: 'arrow', label: '选择对象', hint: '选择 / Shift 多选 · V' }, { id: 'connect', icon: 'connect', label: '创建连接', hint: '创建视觉草稿连接 · C' }, { id: 'bend', icon: 'bend', label: '编辑折点', hint: '选择连线，添加或拖动折点 · B' }] as const).map(item => <button key={item.id} title={item.hint} aria-label={item.label} aria-pressed={previewTool === item.id} className={`tool ${previewTool === item.id ? 'selected' : ''}`} disabled={!current || busy || previewConnecting || previewBusy} onClick={() => chooseTool(item.id)}><Icon name={item.icon} /></button>)}
+            <button className={`tool ${previewTool === 'select' ? 'selected' : ''}`} title="选择 · 单击选中；Ctrl / Shift / ⌘ 点击增减选区；拖动空白框选 · V" aria-label="选择对象" aria-pressed={previewTool === 'select'} disabled={previewLayoutDisabled} onClick={() => chooseTool('select')}><Icon name="arrow" /></button>
+            <details className="selection-menu"><summary aria-label="选区操作" title="选区操作"><Icon name="chevron" size={13} /></summary><div><div className="menu-heading">{previewSelectedNodes.length ? `已选 ${previewSelectedNodes.length} 个节点` : '选择对象'}</div><p className="menu-help">单击选择；Ctrl / Shift / ⌘ 点击增减选区，拖动空白处框选。</p><button disabled={previewLayoutDisabled || !previewSelectedNodes.length} onClick={() => previewEngine.current?.command('select-nodes', { scope: 'siblings' })}>选择同级节点</button><button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('select-nodes', { scope: 'all' })}>选择全部可见模块 <kbd>Ctrl A</kbd></button><button disabled={previewLayoutDisabled || !previewSelectedNodes.length} onClick={() => previewEngine.current?.command('select-nodes', { scope: 'clear' })}>清空选区 <kbd>Esc</kbd></button></div></details>
+            {([{ id: 'connect', icon: 'connect', label: '创建连接', hint: '创建视觉草稿连接 · C' }, { id: 'bend', icon: 'bend', label: '编辑折点', hint: '选择连线，添加或拖动折点 · B' }] as const).map(item => <button key={item.id} title={item.hint} aria-label={item.label} aria-pressed={previewTool === item.id} className={`tool ${previewTool === item.id ? 'selected' : ''}`} disabled={!current || busy || previewConnecting || previewBusy} onClick={() => chooseTool(item.id)}><Icon name={item.icon} /></button>)}
             <button className={`tool ${portEditing ? 'selected' : ''}`} title="显示节点端口；选中连线后可拖动 S / T 端点" aria-label="显示连接点" aria-pressed={portEditing} disabled={!current || busy || previewConnecting || previewBusy} onClick={() => { cancelGesture(); previewEngine.current?.command('show-ports', { visible: !portEditing }); }}><Icon name="ports" /></button>
             <span className="tool-divider" />
-            <button className="tool" onClick={undo} disabled={!previewUndo || busy || previewConnecting || previewBusy} title="撤销 Ctrl+Z"><Icon name="undo" /></button>
-            <button className="tool" onClick={redo} disabled={!previewRedo || busy || previewConnecting || previewBusy} title="重做 Ctrl+Shift+Z"><Icon name="redo" /></button>
-            <button className="tool" title="恢复当前模型的初始视图；可撤销" aria-label="恢复初始视图" disabled={!current || busy || previewConnecting || previewBusy} onClick={() => { cancelGesture(); previewEngine.current?.command('reset'); }}><Icon name="reset" /></button>
+            <button className="tool" onClick={undo} disabled={!previewUndo || busy || previewConnecting || previewBusy} title="撤销 Ctrl+Z" aria-label="撤销画布编辑"><Icon name="undo" /></button>
+            <button className="tool" onClick={redo} disabled={!previewRedo || busy || previewConnecting || previewBusy} title="重做 Ctrl+Shift+Z" aria-label="重做画布编辑"><Icon name="redo" /></button>
+
             <span className="tool-divider" />
-            <button className="tool" aria-label="左对齐所选节点" onClick={() => arrangePreview('left')} disabled={previewLayoutDisabled || !previewCanAlign} title="左对齐 · Shift 多选同一容器中的两个以上节点"><Icon name="align" /></button>
-            <details className="alignment-menu"><summary title="更多对齐与分布" aria-label="更多对齐与分布"><Icon name="chevron" size={13} /></summary><div>
-              {([{ kind: 'left', label: '左对齐' }, { kind: 'hcenter', label: '水平居中对齐' }, { kind: 'right', label: '右对齐' }, { kind: 'top', label: '顶部对齐' }, { kind: 'vcenter', label: '垂直居中对齐' }, { kind: 'bottom', label: '底部对齐' }, { kind: 'distribute-x', label: '水平等距分布' }, { kind: 'distribute-y', label: '垂直等距分布' }]).map(item => <button key={item.kind} disabled={previewLayoutDisabled || !previewCanAlign || (item.kind.startsWith('distribute') && previewSelectedNodes.length < 3)} onClick={event => { arrangePreview(item.kind); event.currentTarget.closest('details')?.removeAttribute('open'); }}>{item.label}</button>)}
+            <button className="tool" aria-label="左对齐所选节点" onClick={() => arrangePreview('left')} disabled={previewLayoutDisabled || !previewCanAlign} title="左对齐 · 选择同一容器内的两个以上节点"><Icon name="align" /></button>
+            <details className="alignment-menu"><summary title="更多对齐与分布" aria-label="更多对齐与分布"><Icon name="chevron" size={13} /></summary><div><div className="menu-heading">对齐与分布</div><p className="menu-help">选择同级节点；至少 2 个对齐、3 个分布。</p>
+              {([{ kind: 'left', label: '左对齐' }, { kind: 'hcenter', label: '水平居中对齐' }, { kind: 'right', label: '右对齐' }, { kind: 'top', label: '顶部对齐' }, { kind: 'vcenter', label: '垂直居中对齐' }, { kind: 'bottom', label: '底部对齐' }, { kind: 'distribute-x', label: '水平等距分布' }, { kind: 'distribute-y', label: '垂直等距分布' }]).map(item => <button key={item.kind} disabled={previewLayoutDisabled || !previewCanAlign || (item.kind.startsWith('distribute') && (previewSelectedNodes.length < 3 || previewPinnedCount > 0))} onClick={event => { arrangePreview(item.kind); event.currentTarget.closest('details')?.removeAttribute('open'); }}>{item.label}</button>)}
             </div></details>
             <button className={`tool ${previewAllPinned ? 'selected' : ''}`} aria-label={previewAllPinned ? '解锁所选节点' : '固定所选节点'} aria-pressed={previewAllPinned} onClick={pinPreviewSelection} disabled={previewLayoutDisabled || !previewSelectedNodes.length} title={previewAllPinned ? '解锁所选节点，恢复直接拖动' : '固定所选节点的直接拖动；子图仍随父容器移动'}><Icon name="pin" /></button>
           </div>
-          <button className="layout-apply" aria-label="Apply layout" title="按当前布线设置应用布局 · Ctrl+Enter" disabled={!current || busy || previewConnecting || previewBusy} onClick={() => previewEngine.current?.command('apply-layout')}><Icon name="bend" size={16} />Apply layout</button>
-          <div className="tool-group"><button className={`tool ${grid ? 'selected' : ''}`} title="显示点阵网格" aria-label="显示点阵网格" aria-pressed={grid} onClick={() => previewEngine.current?.command('grid', { enabled: !grid })}><Icon name="grid" size={16} /></button><button className="tool" onClick={() => fit()} title="适合画布 F"><Icon name="fit" /></button></div>
+          <button className="layout-apply" aria-label="Apply layout" title="按当前布线设置应用布局 · Ctrl+Enter" disabled={!current || busy || previewConnecting || previewBusy} onClick={() => previewEngine.current?.command('apply-layout')}><Icon name="bend" size={16} />优化连线</button>
+          <div className="tool-group"><button className={`tool ${grid ? 'selected' : ''}`} title="显示点阵网格" aria-label="显示点阵网格" aria-pressed={grid} disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('grid', { enabled: !grid })}><Icon name="grid" size={16} /></button><button className="tool" onClick={() => fit()} title="适合画布 F" aria-label="适合画布" disabled={previewLayoutDisabled}><Icon name="fit" /></button><details className="canvas-options"><summary aria-label="画布选项" title="画布选项"><Icon name="more" size={16} /></summary><div><div className="menu-heading">画布</div><button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('show-routing')}>布线与箭头设置</button><button disabled={previewLayoutDisabled} onClick={() => setSemanticFrontier('overview')}>架构概览（F0）</button><button disabled={previewLayoutDisabled} onClick={() => setSemanticFrontier('detail')}>架构详图（F1）</button><button disabled={previewLayoutDisabled} onClick={focusCurrentFrontier}>返回当前前沿</button><button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('expand-all')}>展开全部</button><button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('collapse-all')}>收起全部</button><button disabled={previewLayoutDisabled} onClick={() => { cancelGesture(); previewEngine.current?.command('reset'); }}>恢复初始视图（可撤销）</button></div></details></div>
         </div>
+        {actionFeedback && <div className={`canvas-feedback ${actionFeedback.error ? 'error' : ''}`} role={actionFeedback.error ? 'alert' : 'status'}><Icon name={actionFeedback.error ? 'info' : 'check'} size={15} /><span>{actionFeedback.message}</span><button className="tool" aria-label="关闭操作反馈" onClick={() => setActionFeedback(null)}><Icon name="close" size={13} /></button></div>}
         <div ref={viewportRef} className="canvas-viewport prototype-canvas" data-canvas-surface="recursive-preview">
           <PreviewStudio ref={previewEngine} visible={!authoringOpen} onState={snapshot => void receivePreviewState(snapshot)}
             onSelection={receivePreviewSelection} onEditSource={result => { void bindPreviewSource(result, true).catch(error => setFailure(String(error))); }}
-            onError={setFailure} onSave={() => void save()} />
+            onError={message => { setFailure(message); setActionFeedback({message, error: true}); }} onNotice={(message, error) => { setNotice(message); setFailure(error ? message : ''); setActionFeedback({message, error}); }} onSave={() => void save()} />
         </div>
-        {!!layoutGuidance.length && <div className="layout-warning" role="status" aria-label="布局提示">{layoutGuidance.slice(0, 3).map(message => <p key={message}>{message}</p>)}{layoutGuidance.length > 3 && <p>另有 {layoutGuidance.length - 3} 处布局冲突；调整后会重新检查。</p>}</div>}
-        {activeRecovery && <div className="layout-recovery-preview" role="status" aria-label="位置修复预览"><p>位置修复预览 · {activeRecovery.plan.operation.scope === 'current-frontier' ? '仅当前视图' : '所有视图'} · 应用后才调整选中对象。</p><div><button className="primary" onClick={applyPositionRecovery}>应用位置修复</button><button onClick={cancelGesture}>取消预览</button></div></div>}
-        <div className="command-bar"><span className="command-icon"><Icon name="message" size={17} /></span><input aria-label="画布文字指令" placeholder={selectedNode ? '向右移动 24，或设为蓝色、命名为…' : '选择一个节点，用文字修改画布…'} value={command} onChange={e => setCommand(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) runCommand(); }} /><span className="local-label">本地视觉指令</span><button onClick={runCommand} disabled={!command.trim()}>应用 <span>↵</span></button></div>
-        {sourceOpen && architecture && <div className="source-drawer"><div className="drawer-header"><Icon name="code" size={16} /><b>源码证据</b><span>{previewSourceSpan ? `${previewSourceSpan.path}:${previewSourceSpan.line}` : '只读 · 未执行'}</span><button className="tool" onClick={() => setSourceOpen(false)} aria-label="关闭源码"><Icon name="close" size={16} /></button></div><div className="source-content">{current?.sourceBindingDigest.startsWith('preview-only:') && <p className="field-help">只读源码文本。展示对象没有经过正式模型解析的计算绑定；可在编辑模式中解析支持的源码入口。</p>}{!previewSourceSpan && architecture.sources.length > 0 && <p className="field-help">当前图元没有独立的源码行证据，以下提供完整模型源码供查阅。</p>}{architecture.sources.length === 0 && <p className="field-help">当前案例是视觉或路由示例，没有模型源码。</p>}{architecture.sources.map(source => <div key={source.path}><div className="source-filename">{source.path}</div><pre>{source.content.split('\n').map((line, i) => <div key={i} className={previewSourceSpan?.path === source.path && i + 1 >= previewSourceSpan.line && i + 1 <= previewSourceSpan.endLine ? 'source-highlight' : ''}><span>{i + 1}</span>{line || ' '}</div>)}</pre></div>)}</div></div>}
+        <div className="command-bar"><span className="command-icon"><Icon name="message" size={17} /></span><input disabled={!selectedNode || previewLayoutDisabled} aria-label="画布文字指令" placeholder={selection.ids.length > 1 ? '向右移动 24，或批量设为蓝色…' : selectedNode ? '向右移动 24，或设为蓝色、命名为…' : '选择一个节点，用文字修改画布…'} value={command} onChange={e => setCommand(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) runCommand(); }} /><span className="local-label">本地视觉指令</span><button onClick={runCommand} disabled={!command.trim() || !selectedNode || previewLayoutDisabled}>应用 <span>↵</span></button></div>
+        {sourceOpen && architecture && <div className="source-drawer"><div className="drawer-header"><Icon name="code" size={16} /><b>源码证据</b><span>{previewSourceSpan ? `${previewSourceSpan.path}:${previewSourceSpan.line}` : '只读 · 未执行'}</span><button className="tool" onClick={() => setSourceOpen(false)} aria-label="关闭源码"><Icon name="close" size={16} /></button></div><div className="source-content">{current?.sourceBindingDigest.startsWith('preview-only:') && <p className="field-help">只读源码文本。展示对象没有经过正式模型解析的计算绑定；可在编辑模式中解析支持的源码入口。</p>}{!previewSourceSpan && architecture.sources.length > 0 && <p className="field-help">当前图元没有独立的源码行证据，以下提供完整模型源码供查阅。</p>}{architecture.sources.length === 0 && <p className="field-help">{previewSnapshot.current?.importedDocument ? '当前为 Summary 导入文档，源码位置尚未与 Python 文本验证绑定；可通过原始文档检查声明证据。' : '当前案例是视觉或路由示例，没有模型源码。'}</p>}{architecture.sources.map(source => <div key={source.path}><div className="source-filename">{source.path}</div><pre>{source.content.split('\n').map((line, i) => <div key={i} className={previewSourceSpan?.path === source.path && i + 1 >= previewSourceSpan.line && i + 1 <= previewSourceSpan.endLine ? 'source-highlight' : ''}><span>{i + 1}</span>{line || ' '}</div>)}</pre></div>)}</div></div>}
       </main>
-      <aside className="inspector"><div className="inspector-tabs"><button className={panel === 'object' ? 'active' : ''} onClick={() => setPanel('object')}>对象</button><button className={panel === 'legend' ? 'active' : ''} onClick={() => setPanel('legend')}>图例</button><button className={panel === 'page' ? 'active' : ''} onClick={() => setPanel('page')}>页面</button></div><div className="inspector-content"><details className="preview-routing-menu"><summary>自动布线与递归展开</summary><div className="studio-preview-buttons"><button onClick={() => previewEngine.current?.command("show-routing")}>布线与箭头设置</button><button onClick={() => previewEngine.current?.command("expand-all")}>展开全部</button><button onClick={() => previewEngine.current?.command("collapse-all")}>收起全部</button></div></details>
-        {panel === 'object' && previewSelectedNodes.length > 0 && <section className="preview-selection-tools" aria-label="画布选区"><h3>已选 {previewSelectedNodes.length} 个节点<span>已固定 {previewPinnedCount} 个</span></h3><p className="field-help">{previewSelectedNodes.map(node => node.label || node.id).join('、')}</p><div><button disabled={previewLayoutDisabled || !previewCanAlign} onClick={() => arrangePreview('left')} aria-label="属性面板左对齐所选节点">左对齐</button><button disabled={previewLayoutDisabled} onClick={pinPreviewSelection} aria-label={previewAllPinned ? '属性面板解锁所选节点' : '属性面板固定所选节点'}>{previewAllPinned ? '解锁所选节点' : '固定所选节点'}</button></div><p className="field-help">Shift 多选同一容器中的节点后对齐；三个以上可等距分布。固定阻止节点的直接移动，子图仍随父容器移动，展开时仍使用原型布局。</p>{previewSelectedNodes.length > 1 && !previewCanAlign && <p className="field-help">当前选区跨越不同容器；请选择同级节点进行对齐。</p>}</section>}
-        {panel === 'object' && inspectionNode && inspectionPresentation && <>
+      <aside className="inspector"><div className="inspector-tabs"><button className={panel === 'object' ? 'active' : ''} onClick={() => setPanel('object')}>对象</button><button className={panel === 'legend' ? 'active' : ''} onClick={() => setPanel('legend')}>图例</button><button className={panel === 'page' ? 'active' : ''} onClick={() => setPanel('page')}>页面</button><button className={panel === 'summary' ? 'active' : ''} onClick={() => setPanel('summary')}>Summary</button></div><div className="inspector-content">
+        {panel === 'summary' && frontier && <details className="inspector-section semantic-frontier" open><summary>语义视图<span className="read-only">预览前沿</span></summary><div className="object-heading"><span className="object-icon"><Icon name="layers" size={18} /></span><div><h2>{frontier.label}</h2><span>同一源码语义图的可见切面</span></div></div><div className="coordinate-row"><label>节点 <output>{frontier.visibleNodeCount}</output></label><label>边 <output>{frontier.visibleEdgeCount}</output></label></div><p className="field-help">当前深度 {frontier.depth} · {frontier.expandableCount ? `还有 ${frontier.expandableCount} 个容器可继续细化。` : '当前前沿已展开到可见层级。'}</p><div className="segmented"><button className={frontier.preset === 'overview' ? 'active' : ''} disabled={previewLayoutDisabled} onClick={() => setSemanticFrontier('overview')}>F0 概览</button><button className={frontier.preset === 'detail' ? 'active' : ''} disabled={previewLayoutDisabled} onClick={() => setSemanticFrontier('detail')}>F1 详图</button></div><button className="full-button" disabled={previewLayoutDisabled} onClick={focusCurrentFrontier}>返回当前前沿</button></details>}
+        {panel === 'summary' && current && <details className="inspector-section summary-interaction"><summary>Summary 交互<span className="read-only">预览辅助</span></summary><label className="field-label" htmlFor="preview-interaction-mode">拖动模式</label><select id="preview-interaction-mode" className="field-select" value={previewSnapshot.current?.interactionMode === 'realtime' ? 'realtime' : 'compat'} disabled={previewLayoutDisabled} onChange={event => previewEngine.current?.command('interaction-mode', { mode: event.target.value })}><option value="compat">兼容模式 · 释放后校验</option><option value="realtime">实时模式 · 拖动中同步</option></select><div className="segmented"><button className={previewSnapshot.current?.showGhost ? 'active' : ''} disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('show-ghost', { enabled: !previewSnapshot.current?.showGhost })}>上次路径</button><button className={previewSnapshot.current?.showObstacles ? 'active' : ''} disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('show-obstacles', { enabled: !previewSnapshot.current?.showObstacles })}>安全边界</button></div><div className="coordinate-row"><label>快照 <output>{previewSnapshot.current?.snapshotRevision ?? 0}</output></label><label>源码 <output>{previewSnapshot.current?.importedDocument ? '文档证据' : previewSourceIdentity?.sourceSha256 ? '已绑定' : '预览'}</output></label></div><button className="full-button" disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('show-routing')}>打开布线与箭头设置</button><button className="full-button" disabled={previewLayoutDisabled} onClick={repairSummaryLayout}>优化当前布线</button><button className="full-button" disabled={previewLayoutDisabled || previewSelectedNodeIds.length !== 1} onClick={() => optimizeAutomaticPorts(previewSelectedNodeIds[0], true)}>恢复所选自动连接点</button><button className="full-button" disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('show-evidence')}>打开源码与证据</button></details>}
+        <div hidden={panel !== 'summary'}><SummaryCatalogPanel open={summaryCatalogOpen} onToggle={setSummaryCatalogOpen} disabled={busy || previewBusy || previewConnecting || !!review} onOpen={openSummaryCatalog} onOpenPreview={openSummaryPreview} onBrowseSaved={() => previewEngine.current?.command('show-library')} /></div>
+        {panel === 'summary' && summaryEditing && <SummaryAuthoringPanel snapshot={previewSnapshot.current} selected={previewSelectedNodeIds} disabled={previewLayoutDisabled} onEdit={editSummary} onCompile={compileSummaryModule} onCertify={certifySummaryAssembly} onFormal={() => void formalSourceEditor()} />}
+        {panel === 'summary' && <SummaryViewPanel onContinue={() => previewEngine.current?.command('continue-routing')} snapshot={previewSnapshot.current} selectedIds={previewSelectedNodeIds} disabled={previewLayoutDisabled} onCommand={payload => previewEngine.current?.command('semantic-view', payload)} onFocus={id => previewEngine.current?.focus({ nodeId: id })} />}
+        {panel === 'summary' && current && <SummaryRuntimePanel key={previewCase.current} available={capabilities?.runtimeProfiles?.summaryObserved === true} reason={capabilities?.runtimeProfiles?.unavailableReason} hasSource={summaryRuntimeHasSource} storedReceipt={summaryRuntimeReceipt} disabled={previewLayoutDisabled} onRun={runSummaryObservation} onOpen={openSummaryObservation} />}
+        {panel === 'summary' && current && <SummarySemanticPanel source={previewSource.current} selectedIds={previewSelectedNodeIds} onFocus={id => previewEngine.current?.focus({ nodeId: id })} onEvidence={() => previewEngine.current?.command('show-evidence')} />}
+        {panel === 'object' && previewSelectedNodes.length > 0 && <section className="preview-selection-tools" aria-label="画布选区"><h3>已选 {previewSelectedNodes.length} 个节点<span>{previewPinnedCount ? `${previewPinnedCount} 个已固定` : ''}</span><button className="tool" aria-label="清空选区" onClick={() => previewEngine.current?.command('select-nodes', {scope:'clear'})}><Icon name="close" size={13} /></button></h3><p className="selection-names" title={previewSelectedNodes.map(node => node.label || node.id).join('、')}>{previewSelectedNodes.map(node => node.label || node.id).join('、')}</p>{previewSelectedNodes.length > 1 && <p className="field-help">{previewCanAlign ? '使用工具栏的对齐与分布整理所选节点。' : '选区跨越不同容器；选择同级节点后可对齐。'}</p>}</section>}
+        {panel === 'object' && previewSelectedNodes.length <= 1 && inspectionNode && inspectionPresentation && <>
           <div className="object-heading"><span className="object-icon" style={{ background: inspectionPresentation.fill }}><Icon name="layers" size={20} /></span><div><h2>{previewPresentation(previewSnapshot.current?.graph)?.nodes?.[inspectionNode.id]?.alias ?? inspectionNode.label ?? inspectionNode.id}</h2><span>{inspectionNode.semantic?.moduleType ?? inspectionNode.semantic?.kind ?? inspectionNode.kind ?? '检查对象'}</span></div></div>
           <div className="evidence-tag opaque">源码检查 · 视觉对象</div>
           <section className="property-section"><h3>显示</h3>
@@ -1619,21 +1397,21 @@ export default function App() {
             <label className="field-label">填充颜色</label><input type="color" aria-label="检查对象填充颜色" disabled={previewLayoutDisabled || current?.pageSpec.preset === 'monochrome'} value={inspectionPresentation.fill} onChange={event => void applyInspectionVisual([{ type: 'nodeStyle', id: inspectionNode.id, style: { fill: event.target.value } }])} />
             <label className="field-label">边框颜色</label><input type="color" aria-label="检查对象边框颜色" disabled={previewLayoutDisabled || current?.pageSpec.preset === 'monochrome'} value={inspectionPresentation.stroke} onChange={event => void applyInspectionVisual([{ type: 'nodeStyle', id: inspectionNode.id, style: { stroke: event.target.value } }])} />
           </section>
-          <section className="property-section"><h3>排列与层级</h3><div className="coordinate-row"><label>X <output>{Math.round(inspectionPresentation.x)}</output></label><label>Y <output>{Math.round(inspectionPresentation.y)}</output></label></div>
+          <details className="inspector-section"><summary>排列与层级</summary><div className="coordinate-row"><label>X <output>{Math.round(inspectionPresentation.x)}</output></label><label>Y <output>{Math.round(inspectionPresentation.y)}</output></label></div>
             {inspectionExpandable && <button className="full-button" disabled={previewLayoutDisabled} onClick={() => void applyInspectionVisual([{ type: 'expand', id: inspectionNode.id, expanded: !inspectionNode.expanded }])}><Icon name="layers" size={14} />{inspectionNode.expanded ? '原位收起检查结构' : '原位展开检查结构'}</button>}
             <button className="text-button" onClick={() => previewEngine.current?.focus({ nodeId: inspectionNode.id })}>聚焦这个检查对象</button>
-          </section>
+          </details>
           <section className="property-section"><h3>源码证据</h3><p className="field-help">{inspectionSource ? `${inspectionSource.path}:${inspectionSource.line}–${inspectionSource.endLine}` : '此展示对象没有独立的源码位置。'}</p><button className="full-button" onClick={() => setSourceOpen(true)}><Icon name="code" size={14} />查看检查对象源码</button><p className="field-help">展示和展开保存在递归预览中。此对象没有唯一的正式计算绑定，参数或连接改写请进入模型编辑；视觉调整不改变模型源码。</p></section>
         </>}
-        {panel === 'object' && selectedNode && current && <>
-          <div className="object-heading"><span className="object-icon" style={{ background: (selectedPreviewNodePresentation?.fill ?? selectedSceneNode?.fill) }}><Icon name="layers" size={20} /></span><div><h2>{current.displayAliases[selectedNode.id] ?? selectedNode.label}</h2><span>{selectedNode.kind}</span></div></div><div className={`evidence-tag ${selectedNode.evidence}`}><Icon name="check" size={12} />{statusText(selectedNode.evidence)}</div>
-          <section className="property-section"><h3>显示</h3><TextField label="显示名称" value={current.displayAliases[selectedNode.id] ?? selectedNode.label} onCommit={label => apply([{ type: 'alias', id: selectedNode.id, label }])} /><p className="field-help">源名称：{selectedNode.label}</p><label className="field-label">图元样式</label><select className="field-select" aria-label="图元样式" value={current.nodeStyleOverrides[selectedNode.id]?.glyph ?? (selectedPreviewNodePresentation?.glyph ?? selectedSceneNode?.glyph) ?? 'module'} onChange={e => apply([{ type: 'nodeStyle', id: selectedNode.id, style: { glyph: e.target.value as 'module' } }])}>{['module', 'operator', 'tensor', 'attention', 'norm', 'add', 'opaque'].map(g => <option key={g} value={g}>{({ module: '模块框', operator: '紧凑算子', tensor: '张量条带', attention: 'Attention 图元', norm: '归一化图元', add: '加法图元', opaque: '未知边界' } as Record<string, string>)[g]}</option>)}</select><label className="field-label">填充颜色</label><div className="color-palette">{PALETTE.map(color => <button key={color} aria-label={`填充 ${color}`} className={(selectedPreviewNodePresentation?.fill ?? selectedSceneNode?.fill) === color ? 'picked' : ''} style={{ background: color }} onClick={() => apply(selection.ids.map(id => ({ type: 'nodeStyle', id, style: { fill: color } })))} />)}<input type="color" aria-label="自定义填充颜色" value={(selectedPreviewNodePresentation?.fill ?? selectedSceneNode?.fill) ?? '#dcebf6'} onChange={e => apply(selection.ids.map(id => ({ type: 'nodeStyle', id, style: { fill: e.target.value } })))} /></div><label className="field-label">边框颜色</label><div className="color-field"><input type="color" aria-label="边框颜色" value={(selectedPreviewNodePresentation?.stroke ?? selectedSceneNode?.stroke) ?? '#607d91'} onChange={e => apply([{ type: 'nodeStyle', id: selectedNode.id, style: { stroke: e.target.value } }])} /><code>{(selectedPreviewNodePresentation?.stroke ?? selectedSceneNode?.stroke)}</code></div></section>
-          <section className="property-section"><h3>排列与层级</h3><div className="coordinate-row"><label>X <output>{Math.round(selectedPreviewNodePresentation?.x ?? selectedSceneNode?.x ?? 0)}</output></label><label>Y <output>{Math.round(selectedPreviewNodePresentation?.y ?? selectedSceneNode?.y ?? 0)}</output></label></div><label className="field-label" htmlFor="layout-move-scope">移动范围</label><select id="layout-move-scope" className="field-select" aria-label="移动范围" value={layoutMoveScope} onChange={e => chooseMoveScope(e.target.value as MoveScope)}><option value="all-frontiers">所有视图</option><option value="current-frontier">仅当前视图</option></select><p className="field-help">对齐、位置修复和文字移动使用此范围。{layoutMoveScope === 'current-frontier' ? '调整当前可见前沿；其他层级保留自己的布局。' : '同步调整已保存的展开层级布局。'}</p>{!!selectedNode.children.length && <button className="full-button" disabled={previewLayoutDisabled} onClick={() => apply([{ type: 'expand', id: selectedNode.id, expanded: !current.expandedIds.includes(selectedNode.id) }])}><Icon name="layers" size={14} />{current.expandedIds.includes(selectedNode.id) ? '原位收起' : '原位展开'}</button>}<button className="full-button" onClick={previewPositionRecovery} disabled={busy || selection.ids.length !== 1}><Icon name="align" size={14} />预览位置修复</button><button className="text-button" onClick={() => focusNode(selectedNode.id)}>聚焦这个对象</button></section>
-          <section className="property-section"><h3>连接点</h3><p className="field-help">{portEditing ? "拖动端口到模块任一边缘。" : "点击“优化自动连接点”比较侧面；使用“显示连接点”查看端口；选中连线后可拖动 S / T 端点。"}</p><button className="full-button" disabled={busy || (!selectedNode.ports.length && !selectedNode.children.length)} onClick={() => optimizeAutomaticPorts(selectedNode.id)}>优化自动连接点</button></section><ParameterEditor node={selectedNode} busy={busy} enabled={!current.sourceBindingDigest.startsWith('preview-only:') && !!capabilities?.semanticWriteback} onPrepare={prepareParameter} onInspectConfiguration={inspectConfiguration} />
+        {panel === 'object' && previewSelectedNodes.length <= 1 && selectedNode && current && <>
+          <div className="object-heading"><span className="object-icon" style={{ background: (selectedPreviewNodePresentation?.fill) }}><Icon name="layers" size={20} /></span><div><h2>{current.displayAliases[selectedNode.id] ?? selectedNode.label}</h2><span>{selectedNode.kind}</span></div></div><div className={`evidence-tag ${selectedNode.evidence}`}><Icon name="check" size={12} />{statusText(selectedNode.evidence)}</div>
+          <section className="property-section"><h3>显示</h3><TextField label="显示名称" value={current.displayAliases[selectedNode.id] ?? selectedNode.label} onCommit={label => apply([{ type: 'alias', id: selectedNode.id, label }])} /><p className="field-help">源名称：{selectedNode.label}</p><label className="field-label">图元样式</label><select className="field-select" aria-label="图元样式" value={current.nodeStyleOverrides[selectedNode.id]?.glyph ?? (selectedPreviewNodePresentation?.glyph) ?? 'module'} onChange={e => apply([{ type: 'nodeStyle', id: selectedNode.id, style: { glyph: e.target.value as 'module' } }])}>{['module', 'operator', 'tensor', 'attention', 'norm', 'add', 'opaque'].map(g => <option key={g} value={g}>{({ module: '模块框', operator: '紧凑算子', tensor: '张量条带', attention: 'Attention 图元', norm: '归一化图元', add: '加法图元', opaque: '未知边界' } as Record<string, string>)[g]}</option>)}</select><label className="field-label">填充颜色</label><div className="color-palette">{PALETTE.map(color => <button key={color} aria-label={`填充 ${color}`} className={(selectedPreviewNodePresentation?.fill) === color ? 'picked' : ''} style={{ background: color }} onClick={() => apply(selection.ids.map(id => ({ type: 'nodeStyle', id, style: { fill: color } })))} />)}<input type="color" aria-label="自定义填充颜色" value={(selectedPreviewNodePresentation?.fill) ?? '#dcebf6'} onChange={e => apply(selection.ids.map(id => ({ type: 'nodeStyle', id, style: { fill: e.target.value } })))} /></div><label className="field-label">边框颜色</label><div className="color-field"><input type="color" aria-label="边框颜色" value={(selectedPreviewNodePresentation?.stroke) ?? '#607d91'} onChange={e => apply([{ type: 'nodeStyle', id: selectedNode.id, style: { stroke: e.target.value } }])} /><code>{(selectedPreviewNodePresentation?.stroke)}</code></div></section>
+          <details className="inspector-section"><summary>排列与层级</summary><div className="coordinate-row"><label>X <output>{Math.round(selectedPreviewNodePresentation?.x ?? 0)}</output></label><label>Y <output>{Math.round(selectedPreviewNodePresentation?.y ?? 0)}</output></label></div><label className="field-label" htmlFor="layout-move-scope">移动范围</label><select id="layout-move-scope" className="field-select" aria-label="移动范围" value={layoutMoveScope} onChange={e => chooseMoveScope(e.target.value as MoveScope)}><option value="all-frontiers">所有视图</option><option value="current-frontier">仅当前视图</option></select><p className="field-help">对齐和文字移动使用此范围。布线使用 Summary 设置中的处理范围。{layoutMoveScope === 'current-frontier' ? '调整当前可见前沿；其他层级保留自己的布局。' : '同步调整已保存的展开层级布局。'}</p>{!!selectedNode.children.length && <button className="full-button" disabled={previewLayoutDisabled} onClick={() => apply([{ type: 'expand', id: selectedNode.id, expanded: !current.expandedIds.includes(selectedNode.id) }])}><Icon name="layers" size={14} />{current.expandedIds.includes(selectedNode.id) ? '原位收起' : '原位展开'}</button>}<button className="full-button" onClick={repairSummaryLayout} disabled={previewLayoutDisabled}><Icon name="align" size={14} />优化当前布线</button><button className="text-button" onClick={() => focusNode(selectedNode.id)}>聚焦这个对象</button></details>
+          <details className="inspector-section"><summary>连接点</summary><p className="field-help">{portEditing ? "拖动端口到模块任一边缘。" : "点击“优化自动连接点”比较侧面；使用“显示连接点”查看端口；选中连线后可拖动 S / T 端点。"}</p><button className="full-button" disabled={busy || (!selectedNode.ports.length && !selectedNode.children.length)} onClick={() => optimizeAutomaticPorts(selectedNode.id)}>优化自动连接点</button></details><ParameterEditor node={selectedNode} busy={busy} enabled={!current.sourceBindingDigest.startsWith('preview-only:') && !!capabilities?.semanticWriteback} onPrepare={prepareParameter} onInspectConfiguration={inspectConfiguration} />
           <ActivationEditor node={selectedNode} busy={busy} enabled={!current.sourceBindingDigest.startsWith('preview-only:') && !!capabilities?.supportedIntents?.includes('replace_activation')} inputSpec={inputSpec} onSetup={() => setRuntimeOpen(true)} onPrepare={prepareActivation} />
           <ObjectFacts architecture={current.architecture} node={selectedNode} onSelect={id => { setSelection({ kind: 'node', ids: [id] }); setPanel('object'); }} />
           {selectedNode.ports.some(p => p.direction === 'in') && <ConnectionEditor key={`${architecture?.sourceDigest}:${selectedNode.id}:${JSON.stringify(inputSpec)}`} document={current} nodeId={selectedNode.id} portId={selectedNode.ports.find(p => p.direction === 'in')!.id} busy={busy} inputSpec={inputSpec} onSetup={() => setRuntimeOpen(true)} enabled={!current.sourceBindingDigest.startsWith('preview-only:') && !!capabilities?.supportedIntents?.includes('rebind_input')} onInspect={inspectRebind} onPrepare={prepareRebind} />}
-          <section className="property-section"><h3>模型事实<span className="read-only">只读</span></h3>{Object.entries(selectedNode.parameters).length ? <dl className="parameters">{Object.entries(selectedNode.parameters).map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{typeof value === 'string' ? value : JSON.stringify(value)}</dd></div>)}</dl> : <p className="field-help">没有已解析的构造参数。</p>}<button className="full-button" onClick={() => setSourceOpen(true)}><Icon name="code" size={14} />查看源码位置</button></section>
+          <details className="inspector-section"><summary>模型事实<span className="read-only">只读</span></summary>{Object.entries(selectedNode.parameters).length ? <dl className="parameters">{Object.entries(selectedNode.parameters).map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{typeof value === 'string' ? value : JSON.stringify(value)}</dd></div>)}</dl> : <p className="field-help">没有已解析的构造参数。</p>}<button className="full-button" onClick={() => setSourceOpen(true)}><Icon name="code" size={14} />查看源码位置</button></details>
         </>}
         {panel === 'object' && selectedEdge && current && <><div className="object-heading"><Icon name="arrow" /><div><h2>{selectedEdge.label || selectedEdge.role}</h2><span>张量关系 · {selectedEdge.role}</span></div></div><section className="property-section"><h3>连线样式</h3><label className="field-label">颜色</label><input type="color" aria-label="连线颜色" disabled={current.pageSpec.preset === 'monochrome'} value={selectedEdgeAppearance?.stroke ?? '#64748b'} onChange={e => apply([{ type: 'edgeStyle', id: selectedEdge.id, style: { stroke: e.target.value } }])} />{current.pageSpec.preset === 'monochrome' && <p className="field-help">黑白模式统一使用灰色；已设置的颜色在论文彩色模式生效。</p>}<label className="field-label">线宽</label><input aria-label="连线宽度" type="range" min="1" max="4" step="0.5" value={selectedEdgeAppearance?.width ?? 1.5} onChange={e => apply([{ type: 'edgeStyle', id: selectedEdge.id, style: { width: Number(e.target.value) } }])} /><label className="check-field"><input type="checkbox" checked={selectedEdgeAppearance?.dashed ?? false} onChange={e => apply([{ type: 'edgeStyle', id: selectedEdge.id, style: { dashed: e.target.checked } }])} />使用虚线</label>{selectedEdgeAppearance && <p className="field-help">当前线型：{edgePatternLabel(selectedEdgeAppearance)} · {current.edgeStyleOverrides[selectedEdge.id]?.dashed === undefined ? '角色默认' : '用户覆盖'}。更改复选框后使用显式实线或通用虚线；可撤销最近编辑。</p>}</section><section className="property-section"><h3>当前端口绑定</h3><p className="field-help">{selectedEdge.source.portId} → {selectedEdge.target.portId}</p><p className="field-help">改走线样式不会改变模型计算关系。</p></section><ConnectionEditor key={`${architecture?.sourceDigest}:${selectedEdge.id}:${JSON.stringify(inputSpec)}`} document={current} nodeId={selectedEdge.target.nodeId} portId={selectedEdge.target.portId} busy={busy} inputSpec={inputSpec} onSetup={() => setRuntimeOpen(true)} enabled={!current.sourceBindingDigest.startsWith('preview-only:') && !!capabilities?.supportedIntents?.includes('rebind_input')} onInspect={inspectRebind} onPrepare={prepareRebind} /></>}
         {panel === 'object' && selectedAnnotation && <><h2>说明文字</h2><TextField label="内容" value={selectedAnnotation.text} onCommit={text => apply([{ type: 'annotation', annotation: { ...selectedAnnotation, text } }])} />{annotationConflicts.length > 0 && <p className="annotation-overlap" role="status">说明正文与 {annotationConflicts.length} 个对象重叠。可移到图下方，再检查导出。</p>}<button className="full-button" onClick={moveAnnotationBelow}><Icon name="align" size={14} />移到图下方</button><button className="text-button" onClick={() => focusAnnotation(selectedAnnotation.id)}>聚焦这段说明</button><button className="full-button" onClick={() => { apply([{ type: 'removeAnnotation', id: selectedAnnotation.id }]); setSelection({ kind: 'node', ids: [] }); }}>移除说明</button></>}
@@ -1650,20 +1428,21 @@ export default function App() {
             <p className="field-help">连接及样式保存在当前预览中，可撤销或通过编辑 JSON 恢复。视觉草稿不会自动写入模型源码。</p>
           </section>
         </>}
-        {panel === 'object' && !selectedNode && !selectedEdge && !selectedPreviewEdge && !selectedAnnotation && !previewSelectedNodes.length && <><div className="inspector-empty"><div className="empty-symbol"><Icon name="arrow" size={24} /></div><h2>从一个对象开始</h2><p>选择模块、连线或说明文字，<br />调整论文图的呈现方式。</p><div className="shortcut-line"><kbd>Shift</kbd> 多选对象</div><div className="shortcut-line"><kbd>双击</kbd> 展开 / 收起模块</div></div><div className="document-summary"><div className="eyebrow">SOURCE-GROUNDED CANVAS</div><h3>{current?.title ?? 'ArchCanvas'}</h3><p>一份模型事实，一份可持续编辑的画布。</p><div><b>{architecture?.nodes.length ?? '—'}</b><span>事实对象</span><b>{architecture?.edges.length ?? '—'}</b><span>端口关系</span></div></div>{!!architecture?.diagnostics.length && <div className="diagnostics"><h3>分析边界</h3>{architecture.diagnostics.slice(0, 4).map((d, i) => <p key={i}>{d.message}</p>)}</div>}</>}
+        {panel === 'object' && !selectedNode && !selectedEdge && !selectedPreviewEdge && !selectedAnnotation && !previewSelectedNodes.length && <><div className="inspector-empty"><div className="empty-symbol"><Icon name="arrow" size={24} /></div><h2>从一个对象开始</h2><p>选择模块、连线或说明文字，<br />调整论文图的呈现方式。</p><div className="shortcut-line"><kbd>拖动空白处</kbd> 框选模块</div><div className="shortcut-line"><kbd>Shift / Ctrl</kbd> 多选对象</div><div className="shortcut-line"><kbd>双击</kbd> 展开 / 收起模块</div></div><div className="document-summary"><h3>{current?.title ?? 'ArchCanvas'}</h3><div><b>{summaryCounts?.nodes ?? architecture?.nodes.length ?? '—'}</b><span>{previewSnapshot.current?.importedDocument ? '文档对象' : summaryCounts ? '源码对象' : '事实对象'}</span><b>{summaryCounts?.edges ?? architecture?.edges.length ?? '—'}</b><span>{summaryCounts ? '依赖关系' : '端口关系'}</span></div></div>{!!architecture?.diagnostics.length && <details className="diagnostics"><summary>{previewSnapshot.current?.importedDocument ? '文档导入边界' : summaryCounts ? '正式编辑分析边界' : '分析边界'}</summary>{architecture.diagnostics.slice(0, 4).map((d, i) => <p key={i}>{d.message}</p>)}</details>}</>}
         {panel === 'legend' && current && <><div className="panel-heading"><h2>图例编辑</h2><p>图例属于画布，随当前版本保存和导出。</p>{current.pageSpec.preset === 'monochrome' && <p className="field-help">悬浮图例显示当前可见连线的角色与实际线型；出版图例随视图和样式自动更新。</p>}</div><div className="legend-list">{current.legendItems.map((item, index) => <div className="legend-editor" key={item.id}><div className="legend-row"><input type="color" aria-label={`图例颜色 ${index + 1}`} value={item.color} onChange={e => apply([{ type: 'legend', items: current.legendItems.map(x => x.id === item.id ? { ...x, color: e.target.value } : x) }])} /><TextField label="" value={item.label} onCommit={label => apply([{ type: 'legend', items: current.legendItems.map(x => x.id === item.id ? { ...x, label } : x) }])} /><button className="tool" aria-label={`删除图例 ${index + 1}`} onClick={() => apply([{ type: 'legend', items: current.legendItems.filter(x => x.id !== item.id) }])}><Icon name="close" size={13} /></button></div><div className="legend-controls"><select aria-label={`图例符号 ${index + 1}`} value={item.glyph} onChange={e => apply([{ type: 'legend', items: current.legendItems.map(x => x.id === item.id ? { ...x, glyph: e.target.value as 'module' } : x) }])}>{['module', 'operator', 'tensor', 'attention', 'norm', 'add', 'opaque'].map(g => <option key={g}>{g}</option>)}</select><button disabled={index === 0} onClick={() => { const items = [...current.legendItems]; [items[index - 1], items[index]] = [items[index], items[index - 1]]; apply([{ type: 'legend', items }]); }} title="上移">↑</button><button disabled={index === current.legendItems.length - 1} onClick={() => { const items = [...current.legendItems]; [items[index + 1], items[index]] = [items[index], items[index + 1]]; apply([{ type: 'legend', items }]); }} title="下移">↓</button></div></div>)}</div><button className="full-button" onClick={() => apply([{ type: 'legend', items: [...current.legendItems, { id: `legend-${crypto.randomUUID()}`, label: '自定义图例', color: '#dcebf6', glyph: 'module' }] }])}><Icon name="plus" size={15} />添加图例条目</button></>}
         {panel === 'page' && current && <><div className="panel-heading"><h2>出版页面</h2><p>SVG、PDF 与 PNG 共用当前画布场景。</p></div><section className="property-section"><label className="field-label">物理页宽</label><div className="segmented">{[85, 180].map(widthMm => <button key={widthMm} className={current.pageSpec.widthMm === widthMm ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { widthMm } }])}>{widthMm} mm</button>)}</div><label className="field-label">背景</label><div className="color-field"><input aria-label="页面背景" type="color" value={current.pageSpec.background} onChange={e => apply([{ type: 'page', page: { background: e.target.value } }])} /><code>{current.pageSpec.background}</code></div><label className="field-label">配色</label><div className="segmented"><button className={current.pageSpec.preset === 'paper' ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { preset: 'paper' } }])}>论文彩色</button><button className={current.pageSpec.preset === 'monochrome' ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { preset: 'monochrome' } }])}>黑白</button></div></section><section className="property-section"><h3>说明文字</h3><button className="full-button" onClick={addAnnotation}><Icon name="plus" size={14} />添加说明文字</button><p className="field-help">使用右上角“导出”生成 SVG、PDF、PNG 或完整编辑 JSON。</p></section></>}
       </div><div className="inspector-footer"><Icon name="info" size={14} /><span>视觉编辑不修改模型源码</span></div></aside>
     </div>
-    <footer className={`statusbar ${failure ? 'has-error' : ''}`}><span><i className={busy ? 'busy-dot' : 'live-dot'} />{failure || (runtimeCancel ? cancelling ? '正在取消运行验证…' : '正在隔离运行并核对前后结构…' : busy ? '正在处理…' : notice)}</span><div>{runtimeCancel && <button disabled={cancelling} onClick={() => void cancelRuntime()}>{cancelling ? '取消中…' : '取消运行验证'}</button>}{selection.ids.length > 0 && <span>{selection.ids.length} 个已选</span>}<span>RECURSIVE PREVIEW</span><span>rev {current?.revision ?? 0}</span></div></footer>
-    {runtimeOpen && architecture && <RuntimeProfileDialog architecture={architecture} initial={inputSpec} example={exampleId === 'multi_input'} onSave={saveInputSpec} onClose={() => setRuntimeOpen(false)} />}
+    <footer className={`statusbar ${failure ? 'has-error' : ''}`}><span><i className={busy ? 'busy-dot' : 'live-dot'} />{failure || (runtimeCancel ? cancelling ? '正在取消运行验证…' : '正在隔离运行并核对前后结构…' : busy ? '正在处理…' : notice)}</span><div>{previewSnapshot.current?.canCancel === true && <button onClick={() => previewEngine.current?.command('cancel-operation')}>取消当前图操作</button>}{runtimeCancel && <button disabled={cancelling} onClick={() => void cancelRuntime()}>{cancelling ? '取消中…' : '取消运行验证'}</button>}{selection.ids.length > 0 && <span>{selection.ids.length} 个已选</span>}<span>RECURSIVE PREVIEW</span><span>rev {current?.revision ?? 0}</span></div></footer>
+    {runtimeOpen && architecture && <RuntimeProfileDialog architecture={architecture} initial={inputSpec} example={false} onSave={saveInputSpec} onClose={() => setRuntimeOpen(false)} />}
     {connectionProposal && <div className="modal-backdrop"><div className="runtime-modal connection-proposal" role="dialog" aria-modal="true" aria-labelledby="proposal-title"><div className="modal-heading"><div><div className="eyebrow">CONNECTION PROPOSAL</div><h2 id="proposal-title">{connectionProposal.candidate ? '检查改接提案' : '保留未支持的连接提案'}</h2></div><button className="tool" aria-label="关闭连接提案" onClick={() => setConnectionProposal(null)}><Icon name="close" /></button></div>{connectionProposal.candidate ? <p>将选定输入连接到 <b>{connectionProposal.candidate.variable}</b>。当前只创建提案；运行验证后会展示准确源码 diff 和前后关系，批准后才能提交工作副本。</p> : connectionProposal.blockers.map((blocker, i) => <p key={i}>{blocker}</p>)}<div className="modal-actions"><button onClick={() => setConnectionProposal(null)}>保留当前连接</button>{!inputSpec && <button onClick={() => { setConnectionProposal(null); setRuntimeOpen(true); }}>设置运行输入与模式</button>}{connectionProposal.candidate && <button className="primary" disabled={busy} onClick={() => { const proposal = connectionProposal; setConnectionProposal(null); prepareRebind(proposal.nodeId, proposal.portId, proposal.candidate!.binding); }}>运行验证并预览源码修改</button>}</div></div></div>}
     {review && <ReviewDialog base={review.base} transaction={review.transaction} busy={busy} error={reviewError} onApprove={() => void approveParameter()} onCommit={() => void commitParameter()} onClose={() => void closeReview()} />}
     {exportDocument && exportPreview && <ExportDialog document={exportDocument} capabilities={capabilities}
       selectedId={selection.kind === 'node' && selection.ids.length === 1 ? selection.ids[0] : undefined}
       previewExport={exportPreview}
       onClose={() => { setExportDocument(null); setExportPreview(null); }} />}
-    {importOpen && <div className="modal-backdrop"><div className="import-modal" role="dialog" aria-modal="true" aria-labelledby="import-title"><div className="modal-heading"><div><div className="eyebrow">STATIC SOURCE IMPORT</div><h2 id="import-title">从 Python 源码开始</h2></div><button className="tool" onClick={() => setImportOpen(false)} aria-label="关闭导入"><Icon name="close" /></button></div><p>导入单文件 nn.Module。分析器只解析源码；不导入模块、不运行 forward。多文件工程和已有预览文档可使用下方的目录与适配包入口。</p><button onClick={() => { setImportOpen(false); previewEngine.current?.command("show-import"); }}><Icon name="file" size={15} />选择源码目录 / 编辑 JSON / 适配包</button><div className="import-fields"><label>模型类名<input value={entry} onChange={e => setEntry(e.target.value)} /></label><label>文件名<input value={filename} onChange={e => setFilename(e.target.value)} /></label><button onClick={() => fileRef.current?.click()}><Icon name="file" size={15} />读取 .py / 架构 JSON</button><input ref={fileRef} hidden type="file" accept=".py,.json" onChange={async e => { const file = e.target.files?.[0]; if (!file) return; try { if (file.size > (file.name.endsWith('.json') ? 16_000_000 : 2_000_000)) throw new Error(file.name.endsWith('.json') ? '编辑 JSON 超过 16 MB 导入预算' : 'Python 源码超过 2 MB 导入预算'); const text = await file.text(); if (file.name.endsWith('.json')) { await importCanvasJson(text); } else { setSourceText(text); setFilename(file.name); } } catch (error) { setFailure(`导入失败：${String(error)}`); } e.target.value = ''; }} /></div><textarea aria-label="Python 源码" spellCheck={false} placeholder="import torch\nfrom torch import nn\n\nclass Model(nn.Module):\n    ..." value={sourceText} onChange={e => setSourceText(e.target.value)} />{failure && <p className="error-text">{failure}</p>}<div className="modal-actions"><button onClick={() => setImportOpen(false)}>取消</button><button className="primary" onClick={() => void importSource()} disabled={busy || !sourceText.trim()}>静态分析并打开画布</button></div></div></div>}
+    {importOpen && <SourceImportDialog entry={entry} filename={filename} source={sourceText} busy={busy} error={failure} onEntry={setEntry} onFilename={setFilename} onSource={setSourceText} onJson={importCanvasJson} onError={setFailure} onAnalyze={() => void importSource()} onClose={() => setImportOpen(false)} onProject={() => { setImportOpen(false); previewEngine.current?.command('show-import'); }} />}
+
   </div>{authoringView}</>;
 }
 

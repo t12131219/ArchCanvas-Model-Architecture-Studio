@@ -1,0 +1,97 @@
+{
+  "schema": "archcanvas-summary-host-source-validation/1",
+  "recordedAt": "2026-10-27T23:20:19.838410+00:00",
+  "phaseStatus": "validated-exact-host-source-sharing-and-browser-save-recovery",
+  "overallMigrationStatus": "in-progress",
+  "frontendFullBeforeFinalRecovery": {
+    "tests": 972,
+    "pass": 971,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 1,
+    "durationMs": 627098.81468,
+    "evidence": "frontend-before-final-recovery.log",
+    "scope": "Started before final complete-IR discriminator, per-snapshot alias guard and browser-only saved-marker recovery changes; final targeted/independent/browser results below cover final bytes. One standalone SVG DOM sandbox Chromium skip."
+  },
+  "targetedFinal": {
+    "tests": 46,
+    "pass": 46,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "durationMs": 10903.94019,
+    "evidence": "targeted-final.log",
+    "newHostSnapshotCases": 6,
+    "newActualRecoveryCallbackCases": 2
+  },
+  "independentCopy": {
+    "targetedFinal": {
+      "tests": 111,
+      "pass": 111,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationMs": 68004.331732
+    },
+    "evidence": "independent-final.log",
+    "build": "independent-build-final.log",
+    "inputs": "independent-inputs.json",
+    "currentInputsEqual": 179,
+    "currentPythonFilesEqual": 69,
+    "provenance": "independent-provenance.json",
+    "scope": "Reused standalone formal release, copied installed npm dependencies; minimal isolated Python with standalone src. No clean network install or new CPU execution."
+  },
+  "build": {
+    "passed": true,
+    "evidence": "build-final.log",
+    "independentListedResourcesEqual": 112,
+    "equivalence": "independent-build-equivalence.json"
+  },
+  "browser": {
+    "host": {
+      "passChecks": 6,
+      "browserErrors": 0,
+      "evidence": "browser-host.json"
+    },
+    "sharing": {
+      "passChecks": 8,
+      "browserErrors": 0,
+      "evidence": "browser-sharing.json"
+    },
+    "gestures": {
+      "passChecks": 5,
+      "browserErrors": 0,
+      "evidence": "browser-gestures.json"
+    },
+    "native": {
+      "passChecks": 16,
+      "browserErrors": 0,
+      "evidence": "browser-native.json"
+    }
+  },
+  "browserTotalChecks": 35,
+  "assetIntegrity": {
+    "resources": 112,
+    "integrationAssets": 108,
+    "nativeSourceIdenticalModules": 32,
+    "catalogSourceIdenticalAssets": 45,
+    "publicDistHttpEqual": true,
+    "evidence": "http-assets.json"
+  },
+  "largeGraphDiagnostic": {
+    "evidence": "large-sources-final.json",
+    "scope": "Complete current/before host builders, 300ms F0 routing budget. V8 reference serialization sizes, not browser IPC/RSS/storage/complete routing acceptance. First snapshot slower; no latency improvement claimed. Portable JSON remains unchanged and each host message still contains full source."
+  },
+  "selfReview": [
+    "Fixed VM test root (window versus globalThis); failure retained.",
+    "Real importedDocument metadata uses the IR schema name without containing complete IR. Excluded metadata from source interning and added independent-copy counterexample.",
+    "Actual screenshot exposed browser-only missing-CAS recovery forgetting saved marker. Restored marker only while document, case and load generation remain current; final browser visibly asserts saved after reload.",
+    "Aliased graph/adapter tamper correctly rejects earlier at adapter integrity. Final browser separately exercises that path and graph-only JSON tamper without weakening either validator."
+  ],
+  "remaining": [
+    "Compact portable JSON and cross-message source transfer caching",
+    "Full three-large-model routing, persistent storage, RSS/history/model-switch/cancellation acceptance; current budgets retained",
+    "Fresh CPU through formal isolation/profile/receipt",
+    "Final requirements audit against both migration documents"
+  ]
+}

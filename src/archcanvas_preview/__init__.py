@@ -9,9 +9,24 @@ Migration validation lives in tests/test_preview_backend.py.
 from pathlib import Path
 import tempfile
 
-from .analyze import AdapterError, MAX_BYTES, MAX_DEPTH, MAX_EDGES, MAX_FILES, MAX_NODES, analyze, files_checked
+from .analyze import AdapterError, MAX_BYTES, MAX_DEPTH, MAX_EDGES, MAX_FILES, MAX_NODES, analyze as legacy_analyze, files_checked
+from .semantic_bridge import analyze_summary
 
-__all__ = ["AdapterError", "analyze", "analyze_for_authoring", "capabilities"]
+__all__ = ["AdapterError", "analyze", "analyze_for_authoring", "analyze_summary", "capabilities"]
+
+
+def analyze(files: dict[str, str], entry: str | None = None, config: dict | None = None, *, semantic_mode: str = "legacy") -> dict:
+    """Analyze source for the recursive preview.
+
+    Summary_Merge semantic analysis is the Studio default when explicitly
+    selected by the migrated UI.  The original portable adapter remains
+    available for existing saved bundles and compatibility tests.
+    """
+    if semantic_mode == "summary":
+        return analyze_summary(files, entry, config)
+    if semantic_mode != "legacy":
+        raise AdapterError("不支持的预览语义模式。")
+    return legacy_analyze(files, entry, config)
 
 
 def analyze_for_authoring(files: dict[str, str], entry: str | None) -> dict:
@@ -40,13 +55,18 @@ def capabilities() -> dict:
     return {
         "schema": "summary-source-adapter/1",
         "irSchema": "summary-source-ir/1",
+        "semanticSchema": "archcanvas-source-semantic/2",
+        "semanticModes": ["summary", "legacy"],
+        "studioDefaultSemanticMode": "summary",
         "analyze": "/api/preview/analyze",
         "authoringArchitecture": "/api/preview/edit-source",
+        "nativeAuthoring": {"module": "/api/preview/authoring/module", "schema": "semantic-module/1", "analysis": "isolated-static-ast", "modelExecuted": False, "sourceTransactionBinding": False, "sourceBytes": 120_000,
+                            "localAssembly": {"endpoint": "/api/preview/authoring/certify", "schema": "archcanvas-summary-local-assembly/1", "scope": "declared-local-operand-structure", "modelExecuted": False, "sourceTransactionBinding": False}},
         "exports": "/api/preview/exports",
         "legacyAnalyze": "/api/source-adapter/analyze",
         "managedProject": "/api/projects/{projectId}/preview",
         "modelExecuted": False,
-        "analysis": "static-source-dependencies",
+        "analysis": "summary-static-source-semantic",
         "limits": {"files": MAX_FILES, "sourceBytes": MAX_BYTES, "nodes": MAX_NODES, "edges": MAX_EDGES, "depth": MAX_DEPTH},
         "package": str(Path(__file__).resolve().parent),
         "sourceMigration": {
@@ -54,5 +74,8 @@ def capabilities() -> dict:
             "source": "prototype/Summary_Merge/source_adapter",
             "analyzerSha256": "4203423099ebe24d81a0d512e932d26ae3b172f8d7dce8f1d155c17fa4978650",
             "registrySha256": "5e5a34d04886f1a0450428a0715abc3dc4a14caa3ff1d9669e7948f245f1dbb3",
+            "semanticAdapter": "archcanvas_summary_semantic",
+            "semanticSchema": "archcanvas-source-semantic/2",
+            "semanticMode": "summary",
         },
     }

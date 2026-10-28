@@ -174,7 +174,7 @@ test('older cached frontiers rebuild the bad gates while retaining local edits a
   doc.state.captionAnchors = { sample: { mode: 'ratio', ratio: 0.4, gap: 12 } };
   F.remember(graph);
   const updated = F.upgrade(graph);
-  assert.equal(updated.recursive.presentationVersion, 18);
+  assert.equal(updated.recursive.presentationVersion, 19);
   assert.deepEqual(plain(updated.recursive.state.open), choices);
   assert.deepEqual(plain(updated.recursive.state.layouts), offsets);
   assert.deepEqual(plain(updated.recursive.state.captionAnchors.sample), { mode: 'ratio', ratio: 0.4, gap: 12 });

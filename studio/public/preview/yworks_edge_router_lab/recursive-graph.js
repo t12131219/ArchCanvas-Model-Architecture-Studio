@@ -5,19 +5,20 @@
   const R=root.EdgeRouterLabRouting,E=root.SummaryEngine,C=root.SummaryConstraints;
   const copy=v=>v===undefined?undefined:JSON.parse(JSON.stringify(v)),eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b),EPS=1e-5;
   const receiptCache=new WeakMap();
-  const PRESENTATION_VERSION=18;
+  const PRESENTATION_VERSION=20;
   function children(authority,id){return authority.detail.nodes.filter(n=>n.parent===id);}
   function containers(authority){return authority.detail.nodes.filter(n=>children(authority,n.id).length&&!n.junction).map(n=>n.id);}
   function create(sources){
     const ordered=['overview','modules','detailed',...Object.keys(sources)].filter((k,i,a)=>sources[k]&&a.indexOf(k)===i);
-    const variants=ordered.map(k=>copy(sources[k])),detail=copy(sources.detailed||variants.at(-1)),overview=copy(sources.overview||variants[0]);
+    const variants=ordered.map(k=>copy(sources[k])),detail=copy(sources['source-atomic']||sources.detailed||variants.at(-1)),overview=copy(sources.overview||sources['source-atomic']||variants[0]);
+    if(sources['source-atomic']){const byId=new Map(detail.nodes.map(n=>[n.id,n]));for(const variant of variants)for(const n of variant.nodes){const atomic=byId.get(n.id);if(atomic)for(const key of ['atomicity','semantic_kind','source_evidence','source_line','source_expression','source_binding'])if(atomic[key]!==undefined)n[key]=copy(atomic[key]);}}
     // A single detailed-only audit has no compact snapshot. Its root remains
     // the minimum skeleton, and its nested source containers start folded.
     const mandatory=overview.nodes.filter(n=>n.expanded&&detail.nodes.some(v=>v.parent===n.id)).map(n=>n.id);
     if(!sources.overview){mandatory.splice(0,mandatory.length,...detail.nodes.filter(n=>!n.parent&&children({detail},n.id).length).map(n=>n.id));}
     return {schema:1,presentationVersion:PRESENTATION_VERSION,authority:{detail,variants,mandatory},state:{open:[...mandatory],folded:[],layouts:{},frontiers:{}},revision:0};
   }
-  function opened(doc,id){return doc.authority.mandatory.includes(id)||doc.state.open.includes(id)&&!doc.state.folded.includes(id);}
+  function opened(doc,id){if(doc.state.moduleCuts?.length&&doc.state.folded.includes(id))return false;return doc.authority.mandatory.includes(id)||doc.state.open.includes(id)&&!doc.state.folded.includes(id);}
   function visible(doc){const ids=new Set(),nodes=doc.authority.detail.nodes;
     function visit(id){ids.add(id);if(opened(doc,id))for(const n of nodes)if(n.parent===id)visit(n.id);}
     for(const n of nodes)if(!n.parent||!nodes.some(p=>p.id===n.parent))visit(n.id);return ids;
@@ -266,8 +267,13 @@
         // Align a straight producer ray with its gate. A perpendicular
         // producer first turns towards its consumers; anchoring that gate to
         // the producer's height would drag a Memory K/V bus to the title row.
-        const parallel=['top','bottom'].includes(sourceSide)===['top','bottom'].includes(side),port=common&&parallel&&E.endpoint(graph,list[0].e,'source'),coordinate=port?port[axis]-frame[axis]:list.reduce((v,x)=>v+x.gate.fraction*size,0)/list.length;
-        return {wire,list,coordinate,anchor:port&&coordinate>12&&coordinate<size-12?'source':null};
+        const parallel=['top','bottom'].includes(sourceSide)===['top','bottom'].includes(side),port=common&&parallel&&E.endpoint(graph,list[0].e,'source'),producer=port?port[axis]-frame[axis]:null;
+        // An outside producer may sit above or below the entire consumer
+        // frame. Clamping that ray to its corner destroys nested K/V gates.
+        // Keep the recorded consumer lane unless a straight ray fits inside.
+        const anchor=producer!==null&&producer>12&&producer<size-12;
+        const coordinate=anchor?producer:list.reduce((v,x)=>v+x.gate.fraction*size,0)/list.length;
+        return {wire,list,coordinate,anchor:anchor?'source':null};
       }).sort((a,b)=>a.coordinate-b.coordinate||a.wire.localeCompare(b.wire));
       const pad=Math.max(12,...entries.map(x=>C.borderClearance(x.e,frame)+1)),spacing=Math.min(14,(size-2*pad)/Math.max(1,ordered.length-1));
       let cursor=pad-spacing;
@@ -330,6 +336,16 @@
         if(gate.direction!==direction||seenGates.has(gate.frame))return false;
         seenGates.add(gate.frame);return true;
       });
+      // A newly expanded source region may itself consume a dependency.
+      // Its folded template has no frame crossing. Register the physical
+      // endpoint interface when the frontier introduces that frame; keep the
+      // canonical destination and all interior transits unchanged.
+      if(!source)for(const side of ['source','target']){
+        const node=by.get(e[side]),f=e[side==='source'?'fixedSource':'fixedTarget'];
+        if(node.expanded&&!gates.some(g=>g.frame===node.id)){
+          gates.push({frame:node.id,side:f.side,fraction:f.fraction,direction:side==='source'&&f.inward?'enter':'exit',order:side==='source'?-1:1e9});
+        }
+      }
       e.contract={version:1,source:s,target:t,wire:C.wireIdentity(raw,doc.authority.detail),bus:false,gates,sharedStem:null,enforcePortApproach:true,minimumTerminal:9};
       e.route[0]=E.endpoint(g,e,'source');e.route[e.route.length-1]=E.endpoint(g,e,'target');
       // The route is exact when a registered frontier matches. Preserve its
@@ -409,10 +425,11 @@
     for(const cached of Object.values(doc.state.frontiers)){for(const n of cached.nodes)if(desc.has(n.id)){n.x+=dx;n.y+=dy;}for(const e of cached.edges)if(desc.has(e.source)&&desc.has(e.target)){e.route=e.route.map(p=>({x:p.x+dx,y:p.y+dy}));}else if(desc.has(e.source)||desc.has(e.target)){e.needsRecursiveRouting=true;}}
     remember(after);
   }
-  function toggle(graph,id,force){const doc=graph.recursive;if(!doc||!children(doc.authority,id).length||doc.authority.mandatory.includes(id))return null;remember(graph);const next=force===undefined?!opened(doc,id):force;
+  function toggle(graph,id,force){const doc=graph.recursive;if(!doc||!children(doc.authority,id).length||doc.authority.mandatory.includes(id)&&!doc.state.moduleCuts?.length)return null;remember(graph);const next=force===undefined?!opened(doc,id):force;
+    if(doc.state.moduleCuts?.length)doc.state.moduleManual={...doc.state.moduleManual,[id]:next};
     if(next){if(!doc.state.open.includes(id))doc.state.open.push(id);doc.state.folded=doc.state.folded.filter(v=>v!==id);}else {if(!doc.state.folded.includes(id))doc.state.folded.push(id);}doc.revision++;return build(doc);
   }
-  function all(graph,open){const doc=graph.recursive;remember(graph);if(open){doc.state.open=containers(doc.authority);doc.state.folded=[];}else{doc.state.folded=containers(doc.authority).filter(id=>!doc.authority.mandatory.includes(id));}doc.revision++;return build(doc);}
+  function all(graph,open){const doc=graph.recursive;remember(graph);delete doc.state.moduleCuts;delete doc.state.moduleBase;delete doc.state.moduleManual;if(open){doc.state.open=containers(doc.authority);doc.state.folded=[];}else{doc.state.folded=containers(doc.authority).filter(id=>!doc.authority.mandatory.includes(id));}doc.revision++;return build(doc);}
   function nodeErrors(graph){const doc=graph.recursive;if(!doc)return[];const errors=[],a=doc.authority,r=receipts(doc),ids=visible(doc),actual=new Set(graph.nodes.map(n=>n.id));
     if(!eq([...ids].sort(),[...actual].sort()))errors.push('recursive frontier node set changed');
     const fingerprint=JSON.stringify({nodes:a.detail.nodes.map(n=>[n.id,n.parent,n.semantic,n.visualBinding,n.glyphPresentation,n.html]),edges:a.detail.edges.map(e=>[e.id,e.source,e.target,e.binding,e.fixedSource,e.fixedTarget,e.portPolicy]),baseline:a.detail.semanticBaseline});if(r.authorityFingerprint!==fingerprint){r.authorityCheck=root.SummarySourceContracts.validateGraph(a.detail);r.authorityFingerprint=fingerprint;}errors.push(...r.authorityCheck.violations.map(e=>'recursive authority: '+e));
@@ -652,7 +669,12 @@
     }return hits.sort((a,b)=>a.distance-b.distance||b.high-b.low-(a.high-a.low));
   }
   function parallelShiftCandidates(graph,e,hits){
-    const candidates=new Map(),add=raw=>{if(candidates.size>=96)return;const points=R.simplify(raw);if(points.length<=24)candidates.set(JSON.stringify(points),points);};
+    const candidates=new Map(),add=raw=>{if(candidates.size>=96)return;const points=R.simplify(raw);
+      // A recursive route can cross several expanded containers and easily
+      // exceed the old short-path cutoff. Keep the same bounded candidate
+      // family for those paths while preventing pathological receipts from
+      // consuming the whole worker budget.
+      if(points.length<=96)candidates.set(JSON.stringify(points),points);};
     for(const hit of hits.slice(0,6)){
       const ps=e.route,axis=hit.axis,along=axis==='x'?'y':'x',a=ps[hit.segment],b=ps[hit.segment+1],min=Math.min(a[along],b[along]),max=Math.max(a[along],b[along]);
       for(const coordinate of [hit.peer-10,hit.peer+10,hit.peer-20,hit.peer+20,hit.peer-30,hit.peer+30]){
@@ -685,22 +707,62 @@
       }
     }return [...candidates.values()];
   }
-  function polishShortLanes(graph,context,keepsWaypoints,preserved,preserve){
+  function polishLanes(graph,context,keepsWaypoints,preserved,preserve,options={}){
     // This receipt is only an optional presentation-cleanup cache. Include
     // every peer lane, label, gate and manual knot: a local shortcut's
     // legality can depend on any of them. Normal routing validation always
     // runs before this cache, even when the cleanup budget was exhausted.
-    const key=()=>{const text=JSON.stringify([PRESENTATION_VERSION,graph.nodes.map(n=>[n.id,n.x,n.y,n.w,n.h,n.parent,n.expanded,n.glyphPresentation,n.labelObstacles]),graph.edges.map(e=>[e.id,e.source,e.target,e.route,e.failed,e.arrow,e.style,e.binding,e.contract,e.portPolicy,e.fixedSource,e.fixedTarget,e.physicalSource,e.physicalTarget,e.projection]),graph.junctionMarkers,preserve,[...preserved]]);let a=2166136261,b=5381;for(let i=0;i<text.length;i++){const c=text.charCodeAt(i);a=Math.imul(a^c,16777619);b=Math.imul(b,33)^c;}return text.length+':'+(a>>>0).toString(16)+':'+(b>>>0).toString(16);};
+    const key=()=>{const text=JSON.stringify([PRESENTATION_VERSION,graph.nodes.map(n=>[n.id,n.x,n.y,n.w,n.h,n.parent,n.expanded,n.glyphPresentation,n.labelObstacles]),graph.edges.map(e=>[e.id,e.source,e.target,e.route,e.failed,e.arrow,e.style,e.binding,e.contract,e.portPolicy,e.fixedSource,e.fixedTarget,e.physicalSource,e.physicalTarget,e.projection]),graph.junctionMarkers,preserve,[...preserved],options.edgeIds||null,options.sides||'any']);let a=2166136261,b=5381;for(let i=0;i<text.length;i++){const c=text.charCodeAt(i);a=Math.imul(a^c,16777619);b=Math.imul(b,33)^c;}return text.length+':'+(a>>>0).toString(16)+':'+(b>>>0).toString(16);};
     if(graph.recursiveLaneCleanup===key())return;
     let budget=256,qualityBudget=512,index=parallelLaneIndex(graph);
+    const selected=options.edgeIds&&options.edgeIds.length?new Set(options.edgeIds):null;
+    const eligible=e=>!selected||selected.has(e.id);
     const length=ps=>ps.slice(1).reduce((sum,p,i)=>sum+R.dist(ps[i],p),0),shortStep=ps=>ps.slice(2,-1).some((p,i)=>R.dist(ps[i+1],p)<14),score=ps=>length(ps)+40*Math.max(0,ps.length-2)+ps.slice(2,-1).reduce((sum,p,i)=>sum+Math.max(0,12-R.dist(ps[i+1],p))*4,0);
+    // Expansion must not leave two aligned flexible operators connected by
+    // a U-shaped side detour until the user clicks Apply. Compare only clear
+    // straight candidates here; no global search or node movement is needed.
+    // Fixed interfaces, shared spines, gates and manual knots stay protected.
+    const P=root.SummaryPhysicalPorts;
+    for(const e of graph.edges){
+      if(!budget||!qualityBudget)break;
+      if(!eligible(e)||e.failed||e.style!=='orthogonal'||e.route.length<=2||e.contract.bus||e.contract.gates.length||e.contract.sharedStem||e.portPolicy?.source?.sharedStem||e.portPolicy?.target?.sharedStem)continue;
+      const source=graph.nodes.find(n=>n.id===e.source),target=graph.nodes.find(n=>n.id===e.target);
+      if(!source||!target||source.expanded||target.expanded||source.junction||target.junction||source.glyphPresentation||target.glyphPresentation)continue;
+      if(P.policy(graph,e,'source').mode==='fixed'&&P.policy(graph,e,'target').mode==='fixed')continue;
+      const before=copy(e),quality=peerRouteQuality(graph,e,e.route),candidates=[];
+      for(const s of P.candidates(graph,e,'source',options.sides||'any'))for(const t of P.candidates(graph,e,'target',options.sides||'any')){
+        const projected={...e,physicalSource:s,physicalTarget:t},a=E.endpoint(graph,projected,'source'),b=E.endpoint(graph,projected,'target');
+        if(Math.abs(a.x-b.x)>EPS&&Math.abs(a.y-b.y)>EPS)continue;
+        const points=[a,b];if(length(points)>length(e.route)+EPS||!keepsWaypoints(e,points))continue;
+        candidates.push({projected,points});
+      }
+      candidates.sort((a,b)=>length(a.points)-length(b.points));
+      for(const {projected,points}of candidates){
+        if(!budget||!qualityBudget)break;budget--;qualityBudget--;
+        if(!C.validate(graph,projected,points,context).ok||C.laneContacts(graph,projected,points,context).length||E.overlapsWire(graph,projected,points)||!qualityDoesNotRegress(peerRouteQuality(graph,e,points),quality))continue;
+        e.route=points;e.physicalSource=projected.physicalSource;e.physicalTarget=projected.physicalTarget;
+        if(C.validateJunctions(graph).ok){index=parallelLaneIndex(graph);break;}
+        Object.assign(e,before);
+      }
+    }
     for(const e of graph.edges){
       // Short internal steps are usually a mismatch between two clear lane
       // coordinates. Keep this optional cleanup bounded to local subchains;
       // long deliberate detours and physical arrow terminals are retained.
       if(!budget||!qualityBudget)break;
-      if(e.failed||e.route.length>24)continue;
-      const close=parallelLaneContacts(graph,e,e.route,index);if(!shortStep(e.route)&&!close.length)continue;
+      if(e.failed||e.route.length>96||!eligible(e))continue;
+      const close=parallelLaneContacts(graph,e,e.route,index);
+      // Evaluate legal routes with several bends as well as tiny-step routes.
+      // A long residual/skip path can be fully legal while still carrying
+      // avoidable elbows; the candidate checks below keep this bounded.
+      const protectSpine=!!(e.contract?.sharedStem||e.portPolicy?.source?.sharedStem||e.portPolicy?.target?.sharedStem);
+      // Preserve the established terminal-band ordering for ordinary short
+      // routes. Long paths get the bounded window pass; short paths still
+      // enter it only when they contain the original sub-14px defect. This
+      // prevents a generic shortcut from consuming the bands that the
+      // follow-up terminal cleanup needs for shared recurrent outputs.
+      const longCleanup=e.route.length>=25&&!protectSpine;
+      if(!longCleanup&&!shortStep(e.route)&&!close.length)continue;
       budget--;if(!C.validate(graph,e,e.route,context).ok)continue;
       if(close.length&&budget){
         qualityBudget--;const before=e.route,oldQuality=peerRouteQuality(graph,e,before),raw=parallelShiftCandidates(graph,e,close).filter(points=>keepsWaypoints(e,points)).slice(0,qualityBudget);qualityBudget-=raw.length;
@@ -712,10 +774,16 @@
         }
       }
       for(let pass=0;pass<12;pass++){
-        if(!qualityBudget)break;qualityBudget--;
+        // A parallel shift can expose a new sub-14px elbow on an otherwise
+        // short route. Re-evaluate that defect after the shift so the legacy
+        // terminal ordering still gets its cleanup opportunity.
+        if(!longCleanup&&!shortStep(e.route)||!qualityBudget)break;qualityBudget--;
         const before=e.route,oldLength=length(before),oldQuality=peerRouteQuality(graph,e,before),candidates=new Map();
         for(let i=0;i<before.length-3;i++)for(let j=i+3;j<Math.min(before.length,i+9);j++){
-          if(!before.slice(i+2,j).some((p,k)=>R.dist(before[i+k+1],p)<14))continue;
+          // Try every small orthogonal window. The previous implementation
+          // only considered windows containing a sub-14px step, so long
+          // routes with unnecessary bends could never be improved.
+          if(!longCleanup&&!before.slice(i+2,j).some((p,k)=>R.dist(before[i+k+1],p)<14))continue;
           const a=before[i],b=before[j];for(const corner of [{x:a.x,y:b.y},{x:b.x,y:a.y}]){
             const points=R.simplify([...before.slice(0,i+1),corner,...before.slice(j)]);
             if(points.length<=before.length-2&&length(points)<=oldLength+EPS&&keepsWaypoints(e,points))candidates.set(JSON.stringify(points),points);
@@ -734,7 +802,7 @@
     }
     for(const e of graph.edges){
       if(!budget||!qualityBudget)break;
-      if(e.failed||e.route.length>24)continue;
+      if(e.failed||e.route.length>96||!eligible(e))continue;
       // All normal lane shifts and shortening finish before this optional
       // terminal cleanup, so it cannot interrupt a peer's simplification.
       if(parallelLaneContacts(graph,e,e.route,index).length){
@@ -779,6 +847,13 @@
         // can fall back to a route pressed against the child frame.
         if(gatePath.length){const first=gatePath[0],last=gatePath.at(-1);for(const path of gatePaths)for(const origin of stem?[a,s]:[a])for(const enter of [{x:origin.x,y:first.y},{x:first.x,y:origin.y}])for(const exit of [{x:b.x,y:last.y},{x:last.x,y:b.y}])candidates.push([s,origin,enter,...path,exit,b,t]);}
       }
+      // If an endpoint glyph's caption blocks every short terminal dogleg,
+      // skirt its painted label by the smallest safe edge clearance. This is
+      // still a presentation route candidate; source identity and the two
+      // endpoint port contracts remain unchanged and the full validator
+      // decides whether the candidate is admissible.
+      const captions=graph.nodes.filter(n=>n.glyphPresentation||n.expanded).flatMap(n=>(n.labelObstacles||[]).map(b=>({x:n.x+b.x,y:n.y+b.y,w:b.w,h:b.h})));
+      for(const box of captions){const xs=[box.x-12,box.x+box.w+12],ys=[box.y-2,box.y+box.h+2,box.y-12,box.y+box.h+12];for(const x of xs){candidates.push([s,{x,y:s.y},{x,y:ys[0]},{x:t.x,y:ys[0]},t],[s,{x,y:s.y},{x,y:ys[1]},{x:t.x,y:ys[1]},t]);}for(const y of ys){candidates.push([s,{x:s.x,y},{x:t.x,y},t],[s,{x:xs[0],y:s.y},{x:xs[0],y},{x:t.x,y},t],[s,{x:xs[1],y:s.y},{x:xs[1],y},{x:t.x,y},t]);}}
       const prior=graph.edges.filter(v=>v!==e&&v.contract.wire!==e.contract.wire).map(v=>Object.assign(v.route.slice(),{wire:v.contract.wire})),settings={bendCost:options.bendCost??40,crossingCost:options.crossingCost??180,overlapCost:options.overlapCost??2,edgeSpacing:options.edgeSpacing??10},costs=new Map(),cost=ps=>{if(!costs.has(ps))costs.set(ps,R.routeCost(ps,prior,settings));return costs.get(ps);};
       const legal=candidates.map(R.simplify).filter(ps=>keepsWaypoints(e,ps)&&C.validate(graph,e,ps,context).ok&&!C.laneContacts(graph,e,ps,context).length).flatMap(ps=>separateWireLane(graph,e,ps,context)).filter(ps=>keepsWaypoints(e,ps)&&!C.constraints(graph,e,{margin:0},context).extraObstacles.filter(b=>b.id?.startsWith('label:')).some(b=>ps.slice(1).some((p,i)=>R.intersectsRect(ps[i],p,b)))).sort((a,b)=>cost(a)-cost(b));
       if(legal.length){e.route=legal[0];e.failed=false;delete e.reason;delete e.boundaryLane;delete e.needsRecursiveRouting;repaired.add(e.id);}
@@ -787,7 +862,7 @@
     // A proven clear local route is already final. Sending it through the
     // visibility router again discards that result and can search a much
     // larger graph solely because the old route was invalid at batch start.
-    const ids=graph.edges.filter(e=>initialInvalid.has(e.id)&&!repaired.has(e.id)||e.needsRecursiveRouting||!C.validate(graph,e,e.route,context).ok||E.overlapsWire(graph,e,e.route)).map(e=>e.id);if(!ids.length){ensureJunctionMarkers(graph);polishShortLanes(graph,context,keepsWaypoints,preserved,!!options.preserve);const topology=C.validateJunctions(graph);return {graph,routed:repaired.size,failed:topology.ok?0:1,...(!topology.ok?{reason:topology.violations.join('; ')}:{})};}
+    const ids=graph.edges.filter(e=>initialInvalid.has(e.id)&&!repaired.has(e.id)||e.needsRecursiveRouting||!C.validate(graph,e,e.route,context).ok||E.overlapsWire(graph,e,e.route)).map(e=>e.id);if(!ids.length){ensureJunctionMarkers(graph);polishLanes(graph,context,keepsWaypoints,preserved,!!options.preserve,options);const topology=C.validateJunctions(graph);return {graph,routed:repaired.size,failed:topology.ok?0:1,...(!topology.ok?{reason:topology.violations.join('; ')}:{})};}
     for(const e of graph.edges){delete e.needsRecursiveRouting;if(ids.includes(e.id)&&!preserved.has(e.id)){e.waypoints=C.activeGates(graph,e).filter(g=>g.frame!==e.source&&g.frame!==e.target).sort((a,b)=>a.order-b.order).flatMap(g=>{const frame=graph.nodes.find(n=>n.id===g.frame),p=C.gatePoint(frame,g),normal=normals[g.side],pad=C.laneClearances(graph,e,frame,context)[g.side],sign=g.direction==='enter'?1:-1,before=sign>0?pad.outside:pad.inside,after=sign>0?pad.inside:pad.outside;return [{x:p.x+normal[0]*before*sign,y:p.y+normal[1]*before*sign},{x:p.x-normal[0]*after*sign,y:p.y-normal[1]*after*sign}];});}}
     const batchOptions={margin:4,stub:14,bendCost:40,crossingCost:180,overlapCost:2,edgeSpacing:10,sides:'any',style:'orthogonal',optimizeCrossings:false,groupByWire:true,firstLegal:true,...options,preserve:true};
     const result=E.routeBatch(graph,ids,batchOptions);
@@ -797,7 +872,7 @@
     const beforeLanes=graph.edges.map(e=>[e,copy(e)]);
     for(const e of graph.edges)if(C.laneContacts(graph,e,e.route,context).length){const lane=clearLaneCandidates(graph,e,context).find(points=>keepsWaypoints(e,points));if(lane){e.route=lane;e.failed=false;delete e.reason;delete e.boundaryLane;}}
     if(!C.validateJunctions(graph).ok)for(const [e,saved]of beforeLanes){for(const k of Object.keys(e))delete e[k];Object.assign(e,saved);}
-    ensureJunctionMarkers(graph);polishShortLanes(graph,context,keepsWaypoints,preserved,!!options.preserve);
+    ensureJunctionMarkers(graph);polishLanes(graph,context,keepsWaypoints,preserved,!!options.preserve,options);
     return result;}
-  const api={create,children,containers,opened,visible,representative,signature,build,toggle,all,remember,captureMove,nodeErrors,edgeErrors,validate,route,upgrade,annotations};root.SummaryRecursive=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
+  const api={create,children,containers,opened,visible,representative,signature,build,toggle,all,remember,captureMove,nodeErrors,edgeErrors,validate,route,polish:(graph,options={})=>{C.initialize(graph);const context=C.validationContext(graph);const preserved=new Map(options.preserve?graph.edges.filter(e=>e.waypoints?.length).map(e=>[e.id,copy(e.waypoints)]):[]),keepsWaypoints=(e,points)=>visitsWaypoints(points,preserved.get(e.id)||[]);polishLanes(graph,context,keepsWaypoints,preserved,!!options.preserve,options);return graph;},upgrade,annotations};root.SummaryRecursive=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

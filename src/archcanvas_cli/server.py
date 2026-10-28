@@ -20,6 +20,7 @@ import archcanvas_publication
 import archcanvas_runtime
 import archcanvas_authoring
 import archcanvas_preview
+import archcanvas_summary_semantic
 from archcanvas_python import AnalysisError, analyze_project, analyze_source, validate_output_paths
 from archcanvas_transactions import TransactionManager
 from .workspace import Workspace
@@ -56,9 +57,11 @@ def runtime_config() -> dict[str, str] | None:
 
 def capabilities() -> dict:
     root = project_root()
-    modules = {name: str(Path(module.__file__).resolve()) for name, module in {"archcanvas_cli": archcanvas_cli, "archcanvas_python": archcanvas_python, "archcanvas_transactions": archcanvas_transactions, "archcanvas_publication": archcanvas_publication, "archcanvas_runtime": archcanvas_runtime, "archcanvas_authoring": archcanvas_authoring, "archcanvas_preview": archcanvas_preview}.items()}
+    modules = {name: str(Path(module.__file__).resolve()) for name, module in {"archcanvas_cli": archcanvas_cli, "archcanvas_python": archcanvas_python, "archcanvas_transactions": archcanvas_transactions, "archcanvas_publication": archcanvas_publication, "archcanvas_runtime": archcanvas_runtime, "archcanvas_authoring": archcanvas_authoring, "archcanvas_preview": archcanvas_preview, "archcanvas_summary_semantic": archcanvas_summary_semantic}.items()}
     independent = all("ArchCanvas_Model Architecture Studio_Temp" not in path for path in modules.values())
     runtime_profile = archcanvas_runtime.runtime_capabilities(runtime_config())
+    runtime_profile["summaryObserved"] = runtime_profile["available"]
+    runtime_profile["summaryProfile"] = "summary-aten-observed/1"
     return {
         "schemaVersion": 1,
         "runtimeVersion": archcanvas_cli.__version__,
@@ -80,7 +83,7 @@ def capabilities() -> dict:
         "publicationExport": archcanvas_publication.capabilities(),
         "runtimeObservation": runtime_profile["available"],
         "runtimeProfiles": runtime_profile,
-        "frontend": "stdlib-ast-subset",
+        "frontend": "summary-semantic-static-ast",
         "packageProvenance": {"projectRoot": str(root) if root else None, "modules": modules, "independent": independent},
         "supported": ["local-module-imports", "literal-module-construction", "named-attention-ports", "tuple-outputs", "residual-dataflow", "bounded-module-list", "shared-instance-identity"],
         "limitations": ["Source analysis never executes models; structural execution requires an explicit frozen CPU profile and mandatory kernel isolation", "Sample runtime observations do not establish full-program coverage or old/new numerical equivalence", "HTTP source edits affect registered managed copies only", "Local forward, inherited methods and authored __call__ follow static source evidence", "Unresolved dynamic control, state and external factories retain explicit boundaries; source inspection does not establish tensor lowering", "80 source files, 2 MB corpus, 1200 nodes, 16 repeat iterations", "One service process per data directory; document CAS is process-local"],
@@ -251,7 +254,7 @@ class ArchCanvasServer(ThreadingHTTPServer):
     def runtime_job(self, project: str, identity: str) -> dict:
         with self.runtime_jobs_lock:
             job = self.runtime_jobs.get(identity)
-            if job is None or job["projectId"] != project:
+            if job is None or job.get("kind") == "summary-observation" or job.get("projectId") != project:
                 raise ValueError("Runtime job does not belong to this registered project.")
             return {key: value for key, value in job.items() if key != "cancelEvent"}
 
@@ -289,6 +292,44 @@ class ArchCanvasServer(ThreadingHTTPServer):
                 self.runtime_jobs[identity].update(result)
         threading.Thread(target=run, name=f"archcanvas-runtime-{identity}", daemon=True).start()
         return self.runtime_job(project_id, identity)
+
+    def summary_runtime_job(self, identity: str) -> dict:
+        with self.runtime_jobs_lock:
+            job = self.runtime_jobs.get(identity)
+            if job is None or job.get("kind") != "summary-observation":
+                raise ValueError("Unknown Summary observation job.")
+            return {key: value for key, value in job.items() if key != "cancelEvent"}
+
+    def start_summary_runtime_job(self, payload: dict) -> dict:
+        from archcanvas_preview.analyze import files_checked
+        from archcanvas_runtime.summary import normalize_summary_spec, observe_summary
+        if set(payload) - {"files", "entry", "inputSpec", "sourceSha256"} or not {"files", "entry", "inputSpec"} <= set(payload):
+            raise ValueError("Summary observation requires explicit source text, entry and inputSpec; HTTP filesystem paths and runtime settings are not accepted.")
+        if not isinstance(payload["entry"], str) or "sourceSha256" in payload and not isinstance(payload["sourceSha256"], str):
+            raise ValueError("Summary entry and optional source digest must be text.")
+        files = files_checked(payload["files"])
+        spec = normalize_summary_spec(payload["inputSpec"])
+        with self.runtime_jobs_lock:
+            if any(job["status"] == "running" for job in self.runtime_jobs.values()):
+                raise ValueError("A runtime job is already running; wait or cancel it first.")
+            completed = [key for key, job in self.runtime_jobs.items() if job.get("kind") == "summary-observation"]
+            for old in completed[:-3]:
+                del self.runtime_jobs[old]
+            identity = secrets.token_hex(16); event = threading.Event()
+            self.runtime_jobs[identity] = {"id": identity, "kind": "summary-observation", "status": "running", "cancelEvent": event}
+        def run():
+            try:
+                config = runtime_config()
+                result = observe_summary(files, payload["entry"], spec,
+                                         {**config, "cancelEvent": event} if config else None,
+                                         payload.get("sourceSha256"))
+                value = {"status": "complete", "result": result}
+            except Exception as exc:
+                value = {"status": "failed", "error": str(exc)}
+            with self.runtime_jobs_lock:
+                self.runtime_jobs[identity].update(value)
+        threading.Thread(target=run, name=f"archcanvas-summary-observation-{identity}", daemon=True).start()
+        return self.summary_runtime_job(identity)
 
     def server_close(self):
         with self.runtime_jobs_lock:
@@ -373,6 +414,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(200, capabilities())
             elif path == "/api/session":
                 self.send_json(200, {"token": self.server.session_token})
+            elif path.startswith("/api/preview/runtime-jobs/"):
+                identity = path.removeprefix("/api/preview/runtime-jobs/")
+                if self.session_guard():
+                    self.send_json(200, self.server.summary_runtime_job(identity))
             elif path.startswith("/api/canvas-sessions/"):
                 saved = self.server.store.get(path.removeprefix("/api/canvas-sessions/"))
                 self.send_json(200 if saved else 404, saved or {"error": "Canvas session not found."})
@@ -540,15 +585,35 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("Entry and filename must be text.")
                 self.send_json(200, analyze_source(payload.get("source"), payload["entry"], payload.get("filename", "model.py")))
             elif path in ("/api/preview/analyze", "/api/source-adapter/analyze"):
-                if set(payload) - {"files", "entry", "config"} or "files" not in payload:
+                if set(payload) - {"files", "entry", "config", "semanticMode"} or "files" not in payload:
                     raise ValueError("Preview analysis accepts files, entry and optional config only; filesystem paths are not accepted.")
-                result = archcanvas_preview.analyze(payload["files"], payload.get("entry"), payload.get("config"))
+                result = archcanvas_preview.analyze(payload["files"], payload.get("entry"), payload.get("config"), semantic_mode=payload.get("semanticMode", "legacy"))
                 result = self.server.adapters.preview(result, payload["files"])
                 self.send_json(200, result)
+            elif path == "/api/preview/runtime-jobs":
+                self.send_json(202, self.server.start_summary_runtime_job(payload))
+            elif path.startswith("/api/preview/runtime-jobs/") and path.endswith("/cancel"):
+                if payload:
+                    raise ValueError("Summary runtime cancellation takes an empty object.")
+                identity = path.removeprefix("/api/preview/runtime-jobs/").removesuffix("/cancel")
+                self.server.summary_runtime_job(identity)
+                with self.server.runtime_jobs_lock:
+                    self.server.runtime_jobs[identity]["cancelEvent"].set()
+                self.send_json(200, self.server.summary_runtime_job(identity))
             elif path == "/api/preview/edit-source":
                 if set(payload) != {"files", "entry"}:
                     raise ValueError("Preview source editing requires files and entry only; filesystem paths are not accepted.")
                 self.send_json(200, archcanvas_preview.analyze_for_authoring(payload["files"], payload["entry"]))
+            elif path == "/api/preview/authoring/module":
+                if set(payload) - {"source", "entry", "constructor"} or not {"source", "entry"} <= set(payload):
+                    raise ValueError("Summary module analysis accepts source, entry and optional constructor only.")
+                from archcanvas_preview.authoring_bridge import compile_source_module
+                self.send_json(200, compile_source_module(payload["source"], payload["entry"], payload.get("constructor")))
+            elif path == "/api/preview/authoring/certify":
+                if set(payload) != {"ir"}:
+                    raise ValueError("Summary local structure analysis accepts the declared IR only.")
+                from archcanvas_preview.assembly_bridge import certify_declared_assembly
+                self.send_json(200, certify_declared_assembly(payload["ir"]))
             elif path == "/api/preview/exports":
                 if set(payload) != {"svg", "format", "dpi", "widthMm", "binding"}:
                     raise ValueError("Preview export requires svg, format, dpi, widthMm and binding only.")
@@ -606,7 +671,7 @@ class Handler(BaseHTTPRequestHandler):
             elif path.startswith("/api/projects/"):
                 parts = path.removeprefix("/api/projects/").split("/")
                 if len(parts) == 2 and parts[1] == "preview":
-                    if set(payload) - {"config", "baseSourceDigest", "baseIrDigest"}:
+                    if set(payload) - {"config", "baseSourceDigest", "baseIrDigest", "semanticMode"}:
                         raise ValueError("Managed preview accepts only optional config and source/IR versions.")
                     with self.server.workspace.lock:
                         project = self.server.workspace.project(parts[0])
@@ -614,7 +679,7 @@ class Handler(BaseHTTPRequestHandler):
                             self.send_json(409, {"error": "The project source or IR changed; reload before previewing."})
                             return
                         files = {source["path"]: source["content"] for source in project["architecture"]["sources"]}
-                        result = archcanvas_preview.analyze(files, project["entry"], payload.get("config"))
+                        result = archcanvas_preview.analyze(files, project["entry"], payload.get("config"), semantic_mode=payload.get("semanticMode", "legacy"))
                         result = self.server.adapters.preview(result, files)
                         result["studioBinding"] = {"projectId": project["id"], **{key: project[key] for key in ("entry", "sourceDigest", "irDigest")}}
                     self.send_json(200, result)

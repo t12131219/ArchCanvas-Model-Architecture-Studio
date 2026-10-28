@@ -1,0 +1,233 @@
+- banner:
+  - text: ArchCanvas
+  - generic: 模型架构工作台
+  - generic: /
+  - generic: Transformer
+  - generic "模型 ⌄":
+    - text: 模型
+    - generic: ⌄
+  - option "选择示例" [disabled] [selected]
+  - option "Encoder–Decoder Transformer"
+  - option "Multilayer Perceptron"
+  - option "Residual CNN"
+  - option "Vision Transformer holdout"
+  - option "Dense 300-layer stress"
+  - option "Input Rebinding Lab"
+  - option "Multi-input Attention"
+  - group "工作区模式":
+    - button "视图" [pressed]
+    - button "编辑"
+  - generic: 有未保存编辑
+  - button "保存":
+    - text: 保存
+  - button "导出":
+    - text: 导出
+- main:
+  - button "展开模型层级面板":
+  - generic: Transformer
+  - generic: 预览
+  - button "展开属性面板":
+  - toolbar "画布编辑工具":
+    - button "选择对象" [pressed]:
+    - generic "选区操作":
+    - button "创建连接":
+    - button "编辑折点":
+    - button "显示连接点":
+    - button "撤销画布编辑":
+    - button "重做画布编辑" [disabled]:
+    - button "左对齐所选节点" [disabled]:
+    - generic "更多对齐与分布":
+    - button "固定所选节点":
+    - button "Apply layout":
+      - text: 优化连线
+    - button "显示点阵网格" [pressed]:
+    - button "适合画布" [active]:
+    - generic "画布选项":
+  - status:
+    - generic: 展开状态与局部布局已保存；可继续选择内部模块。
+    - button "关闭操作反馈":
+  - region "模型架构预览":
+    - iframe:
+      - main:
+        - img "可递归展开的模型图画布":
+          - generic "节点 enc.layer_i enc.layer_i":
+            - 'generic "enc.layer_i | source: EncoderLayer.forward | parameter: model.encoder.layers[i]"'
+          - generic "节点 dec.layer_i dec.layer_i":
+            - 'generic "dec.layer_i | source: DecoderLayer.forward | parameter: model.decoder.layers[i]"'
+          - generic "节点 enc.self enc.self":
+            - 'generic "enc.self | source: MultiHeadAttention.forward, EncoderLayer.forward | parameter: model.encoder.layers[i].self_attn"'
+            - button "收起 enc.self":
+              - generic: −
+          - generic "边 binding-001-0 src_pe.buffer 到 src_pe.add"
+          - generic "边 binding-002-1 src_pe.add 到 enc.self.q"
+          - generic "边 binding-005-4 src_pe.add 到 enc.norm1"
+          - generic "边 binding-006-5 src_tokens 到 src_embed"
+          - generic "边 binding-007-6 src_embed 到 src_pe.add"
+          - generic "边 binding-008-7 tgt_pe.buffer 到 tgt_pe.add"
+          - generic "边 binding-009-8 tgt_pe.add 到 dec.self"
+          - generic "边 binding-012-11 tgt_pe.add 到 dec.norm1"
+          - generic "边 binding-013-12 tgt_tokens 到 tgt_embed"
+          - generic "边 binding-014-13 tgt_embed 到 tgt_pe.add"
+          - generic "边 binding-030-29 enc.self.wo 到 enc.norm1"
+          - generic "边 binding-032-31 enc.norm1 到 enc.ffn"
+          - generic "边 binding-037-36 enc.ffn 到 enc.norm2"
+          - generic "边 binding-039-38 enc.norm1 到 enc.norm2"
+          - generic "边 encoder-memory-to-cross-39 enc.norm2 到 enc.memory.value"
+          - generic "边 encoder-memory-to-cross-040-40 enc.memory.value 到 dec.cross"
+          - generic "边 binding-059-58 dec.self 到 dec.norm1"
+          - generic "边 binding-061-60 dec.norm1 到 dec.cross"
+          - generic "边 binding-073-72 dec.cross 到 dec.norm2"
+          - generic "边 binding-075-74 dec.norm1 到 dec.norm2"
+          - generic "边 binding-076-75 dec.norm2 到 dec.ffn"
+          - generic "边 binding-081-80 dec.ffn 到 dec.norm3"
+          - generic "边 binding-083-82 dec.norm2 到 dec.norm3"
+          - generic "边 binding-084-83 dec.norm3 到 generator"
+          - generic "边 binding-085-84 generator 到 probabilities"
+          - generic "边 binding-003-2 src_pe.add 到 enc.self.k"
+          - generic "边 binding-004-3 src_pe.add 到 enc.self.v"
+          - generic "边 binding-015-14 enc.self.q 到 enc.self.q.value"
+          - generic "边 binding-016-15 enc.self.q.value 到 enc.self.split"
+          - generic "边 binding-017-16 enc.self.split 到 enc.self.sdpa"
+          - generic "边 binding-018-17 enc.self.k 到 enc.self.k.value"
+          - generic "边 binding-019-18 enc.self.k.value 到 enc.self.split"
+          - generic "边 binding-020-19 enc.self.split 到 enc.self.sdpa"
+          - generic "边 binding-021-20 enc.self.v 到 enc.self.v.value"
+          - generic "边 binding-022-21 enc.self.v.value 到 enc.self.split"
+          - generic "边 binding-023-22 enc.self.split 到 enc.self.sdpa"
+          - generic "边 binding-024-23 enc.self.sdpa 到 enc.self.merge"
+          - generic "边 binding-025-24 enc.self.merge 到 enc.self.wo"
+          - generic "节点 probabilities probabilities":
+            - 'generic "probabilities | source: | parameter: None"'
+          - generic "节点 generator generator":
+            - 'generic "generator | source: Transformer.__init__, Transformer.forward | parameter: model.generator.weight"'
+          - generic "节点 enc.norm2 enc.norm2":
+            - 'generic "enc.norm2 | source: EncoderLayer.forward | parameter: model.encoder.layers[i].norm2"'
+            - button "展开 enc.norm2":
+              - generic: ＋
+          - generic "节点 enc.ffn enc.ffn":
+            - 'generic "enc.ffn | source: PositionwiseFeedForward.forward, EncoderLayer.forward | parameter: model.encoder.layers[i].ffn"'
+            - button "展开 enc.ffn":
+              - generic: ＋
+          - generic "节点 enc.norm1 enc.norm1":
+            - 'generic "enc.norm1 | source: EncoderLayer.forward | parameter: model.encoder.layers[i].norm1"'
+            - button "展开 enc.norm1":
+              - generic: ＋
+          - generic "节点 src_embed src_embed":
+            - 'generic "src_embed | source: TokenEmbedding.forward | parameter: model.src_embedding.embedding.weight"'
+          - generic "节点 src_pe.add src_pe.add"
+          - generic "节点 src_pe.buffer src_pe.buffer":
+            - 'generic "src_pe.buffer | source: PositionalEncoding.forward | parameter: None"'
+          - generic "节点 src_tokens src_tokens":
+            - generic: src [B,S]
+          - generic "节点 dec.norm3 dec.norm3":
+            - 'generic "dec.norm3 | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm3"'
+            - button "展开 dec.norm3":
+              - generic: ＋
+          - generic "节点 dec.ffn dec.ffn":
+            - 'generic "dec.ffn | source: PositionwiseFeedForward.forward, DecoderLayer.forward | parameter: model.decoder.layers[i].ffn"'
+            - button "展开 dec.ffn":
+              - generic: ＋
+          - generic "节点 dec.norm2 dec.norm2":
+            - 'generic "dec.norm2 | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm2"'
+            - button "展开 dec.norm2":
+              - generic: ＋
+          - generic "节点 dec.cross dec.cross":
+            - 'generic "dec.cross | source: MultiHeadAttention.forward, DecoderLayer.forward | parameter: model.decoder.layers[i].cross_attn"'
+            - button "展开 dec.cross":
+              - generic: ＋
+          - generic "节点 dec.norm1 dec.norm1":
+            - 'generic "dec.norm1 | source: DecoderLayer.forward | parameter: model.decoder.layers[i].norm1"'
+            - button "展开 dec.norm1":
+              - generic: ＋
+          - generic "节点 dec.self dec.self":
+            - 'generic "dec.self | source: MultiHeadAttention.forward, DecoderLayer.forward | parameter: model.decoder.layers[i].self_attn"'
+            - button "展开 dec.self":
+              - generic: ＋
+          - generic "节点 tgt_embed tgt_embed":
+            - 'generic "tgt_embed | source: TokenEmbedding.forward | parameter: model.tgt_embedding.embedding.weight"'
+          - generic "节点 tgt_pe.add tgt_pe.add"
+          - generic "节点 tgt_pe.buffer tgt_pe.buffer":
+            - 'generic "tgt_pe.buffer | source: PositionalEncoding.forward | parameter: None"'
+          - generic "节点 tgt_tokens tgt_tokens":
+            - generic: tgt [B,T] · shifted-right by caller
+          - generic "节点 enc.memory.value enc.memory.value":
+            - 'generic "| source: | parameter: None"'
+            - generic: Memory M [B,S,D] final Encoder output
+          - generic "节点 enc.self.q enc.self.q":
+            - 'generic "enc.self.q | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.encoder.layers[i].self_attn.w_q"'
+          - generic "节点 enc.self.k enc.self.k":
+            - 'generic "enc.self.k | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.encoder.layers[i].self_attn.w_k"'
+          - generic "节点 enc.self.v enc.self.v":
+            - 'generic "enc.self.v | source: MultiHeadAttention.__init__, MultiHeadAttention.forward | parameter: model.encoder.layers[i].self_attn.w_v"'
+          - generic "节点 enc.self.split enc.self.split":
+            - 'generic "enc.self.split | source: MultiHeadAttention._split_heads | parameter: None"'
+          - generic "节点 enc.self.sdpa enc.self.sdpa":
+            - 'generic "enc.self.sdpa | source: scaled_dot_product_attention | parameter: None"'
+            - button "展开 enc.self.sdpa":
+              - generic: ＋
+          - generic "节点 enc.self.merge enc.self.merge":
+            - 'generic "enc.self.merge | source: MultiHeadAttention._combine_heads | parameter: None"'
+          - generic "节点 enc.self.wo enc.self.wo":
+            - 'generic "enc.self.wo | source: MultiHeadAttention.forward | parameter: model.encoder.layers[i].self_attn.w_o"'
+          - generic "节点 enc.self.q.value enc.self.q.value"
+          - generic "节点 enc.self.k.value enc.self.k.value"
+          - generic "节点 enc.self.v.value enc.self.v.value"
+          - generic: Softmax → probabilities [B,T,V] Explanation only; outside Transformer.forward
+          - generic: Generator Linear D → vocabulary V
+          - generic: logits
+          - generic: Encoder × N_encoder
+          - generic: Add & Norm (residual → LayerNorm)
+          - generic: Position-wise feed-forward network
+          - generic: same shared transform at each token
+          - generic: Add & Norm (residual → LayerNorm)
+          - generic: Source token embedding × √D
+          - generic: Embedding output [B,L,D] · PE dropout folded
+          - generic: +
+          - generic: Fixed sinusoidal PE
+          - generic: Decoder × N_decoder
+          - generic: Add & Norm (residual → LayerNorm)
+          - generic: Position-wise feed-forward network
+          - generic: same shared transform at each token
+          - generic: Add & Norm (residual → LayerNorm)
+          - generic: Encoder–decoder cross-attention
+          - generic: Q ← H [B,T,D] K,V ← M [B,S,D]
+          - generic: padding mask optional
+          - generic: Add & Norm (residual → LayerNorm)
+          - generic: Decoder masked self-attention
+          - generic: Q,K,V ← X [B,T,D]
+          - generic: causal + padding mask supplied by caller
+          - generic: Target token embedding × √D
+          - generic: Embedding output [B,L,D] · PE dropout folded
+          - generic: +
+          - generic: Fixed sinusoidal PE
+          - generic: Encoder self-attention
+          - generic: Q,K,V ← X [B,S,D]
+          - generic: Linear WQ
+          - generic: Linear WK
+          - generic: Linear WV
+          - generic: "Split heads: Q / K / V → [B,H,L,Dh]"
+          - generic: Scaled dot-product attention
+          - generic: "Combine heads: [B,H,Lq,Dh] → [B,Lq,D]"
+          - generic: Linear Wᴼ (D → D)
+          - generic: Q
+          - generic: "[B,S,D]"
+          - generic: K
+          - generic: "[B,S,D]"
+          - generic: V
+          - generic: "[B,S,D]"
+        - button "−"
+        - generic: 33%
+        - button "＋"
+        - button "适宽"
+      - text: › › › ›
+  - textbox "画布文字指令":
+    - /placeholder: 向右移动 24，或设为蓝色、命名为…
+  - generic: 本地视觉指令
+  - button "应用 ↵" [disabled]:
+    - text: 应用
+    - generic: ↵
+- text: › › ›
+- contentinfo:
+  - generic: 展开状态与局部布局已保存；可继续选择内部模块。
+  - generic: 1 个已选
+  - generic: rev 2

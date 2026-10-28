@@ -1,0 +1,363 @@
+- banner:
+  - text: ArchCanvas
+  - generic: 模型架构工作台
+  - generic: /
+  - generic: vae
+  - generic "模型 ⌄":
+    - text: 模型
+    - generic: ⌄
+  - option "选择示例" [disabled] [selected]
+  - option "Encoder–Decoder Transformer"
+  - option "Multilayer Perceptron"
+  - option "Residual CNN"
+  - option "Vision Transformer holdout"
+  - option "Dense 300-layer stress"
+  - option "Input Rebinding Lab"
+  - option "Multi-input Attention"
+  - group "工作区模式":
+    - button "视图" [pressed]
+    - button "编辑"
+  - generic: 有未保存编辑
+  - button "保存":
+    - text: 保存
+  - button "导出":
+    - text: 导出
+- main:
+  - button "展开模型层级面板":
+  - generic: vae
+  - generic: 预览
+  - button "展开属性面板":
+  - toolbar "画布编辑工具":
+    - button "选择对象" [pressed]:
+    - generic "选区操作":
+    - button "创建连接":
+    - button "编辑折点":
+    - button "显示连接点":
+    - button "撤销画布编辑" [disabled]:
+    - button "重做画布编辑" [disabled]:
+    - button "左对齐所选节点" [disabled]:
+    - generic "更多对齐与分布":
+    - button "固定所选节点" [disabled]:
+    - button "Apply layout":
+      - text: 优化连线
+    - button "显示点阵网格" [pressed]:
+    - button "适合画布":
+    - generic "画布选项":
+  - status:
+    - generic: 展开状态与局部布局已保存；可继续选择内部模块。
+    - button "关闭操作反馈":
+  - region "模型架构预览":
+    - iframe:
+      - main:
+        - img "可递归展开的模型图画布":
+          - generic "节点 vae.root MNIST fully connected VAE":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:119 VariationalAutoencoder.forward; parameter=not asserted;"
+            - generic: MNIST fully connected VAE
+            - generic: (mu, logvar, z, decoded)
+            - generic: E005
+          - generic "节点 vae.forward Model forward":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:119 VariationalAutoencoder.forward; parameter=not asserted;"
+            - generic: Model forward
+            - generic: four-tensor tuple
+            - generic: E005
+            - button "收起 Model forward":
+              - generic: −
+          - generic "节点 vae.encoder Encoder":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=hidden_1 / z_mean / z_log_var;"
+            - generic: Encoder
+            - generic: (mu, logvar, z)
+            - generic: E002,E004
+            - button "收起 Encoder":
+              - generic: −
+          - generic "节点 vae.posterior Posterior parameter heads":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=not asserted; same hidden input; independent Linear weights | parallel means two tensor results, not addition"
+            - generic: Posterior parameter heads
+            - generic: "mu / logvar: independent operands"
+            - generic: E004
+            - button "收起 Posterior parameter heads":
+              - generic: −
+          - generic "节点 vae.sampling Reparameterization":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:96 VariationalAutoencoder.reparameterize; parameter=not asserted; sampling also happens in eval mode in this source"
+            - generic: Reparameterization
+            - generic: "z: [B,15]"
+            - generic: E006
+            - button "收起 Reparameterization":
+              - generic: −
+          - generic "节点 vae.decoder Decoder":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:112 VariationalAutoencoder.decoder; parameter=linear_3 / linear_4;"
+            - generic: Decoder
+            - generic: "decoded: [B,784]"
+            - generic: E002,E003
+            - button "收起 Decoder":
+              - generic: −
+          - generic "边 route-0001-0 vae.enc_activation 到 vae.mean_head"
+          - generic "边 route-0002-1 vae.enc_activation 到 vae.logvar_head"
+          - generic "边 route-0005-4 vae.mean_head 到 vae.sample_operands"
+          - generic "边 route-0006-5 vae.logvar_head 到 vae.sample_operands"
+          - generic "边 route-0007-6 vae.sample_operands 到 vae.z"
+          - generic "边 route-0008-7 vae.sample_operands 到 vae.z"
+          - generic "边 route-0009-8 vae.enc_linear 到 vae.enc_activation"
+          - generic "边 route-0010-9 vae.z 到 vae.encoder_return"
+          - generic "边 route-0011-10 vae.dec_linear1 到 vae.dec_activation"
+          - generic "边 route-0012-11 vae.dec_activation 到 vae.dec_linear2"
+          - generic "边 route-0013-12 vae.dec_linear2 到 vae.dec_sigmoid"
+          - generic "边 route-0014-13 vae.z 到 vae.select_z"
+          - generic "边 route-0015-14 vae.select_z 到 vae.dec_linear1"
+          - generic "边 route-0016-15 vae.dec_sigmoid 到 vae.return"
+          - generic "边 route-0017-16 vae.input 到 vae.enc_linear"
+          - generic "边 route-0018-17 vae.epsilon 到 vae.sample_operands"
+          - generic "边 route-0019-18 vae.mean_head 到 vae.encoder_return"
+          - generic "边 route-0020-19 vae.logvar_head 到 vae.encoder_return"
+          - generic "边 route-0021-20 vae.mean_head 到 vae.return"
+          - generic "边 route-0022-21 vae.logvar_head 到 vae.return"
+          - generic "边 route-0023-22 vae.z 到 vae.return"
+          - generic "边 route-0024-23 vae.mean_head 到 vae.epsilon"
+          - generic "节点 vae.input Flattened MNIST features":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:119 VariationalAutoencoder.forward; parameter=not asserted; caller reshapes [B,1,28,28] to [B,784] before model(features) | pixel range [0,1] from dataset ToTensor":
+              - generic: FlattenedMNISTfeatures
+              - generic: "[B,784]"
+              - generic: E005
+          - generic "节点 vae.enc_linear Linear 784 -> 500":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=hidden_1; self.hidden_1"
+            - generic: Linear 784 -> 500
+            - generic: "[B,500]"
+            - generic: E002,E004
+          - generic "节点 vae.enc_activation LeakyReLU":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=not asserted; negative_slope=0.0001"
+            - generic: LeakyReLU
+            - generic: "[B,500]"
+            - generic: E004
+          - generic "节点 vae.mean_head Mean head":
+            - generic: Mean head
+            - generic: vae.mean_head
+            - button "展开 Mean head":
+              - generic: ＋
+          - generic "节点 vae.logvar_head Log-variance head":
+            - generic: Log-variance head
+            - generic: vae.logvar_head
+            - button "展开 Log-variance head":
+              - generic: ＋
+          - generic "节点 vae.sample_operands Mean / scaled noise":
+            - generic: Mean / scaled noise
+            - generic: vae.sample_operands
+            - button "展开 Mean / scaled noise":
+              - generic: ＋
+          - generic "节点 vae.z Add mu + std*epsilon":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:96 VariationalAutoencoder.reparameterize; parameter=not asserted; elementwise addition"
+            - generic: Add mu + std*epsilon
+            - generic: "z: [B,15]"
+            - generic: E006
+          - generic "节点 vae.encoder_return Return (mu, logvar, z)":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=not asserted; tuple fields are retained; no concatenation"
+            - generic: Return (mu, logvar, z)
+            - generic: three [B,15] tensors
+            - generic: E004
+          - generic "节点 vae.select_z Select encoded z":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:119 VariationalAutoencoder.forward; parameter=not asserted; decoder receives encoded, not mu or concatenated statistics"
+            - generic: Select encoded z
+            - generic: "[B,15]"
+            - generic: E005
+          - generic "节点 vae.dec_linear1 Linear 15 -> 500":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:112 VariationalAutoencoder.decoder; parameter=linear_3; self.linear_3"
+            - generic: Linear 15 -> 500
+            - generic: "[B,500]"
+            - generic: E002,E003
+          - generic "节点 vae.dec_activation LeakyReLU":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:112 VariationalAutoencoder.decoder; parameter=not asserted; negative_slope=0.0001"
+            - generic: LeakyReLU
+            - generic: "[B,500]"
+            - generic: E003
+          - generic "节点 vae.dec_linear2 Linear 500 -> 784":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:112 VariationalAutoencoder.decoder; parameter=linear_4; self.linear_4"
+            - generic: Linear 500 -> 784
+            - generic: "[B,784]"
+            - generic: E002,E003
+          - generic "节点 vae.dec_sigmoid Sigmoid":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:112 VariationalAutoencoder.decoder; parameter=not asserted; pixel probabilities in [0,1]"
+            - generic: Sigmoid
+            - generic: "decoded: [B,784]"
+            - generic: E003
+          - generic "节点 vae.return Return (mu, logvar, z, decoded)":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:119 VariationalAutoencoder.forward; parameter=not asserted; actual four-tensor forward result | decoder output is one tuple field"
+            - generic: Return (mu, logvar, z, decoded)
+            - generic: "[B,15] x 3; [B,784]"
+            - generic: E005
+          - generic "节点 vae.epsilon Internal Gaussian sample":
+            - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:96 VariationalAutoencoder.reparameterize; parameter=not asserted; torch.randn(z_mu.size(0), z_mu.size(1)).to(device) | created inside reparameterize; not a user input"
+            - generic: Internal Gaussian sample
+            - generic: "epsilon: [B,15]"
+            - generic: E006
+        - button "−"
+        - generic: 20%
+        - button "＋"
+        - button "适宽"
+      - text: › › › ›
+  - textbox "画布文字指令" [disabled]:
+    - /placeholder: 选择一个节点，用文字修改画布…
+  - generic: 本地视觉指令
+  - button "应用 ↵" [disabled]:
+    - text: 应用
+    - generic: ↵
+- contentinfo:
+  - generic: 原型视图与源码已打开；展示对象可独立编辑，进入编辑模式后按源码建立模型绑定。
+  - generic: rev 1
+- dialog "导出当前画布":
+  - generic: PUBLICATION EXPORT
+  - heading "导出当前画布" [level=2]
+  - button "关闭导出":
+  - paragraph: vae · 视觉版本 40 · 彩色
+  - text: 导出范围
+  - combobox "导出范围":
+    - option "整个当前画布" [selected]
+    - option "已展开容器的详情页"
+  - text: 出版宽度
+  - combobox "导出宽度":
+    - option "85 mm"
+    - option "180 mm" [selected]
+  - text: 自定义宽度（25–1000 mm）
+  - spinbutton "自定义导出宽度": "180"
+  - text: 最终尺寸文字预检
+  - paragraph: 页面 180 × 198.0 mm
+  - paragraph: 节点名称 3.35 pt · 最小文字 2.15 pt · 主线 0.14 pt
+  - paragraph: 以 7 pt 为起点，此范围需要至少 586 × 644.5 mm。可增大页宽或显式选择更小的详情范围；请同时核对页高与目标版面。
+  - button "采用建议页宽 586 mm"
+  - paragraph: 字号按真实预览的导出尺寸计算，7 pt 是起始建议。字体、连线与实际阅读效果仍需审看。
+  - generic "整图预览":
+    - img "可递归展开的模型图画布":
+      - generic "节点 vae.root MNIST fully connected VAE":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:119 VariationalAutoencoder.forward; parameter=not asserted;"
+        - generic: MNIST fully connected VAE
+        - generic: (mu, logvar, z, decoded)
+        - generic: E005
+      - generic "节点 vae.forward Model forward":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:119 VariationalAutoencoder.forward; parameter=not asserted;"
+        - generic: Model forward
+        - generic: four-tensor tuple
+        - generic: E005
+      - generic "节点 vae.encoder Encoder":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=hidden_1 / z_mean / z_log_var;"
+        - generic: Encoder
+        - generic: (mu, logvar, z)
+        - generic: E002,E004
+      - generic "节点 vae.posterior Posterior parameter heads":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=not asserted; same hidden input; independent Linear weights | parallel means two tensor results, not addition"
+        - generic: Posterior parameter heads
+        - generic: "mu / logvar: independent operands"
+        - generic: E004
+      - generic "节点 vae.sampling Reparameterization":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:96 VariationalAutoencoder.reparameterize; parameter=not asserted; sampling also happens in eval mode in this source"
+        - generic: Reparameterization
+        - generic: "z: [B,15]"
+        - generic: E006
+      - generic "节点 vae.decoder Decoder":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:112 VariationalAutoencoder.decoder; parameter=linear_3 / linear_4;"
+        - generic: Decoder
+        - generic: "decoded: [B,784]"
+        - generic: E002,E003
+      - generic "边 route-0001-0 vae.enc_activation 到 vae.mean_head"
+      - generic "边 route-0002-1 vae.enc_activation 到 vae.logvar_head"
+      - generic "边 route-0005-4 vae.mean_head 到 vae.sample_operands"
+      - generic "边 route-0006-5 vae.logvar_head 到 vae.sample_operands"
+      - generic "边 route-0007-6 vae.sample_operands 到 vae.z"
+      - generic "边 route-0008-7 vae.sample_operands 到 vae.z"
+      - generic "边 route-0009-8 vae.enc_linear 到 vae.enc_activation"
+      - generic "边 route-0010-9 vae.z 到 vae.encoder_return"
+      - generic "边 route-0011-10 vae.dec_linear1 到 vae.dec_activation"
+      - generic "边 route-0012-11 vae.dec_activation 到 vae.dec_linear2"
+      - generic "边 route-0013-12 vae.dec_linear2 到 vae.dec_sigmoid"
+      - generic "边 route-0014-13 vae.z 到 vae.select_z"
+      - generic "边 route-0015-14 vae.select_z 到 vae.dec_linear1"
+      - generic "边 route-0016-15 vae.dec_sigmoid 到 vae.return"
+      - generic "边 route-0017-16 vae.input 到 vae.enc_linear"
+      - generic "边 route-0018-17 vae.epsilon 到 vae.sample_operands"
+      - generic "边 route-0019-18 vae.mean_head 到 vae.encoder_return"
+      - generic "边 route-0020-19 vae.logvar_head 到 vae.encoder_return"
+      - generic "边 route-0021-20 vae.mean_head 到 vae.return"
+      - generic "边 route-0022-21 vae.logvar_head 到 vae.return"
+      - generic "边 route-0023-22 vae.z 到 vae.return"
+      - generic "边 route-0024-23 vae.mean_head 到 vae.epsilon"
+      - generic "节点 vae.input Flattened MNIST features":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:119 VariationalAutoencoder.forward; parameter=not asserted; caller reshapes [B,1,28,28] to [B,784] before model(features) | pixel range [0,1] from dataset ToTensor":
+          - generic: FlattenedMNISTfeatures
+          - generic: "[B,784]"
+          - generic: E005
+      - generic "节点 vae.enc_linear Linear 784 -> 500":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=hidden_1; self.hidden_1"
+        - generic: Linear 784 -> 500
+        - generic: "[B,500]"
+        - generic: E002,E004
+      - generic "节点 vae.enc_activation LeakyReLU":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=not asserted; negative_slope=0.0001"
+        - generic: LeakyReLU
+        - generic: "[B,500]"
+        - generic: E004
+      - generic "节点 vae.mean_head Mean head":
+        - generic: Mean head
+        - generic: vae.mean_head
+      - generic "节点 vae.logvar_head Log-variance head":
+        - generic: Log-variance head
+        - generic: vae.logvar_head
+      - generic "节点 vae.sample_operands Mean / scaled noise":
+        - generic: Mean / scaled noise
+        - generic: vae.sample_operands
+      - generic "节点 vae.z Add mu + std*epsilon":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:96 VariationalAutoencoder.reparameterize; parameter=not asserted; elementwise addition"
+        - generic: Add mu + std*epsilon
+        - generic: "z: [B,15]"
+        - generic: E006
+      - generic "节点 vae.encoder_return Return (mu, logvar, z)":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:104 VariationalAutoencoder.encoder; parameter=not asserted; tuple fields are retained; no concatenation"
+        - generic: Return (mu, logvar, z)
+        - generic: three [B,15] tensors
+        - generic: E004
+      - generic "节点 vae.select_z Select encoded z":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:119 VariationalAutoencoder.forward; parameter=not asserted; decoder receives encoded, not mu or concatenated statistics"
+        - generic: Select encoded z
+        - generic: "[B,15]"
+        - generic: E005
+      - generic "节点 vae.dec_linear1 Linear 15 -> 500":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:112 VariationalAutoencoder.decoder; parameter=linear_3; self.linear_3"
+        - generic: Linear 15 -> 500
+        - generic: "[B,500]"
+        - generic: E002,E003
+      - generic "节点 vae.dec_activation LeakyReLU":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:112 VariationalAutoencoder.decoder; parameter=not asserted; negative_slope=0.0001"
+        - generic: LeakyReLU
+        - generic: "[B,500]"
+        - generic: E003
+      - generic "节点 vae.dec_linear2 Linear 500 -> 784":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:76 VariationalAutoencoder.__init__; deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:112 VariationalAutoencoder.decoder; parameter=linear_4; self.linear_4"
+        - generic: Linear 500 -> 784
+        - generic: "[B,784]"
+        - generic: E002,E003
+      - generic "节点 vae.dec_sigmoid Sigmoid":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:112 VariationalAutoencoder.decoder; parameter=not asserted; pixel probabilities in [0,1]"
+        - generic: Sigmoid
+        - generic: "decoded: [B,784]"
+        - generic: E003
+      - generic "节点 vae.return Return (mu, logvar, z, decoded)":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:119 VariationalAutoencoder.forward; parameter=not asserted; actual four-tensor forward result | decoder output is one tuple field"
+        - generic: Return (mu, logvar, z, decoded)
+        - generic: "[B,15] x 3; [B,784]"
+        - generic: E005
+      - generic "节点 vae.epsilon Internal Gaussian sample":
+        - generic "deeplearning-models/pytorch_ipynb/autoencoder/ae-var.py:96 VariationalAutoencoder.reparameterize; parameter=not asserted; torch.randn(z_mu.size(0), z_mu.size(1)).to(device) | created inside reparameterize; not a user input"
+        - generic: Internal Gaussian sample
+        - generic: "epsilon: [B,15]"
+        - generic: E006
+  - button "SVG 矢量输出":
+    - text: SVG
+    - generic: 矢量输出
+  - button "PDF 矢量输出" [disabled]:
+    - text: PDF
+    - generic: 矢量输出
+  - button "PNG 高分辨率位图" [disabled]:
+    - text: PNG
+    - generic: 高分辨率位图
+  - button "编辑 JSON 完整画布文档":
+    - text: 编辑 JSON
+    - generic: 完整画布文档
+  - paragraph: 预览和下载使用同一份真实 SVG，保留当前几何、显示名与样式。PDF 字体由本机解析；请在目标阅读器检查字体。
+  - alert: "ApiError: Preview sourceDigest must be an exact SHA256 hexadecimal digest."
+  - button "关闭"
+  - button "生成文件"

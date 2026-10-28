@@ -240,6 +240,17 @@ def main():
     apply_limits(request["limits"])
     if request["action"] == "probe":
         return probe(request)
+    if request["action"] == "summary-observe":
+        # The vendored observer is mounted from a verified immutable snapshot.
+        # Its original ATen/source-stack semantics remain the single authority.
+        import importlib.util
+        if digest(Path("/summary-worker.py").read_bytes()) != request["environment"]["summaryWorkerDigest"]:
+            raise ValueError("Summary observer digest mismatch")
+        spec = importlib.util.spec_from_file_location("archcanvas_summary_observer", "/summary-worker.py")
+        observer = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = observer
+        spec.loader.exec_module(observer)
+        return observer.main(request["summaryRequest"])
     import torch
     torch.set_num_threads(1)
     if request["action"] == "environment":

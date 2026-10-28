@@ -39,7 +39,7 @@ function previewAnnotationGeometry(value: unknown) {
   const annotations = Object.values(presentation?.annotations ?? {}).map(annotation => ({ id: annotation.id, ...previewAnnotationBody(annotation) }));
   const sourceRelation = previewGraphEdges(value).some(edge => isPreviewSourceDependency(value, edge));
   const controls = !!graph?.sourceControls?.controls?.length;
-  const count = (presentation?.legend?.length ?? 0) + (sourceRelation ? 1 : 0) + (controls ? 1 : 0), canvas = graph?.canvas, legendWidth = sourceRelation || controls ? 360 : 250;
+  const count = (sourceRelation ? 1 : 0) + (controls ? 1 : 0), canvas = graph?.canvas, legendWidth = sourceRelation || controls ? 360 : 250;
   const legend = count && canvas ? { id: 'studio:legend', x: Math.max(10, canvas[0] - legendWidth - 20), y: Math.max(10, canvas[1] - count * 28 - 52), width: legendWidth, height: count * 28 + 32 } : undefined;
   return { nodes, annotations, legend };
 }

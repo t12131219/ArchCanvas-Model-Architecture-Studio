@@ -2,12 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
-import type { PointerEvent } from 'react';
 import { parseMoveCommand } from '../src/moveCommand.ts';
 import { applyVisualBatch, buildScene, createDocument, createHistory, reduceHistory, renderSvg, ValidationError } from '../src/core/index.ts';
 import type { Architecture, ArchitectureNode, CanvasDocument, HistoryState, MoveScope, VisualOperation } from '../src/core/types.ts';
-import { prepareMovePreview, previewMoveScene } from '../src/core/movePreview.ts';
-import { planLayoutRecovery } from '../src/core/layoutRecovery.ts';
 
 const all: MoveScope = 'all-frontiers', local: MoveScope = 'current-frontier';
 const compactKey = 'visible-frontier/1:["root"]';
@@ -96,120 +93,37 @@ function literalDocument(): CanvasDocument {
   return document;
 }
 
-type Pointer=PointerEvent<HTMLDivElement>;
-type Gesture={type:'pan'|'move'|'box';pointerId:number;x:number;y:number;camera:{x:number;y:number;zoom:number};
-  ids:string[];dx:number;dy:number;document?:CanvasDocument;preview?:ReturnType<typeof prepareMovePreview>;moveScope?:MoveScope;pan?:unknown};
-
-// Execute the actual App callback AST, not duplicated callback logic or JSX regex.
-// State setters, viewport/capture and rAF are controlled infrastructure. React is
-// not mounted; this does not certify native effects, first paint or pixel output.
 function appHarness(scope:MoveScope=all, ids:string[]=['output'], commandText='') {
   const source=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
   const ast=ts.createSourceFile('App.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
   const app=ast.statements.find(item=>ts.isFunctionDeclaration(item)&&item.name?.text==='App');
   assert.ok(app&&ts.isFunctionDeclaration(app)&&app.body);
-  const names=['cancelGesture','chooseMoveScope','apply','panInput','pointerDown','pointerMove','pointerUp',
-    'arrangePreview','runCommand','previewPositionRecovery','applyPositionRecovery'];
+  const names=['chooseMoveScope','apply','arrangePreview','runCommand'];
   const snippets=names.map(name=>{
     const statement=app.body!.statements.find(item=>ts.isFunctionDeclaration(item)?item.name?.text===name:
       ts.isVariableStatement(item)&&item.declarationList.declarations.some(d=>ts.isIdentifier(d.name)&&d.name.text===name));
     assert.ok(statement,`Actual App callback ${name}`);return statement.getText(ast);
   });
-  const historyRef={current:createHistory(literalDocument())};
-  const current=historyRef.current.document,scene=buildScene(current);
-  const gesture={current:null as Gesture|null},portGesture={current:null as {pointerId:number}|null},frame={current:0};
-  const cameraRef={current:{x:10,y:20,zoom:.5}};
-  const pending=new Map<number,FrameRequestCallback>(),captured=new Set<number>();
-  const operations:VisualOperation[][]=[],notices:string[]=[],failures:string[]=[],commands:string[]=[],scopeChanges:MoveScope[]=[];
-  const previewCalls:MoveScope[]=[],recoveryCalls:MoveScope[]=[],events:string[]=[];
-  const arrangementCalls:unknown[][]=[];
-  let nextFrame=0,preview:unknown=null,recovery:unknown=null;
-  const element={getBoundingClientRect:()=>({left:20,top:40,width:640,height:600}),
-    setPointerCapture:(id:number)=>{captured.add(id);events.push('capture');},hasPointerCapture:(id:number)=>captured.has(id),
-    releasePointerCapture:(id:number)=>{captured.delete(id);events.push('release');}};
-  const implicitRoots = new Set<string>();
-  const environment={historyRef,current,scene,implicitRoots,cameraRef,gesture,portGesture,frame,viewportRef:{current:element},
-    portRequest:{current:0},space:{current:false},tool:'select',busy:false,inputSpec:null,
-    layoutMoveScope:scope,selection:{kind:'node',ids},command:commandText,activeRecovery:null,
-    selectedNode:current.architecture.nodes.find(n=>n.id===ids[0]),selectedSceneNode:scene.nodes.find(n=>n.id===ids[0]),
-    editingTarget:()=>false,claimGestureCamera:()=>{events.push('claim');},
-    synchronizeCameraViewport:()=>{events.push('synchronize');},
-    setPortLayoutPreview:()=>{},portEditing:false,setPreview:(value:unknown)=>{preview=typeof value==='function'?(value as (p:unknown)=>unknown)(preview):value;},
-    setRecoveryPreview:(value:unknown)=>{recovery=value;},setBox:()=>{},setPortDraft:()=>{},setIsPanning:()=>{},
-    setSelection:()=>{},setPanel:()=>{},setFailure:(value:string)=>{failures.push(value);},setNotice:(value:string)=>{notices.push(value);},
-    setCommand:(value:string)=>{commands.push(value);},setLayoutMoveScope:(value:MoveScope)=>{scopeChanges.push(value);},
-    setHistory:(value:HistoryState)=>{assert.equal(value,historyRef.current);},
-    useCallback:<T>(callback:T)=>callback,
-    // Bridge transport is controlled infrastructure; the actual App still
-    // validates and commits the formal operations under test.
-    mapPreviewOperations:(value:VisualOperation[])=>value,
-    readyPreview:()=>true,
-    previewLayoutDisabled:false,previewCanAlign:true,
+  const historyRef={current:createHistory(literalDocument())}, current=historyRef.current.document;
+  const operations:VisualOperation[][]=[],notices:string[]=[],failures:string[]=[],commands:string[]=[],scopeChanges:MoveScope[]=[],arrangementCalls:unknown[][]=[];
+  const environment={historyRef,current,layoutMoveScope:scope,selection:{kind:'node',ids},command:commandText,
+    selectedNode:current.architecture.nodes.find(n=>n.id===ids[0]),
+    setActionFeedback:()=>{},setFailure:(value:string)=>failures.push(value),setNotice:(value:string)=>notices.push(value),
+    setCommand:(value:string)=>commands.push(value),setLayoutMoveScope:(value:MoveScope)=>scopeChanges.push(value),
+    setHistory:(value:HistoryState)=>assert.equal(value,historyRef.current),
+    useCallback:<T>(callback:T)=>callback,cancelGesture:()=>{},mapPreviewOperations:(value:VisualOperation[])=>value,
+    readyPreview:()=>true,previewLayoutDisabled:false,previewCanAlign:true,
     previewEngine:{current:{visual:async()=>{},command:(...args:unknown[])=>arrangementCalls.push(args)}},
-    prepareMovePreview:(document:CanvasDocument,selection:readonly string[],value?:MoveScope)=>{
-      previewCalls.push(value??all);return prepareMovePreview(document,selection,value);},
-    planLayoutRecovery:(document:CanvasDocument,id:string,value?:MoveScope)=>{
-      recoveryCalls.push(value??all);return planLayoutRecovery(document,id,value);},
     reduceHistory:(previous:HistoryState,action:Parameters<typeof reduceHistory>[1])=>{
       if(action.type==='apply')operations.push(action.operations);return reduceHistory(previous,action);},
     parseMoveCommand,studioTelemetry:{beginInteraction:()=>1,endInteraction:()=>{}},
-    requestAnimationFrame:(callback:FrameRequestCallback)=>{const id=++nextFrame;pending.set(id,callback);return id;},
-    cancelAnimationFrame:(id:number)=>{pending.delete(id);},
   };
   const compiled=ts.transpileModule(snippets.join('\n'),{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
-  const callbacks=new Function(...Object.keys(environment),`${compiled}\nreturn {${names.join(',')},
-    replaceRenderScope(value) { layoutMoveScope=value; }, replaceActiveRecovery(value) { activeRecovery=value; }};`)(...Object.values(environment)) as {
-    cancelGesture:()=>void;chooseMoveScope:(scope:MoveScope)=>void;apply:(ops:VisualOperation[])=>void;
-    pointerDown:(event:Pointer)=>void;pointerMove:(event:Pointer)=>void;pointerUp:(event:Pointer)=>void;
-    arrangePreview:(kind:string)=>void;runCommand:()=>void;previewPositionRecovery:()=>void;applyPositionRecovery:()=>void;
-    replaceRenderScope:(value:MoveScope)=>void;replaceActiveRecovery:(value:unknown)=>void;
+  const callbacks=new Function(...Object.keys(environment),`${compiled}\nreturn {${names.join(',')}};`)(...Object.values(environment)) as {
+    chooseMoveScope:(scope:MoveScope)=>void;apply:(ops:VisualOperation[])=>void;arrangePreview:(kind:string)=>void;runCommand:()=>void;
   };
-  const event=(x:number,y:number,nodeId?:string,pointerId=7)=>({pointerId,clientX:x+20,clientY:y+40,button:0,shiftKey:false,
-    currentTarget:element,preventDefault(){},target:{closest:(selector:string)=>selector==='[data-node-id]'&&nodeId?{getAttribute:()=>nodeId}:null}}) as unknown as Pointer;
-  return {...callbacks,current,scene,historyRef,gesture,portGesture,frame,cameraRef,pending,captured,operations,
-    notices,failures,commands,scopeChanges,previewCalls,recoveryCalls,arrangementCalls,events,event,
-    getPreview:()=>preview as {session:ReturnType<typeof prepareMovePreview>;dx:number;dy:number}|null,
-    getRecovery:()=>recovery as {document:CanvasDocument;plan:ReturnType<typeof planLayoutRecovery>}|null,
-    runFrames:()=>{const work=[...pending];pending.clear();for(const [,callback] of work)callback(0);}};
+  return {...callbacks,current,historyRef,operations,notices,failures,commands,scopeChanges,arrangementCalls};
 }
-
-test('actual App drag captures scope at down and commits that scope after a different render scope', () => {
-  for(const scope of [all,local]) {
-    const h=appHarness(scope),oldCompact=JSON.stringify(h.current.layoutByFrontier[compactKey]);
-    h.pointerDown(h.event(100,100,'output'));
-    assert.deepEqual(h.previewCalls,[scope]);
-    assert.equal(h.gesture.current?.moveScope,scope);
-    assert.equal(h.gesture.current?.preview?.scope,scope);
-    h.replaceRenderScope(scope===all?local:all);
-    h.pointerMove(h.event(112,104));h.runFrames();
-    const value=h.getPreview();assert.ok(value);
-    const preview=previewMoveScene(value.session,value.dx,value.dy);
-    h.pointerUp(h.event(112,104));
-    assert.deepEqual(h.operations,[[{type:'move',ids:['output'],dx:24,dy:8,scope}]]);
-    assert.deepEqual(preview,buildScene(h.historyRef.current.document));
-    assert.equal(renderSvg(preview,{interactive:true}),renderSvg(buildScene(h.historyRef.current.document),{interactive:true}));
-    assert.equal(h.historyRef.current.past.length,1);
-    assert.deepEqual(h.current.layout.output,{x:36,y:30254});
-    assert.deepEqual(h.historyRef.current.document.layout.output,{x:60,y:30262});
-    assert.equal(JSON.stringify(h.historyRef.current.document.layoutByFrontier[compactKey])===oldCompact,scope===local);
-  }
-});
-
-test('actual App ignores unrelated pointer-up and stale-document move without committing history', () => {
-  const h=appHarness(local);h.pointerDown(h.event(100,100,'output'));
-  h.pointerUp(h.event(112,104,undefined,8));assert.equal(h.operations.length,0);assert.ok(h.gesture.current);
-  h.historyRef.current=createHistory(applyVisualBatch(h.current,[{type:'alias',id:'output',label:'changed'}]));
-  h.pointerUp(h.event(112,104));assert.equal(h.operations.length,0);assert.equal(h.historyRef.current.past.length,0);
-});
-
-test('actual App scope selection cancels gesture, frame and recovery before a late terminal input', () => {
-  const h=appHarness(local);h.pointerDown(h.event(100,100,'output'));h.pointerMove(h.event(112,104));
-  assert.equal(h.pending.size,1);assert.ok(h.captured.has(7));
-  h.chooseMoveScope(all);
-  assert.deepEqual(h.scopeChanges,[all]);assert.equal(h.gesture.current,null);assert.equal(h.pending.size,0);
-  assert.equal(h.getPreview(),null);assert.equal(h.getRecovery(),null);assert.equal(h.captured.size,0);
-  h.runFrames();h.pointerUp(h.event(112,104));assert.equal(h.operations.length,0);assert.equal(h.historyRef.current.past.length,0);
-});
 
 test('actual App alignment forwards selected scope to the recursive preview without mutating formal source caches', () => {
   for(const scope of [all,local]) {
@@ -236,18 +150,6 @@ test('actual App refuses partial compound movement and leaves alias/color dispat
   const alias=appHarness(local,['output'],'命名为“向右移动 24”');alias.runCommand();
   assert.deepEqual(alias.operations,[[{type:'alias',id:'output',label:'向右移动 24'}]]);
   assert.deepEqual(alias.historyRef.current.document.layout.output,{x:36,y:30254});
-});
-
-test('actual App recovery forwards current scope and applies the exact proposed operation', () => {
-  const h=appHarness(local,['input']);h.previewPositionRecovery();assert.deepEqual(h.recoveryCalls,[local]);
-  const value=h.getRecovery();assert.ok(value);assert.equal(value.plan.status,'ready');
-  if(value.plan.status!=='ready')throw new Error('Literal header conflict must have a ready proposal');
-  assert.equal(value.plan.operation.scope,local);
-  const oldCompact=JSON.stringify(h.current.layoutByFrontier[compactKey]);
-  h.replaceActiveRecovery(value);h.applyPositionRecovery();
-  assert.deepEqual(h.operations,[[value.plan.operation]]);assert.equal(h.historyRef.current.past.length,1);
-  assert.deepEqual(buildScene(h.historyRef.current.document),value.plan.scene);
-  assert.equal(JSON.stringify(h.historyRef.current.document.layoutByFrontier[compactKey]),oldCompact);
 });
 
 test('scope-specific caches retain the operated-container, ancestor and pinned-subtree toggle rules', () => {

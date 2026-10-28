@@ -2,15 +2,18 @@ import type { Architecture, ArchitectureNode, CanvasDocument, VisualOperation } 
 import type { AuthoredDraft } from './authoring.ts';
 
 /** The preview adapter and the model editor analyse the same bytes with distinct IR contracts. */
-export type PreviewSourceRequest = { files: Record<string, string>; entry: string; config: Record<string, unknown> };
+export type PreviewSourceRequest = { files: Record<string, string>; entry: string; config: Record<string, unknown>; semanticMode?: 'summary' | 'legacy' };
 export type PreviewSourceLocation = { path: string; line: number; endLine: number; expression?: string; column?: number; endColumn?: number };
 export type PreviewEvidence = { file: string; line: number; endLine: number; expression: string; column?: number; endColumn?: number };
 export type PreviewSourceNode = { id: string; parent?: string | null; kind?: string; sourceKind?: string; label?: string; instance?: string; moduleType?: string; expression?: string; source_evidence?: string[]; sourceStructure?: boolean;
-  sourceParameters?: { callSites?: (Partial<PreviewEvidence> & { path?: string })[]; condition?: string } };
+  presentation_only?: boolean; canonical_members?: string[]; sourceParameters?: { callSites?: (Partial<PreviewEvidence> & { path?: string })[]; condition?: string } };
 export type PreviewSourceBundle = {
   schema: 'summary-source-adapter/1'; id: string; entry: string; sourceSha256: string; irSha256: string;
   files: { path: string; text: string; sha256: string }[]; config?: Record<string, unknown>;
-  ir?: { nodes: PreviewSourceNode[] }; evidence?: Record<string, PreviewEvidence>;
+  semanticMode?: 'summary' | 'legacy';
+  ir?: { nodes: PreviewSourceNode[]; semanticSchema?: string; semantic_ir?: Record<string, unknown> };
+  semantic?: { schema?: string; irDigest?: string; coverage?: { status?: string; scope?: string; complete?: boolean; reason?: string }; motifs?: unknown[]; semanticContracts?: unknown[]; modelExecuted?: boolean };
+  evidence?: Record<string, PreviewEvidence>;
 };
 export type RawPreviewSource = {
   schema: 'archcanvas-preview-source/1'; caseId: string; title?: string; entry: string; files: Record<string, string>;
@@ -50,7 +53,10 @@ function sourceRequest(files: { path: string; text: string }[], entry: string, c
     entries.push([path, file.text]);
   }
   if (size > 2_000_000) throw new Error('源码总量超过 2 MB。');
-  return { files: Object.fromEntries(entries.sort(([a], [b]) => a.localeCompare(b))), entry: entry.trim(), config: structuredClone(config) };
+  // Summary_Merge semantic analysis is the sole source/graph authority for
+  // migrated previews.  Keep an explicit escape hatch for old saved bundles,
+  // but make every Studio initiated request select the Summary IR by default.
+  return { files: Object.fromEntries(entries.sort(([a], [b]) => a.localeCompare(b))), entry: entry.trim(), config: structuredClone(config), semanticMode: 'summary' };
 }
 
 /** Submit the registered workspace corpus, including local dependencies, rather than one display file. */
@@ -173,6 +179,14 @@ function selectionScore(node: ArchitectureNode, raw: PreviewSourceNode | undefin
     if (category) score += category.includes(node.category) ? 120 : -120;
     if (normalizedKind(node.kind) === normalizedKind(raw.moduleType ?? raw.kind)) score += 60;
   }
+  // Formal input facts may span the whole method, while preview evidence names
+  // one AST argument. Match the declared output port, never a display alias.
+  if (raw?.kind === 'input' && node.category === 'input' && node.ports.some(port => port.direction === 'out') && location.expression &&
+      /^[_\p{ID_Start}][_\p{ID_Continue}]*$/u.test(location.expression.trim())) {
+    const name = location.expression.trim();
+    if (!node.ports.some(port => port.direction === 'out' && port.name === name)) return -1;
+    score += 200;
+  }
   if (raw?.instance && node.instanceId) score += normalizedInstance(raw.instance) === normalizedInstance(node.instanceId) ? 160 : -80;
   if (raw?.sourceStructure && node.sourceStructure && raw.sourceKind === node.kind) score += 160;
   if (node.sourceStructure) score -= 30;
@@ -183,6 +197,9 @@ function selectionScore(node: ArchitectureNode, raw: PreviewSourceNode | undefin
 export function previewSelectionNodeIds(architecture: Architecture, selection: PreviewSelection, bundle?: PreviewEvidenceSource): string[] {
   if (bundle && selection.caseId && selection.caseId !== evidenceCaseId(bundle)) return [];
   const raw = sourceNode(selection, bundle), id = selection.nodeId ?? raw?.id;
+  // Certified summaries can aggregate several exact source objects. Their
+  // source spans aid inspection and cannot license one formal edit target.
+  if (raw?.presentation_only || (raw?.canonical_members?.length ?? 0) > 1) return [];
   if (id && architecture.nodes.some(node => node.id === id)) return [id];
   const locations = previewSourceLocations(selection, bundle);
   if (!locations.length) return [];
@@ -252,13 +269,26 @@ export function documentPreviewIdentity(document: CanvasDocument): PreviewSource
   return previewSourceIdentity(document.architecture, document.id);
 }
 
-export type PreviewVisualNode = PreviewSourceNode & { parent?: string | null; x: number; y: number; w?: number; h?: number; fill?: string; expanded?: boolean; junction?: boolean; semantic?: PreviewSourceNode };
-export type PreviewVisualGraph = { nodes: PreviewVisualNode[] };
+export type PreviewVisualNode = PreviewSourceNode & { parent?: string | null; x: number; y: number; w?: number; h?: number; fill?: string; expanded?: boolean; junction?: boolean; semantic?: PreviewSourceNode; semanticRef?: true };
+export type PreviewVisualGraph = { nodes: PreviewVisualNode[]; semanticHierarchy?: { nodes: PreviewVisualNode[] }; generic?: { ir?: { nodes: PreviewSourceNode[] } } };
+
+/** Summary publishes its semantic navigation index; this is never a second layout authority. */
+export function previewDetailGraph<T extends PreviewVisualGraph>(graph: T): T {
+  const recursive = (graph as T & { recursive?: { authority?: { detail?: T } } }).recursive?.authority?.detail;
+  if (recursive) return recursive;
+  if (!graph.semanticHierarchy) return graph;
+  // A native hierarchy row references the same complete IR already carried by
+  // this snapshot. Exact ID joins retain source-matching facts without copying
+  // large expressions/receipts into a second navigation tree.
+  const canonical = new Map((graph.generic?.ir?.nodes ?? []).map(node => [node.id, node]));
+  const nodes = graph.semanticHierarchy.nodes.map(node => node.semanticRef === true && canonical.has(node.id) ? { ...node, semantic: canonical.get(node.id) } : node);
+  return { ...graph, nodes };
+}
 
 /** A reviewed aggregate may share evidence with another display object. Only
  * globally one-to-one identities can carry formal presentation or selection. */
 export function previewUniqueNodeBindings(architecture: Architecture, graph: PreviewVisualGraph, source?: PreviewEvidenceSource): Map<string, string> {
-  const detail = (graph as PreviewVisualGraph & { recursive?: { authority?: { detail?: PreviewVisualGraph } } }).recursive?.authority?.detail;
+  const detail = previewDetailGraph(graph);
   const byCanonical = new Map<string, string[]>();
   const singleton = new Set<string>();
   for (const node of new Map((detail?.nodes ?? graph.nodes).map(node => [node.id, node])).values()) {
@@ -318,7 +348,7 @@ export function previewNodeLayoutOperation(document: CanvasDocument, operation: 
 /** Replay only known containers; saved coordinates need a separate preview-layout provenance. */
 export function previewExpansionOperations(document: CanvasDocument, graph: PreviewVisualGraph, source?: PreviewEvidenceSource): Extract<VisualOperation, { type: 'expand' }>[] {
   const expanded = new Set(document.expandedIds), facts = new Map(document.architecture.nodes.map(node => [node.id, node]));
-  const detail = (graph as PreviewVisualGraph & { recursive?: { authority?: { detail?: PreviewVisualGraph } } }).recursive?.authority?.detail ?? graph;
+  const detail = previewDetailGraph(graph);
   const nodes = new Map(detail.nodes.map(node => [node.id, node])), states = new Map<string, boolean>(), requiredAncestors = new Set<string>();
   const visible = (id: string) => {
     let parent = facts.get(id)?.parentId;

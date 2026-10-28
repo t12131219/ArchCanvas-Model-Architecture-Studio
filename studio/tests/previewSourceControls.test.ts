@@ -77,6 +77,27 @@ test('mismatched evidence, indirect descendants, ordinary modules and folded con
   const ordinary = fixture(); ordinary.nodes[1].semantic.sourceStructure = false; assert.equal(S.refresh(ordinary).controls.length, 0);
 });
 
+test('conditional fallback rejects a two-unit hairpin and finds readable controls across translated layouts', () => {
+  for (const shift of [0, 317]) {
+    const { S, E } = runtime(), graph = fixture();
+    for (const n of graph.nodes) { n.x += shift; n.y += shift; }
+    graph.canvas = [1700,1500];
+    const routeOne=E.routeOne;
+    E.routeOne=(_g:any,e:any)=>{
+      const owner=graph.nodes[1],a={x:owner.x+80,y:owner.y+86},target=graph.nodes.find((n:any)=>n.id===e.target),b={x:target.x+target.w/2,y:target.y};
+      e.route=[a,{x:a.x,y:a.y+12},{x:a.x-62,y:a.y+12},{x:a.x-62,y:a.y+14},{x:b.x,y:a.y+14},b];
+      return {ok:true};
+    };
+    let result:any;try { result=S.refresh(graph); } finally { E.routeOne=routeOne; }
+    assert.equal(result.controls.length,2);assert.deepEqual(plain(result.diagnostics),[]);
+    for(const c of result.controls)for(let i=0;i<c.points.length-3;i++){
+      const [a,b,d,e]=c.points.slice(i,i+4);
+      if(a.y===b.y&&d.y===e.y&&(b.x-a.x)*(e.x-d.x)<0)assert.ok(Math.abs(b.y-d.y)>=10);
+      if(a.x===b.x&&d.x===e.x&&(b.y-a.y)*(e.y-d.y)<0)assert.ok(Math.abs(b.x-d.x)>=10);
+    }
+  }
+});
+
 test('nested and independently expanded branches only receive arrows from their own condition', () => {
   const { S } = runtime(), graph = fixture(); graph.nodes[2].expanded = true; graph.nodes[2].routingObstacle = false;
   const nested = plain(graph.nodes.slice(1));
@@ -156,8 +177,8 @@ test('actual saved-case loader commits the worker-refreshed control graph when n
     collection: 'source_adapter', origin: 'model:Model', views: [{ key: 'overview' }] };
   let request = 30, validations = 0, published: any;
   Object.assign(context, {
-    E: context.SummaryEngine, C: context.SummaryConstraints, F, busy: false, drag: null, loadToken: 0,
-    sessions: new Map(), catalogSources: null, importedPackages: new Map(), names: {}, graph: null, studioBridge: null,
+    E: context.SummaryEngine, C: context.SummaryConstraints, N: context.ArchCanvasSemanticView, F, busy: false, drag: null, loadToken: 0,
+    sessions: new Map(), catalogSources: null, importedPackages: new Map(), importedDocuments: new Map(), names: {}, graph: null, studioBridge: null,
     selectedNodes: new Set(), selectedEdges: new Set(), URL, location: { href: 'http://127.0.0.1/preview/' },
     window: { history: { replaceState() {} } },
     $: () => ({ value: '', checked: false, innerHTML: '', textContent: '' }),

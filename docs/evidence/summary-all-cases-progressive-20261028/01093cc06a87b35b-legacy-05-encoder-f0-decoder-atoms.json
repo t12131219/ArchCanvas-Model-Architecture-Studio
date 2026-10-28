@@ -1,0 +1,2247 @@
+{
+  "edges": 61,
+  "invalid": 0,
+  "layout": "true",
+  "nodes": 59,
+  "phase": "committed",
+  "source": "true",
+  "viewBox": "-1531.5630434782606 0 4721.126086956521 2763",
+  "ids": [
+    "enc.layer_i",
+    "dec.layer_i",
+    "dec.norm3",
+    "dec.ffn",
+    "dec.norm2",
+    "dec.cross",
+    "dec.norm1",
+    "dec.self",
+    "dec.self.sdpa",
+    "probabilities",
+    "generator",
+    "src_embed",
+    "src_pe.add",
+    "src_pe.buffer",
+    "src_tokens",
+    "tgt_embed",
+    "tgt_pe.add",
+    "tgt_pe.buffer",
+    "tgt_tokens",
+    "enc.memory.value",
+    "dec.norm3.add",
+    "dec.norm3.layernorm",
+    "dec.ffn.linear2",
+    "dec.ffn.relu",
+    "dec.ffn.linear1",
+    "dec.norm2.add",
+    "dec.norm2.layernorm",
+    "dec.cross.k",
+    "dec.cross.v",
+    "dec.cross.q",
+    "dec.cross.split",
+    "dec.cross.sdpa",
+    "dec.cross.merge",
+    "dec.cross.wo",
+    "dec.norm1.add",
+    "dec.norm1.layernorm",
+    "dec.self.q",
+    "dec.self.k",
+    "dec.self.v",
+    "dec.self.split",
+    "dec.self.sdpa.av",
+    "dec.self.sdpa.softmax",
+    "dec.self.sdpa.mask",
+    "dec.self.sdpa.scale",
+    "dec.self.sdpa.qkt",
+    "dec.self.merge",
+    "dec.self.wo",
+    "dec.ffn.output_value",
+    "dec.ffn.input_value",
+    "dec.cross.k.value",
+    "dec.cross.v.value",
+    "dec.cross.q.value",
+    "dec.self.q.value",
+    "dec.self.k.value",
+    "dec.self.v.value",
+    "enc.norm2",
+    "enc.ffn",
+    "enc.norm1",
+    "enc.self"
+  ],
+  "edgeBindings": [
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "src_pe.add:pe",
+        "canonical_src": "src_pe.buffer:out",
+        "dashed": false,
+        "dst": "src_pe.add:pe",
+        "id": "binding-001",
+        "points": [
+          [
+            290,
+            2450
+          ],
+          [
+            367,
+            2450
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "src_pe.buffer:out",
+          "target": "src_pe.add:pe"
+        },
+        "semantic_edges": [
+          "src_pe.buffer:out->src_pe.add:pe"
+        ],
+        "semantic_kind": "tensor",
+        "src": "src_pe.buffer:out",
+        "width": 2.2
+      },
+      "id": "binding-001-0"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "enc.self.q:in",
+        "canonical_src": "src_pe.add:out",
+        "dashed": false,
+        "dst": "enc.self.q:in",
+        "id": "binding-002",
+        "points": [
+          [
+            382,
+            2435
+          ],
+          [
+            382,
+            1692
+          ],
+          [
+            202.66666666666669,
+            1692
+          ],
+          [
+            202.66666666666669,
+            1668
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "src_pe.add:out",
+          "target": "enc.self.q:in"
+        },
+        "semantic_edges": [
+          "enc.self:in->enc.self.q:in",
+          "src_pe.add:out->src_pe.dropout:in",
+          "src_pe.dropout:out->src_pe:out",
+          "src_pe:out->enc.self:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "src_pe.add:out",
+        "width": 2.2
+      },
+      "id": "binding-002-1"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "enc.norm1.add:x",
+        "canonical_src": "src_pe.add:out",
+        "dashed": false,
+        "dst": "enc.norm1.add:x",
+        "id": "binding-005",
+        "points": [
+          [
+            382,
+            2435
+          ],
+          [
+            382,
+            1728
+          ],
+          [
+            56,
+            1728
+          ],
+          [
+            56,
+            950
+          ],
+          [
+            368,
+            950
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "src_pe.add:out",
+          "target": "enc.norm1.add:x"
+        },
+        "semantic_edges": [
+          "enc.norm1:skip->enc.norm1.add:x",
+          "src_pe.add:out->src_pe.dropout:in",
+          "src_pe.dropout:out->src_pe:out",
+          "src_pe:out->enc.norm1:skip"
+        ],
+        "semantic_kind": "residual",
+        "src": "src_pe.add:out",
+        "width": 2.2
+      },
+      "id": "binding-005-4"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "src_embed:in",
+        "canonical_src": "src_tokens:out",
+        "dashed": false,
+        "dst": "src_embed:in",
+        "id": "binding-006",
+        "points": [
+          [
+            382,
+            2573
+          ],
+          [
+            382,
+            2554
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "src_tokens:out",
+          "target": "src_embed:in"
+        },
+        "semantic_edges": [
+          "src_tokens:out->src_embed:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "src_tokens:out",
+        "width": 2.2
+      },
+      "id": "binding-006-5"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "src_pe.add:x",
+        "canonical_src": "src_embed:out",
+        "dashed": false,
+        "dst": "src_pe.add:x",
+        "id": "binding-007",
+        "points": [
+          [
+            382,
+            2492
+          ],
+          [
+            382,
+            2465
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "src_embed:out",
+          "target": "src_pe.add:x"
+        },
+        "semantic_edges": [
+          "src_embed:out->src_pe:in",
+          "src_pe:in->src_pe.add:x"
+        ],
+        "semantic_kind": "tensor",
+        "src": "src_embed:out",
+        "width": 2.2
+      },
+      "id": "binding-007-6"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "tgt_pe.add:pe",
+        "canonical_src": "tgt_pe.buffer:out",
+        "dashed": false,
+        "dst": "tgt_pe.add:pe",
+        "id": "binding-008",
+        "points": [
+          [
+            1146,
+            2450
+          ],
+          [
+            1223,
+            2450
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "tgt_pe.buffer:out",
+          "target": "tgt_pe.add:pe"
+        },
+        "semantic_edges": [
+          "tgt_pe.buffer:out->tgt_pe.add:pe"
+        ],
+        "semantic_kind": "tensor",
+        "src": "tgt_pe.buffer:out",
+        "width": 2.2
+      },
+      "id": "binding-008-7"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.q:in",
+        "canonical_src": "tgt_pe.add:out",
+        "dashed": false,
+        "dst": "dec.self.q:in",
+        "id": "binding-009",
+        "points": [
+          [
+            1238,
+            2435
+          ],
+          [
+            1238,
+            2358
+          ],
+          [
+            1058.6666666666667,
+            2358
+          ],
+          [
+            1058.6666666666667,
+            2334
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "tgt_pe.add:out",
+          "target": "dec.self.q:in"
+        },
+        "semantic_edges": [
+          "dec.self:in->dec.self.q:in",
+          "tgt_pe.add:out->tgt_pe.dropout:in",
+          "tgt_pe.dropout:out->tgt_pe:out",
+          "tgt_pe:out->dec.self:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "tgt_pe.add:out",
+        "width": 2.2
+      },
+      "id": "binding-009-8"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.norm1.add:x",
+        "canonical_src": "tgt_pe.add:out",
+        "dashed": false,
+        "dst": "dec.norm1.add:x",
+        "id": "binding-012",
+        "points": [
+          [
+            1238,
+            2435
+          ],
+          [
+            1238,
+            2394
+          ],
+          [
+            912,
+            2394
+          ],
+          [
+            912,
+            1616
+          ],
+          [
+            1224,
+            1616
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "tgt_pe.add:out",
+          "target": "dec.norm1.add:x"
+        },
+        "semantic_edges": [
+          "dec.norm1:skip->dec.norm1.add:x",
+          "tgt_pe.add:out->tgt_pe.dropout:in",
+          "tgt_pe.dropout:out->tgt_pe:out",
+          "tgt_pe:out->dec.norm1:skip"
+        ],
+        "semantic_kind": "residual",
+        "src": "tgt_pe.add:out",
+        "width": 2.2
+      },
+      "id": "binding-012-11"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "tgt_embed:in",
+        "canonical_src": "tgt_tokens:out",
+        "dashed": false,
+        "dst": "tgt_embed:in",
+        "id": "binding-013",
+        "points": [
+          [
+            1238,
+            2573
+          ],
+          [
+            1238,
+            2554
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "tgt_tokens:out",
+          "target": "tgt_embed:in"
+        },
+        "semantic_edges": [
+          "tgt_tokens:out->tgt_embed:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "tgt_tokens:out",
+        "width": 2.2
+      },
+      "id": "binding-013-12"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "tgt_pe.add:x",
+        "canonical_src": "tgt_embed:out",
+        "dashed": false,
+        "dst": "tgt_pe.add:x",
+        "id": "binding-014",
+        "points": [
+          [
+            1238,
+            2492
+          ],
+          [
+            1238,
+            2465
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "tgt_embed:out",
+          "target": "tgt_pe.add:x"
+        },
+        "semantic_edges": [
+          "tgt_embed:out->tgt_pe:in",
+          "tgt_pe:in->tgt_pe.add:x"
+        ],
+        "semantic_kind": "tensor",
+        "src": "tgt_embed:out",
+        "width": 2.2
+      },
+      "id": "binding-014-13"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "enc.norm1.add:f",
+        "canonical_src": "enc.self.wo:out",
+        "dashed": false,
+        "dst": "enc.norm1.add:f",
+        "id": "binding-030",
+        "points": [
+          [
+            382,
+            1092
+          ],
+          [
+            382,
+            964
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "enc.self.wo:out",
+          "target": "enc.norm1.add:f"
+        },
+        "semantic_edges": [
+          "enc.norm1.branch_dropout:out->enc.norm1.add:f",
+          "enc.norm1:in->enc.norm1.branch_dropout:in",
+          "enc.self.wo:out->enc.self:out",
+          "enc.self:out->enc.norm1:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "enc.self.wo:out",
+        "width": 2.2
+      },
+      "id": "binding-030-29"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "enc.ffn.linear1:in",
+        "canonical_src": "enc.norm1.layernorm:out",
+        "dashed": false,
+        "dst": "enc.ffn.input_value:in",
+        "id": "binding-032",
+        "points": [
+          [
+            382,
+            880
+          ],
+          [
+            382,
+            790
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "enc.norm1.layernorm:out",
+          "target": "enc.ffn.linear1:in"
+        },
+        "semantic_edges": [
+          "enc.ffn:in->enc.ffn.linear1:in",
+          "enc.norm1.layernorm:out->enc.norm1:out",
+          "enc.norm1:out->enc.ffn:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "enc.norm1.layernorm:out",
+        "width": 2.2
+      },
+      "id": "binding-032-31"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "enc.norm2.add:f",
+        "canonical_src": "enc.ffn.linear2:out",
+        "dashed": false,
+        "dst": "enc.norm2.add:f",
+        "id": "binding-037",
+        "points": [
+          [
+            382,
+            538
+          ],
+          [
+            382,
+            434
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "enc.ffn.linear2:out",
+          "target": "enc.norm2.add:f"
+        },
+        "semantic_edges": [
+          "enc.ffn.linear2:out->enc.ffn:out",
+          "enc.ffn:out->enc.norm2:in",
+          "enc.norm2.branch_dropout:out->enc.norm2.add:f",
+          "enc.norm2:in->enc.norm2.branch_dropout:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "enc.ffn.output_value:out",
+        "width": 2.2
+      },
+      "id": "binding-037-36"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "enc.norm2.add:x",
+        "canonical_src": "enc.norm1.layernorm:out",
+        "dashed": false,
+        "dst": "enc.norm2.add:x",
+        "id": "binding-039",
+        "points": [
+          [
+            382,
+            880
+          ],
+          [
+            382,
+            826
+          ],
+          [
+            56,
+            826
+          ],
+          [
+            56,
+            420
+          ],
+          [
+            368,
+            420
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "enc.norm1.layernorm:out",
+          "target": "enc.norm2.add:x"
+        },
+        "semantic_edges": [
+          "enc.norm1.layernorm:out->enc.norm1:out",
+          "enc.norm1:out->enc.norm2:skip",
+          "enc.norm2:skip->enc.norm2.add:x"
+        ],
+        "semantic_kind": "residual",
+        "src": "enc.norm1.layernorm:out",
+        "width": 2.2
+      },
+      "id": "binding-039-38"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.cross.k:in",
+        "canonical_src": "enc.norm2.layernorm:out",
+        "dashed": false,
+        "dst": "enc.memory.value:in",
+        "id": "encoder-memory-to-cross",
+        "points": [
+          [
+            382,
+            350
+          ],
+          [
+            382,
+            219
+          ],
+          [
+            800,
+            219
+          ],
+          [
+            800,
+            318
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "enc.norm2.layernorm:out",
+          "target": "dec.cross.k:in"
+        },
+        "semantic_edges": [
+          "dec.cross:memory->dec.cross.k:in",
+          "enc.norm2.layernorm:out->enc.norm2:out",
+          "enc.norm2:out->enc.output:in",
+          "enc.output:out->dec.cross:memory"
+        ],
+        "semantic_kind": "memory",
+        "src": "enc.norm2.layernorm:out",
+        "width": 2.8
+      },
+      "id": "encoder-memory-to-cross-39"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.cross.k:in",
+        "canonical_src": "enc.norm2.layernorm:out",
+        "dashed": false,
+        "dst": "dec.cross.k:in",
+        "id": "encoder-memory-to-cross-040",
+        "points": [
+          [
+            800,
+            422
+          ],
+          [
+            800,
+            1446
+          ],
+          [
+            1058.6666666666667,
+            1446
+          ],
+          [
+            1058.6666666666667,
+            1422
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "enc.norm2.layernorm:out",
+          "target": "dec.cross.k:in"
+        },
+        "semantic_edges": [
+          "dec.cross:memory->dec.cross.k:in",
+          "enc.norm2.layernorm:out->enc.norm2:out",
+          "enc.norm2:out->enc.output:in",
+          "enc.output:out->dec.cross:memory"
+        ],
+        "semantic_kind": "memory",
+        "src": "enc.memory.value:out",
+        "width": 2.8
+      },
+      "id": "encoder-memory-to-cross-040-40"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.norm1.add:f",
+        "canonical_src": "dec.self.wo:out",
+        "dashed": false,
+        "dst": "dec.norm1.add:f",
+        "id": "binding-059",
+        "points": [
+          [
+            1238,
+            1758
+          ],
+          [
+            1238,
+            1630
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.self.wo:out",
+          "target": "dec.norm1.add:f"
+        },
+        "semantic_edges": [
+          "dec.norm1.branch_dropout:out->dec.norm1.add:f",
+          "dec.norm1:in->dec.norm1.branch_dropout:in",
+          "dec.self.wo:out->dec.self:out",
+          "dec.self:out->dec.norm1:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.self.wo:out",
+        "width": 2.2
+      },
+      "id": "binding-059-58"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.cross.q:in",
+        "canonical_src": "dec.norm1.layernorm:out",
+        "dashed": false,
+        "dst": "dec.cross.q:in",
+        "id": "binding-061",
+        "points": [
+          [
+            1238,
+            1546
+          ],
+          [
+            1238,
+            1456
+          ],
+          [
+            1417.3333333333337,
+            1456
+          ],
+          [
+            1417.3333333333337,
+            1422
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.norm1.layernorm:out",
+          "target": "dec.cross.q:in"
+        },
+        "semantic_edges": [
+          "dec.cross:in->dec.cross.q:in",
+          "dec.norm1.layernorm:out->dec.norm1:out",
+          "dec.norm1:out->dec.cross:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.norm1.layernorm:out",
+        "width": 2.2
+      },
+      "id": "binding-061-60"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.norm2.add:f",
+        "canonical_src": "dec.cross.wo:out",
+        "dashed": false,
+        "dst": "dec.norm2.add:f",
+        "id": "binding-073",
+        "points": [
+          [
+            1238,
+            1092
+          ],
+          [
+            1238,
+            964
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.cross.wo:out",
+          "target": "dec.norm2.add:f"
+        },
+        "semantic_edges": [
+          "dec.cross.wo:out->dec.cross:out",
+          "dec.cross:out->dec.norm2:in",
+          "dec.norm2.branch_dropout:out->dec.norm2.add:f",
+          "dec.norm2:in->dec.norm2.branch_dropout:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.cross.wo:out",
+        "width": 2.2
+      },
+      "id": "binding-073-72"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.norm2.add:x",
+        "canonical_src": "dec.norm1.layernorm:out",
+        "dashed": false,
+        "dst": "dec.norm2.add:x",
+        "id": "binding-075",
+        "points": [
+          [
+            1238,
+            1546
+          ],
+          [
+            1238,
+            1492
+          ],
+          [
+            912,
+            1492
+          ],
+          [
+            912,
+            950
+          ],
+          [
+            1224,
+            950
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.norm1.layernorm:out",
+          "target": "dec.norm2.add:x"
+        },
+        "semantic_edges": [
+          "dec.norm1.layernorm:out->dec.norm1:out",
+          "dec.norm1:out->dec.norm2:skip",
+          "dec.norm2:skip->dec.norm2.add:x"
+        ],
+        "semantic_kind": "residual",
+        "src": "dec.norm1.layernorm:out",
+        "width": 2.2
+      },
+      "id": "binding-075-74"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.ffn.linear1:in",
+        "canonical_src": "dec.norm2.layernorm:out",
+        "dashed": false,
+        "dst": "dec.ffn.input_value:in",
+        "id": "binding-076",
+        "points": [
+          [
+            1238,
+            880
+          ],
+          [
+            1238,
+            790
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.norm2.layernorm:out",
+          "target": "dec.ffn.linear1:in"
+        },
+        "semantic_edges": [
+          "dec.ffn:in->dec.ffn.linear1:in",
+          "dec.norm2.layernorm:out->dec.norm2:out",
+          "dec.norm2:out->dec.ffn:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.norm2.layernorm:out",
+        "width": 2.2
+      },
+      "id": "binding-076-75"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.norm3.add:f",
+        "canonical_src": "dec.ffn.linear2:out",
+        "dashed": false,
+        "dst": "dec.norm3.add:f",
+        "id": "binding-081",
+        "points": [
+          [
+            1238,
+            538
+          ],
+          [
+            1238,
+            434
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.ffn.linear2:out",
+          "target": "dec.norm3.add:f"
+        },
+        "semantic_edges": [
+          "dec.ffn.linear2:out->dec.ffn:out",
+          "dec.ffn:out->dec.norm3:in",
+          "dec.norm3.branch_dropout:out->dec.norm3.add:f",
+          "dec.norm3:in->dec.norm3.branch_dropout:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.ffn.output_value:out",
+        "width": 2.2
+      },
+      "id": "binding-081-80"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.norm3.add:x",
+        "canonical_src": "dec.norm2.layernorm:out",
+        "dashed": false,
+        "dst": "dec.norm3.add:x",
+        "id": "binding-083",
+        "points": [
+          [
+            1238,
+            880
+          ],
+          [
+            1238,
+            826
+          ],
+          [
+            912,
+            826
+          ],
+          [
+            912,
+            420
+          ],
+          [
+            1224,
+            420
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.norm2.layernorm:out",
+          "target": "dec.norm3.add:x"
+        },
+        "semantic_edges": [
+          "dec.norm2.layernorm:out->dec.norm2:out",
+          "dec.norm2:out->dec.norm3:skip",
+          "dec.norm3:skip->dec.norm3.add:x"
+        ],
+        "semantic_kind": "residual",
+        "src": "dec.norm2.layernorm:out",
+        "width": 2.2
+      },
+      "id": "binding-083-82"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "generator:in",
+        "canonical_src": "dec.norm3.layernorm:out",
+        "dashed": false,
+        "dst": "generator:in",
+        "id": "binding-084",
+        "points": [
+          [
+            1238,
+            350
+          ],
+          [
+            1238,
+            236
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.norm3.layernorm:out",
+          "target": "generator:in"
+        },
+        "semantic_edges": [
+          "dec.norm3.layernorm:out->dec.norm3:out",
+          "dec.norm3:out->dec.output:in",
+          "dec.output:out->generator:in"
+        ],
+        "semantic_kind": "repeat_output",
+        "src": "dec.norm3.layernorm:out",
+        "width": 2.2
+      },
+      "id": "binding-084-83"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "probabilities:in",
+        "canonical_src": "generator:out",
+        "dashed": true,
+        "dst": "probabilities:in",
+        "id": "binding-085",
+        "points": [
+          [
+            1238,
+            188
+          ],
+          [
+            1238,
+            168
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "generator:out",
+          "target": "probabilities:in"
+        },
+        "semantic_edges": [
+          "generator:out->logits:in",
+          "logits:out->probabilities:in"
+        ],
+        "semantic_kind": "explanatory",
+        "src": "generator:out",
+        "width": 2.2
+      },
+      "id": "binding-085-84"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.k:in",
+        "canonical_src": "tgt_pe.add:out",
+        "dashed": false,
+        "dst": "dec.self.k:in",
+        "id": "binding-010",
+        "points": [
+          [
+            1238,
+            2435
+          ],
+          [
+            1238,
+            2334
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "tgt_pe.add:out",
+          "target": "dec.self.k:in"
+        },
+        "semantic_edges": [
+          "dec.self:in->dec.self.k:in",
+          "tgt_pe.add:out->tgt_pe.dropout:in",
+          "tgt_pe.dropout:out->tgt_pe:out",
+          "tgt_pe:out->dec.self:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "tgt_pe.add:out",
+        "width": 2.2
+      },
+      "id": "binding-010-9"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.v:in",
+        "canonical_src": "tgt_pe.add:out",
+        "dashed": false,
+        "dst": "dec.self.v:in",
+        "id": "binding-011",
+        "points": [
+          [
+            1238,
+            2435
+          ],
+          [
+            1238,
+            2358
+          ],
+          [
+            1417.3333333333337,
+            2358
+          ],
+          [
+            1417.3333333333337,
+            2334
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "tgt_pe.add:out",
+          "target": "dec.self.v:in"
+        },
+        "semantic_edges": [
+          "dec.self:in->dec.self.v:in",
+          "tgt_pe.add:out->tgt_pe.dropout:in",
+          "tgt_pe.dropout:out->tgt_pe:out",
+          "tgt_pe:out->dec.self:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "tgt_pe.add:out",
+        "width": 2.2
+      },
+      "id": "binding-011-10"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.cross.v:in",
+        "canonical_src": "enc.norm2.layernorm:out",
+        "dashed": false,
+        "dst": "dec.cross.v:in",
+        "id": "encoder-memory-to-cross-042",
+        "points": [
+          [
+            800,
+            422
+          ],
+          [
+            800,
+            1446
+          ],
+          [
+            1238,
+            1446
+          ],
+          [
+            1238,
+            1422
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "enc.norm2.layernorm:out",
+          "target": "dec.cross.v:in"
+        },
+        "semantic_edges": [
+          "dec.cross:memory->dec.cross.v:in",
+          "enc.norm2.layernorm:out->enc.norm2:out",
+          "enc.norm2:out->enc.output:in",
+          "enc.output:out->dec.cross:memory"
+        ],
+        "semantic_kind": "memory",
+        "src": "enc.memory.value:out",
+        "width": 2.8
+      },
+      "id": "encoder-memory-to-cross-042-42"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.split:q_in",
+        "canonical_src": "dec.self.q:out",
+        "dashed": false,
+        "dst": "dec.self.q.value:in",
+        "id": "binding-044",
+        "points": [
+          [
+            1058.6666666666667,
+            2300
+          ],
+          [
+            1058.6666666666667,
+            2276
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.self.q:out",
+          "target": "dec.self.split:q_in"
+        },
+        "semantic_edges": [
+          "dec.self.q:out->dec.self.split:q_in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.self.q:out",
+        "width": 2.2
+      },
+      "id": "binding-044-43"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.split:q_in",
+        "canonical_src": "dec.self.q:out",
+        "dashed": false,
+        "dst": "dec.self.split:q_in",
+        "id": "binding-045",
+        "points": [
+          [
+            1058.6666666666667,
+            2246
+          ],
+          [
+            1058.6666666666667,
+            2222
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.self.q:out",
+          "target": "dec.self.split:q_in"
+        },
+        "semantic_edges": [
+          "dec.self.q:out->dec.self.split:q_in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.self.q.value:out",
+        "width": 2.2
+      },
+      "id": "binding-045-44"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.sdpa.qkt:q",
+        "canonical_src": "dec.self.split:q_out",
+        "dashed": false,
+        "dst": "dec.self.sdpa.qkt:q",
+        "id": "binding-046",
+        "points": [
+          [
+            1198,
+            2184
+          ],
+          [
+            1198,
+            2146
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.self.split:q_out",
+          "target": "dec.self.sdpa.qkt:q"
+        },
+        "semantic_edges": [
+          "dec.self.sdpa:q->dec.self.sdpa.qkt:q",
+          "dec.self.split:q_out->dec.self.sdpa:q"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.self.split:q_out",
+        "width": 2.2
+      },
+      "id": "binding-046-45"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.split:k_in",
+        "canonical_src": "dec.self.k:out",
+        "dashed": false,
+        "dst": "dec.self.k.value:in",
+        "id": "binding-047",
+        "points": [
+          [
+            1238,
+            2300
+          ],
+          [
+            1238,
+            2276
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.self.k:out",
+          "target": "dec.self.split:k_in"
+        },
+        "semantic_edges": [
+          "dec.self.k:out->dec.self.split:k_in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.self.k:out",
+        "width": 2.2
+      },
+      "id": "binding-047-46"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.split:k_in",
+        "canonical_src": "dec.self.k:out",
+        "dashed": false,
+        "dst": "dec.self.split:k_in",
+        "id": "binding-048",
+        "points": [
+          [
+            1238,
+            2246
+          ],
+          [
+            1238,
+            2222
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.self.k:out",
+          "target": "dec.self.split:k_in"
+        },
+        "semantic_edges": [
+          "dec.self.k:out->dec.self.split:k_in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.self.k.value:out",
+        "width": 2.2
+      },
+      "id": "binding-048-47"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.sdpa.qkt:k",
+        "canonical_src": "dec.self.split:k_out",
+        "dashed": false,
+        "dst": "dec.self.sdpa.qkt:k",
+        "id": "binding-049",
+        "points": [
+          [
+            1278,
+            2184
+          ],
+          [
+            1278,
+            2146
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.self.split:k_out",
+          "target": "dec.self.sdpa.qkt:k"
+        },
+        "semantic_edges": [
+          "dec.self.sdpa:k->dec.self.sdpa.qkt:k",
+          "dec.self.split:k_out->dec.self.sdpa:k"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.self.split:k_out",
+        "width": 2.2
+      },
+      "id": "binding-049-48"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.split:v_in",
+        "canonical_src": "dec.self.v:out",
+        "dashed": false,
+        "dst": "dec.self.v.value:in",
+        "id": "binding-050",
+        "points": [
+          [
+            1417.3333333333337,
+            2300
+          ],
+          [
+            1417.3333333333337,
+            2276
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.self.v:out",
+          "target": "dec.self.split:v_in"
+        },
+        "semantic_edges": [
+          "dec.self.v:out->dec.self.split:v_in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.self.v:out",
+        "width": 2.2
+      },
+      "id": "binding-050-49"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.split:v_in",
+        "canonical_src": "dec.self.v:out",
+        "dashed": false,
+        "dst": "dec.self.split:v_in",
+        "id": "binding-051",
+        "points": [
+          [
+            1417.3333333333337,
+            2246
+          ],
+          [
+            1417.3333333333337,
+            2222
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.self.v:out",
+          "target": "dec.self.split:v_in"
+        },
+        "semantic_edges": [
+          "dec.self.v:out->dec.self.split:v_in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.self.v.value:out",
+        "width": 2.2
+      },
+      "id": "binding-051-50"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.sdpa.av:v",
+        "canonical_src": "dec.self.split:v_out",
+        "dashed": false,
+        "dst": "dec.self.sdpa.av:v",
+        "id": "binding-052",
+        "points": [
+          [
+            1417.3333333333337,
+            2184
+          ],
+          [
+            1417.3333333333337,
+            1930
+          ],
+          [
+            1338,
+            1930
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.self.split:v_out",
+          "target": "dec.self.sdpa.av:v"
+        },
+        "semantic_edges": [
+          "dec.self.sdpa:v->dec.self.sdpa.av:v",
+          "dec.self.split:v_out->dec.self.sdpa:v"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.self.split:v_out",
+        "width": 2.2
+      },
+      "id": "binding-052-51"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.merge:in",
+        "canonical_src": "dec.self.sdpa.av:out",
+        "dashed": false,
+        "dst": "dec.self.merge:in",
+        "id": "binding-053",
+        "points": [
+          [
+            1238,
+            1914
+          ],
+          [
+            1238,
+            1848
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.self.sdpa.av:out",
+          "target": "dec.self.merge:in"
+        },
+        "semantic_edges": [
+          "dec.self.sdpa.av:out->dec.self.sdpa:out",
+          "dec.self.sdpa:out->dec.self.merge:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.self.sdpa.av:out",
+        "width": 2.2
+      },
+      "id": "binding-053-52"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.wo:in",
+        "canonical_src": "dec.self.merge:out",
+        "dashed": false,
+        "dst": "dec.self.wo:in",
+        "id": "binding-054",
+        "points": [
+          [
+            1238,
+            1816
+          ],
+          [
+            1238,
+            1792
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.self.merge:out",
+          "target": "dec.self.wo:in"
+        },
+        "semantic_edges": [
+          "dec.self.merge:out->dec.self.wo:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.self.merge:out",
+        "width": 2.2
+      },
+      "id": "binding-054-53"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.sdpa.scale:in",
+        "canonical_src": "dec.self.sdpa.qkt:out",
+        "dashed": false,
+        "dst": "dec.self.sdpa.scale:in",
+        "id": "binding-055",
+        "points": [
+          [
+            1238,
+            2114
+          ],
+          [
+            1238,
+            2096
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.self.sdpa.qkt:out",
+          "target": "dec.self.sdpa.scale:in"
+        },
+        "semantic_edges": [
+          "dec.self.sdpa.qkt:out->dec.self.sdpa.scale:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.self.sdpa.qkt:out",
+        "width": 2.2
+      },
+      "id": "binding-055-54"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.sdpa.mask:in",
+        "canonical_src": "dec.self.sdpa.scale:out",
+        "dashed": false,
+        "dst": "dec.self.sdpa.mask:in",
+        "id": "binding-056",
+        "points": [
+          [
+            1238,
+            2064
+          ],
+          [
+            1238,
+            2046
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.self.sdpa.scale:out",
+          "target": "dec.self.sdpa.mask:in"
+        },
+        "semantic_edges": [
+          "dec.self.sdpa.scale:out->dec.self.sdpa.mask:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.self.sdpa.scale:out",
+        "width": 2.2
+      },
+      "id": "binding-056-55"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.sdpa.softmax:in",
+        "canonical_src": "dec.self.sdpa.mask:out",
+        "dashed": false,
+        "dst": "dec.self.sdpa.softmax:in",
+        "id": "binding-057",
+        "points": [
+          [
+            1238,
+            2014
+          ],
+          [
+            1238,
+            1996
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.self.sdpa.mask:out",
+          "target": "dec.self.sdpa.softmax:in"
+        },
+        "semantic_edges": [
+          "dec.self.sdpa.mask:out->dec.self.sdpa.softmax:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.self.sdpa.mask:out",
+        "width": 2.2
+      },
+      "id": "binding-057-56"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.self.sdpa.av:a",
+        "canonical_src": "dec.self.sdpa.softmax:out",
+        "dashed": false,
+        "dst": "dec.self.sdpa.av:a",
+        "id": "binding-058",
+        "points": [
+          [
+            1238,
+            1964
+          ],
+          [
+            1238,
+            1946
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.self.sdpa.softmax:out",
+          "target": "dec.self.sdpa.av:a"
+        },
+        "semantic_edges": [
+          "dec.self.sdpa.attn_dropout:out->dec.self.sdpa.av:a",
+          "dec.self.sdpa.nan_guard:out->dec.self.sdpa.attn_dropout:in",
+          "dec.self.sdpa.softmax:out->dec.self.sdpa.nan_guard:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.self.sdpa.softmax:out",
+        "width": 2.2
+      },
+      "id": "binding-058-57"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.norm1.layernorm:in",
+        "canonical_src": "dec.norm1.add:out",
+        "dashed": false,
+        "dst": "dec.norm1.layernorm:in",
+        "id": "binding-060",
+        "points": [
+          [
+            1238,
+            1602
+          ],
+          [
+            1238,
+            1578
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.norm1.add:out",
+          "target": "dec.norm1.layernorm:in"
+        },
+        "semantic_edges": [
+          "dec.norm1.add:out->dec.norm1.layernorm:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.norm1.add:out",
+        "width": 2.2
+      },
+      "id": "binding-060-59"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.cross.split:q_in",
+        "canonical_src": "dec.cross.q:out",
+        "dashed": false,
+        "dst": "dec.cross.q.value:in",
+        "id": "binding-062",
+        "points": [
+          [
+            1417.3333333333337,
+            1388
+          ],
+          [
+            1417.3333333333337,
+            1364
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.cross.q:out",
+          "target": "dec.cross.split:q_in"
+        },
+        "semantic_edges": [
+          "dec.cross.q:out->dec.cross.split:q_in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.cross.q:out",
+        "width": 2.2
+      },
+      "id": "binding-062-61"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.cross.split:q_in",
+        "canonical_src": "dec.cross.q:out",
+        "dashed": false,
+        "dst": "dec.cross.split:q_in",
+        "id": "binding-063",
+        "points": [
+          [
+            1417.3333333333337,
+            1334
+          ],
+          [
+            1417.3333333333337,
+            1310
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.cross.q:out",
+          "target": "dec.cross.split:q_in"
+        },
+        "semantic_edges": [
+          "dec.cross.q:out->dec.cross.split:q_in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.cross.q.value:out",
+        "width": 2.2
+      },
+      "id": "binding-063-62"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.cross.sdpa:q",
+        "canonical_src": "dec.cross.split:q_out",
+        "dashed": false,
+        "dst": "dec.cross.sdpa:q",
+        "id": "binding-064",
+        "points": [
+          [
+            1417.3333333333337,
+            1272
+          ],
+          [
+            1417.3333333333337,
+            1248
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.cross.split:q_out",
+          "target": "dec.cross.sdpa:q"
+        },
+        "semantic_edges": [
+          "dec.cross.split:q_out->dec.cross.sdpa:q"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.cross.split:q_out",
+        "width": 2.2
+      },
+      "id": "binding-064-63"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.cross.split:k_in",
+        "canonical_src": "dec.cross.k:out",
+        "dashed": false,
+        "dst": "dec.cross.k.value:in",
+        "id": "binding-065",
+        "points": [
+          [
+            1058.6666666666667,
+            1388
+          ],
+          [
+            1058.6666666666667,
+            1364
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.cross.k:out",
+          "target": "dec.cross.split:k_in"
+        },
+        "semantic_edges": [
+          "dec.cross.k:out->dec.cross.split:k_in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.cross.k:out",
+        "width": 2.2
+      },
+      "id": "binding-065-64"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.cross.split:k_in",
+        "canonical_src": "dec.cross.k:out",
+        "dashed": false,
+        "dst": "dec.cross.split:k_in",
+        "id": "binding-066",
+        "points": [
+          [
+            1058.6666666666667,
+            1334
+          ],
+          [
+            1058.6666666666667,
+            1310
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.cross.k:out",
+          "target": "dec.cross.split:k_in"
+        },
+        "semantic_edges": [
+          "dec.cross.k:out->dec.cross.split:k_in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.cross.k.value:out",
+        "width": 2.2
+      },
+      "id": "binding-066-65"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.cross.sdpa:k",
+        "canonical_src": "dec.cross.split:k_out",
+        "dashed": false,
+        "dst": "dec.cross.sdpa:k",
+        "id": "binding-067",
+        "points": [
+          [
+            1058.6666666666667,
+            1272
+          ],
+          [
+            1058.6666666666667,
+            1248
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.cross.split:k_out",
+          "target": "dec.cross.sdpa:k"
+        },
+        "semantic_edges": [
+          "dec.cross.split:k_out->dec.cross.sdpa:k"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.cross.split:k_out",
+        "width": 2.2
+      },
+      "id": "binding-067-66"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.cross.split:v_in",
+        "canonical_src": "dec.cross.v:out",
+        "dashed": false,
+        "dst": "dec.cross.v.value:in",
+        "id": "binding-068",
+        "points": [
+          [
+            1238,
+            1388
+          ],
+          [
+            1238,
+            1364
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.cross.v:out",
+          "target": "dec.cross.split:v_in"
+        },
+        "semantic_edges": [
+          "dec.cross.v:out->dec.cross.split:v_in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.cross.v:out",
+        "width": 2.2
+      },
+      "id": "binding-068-67"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.cross.split:v_in",
+        "canonical_src": "dec.cross.v:out",
+        "dashed": false,
+        "dst": "dec.cross.split:v_in",
+        "id": "binding-069",
+        "points": [
+          [
+            1238,
+            1334
+          ],
+          [
+            1238,
+            1310
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.cross.v:out",
+          "target": "dec.cross.split:v_in"
+        },
+        "semantic_edges": [
+          "dec.cross.v:out->dec.cross.split:v_in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.cross.v.value:out",
+        "width": 2.2
+      },
+      "id": "binding-069-68"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.cross.sdpa:v",
+        "canonical_src": "dec.cross.split:v_out",
+        "dashed": false,
+        "dst": "dec.cross.sdpa:v",
+        "id": "binding-070",
+        "points": [
+          [
+            1238,
+            1272
+          ],
+          [
+            1238,
+            1248
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.cross.split:v_out",
+          "target": "dec.cross.sdpa:v"
+        },
+        "semantic_edges": [
+          "dec.cross.split:v_out->dec.cross.sdpa:v"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.cross.split:v_out",
+        "width": 2.2
+      },
+      "id": "binding-070-69"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.cross.merge:in",
+        "canonical_src": "dec.cross.sdpa:out",
+        "dashed": false,
+        "dst": "dec.cross.merge:in",
+        "id": "binding-071",
+        "points": [
+          [
+            1238,
+            1206
+          ],
+          [
+            1238,
+            1182
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.cross.sdpa:out",
+          "target": "dec.cross.merge:in"
+        },
+        "semantic_edges": [
+          "dec.cross.sdpa:out->dec.cross.merge:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.cross.sdpa:out",
+        "width": 2.2
+      },
+      "id": "binding-071-70"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.cross.wo:in",
+        "canonical_src": "dec.cross.merge:out",
+        "dashed": false,
+        "dst": "dec.cross.wo:in",
+        "id": "binding-072",
+        "points": [
+          [
+            1238,
+            1150
+          ],
+          [
+            1238,
+            1126
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.cross.merge:out",
+          "target": "dec.cross.wo:in"
+        },
+        "semantic_edges": [
+          "dec.cross.merge:out->dec.cross.wo:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.cross.merge:out",
+        "width": 2.2
+      },
+      "id": "binding-072-71"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.norm2.layernorm:in",
+        "canonical_src": "dec.norm2.add:out",
+        "dashed": false,
+        "dst": "dec.norm2.layernorm:in",
+        "id": "binding-074",
+        "points": [
+          [
+            1238,
+            936
+          ],
+          [
+            1238,
+            912
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.norm2.add:out",
+          "target": "dec.norm2.layernorm:in"
+        },
+        "semantic_edges": [
+          "dec.norm2.add:out->dec.norm2.layernorm:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.norm2.add:out",
+        "width": 2.2
+      },
+      "id": "binding-074-73"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.ffn.linear1:in",
+        "canonical_src": "dec.norm2.layernorm:out",
+        "dashed": false,
+        "dst": "dec.ffn.linear1:in",
+        "id": "binding-077",
+        "points": [
+          [
+            1238,
+            760
+          ],
+          [
+            1238,
+            736
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.norm2.layernorm:out",
+          "target": "dec.ffn.linear1:in"
+        },
+        "semantic_edges": [
+          "dec.ffn:in->dec.ffn.linear1:in",
+          "dec.norm2.layernorm:out->dec.norm2:out",
+          "dec.norm2:out->dec.ffn:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.ffn.input_value:out",
+        "width": 2.2
+      },
+      "id": "binding-077-76"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.ffn.relu:in",
+        "canonical_src": "dec.ffn.linear1:out",
+        "dashed": false,
+        "dst": "dec.ffn.relu:in",
+        "id": "binding-078",
+        "points": [
+          [
+            1238,
+            704
+          ],
+          [
+            1238,
+            680
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.ffn.linear1:out",
+          "target": "dec.ffn.relu:in"
+        },
+        "semantic_edges": [
+          "dec.ffn.linear1:out->dec.ffn.relu:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.ffn.linear1:out",
+        "width": 2.2
+      },
+      "id": "binding-078-77"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.ffn.linear2:in",
+        "canonical_src": "dec.ffn.relu:out",
+        "dashed": false,
+        "dst": "dec.ffn.linear2:in",
+        "id": "binding-079",
+        "points": [
+          [
+            1238,
+            648
+          ],
+          [
+            1238,
+            624
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.ffn.relu:out",
+          "target": "dec.ffn.linear2:in"
+        },
+        "semantic_edges": [
+          "dec.ffn.dropout:out->dec.ffn.linear2:in",
+          "dec.ffn.relu:out->dec.ffn.dropout:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.ffn.relu:out",
+        "width": 2.2
+      },
+      "id": "binding-079-78"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.norm3.add:f",
+        "canonical_src": "dec.ffn.linear2:out",
+        "dashed": false,
+        "dst": "dec.ffn.output_value:in",
+        "id": "binding-080",
+        "points": [
+          [
+            1238,
+            592
+          ],
+          [
+            1238,
+            568
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.ffn.linear2:out",
+          "target": "dec.norm3.add:f"
+        },
+        "semantic_edges": [
+          "dec.ffn.linear2:out->dec.ffn:out",
+          "dec.ffn:out->dec.norm3:in",
+          "dec.norm3.branch_dropout:out->dec.norm3.add:f",
+          "dec.norm3:in->dec.norm3.branch_dropout:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.ffn.linear2:out",
+        "width": 2.2
+      },
+      "id": "binding-080-79"
+    },
+    {
+      "binding": {
+        "arrow": true,
+        "canonical_dst": "dec.norm3.layernorm:in",
+        "canonical_src": "dec.norm3.add:out",
+        "dashed": false,
+        "dst": "dec.norm3.layernorm:in",
+        "id": "binding-082",
+        "points": [
+          [
+            1238,
+            406
+          ],
+          [
+            1238,
+            382
+          ]
+        ],
+        "port_authority": {
+          "geometry": "presentation",
+          "source": "dec.norm3.add:out",
+          "target": "dec.norm3.layernorm:in"
+        },
+        "semantic_edges": [
+          "dec.norm3.add:out->dec.norm3.layernorm:in"
+        ],
+        "semantic_kind": "tensor",
+        "src": "dec.norm3.add:out",
+        "width": 2.2
+      },
+      "id": "binding-082-81"
+    }
+  ],
+  "model": {
+    "id": "01093cc06a87b35b",
+    "title": "Transformer · 源码原子粒度"
+  },
+  "stage": "legacy-05-encoder-f0-decoder-atoms",
+  "meta": {
+    "model": {
+      "id": "01093cc06a87b35b",
+      "title": "Transformer · 源码原子粒度"
+    },
+    "root": "enc.layer_i"
+  },
+  "cuts": [
+    {
+      "depth": "all",
+      "id": "dec.layer_i",
+      "level": "source",
+      "text": "dec.layer_i登记原子层 · 43 可见 / 43 原始节点"
+    },
+    {
+      "depth": "all",
+      "id": "enc.layer_i",
+      "level": "f0",
+      "text": "enc.layer_iF0 架构概览 · 5 可见 / 29 原始节点"
+    }
+  ],
+  "routing": [
+    "Summary 语义切面登记预览层级模块语义深度2 个独立切面选中模块后单独调整；其他模块保留各自的切面。源码深度可逐级增加，或一次展开全部原始节点。目标模块enc.layer_i · 29 原始节点 · 整个模型enc.norm2 · 3 原始节点enc.ffn · 6 原始节点enc.norm1 · 3 原始节点enc.self · 16 原始节点enc.self.sdpa · 6 原始节点dec.layer_i · 43 原始节点 · 整个模型dec.norm3 · 3 原始节点dec.ffn · 6 原始节点dec.norm2 · 3 原始节点dec.cross · 11 原始节点dec.norm1 · 3 原始节点dec.self · 16 原始节点dec.self.sdpa · 6 原始节点定位目标模块模块切面F0 架构概览F1 登记详图登记原子层应用到目标模块模块 F0模块 F1目标模块展开到全部登记原子目标模块恢复全局切面dec.layer_i登记原子层 · 43 可见 / 43 原始节点enc.layer_iF0 架构概览 · 5 可见 / 29 原始节点全局 F0/F1 与展开/收起全部会统一重设前沿；撤销、重做及编辑 JSON 保留混合切面。按案例登记的原子节点、依赖和来源证据展开；折叠单位保留在原始预览 IR 中。源码分析与 CPU 执行权限仍由原有流程验证。语义摘要不表示已执行模型。参数和结构修改仍通过正式编辑与事务审查。"
+  ],
+  "mode": "registered",
+  "time": "2026-10-28T10:01:40.595Z",
+  "file": "01093cc06a87b35b-legacy-05-encoder-f0-decoder-atoms"
+}
