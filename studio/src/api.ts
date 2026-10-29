@@ -88,7 +88,11 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
   return result as T;
 }
 export const api = {
+  importSourceComponents: (value: { files: Record<string, string>; entry: string; config: Record<string, unknown>; title: string }) => mutation<{ added: number; reused: number; candidates: number }>('/preview/source-components/import', value),
+  discoverComponentModels: (files: Record<string, string>) => request<{ candidates: string[]; syntaxErrors: { file: string; message: string }[] }>('/models/discover', { method: 'POST', body: JSON.stringify({ files }) }),
   observeSummary,
+  inspectSummarySource: (source: string) => mutation<import('./SourceCodeWindow').SourceInventory>('/preview/authoring/inspect', { source }),
+  summaryPython: (document: Record<string, unknown>) => mutation<{ source: string; files: Record<string, string>; entry: string; mode: string; archiveBase64: string }>('/preview/authoring/python', { document }),
   summaryModule: (value: { source: string; entry: string; constructor: Record<string, unknown> }) => mutation<Record<string, unknown>>('/preview/authoring/module', value),
   summaryAssembly: (ir: Record<string, unknown>) => mutation<Record<string, unknown>>('/preview/authoring/certify', { ir }),
   previewAnalyze: (value: PreviewSourceRequest) => request<PreviewSourceBundle>('/preview/analyze', { method: 'POST', body: JSON.stringify(value) }),

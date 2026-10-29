@@ -33,6 +33,26 @@ def _request(source, entry, constructor):
     return {"source": source, "entry": entry, "constructor": constructor}
 
 
+def inspect_source(source):
+    payload = _request(source, "_inspect", {})
+    return _run_task({**payload, "task": "inspect"})
+
+
+def generate_python(document):
+    if not isinstance(document, dict) or len(json.dumps(document, ensure_ascii=False, allow_nan=False).encode()) > MAX_RESULT_BYTES:
+        raise AdapterError("Python 生成文档无效或超过 16 MB。")
+    return _run_task({"task": "generate", "document": document})
+
+
+def _run_task(payload):
+    if not _COMPILATION.acquire(blocking=False):
+        raise AdapterError("正在进行另一个 Summary 静态分析，请完成后重试。")
+    try:
+        return _compile_module(payload)
+    finally:
+        _COMPILATION.release()
+
+
 def compile_source_module(source, entry, constructor=None):
     payload = _request(source, entry, constructor)
     if not _COMPILATION.acquire(blocking=False):
@@ -63,6 +83,8 @@ def _compile_module(payload):
             raise AdapterError("Summary 模块解析没有返回有效结果。") from error
     if response.get("error"):
         raise AdapterError(response["error"])
+    if payload.get("task"):
+        return response["result"]
     module = response["module"]
     if module.get("schema") != "semantic-module/1" or module.get("source") != payload["source"] or module.get("entry") != payload["entry"] or module.get("constructor") != payload["constructor"]:
         raise AdapterError("Summary 模块解析结果与请求来源不一致。")
@@ -79,6 +101,16 @@ def _module_worker():
         from archcanvas_summary_semantic.authoring import compile_module
         from archcanvas_summary_semantic.schema import validate_ir
         payload = json.load(sys.stdin)
+        if payload.get("task") == "inspect":
+            from archcanvas_summary_semantic.source_inventory import inspect_source
+            result = inspect_source(_request(payload["source"], "_inspect", {})["source"])
+            sys.stdout.write(json.dumps({"result": result}, ensure_ascii=False, allow_nan=False))
+            return
+        if payload.get("task") == "generate":
+            from archcanvas_summary_semantic.python_export import generate_python
+            result = generate_python(payload["document"])
+            sys.stdout.write(json.dumps({"result": result}, ensure_ascii=False, allow_nan=False))
+            return
         module = compile_module(**_request(**payload))
         ir = module["ir"]
         if len(ir["nodes"]) > MAX_NODES or len(ir["edges"]) > MAX_EDGES:

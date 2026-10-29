@@ -7,7 +7,7 @@ import vm from 'node:vm';
 
 // Use the shipped engine and source-grounded catalog; no model code executes.
 const preview = fileURLToPath(new URL('../public/preview/', import.meta.url));
-const context = vm.createContext({});
+const context = vm.createContext({ performance });
 for (const file of ['router.js', 'physical-ports.js', 'junction-markers.js', 'route-labels.js',
   'source-contracts.js', 'semantic-constraints.js', 'graph-engine.js', 'recursive-graph.js']) {
   vm.runInContext(readFileSync(path.join(preview, 'yworks_edge_router_lab', file), 'utf8'), context, { filename: file });
@@ -174,7 +174,7 @@ test('older cached frontiers rebuild the bad gates while retaining local edits a
   doc.state.captionAnchors = { sample: { mode: 'ratio', ratio: 0.4, gap: 12 } };
   F.remember(graph);
   const updated = F.upgrade(graph);
-  assert.equal(updated.recursive.presentationVersion, 19);
+  assert.equal(updated.recursive.presentationVersion, 20);
   assert.deepEqual(plain(updated.recursive.state.open), choices);
   assert.deepEqual(plain(updated.recursive.state.layouts), offsets);
   assert.deepEqual(plain(updated.recursive.state.captionAnchors.sample), { mode: 'ratio', ratio: 0.4, gap: 12 });

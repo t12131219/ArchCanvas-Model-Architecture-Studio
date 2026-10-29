@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import ts from 'typescript';
 import React from 'react';
+import { t, uiMessage, setLocale } from '../src/i18n.ts';
 import { parseSummaryCatalog, summaryPrograms, summaryConfiguration } from '../src/summaryCatalog.ts';
 
 function component(file:string, states:Record<number,unknown>={}) {
@@ -11,7 +12,7 @@ function component(file:string, states:Record<number,unknown>={}) {
  const exports:any={};let slot=0;
  const hooks={...React,useEffect(){},useState(initial:unknown){const i=slot++;return [i in states?states[i]:initial,()=>{}];},useRef:(value:unknown)=>({current:value})};
  const code=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.React}}).outputText;
- new Function('require','exports','React',code)(()=>hooks,exports,React);return exports;
+ new Function('require','exports','React',code)((id:string)=>id==='./i18n'?{t,uiMessage}:hooks,exports,React);return exports;
 }
 function elements(node:any):any[] {return !node||typeof node!=='object'?[]:[node,...React.Children.toArray(node.props?.children).flatMap(elements)];}
 function text(node:any):string {return typeof node==='string'||typeof node==='number'?String(node):React.Children.toArray(node?.props?.children).map(text).join('');}
@@ -37,7 +38,7 @@ test('runtime evidence switches annotate the current graph without replacing mod
  all.find(e=>e.props['aria-label']==='显示已匹配运行证据').props.onChange({target:{checked:true}});
  all.find(e=>e.props['aria-label']==='Summary 观察记录').props.onChange({target:{value:'0'}});
  assert.deepEqual(commands,[{patch:{mode:'merged',paperFocus:null,paperRelation:null}},{patch:{mode:'merged',runtimeInlineRun:0,paperFocus:null}}]);
- assert.equal(tree.props.open,undefined);assert.equal(all.some(e=>e.type==='textarea'),false);assert.doesNotMatch(text(tree),/CPU 精确源码|打开本次观察结果|证据视图/);
+ assert.equal(tree.props.open,true,'the task dialog exposes its evidence content immediately');assert.equal(all.some(e=>e.type==='textarea'),false);assert.doesNotMatch(text(tree),/CPU 精确源码|打开本次观察结果|证据视图/);
 });
 test('a new observation has a complete save path without replacing the active graph',()=>{
  const document={schema:'archcanvas-source-semantic/2',nodes:[],runtime:{runs:[{id:'specific-input'}]}};
@@ -58,10 +59,54 @@ test('model entries group by source identity, retaining constructor variants and
  const transformer=programs.find(p=>p.models.length===2)!;assert.equal(transformer.title,'Transformer');assert.notEqual(summaryConfiguration(transformer.models[0]),summaryConfiguration(transformer.models[1]));
  const [first]=catalog.models;assert.equal(summaryPrograms([first,{...first,id:'other',program:{...first.program!,id:'a'.repeat(64)}}]).length,2,'same title cannot merge different sources');
 });
-test('host retains object legend page editing panels and removes redundant Summary view shells',()=>{
+test('host exposes task entries and keeps Summary APIs without permanent visual inspector tabs',()=>{
  const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
  assert.doesNotMatch(app,/className="semantic-frontier"|className="summary-interaction"|onOpenPreview=|openSummaryObservation/);
- for(const name of ['对象','图例','页面','Summary'])assert.ok(app.includes(name));
+ assert.doesNotMatch(app,/<aside className="inspector"|className="inspector-tabs"/);
+ for(const task of ['library','expansion','runtime'])assert.ok(app.includes(`setTaskDialog('${task}')`));
+ assert.ok(app.includes('<SummaryAuthoringPanel'));assert.ok(app.includes('onCompile='));
  assert.ok(app.includes('<SummarySemanticPanel embedded'));assert.ok(app.includes('onSaveEvidence='));
  const library=readFileSync(new URL('../src/SummaryCatalogPanel.tsx',import.meta.url),'utf8');assert.doesNotMatch(library,/loadSummaryPreviewCases|summary-preview-cases/);
+});
+
+test('editing defaults to adding components without mounting advanced forms and thousands of hidden source rows',()=>{
+ const node={id:'root',label:'Root',kind:'composite',parent:null,ports:{inputs:[],outputs:[]}};
+ const snapshot={authoring:{workspaceId:'test',title:'Test',scope:null,nodes:[node],edges:[],library:[],sourceNodes:Array.from({length:3371},(_,i)=>({id:'source-'+i,label:'Source '+i,kind:'compute'}))}};
+ const render=(section:string)=>component('SummaryAuthoringPanel.tsx',{16:section}).SummaryAuthoringPanel({snapshot,selected:[],disabled:false});
+ const initial=elements(render('add'));
+ assert.equal(initial.some(e=>e.type==='button'&&text(e)==='打开悬浮源码工作台'),true,'custom source workbench is available directly in Add');
+ assert.equal(initial.filter(e=>e.type==='button'&&text(e).startsWith('Source ')).length,0);
+ assert.equal(initial.find(e=>e.props?.['aria-label']==='Summary 编辑层级').props.children[1].length,1);
+ assert.ok(text(render('selection')).includes('精确槽位连接'));
+ assert.ok(text(render('add')).includes('源码模块与参数重解析'));
+ assert.ok(text(render('add')).includes('模型信息与名称'));
+ assert.ok(!text(render('add')).includes('清空搭建并开始参考重建'));
+});
+
+test('source components browse an independent searchable library instead of the active document nodes',()=>{
+ const source=readFileSync(new URL('../src/SummaryAuthoringPanel.tsx',import.meta.url),'utf8');
+ assert.doesNotMatch(source,/state\.sourceNodes\.filter|sourceNode: n\.id/);
+ assert.match(source,/sourceComponent: id/);
+ const catalog=JSON.parse(readFileSync(new URL('../public/preview/data/source-components/index.json',import.meta.url),'utf8'));
+ const render=(query:string)=>component('SourceComponentLibrary.tsx',{0:catalog,2:'模块'}).SourceComponentLibrary({query,disabled:false,onAdd(){}});
+ const entries=elements(render('Attention')).filter(e=>typeof e.type==='function'&&e.props.family);
+ assert.ok(entries.length>0);assert.ok(entries.every(e=>JSON.stringify(e.props.family).includes('Attention')));
+ assert.ok(text(render('a-nonexistent-component')).includes('没有匹配项'));
+ assert.ok(elements(render('')).filter(e=>typeof e.type==='function'&&e.props.family).length<=20,'rows are paged');
+});
+
+
+test('English editor localizes controls while source names, preset names and category values stay intact',()=>{
+ try {
+  setLocale('en');
+  const nodes=[{id:'root',label:'PositionwiseFeedForward',kind:'composite',parent:null,ports:{inputs:[],outputs:[]}}];
+  const snapshot={authoring:{workspaceId:'test',title:'我的 Encoder',scope:null,nodes,edges:[],library:[],sourceNodes:[]}};
+  const tree=component('SummaryAuthoringPanel.tsx',{2:[{title:'Linear'}]}).SummaryAuthoringPanel({snapshot,selected:[],disabled:false});
+  assert.ok(text(tree).includes('Model name and information'));assert.ok(text(tree).includes('Source module and constructor parsing'));
+  assert.ok(elements(tree).some(e=>e.type==='option'&&text(e)==='PositionwiseFeedForward'));
+  assert.ok(elements(tree).some(e=>e.type==='button'&&text(e)==='Linear'));
+  const catalog=JSON.parse(readFileSync(new URL('../public/preview/data/source-components/index.json',import.meta.url),'utf8'));
+  const library=component('SourceComponentLibrary.tsx',{0:catalog,2:'模块'}).SourceComponentLibrary({query:'Attention',disabled:false,onAdd(){}});
+  assert.ok(elements(library).some(e=>typeof e.type==='function'&&e.props.family),'English must not change the persisted category filter');
+ }finally{setLocale('zh-CN');}
 });

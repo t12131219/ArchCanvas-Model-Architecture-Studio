@@ -1,3 +1,4 @@
+import { t, uiMessage } from './i18n';
 import { useState } from 'react';
 import type { Architecture } from './core';
 import type { InputSpec } from './api';
@@ -27,15 +28,15 @@ export function RuntimeProfileDialog({ architecture, initial, example, onSave, o
     } catch (e) { setError(String(e)); }
   }
   return <div className="modal-backdrop"><div className="runtime-modal" role="dialog" aria-modal="true" aria-labelledby="runtime-title">
-    <div className="modal-heading"><div><div className="eyebrow">ISOLATED CPU VALIDATION</div><h2 id="runtime-title">连接验证的输入与模式</h2></div><button className="tool" aria-label="关闭运行设置" onClick={onClose}><Icon name="close" /></button></div>
-    <p className="runtime-intro">为 {architecture.label} 明确输入。预览语义修改时，将在隔离 CPU worker 中运行候选源码，核对从当前源码与修改意图独立推导的调用、形状、类型和状态预期。现在保存设置只登记输入，不执行模型。</p>
-    {example && <p className="field-help">以下是这个示例的演示输入，可修改；它们不是自动推断的实际训练输入。</p>}
-    <label className="field-label" htmlFor="runtime-inputs">具名输入 · {names.join('、')}</label>
-    <textarea id="runtime-inputs" aria-label="运行输入 JSON" value={draft} onChange={e => setDraft(e.target.value)} spellCheck={false} />
-    <div className="runtime-fields"><label>随机种子<input aria-label="运行随机种子" type="number" min="0" value={seed} onChange={e => setSeed(e.target.value)} /></label><label className="check-field"><input type="checkbox" checked={evalMode} onChange={e => setEval(e.target.checked)} />评估模式 eval</label><label className="check-field"><input type="checkbox" checked={trainMode} onChange={e => setTrain(e.target.checked)} />训练模式 train</label></div>
-    <details><summary>模型构造参数</summary><p className="field-help">当前合同使用源码中的默认构造参数，须保留 {'{}'}；不加载 checkpoint。</p><textarea aria-label="模型构造参数 JSON" className="constructor-input" value={constructor} onChange={e => setConstructor(e.target.value)} spellCheck={false} /></details>
-    <p className="review-note">默认禁网、只读源码、独立临时写入目录，并限制时间和资源。缺少已验证隔离环境或所需运行检查失败时，连接提案无法提交。样本检查不证明全程序或数值等价。</p>
-    {error && <p role="alert" className="error-text">{error}</p>}
-    <div className="modal-actions"><button onClick={onClose}>取消</button><button className="primary" onClick={save}>保存输入设置</button></div>
+    <div className="modal-heading"><div><div className="eyebrow">ISOLATED CPU VALIDATION</div><h2 id="runtime-title">{t("连接验证的输入与模式")}</h2></div><button className="tool" aria-label={t("关闭运行设置")} onClick={onClose}><Icon name="close" /></button></div>
+    <p className="runtime-intro">{t("为")}{architecture.label}{t("明确输入。预览语义修改时，将在隔离 CPU worker 中运行候选源码，核对从当前源码与修改意图独立推导的调用、形状、类型和状态预期。现在保存设置只登记输入，不执行模型。")}</p>
+    {example && <p className="field-help">{t("以下是这个示例的演示输入，可修改；它们不是自动推断的实际训练输入。")}</p>}
+    <label className="field-label" htmlFor="runtime-inputs">{t("具名输入 ·")}{names.join('、')}</label>
+    <textarea id="runtime-inputs" aria-label={t("运行输入 JSON")} value={draft} onChange={e => setDraft(e.target.value)} spellCheck={false} />
+    <div className="runtime-fields"><label>{t("随机种子")}<input aria-label={t("运行随机种子")} type="number" min="0" value={seed} onChange={e => setSeed(e.target.value)} /></label><label className="check-field"><input type="checkbox" checked={evalMode} onChange={e => setEval(e.target.checked)} />{t("评估模式 eval")}</label><label className="check-field"><input type="checkbox" checked={trainMode} onChange={e => setTrain(e.target.checked)} />{t("训练模式 train")}</label></div>
+    <details><summary>{t("模型构造参数")}</summary><p className="field-help">{t("当前合同使用源码中的默认构造参数，须保留")}{'{}'}{t("；不加载 checkpoint。")}</p><textarea aria-label={t("模型构造参数 JSON")} className="constructor-input" value={constructor} onChange={e => setConstructor(e.target.value)} spellCheck={false} /></details>
+    <p className="review-note">{t("默认禁网、只读源码、独立临时写入目录，并限制时间和资源。缺少已验证隔离环境或所需运行检查失败时，连接提案无法提交。样本检查不证明全程序或数值等价。")}</p>
+    {error && <p role="alert" className="error-text">{uiMessage(error)}</p>}
+    <div className="modal-actions"><button onClick={onClose}>{t("取消")}</button><button className="primary" onClick={save}>{t("保存输入设置")}</button></div>
   </div></div>;
 }

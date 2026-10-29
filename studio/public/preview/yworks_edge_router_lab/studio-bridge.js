@@ -10,9 +10,17 @@
     if(query.get('embed')==='1')document.documentElement.classList.add('studio-embedded');
     if(query.get('surface')==='canvas'){
       document.documentElement.classList.add('studio-canvas');
+      const libraryTitle=document.querySelector('.library h2'),libraryFooter=document.querySelector('.library-footer');
+      if(libraryTitle)libraryTitle.textContent='已保存与导入文档';
+      if(libraryFooter)libraryFooter.textContent='每个模型独立保存展开与编辑状态。更多源码模型可从左侧“模型库”打开。';
       const close=()=>document.documentElement.classList.remove('studio-library-open','studio-routing-open');
       const backdrop=document.createElement('button');backdrop.className='studio-drawer-backdrop';backdrop.setAttribute('aria-label','关闭预览面板');backdrop.onclick=close;document.body.append(backdrop);
-      for(const panel of document.querySelectorAll('.library,.settings')){const button=document.createElement('button');button.className='studio-drawer-close';button.textContent='关闭 ×';button.onclick=close;panel.prepend(button);}
+      for(const panel of document.querySelectorAll('.library,.settings')){
+        const heading=document.createElement('div');heading.className='studio-drawer-heading';
+        const title=document.createElement('strong');title.textContent=panel.matches('.library')?'已保存与导入文档':'布线与箭头';
+        const button=document.createElement('button');button.className='studio-drawer-close';button.textContent='关闭 ×';button.onclick=close;
+        heading.append(title,button);panel.prepend(heading);
+      }
       const sourceContext=document.createElement('dialog');sourceContext.id='studioSourceContext';
       const sourceHeader=document.createElement('div');sourceHeader.className='dialog-head';const sourceTitle=document.createElement('h2');sourceTitle.textContent='当前模型 · 源码与 IR';const sourceClose=document.createElement('button');sourceClose.textContent='关闭 ×';sourceClose.onclick=()=>sourceContext.close();sourceHeader.append(sourceTitle,sourceClose);sourceContext.append(sourceHeader);
       for(const selector of ['.source-bar','.facts']){const section=document.querySelector(selector);if(section)sourceContext.append(section);}document.body.append(sourceContext);
@@ -63,7 +71,7 @@
         else if(command==='save'){await api.save();emit('saved',{requestId,...api.state()});}
         else if(command==='svg'){const xml=await api.svg(message);emit('svg',{requestId,xml,svg:xml,...api.state()});}
         else if(command==='export-svg'||command==='export-json'){await api.export(command==='export-svg'?'svg':'json');emit('exported',{requestId,format:command==='export-svg'?'svg':'json'});}
-        else if(command==='apply-layout'){
+        else if(command==='apply-layout'||command==='authoring'){
           // The command's response is also the final host state. Otherwise
           // apply's finalizer plus applied + state clone the source three times.
           applyingLayout++;try{await api.command(command,message);emit('applied',{requestId,command,...api.state()});}finally{applyingLayout--;}

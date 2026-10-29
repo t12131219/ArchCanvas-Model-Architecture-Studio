@@ -1,3 +1,4 @@
+import { t, uiMessage } from './i18n';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { PreviewSnapshot } from './PreviewStudio';
 import type { SummaryRuntimeResult } from './api';
@@ -39,38 +40,38 @@ export function SummaryRuntimePanel({ available, reason, hasSource, storedReceip
   } | undefined;
   const evidence = view?.runtimeEvidence, observed = evidence?.runs ?? [], mode = view?.mode ?? 'source';
   const patch = (value: Record<string, unknown>) => onCommand?.({ patch: value });
-  return <details className="inspector-section summary-runtime">
-    <summary>源码与运行证据<span className="read-only">来源与覆盖</span></summary>
-    {mode === 'runtime' && <><p className="field-help">当前打开的是旧版轨迹文档。</p><button className="full-button" disabled={disabled} onClick={() => patch({ mode: 'merged', paperFocus: null, paperRelation: null })}>回到源码主图</button></>}
+  return <details className="inspector-section summary-runtime" open>
+    <summary>{t("源码与运行证据")}<span className="read-only">{t("来源与覆盖")}</span></summary>
+    {mode === 'runtime' && <><p className="field-help">{t("当前打开的是旧版轨迹文档。")}</p><button className="full-button" disabled={disabled} onClick={() => patch({ mode: 'merged', paperFocus: null, paperRelation: null })}>{t("回到源码主图")}</button></>}
     {!!observed.length && <>
-      <label className="check"><input type="checkbox" aria-label="显示已匹配运行证据" checked={mode === 'merged'} disabled={disabled} onChange={event => patch({ mode: event.target.checked ? 'merged' : 'source', paperFocus: null, paperRelation: null })}/>显示已匹配运行证据</label>
-      <label className="field-label">观察记录<select aria-label="Summary 观察记录" disabled={disabled} value={evidence?.selectedRun ?? 0} onChange={event => patch({ mode: 'merged', runtimeInlineRun: Number(event.target.value), paperFocus: null })}>
-        {observed.map(run => <option key={run.index} value={run.index}>{run.case} / {run.mode} · {run.status === 'passed' ? '记录通过' : run.status === 'failed' ? '记录失败' : run.status}</option>)}
+      <label className="check"><input type="checkbox" aria-label={t("显示已匹配运行证据")} checked={mode === 'merged'} disabled={disabled} onChange={event => patch({ mode: event.target.checked ? 'merged' : 'source', paperFocus: null, paperRelation: null })}/>{t("显示已匹配运行证据")}</label>
+      <label className="field-label">{t("观察记录")}<select aria-label={t("Summary 观察记录")} disabled={disabled} value={evidence?.selectedRun ?? 0} onChange={event => patch({ mode: 'merged', runtimeInlineRun: Number(event.target.value), paperFocus: null })}>
+        {observed.map(run => <option key={run.index} value={run.index}>{run.case} / {run.mode} · {run.status === 'passed' ? t("记录通过") : run.status === 'failed' ? t("记录失败") : run.status}</option>)}
       </select></label>
-      <p className="field-help">{observed.length} 条文档内观察记录；{mode === 'merged' ? `${evidence?.integratedRegions ?? 0} 个调用已匹配到当前源码。` : '可在当前图中显示匹配结果。'} 未观察路径仍为未知。</p>
-      <details><summary>观察记录与匹配范围</summary><pre>{JSON.stringify(evidence, null, 2)}</pre></details>
+      <p className="field-help">{observed.length}{t("条文档内观察记录；")}{mode === 'merged' ? t("{0} 个调用已匹配到当前源码。", {"0": evidence?.integratedRegions ?? 0}) : t("可在当前图中显示匹配结果。")}{t("未观察路径仍为未知。")}</p>
+      <details><summary>{t("观察记录与匹配范围")}</summary><pre>{JSON.stringify(evidence, null, 2)}</pre></details>
     </>}
-    {!observed.length && <p className="field-help">当前没有可匹配的运行记录，按已有源码或登记证据展示。探针只补充明确样例实际经过的路径。</p>}
-    {view?.selectionDetails?.filter(detail => selectedIds.includes(detail.id)).map(detail => <details key={detail.id}><summary>所选对象的源码与证据</summary><pre>{detail.evidence}</pre></details>)}
+    {!observed.length && <p className="field-help">{t("当前没有可匹配的运行记录，按已有源码或登记证据展示。探针只补充明确样例实际经过的路径。")}</p>}
+    {view?.selectionDetails?.filter(detail => selectedIds.includes(detail.id)).map(detail => <details key={detail.id}><summary>{t("所选对象的源码与证据")}</summary><pre>{detail.evidence}</pre></details>)}
     {children}
-    <details className="summary-probe"><summary>添加运行证据</summary>
-      <p className="field-help">使用明确的输入、构造参数和模式运行隔离 CPU 探针，检查未知模块及实际执行路径。</p>
-      {!available && <p className="field-help">隔离 CPU 环境不可用：{reason || '未通过运行环境检查'}</p>}
-      {!hasSource && <p className="field-help">当前文档没有可执行的 Python 文本，可继续查看已有运行记录。</p>}
+    <details className="summary-probe"><summary>{t("添加运行证据")}</summary>
+      <p className="field-help">{t("使用明确的输入、构造参数和模式运行隔离 CPU 探针，检查未知模块及实际执行路径。")}</p>
+      {!available && <p className="field-help">{t("隔离 CPU 环境不可用：")}{reason || t("未通过运行环境检查")}</p>}
+      {!hasSource && <p className="field-help">{t("当前文档没有可执行的 Python 文本，可继续查看已有运行记录。")}</p>}
       {available && hasSource && <>
-        <label className="field-label">输入规格<textarea aria-label="Summary CPU 输入规格" rows={10} spellCheck={false} value={draft} disabled={pending} onChange={e => setDraft(e.target.value)} /></label>
-        <p className="field-help">cases[].inputs 填写具名输入，例如 x: {'{"shape":[2,3],"dtype":"float32","fill":"ones"}'}；标量使用 {'{"value":true}'}。模式可选 eval / train。</p>
-        <button className="full-button" disabled={disabled || pending} onClick={() => void run()}>{pending ? '正在隔离运行…' : '运行探针'}</button>
+        <label className="field-label">{t("输入规格")}<textarea aria-label={t("Summary CPU 输入规格")} rows={10} spellCheck={false} value={draft} disabled={pending} onChange={e => setDraft(e.target.value)} /></label>
+        <p className="field-help">{t("cases[].inputs 填写具名输入，例如 x:")}{'{"shape":[2,3],"dtype":"float32","fill":"ones"}'}{t("；标量使用")}{'{"value":true}'}{t("。模式可选 eval / train。")}</p>
+        <button className="full-button" disabled={disabled || pending} onClick={() => void run()}>{pending ? t("正在隔离运行…") : t("运行探针")}</button>
       </>}
-      {pending && <button className="full-button" onClick={() => { stopRequested.current = true; void cancel.current?.().catch(e => { if (alive.current) setError(String(e)); }); }}>取消运行探针</button>}
+      {pending && <button className="full-button" onClick={() => { stopRequested.current = true; void cancel.current?.().catch(e => { if (alive.current) setError(String(e)); }); }}>{t("取消运行探针")}</button>}
       {!!Object.keys(receipt).length && <>
-        <p className="field-help">状态：{String(receipt.status ?? '未知')} · {receipt.model_executed === true ? '已执行声明样例' : receipt.model_executed === false ? '未执行模型' : '执行未完整确认'} · {runs.length} 条运行记录{receipt.reason ? ` · ${String(receipt.reason)}` : ''}</p>
-        <details onToggle={event => setShowReceipt(event.currentTarget.open)}><summary>输入、环境与完整观察收据</summary>{showReceipt && <pre>{JSON.stringify(receipt, null, 2)}</pre>}</details>
+        <p className="field-help">{t("状态：")}{String(receipt.status ?? t("未知"))} · {receipt.model_executed === true ? t("已执行声明样例") : receipt.model_executed === false ? t("未执行模型") : t("执行未完整确认")} · {runs.length}{t("条运行记录")}{receipt.reason ? ` · ${String(receipt.reason)}` : ''}</p>
+        <details onToggle={event => setShowReceipt(event.currentTarget.open)}><summary>{t("输入、环境与完整观察收据")}</summary>{showReceipt && <pre>{JSON.stringify(receipt, null, 2)}</pre>}</details>
       </>}
-      {result?.document && <><button className="full-button" onClick={() => onSaveEvidence(result.document!)}>保存本次观察证据</button><p className="field-help">本次结果尚未附加到当前图。请保存证据文档；切换模型或关闭面板后，本次临时结果会清除。</p></>}
-      {error && <p className="field-help error" role="alert">{error}</p>}
+      {result?.document && <><button className="full-button" onClick={() => onSaveEvidence(result.document!)}>{t("保存本次观察证据")}</button><p className="field-help">{t("本次结果尚未附加到当前图。请保存证据文档；切换模型或关闭面板后，本次临时结果会清除。")}</p></>}
+      {error && <p className="field-help error" role="alert">{uiMessage(error)}</p>}
     </details>
-    {!!view?.nodeAccounting && <details><summary>原始节点与依赖归属</summary><pre>{JSON.stringify({ nodes: Object.fromEntries(Object.entries(view.nodeAccounting).map(([key, ids]) => [key, ids.length])), edges: Object.fromEntries(Object.entries(view.edgeAccounting ?? {}).map(([key, ids]) => [key, ids.length])) }, null, 2)}</pre></details>}
-    <p className="field-help">运行证据对应特定输入和模式，不证明未观察分支。源码修改仍通过正式编辑与事务审查。</p>
+    {!!view?.nodeAccounting && <details><summary>{t("原始节点与依赖归属")}</summary><pre>{JSON.stringify({ nodes: Object.fromEntries(Object.entries(view.nodeAccounting).map(([key, ids]) => [key, ids.length])), edges: Object.fromEntries(Object.entries(view.edgeAccounting ?? {}).map(([key, ids]) => [key, ids.length])) }, null, 2)}</pre></details>}
+    <p className="field-help">{t("运行证据对应特定输入和模式，不证明未观察分支。源码修改仍通过正式编辑与事务审查。")}</p>
   </details>;
 }

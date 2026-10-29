@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { useState } from 'react';
 
 const TASKS = [
@@ -69,20 +70,20 @@ export function StudyPanel() {
     const link = document.createElement('a'); link.href = url; link.download = `m4-study-${study.participantCode}.json`; link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  return <aside className="study-recorder" aria-label="研究任务记录">
+  return <aside className="study-recorder" aria-label={t("研究任务记录")}>
     <style>{`.study-recorder{position:fixed;z-index:130;left:16px;bottom:42px;width:350px;padding:16px;background:#fffdf7;border:1px solid #d6c9a9;border-radius:12px;box-shadow:0 8px 32px #24334520;color:#283843;font-size:13px}.study-recorder h2{font-size:16px;margin:0 0 10px}.study-recorder p{line-height:1.55;margin:10px 0}.study-recorder label{display:block;margin:10px 0}.study-recorder input,.study-recorder select,.study-recorder textarea{width:100%;box-sizing:border-box;padding:7px;border:1px solid #c4ced4;border-radius:5px}.study-recorder button{padding:7px 10px;margin:4px 5px 0 0;border:1px solid #c4ced4;border-radius:5px;background:#fff;cursor:pointer}.study-recorder .study-json{font:10px monospace;height:110px}.study-recorder .study-actions{display:flex;flex-wrap:wrap}.study-recorder small{color:#647580}`}</style>
-    <h2>M4 研究任务记录 <button aria-label="折叠研究任务记录" onClick={() => setCollapsed(value => !value)}>{collapsed ? '展开' : '收起'}</button></h2>
+    <h2>{t("M4 研究任务记录")}<button aria-label={t("折叠研究任务记录")} onClick={() => setCollapsed(value => !value)}>{collapsed ? t("展开") : t("收起")}</button></h2>
     {!collapsed && <>{!study ? <>
-      <p>使用匿名代号。结果只保存在当前浏览器，可下载为 JSON；请另行保存画布、导出文件和审看截图。</p>
-      <label>参与者代号<input aria-label="参与者代号" placeholder="R01" value={code} maxLength={40} onChange={event => setCode(event.target.value)} /></label>
-      <label>参与者类型<select aria-label="参与者类型" value={kind} onChange={event => setKind(event.target.value as Study['participantKind'])}><option value="researcher">研究使用者</option><option value="automation">自动化冒烟</option></select></label>
-      <button disabled={!/^[A-Za-z0-9_-]{1,40}$/.test(code.trim())} onClick={start}>开始任务计时</button>
+      <p>{t("使用匿名代号。结果只保存在当前浏览器，可下载为 JSON；请另行保存画布、导出文件和审看截图。")}</p>
+      <label>{t("参与者代号")}<input aria-label={t("参与者代号")} placeholder="R01" value={code} maxLength={40} onChange={event => setCode(event.target.value)} /></label>
+      <label>{t("参与者类型")}<select aria-label={t("参与者类型")} value={kind} onChange={event => setKind(event.target.value as Study['participantKind'])}><option value="researcher">{t("研究使用者")}</option><option value="automation">{t("自动化冒烟")}</option></select></label>
+      <button disabled={!/^[A-Za-z0-9_-]{1,40}$/.test(code.trim())} onClick={start}>{t("开始任务计时")}</button>
     </> : <>
-      <small>{study.participantCode} · {study.participantKind} · {study.checkpoints.length}/{TASKS.length} 步</small>
-      {study.outcome === 'running' ? <><p>{TASKS[study.checkpoints.length]}</p><button onClick={checkpoint}>记录此步已完成</button><button onClick={() => store({ ...study, outcome: 'abandoned', finishedAt: new Date().toISOString() })}>结束并记录未完成</button></> : <p>{study.outcome === 'completed' ? '已记录全部步骤的自报完成结果。' : '已记录未完成结果。'} 复核画布与导出后再计入任务完成率。</p>}
-      <label>卡点、错误和审看意见<textarea aria-label="研究任务卡点" value={study.notes} onChange={event => store({ ...study, notes: event.target.value.slice(0, 4000) })} /></label>
-      <div className="study-actions"><button onClick={download}>下载任务记录</button><button onClick={() => { sessionStorage.removeItem(KEY); setStudy(null); }}>开始下一份记录</button></div>
-      <details><summary>查看本地记录 JSON</summary><textarea aria-label="研究任务 JSON" className="study-json" readOnly value={JSON.stringify(study, null, 2)} /></details>
+      <small>{study.participantCode} · {study.participantKind} · {study.checkpoints.length}/{TASKS.length}{t("步")}</small>
+      {study.outcome === 'running' ? <><p>{TASKS[study.checkpoints.length]}</p><button onClick={checkpoint}>{t("记录此步已完成")}</button><button onClick={() => store({ ...study, outcome: 'abandoned', finishedAt: new Date().toISOString() })}>{t("结束并记录未完成")}</button></> : <p>{study.outcome === 'completed' ? t("已记录全部步骤的自报完成结果。") : t("已记录未完成结果。")}{t("复核画布与导出后再计入任务完成率。")}</p>}
+      <label>{t("卡点、错误和审看意见")}<textarea aria-label={t("研究任务卡点")} value={study.notes} onChange={event => store({ ...study, notes: event.target.value.slice(0, 4000) })} /></label>
+      <div className="study-actions"><button onClick={download}>{t("下载任务记录")}</button><button onClick={() => { sessionStorage.removeItem(KEY); setStudy(null); }}>{t("开始下一份记录")}</button></div>
+      <details><summary>{t("查看本地记录 JSON")}</summary><textarea aria-label={t("研究任务 JSON")} className="study-json" readOnly value={JSON.stringify(study, null, 2)} /></details>
     </>}</>}
   </aside>;
 }

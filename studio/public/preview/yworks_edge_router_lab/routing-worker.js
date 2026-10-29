@@ -17,7 +17,7 @@ self.onmessage = event => {
     else if(task==='move'){
       SummaryEngine.move(graph,id,dx,dy,options);
       const validation=validateView(graph),invalid=validation.edges.filter(([,check])=>!check.ok).map(([id])=>id);
-      if(!validation.source.ok||!validation.layout.ok||invalid.length)throw new Error('移动后的图未通过完整校验: '+[...validation.source.violations,...validation.layout.violations,...invalid].join('; '));
+      if(!SummaryEngine.acceptsView(graph,validation))throw new Error('移动后的图未通过完整校验: '+[...validation.source.violations,...validation.layout.violations,...invalid].slice(0,4).join('; '));
       SummarySourceControls.refresh(graph);
       reply({requestId,ok:true,graph,validation});
     }else {const result=SummaryEngine.routeBatch(graph,ids,{...options,edgeIds:ids}),validation=validateView(graph);SummarySourceControls.refresh(graph);reply({requestId,ok:true,...result,validation});}

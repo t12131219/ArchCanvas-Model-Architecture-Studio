@@ -22,11 +22,11 @@ function compile(input: string, name: string) {
   assert.equal(output.diagnostics?.filter(item => item.category === ts.DiagnosticCategory.Error).length ?? 0, 0);
   const resolved = output.outputText.replace(/import ['"]\.\/AuthoringStudio\.css['"];?/g, '')
     .replace(/(['"])\.\/([^'"]+\.ts)\1/g, (_match, _quote, file) => `'${pathToFileURL(`${studio}src/${file}`).href}'`)
-    .replace(/(['"])\.\/(icons|WorkspaceModeSwitch|FloatingLegend|CustomModuleDialog)\1/g, (_match, _quote, file) => `'./${file}.mjs'`)
+    .replace(/(['"])\.\/(icons|WorkspaceModeSwitch|FloatingLegend|CustomModuleDialog|LanguageSelector)\1/g, (_match, _quote, file) => `'./${file}.mjs'`)
     .replace(/(['"])\.\/([A-Za-z][A-Za-z0-9]*)\1/g, (_match, _quote, file) => `'${pathToFileURL(`${studio}src/${file}.ts`).href}'`);
   writeFileSync(`${temporary}/${name}.mjs`, resolved);
 }
-for (const name of ['icons', 'WorkspaceModeSwitch', 'FloatingLegend', 'CustomModuleDialog']) compile(readFileSync(`${studio}src/${name}.tsx`, 'utf8'), name);
+for (const name of ['icons', 'WorkspaceModeSwitch', 'FloatingLegend', 'CustomModuleDialog', 'LanguageSelector']) compile(readFileSync(`${studio}src/${name}.tsx`, 'utf8'), name);
 compile(source, 'AuthoringStudio');
 type Props = { onClose: () => void; onOpen: () => Promise<void>; initialWorkspace?: { draft: ReturnType<typeof blankDraft> } };
 const { AuthoringStudio, unsupportedPaletteMessage } = await import(pathToFileURL(`${temporary}/AuthoringStudio.mjs`).href) as {

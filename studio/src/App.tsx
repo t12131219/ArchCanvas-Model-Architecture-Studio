@@ -1,3 +1,6 @@
+import { t, uiMessage } from './i18n';
+import { LanguageSelector } from './LanguageSelector';
+import { modelName } from './modelName';
 import { rememberPreviewSave, matchesPreviewSave } from './previewSaveState';
 import { SourceImportDialog } from './SourceImportDialog';
 import { SummaryViewPanel } from './SummaryViewPanel';
@@ -7,6 +10,7 @@ import { SummarySemanticPanel } from './SummarySemanticPanel';
 import { SummaryCatalogPanel } from './SummaryCatalogPanel';
 import { loadSummaryCatalog, loadSummaryCatalogModel, type SummaryCatalogModel } from './summaryCatalog';
 import { useWorkspaceMenus } from './WorkspaceUI';
+import { WorkspaceDialog } from './WorkspaceDialog';
 import { sameSourceSemantics, sourcePresentationOperations } from './sourcePresentation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { buildScene, createDocument, createHistory, reconcileDocument, reduceHistory, validateArchitecture } from './core';
@@ -101,13 +105,22 @@ export default function App() {
   const [previewTool, setPreviewTool] = useState<'select' | 'connect' | 'bend'>('select');
   const [portEditing, setPortEditing] = useState(false);
   const [layoutMoveScope, setLayoutMoveScope] = useState<MoveScope>('all-frontiers');
-  const [panel, setPanel] = useState<'object' | 'legend' | 'page' | 'summary'>('object');
+  const [taskDialog, setTaskDialog] = useState<'library' | 'expansion' | 'runtime' | null>(null);
+  const [assemblyOpen, setAssemblyOpen] = useState(false);
+  const [newModelOpen, setNewModelOpen] = useState(false);
+  const [newModelTitle, setNewModelTitle] = useState('');
+  const [newModelError, setNewModelError] = useState('');
+  const [creatingModel, setCreatingModel] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
   useWorkspaceMenus();
   const [leftCollapsed, setLeftCollapsed] = useState(false);
-  const [rightCollapsed, setRightCollapsed] = useState(false);
   const [treeSearch, setTreeSearch] = useState('');
   const [actionFeedback, setActionFeedback] = useState<{message: string; error?: boolean} | null>(null);
+  useEffect(() => {
+    if (!actionFeedback || actionFeedback.error) return;
+    const timer = window.setTimeout(() => setActionFeedback(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [actionFeedback]);
   const [importOpen, setImportOpen] = useState(false);
   const [sourceText, setSourceText] = useState('');
   const [entry, setEntry] = useState('Model');
@@ -334,7 +347,7 @@ export default function App() {
     if (message.caseId && message.caseId !== previewCase.current) return;
     synchronizePreviewNodeSelection(message.nodeIds ?? message.selectedNodes);
     if (typeof message.annotationId === 'string') {
-      setSelection({ kind: 'annotation', ids: [message.annotationId] }); setPanel(before => before === 'summary' ? before : 'object'); return;
+      setSelection({ kind: 'annotation', ids: [message.annotationId] }); return;
     }
     const architecture = historyRef.current?.document.architecture;
     if (!architecture) return;
@@ -344,13 +357,13 @@ export default function App() {
       const raw = previewGraphEdges(previewSnapshot.current?.graph).find(item => item.id === edge.id);
       const ids = raw ? previewFormalEdgeIds(architecture, raw, previewSnapshot.current?.graph, previewSource.current, currentPreviewNodeBindings()) : [];
       setSelection(ids.length === 1 ? { kind: 'edge', ids } : { kind: 'preview-edge', ids: [edge.id] });
-      setPanel(before => before === 'summary' ? before : 'object'); return;
+      return;
     }
     const selected = (message.nodeIds ?? message.selectedNodes) as string[] | undefined;
     const bindings = currentPreviewNodeBindings();
     const ids = selected?.length && graph ? [...new Set(selected.flatMap(id => bindings.has(id) ? [bindings.get(id)!] : []))] :
       typeof message.nodeId === 'string' && bindings.has(message.nodeId) ? [bindings.get(message.nodeId)!] : [];
-    setSelection({ kind: 'node', ids }); setPanel(before => before === 'summary' ? before : 'object');
+    setSelection({ kind: 'node', ids });
   }
   function receivePreviewInteraction(status: Record<string, unknown>) {
     const snapshot = previewSnapshot.current;
@@ -472,7 +485,6 @@ export default function App() {
     setInputSpec(spec); setRuntimeOpen(false); setNotice('运行输入已登记；候选检查仍是静态，连接预览才执行隔离验证');
   }
 
-  useEffect(() => { document.querySelector('.inspector-content')?.scrollTo({ top: 0 }); }, [selection.ids[0], panel]);
   function readCameraViewport() {
     return cameraViewportSize(viewportRef.current?.getBoundingClientRect());
   }
@@ -537,7 +549,6 @@ export default function App() {
     const mapped = detail?.nodes.some(node => node.id === id && !node.junction) ? id : previewNodeId(id);
     if (!mapped) { setFailure('此源码对象没有唯一对应的画布图元；可直接在画布选择或查看源码。'); return; }
     setFailure('');
-    setPanel(before => before === 'summary' ? before : 'object');
     previewEngine.current?.focus({ nodeId: mapped, additive });
   }, []);
   const expandHierarchyNode = useCallback((id: string, expanded: boolean) => {
@@ -746,7 +757,7 @@ export default function App() {
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || authoringOpen || editingTarget(event.target) || review || exportDocument || connectionProposal || runtimeOpen || importOpen) return;
+      if (event.defaultPrevented || taskDialog || authoringOpen || editingTarget(event.target) || review || exportDocument || connectionProposal || runtimeOpen || importOpen) return;
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); event.shiftKey ? redo() : undo(); }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') { event.preventDefault(); redo(); }
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); previewEngine.current?.command('apply-layout'); }
@@ -763,7 +774,7 @@ export default function App() {
     };
     window.addEventListener('keydown', down);
     return () => { window.removeEventListener('keydown', down); };
-  }, [fit, redo, save, undo, review, exportDocument, connectionProposal, runtimeOpen, importOpen, cancelGesture, authoringOpen]);
+  }, [fit, redo, save, undo, review, exportDocument, connectionProposal, runtimeOpen, importOpen, cancelGesture, authoringOpen, taskDialog]);
 
   async function semanticProject(base: CanvasDocument, sequence: number) {
     if (base.sourceBindingDigest.startsWith('preview-only:')) throw new Error('请先进入编辑模式，从原 Python 建立正式源码绑定。');
@@ -957,7 +968,7 @@ export default function App() {
   function focusNode(id: string) {
     cancelGesture();
     focusPreviewNode(id);
-    setSelection({ kind: 'node', ids: [id] }); setPanel('object');
+    setSelection({ kind: 'node', ids: [id] });
   }
 
   function focusAnnotation(id: string) {
@@ -976,8 +987,8 @@ export default function App() {
     const width = 380, height = 64;
     const x = canvas ? Math.max(12, Math.min(maxX - width, canvas[0] - width - 12)) : Math.max(12, maxX - width);
     const y = canvas ? Math.max(12, Math.min(maxY + 24, canvas[1] - height - 12)) : maxY + 24;
-    apply([{ type: 'annotation', annotation: { id, text: '双击模块展开或收起；显示名在右侧对象面板编辑。', x, y, width } }]);
-    setSelection({ kind: 'annotation', ids: [id] }); setPanel('object'); focusAnnotation(id);
+    apply([{ type: 'annotation', annotation: { id, text: '双击模块展开或收起；使用视图菜单调整阅读范围。', x, y, width } }]);
+    setSelection({ kind: 'annotation', ids: [id] });  focusAnnotation(id);
   }
   function moveAnnotationBelow() {
     if (!selectedAnnotation) return;
@@ -1122,18 +1133,23 @@ export default function App() {
     if (enteringAuthoring.current || busy || !historyRef.current) return;
     if (!readyPreview()) { setFailure('预览正在接入当前源码，请完成后再进入模型编辑。'); return; }
     enteringAuthoring.current = true;
+    setBusy(true);
+    setNotice('正在保留当前展开层级并准备编辑副本…');
     const sequence = loadSequence.current;
     try {
-      const snapshot = await previewEngine.current?.snapshot();
+      // Begin is serialized against the iframe's current graph. No preliminary
+      // full-source snapshot is needed just to choose the editor.
+      const snapshot = previewSnapshot.current?.graph?.generic ? previewSnapshot.current : await previewEngine.current?.snapshot();
       if (sequence !== loadSequence.current) return;
-      if (snapshot) await receivePreviewState(snapshot);
+      if (snapshot && !snapshot.graph?.generic) await receivePreviewState(snapshot);
       if (sequence !== loadSequence.current) return;
       if (snapshot?.graph?.generic) {
         const edited = await previewEngine.current!.author({ action: 'begin' });
-        await receivePreviewState(edited); setSummaryEditorId(String(edited.caseId)); setPanel('summary'); setFailure('');
+        await receivePreviewState(edited); setSummaryEditorId(String(edited.caseId)); setAssemblyOpen(true); setFailure('');
+        setNotice('已进入编辑副本，当前展开层级已保留。');
       } else await continueModelAuthoring();
     } catch (error) { setFailure(`无法同步当前预览，画布与编辑副本均已保留：${String(error)}`); }
-    finally { enteringAuthoring.current = false; }
+    finally { enteringAuthoring.current = false; if (sequence === loadSequence.current) setBusy(false); }
   }
   async function openSummaryCatalog(model: SummaryCatalogModel, startup = false) {
     if (!startup && (busy || previewBusy || previewConnecting || review)) throw Error('请先完成当前模型操作。');
@@ -1149,7 +1165,7 @@ export default function App() {
       previewSource.current = undefined; previewBoundSource.current = ''; previewCase.current = String(snapshot.caseId);
       historyRef.current = createHistory(previewPanelDocument(snapshot)); setHistory(historyRef.current);
       setSelection({ kind: 'node', ids: [] }); setProjectId(null); setStorageRevision(0); setSavedVisualRevision(-1);
-      setSummaryEditorId(null); if (!startup) setPanel('summary');
+      setSummaryEditorId(null); if (!startup) setTaskDialog(null);
       previewLoading.current = false;
       await receivePreviewState(snapshot);
       setNotice(`已打开 ${model.title}；保留原始语义与归档证据，本次未执行模型。`);
@@ -1158,15 +1174,19 @@ export default function App() {
     }
   }
   async function newSummaryModel() {
-    if (busy || previewBusy || review) return;
+    if (busy || previewBusy || review || creatingModel) return;
+    let title: string;
+    try { title = modelName(newModelTitle); } catch (error) { setNewModelError(String(error)); return; }
+    setCreatingModel(true); setBusy(true); setNewModelError('');
     try {
-      const snapshot = await previewEngine.current!.author({ action: 'begin', blank: true });
-      await receivePreviewState(snapshot); setSummaryEditorId(String(snapshot.caseId)); setPanel('summary'); setFailure('');
-    } catch (error) { setFailure(String(error)); }
+      const snapshot = await previewEngine.current!.author({ action: 'begin', blank: true, title });
+      await receivePreviewState(snapshot); setSummaryEditorId(String(snapshot.caseId)); setAssemblyOpen(true); setFailure(''); setNewModelOpen(false);
+    } catch (error) { setNewModelError(String(error)); } finally { setCreatingModel(false); setBusy(false); }
   }
   async function editSummary(operation: Record<string, unknown>) {
     const snapshot = await previewEngine.current!.author(operation);
     await receivePreviewState(snapshot);
+    if (operation.action === 'import-source-model') { setSummaryEditorId(String(snapshot.caseId)); setAssemblyOpen(true); setNotice('已从源码创建完整模型副本；源码已保存，本次未执行代码。'); }
   }
   async function runSummaryObservation(inputSpec: Record<string, unknown>, onStart: (cancel: () => Promise<void>) => void): Promise<SummaryRuntimeResult> {
     if (!readyPreview() || previewLayoutDisabled) throw Error('请等待当前模型就绪。');
@@ -1308,9 +1328,9 @@ export default function App() {
     onNewBlank={workspace => { retainAuthoringWorkspace(workspace); openBlankAuthoring(); }}
     onReuseView={async workspace => {
       retainAuthoringWorkspace(workspace);
-      if (!browseBaseline) throw new Error('缺少原视图绑定。');
+      if (!browseBaseline) throw new Error(t("缺少原视图绑定。"));
       if (!sameGeneratedDraft(workspace.draft, browseBaseline)) {
-        if (!sameSourceSemantics(workspace.draft, browseBaseline) || !historyRef.current) throw new Error('编辑内容已变化，需要重新生成视图。');
+        if (!sameSourceSemantics(workspace.draft, browseBaseline) || !historyRef.current) throw new Error(t("编辑内容已变化，需要重新生成视图。"));
         if (workspace.draft.sourceProvenance?.documentId !== historyRef.current.document.id) return false;
         const operations = sourcePresentationOperations(historyRef.current.document, browseBaseline, workspace.draft);
         if (operations.length) {
@@ -1330,104 +1350,118 @@ export default function App() {
 
   return <><div className="studio" hidden={authoringOpen}>
     <header className="topbar">
-      <div className="brand"><span className="brand-mark"><i /><i /><i /></span><span>ArchCanvas<small>模型架构工作台</small></span></div>
-      <div className="project-breadcrumb"><span className="slash">/</span><Icon name="file" size={15} /><span>{current?.title ?? '模型工作台'}</span></div>
-      <div className="header-actions"><details className="workspace-menu"><summary>模型 <span>⌄</span></summary><div><button disabled={busy || !!review} onClick={() => void newSummaryModel()}><Icon name="plus" size={15} />新建空白模型</button><button disabled={busy || !!review} onClick={openBlankAuthoring}>新建正式源码模型</button><button disabled={!current || busy || previewBusy || previewConnecting} onClick={() => void formalSourceEditor()}>正式源码工作副本</button><button disabled={busy || !!review} onClick={() => { setFailure(''); setImportOpen(true); }}><Icon name="file" size={15} />导入 Python 源码</button><button disabled={!current} onClick={() => setSourceOpen(true)}><Icon name="code" size={15} />查看源码</button><button onClick={() => { setSummaryCatalogOpen(true); setRightCollapsed(false); setPanel('summary'); }}><Icon name="layers" size={15} />Summary 模型库</button><button onClick={() => previewEngine.current?.command("show-evidence")}><Icon name="info" size={15} />原型来源与审查记录</button></div></details><WorkspaceModeSwitch mode={summaryEditing ? "edit" : "view"} disabled={!current || busy || previewConnecting || previewBusy || !!review} onView={() => setSummaryEditorId(null)} onEdit={() => void editCurrentPreview()} /><span className={`save-state ${dirty ? 'dirty' : ''}`}><i />{current ? dirty ? '有未保存编辑' : '已保存' : '等待文档'}</span><button onClick={save} disabled={!current || busy || previewConnecting || previewBusy}><Icon name="save" size={15} />保存</button><button className="primary" onClick={() => void openPreviewExport()} disabled={!current || busy || previewConnecting || previewBusy}><Icon name="export" size={16} />导出</button></div>
+      <div className="brand"><span className="brand-mark"><i /><i /><i /></span><span>ArchCanvas<small>{t("模型架构工作台")}</small></span></div>
+      <div className="project-breadcrumb"><span className="slash">/</span><Icon name="file" size={15} /><span>{current?.title ?? t("模型工作台")}</span></div>
+      <nav className="workspace-menus" aria-label={t("工作台菜单")}>
+        <details className="workspace-menu"><summary>{t("模型")}<span>⌄</span></summary><div>
+          <div className="menu-heading">{t("打开与创建")}</div>
+          <button disabled={busy || !!review} onClick={() => { setFailure(''); setImportOpen(true); }}><Icon name="file" size={15} />{t("导入 Python / 文档")}</button>
+          <button disabled={busy || previewConnecting || previewBusy} onClick={() => { setSummaryCatalogOpen(true); setTaskDialog('library'); }}><Icon name="layers" size={15} />{t("浏览模型库")}</button>
+          <button disabled={busy || !!review} onClick={() => { setNewModelTitle(''); setNewModelError(''); setNewModelOpen(true); }}><Icon name="plus" size={15} />{t("新建空白模型")}</button>
+        </div></details>
+        <details className="workspace-menu"><summary>{t("编辑")}<span>⌄</span></summary><div>
+          <div className="menu-heading">{t("图形与组装副本")}</div>
+          <button disabled={previewLayoutDisabled} onClick={() => { if (summaryEditing) setAssemblyOpen(true); else void editCurrentPreview(); }}>{t("打开构件编辑…")}</button>
+          <button disabled={previewLayoutDisabled || !previewUndo} onClick={undo}>{t("撤销画布编辑")}<kbd>Ctrl Z</kbd></button>
+          <button disabled={previewLayoutDisabled || !previewRedo} onClick={redo}>{t("重做画布编辑")}<kbd>Ctrl ⇧ Z</kbd></button>
+          <div className="menu-heading">{t("源码工作流")}</div>
+          <button disabled={!current || busy || previewBusy || previewConnecting} onClick={() => void formalSourceEditor()}>{t("正式源码工作副本")}</button>
+          <button disabled={busy || !!review} onClick={openBlankAuthoring}>{t("新建正式源码模型")}</button>
+        </div></details>
+        <details className="workspace-menu"><summary>{t("视图")}<span>⌄</span></summary><div>
+          <button disabled={previewLayoutDisabled} onClick={() => setTaskDialog('expansion')}><Icon name="layers" size={15} />{t("模块展开与预设…")}</button>
+          <button disabled={previewLayoutDisabled} onClick={focusCurrentFrontier}>{t("定位当前模块")}</button>
+          <button disabled={previewLayoutDisabled} onClick={() => fit()}><Icon name="fit" size={15} />{t("适合画布")}<kbd>F</kbd></button>
+          <button aria-pressed={grid} disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('grid', { enabled: !grid })}>{grid ? t("隐藏") : t("显示")}{t("点阵网格")}</button>
+          <div className="menu-heading">{t("来源与观察")}</div>
+          <button disabled={!current} onClick={() => setSourceOpen(true)}>{t("查看源码证据")}</button>
+          <button disabled={previewLayoutDisabled} onClick={() => setTaskDialog('runtime')}>{t("运行观察与语义证据…")}</button>
+          <div className="menu-heading">{t("展开范围")}</div>
+          <button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('expand-all')}>{t("展开全部")}</button>
+          <button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('collapse-all')}>{t("收起全部")}</button>
+          <button disabled={previewLayoutDisabled} onClick={() => { cancelGesture(); previewEngine.current?.command('reset'); }}>{t("恢复初始视图（可撤销）")}</button>
+        </div></details>
+        <details className="workspace-menu"><summary>{t("排列")}<span>⌄</span></summary><div>
+          <button disabled={previewLayoutDisabled} onClick={repairSummaryLayout}><Icon name="bend" size={15} />{t("优化当前连线")}<kbd>Ctrl ↵</kbd></button>
+          <button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('show-routing')}>{t("布线与箭头设置…")}</button>
+          <button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('continue-routing')}>{t("继续未完成布线")}</button>
+          <div className="menu-heading">{t("对齐与分布 · 同级节点")}</div>
+          <label className="menu-field">{t("移动范围")}<select aria-label={t("布局移动范围")} value={layoutMoveScope} onChange={event => setLayoutMoveScope(event.target.value as MoveScope)}><option value="all-frontiers">{t("所有视图")}</option><option value="current-frontier">{t("仅当前视图")}</option></select></label>
+          {([{ kind: 'left', label: t("左对齐") }, { kind: 'hcenter', label: t("水平居中对齐") }, { kind: 'right', label: t("右对齐") }, { kind: 'top', label: t("顶部对齐") }, { kind: 'vcenter', label: t("垂直居中对齐") }, { kind: 'bottom', label: t("底部对齐") }, { kind: 'distribute-x', label: t("水平等距分布") }, { kind: 'distribute-y', label: t("垂直等距分布") }]).map(item => <button key={item.kind} disabled={previewLayoutDisabled || !previewCanAlign || (item.kind.startsWith('distribute') && (previewSelectedNodes.length < 3 || previewPinnedCount > 0))} onClick={() => arrangePreview(item.kind)}>{item.label}</button>)}
+          <button aria-pressed={previewAllPinned} disabled={previewLayoutDisabled || !previewSelectedNodes.length} onClick={pinPreviewSelection}><Icon name="pin" size={15} />{previewAllPinned ? t("解锁所选节点") : t("固定所选节点")}</button>
+        </div></details>
+      </nav>
+      <div className="header-actions"><LanguageSelector /><WorkspaceModeSwitch mode={summaryEditing ? 'edit' : 'view'} disabled={!current || busy || previewConnecting || previewBusy || !!review} onView={() => { setSummaryEditorId(null); setAssemblyOpen(false); setTaskDialog(null); }} onEdit={() => void editCurrentPreview()} /><span className={`save-state ${dirty ? 'dirty' : ''}`} aria-live="polite"><i />{current ? dirty ? t("未保存") : t("已保存") : t("等待文档")}</span><button onClick={save} disabled={!current || busy || previewConnecting || previewBusy}><Icon name="save" size={15} /><span>{t("保存")}</span></button><button className="primary" onClick={() => void openPreviewExport()} disabled={!current || busy || previewConnecting || previewBusy}><Icon name="export" size={16} />{t("导出")}</button></div>
     </header>
-    <div className={`workspace ${leftCollapsed ? 'left-collapsed' : ''} ${rightCollapsed ? 'right-collapsed' : ''}`}>
-      <aside className="navigator">
-        <div className="navigator-top"><div className="panel-title"><Icon name="layers" size={16} /><b>模型层级</b><span>{navigation?.nodes.length ?? architecture?.nodes.length ?? 0}</span></div><label className="tree-search"><Icon name="search" size={14} /><input aria-label="搜索模型层级" placeholder="搜索模块…" value={treeSearch} onChange={e => setTreeSearch(e.target.value)} />{treeSearch && <button className="tool" aria-label="清除层级搜索" onClick={() => setTreeSearch('')}><Icon name="close" size={12} /></button>}</label></div>
-        <div className="tree" role="tree" aria-label="模型层级" aria-multiselectable="true">
+    <div className={`workspace ${leftCollapsed ? 'left-collapsed' : ''}`}>
+      <nav className="workspace-rail" aria-label={t("工作区导航")}>
+        <button aria-label={t("模型层级")} aria-pressed={!leftCollapsed && !assemblyOpen} onClick={() => { setAssemblyOpen(false); setLeftCollapsed(value => assemblyOpen ? false : !value); }}><Icon name="layers" size={19} /><span>{t("层级")}</span></button>
+        <button aria-label={t("浏览模型库")} aria-pressed={taskDialog === 'library'} disabled={busy || previewConnecting || previewBusy} onClick={() => { setSummaryCatalogOpen(true); setTaskDialog('library'); }}><Icon name="grid" size={19} /><span>{t("模型库")}</span></button>
+        <button aria-label={t("查看源码")} aria-pressed={sourceOpen} disabled={!current} onClick={() => setSourceOpen(value => !value)}><Icon name="code" size={19} /><span>{t("源码")}</span></button>
+        {summaryEditing && <button aria-label={t("编辑模型构件")} aria-pressed={assemblyOpen} onClick={() => setAssemblyOpen(value => !value)}><Icon name="plus" size={19} /><span>{t("构件")}</span></button>}
+        <button className="rail-bottom" aria-label={t("运行观察与语义证据")} aria-pressed={taskDialog === 'runtime'} disabled={previewLayoutDisabled} onClick={() => setTaskDialog('runtime')}><Icon name="info" size={19} /><span>{t("证据")}</span></button>
+      </nav>
+      <aside className="navigator" hidden={summaryEditing && assemblyOpen}>
+        <div className="navigator-top"><div className="panel-title"><Icon name="layers" size={16} /><b>{t("模型层级")}</b><span>{navigation?.nodes.length ?? architecture?.nodes.length ?? 0}</span></div><label className="tree-search"><Icon name="search" size={14} /><input aria-label={t("搜索模型层级")} placeholder={t("搜索模块…")} value={treeSearch} onChange={e => setTreeSearch(e.target.value)} />{treeSearch && <button className="tool" aria-label={t("清除层级搜索")} onClick={() => setTreeSearch('')}><Icon name="close" size={12} /></button>}</label></div>
+        <div className="tree" role="tree" aria-label={t("模型层级")} aria-multiselectable="true">
           {architecture && current && <HierarchyTree architecture={navigation ?? architecture} document={navigation ?? current} mandatoryIds={navigation?.mandatoryIds} selected={navigation ? previewSelectedNodeIds : selection.ids} onSelect={selectHierarchyNode} onExpand={expandHierarchyNode} query={treeSearch} />}
         </div>
-        <div className="navigator-bottom"><button className={sourceOpen ? 'active' : ''} onClick={() => setSourceOpen(x => !x)} disabled={!current}><Icon name="code" size={16} />查看源码证据<Icon name="chevron" size={13} /></button><div className="source-note"><span className="live-dot" />{previewSnapshot.current?.importedDocument ? '导入文档证据' : '静态源码视图'}</div></div>
+        <div className="navigator-bottom"><button className={sourceOpen ? 'active' : ''} onClick={() => setSourceOpen(x => !x)} disabled={!current}><Icon name="code" size={16} />{t("查看源码证据")}<Icon name="chevron" size={13} /></button><div className="source-note"><span className="live-dot" />{previewSnapshot.current?.importedDocument ? t("导入文档证据") : t("静态源码视图")}</div></div>
       </aside>
-      <main className="main">
-        <div className="workspace-caption"><button className="tool" aria-label={leftCollapsed ? '展开模型层级面板' : '收起模型层级面板'} aria-pressed={!leftCollapsed} onClick={() => setLeftCollapsed(value => !value)} title="模型层级面板"><Icon name="panelLeft" size={16} /></button><b>{current?.title ?? '模型工作台'}</b><span>{summaryEditing ? "Summary 编辑副本" : "预览"}</span><button className="tool" aria-label={rightCollapsed ? '展开属性面板' : '收起属性面板'} aria-pressed={!rightCollapsed} onClick={() => setRightCollapsed(value => !value)} title="属性面板"><Icon name="panelRight" size={16} /></button></div>
-        <div className="canvas-toolbar" role="toolbar" aria-label="画布编辑工具">
+      {summaryEditing && <aside className="assembly-dock" aria-label={t("模型构件编辑")} hidden={!assemblyOpen}>
+        <div className="dock-heading"><div><b>{t("模型构件")}</b><span>{t("在编辑副本中组装")}</span></div><button className="tool" aria-label={t("关闭构件编辑")} onClick={() => setAssemblyOpen(false)}><Icon name="close" size={16} /></button></div>
+        <div className="dock-content"><SummaryAuthoringPanel snapshot={previewSnapshot.current} selected={previewSelectedNodeIds} disabled={previewLayoutDisabled} onEdit={editSummary} onCompile={compileSummaryModule} onCertify={certifySummaryAssembly} onFormal={() => void formalSourceEditor()} /></div>
+      </aside>}
+      <main className="main" data-work-panel>
+        <div className="workspace-caption"><button className="tool" aria-label={assemblyOpen ? t("显示模型层级面板") : leftCollapsed ? t("展开模型层级面板") : t("收起模型层级面板")} aria-pressed={!leftCollapsed && !assemblyOpen} onClick={() => { setAssemblyOpen(false); setLeftCollapsed(value => assemblyOpen ? false : !value); }} title={t("模型层级面板")}><Icon name="panelLeft" size={16} /></button><b>{current?.title ?? t("模型工作台")}</b><span className="workspace-context">{summaryEditing ? t("编辑副本") : t("模型视图")}</span><div className="caption-actions">{summaryEditing && <button onClick={() => setAssemblyOpen(value => !value)} aria-pressed={assemblyOpen}><Icon name="plus" size={14} />{t("构件")}</button>}<button disabled={previewLayoutDisabled} onClick={() => setTaskDialog('expansion')}><Icon name="layers" size={14} />{t("模块展开")}</button><button className="layout-apply" aria-label={t("优化当前连线")} title={t("按当前布线设置应用布局 · Ctrl+Enter")} disabled={previewLayoutDisabled} onClick={repairSummaryLayout}><Icon name="bend" size={14} />{t("优化连线")}</button></div></div>
+        <div className="canvas-toolbar" role="toolbar" aria-label={t("画布编辑工具")}>
           <div className="tool-group">
-            <button className={`tool ${previewTool === 'select' ? 'selected' : ''}`} title="选择 · 单击选中；Ctrl / Shift / ⌘ 点击增减选区；拖动空白框选 · V" aria-label="选择对象" aria-pressed={previewTool === 'select'} disabled={previewLayoutDisabled} onClick={() => chooseTool('select')}><Icon name="arrow" /></button>
-            <details className="selection-menu"><summary aria-label="选区操作" title="选区操作"><Icon name="chevron" size={13} /></summary><div><div className="menu-heading">{previewSelectedNodes.length ? `已选 ${previewSelectedNodes.length} 个节点` : '选择对象'}</div><p className="menu-help">单击选择；Ctrl / Shift / ⌘ 点击增减选区，拖动空白处框选。</p><button disabled={previewLayoutDisabled || !previewSelectedNodes.length} onClick={() => previewEngine.current?.command('select-nodes', { scope: 'siblings' })}>选择同级节点</button><button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('select-nodes', { scope: 'all' })}>选择全部可见模块 <kbd>Ctrl A</kbd></button><button disabled={previewLayoutDisabled || !previewSelectedNodes.length} onClick={() => previewEngine.current?.command('select-nodes', { scope: 'clear' })}>清空选区 <kbd>Esc</kbd></button></div></details>
-            {([{ id: 'connect', icon: 'connect', label: '创建连接', hint: '创建视觉草稿连接 · C' }, { id: 'bend', icon: 'bend', label: '编辑折点', hint: '选择连线，添加或拖动折点 · B' }] as const).map(item => <button key={item.id} title={item.hint} aria-label={item.label} aria-pressed={previewTool === item.id} className={`tool ${previewTool === item.id ? 'selected' : ''}`} disabled={!current || busy || previewConnecting || previewBusy} onClick={() => chooseTool(item.id)}><Icon name={item.icon} /></button>)}
-            <button className={`tool ${portEditing ? 'selected' : ''}`} title="显示节点端口；选中连线后可拖动 S / T 端点" aria-label="显示连接点" aria-pressed={portEditing} disabled={!current || busy || previewConnecting || previewBusy} onClick={() => { cancelGesture(); previewEngine.current?.command('show-ports', { visible: !portEditing }); }}><Icon name="ports" /></button>
+            <button className={`tool ${previewTool === 'select' ? 'selected' : ''}`} title={t("选择与框选 · V")} aria-label={t("选择对象")} aria-pressed={previewTool === 'select'} disabled={previewLayoutDisabled} onClick={() => chooseTool('select')}><Icon name="arrow" /></button>
+            <details className="selection-menu"><summary aria-label={t("选区操作")} title={t("选区操作")}><Icon name="chevron" size={13} /></summary><div><div className="menu-heading">{previewSelectedNodes.length ? t("已选 {0} 个节点", {"0": previewSelectedNodes.length}) : t("选择对象")}</div><p className="menu-help">{t("单击选择；Ctrl / Shift / ⌘ 点击增减选区，拖动空白处框选。")}</p><button disabled={previewLayoutDisabled || !previewSelectedNodes.length} onClick={() => previewEngine.current?.command('select-nodes', { scope: 'siblings' })}>{t("选择同级节点")}</button><button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('select-nodes', { scope: 'all' })}>{t("选择全部可见模块")}<kbd>Ctrl A</kbd></button><button disabled={previewLayoutDisabled || !previewSelectedNodes.length} onClick={() => previewEngine.current?.command('select-nodes', { scope: 'clear' })}>{t("清空选区")}<kbd>Esc</kbd></button></div></details>
+            {([{ id: 'connect', icon: 'connect', label: t("创建连接"), hint: t("创建视觉草稿连接 · C") }, { id: 'bend', icon: 'bend', label: t("编辑折点"), hint: t("选择连线，添加或拖动折点 · B") }] as const).map(item => <button key={item.id} title={item.hint} aria-label={item.label} aria-pressed={previewTool === item.id} className={`tool ${previewTool === item.id ? 'selected' : ''}`} disabled={previewLayoutDisabled} onClick={() => chooseTool(item.id)}><Icon name={item.icon} /></button>)}
+            <button className={`tool ${portEditing ? 'selected' : ''}`} title={t("显示连接点；选中连线后可拖动 S / T 端点")} aria-label={t("显示连接点")} aria-pressed={portEditing} disabled={previewLayoutDisabled} onClick={() => { cancelGesture(); previewEngine.current?.command('show-ports', { visible: !portEditing }); }}><Icon name="ports" /></button>
             <span className="tool-divider" />
-            <button className="tool" onClick={undo} disabled={!previewUndo || busy || previewConnecting || previewBusy} title="撤销 Ctrl+Z" aria-label="撤销画布编辑"><Icon name="undo" /></button>
-            <button className="tool" onClick={redo} disabled={!previewRedo || busy || previewConnecting || previewBusy} title="重做 Ctrl+Shift+Z" aria-label="重做画布编辑"><Icon name="redo" /></button>
-
+            <button className="tool" onClick={undo} disabled={!previewUndo || previewLayoutDisabled} title={t("撤销 Ctrl+Z")} aria-label={t("撤销画布编辑")}><Icon name="undo" /></button>
+            <button className="tool" onClick={redo} disabled={!previewRedo || previewLayoutDisabled} title={t("重做 Ctrl+Shift+Z")} aria-label={t("重做画布编辑")}><Icon name="redo" /></button>
             <span className="tool-divider" />
-            <button className="tool" aria-label="左对齐所选节点" onClick={() => arrangePreview('left')} disabled={previewLayoutDisabled || !previewCanAlign} title="左对齐 · 选择同一容器内的两个以上节点"><Icon name="align" /></button>
-            <details className="alignment-menu"><summary title="更多对齐与分布" aria-label="更多对齐与分布"><Icon name="chevron" size={13} /></summary><div><div className="menu-heading">对齐与分布</div><p className="menu-help">选择同级节点；至少 2 个对齐、3 个分布。</p>
-              {([{ kind: 'left', label: '左对齐' }, { kind: 'hcenter', label: '水平居中对齐' }, { kind: 'right', label: '右对齐' }, { kind: 'top', label: '顶部对齐' }, { kind: 'vcenter', label: '垂直居中对齐' }, { kind: 'bottom', label: '底部对齐' }, { kind: 'distribute-x', label: '水平等距分布' }, { kind: 'distribute-y', label: '垂直等距分布' }]).map(item => <button key={item.kind} disabled={previewLayoutDisabled || !previewCanAlign || (item.kind.startsWith('distribute') && (previewSelectedNodes.length < 3 || previewPinnedCount > 0))} onClick={event => { arrangePreview(item.kind); event.currentTarget.closest('details')?.removeAttribute('open'); }}>{item.label}</button>)}
-            </div></details>
-            <button className={`tool ${previewAllPinned ? 'selected' : ''}`} aria-label={previewAllPinned ? '解锁所选节点' : '固定所选节点'} aria-pressed={previewAllPinned} onClick={pinPreviewSelection} disabled={previewLayoutDisabled || !previewSelectedNodes.length} title={previewAllPinned ? '解锁所选节点，恢复直接拖动' : '固定所选节点的直接拖动；子图仍随父容器移动'}><Icon name="pin" /></button>
+            <button className="tool" onClick={() => fit()} title={t("适合画布 · F")} aria-label={t("适合画布")} disabled={previewLayoutDisabled}><Icon name="fit" /></button>
           </div>
-          <button className="layout-apply" aria-label="Apply layout" title="按当前布线设置应用布局 · Ctrl+Enter" disabled={!current || busy || previewConnecting || previewBusy} onClick={() => previewEngine.current?.command('apply-layout')}><Icon name="bend" size={16} />优化连线</button>
-          <div className="tool-group"><button className={`tool ${grid ? 'selected' : ''}`} title="显示点阵网格" aria-label="显示点阵网格" aria-pressed={grid} disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('grid', { enabled: !grid })}><Icon name="grid" size={16} /></button><button className="tool" onClick={() => fit()} title="适合画布 F" aria-label="适合画布" disabled={previewLayoutDisabled}><Icon name="fit" /></button><details className="canvas-options"><summary aria-label="画布选项" title="画布选项"><Icon name="more" size={16} /></summary><div><div className="menu-heading">画布</div><button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('show-routing')}>布线与箭头设置</button><button disabled={previewLayoutDisabled} onClick={focusCurrentFrontier}>定位当前模块</button><button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('expand-all')}>展开全部</button><button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('collapse-all')}>收起全部</button><button disabled={previewLayoutDisabled} onClick={() => { cancelGesture(); previewEngine.current?.command('reset'); }}>恢复初始视图（可撤销）</button></div></details></div>
         </div>
-        {actionFeedback && <div className={`canvas-feedback ${actionFeedback.error ? 'error' : ''}`} role={actionFeedback.error ? 'alert' : 'status'}><Icon name={actionFeedback.error ? 'info' : 'check'} size={15} /><span>{actionFeedback.message}</span><button className="tool" aria-label="关闭操作反馈" onClick={() => setActionFeedback(null)}><Icon name="close" size={13} /></button></div>}
+        {actionFeedback && <div className={`canvas-feedback ${actionFeedback.error ? 'error' : ''}`} role={actionFeedback.error ? 'alert' : 'status'}><Icon name={actionFeedback.error ? 'info' : 'check'} size={15} /><span>{uiMessage(actionFeedback.message)}</span><button className="tool" aria-label={t("关闭操作反馈")} onClick={() => setActionFeedback(null)}><Icon name="close" size={13} /></button></div>}
         <div ref={viewportRef} className="canvas-viewport prototype-canvas" data-canvas-surface="recursive-preview">
           <PreviewStudio ref={previewEngine} visible={!authoringOpen} onState={snapshot => void receivePreviewState(snapshot)} onInteraction={receivePreviewInteraction}
             onSelection={receivePreviewSelection} onEditSource={result => { void bindPreviewSource(result, true).catch(error => setFailure(String(error))); }}
             onError={message => { setFailure(message); setActionFeedback({message, error: true}); }} onNotice={(message, error) => { setNotice(message); setFailure(error ? message : ''); setActionFeedback({message, error}); }} onSave={() => void save()} />
         </div>
-        <div className="command-bar"><span className="command-icon"><Icon name="message" size={17} /></span><input disabled={!selectedNode || previewLayoutDisabled} aria-label="画布文字指令" placeholder={selection.ids.length > 1 ? '向右移动 24，或批量设为蓝色…' : selectedNode ? '向右移动 24，或设为蓝色、命名为…' : '选择一个节点，用文字修改画布…'} value={command} onChange={e => setCommand(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) runCommand(); }} /><span className="local-label">本地视觉指令</span><button onClick={runCommand} disabled={!command.trim() || !selectedNode || previewLayoutDisabled}>应用 <span>↵</span></button></div>
-        {sourceOpen && architecture && <div className="source-drawer"><div className="drawer-header"><Icon name="code" size={16} /><b>源码证据</b><span>{previewSourceSpan ? `${previewSourceSpan.path}:${previewSourceSpan.line}` : '只读 · 未执行'}</span><button className="tool" onClick={() => setSourceOpen(false)} aria-label="关闭源码"><Icon name="close" size={16} /></button></div><div className="source-content">{current?.sourceBindingDigest.startsWith('preview-only:') && <p className="field-help">只读源码文本。展示对象没有经过正式模型解析的计算绑定；可在编辑模式中解析支持的源码入口。</p>}{!previewSourceSpan && architecture.sources.length > 0 && <p className="field-help">当前图元没有独立的源码行证据，以下提供完整模型源码供查阅。</p>}{architecture.sources.length === 0 && <p className="field-help">{previewSnapshot.current?.importedDocument ? '当前为 Summary 导入文档，源码位置尚未与 Python 文本验证绑定；可通过原始文档检查声明证据。' : '当前案例是视觉或路由示例，没有模型源码。'}</p>}{architecture.sources.map(source => <div key={source.path}><div className="source-filename">{source.path}</div><pre>{source.content.split('\n').map((line, i) => <div key={i} className={previewSourceSpan?.path === source.path && i + 1 >= previewSourceSpan.line && i + 1 <= previewSourceSpan.endLine ? 'source-highlight' : ''}><span>{i + 1}</span>{line || ' '}</div>)}</pre></div>)}</div></div>}
+
+        {sourceOpen && architecture && <div className="source-drawer"><div className="drawer-header"><Icon name="code" size={16} /><b>{t("源码证据")}</b><span>{previewSourceSpan ? `${previewSourceSpan.path}:${previewSourceSpan.line}` : t("只读 · 未执行")}</span><button className="tool" onClick={() => setSourceOpen(false)} aria-label={t("关闭源码")}><Icon name="close" size={16} /></button></div><div className="source-content">{current?.sourceBindingDigest.startsWith('preview-only:') && <p className="field-help">{t("只读源码文本。展示对象没有经过正式模型解析的计算绑定；可在编辑模式中解析支持的源码入口。")}</p>}{!previewSourceSpan && architecture.sources.length > 0 && <p className="field-help">{t("当前图元没有独立的源码行证据，以下提供完整模型源码供查阅。")}</p>}{architecture.sources.length === 0 && <p className="field-help">{previewSnapshot.current?.importedDocument ? t("当前为 Summary 导入文档，源码位置尚未与 Python 文本验证绑定；可通过原始文档检查声明证据。") : t("当前案例是视觉或路由示例，没有模型源码。")}</p>}{architecture.sources.map(source => <div key={source.path}><div className="source-filename">{source.path}</div><pre>{source.content.split('\n').map((line, i) => <div key={i} className={previewSourceSpan?.path === source.path && i + 1 >= previewSourceSpan.line && i + 1 <= previewSourceSpan.endLine ? 'source-highlight' : ''}><span>{i + 1}</span>{line || ' '}</div>)}</pre></div>)}</div></div>}
       </main>
-      <aside className="inspector"><div className="inspector-tabs"><button className={panel === 'object' ? 'active' : ''} onClick={() => setPanel('object')}>对象</button><button className={panel === 'legend' ? 'active' : ''} onClick={() => setPanel('legend')}>图例</button><button className={panel === 'page' ? 'active' : ''} onClick={() => setPanel('page')}>页面</button><button className={panel === 'summary' ? 'active' : ''} onClick={() => setPanel('summary')}>Summary</button></div><div className="inspector-content">
-        <div hidden={panel !== 'summary'}><SummaryCatalogPanel open={summaryCatalogOpen} onToggle={setSummaryCatalogOpen} disabled={busy || previewBusy || previewConnecting || !!review} onOpen={openSummaryCatalog} onBrowseSaved={() => previewEngine.current?.command('show-library')} /></div>
-        {panel === 'summary' && summaryEditing && <SummaryAuthoringPanel snapshot={previewSnapshot.current} selected={previewSelectedNodeIds} disabled={previewLayoutDisabled} onEdit={editSummary} onCompile={compileSummaryModule} onCertify={certifySummaryAssembly} onFormal={() => void formalSourceEditor()} />}
-        {panel === 'summary' && <SummaryViewPanel onContinue={() => previewEngine.current?.command('continue-routing')} snapshot={previewSnapshot.current} selectedIds={previewSelectedNodeIds} disabled={previewLayoutDisabled} onCommand={payload => previewEngine.current?.command('semantic-view', payload)} onFocus={id => previewEngine.current?.focus({ nodeId: id })} />}
-        {panel === 'summary' && current && <SummaryRuntimePanel key={previewCase.current} available={capabilities?.runtimeProfiles?.summaryObserved === true} reason={capabilities?.runtimeProfiles?.unavailableReason} hasSource={summaryRuntimeHasSource} storedReceipt={summaryRuntimeReceipt} disabled={previewLayoutDisabled} onRun={runSummaryObservation} onSaveEvidence={document => download('summary-observation.json', JSON.stringify(document, null, 2), 'application/json')} snapshot={previewSnapshot.current} selectedIds={previewSelectedNodeIds} onCommand={payload => previewEngine.current?.command('semantic-view', payload)}>
-          <SummarySemanticPanel embedded source={previewSource.current} selectedIds={previewSelectedNodeIds} onFocus={id => previewEngine.current?.focus({ nodeId: id })} onEvidence={() => previewEngine.current?.command('show-evidence')} />
-        </SummaryRuntimePanel>}
-        {panel === 'object' && previewSelectedNodes.length > 0 && <section className="preview-selection-tools" aria-label="画布选区"><h3>已选 {previewSelectedNodes.length} 个节点<span>{previewPinnedCount ? `${previewPinnedCount} 个已固定` : ''}</span><button className="tool" aria-label="清空选区" onClick={() => previewEngine.current?.command('select-nodes', {scope:'clear'})}><Icon name="close" size={13} /></button></h3><p className="selection-names" title={previewSelectedNodes.map(node => node.label || node.id).join('、')}>{previewSelectedNodes.map(node => node.label || node.id).join('、')}</p>{previewSelectedNodes.length > 1 && <p className="field-help">{previewCanAlign ? '使用工具栏的对齐与分布整理所选节点。' : '选区跨越不同容器；选择同级节点后可对齐。'}</p>}</section>}
-        {panel === 'object' && previewSelectedNodes.length <= 1 && inspectionNode && inspectionPresentation && <>
-          <div className="object-heading"><span className="object-icon" style={{ background: inspectionPresentation.fill }}><Icon name="layers" size={20} /></span><div><h2>{previewPresentation(previewSnapshot.current?.graph)?.nodes?.[inspectionNode.id]?.alias ?? inspectionNode.label ?? inspectionNode.id}</h2><span>{inspectionNode.semantic?.moduleType ?? inspectionNode.semantic?.kind ?? inspectionNode.kind ?? '检查对象'}</span></div></div>
-          <div className="evidence-tag opaque">源码检查 · 视觉对象</div>
-          <section className="property-section"><h3>显示</h3>
-            <TextField label="预览显示名称" value={previewPresentation(previewSnapshot.current?.graph)?.nodes?.[inspectionNode.id]?.alias ?? inspectionNode.label ?? inspectionNode.id} onCommit={label => void applyInspectionVisual([{ type: 'alias', id: inspectionNode.id, label }])} />
-            <label className="field-label">填充颜色</label><input type="color" aria-label="检查对象填充颜色" disabled={previewLayoutDisabled || current?.pageSpec.preset === 'monochrome'} value={inspectionPresentation.fill} onChange={event => void applyInspectionVisual([{ type: 'nodeStyle', id: inspectionNode.id, style: { fill: event.target.value } }])} />
-            <label className="field-label">边框颜色</label><input type="color" aria-label="检查对象边框颜色" disabled={previewLayoutDisabled || current?.pageSpec.preset === 'monochrome'} value={inspectionPresentation.stroke} onChange={event => void applyInspectionVisual([{ type: 'nodeStyle', id: inspectionNode.id, style: { stroke: event.target.value } }])} />
-          </section>
-          <details className="inspector-section"><summary>排列与层级</summary><div className="coordinate-row"><label>X <output>{Math.round(inspectionPresentation.x)}</output></label><label>Y <output>{Math.round(inspectionPresentation.y)}</output></label></div>
-            {inspectionExpandable && <button className="full-button" disabled={previewLayoutDisabled} onClick={() => void applyInspectionVisual([{ type: 'expand', id: inspectionNode.id, expanded: !inspectionNode.expanded }])}><Icon name="layers" size={14} />{inspectionNode.expanded ? '原位收起检查结构' : '原位展开检查结构'}</button>}
-            <button className="text-button" onClick={() => previewEngine.current?.focus({ nodeId: inspectionNode.id })}>聚焦这个检查对象</button>
-          </details>
-          <section className="property-section"><h3>源码证据</h3><p className="field-help">{inspectionSource ? `${inspectionSource.path}:${inspectionSource.line}–${inspectionSource.endLine}` : '此展示对象没有独立的源码位置。'}</p><button className="full-button" onClick={() => setSourceOpen(true)}><Icon name="code" size={14} />查看检查对象源码</button><p className="field-help">展示和展开保存在递归预览中。此对象没有唯一的正式计算绑定，参数或连接改写请进入模型编辑；视觉调整不改变模型源码。</p></section>
-        </>}
-        {panel === 'object' && previewSelectedNodes.length <= 1 && selectedNode && current && <>
-          <div className="object-heading"><span className="object-icon" style={{ background: (selectedPreviewNodePresentation?.fill) }}><Icon name="layers" size={20} /></span><div><h2>{current.displayAliases[selectedNode.id] ?? selectedNode.label}</h2><span>{selectedNode.kind}</span></div></div><div className={`evidence-tag ${selectedNode.evidence}`}><Icon name="check" size={12} />{statusText(selectedNode.evidence)}</div>
-          <section className="property-section"><h3>显示</h3><TextField label="显示名称" value={current.displayAliases[selectedNode.id] ?? selectedNode.label} onCommit={label => apply([{ type: 'alias', id: selectedNode.id, label }])} /><p className="field-help">源名称：{selectedNode.label}</p><label className="field-label">图元样式</label><select className="field-select" aria-label="图元样式" value={current.nodeStyleOverrides[selectedNode.id]?.glyph ?? (selectedPreviewNodePresentation?.glyph) ?? 'module'} onChange={e => apply([{ type: 'nodeStyle', id: selectedNode.id, style: { glyph: e.target.value as 'module' } }])}>{['module', 'operator', 'tensor', 'attention', 'norm', 'add', 'opaque'].map(g => <option key={g} value={g}>{({ module: '模块框', operator: '紧凑算子', tensor: '张量条带', attention: 'Attention 图元', norm: '归一化图元', add: '加法图元', opaque: '未知边界' } as Record<string, string>)[g]}</option>)}</select><label className="field-label">填充颜色</label><div className="color-palette">{PALETTE.map(color => <button key={color} aria-label={`填充 ${color}`} className={(selectedPreviewNodePresentation?.fill) === color ? 'picked' : ''} style={{ background: color }} onClick={() => apply(selection.ids.map(id => ({ type: 'nodeStyle', id, style: { fill: color } })))} />)}<input type="color" aria-label="自定义填充颜色" value={(selectedPreviewNodePresentation?.fill) ?? '#dcebf6'} onChange={e => apply(selection.ids.map(id => ({ type: 'nodeStyle', id, style: { fill: e.target.value } })))} /></div><label className="field-label">边框颜色</label><div className="color-field"><input type="color" aria-label="边框颜色" value={(selectedPreviewNodePresentation?.stroke) ?? '#607d91'} onChange={e => apply([{ type: 'nodeStyle', id: selectedNode.id, style: { stroke: e.target.value } }])} /><code>{(selectedPreviewNodePresentation?.stroke)}</code></div></section>
-          <details className="inspector-section"><summary>排列与层级</summary><div className="coordinate-row"><label>X <output>{Math.round(selectedPreviewNodePresentation?.x ?? 0)}</output></label><label>Y <output>{Math.round(selectedPreviewNodePresentation?.y ?? 0)}</output></label></div><label className="field-label" htmlFor="layout-move-scope">移动范围</label><select id="layout-move-scope" className="field-select" aria-label="移动范围" value={layoutMoveScope} onChange={e => chooseMoveScope(e.target.value as MoveScope)}><option value="all-frontiers">所有视图</option><option value="current-frontier">仅当前视图</option></select><p className="field-help">对齐和文字移动使用此范围。布线使用 Summary 设置中的处理范围。{layoutMoveScope === 'current-frontier' ? '调整当前可见前沿；其他层级保留自己的布局。' : '同步调整已保存的展开层级布局。'}</p>{!!selectedNode.children.length && <button className="full-button" disabled={previewLayoutDisabled} onClick={() => apply([{ type: 'expand', id: selectedNode.id, expanded: !current.expandedIds.includes(selectedNode.id) }])}><Icon name="layers" size={14} />{current.expandedIds.includes(selectedNode.id) ? '原位收起' : '原位展开'}</button>}<button className="full-button" onClick={repairSummaryLayout} disabled={previewLayoutDisabled}><Icon name="align" size={14} />优化当前布线</button><button className="text-button" onClick={() => focusNode(selectedNode.id)}>聚焦这个对象</button></details>
-          <details className="inspector-section"><summary>连接点</summary><p className="field-help">{portEditing ? "拖动端口到模块任一边缘。" : "点击“优化自动连接点”比较侧面；使用“显示连接点”查看端口；选中连线后可拖动 S / T 端点。"}</p><button className="full-button" disabled={busy || (!selectedNode.ports.length && !selectedNode.children.length)} onClick={() => optimizeAutomaticPorts(selectedNode.id)}>优化自动连接点</button></details><ParameterEditor node={selectedNode} busy={busy} enabled={!current.sourceBindingDigest.startsWith('preview-only:') && !!capabilities?.semanticWriteback} onPrepare={prepareParameter} onInspectConfiguration={inspectConfiguration} />
-          <ActivationEditor node={selectedNode} busy={busy} enabled={!current.sourceBindingDigest.startsWith('preview-only:') && !!capabilities?.supportedIntents?.includes('replace_activation')} inputSpec={inputSpec} onSetup={() => setRuntimeOpen(true)} onPrepare={prepareActivation} />
-          <ObjectFacts architecture={current.architecture} node={selectedNode} onSelect={id => { setSelection({ kind: 'node', ids: [id] }); setPanel('object'); }} />
-          {selectedNode.ports.some(p => p.direction === 'in') && <ConnectionEditor key={`${architecture?.sourceDigest}:${selectedNode.id}:${JSON.stringify(inputSpec)}`} document={current} nodeId={selectedNode.id} portId={selectedNode.ports.find(p => p.direction === 'in')!.id} busy={busy} inputSpec={inputSpec} onSetup={() => setRuntimeOpen(true)} enabled={!current.sourceBindingDigest.startsWith('preview-only:') && !!capabilities?.supportedIntents?.includes('rebind_input')} onInspect={inspectRebind} onPrepare={prepareRebind} />}
-          <details className="inspector-section"><summary>模型事实<span className="read-only">只读</span></summary>{Object.entries(selectedNode.parameters).length ? <dl className="parameters">{Object.entries(selectedNode.parameters).map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{typeof value === 'string' ? value : JSON.stringify(value)}</dd></div>)}</dl> : <p className="field-help">没有已解析的构造参数。</p>}<button className="full-button" onClick={() => setSourceOpen(true)}><Icon name="code" size={14} />查看源码位置</button></details>
-        </>}
-        {panel === 'object' && selectedEdge && current && <><div className="object-heading"><Icon name="arrow" /><div><h2>{selectedEdge.label || selectedEdge.role}</h2><span>张量关系 · {selectedEdge.role}</span></div></div><section className="property-section"><h3>连线样式</h3><label className="field-label">颜色</label><input type="color" aria-label="连线颜色" disabled={current.pageSpec.preset === 'monochrome'} value={selectedEdgeAppearance?.stroke ?? '#64748b'} onChange={e => apply([{ type: 'edgeStyle', id: selectedEdge.id, style: { stroke: e.target.value } }])} />{current.pageSpec.preset === 'monochrome' && <p className="field-help">黑白模式统一使用灰色；已设置的颜色在论文彩色模式生效。</p>}<label className="field-label">线宽</label><input aria-label="连线宽度" type="range" min="1" max="4" step="0.5" value={selectedEdgeAppearance?.width ?? 1.5} onChange={e => apply([{ type: 'edgeStyle', id: selectedEdge.id, style: { width: Number(e.target.value) } }])} /><label className="check-field"><input type="checkbox" checked={selectedEdgeAppearance?.dashed ?? false} onChange={e => apply([{ type: 'edgeStyle', id: selectedEdge.id, style: { dashed: e.target.checked } }])} />使用虚线</label>{selectedEdgeAppearance && <p className="field-help">当前线型：{edgePatternLabel(selectedEdgeAppearance)} · {current.edgeStyleOverrides[selectedEdge.id]?.dashed === undefined ? '角色默认' : '用户覆盖'}。更改复选框后使用显式实线或通用虚线；可撤销最近编辑。</p>}</section><section className="property-section"><h3>当前端口绑定</h3><p className="field-help">{selectedEdge.source.portId} → {selectedEdge.target.portId}</p><p className="field-help">改走线样式不会改变模型计算关系。</p></section><ConnectionEditor key={`${architecture?.sourceDigest}:${selectedEdge.id}:${JSON.stringify(inputSpec)}`} document={current} nodeId={selectedEdge.target.nodeId} portId={selectedEdge.target.portId} busy={busy} inputSpec={inputSpec} onSetup={() => setRuntimeOpen(true)} enabled={!current.sourceBindingDigest.startsWith('preview-only:') && !!capabilities?.supportedIntents?.includes('rebind_input')} onInspect={inspectRebind} onPrepare={prepareRebind} /></>}
-        {panel === 'object' && selectedAnnotation && <><h2>说明文字</h2><TextField label="内容" value={selectedAnnotation.text} onCommit={text => apply([{ type: 'annotation', annotation: { ...selectedAnnotation, text } }])} />{annotationConflicts.length > 0 && <p className="annotation-overlap" role="status">说明正文与 {annotationConflicts.length} 个对象重叠。可移到图下方，再检查导出。</p>}<button className="full-button" onClick={moveAnnotationBelow}><Icon name="align" size={14} />移到图下方</button><button className="text-button" onClick={() => focusAnnotation(selectedAnnotation.id)}>聚焦这段说明</button><button className="full-button" onClick={() => { apply([{ type: 'removeAnnotation', id: selectedAnnotation.id }]); setSelection({ kind: 'node', ids: [] }); }}>移除说明</button></>}
-        {panel === 'object' && selectedPreviewEdge && <>
-          <div className="object-heading"><Icon name="arrow" /><div><h2>{isPreviewDraftEdge(selectedPreviewEdge) ? '视觉草稿连接' : '预览连接'}</h2><span>{selectedPreviewEdge.id}</span></div></div>
-          <section className="property-section"><h3>连线样式</h3>
-            <label className="field-label">颜色</label><input type="color" aria-label="视觉连接颜色" disabled={busy || current?.pageSpec.preset === 'monochrome'} value={selectedPreviewEdgeAppearance?.stroke ?? '#263b4b'} onChange={e => void stylePreviewEdge(selectedPreviewEdge.id, { stroke: e.target.value })} />
-            {current?.pageSpec.preset === 'monochrome' && <p className="field-help">黑白模式统一使用灰色；已设置的颜色在论文彩色模式生效。</p>}
-            <label className="field-label">线宽</label><input aria-label="视觉连接宽度" type="range" min="0.5" max="12" step="0.1" disabled={busy} value={selectedPreviewEdgeAppearance?.width ?? 2.2} onChange={e => void stylePreviewEdge(selectedPreviewEdge.id, { width: Number(e.target.value) })} />
-            <label className="check-field"><input type="checkbox" disabled={busy} checked={selectedPreviewEdgeAppearance?.dashed ?? false} onChange={e => void stylePreviewEdge(selectedPreviewEdge.id, { dashed: e.target.checked })} />使用虚线</label>
-          </section>
-          <section className="property-section"><h3>当前视觉端点</h3>
-            <p className="field-help">{graphFromSnapshot()?.nodes.find(node => node.id === selectedPreviewEdge.source)?.label ?? selectedPreviewEdge.source} → {graphFromSnapshot()?.nodes.find(node => node.id === selectedPreviewEdge.target)?.label ?? selectedPreviewEdge.target}</p>
-            <p className="field-help">连接及样式保存在当前预览中，可撤销或通过编辑 JSON 恢复。视觉草稿不会自动写入模型源码。</p>
-          </section>
-        </>}
-        {panel === 'object' && !selectedNode && !selectedEdge && !selectedPreviewEdge && !selectedAnnotation && !previewSelectedNodes.length && <><div className="inspector-empty"><div className="empty-symbol"><Icon name="arrow" size={24} /></div><h2>从一个对象开始</h2><p>选择模块、连线或说明文字，<br />调整论文图的呈现方式。</p><div className="shortcut-line"><kbd>拖动空白处</kbd> 框选模块</div><div className="shortcut-line"><kbd>Shift / Ctrl</kbd> 多选对象</div><div className="shortcut-line"><kbd>双击</kbd> 展开 / 收起模块</div></div><div className="document-summary"><h3>{current?.title ?? 'ArchCanvas'}</h3><div><b>{summaryCounts?.nodes ?? architecture?.nodes.length ?? '—'}</b><span>{previewSnapshot.current?.importedDocument ? '文档对象' : summaryCounts ? '源码对象' : '事实对象'}</span><b>{summaryCounts?.edges ?? architecture?.edges.length ?? '—'}</b><span>{summaryCounts ? '依赖关系' : '端口关系'}</span></div></div>{!!architecture?.diagnostics.length && <details className="diagnostics"><summary>{previewSnapshot.current?.importedDocument ? '文档导入边界' : summaryCounts ? '正式编辑分析边界' : '分析边界'}</summary>{architecture.diagnostics.slice(0, 4).map((d, i) => <p key={i}>{d.message}</p>)}</details>}</>}
-        {panel === 'legend' && current && <><div className="panel-heading"><h2>图例编辑</h2><p>图例属于画布，随当前版本保存和导出。</p>{current.pageSpec.preset === 'monochrome' && <p className="field-help">悬浮图例显示当前可见连线的角色与实际线型；出版图例随视图和样式自动更新。</p>}</div><div className="legend-list">{current.legendItems.map((item, index) => <div className="legend-editor" key={item.id}><div className="legend-row"><input type="color" aria-label={`图例颜色 ${index + 1}`} value={item.color} onChange={e => apply([{ type: 'legend', items: current.legendItems.map(x => x.id === item.id ? { ...x, color: e.target.value } : x) }])} /><TextField label="" value={item.label} onCommit={label => apply([{ type: 'legend', items: current.legendItems.map(x => x.id === item.id ? { ...x, label } : x) }])} /><button className="tool" aria-label={`删除图例 ${index + 1}`} onClick={() => apply([{ type: 'legend', items: current.legendItems.filter(x => x.id !== item.id) }])}><Icon name="close" size={13} /></button></div><div className="legend-controls"><select aria-label={`图例符号 ${index + 1}`} value={item.glyph} onChange={e => apply([{ type: 'legend', items: current.legendItems.map(x => x.id === item.id ? { ...x, glyph: e.target.value as 'module' } : x) }])}>{['module', 'operator', 'tensor', 'attention', 'norm', 'add', 'opaque'].map(g => <option key={g}>{g}</option>)}</select><button disabled={index === 0} onClick={() => { const items = [...current.legendItems]; [items[index - 1], items[index]] = [items[index], items[index - 1]]; apply([{ type: 'legend', items }]); }} title="上移">↑</button><button disabled={index === current.legendItems.length - 1} onClick={() => { const items = [...current.legendItems]; [items[index + 1], items[index]] = [items[index], items[index + 1]]; apply([{ type: 'legend', items }]); }} title="下移">↓</button></div></div>)}</div><button className="full-button" onClick={() => apply([{ type: 'legend', items: [...current.legendItems, { id: `legend-${crypto.randomUUID()}`, label: '自定义图例', color: '#dcebf6', glyph: 'module' }] }])}><Icon name="plus" size={15} />添加图例条目</button></>}
-        {panel === 'page' && current && <><div className="panel-heading"><h2>出版页面</h2><p>SVG、PDF 与 PNG 共用当前画布场景。</p></div><section className="property-section"><label className="field-label">物理页宽</label><div className="segmented">{[85, 180].map(widthMm => <button key={widthMm} className={current.pageSpec.widthMm === widthMm ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { widthMm } }])}>{widthMm} mm</button>)}</div><label className="field-label">背景</label><div className="color-field"><input aria-label="页面背景" type="color" value={current.pageSpec.background} onChange={e => apply([{ type: 'page', page: { background: e.target.value } }])} /><code>{current.pageSpec.background}</code></div><label className="field-label">配色</label><div className="segmented"><button className={current.pageSpec.preset === 'paper' ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { preset: 'paper' } }])}>论文彩色</button><button className={current.pageSpec.preset === 'monochrome' ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { preset: 'monochrome' } }])}>黑白</button></div></section><section className="property-section"><h3>说明文字</h3><button className="full-button" onClick={addAnnotation}><Icon name="plus" size={14} />添加说明文字</button><p className="field-help">使用右上角“导出”生成 SVG、PDF、PNG 或完整编辑 JSON。</p></section></>}
-      </div><div className="inspector-footer"><Icon name="info" size={14} /><span>视觉编辑不修改模型源码</span></div></aside>
+
     </div>
-    <footer className={`statusbar ${failure ? 'has-error' : ''}`}><span><i className={busy ? 'busy-dot' : 'live-dot'} />{failure || (runtimeCancel ? cancelling ? '正在取消运行验证…' : '正在隔离运行并核对前后结构…' : busy ? '正在处理…' : notice)}</span><div>{previewCanCancel && <button onClick={() => previewEngine.current?.command('cancel-operation')}>取消当前图操作</button>}{runtimeCancel && <button disabled={cancelling} onClick={() => void cancelRuntime()}>{cancelling ? '取消中…' : '取消运行验证'}</button>}{selection.ids.length > 0 && <span>{selection.ids.length} 个已选</span>}<span>RECURSIVE PREVIEW</span><span>rev {current?.revision ?? 0}</span></div></footer>
+    <footer className={`statusbar ${failure ? 'has-error' : ''}`}><span><i className={busy ? 'busy-dot' : 'live-dot'} />{uiMessage(failure || (runtimeCancel ? cancelling ? t("正在取消运行验证…") : t("正在隔离运行并核对前后结构…") : busy ? t("正在处理…") : notice))}</span><div>{previewCanCancel && <button onClick={() => previewEngine.current?.command('cancel-operation')}>{t("取消当前图操作")}</button>}{runtimeCancel && <button disabled={cancelling} onClick={() => void cancelRuntime()}>{cancelling ? t("取消中…") : t("取消运行验证")}</button>}{selection.ids.length > 0 && <span>{selection.ids.length}{t("个已选")}</span>}<span>RECURSIVE PREVIEW</span><span>rev {current?.revision ?? 0}</span></div></footer>
+    {newModelOpen && <WorkspaceDialog title={t("新建空白模型")} description={t("设置模型名称，然后添加构件或导入自定义源码模块。名称可在编辑面板中随时修改。")} onClose={() => { if (!creatingModel) setNewModelOpen(false); }}>
+      <form className="new-model-form" onSubmit={event => { event.preventDefault(); void newSummaryModel(); }}>
+        <label className="field-label">{t("模型名称")}<input aria-label={t("新模型名称")} autoFocus maxLength={240} placeholder={t("例如 VisionEncoder")} value={newModelTitle} disabled={creatingModel} onChange={event => setNewModelTitle(event.target.value)} /></label>
+        {newModelError && <p role="alert">{uiMessage(newModelError)}</p>}
+        <p className="field-help">{t("界面语言切换不会改变此名称、模块名称或 Python 标识符。")}</p>
+        <div className="modal-actions"><button type="button" disabled={creatingModel} onClick={() => setNewModelOpen(false)}>{t("取消")}</button><button className="primary" type="submit" disabled={creatingModel || !newModelTitle.trim()}>{creatingModel ? t("正在创建…") : t("创建模型")}</button></div>
+      </form>
+    </WorkspaceDialog>}
+    {taskDialog === 'library' && <WorkspaceDialog title={t("模型库")} description={t("选择一个模型，或恢复已保存的文档。")} onClose={() => setTaskDialog(null)}>
+      <SummaryCatalogPanel open={summaryCatalogOpen} onToggle={setSummaryCatalogOpen} disabled={busy || previewBusy || previewConnecting || !!review} onOpen={async model => { await openSummaryCatalog(model); setTaskDialog(null); }} onBrowseSaved={() => { setTaskDialog(null); previewEngine.current?.command('show-library'); }} />
+    </WorkspaceDialog>}
+    {taskDialog === 'expansion' && <WorkspaceDialog title={t("模块展开")} description={t("选择阅读范围；每个模块可以保留自己的展开深度。")} onClose={() => setTaskDialog(null)}>
+      <SummaryViewPanel onContinue={() => previewEngine.current?.command('continue-routing')} snapshot={previewSnapshot.current} selectedIds={previewSelectedNodeIds} disabled={previewLayoutDisabled} onCommand={payload => previewEngine.current?.command('semantic-view', payload)} onFocus={id => previewEngine.current?.focus({ nodeId: id })} />
+      {!previewSnapshot.current?.semanticView && <p className="field-help">{t("当前文档使用递归视图，可在左侧层级树或画布中双击展开模块。")}</p>}
+    </WorkspaceDialog>}
+    {taskDialog === 'runtime' && current && <WorkspaceDialog title={t("运行观察与语义证据")} description={t("查看来源与已有观察；新运行需要明确填写输入规格。")} onClose={() => setTaskDialog(null)}>
+      <SummaryRuntimePanel key={previewCase.current} available={capabilities?.runtimeProfiles?.summaryObserved === true} reason={capabilities?.runtimeProfiles?.unavailableReason} hasSource={summaryRuntimeHasSource} storedReceipt={summaryRuntimeReceipt} disabled={previewLayoutDisabled} onRun={runSummaryObservation} onSaveEvidence={document => download('summary-observation.json', JSON.stringify(document, null, 2), 'application/json')} snapshot={previewSnapshot.current} selectedIds={previewSelectedNodeIds} onCommand={payload => previewEngine.current?.command('semantic-view', payload)}>
+        <SummarySemanticPanel embedded source={previewSource.current} selectedIds={previewSelectedNodeIds} onFocus={id => previewEngine.current?.focus({ nodeId: id })} onEvidence={() => { setTaskDialog(null); previewEngine.current?.command('show-evidence'); }} />
+      </SummaryRuntimePanel>
+    </WorkspaceDialog>}
+
     {runtimeOpen && architecture && <RuntimeProfileDialog architecture={architecture} initial={inputSpec} example={false} onSave={saveInputSpec} onClose={() => setRuntimeOpen(false)} />}
-    {connectionProposal && <div className="modal-backdrop"><div className="runtime-modal connection-proposal" role="dialog" aria-modal="true" aria-labelledby="proposal-title"><div className="modal-heading"><div><div className="eyebrow">CONNECTION PROPOSAL</div><h2 id="proposal-title">{connectionProposal.candidate ? '检查改接提案' : '保留未支持的连接提案'}</h2></div><button className="tool" aria-label="关闭连接提案" onClick={() => setConnectionProposal(null)}><Icon name="close" /></button></div>{connectionProposal.candidate ? <p>将选定输入连接到 <b>{connectionProposal.candidate.variable}</b>。当前只创建提案；运行验证后会展示准确源码 diff 和前后关系，批准后才能提交工作副本。</p> : connectionProposal.blockers.map((blocker, i) => <p key={i}>{blocker}</p>)}<div className="modal-actions"><button onClick={() => setConnectionProposal(null)}>保留当前连接</button>{!inputSpec && <button onClick={() => { setConnectionProposal(null); setRuntimeOpen(true); }}>设置运行输入与模式</button>}{connectionProposal.candidate && <button className="primary" disabled={busy} onClick={() => { const proposal = connectionProposal; setConnectionProposal(null); prepareRebind(proposal.nodeId, proposal.portId, proposal.candidate!.binding); }}>运行验证并预览源码修改</button>}</div></div></div>}
+    {connectionProposal && <div className="modal-backdrop"><div className="runtime-modal connection-proposal" role="dialog" aria-modal="true" aria-labelledby="proposal-title"><div className="modal-heading"><div><div className="eyebrow">CONNECTION PROPOSAL</div><h2 id="proposal-title">{connectionProposal.candidate ? t("检查改接提案") : t("保留未支持的连接提案")}</h2></div><button className="tool" aria-label={t("关闭连接提案")} onClick={() => setConnectionProposal(null)}><Icon name="close" /></button></div>{connectionProposal.candidate ? <p>{t("将选定输入连接到")}<b>{connectionProposal.candidate.variable}</b>{t("。当前只创建提案；运行验证后会展示准确源码 diff 和前后关系，批准后才能提交工作副本。")}</p> : connectionProposal.blockers.map((blocker, i) => <p key={i}>{blocker}</p>)}<div className="modal-actions"><button onClick={() => setConnectionProposal(null)}>{t("保留当前连接")}</button>{!inputSpec && <button onClick={() => { setConnectionProposal(null); setRuntimeOpen(true); }}>{t("设置运行输入与模式")}</button>}{connectionProposal.candidate && <button className="primary" disabled={busy} onClick={() => { const proposal = connectionProposal; setConnectionProposal(null); prepareRebind(proposal.nodeId, proposal.portId, proposal.candidate!.binding); }}>{t("运行验证并预览源码修改")}</button>}</div></div></div>}
     {review && <ReviewDialog base={review.base} transaction={review.transaction} busy={busy} error={reviewError} onApprove={() => void approveParameter()} onCommit={() => void commitParameter()} onClose={() => void closeReview()} />}
     {exportDocument && exportPreview && <ExportDialog document={exportDocument} capabilities={capabilities}
       selectedId={selection.kind === 'node' && selection.ids.length === 1 ? selection.ids[0] : undefined}
@@ -1442,5 +1476,5 @@ function TextField({ label, value, onCommit }: { label: string; value: string; o
   const [draft, setDraft] = useState(value);
   const cancelled = useRef(false);
   useEffect(() => setDraft(value), [value]);
-  return <label className="text-field">{label && <span className="field-label">{label}</span>}<input aria-label={label || '图例文字'} value={draft} onChange={e => { cancelled.current = false; setDraft(e.target.value); }} onBlur={() => { if (!cancelled.current && draft !== value) onCommit(draft); cancelled.current = false; }} onKeyDown={e => { if (e.nativeEvent.isComposing) return; if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') { cancelled.current = true; setDraft(value); e.currentTarget.blur(); } }} /></label>;
+  return <label className="text-field">{label && <span className="field-label">{label}</span>}<input aria-label={label || t("图例文字")} value={draft} onChange={e => { cancelled.current = false; setDraft(e.target.value); }} onBlur={() => { if (!cancelled.current && draft !== value) onCommit(draft); cancelled.current = false; }} onKeyDown={e => { if (e.nativeEvent.isComposing) return; if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') { cancelled.current = true; setDraft(value); e.currentTarget.blur(); } }} /></label>;
 }

@@ -1,3 +1,4 @@
+import { t, uiMessage, getLocale, subscribeLocale } from './i18n';
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import './PreviewStudio.css';
 
@@ -53,9 +54,11 @@ export const PreviewStudio = forwardRef<PreviewHandle, {
     } catch { return base; }
   });
 
+  useEffect(() => subscribeLocale(updateLocale), []);
   function post(type: string, payload: Record<string, unknown> = {}) {
     iframe.current?.contentWindow?.postMessage({ type: `archcanvas:preview:${type}`, ...payload }, window.location.origin);
   }
+  function updateLocale() { iframe.current?.contentWindow?.postMessage({ type: 'archcanvas:ui-locale', locale: getLocale() }, window.location.origin); }
   function waitReady() {
     if (ready.current) return Promise.resolve();
     return new Promise<void>((resolve, reject) => {
@@ -107,6 +110,7 @@ export const PreviewStudio = forwardRef<PreviewHandle, {
       const type = String(message.type).slice('archcanvas:preview:'.length);
       if (type === 'progress' && !ready.current) setStartup({ message: String(message.message ?? '正在恢复模型…'), canCancel: message.canCancel === true });
       if (type === 'ready') {
+        updateLocale();
         ready.current = true; setConnected(true);
         for (const done of readyWaiters.current) done();
       }
@@ -139,9 +143,9 @@ export const PreviewStudio = forwardRef<PreviewHandle, {
       pending.current.clear();
     };
   }, []);
-  return <section className="prototype-preview" hidden={!visible} aria-label="模型架构预览">
-    {!connected && <div className="preview-loading" role="status">{startup.message}{startup.canCancel && <button onClick={() => post('cancel-operation', { requestId: crypto.randomUUID() })}>取消恢复操作</button>}</div>}
-    <iframe ref={iframe} title="ArchCanvas 模型预览与连线编辑器"
-      src={sourceUrl} onLoad={() => post('hello')} />
+  return <section className="prototype-preview" hidden={!visible} aria-label={t("模型架构预览")}>
+    {!connected && <div className="preview-loading" role="status">{uiMessage(startup.message)}{startup.canCancel && <button onClick={() => post('cancel-operation', { requestId: crypto.randomUUID() })}>{t("取消恢复操作")}</button>}</div>}
+    <iframe ref={iframe} title={t("ArchCanvas 模型预览与连线编辑器")}
+      src={sourceUrl} onLoad={() => { updateLocale(); post('hello'); }} />
   </section>;
 });

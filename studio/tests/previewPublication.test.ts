@@ -80,12 +80,12 @@ test('real DOM SVG sanitization preserves path, transform, marker and physical p
     const output = sanitize(fixture, 180), xml = new DOMParser().parseFromString(output.svg, 'image/svg+xml');
     return { output, path: xml.querySelector('svg>path')!.getAttribute('d'), transform: xml.querySelector('g')!.getAttribute('transform'),
       marker: xml.querySelector('svg>path')!.getAttribute('marker-end'), wireFill: xml.querySelector('svg>path')!.getAttribute('fill'), font: xml.querySelector('text')!.getAttribute('font-size'),
-      unsafe: xml.querySelectorAll('script,foreignObject,style,.node-hit,#handleLayer').length, nestedDefinitions: xml.querySelectorAll('defs defs').length, markerStroke: xml.querySelector('marker')!.getAttribute('stroke'),
+      unsafe: xml.querySelectorAll('script,foreignObject,style,.node-hit,#handleLayer,metadata#archcanvas-preview-document').length, nestedDefinitions: xml.querySelectorAll('defs defs').length, markerStroke: xml.querySelector('marker')!.getAttribute('stroke'),
       controlAttributes: [...xml.querySelectorAll('*')].flatMap(node => [...node.attributes].filter(attribute => attribute.name.startsWith('data-source-control'))).length,
       controlPath: xml.querySelector('#source-controls path')!.getAttribute('d'), controlDash: xml.querySelector('#source-controls path')!.getAttribute('stroke-dasharray'),
       decisionPath: xml.querySelector('#source-decision path')!.getAttribute('d'), controlLabel: xml.querySelector('#source-controls text')!.textContent,
       controlLegend: xml.querySelector('#source-control-legend text')!.textContent };
-  }, { module, fixture: fixture.replace('</svg>', sourceControls + '</svg>') });
+  }, { module, fixture: fixture.replace('</svg>', `<metadata id="archcanvas-preview-document">${'x'.repeat(300_000)}</metadata>` + sourceControls + '</svg>') });
   assert.equal(parsed.unsafe, 0); assert.equal(parsed.nestedDefinitions, 0); assert.equal(parsed.markerStroke, '#102030');
   assert.equal(parsed.path, 'M 120 80 L 200 80 L 200 150'); assert.equal(parsed.transform, 'translate(30,40)');
   assert.equal(parsed.marker, 'url(#arrow)'); assert.equal(parsed.wireFill, 'none'); assert.equal(parsed.font, '12');

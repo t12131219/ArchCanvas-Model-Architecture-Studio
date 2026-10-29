@@ -31,7 +31,7 @@ test('all Summary document formats enter the native bridge instead of the formal
 test('imported Summary evidence opens Studio panels without requesting or binding Python source', async () => {
   const historyRef = { current: null as any }, previewSource = { current: { old: true } as any }, notices: string[] = [];
   const env = {
-    previewSnapshot: { current: null }, synchronizePreviewNodeSelection() {}, setPreviewTool() {}, setPortEditing() {}, setGrid() {}, setPreviewBusy() {},
+    previewSnapshot: { current: null }, synchronizePreviewNodeSelection() {}, setPreviewTool() {}, setPortEditing() {}, setGrid() {}, setPreviewBusy() {}, setPreviewCanCancel() {},
     setPreviewDirty() {}, setPreviewUndo() {}, setPreviewRedo() {}, setPreviewVersion() {}, setSelection() {}, savedPreviewGraph: { current: null },
     initialModelLoading: { current: false }, previewLoading: { current: false }, previewCase: { current: 'old' }, previewSource,
     previewSequence: { current: 0 }, loadSequence: { current: 0 }, previewBoundSource: { current: 'old' },
@@ -110,6 +110,7 @@ test('actual edit entry awaits the latest preview snapshot and never opens an ed
   const calls: string[] = [], sequence = { current: 4 };
   let finish!: (value: object) => void;
   const env = { enteringAuthoring: { current: false }, busy: false, activeRecovery: null, historyRef: { current: {} }, loadSequence: sequence,
+    previewSnapshot: {current:null},setBusy() {},setNotice() {},
     previewEngine: { current: { snapshot: () => new Promise(resolve => { finish = resolve; }) } },
     receivePreviewState: async () => { calls.push('sync'); }, continueModelAuthoring: async () => { calls.push('edit'); }, readyPreview: () => true, setFailure() {} };
   const edit = callback('editCurrentPreview', env), pending = edit(); await edit();
@@ -202,7 +203,7 @@ test('additional preview inspection objects preserve a byte-matched formal docum
   const architecture = { sourceDigest: 'source', irDigest: 'ir' }, original = { document: { id: 'formal', sourceBindingDigest: 'source', architecture, revision: 6 } };
   const historyRef = { current: original }, source = { schema: 'summary-source-adapter/1', id: 'formal-case' }, projected: unknown[] = [];
   const environment = {
-    previewSnapshot: { current: null }, synchronizePreviewNodeSelection() {}, setPreviewTool() {}, setPortEditing() {}, setGrid() {}, setPreviewBusy() {},
+    previewSnapshot: { current: null }, synchronizePreviewNodeSelection() {}, setPreviewTool() {}, setPortEditing() {}, setGrid() {}, setPreviewBusy() {}, setPreviewCanCancel() {},
     setPreviewDirty() {}, setPreviewUndo() {}, setPreviewRedo() {}, setPreviewVersion() {}, setSelection() {}, savedPreviewGraph: { current: null },
     initialModelLoading: { current: false }, previewLoading: { current: false }, previewCase: { current: 'formal-case' }, previewSource: { current: source },
     synchronizingPreview: { current: false }, historyRef, graphFromSnapshot: (snapshot: any) => snapshot.graph,
@@ -337,7 +338,7 @@ test('actual catalog source request rejects an old A response after an A to B to
   const previewCase = { current: 'seed' }, previewSequence = { current: 0 }, loadSequence = { current: 0 }, historyRef = { current: { document: { id: 'seed', sourceBindingDigest: 'preview-only:seed' } } as any };
   const deferred: { resolve: (result: unknown) => void }[] = [], bound: unknown[] = [], history: unknown[] = [];
   const environment = {
-    previewSnapshot: { current: null }, synchronizePreviewNodeSelection() {}, setPreviewTool() {}, setPortEditing() {}, setGrid() {}, setPreviewBusy() {},
+    previewSnapshot: { current: null }, synchronizePreviewNodeSelection() {}, setPreviewTool() {}, setPortEditing() {}, setGrid() {}, setPreviewBusy() {}, setPreviewCanCancel() {},
     setPreviewDirty() {}, setPreviewUndo() {}, setPreviewRedo() {}, setPreviewVersion() {}, setSelection() {}, savedPreviewGraph: { current: null },
     initialModelLoading: { current: false }, previewLoading: { current: false }, previewCase, previewSequence, loadSequence, previewBoundSource: { current: '' }, previewSource: { current: undefined },
     setBusy() {}, setPreviewConnecting() {}, previewPanelDocument: (snapshot: any) => ({ id: snapshot.caseId, sourceBindingDigest: `preview-only:${snapshot.caseId}` }),
@@ -377,7 +378,7 @@ test('saved native graph keeps a derived panel projection saved while real alias
     const historyRef = { current: { document, past: [], future: [] } as any };
     let dirty = false, savedRevision = document.revision;
     const environment = {
-      previewSnapshot: { current: null }, synchronizePreviewNodeSelection() {}, setPreviewTool() {}, setPortEditing() {}, setGrid() {}, setPreviewBusy() {},
+      previewSnapshot: { current: null }, synchronizePreviewNodeSelection() {}, setPreviewTool() {}, setPortEditing() {}, setGrid() {}, setPreviewBusy() {}, setPreviewCanCancel() {},
       savedPreviewGraph: { current: JSON.stringify(savedGraph) }, setPreviewDirty: (value: boolean) => { dirty = value; },
       setSavedVisualRevision: (value: number) => { savedRevision = value; }, setPreviewUndo() {}, setPreviewRedo() {}, setPreviewVersion() {}, setSelection() {},
       initialModelLoading: { current: false }, previewLoading: { current: false }, previewCase: { current: 'case' },

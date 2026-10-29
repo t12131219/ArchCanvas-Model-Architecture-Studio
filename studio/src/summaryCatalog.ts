@@ -1,3 +1,4 @@
+import { t } from './i18n.ts';
 /** Static, pinned Summary assets. Source paths in the IR are provenance only. */
 export const SUMMARY_CATALOG_LIMITS = Object.freeze({ bytes: 16_000_000, nodes: 4000, edges: 5000 });
 type Asset = { path: string; bytes: number; sha256: string };
@@ -52,7 +53,7 @@ export function summaryPrograms(models: SummaryCatalogModel[]) {
 export function summaryConfiguration(model: SummaryCatalogModel) {
   const values = model.program?.constructor ?? {};
   const parameters = Object.entries(values).map(([key, value]) => `${key}=${JSON.stringify(value)}`).join(', ');
-  return `${parameters || '默认构造参数'}${model.program?.observations ? ` · ${model.program.observations} 条观察记录` : ''}`;
+  return `${parameters || t('默认构造参数')}${model.program?.observations ? t(' · {0} 条观察记录', {0: model.program.observations}) : ''}`;
 }
 export function summaryCatalogBlockReason(model: SummaryCatalogModel): string | null {
   if (model.nodes > SUMMARY_CATALOG_LIMITS.nodes || model.edges > SUMMARY_CATALOG_LIMITS.edges) return `原始图 ${model.nodes} 节点 / ${model.edges} 依赖，超过当前 ${SUMMARY_CATALOG_LIMITS.nodes} 节点 / ${SUMMARY_CATALOG_LIMITS.edges} 依赖预算。`;

@@ -283,7 +283,7 @@ from archcanvas_adapters.registry import AdapterRegistry
 with tempfile.TemporaryDirectory(prefix="archcanvas-generated-preview-") as registry:
  print(json.dumps(AdapterRegistry(Path(registry)).preview(analyze(v["files"],v["entry"],v["config"]),v["files"])))`,
     architecturePreviewRequest(generated.architecture)) as any;
-  const bundleBytes = JSON.stringify(bundle), context = vm.createContext({ TextEncoder, TextDecoder });
+  const bundleBytes = JSON.stringify(bundle), context = vm.createContext({ performance, TextEncoder, TextDecoder });
   for (const file of ['router.js', 'physical-ports.js', 'junction-markers.js', 'route-labels.js',
     'source-contracts.js', 'semantic-constraints.js', 'graph-engine.js', 'recursive-graph.js', 'source-adapter.js']) {
     vm.runInContext(readFileSync(new URL(`../public/preview/yworks_edge_router_lab/${file}`, import.meta.url), 'utf8'), context, { filename: file });

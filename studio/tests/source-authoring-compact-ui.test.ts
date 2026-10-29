@@ -22,11 +22,11 @@ function compile(input: string, name: string) {
   const output = ts.transpileModule(input, { fileName: `${name}.tsx`, compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText
     .replace(/import ['"]\.\/AuthoringStudio\.css['"];?/g, '')
     .replace(/(['"])\.\/([^'"]+\.ts)\1/g, (_match, _quote, file) => `'${pathToFileURL(`${studio}src/${file}`).href}'`)
-    .replace(/(['"])\.\/(icons|WorkspaceModeSwitch|FloatingLegend|CustomModuleDialog)\1/g, (_match, _quote, file) => `'./${file}.mjs'`)
+    .replace(/(['"])\.\/(icons|WorkspaceModeSwitch|FloatingLegend|CustomModuleDialog|LanguageSelector)\1/g, (_match, _quote, file) => `'./${file}.mjs'`)
     .replace(/(['"])\.\/([A-Za-z][A-Za-z0-9]*)\1/g, (_match, _quote, file) => `'${pathToFileURL(`${studio}src/${file}.ts`).href}'`);
   writeFileSync(`${temporary}/${name}.mjs`, output);
 }
-for (const name of ['icons', 'WorkspaceModeSwitch', 'FloatingLegend', 'CustomModuleDialog']) compile(readFileSync(`${studio}src/${name}.tsx`, 'utf8'), name);
+for (const name of ['icons', 'WorkspaceModeSwitch', 'FloatingLegend', 'CustomModuleDialog', 'LanguageSelector']) compile(readFileSync(`${studio}src/${name}.tsx`, 'utf8'), name);
 compile(source.replace('useState<DraftCatalog | null>(null)', `useState<DraftCatalog | null>(${JSON.stringify(catalog)})`), 'AuthoringStudio');
 const { AuthoringStudio } = await import(pathToFileURL(`${temporary}/AuthoringStudio.mjs`).href);
 

@@ -9,7 +9,7 @@ import { webcrypto } from 'node:crypto';
 import { bundlePreviewRequest } from '../src/previewInterop.ts';
 
 const project = fileURLToPath(new URL('../../', import.meta.url));
-const context = vm.createContext({ TextEncoder, TextDecoder, crypto: webcrypto });
+const context = vm.createContext({ performance, TextEncoder, TextDecoder, crypto: webcrypto });
 for (const name of ['router', 'physical-ports', 'junction-markers', 'route-labels', 'source-contracts', 'semantic-constraints', 'graph-engine', 'recursive-graph', 'source-adapter']) {
   vm.runInContext(readFileSync(new URL(`../public/preview/yworks_edge_router_lab/${name}.js`, import.meta.url), 'utf8'), context, { filename: name + '.js' });
 }

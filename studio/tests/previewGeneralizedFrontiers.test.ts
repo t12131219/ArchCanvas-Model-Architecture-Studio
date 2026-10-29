@@ -6,7 +6,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 
 const preview = fileURLToPath(new URL('../public/preview/', import.meta.url));
-const context = vm.createContext({});
+const context = vm.createContext({ performance });
 for (const file of ['router.js', 'physical-ports.js', 'junction-markers.js', 'route-labels.js',
   'source-contracts.js', 'semantic-constraints.js', 'graph-engine.js', 'recursive-graph.js']) {
   vm.runInContext(readFileSync(path.join(preview, 'yworks_edge_router_lab', file), 'utf8'), context, { filename: file });

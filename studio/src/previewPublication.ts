@@ -72,6 +72,10 @@ export function sanitizePreviewPublication(raw: string, widthMm: number): Previe
   if (parsed.querySelector('parsererror') || root.localName !== 'svg' || root.namespaceURI !== NS) throw new Error('预览 SVG 不是有效的独立 SVG。');
   const viewBox = (root.getAttribute('viewBox') ?? '').trim().split(/[\s,]+/).map(Number);
   if (viewBox.length !== 4 || viewBox.some(value => !Number.isFinite(value)) || viewBox[2] <= 0 || viewBox[3] <= 0) throw new Error('预览 SVG 缺少有效的 viewBox。');
+  // The preview embeds a complete editable document (including native IR) for
+  // round trips. Publication carries its binding in the export receipt; keep
+  // that document in editing JSON rather than consuming the SVG text budget.
+  root.querySelectorAll('metadata#archcanvas-preview-document').forEach(element => element.remove());
   root.querySelectorAll('[data-editor-only],.wire-hit,.node-hit,.frame-hit,.expansion-control,#previewLayer,#handleLayer,#obstacleLayer,#ghostLayer').forEach(element => element.remove());
   // The iframe normally supplies computed paint. Preserve supported simple
   // stylesheet rules too, so class-based wire fill and fonts remain faithful.

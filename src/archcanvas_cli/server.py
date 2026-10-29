@@ -237,6 +237,8 @@ class ArchCanvasServer(ThreadingHTTPServer):
         self.store = DocumentStore(self.state_root / "documents")
         self.workspace = Workspace(self.state_root, root)
         self.drafts = DraftStore(self.state_root / "drafts")
+        from archcanvas_preview.component_store import ComponentStore
+        self.components = ComponentStore(self.state_root / "source-components")
         self.transactions = TransactionManager(self.state_root / "transactions")
         from archcanvas_adapters import AdapterRegistry
         self.adapters = AdapterRegistry(self.state_root / "adapters")
@@ -380,7 +382,7 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError as exc:
             raise ValueError("Content-Length must be an integer.") from exc
         path = unquote(urlsplit(self.path).path)
-        source_authoring = path in {"/api/authoring/import-source", "/api/authoring/source-frontier", "/api/authoring/validate", "/api/authoring/generate", "/api/preview/exports", "/api/models/discover"} or path.startswith(("/api/authoring/drafts/", "/api/authoring/source-regions/", "/api/adapters/"))
+        source_authoring = path in {"/api/authoring/import-source", "/api/authoring/source-frontier", "/api/authoring/validate", "/api/authoring/generate", "/api/preview/exports", "/api/models/discover", "/api/preview/source-components/import"} or path.startswith(("/api/authoring/drafts/", "/api/authoring/source-regions/", "/api/adapters/"))
         budget = MAX_SOURCE_REQUEST_BYTES if source_authoring else MAX_REQUEST_BYTES
         if not 0 <= length <= budget:
             raise ValueError(f"JSON request body must fit within {budget // 1_000_000} MB.")
@@ -423,6 +425,17 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(200 if saved else 404, saved or {"error": "Canvas session not found."})
             elif path == "/api/authoring/catalog":
                 self.send_json(200, archcanvas_authoring.module_catalog())
+            elif path == "/api/preview/source-components":
+                self.send_json(200, self.server.components.catalog())
+            elif path.startswith("/api/preview/source-components/"):
+                from archcanvas_preview.component_library import packed
+                body = packed(self.server.components.module(path.removeprefix("/api/preview/source-components/")))
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(body)
             elif path.startswith("/api/authoring/drafts/"):
                 draft = self.server.drafts.get(path.removeprefix("/api/authoring/drafts/"))
                 self.send_json(200 if draft else 404, draft or {"error": "Draft not found."})
@@ -604,11 +617,25 @@ class Handler(BaseHTTPRequestHandler):
                 if set(payload) != {"files", "entry"}:
                     raise ValueError("Preview source editing requires files and entry only; filesystem paths are not accepted.")
                 self.send_json(200, archcanvas_preview.analyze_for_authoring(payload["files"], payload["entry"]))
+            elif path == "/api/preview/authoring/inspect":
+                if set(payload) != {"source"}:
+                    raise ValueError("Source discovery accepts source text only.")
+                from archcanvas_preview.authoring_bridge import inspect_source
+                self.send_json(200, inspect_source(payload["source"]))
+            elif path == "/api/preview/authoring/python":
+                if set(payload) != {"document"}:
+                    raise ValueError("Python generation accepts the current authoring document only.")
+                from archcanvas_preview.authoring_bridge import generate_python
+                self.send_json(200, generate_python(payload["document"]))
             elif path == "/api/preview/authoring/module":
                 if set(payload) - {"source", "entry", "constructor"} or not {"source", "entry"} <= set(payload):
                     raise ValueError("Summary module analysis accepts source, entry and optional constructor only.")
                 from archcanvas_preview.authoring_bridge import compile_source_module
                 self.send_json(200, compile_source_module(payload["source"], payload["entry"], payload.get("constructor")))
+            elif path == "/api/preview/source-components/import":
+                if set(payload) - {"files", "entry", "config", "title"} or not {"files", "entry"} <= set(payload):
+                    raise ValueError("Component import accepts Python file text, entry, config and title only.")
+                self.send_json(201, self.server.components.import_project(**payload))
             elif path == "/api/preview/authoring/certify":
                 if set(payload) != {"ir"}:
                     raise ValueError("Summary local structure analysis accepts the declared IR only.")

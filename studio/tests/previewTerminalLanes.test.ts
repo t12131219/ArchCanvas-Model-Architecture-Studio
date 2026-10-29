@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const runtime = process.env.ARCHCANVAS_PREVIEW_TEST_RUNTIME ||
   fileURLToPath(new URL('../public/preview/yworks_edge_router_lab/', import.meta.url));
-const context = vm.createContext({});
+const context = vm.createContext({ performance });
 for (const name of ['router.js', 'physical-ports.js', 'junction-markers.js', 'route-labels.js',
   'source-contracts.js', 'semantic-constraints.js', 'graph-engine.js', 'recursive-graph.js'])
   vm.runInContext(fs.readFileSync(path.join(runtime, name), 'utf8'), context, { filename: name });

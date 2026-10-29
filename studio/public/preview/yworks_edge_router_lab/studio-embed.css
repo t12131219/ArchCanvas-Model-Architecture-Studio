@@ -36,3 +36,72 @@ html.studio-canvas .studio-display-controls summary{cursor:pointer;margin-bottom
 .source-discovery-actions [role="status"] { font-size:12px; color:#526078; }
 #sourceHierarchy { margin:10px 0; }
 #sourceHierarchyText { max-height:240px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; }
+
+/* Embedded workspace chrome. Graph glyphs and publication colors stay model-owned. */
+html.studio-canvas{--ink:#1b1b18;--muted:#6b6b64;--teal:#2c73de;--border:#deded7;--paper:#f3f2ee}
+html.studio-canvas .stage{background-color:#f3f2ee;background-image:radial-gradient(#d4d4ca .7px,transparent .7px)}
+html.studio-canvas .zoom-controls,html.studio-canvas .view-navigation{background:#ffffffed;border-color:#e0e0d7;border-radius:12px;box-shadow:0 3px 16px #1b1b180a;color:#6b6b64}
+html.studio-canvas .zoom-controls button,html.studio-canvas .view-navigation button{border-radius:7px;color:#5c5c55;background:transparent;min-height:28px}
+html.studio-canvas .zoom-controls button:hover,html.studio-canvas .view-navigation button:hover{background:#eeede9}
+html.studio-canvas .view-navigation summary{color:#6b6b64}
+html.studio-canvas .view-navigation svg{background:#f3f2ee}
+html.studio-canvas .library,html.studio-canvas .settings{background:#fff;border-color:#deded7;box-shadow:0 8px 40px #1b1b181a;padding:20px}
+html.studio-canvas button{border-radius:999px}
+html.studio-canvas button:hover:not(:disabled){background:#eeede9}
+html.studio-canvas .primary{background:#1b1b18;border-color:#1b1b18;color:white}
+html.studio-canvas .primary:hover:not(:disabled){background:#383832}
+html.studio-canvas input,html.studio-canvas select{background:#f1f0ec;border-color:#deded7;border-radius:8px}
+html.studio-canvas .case-button{border-radius:8px}
+html.studio-canvas .case-button.active{background:#ebf2fc;color:#2c73de}
+html.studio-canvas .studio-drawer-backdrop{background:#1b1b1840}
+html.studio-canvas :focus-visible{outline-color:#2c73de}
+
+/* Embedded chrome follows the host even inside expanded drawers and dialogs. */
+html.studio-canvas{color-scheme:light}
+html.studio-canvas body{color:var(--ink);font-size:12px}
+html.studio-canvas :is(.field,.range,.check,.micro,.boundary-note,.collection-label,.facts p,.facts pre,.facts ul){color:var(--muted)}
+html.studio-canvas :is(.library,.settings){overscroll-behavior:contain;scrollbar-width:thin;border-radius:0;max-width:100%;padding:20px}
+html.studio-canvas :is(.library,.settings) .eyebrow{color:var(--muted);letter-spacing:1px}
+html.studio-canvas .studio-drawer-backdrop{width:100%;height:100%;max-width:none;margin:0;padding:0;border:0;border-radius:0!important;box-shadow:none;background:#1b1b1840}
+html.studio-canvas .studio-drawer-backdrop:hover:not(:disabled){background:#1b1b1840}
+html.studio-canvas .studio-drawer-close{position:sticky;top:0;z-index:1;background:#fff;min-height:32px;border-color:var(--border);color:var(--ink)}
+html.studio-canvas :is(input,select,textarea){font-size:12px;color:var(--ink);background:#f1f0ec;border:1px solid transparent;border-radius:8px;max-width:100%;box-sizing:border-box}
+html.studio-canvas :is(input,select,textarea):hover{border-color:var(--border)}
+html.studio-canvas input[type=checkbox]{width:14px;height:14px;flex:none}
+html.studio-canvas .field,html.studio-canvas .range{font-size:11px;margin:16px 0;line-height:1.7}
+html.studio-canvas .field select{font-size:12px;min-height:36px;margin-top:7px;padding:8px 10px;color:var(--ink);background:#f1f0ec}
+html.studio-canvas .check{font-size:11px;gap:8px;line-height:1.7;align-items:flex-start}
+html.studio-canvas .range output{color:var(--ink)}
+html.studio-canvas :is(.boundary-note,.inspector pre,.facts pre){background:#f7f7f4;border-color:var(--border);border-radius:8px;color:var(--muted)}
+html.studio-canvas .secondary{color:var(--ink);border-color:var(--border)}
+html.studio-canvas .primary kbd{color:#d8d8d0}
+html.studio-canvas .status{background:#f1f0ec;color:var(--muted);border-color:var(--border)}
+html.studio-canvas .case-button:hover{background:#eeede9}
+html.studio-canvas .studio-display-controls{border:1px solid var(--border);border-radius:10px;padding:0 12px;font-size:11px;background:#f7f7f4}
+html.studio-canvas .studio-display-controls>summary{list-style:none;display:flex;align-items:center;gap:8px;min-height:42px;margin:0;color:var(--ink);font-size:12px;cursor:pointer}
+html.studio-canvas .studio-display-controls>summary::-webkit-details-marker{display:none}
+html.studio-canvas .studio-display-controls>summary:before{content:'›';display:inline-block;font-size:18px;color:var(--muted)}
+html.studio-canvas .studio-display-controls[open]>summary:before{transform:rotate(90deg)}
+html.studio-canvas .studio-display-controls[open]>summary{border-bottom:1px solid var(--border);margin-bottom:10px}
+html.studio-canvas .view-navigation summary::marker{color:var(--muted)}
+html.studio-canvas #overviewNodes rect{fill:#c6c6bc;stroke:none}
+html.studio-canvas #overviewNodes rect[fill=none]{fill:none;stroke:#aaa99f}
+html.studio-canvas #overviewViewport{fill:#2c73de26;stroke:#2c73de}
+/* Notices are already forwarded through the same-origin bridge to the host. */
+html.studio-canvas #toast{display:none!important}
+html.studio-canvas dialog{border-radius:18px;border-color:var(--border);color:var(--ink);background:#fff;box-shadow:0 24px 100px #1b1b1829}
+html.studio-canvas dialog::backdrop{background:#1b1b1840}
+html.studio-canvas dialog :is(.micro,.import-advanced>summary,.source-discovery-actions){color:var(--muted)}
+html.studio-canvas dialog :is(input,textarea,select){background:#f1f0ec;color:var(--ink);border-color:var(--border)}
+html.studio-canvas .import-section{border-color:var(--border)}
+html.studio-canvas :is(.import-section,.import-advanced)>summary:before{color:var(--muted)}
+html.studio-canvas dialog input::file-selector-button{border-color:var(--border);color:var(--ink);border-radius:8px}
+@media(max-width:420px){html.studio-canvas .view-navigation{width:136px;left:8px;bottom:58px}html.studio-canvas .zoom-controls{right:8px;bottom:10px}html.studio-canvas .view-navigation svg{height:76px}}
+html.studio-canvas :is(.library,.settings) .eyebrow{display:none}
+html.studio-canvas .library input[type=search]{background:#f1f0ec;color:var(--ink);border-color:transparent}
+/* A full sticky heading prevents the close control from covering scrolled fields. */
+html.studio-canvas :is(.library,.settings){scroll-padding-top:76px}
+html.studio-canvas .studio-drawer-heading+.panel-head{display:none}
+html.studio-canvas .studio-drawer-heading{position:sticky;top:-20px;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-20px -20px 18px;padding:16px 20px 12px;min-height:64px;background:#fff;border-bottom:1px solid var(--border)}
+html.studio-canvas .studio-drawer-heading strong{font-size:14px;font-weight:600}
+html.studio-canvas .studio-drawer-heading .studio-drawer-close{position:static;margin:0;flex:none}

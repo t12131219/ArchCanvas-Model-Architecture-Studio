@@ -1,4 +1,5 @@
-import { memo, useMemo, type CSSProperties } from 'react';
+import { t, getLocale, subscribeLocale } from './i18n';
+import { memo, useMemo, useSyncExternalStore, type CSSProperties } from 'react';
 import type { CanvasDocument } from './core';
 import type { HierarchyNode } from './previewHierarchy';
 import { Icon } from './icons';
@@ -26,6 +27,7 @@ type TreeState = {
 };
 
 export const HierarchyTree = memo(function HierarchyTree({ architecture, document, selected, onSelect, onExpand, query = '', mandatoryIds = [] }: HierarchyTreeProps) {
+  useSyncExternalStore(subscribeLocale, getLocale, getLocale);
   const { roots, byId } = useMemo(() => {
     const roots: HierarchyNode[] = [];
     const byId = new Map<string, HierarchyNode>();
@@ -50,7 +52,7 @@ export const HierarchyTree = memo(function HierarchyTree({ architecture, documen
   const mandatory = useMemo(() => new Set(mandatoryIds), [mandatoryIds]);
   const state: TreeState = { byId, aliases: document.displayAliases, expanded, selected: selectedIds, pinned, onSelect, onExpand, matches, mandatory };
 
-  return <>{matches?.size === 0 && <p className="tree-empty">没有匹配的模块</p>}{roots.map(node => <TreeNode key={node.id} node={node} state={state} />)}</>;
+  return <>{matches?.size === 0 && <p className="tree-empty">{t("没有匹配的模块")}</p>}{roots.map(node => <TreeNode key={node.id} node={node} state={state} />)}</>;
 });
 
 function TreeNode({ node, state, depth = 0 }: { node: HierarchyNode; state: TreeState; depth?: number }) {
@@ -61,7 +63,7 @@ function TreeNode({ node, state, depth = 0 }: { node: HierarchyNode; state: Tree
 
   return <div role="treeitem" data-tree-node-id={node.id} data-tree-depth={depth} aria-expanded={node.children.length ? expanded : undefined} aria-selected={selected}>
     <div className={`tree-row ${selected ? 'selected' : ''}`} style={{ paddingLeft: 14 + depth * 13 }}>
-      <button className={`tree-toggle ${canvasExpanded ? 'open' : ''}`} disabled={!node.children.length || state.mandatory.has(node.id)} title={state.mandatory.has(node.id) ? '根容器保持展开' : undefined} aria-label={`${canvasExpanded ? '收起' : '展开'} ${node.label}`} onClick={() => state.onExpand(node.id, !canvasExpanded)}><Icon name="chevron" size={11} /></button>
+      <button className={`tree-toggle ${canvasExpanded ? 'open' : ''}`} disabled={!node.children.length || state.mandatory.has(node.id)} title={state.mandatory.has(node.id) ? t("根容器保持展开") : undefined} aria-label={`${canvasExpanded ? t("收起") : t("展开")} ${node.label}`} onClick={() => state.onExpand(node.id, !canvasExpanded)}><Icon name="chevron" size={11} /></button>
       <button className="tree-label" onClick={event => state.onSelect(node.id, event.shiftKey || event.ctrlKey || event.metaKey)}><span className={`tree-node-dot ${node.category}`} /><span>{state.aliases[node.id] ?? node.label}</span>{node.repeat && <small>×{node.repeat.count}</small>}</button>
       {state.pinned.has(node.id) && <Icon name="pin" size={10} />}
     </div>

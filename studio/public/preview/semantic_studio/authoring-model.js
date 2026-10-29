@@ -34,7 +34,7 @@
     for(const s of module.ir.sources||[])if(!doc.sources.some(v=>v.path===s.path))doc.sources.push(copy(s));
     const roots=inserted.filter(n=>!n.parent||n.parent===parent).map(n=>n.id);
     if(module.components)for(const [id,value]of Object.entries(remap(module.components,ids)))doc.modules[id]=value;
-    for(const id of roots)doc.modules[id]={title:module.title,source:module.source||null,entry:module.entry||null,constructor:copy(module.constructor||{}),origin:module.ir.ir_digest||null};
+    for(const id of roots)doc.modules[id]={title:module.title,source:module.source||null,entry:module.entry||null,constructor:copy(module.constructor||{}),origin:module.ir.ir_digest||null,codeBinding:Object.fromEntries(ids),...(module.sourceLibrary?{sourceLibrary:copy(module.sourceLibrary)}:{})};
     if(keepIdentity&&doc.recipe){const present=new Set(doc.nodes.map(n=>n.id));for(const n of doc.nodes){const original=doc.recipe.parents[n.id];if(original&&present.has(original))n.parent=original;}}
     return {roots,ids:Object.fromEntries(ids)};
   }

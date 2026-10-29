@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
+import { t, uiMessage } from '../src/i18n.ts';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
@@ -69,7 +70,7 @@ test('actual panel run honors cancellation requested before job creation and ign
 test('retained Studio fold shows explicit profile and actual unavailable environment without offering automatic execution', () => {
   const source = readFileSync(new URL('../src/SummaryRuntimePanel.tsx', import.meta.url), 'utf8');
   const code = ts.transpileModule(source.replace(/^import .*;$/gm, '').replace('export function SummaryRuntimePanel', 'function SummaryRuntimePanel'), { compilerOptions: { target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.React } }).outputText;
-  const Panel = new Function('React', 'useState', 'useRef', 'useEffect', code + ';return SummaryRuntimePanel;')(React, React.useState, React.useRef, () => {});
+  const Panel = new Function('React', 'useState', 'useRef', 'useEffect', 't', 'uiMessage', code + ';return SummaryRuntimePanel;')(React, React.useState, React.useRef, () => {}, t, uiMessage);
   const html = renderToStaticMarkup(React.createElement(Panel, { available: false, reason: 'isolation unavailable', hasSource: true, disabled: false, onRun() { throw Error('render must not execute'); }, onSaveEvidence() {} }));
   assert.match(html, /源码与运行证据/); assert.match(html, /添加运行证据/); assert.match(html, /isolation unavailable/); assert.doesNotMatch(html, /textarea|>运行探针<|Summary 证据视图/);
 });

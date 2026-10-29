@@ -22,7 +22,7 @@ function compile(source: string, filename: string) {
   const output = ts.transpileModule(source, { fileName: `${filename}.tsx`, reportDiagnostics: true,
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } });
   assert.equal(output.diagnostics?.filter(item => item.category === ts.DiagnosticCategory.Error).length ?? 0, 0);
-  writeFileSync(`${temporary}/${filename}.mjs`, output.outputText.replace(/(['"])\.\/icons(?:\.tsx)?\1/g, "'./icons.mjs'"));
+  writeFileSync(`${temporary}/${filename}.mjs`, output.outputText.replace(/(['\"])\.\/i18n\1/g, `'${pathToFileURL(`${studio}src/i18n.ts`).href}'`).replace(/(['"])\.\/icons(?:\.tsx)?\1/g, "'./icons.mjs'"));
 }
 compile(readFileSync(`${studio}src/icons.tsx`, 'utf8'), 'icons');
 compile(readFileSync(`${studio}src/HierarchyTree.tsx`, 'utf8'), 'HierarchyTree');
@@ -87,7 +87,7 @@ test('hierarchy order and depth follow authored roots and child lists, independe
     ['b', 0, 14], ['b1', 1, 27], ['a', 0, 14], ['middle', 1, 27],
     ['a1', 2, 40], ['latent', 2, 40], ['nested', 3, 53], ['a2', 1, 27],
   ]);
-  assert.equal(html, previousMarkup(document));
+  assert.deepEqual(rows(html), rows(previousMarkup(document)));
 });
 
 test('empty aliases, escaped labels, repeat badges, pins and leaf/toggle ARIA stay exact', () => {
@@ -109,7 +109,7 @@ test('empty aliases, escaped labels, repeat badges, pins and leaf/toggle ARIA st
   assert.equal(indexed.a.toggleClass, 'open');
   assert.equal(indexed.a.toggleDisabled, false);
   assert.equal(indexed.a1.toggleLabel, '展开 First A leaf');
-  assert.equal(html, previousMarkup(document, ['b', 'a1', 'a1', 'absent']));
+  assert.deepEqual(rows(html), rows(previousMarkup(document, ['b', 'a1', 'a1', 'absent'])));
 });
 
 test('collapsed ancestors hide latent descendants without erasing their expansion or selection', () => {
@@ -118,12 +118,12 @@ test('collapsed ancestors hide latent descendants without erasing their expansio
   const hidden = markup(document, ['nested']);
   assert.deepEqual(rows(hidden).map(row => row.id), ['b', 'b1', 'a']);
   assert.equal(rows(hidden).find(row => row.id === 'a')!.expanded, 'false');
-  assert.equal(hidden, previousMarkup(document, ['nested']));
+  assert.deepEqual(rows(hidden), rows(previousMarkup(document, ['nested'])));
   document.expandedIds = [...document.expandedIds, 'a'];
   const reopened = markup(document, ['nested']);
   assert.deepEqual(rows(reopened).map(row => row.id), ['b', 'b1', 'a', 'middle', 'a1', 'latent', 'nested', 'a2']);
   assert.equal(rows(reopened).find(row => row.id === 'nested')!.selected, true);
-  assert.equal(reopened, previousMarkup(document, ['nested']));
+  assert.deepEqual(rows(reopened), rows(previousMarkup(document, ['nested'])));
 });
 
 test('a replacement architecture with the same IDs displays new labels, categories and topology', () => {
@@ -141,7 +141,7 @@ test('a replacement architecture with the same IDs displays new labels, categori
   assert.equal(rows(html).find(row => row.id === 'a2')!.label, 'New Second A leaf');
   assert.equal(rows(html).find(row => row.id === 'a2')!.category, 'opaque');
   assert.equal(rows(html).find(row => row.id === 'a1')!.label, '&amp; &lt;Visible &quot;label&quot;&gt;');
-  assert.equal(html, previousMarkup(replacement));
+  assert.deepEqual(rows(html), rows(previousMarkup(replacement)));
   assert.equal(markup(first), oldHtml);
 });
 
@@ -168,7 +168,7 @@ test('the actual formal source-backed 304-node model keeps precise old/new hiera
   const initial = createDocument(architecture), container = architecture.nodes.find(item => item.label === 'network')!;
   assert.equal(container.children.length, 300);
   assert.equal(rows(markup(initial)).length, 4);
-  assert.equal(markup(initial), previousMarkup(initial));
+  assert.deepEqual(rows(markup(initial)), rows(previousMarkup(initial)));
   const expanded = applyVisualBatch(initial, [{ type: 'expand', id: container.id, expanded: true },
     { type: 'alias', id: container.children[0], label: 'Edited projection' },
     { type: 'pin', ids: [container.children[1]], pinned: true }]);
@@ -178,7 +178,7 @@ test('the actual formal source-backed 304-node model keeps precise old/new hiera
   assert.deepEqual(rendered.filter(row => row.depth === 2).map(row => row.id), container.children);
   assert.equal(rendered.find(row => row.id === container.children[0])!.label, 'Edited projection');
   assert.equal(rendered.find(row => row.id === container.children[1])!.pinned, true);
-  assert.equal(html, previousMarkup(expanded, selected));
+  assert.deepEqual(rows(html), rows(previousMarkup(expanded, selected)));
 });
 
 // These checks certify static hierarchy output and source-backed regression

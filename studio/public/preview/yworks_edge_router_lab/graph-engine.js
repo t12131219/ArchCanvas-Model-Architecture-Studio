@@ -156,6 +156,13 @@
     const constrained=graph.edges.filter(e=>e.boundaryLane?.constrainedAt===context.geometryKey).map(e=>e.id);
     return {source:context.nativeSource?.sourceCheck||C.validateSource(graph),layout:{ok:!violations.length,violations,...conflicts,junctions},routing:{constrained,contacts:graph.edges.flatMap(e=>C.laneContacts(graph,e,e.route,context).map(hit=>({edge:e.id,...hit})))},edges:graph.edges.map(e=>{const check=C.validate(graph,e,e.route,context),extra=affected.get(e.id)||[];return [e.id,{ok:check.ok&&!extra.length,violations:[...check.violations,...extra]}];})};
   }
+  function acceptsView(graph,validation){
+    // Native expansion can publish explicit pending paths. A presentation
+    // gesture uses the same acceptance contract as expansion/import, while
+    // source facts, sibling collisions and settled routes remain mandatory.
+    if(graph.generic&&root.ArchCanvasSemanticView)return root.ArchCanvasSemanticView.accepts(graph,validation);
+    return validation.source.ok&&validation.layout.ok&&validation.edges.every(([,check])=>check.ok);
+  }
   function repairCandidates(graph,e,old){
     const s=endpoint(graph,e,'source'),t=endpoint(graph,e,'target'),out=[];
     const add=ps=>out.push(R.simplify(ps));
@@ -209,6 +216,7 @@
     const laneRepair=e=>options.boundaryLanes!==false&&C.needsLaneRepair(graph,e,context);
     const laneClear=(e,ps)=>options.boundaryLanes===false||!C.laneContacts(graph,e,ps,context).length;
     const ids=descendants(graph,id);
+    const unresolved=new Set(graph.generic?graph.edges.filter(e=>e.failed||e.pendingRouting||e.draft).map(e=>e.id):[]);
     const moving=graph.nodes.filter(n=>ids.has(n.id)),selected=moving.find(n=>n.id===id);
     if(!selected)return new Set();
     const owner=graph.nodes.find(n=>n.id===selected.parent);
@@ -228,6 +236,9 @@
         if(ids.has(e.source))e.route[0]=endpoint(graph,e,'source');
         if(ids.has(e.target))e.route[e.route.length-1]=endpoint(graph,e,'target');
       }
+      // Unfinished routes keep their explicit status and follow their exact
+      // endpoints. Moving a glyph is not a request to finish every other lane.
+      if(unresolved.has(e.id))continue;
       if(ids.has(e.source)||ids.has(e.target)||!C.validate(graph,e,e.route,context).ok||laneRepair(e))affected.push(e);
     }
     const opts={margin:6,stub:16,bendCost:40,crossingCost:180,overlapCost:2,edgeSpacing:12,sides:'any',preserve:true,...options};
@@ -238,7 +249,7 @@
     // obstacles; the complete graph is checked again before committing.
     const legal=(e,ps)=>C.validate(graph,e,ps,context).ok&&!overlapsWire({...graph,edges:reserved},e,ps);
     for(const e of affected){
-      reserved=graph.edges.filter(v=>v===e||!affected.includes(v)||settled.has(v)||C.validate(graph,v,v.route,context).ok);
+      reserved=graph.edges.filter(v=>!unresolved.has(v.id)&&(v===e||!affected.includes(v)||settled.has(v)||C.validate(graph,v,v.route,context).ok));
       const incident=ids.has(e.source)!==ids.has(e.target);
       if(incident&&e.portPolicy&&!e.contract.bus){
         const old=savedEdges.find(([v])=>v===e)[1].route;
@@ -268,10 +279,10 @@
       e.failed=false;delete e.reason;settled.add(e);graph.lastMove.rerouted++;
     }
     // Later repairs must not invalidate an earlier wire, gate or terminal.
-    reserved=graph.edges;
+    reserved=graph.edges.filter(e=>!unresolved.has(e.id));
     if(affected.some(e=>!legal(e,e.route)))return rollback('local routes conflict');
     const complete=validateView(graph);
-    if(!complete.source.ok||!complete.layout.ok||complete.edges.some(([edgeId,check])=>!check.ok&&!graph.edges.find(e=>e.id===edgeId)?.draft))
+    if(!acceptsView(graph,complete))
       return rollback(!complete.layout.junctions.ok?'source tensor fork disconnected':'complete moved graph is invalid');
     return ids;
   }
@@ -528,7 +539,7 @@
     const placed=L.place(graph,a,points,occupied,fast);if(placed){out.set(a.id,placed);occupied.push(placed.box);}
   }return out;}
   function snapRouteLabel(graph,a,p){return L.snap(a,labelPath(graph,a),p);}
-  const api={labelPath,routeLabelPlacements,snapRouteLabel,clone,upgradePresentation,port,endpoint,descendants,move,movePreview,reconnect,crop,arrow,path,curvePoints,curveRadius,displayed,adaptiveOptions,conflicts,overlapsWire,sharesPresentation,layoutConflicts,validateView,routeOne,routeBatch,optimizeRoutes,attachmentTransform,junctionPoint:J.point};
+  const api={labelPath,routeLabelPlacements,snapRouteLabel,clone,upgradePresentation,port,endpoint,descendants,move,movePreview,reconnect,crop,arrow,path,curvePoints,curveRadius,displayed,adaptiveOptions,conflicts,overlapsWire,sharesPresentation,layoutConflicts,validateView,acceptsView,routeOne,routeBatch,optimizeRoutes,attachmentTransform,junctionPoint:J.point};
   root.SummaryEngine=api;
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

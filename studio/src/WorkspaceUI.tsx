@@ -1,28 +1,54 @@
 import { useEffect, useRef, type RefObject } from 'react';
+import { workspaceMenuPosition } from './workspaceMenuPosition';
+
+let lastMenuOpener: HTMLElement | null = null;
 
 /** One transient menu at a time, with consistent pointer and keyboard dismissal. */
 export function useWorkspaceMenus() {
   useEffect(() => {
+    const selector = 'details.workspace-menu,details.alignment-menu,details.selection-menu,details.canvas-options';
+    const panels = new Set<HTMLElement>();
     const menus = () => [...document.querySelectorAll<HTMLDetailsElement>('details.workspace-menu[open], details.alignment-menu[open], details.selection-menu[open], details.canvas-options[open]')];
+    const place = (menu: HTMLDetailsElement) => {
+      const panel = menu.querySelector<HTMLElement>(':scope > div'), anchor = menu.querySelector('summary');
+      if (!panel || !anchor) return;
+      // The top layer escapes iframe/surface stacking contexts and clipped docks.
+      panel.setAttribute('popover', 'manual'); panels.add(panel);
+      if (!panel.matches(':popover-open')) panel.showPopover();
+      panel.style.width = `${Math.min(280, window.innerWidth - 16)}px`;
+      const position = workspaceMenuPosition(anchor.getBoundingClientRect(), { width: 280, height: panel.scrollHeight + 2 }, { width: window.innerWidth, height: window.innerHeight }, !!menu.closest('.canvas-toolbar'));
+      Object.assign(panel.style, { position: 'fixed', inset: 'auto', margin: '0', left: `${position.left}px`, top: `${position.top}px`, width: `${position.width}px`, minWidth: '0', maxHeight: `${position.maxHeight}px` });
+    };
+    const reposition = () => menus().forEach(place);
     const pointer = (event: Event) => {
+      const trigger = (event.target as Element).closest?.('button')?.closest('details.workspace-menu,details.selection-menu,details.canvas-options');
+      if (trigger) lastMenuOpener = trigger.querySelector<HTMLElement>('summary');
       for (const menu of menus()) if (!menu.contains(event.target as Node)) menu.open = false;
     };
-    const toggle = (event: Event) => { const target = event.target; if (target instanceof HTMLDetailsElement && target.open && target.matches('details.workspace-menu,details.alignment-menu,details.selection-menu,details.canvas-options')) for (const menu of menus()) if (menu !== target) menu.open = false; };
+    const toggle = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLDetailsElement) || !target.matches(selector)) return;
+      if (target.open) { for (const menu of menus()) if (menu !== target) menu.open = false; place(target); }
+      else target.querySelector<HTMLElement>(':scope > div')?.hidePopover();
+    };
     const click = (event: MouseEvent) => {
       const button = (event.target as Element).closest('button');
-      if (button && !button.disabled) button.closest<HTMLDetailsElement>('details.workspace-menu,details.selection-menu,details.canvas-options')?.removeAttribute('open');
+      if (button && !button.disabled) {
+        const menu = button.closest<HTMLDetailsElement>('details.workspace-menu,details.selection-menu,details.canvas-options');
+        if (menu) { lastMenuOpener = menu.querySelector<HTMLElement>('summary'); menu.open = false; if (menu.contains(document.activeElement)) lastMenuOpener?.focus(); }
+      }
     };
     const key = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         const open = menus();
         if (open.length) { event.preventDefault(); open.at(-1)?.querySelector<HTMLElement>('summary')?.focus(); open.forEach(menu => { menu.open = false; }); }
       }
-      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && !(event.target as Element).closest('input,select,textarea,[contenteditable]')) {
         const menu = (event.target as Element).closest<HTMLDetailsElement>('details.workspace-menu,details.alignment-menu,details.selection-menu,details.canvas-options');
         if (!menu) return;
         const buttons = [...menu.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
         if (!buttons.length) return;
-        menu.open = true; event.preventDefault();
+        menu.open = true; place(menu); event.preventDefault();
         const index = buttons.indexOf(event.target as HTMLButtonElement);
         buttons[index < 0 ? (event.key === 'ArrowDown' ? 0 : buttons.length - 1) : (index + (event.key === 'ArrowDown' ? 1 : buttons.length - 1)) % buttons.length].focus();
       }
@@ -35,7 +61,8 @@ export function useWorkspaceMenus() {
     document.addEventListener('click', click);
     document.addEventListener('keydown', key);
     window.addEventListener('blur', blur);
-    return () => { document.removeEventListener('pointerdown', pointer, true); document.removeEventListener('focusin', pointer); document.removeEventListener('toggle', toggle, true); document.removeEventListener('click', click); document.removeEventListener('keydown', key); window.removeEventListener('blur', blur); };
+    window.addEventListener('resize', reposition);
+    return () => { document.removeEventListener('pointerdown', pointer, true); document.removeEventListener('focusin', pointer); document.removeEventListener('toggle', toggle, true); document.removeEventListener('click', click); document.removeEventListener('keydown', key); window.removeEventListener('blur', blur); window.removeEventListener('resize', reposition); panels.forEach(panel => panel.hidePopover()); };
   }, []);
 }
 
@@ -45,9 +72,18 @@ export function useModalFocus<T extends HTMLElement>(onClose: () => void): RefOb
   const close = useRef(onClose); close.current = onClose;
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
+    const opener = previous?.closest('details')?.querySelector<HTMLElement>('summary') ?? (previous === document.body ? lastMenuOpener : previous);
+    lastMenuOpener = null;
     const panel = ref.current;
     if (!panel) return;
-    const controls = () => [...panel.querySelectorAll<HTMLElement>('button:not(:disabled),input:not([hidden]),textarea,select,[tabindex="0"]')].filter(node => node.getClientRects().length);
+    const controls = () => [...panel.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled):not([type=hidden]),textarea:not(:disabled),select:not(:disabled),summary,a[href],[tabindex="0"]')].filter(node => {
+      if (!node.getClientRects().length) return false;
+      // Closed details can retain layout boxes while their controls cannot receive focus.
+      for (let ancestor = node.parentElement; ancestor && ancestor !== panel; ancestor = ancestor.parentElement) {
+        if (ancestor.tagName === 'DETAILS' && !ancestor.hasAttribute('open') && !ancestor.querySelector(':scope > summary')?.contains(node)) return false;
+      }
+      return true;
+    });
     controls()[0]?.focus();
     const key = (event: KeyboardEvent) => {
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close.current(); }
@@ -58,7 +94,7 @@ export function useModalFocus<T extends HTMLElement>(onClose: () => void): RefOb
       }
     };
     panel.addEventListener('keydown', key);
-    return () => { panel.removeEventListener('keydown', key); previous?.focus(); };
+    return () => { panel.removeEventListener('keydown', key); if (opener?.isConnected) opener.focus(); };
   }, []);
   return ref;
 }

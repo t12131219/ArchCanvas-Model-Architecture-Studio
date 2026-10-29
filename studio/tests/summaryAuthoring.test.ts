@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { webcrypto } from 'node:crypto';
+import { webcrypto, createHash } from 'node:crypto';
 import vm from 'node:vm';
 
 const context = vm.createContext({ performance, TextEncoder, crypto: webcrypto });
@@ -21,6 +21,95 @@ function graph(result: any) {
 }
 const blank = async () => graph(await W.begin(null, { blank: true }));
 async function edit(g: any, op: any) { return graph(await W.apply(g, op, presets)); }
+
+test('independent source library validates shipped assets and inserts into a blank model with portable provenance', async () => {
+  const catalog = JSON.parse(readFileSync(new URL('../public/preview/data/source-components/index.json',import.meta.url),'utf8'));
+  const variants = catalog.families.flatMap((f:any) => f.variants);
+  const ids = new Set<string>();
+  for (const variant of variants) {
+    assert.equal(ids.has(variant.id), false); ids.add(variant.id);
+    const bytes = readFileSync(new URL('../public/preview/data/source-components/'+variant.path,import.meta.url));
+    assert.equal(bytes.length,variant.bytes);
+    assert.equal(createHash('sha256').update(bytes).digest('hex'),variant.sha256);
+    const module = JSON.parse(bytes.toString('utf8'));
+    assert.equal(context.SemanticEngine.validate(module.ir), true);
+    assert.equal(module.ir.nodes.length, variant.nodes);
+    assert.equal(module.ir.nodes.some((n:any)=>n.evidence_status==='runtime-only'||n.runtime_evidence?.length), false);
+  }
+  const entry = catalog.families.find((f:any)=>f.title==='Linear').variants[0], reads:string[]=[];
+  const read = async(path:string,json=false) => {
+    reads.push(path);assert.match(path,/^data\/source-components\//);
+    const text = readFileSync(new URL('../public/preview/'+path,import.meta.url),'utf8');return json?JSON.parse(text):text;
+  };
+  const module = await W.sourceComponent(entry.id,read);
+  assert.equal(reads.length,2,'only independent index and selected asset are needed');
+  let g = await blank(); assert.equal(g.generic.authoring.baseline,null);
+  g = graph(await W.apply(g,{action:'add',sourceComponent:entry.id},[],module));
+  const first = copy(g.generic.authoring);
+  assert.equal(first.nodes.length,module.ir.nodes.length);
+  assert.deepEqual(first.sources,copy(module.ir.sources));
+  assert.deepEqual(first.modules[Object.keys(first.modules)[0]].sourceLibrary,copy(module.sourceLibrary));
+  const restored = await D.restore(copy(W.record(g)));
+  assert.deepEqual(copy(restored.record.document),first,'saved document restores without fetching the library or any example');
+  g = graph(await W.apply(g,{action:'add',sourceComponent:entry.id},[],module));
+  assert.equal(g.generic.authoring.nodes.length,first.nodes.length*2);
+  assert.equal(new Set(g.generic.authoring.nodes.map((n:any)=>n.id)).size,first.nodes.length*2);
+  assert.equal(g.importedDocument.sourceVerified,false);
+  await assert.rejects(W.apply(g,{action:'add',sourceComponent:entry.id}),/独立源码构件库/);
+  await assert.rejects(W.sourceComponent('../bad',read),/身份无效/);
+  await assert.rejects(W.sourceComponent(entry.id,async(path:string,json:boolean)=>json?read(path,true):(await read(path))+' '),/校验失败/);
+});
+
+test('project components are resolved from fresh indexed assets with source names and integrity checks', async () => {
+  const catalog = JSON.parse(readFileSync(new URL('../public/preview/data/source-components/index.json',import.meta.url),'utf8'));
+  const variant = catalog.families.find((f:any)=>f.title==='PositionwiseFeedForward').variants[0];
+  const text = readFileSync(new URL('../public/preview/data/source-components/'+variant.path,import.meta.url),'utf8');
+  let corrupt = false;
+  const paths: string[] = [];
+  context.fetch = async (path:string,options:any) => {
+    paths.push(path); assert.equal(options.cache,'no-store');
+    return {ok:true,json:async()=>catalog,text:async()=>text+(corrupt?' ':'')};
+  };
+  const read = async()=>{throw Error('must not borrow shipped catalog for a project component');};
+  try {
+    const module = await W.sourceComponent(variant.id,read,'project');
+    assert.deepEqual(paths,['/api/preview/source-components','/api/preview/source-components/'+variant.id]);
+    assert.equal(module.ir.nodes.find((n:any)=>!n.parent).label,'PositionwiseFeedForward');
+    const added = await W.apply(await blank(),{action:'add',sourceComponent:variant.id,componentScope:'project'},[],module);
+    assert.ok(added.record.document.nodes.some((n:any)=>n.label==='PositionwiseFeedForward'));
+    const restored = await D.restore(copy(added.record));
+    assert.deepEqual(copy(restored.record.document),copy(added.record.document));
+    corrupt=true;
+    await assert.rejects(W.sourceComponent(variant.id,read,'project'),/校验失败/);
+  } finally { delete context.fetch; }
+});
+
+test('first edit entry preserves the complete frontier and validated layout through portable restoration', async () => {
+  const ir = copy(presets[0].ir);
+  const source = N.prepare({ task: 'generic-build', ir, options }).graph;
+  source.caseId = 'source';
+  const before = JSON.stringify(source), result = await W.begin(source);
+  assert.equal(N.accepts(result.initialGraph, context.SummaryEngine.validateView(result.initialGraph)), true);
+  assert.equal(D.checkRendering(result.initialGraph), true);
+  assert.equal(result.initialGraph.sourceAdapter, undefined);
+  assert.equal(result.initialGraph.importedDocument.sourceVerified, false);
+  assert.equal(D.matches(result.initialGraph, result.parsed), true);
+  assert.notEqual(result.initialGraph.nodes, source.nodes);
+  assert.deepEqual(copy(result.parsed.state), copy(source.generic.state));
+  const restored = await D.restore(copy(result.record));
+  assert.deepEqual(copy(restored.parsed.state), copy(source.generic.state));
+  const built = N.prepare({ task: 'generic-build', ir: result.parsed.ir, state: result.parsed.state,
+    extra: { authoring: result.parsed.authoring }, nativeLayout: result.parsed.nativeLayout, options });
+  assert.equal(N.accepts(built.graph, built.validation), true);
+  assert.equal(built.routed, 0);
+  assert.deepEqual(copy(built.graph.nodes.map((n: any) => [n.id,n.x,n.y,n.w,n.h,n.expanded])),
+    copy(source.nodes.map((n: any) => [n.id,n.x,n.y,n.w,n.h,n.expanded])));
+  assert.deepEqual(copy(built.graph.edges.map((e: any) => [e.id,e.points])), copy(source.edges.map((e: any) => [e.id,e.points])));
+  const authored = W.attach(built.graph, result.record);
+  const changed = await W.apply(authored, { action:'edit',id:ir.nodes[0].id,fields:{label:'Changed'} });
+  assert.equal(changed.record.document.canvasView, undefined, 'structural edits invalidate the inherited view receipt');
+  assert.equal(JSON.stringify(source), before);
+});
 
 test('blank authoring has an explicit independent identity and never acquires source authority', async () => {
   const g = await blank(), record = W.record(g), restored = await D.restore(record);

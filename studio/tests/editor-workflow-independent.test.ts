@@ -442,7 +442,7 @@ test('actual editor top actions expose edit/view mode and custom-source launcher
   assert.match(html.slice(legend), /aria-label="收起悬浮图例"/); assert.match(html.slice(legend), /数据流/);
 });
 
-test('actual source-view preserves Studio panels, mode switch and legend controls around the embedded preview', async () => {
+test('actual source-view preserves Studio navigation, mode switch and canvas controls around the embedded preview', async () => {
   const document = createGeneratedCanvas(generated.architecture, sourceDraft, generated).document;
   const input = readFileSync(`${studio}src/App.tsx`, 'utf8');
   const configured = input.replace('useState<HistoryState | null>(null)', `useState<HistoryState | null>(${JSON.stringify(createHistory(document))})`);
@@ -451,13 +451,14 @@ test('actual source-view preserves Studio panels, mode switch and legend control
   const html = renderToStaticMarkup(createElement(App));
   const header = html.slice(0, html.indexOf('</header>'));
   assert.match(header, /aria-pressed="true"[^>]*>视图/); assert.match(header, /aria-pressed="false"[^>]*>编辑/);
-  assert.match(html, /class="workspace-caption"/); assert.match(html, /class="inspector-tabs"[^]*?>图例<\/button>/);
+  assert.match(html, /class="workspace-caption"/); assert.doesNotMatch(html, /class="inspector-tabs"/);
   assert.match(html, /<iframe[^>]+title="ArchCanvas 模型预览与连线编辑器"[^>]+surface=canvas/);
-  for (const panel of ['navigator', 'inspector', 'canvas-toolbar']) assert.ok(html.includes(`class="${panel}"`), panel);
+  for (const panel of ['navigator', 'canvas-toolbar']) assert.ok(html.includes(`class="${panel}"`), panel);
   const menu = html.slice(html.indexOf('class="workspace-menu"'), html.indexOf('</details>'));
-  assert.match(menu, /Summary 模型库/);
+  assert.match(menu, /浏览模型库/);
   assert.doesNotMatch(menu, /内置示例|示例与模块库/);
-  assert.match(html, /<button[^>]*>Summary<\/button>/);
+  assert.doesNotMatch(html, /<button[^>]*>Summary<\/button>/);
+  assert.match(html, /界面语言 \/ Interface language/);
   assert.doesNotMatch(html, /summary-interaction/);
   assert.doesNotMatch(html, /data-scene-node="module:model.AuthoredModel"/);
 });

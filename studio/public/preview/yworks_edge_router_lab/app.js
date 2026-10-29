@@ -240,14 +240,14 @@
     const scale=stageScale(),visible=unifiedVisible(),visibleNodes=graph.nodes.filter(n=>!n.junction&&visible.has(n.id)&&(!partial||changedNodes.has(n.id)));
     for(const n of visibleNodes){if(n.junction)continue;let v=scene.nodes.get(n.id);
       if(!v){const g=element('g',{class:'scene-node','data-render-instance':++epoch}),content=element('g'),hit=element('rect',{rx:8});g.append(content,hit);v={g,content,hit};scene.nodes.set(n.id,v);$(n.expanded?'frameLayer':'nodeLayer').append(g);}
-      setAttrs(v.g,{'data-node-id':n.id,'data-parent':n.parent||'','data-expanded':String(!!n.expanded),'data-recursive-children':unifiedChildren(n.id).length,'data-unified-expanded':String(!!unifiedState?.expanded?.has(n.id)),'data-unified-collapsed':String(unifiedHasChildren(n.id)&&!unifiedState?.expanded?.has(n.id)),'data-visual-binding':JSON.stringify(n.visualBinding||{}),'aria-label':`节点 ${n.id} ${label(n)}`});
+      setAttrs(v.g,{'data-node-id':n.id,'data-parent':n.parent||'','data-expanded':String(!!n.expanded),'data-recursive-children':unifiedChildren(n.id).length,'data-unified-expanded':String(!!unifiedState?.expanded?.has(n.id)),'data-unified-collapsed':String(unifiedHasChildren(n.id)&&!unifiedState?.expanded?.has(n.id)),'data-visual-binding':JSON.stringify(n.visualBinding||{}),'aria-label':window.ArchCanvasUILocale?.node?.(n.id,label(n))||`节点 ${n.id} ${label(n)}`});
       const ownerLayer=$(n.expanded?'frameLayer':'nodeLayer');
       // Preserve native click targets and stacking order on selection-only
       // renders. Reparent only when a module changes between node and frame.
       if(v.g.parentNode!==ownerLayer)ownerLayer.append(v.g);
-      setAttrs(v.content,{transform:`translate(${n.x-n.base[0]} ${n.y-n.base[1]})`});if(v.html!==n.html){v.content.innerHTML=n.html;v.html=n.html;}if(n.expanded||window.ArchCanvasStudioPresentation.state(graph).nodes?.[n.id]?.width){const rect=v.content.querySelector('rect');if(rect){rect.setAttribute('width',n.w);rect.setAttribute('height',n.h);}}applyStudioPresentation(n,v);
+      setAttrs(v.content,{transform:`translate(${n.x-n.base[0]} ${n.y-n.base[1]})`});if(v.html!==n.html){v.content.innerHTML=n.html;v.html=n.html;}if(n.expanded||window.ArchCanvasStudioPresentation.state(graph).nodes?.[n.id]?.width){const rect=v.content.querySelector('rect');if(rect){rect.setAttribute('width',n.w);rect.setAttribute('height',n.h);}}applyStudioPresentation(n,v);if(n.modelHeading){const note=v.content.querySelector('text:not([font-weight])'),bounds=n.labelObstacles?.at(-1);if(note&&bounds&&!note.hasAttribute('data-ui-message')){note.setAttribute('data-ui-message',note.textContent);note.setAttribute('data-ui-width',bounds.w-8);}window.ArchCanvasUILocale?.svg(v.content);}
       setAttrs(v.hit,{x:n.x,y:n.y,width:n.w,height:n.h,class:n.expanded?'frame-hit':'node-hit'});v.g.onpointerdown=ev=>nodeDown(ev,n);v.g.ondblclick=ev=>{if(!busy&&!drag&&tool==='select'&&unifiedHasChildren(n.id)){ev.preventDefault();ev.stopPropagation();toggleUnifiedNode(n.id);}};
-      if(unifiedHasChildren(n.id)){if(!v.toggle){v.toggle=element('g',{class:'expansion-control',role:'button',tabindex:'0'});v.toggle.append(element('rect',{width:22,height:22,rx:5,fill:'#fff',stroke:'#198e90'}),element('text',{x:11,y:16,'text-anchor':'middle','font-size':18,fill:'#198e90'}));v.g.append(v.toggle);}setAttrs(v.toggle,{transform:`translate(${n.x+n.w-28} ${n.y+5})`,'aria-label':`${n.expanded?'收起':'展开'} ${label(n)}`});v.toggle.querySelector('text').textContent=n.expanded?'−':'＋';v.toggle.onpointerdown=ev=>ev.stopPropagation();v.toggle.onclick=ev=>{ev.preventDefault();ev.stopPropagation();toggleUnifiedNode(n.id);};v.toggle.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();toggleUnifiedNode(n.id);}};}else if(v.toggle){v.toggle.remove();v.toggle=null;}
+      if(unifiedHasChildren(n.id)){if(!v.toggle){v.toggle=element('g',{class:'expansion-control',role:'button',tabindex:'0'});v.toggle.append(element('rect',{width:22,height:22,rx:5,fill:'#fff',stroke:'#198e90'}),element('text',{x:11,y:16,'text-anchor':'middle','font-size':18,fill:'#198e90'}));v.g.append(v.toggle);}setAttrs(v.toggle,{transform:`translate(${n.x+n.w-28} ${n.y+5})`,'aria-label':`${window.ArchCanvasUILocale?.text(n.expanded?'收起':'展开')||(n.expanded?'收起':'展开')} ${label(n)}`});v.toggle.querySelector('text').textContent=n.expanded?'−':'＋';v.toggle.onpointerdown=ev=>ev.stopPropagation();v.toggle.onclick=ev=>{ev.preventDefault();ev.stopPropagation();toggleUnifiedNode(n.id);};v.toggle.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();toggleUnifiedNode(n.id);}};}else if(v.toggle){v.toggle.remove();v.toggle=null;}
       if($('showObstacles').checked&&n.routingObstacle!==false){const b=R.expand(n,+$('clearance').value);let obstacle=scene.obstacles.get(n.id);if(!obstacle){obstacle=element('rect',{fill:'none',stroke:'#c9925680','pointer-events':'none'});scene.obstacles.set(n.id,obstacle);$('obstacleLayer').append(obstacle);}setAttrs(obstacle,{x:b.x,y:b.y,width:b.w,height:b.h,'stroke-width':1/scale,'stroke-dasharray':`${4/scale} ${4/scale}`});}
     }
     if(!partial){prune(scene.nodes,new Set(visibleNodes.map(n=>n.id)));
@@ -268,7 +268,7 @@
     if(scene.ghost!==ghost||scene.showGhost!==$('showGhost').checked){$('ghostLayer').replaceChildren();if($('showGhost').checked)for(const e of ghost)$('ghostLayer').append(element('path',{d:E.path(e.route,e.style),fill:'none',stroke:'#a7babb','stroke-width':1.5,'stroke-dasharray':'6 7',opacity:.6,'pointer-events':'none'}));scene.ghost=ghost;scene.showGhost=$('showGhost').checked;}
     for(const e of displayEdges){let v=scene.edges.get(e.id);const edgeGraph=graph;const ps=interactive?R.simplify(e.route):presentationOnly&&v?.points?v.points:E.displayed(edgeGraph,e);if(ps.length<2)continue;const check=scene.checks.get(e.id)||{ok:true,violations:[]},selected=selectedEdges.has(e.id),appearance=window.ArchCanvasStudioPresentation.edgeAppearance(graph,e),color=e.failed||!check.ok?'#d54c60':selected?'#d77944':appearance.stroke,start=e.arrow==='both',end=e.arrow!=='none';
       if(!v){const g=element('g',{'data-render-instance':++epoch}),shaft=element('path',{fill:'none',class:'wire-path','stroke-linecap':'butt'}),head=element('path',{class:'arrow-shape','pointer-events':'none'}),tail=element('path',{class:'arrow-shape','pointer-events':'none'}),hit=element('path',{class:'wire-hit','data-edge-hit':e.id});g.append(shaft,head,tail,hit);v={g,shaft,head,tail,hit};scene.edges.set(e.id,v);$('edgeLayer').append(g);}
-      setAttrs(v.g,{'data-edge-id':e.id,'data-source':e.source,'data-target':e.target,'data-role':e.role||'tensor','data-draft':String(!!e.draft),'data-physical-source':JSON.stringify(E.endpoint(edgeGraph,e,'source')),'data-physical-target':JSON.stringify(E.endpoint(edgeGraph,e,'target')),'data-constraint-valid':interactive?'pending':String(check.ok&&!e.failed),'data-constraint-reason':interactive?'drag preview':e.reason||check.violations.join('; '),'data-semantic-binding':JSON.stringify(e.binding),'data-boundary-gates':JSON.stringify(e.contract?.gates||[]),'aria-label':`边 ${e.id} ${e.source} 到 ${e.target}`});
+      setAttrs(v.g,{'data-edge-id':e.id,'data-source':e.source,'data-target':e.target,'data-role':e.role||'tensor','data-draft':String(!!e.draft),'data-physical-source':JSON.stringify(E.endpoint(edgeGraph,e,'source')),'data-physical-target':JSON.stringify(E.endpoint(edgeGraph,e,'target')),'data-constraint-valid':interactive?'pending':String(check.ok&&!e.failed),'data-constraint-reason':interactive?'drag preview':e.reason||check.violations.join('; '),'data-semantic-binding':JSON.stringify(e.binding),'data-boundary-gates':JSON.stringify(e.contract?.gates||[]),'aria-label':window.ArchCanvasUILocale?.edge?.(e.id,e.source,e.target)||`边 ${e.id} ${e.source} 到 ${e.target}`});
       if(appearance.sourceRelation){v.g.setAttribute('data-source-relation-id',e.id);v.g.setAttribute('aria-label',`源码数据依赖 ${e.id} ${e.source} 到 ${e.target}；执行路径未确定`);}else v.g.removeAttribute('data-source-relation-id');
       const d=interactive?R.polylinePath(ps):presentationOnly&&v.path?v.path:E.path(ps,e.style,edgeGraph,e);
       if(!interactive&&!presentationOnly){v.points=ps;v.path=d;}setAttrs(v.shaft,{d,stroke:color,'stroke-width':selected?2.8:appearance.width,'stroke-dasharray':appearance.dashArray,'stroke-dashoffset':appearance.dashArray==='none'?'0':dashOffset(ps,appearance.dashArray),'stroke-linecap':appearance.dashArray==='none'?'butt':'round','stroke-linejoin':'round'});
@@ -418,7 +418,7 @@
     if(kind==='node'&&drag.saved&&interactionMode==='realtime'){
       const gesture=drag,base=gesture.before;
       const validation=E.validateView(graph);
-      const valid=validation.source.ok&&validation.layout.ok&&validation.edges.every(([,check])=>check.ok);
+      const valid=E.acceptsView(graph,validation);
       if(!valid){restoreGesture(gesture);toast('实时移动已恢复：最终位置未通过完整约束校验。');}
       else {if(graph.generic)G.remember(graph);else F.captureMove(base,graph,gesture.node.id);toast(graph.lastMove?.blocked?'此位置无法保留合法连接，已停留在上一合法位置。':'实时更新已提交：节点、箭头、所属文字与连接同步保存。');}
       drag=null;dragPoint=null;$('previewLayer').replaceChildren();if(svg.hasPointerCapture(ev.pointerId))svg.releasePointerCapture(ev.pointerId);
@@ -460,7 +460,7 @@
     if(message.task==='frontier')return window.SummaryFrontierTask.run(copy,message.transition,message.options);
     if(message.task==='optimize'){const result=E.optimizeRoutes(copy,message.ids,message.options);window.SummarySourceControls?.refresh(copy);return result;}
     if(message.task==='validate'){window.SummarySourceControls?.refresh(copy);return {ok:true,graph:copy,validation:E.validateView(copy)};}
-    if(message.task==='move'){E.move(copy,message.id,message.dx,message.dy,message.options);const validation=E.validateView(copy);if(!validation.source.ok||!validation.layout.ok||validation.edges.some(([,check])=>!check.ok))return {ok:false,error:'移动后的图未通过完整校验'};window.SummarySourceControls?.refresh(copy);return{ok:true,graph:copy,validation};}
+    if(message.task==='move'){E.move(copy,message.id,message.dx,message.dy,message.options);const validation=E.validateView(copy);if(!E.acceptsView(copy,validation))return {ok:false,error:'移动后的图未通过完整校验'};window.SummarySourceControls?.refresh(copy);return{ok:true,graph:copy,validation};}
     const result=E.routeBatch(copy,message.ids,{...message.options,edgeIds:message.ids});window.SummarySourceControls?.refresh(result.graph);return {ok:true,...result,validation:E.validateView(copy)};
   }
   async function runRouting(ids,opts){C.initialize(graph);return runGraphTask({task:'route',graph,ids,options:opts});}
@@ -526,15 +526,26 @@
   async function studioAuthoring(message){
     if(busy||drag)throw Error('请先完成当前图操作。');
     const W=window.ArchCanvasSummaryAuthoring;
+    if(message.action==='import-source-model'){
+      if(message.workspaceId!==graph?.authoringWorkspace?.id||message.baseDocumentSha256!==graph?.authoringWorkspace?.documentSha256)throw Error('源码解析期间编辑文档已变化；原稿保留，请重新解析。');
+      const prepared=await W.fromSource(message.module,message.title);
+      await installDocument({nativeDocument:prepared.record},prepared);return;
+    }
     if(message.action==='begin'){
       if(graph?.authoringWorkspace&&!message.blank)return;
+      const started=performance.now();
       const presentation=!message.blank&&graph?.studioPresentation?E.clone(graph.studioPresentation):null;
-      const cuts=!message.blank?E.clone(graph?.generic?.state.moduleCuts||[]):[];
+      const retainedCamera=E.clone(camera),retainedSelection=[...selectedNodes];
       const result=await W.begin(graph,message);
-      await installDocument({nativeDocument:result.record});
-      const retained=cuts.filter(c=>graph.generic.ir.nodes.some(n=>n.id===c.id&&n.kind==='composite'));
-      if(retained.length)await changeFrontier({type:'semantic',patch:{moduleCuts:retained}},true);
-      if(presentation){graph.studioPresentation=presentation;render({presentationOnly:true});persist();studioBridge?.state();}
+      // Pass this internally prepared document directly. External JSON always
+      // takes the restore/digest checks in registerDocument.
+      result.camera=retainedCamera;
+      await installDocument({nativeDocument:result.record},result);
+      selectedNodes=new Set(retainedSelection.filter(id=>node(id)));
+      if(presentation)graph.studioPresentation=presentation;
+      render({presentationOnly:true});persist();
+      svg.setAttribute('data-authoring-entry-ms',(performance.now()-started).toFixed(1));
+      svg.setAttribute('data-authoring-build-ms',String(importedDocuments.get(current.id)?.initial?.timing?.buildMs??0));
       return;
     }
     if(!graph?.authoringWorkspace)throw Error('请先进入 Summary 编辑副本。');
@@ -542,7 +553,8 @@
     const before=graph,caseId=current.id;busy=true;render({presentationOnly:true});studioBridge?.state();let committed=false,validation;
     try{
       const presets=(await sourceAsset('data/semantic/authoring-presets.json',true)).modules;
-      const result=await W.apply(before,message,presets),{record,parsed}=result;
+      const sourceModule=message.action==='add'&&message.sourceComponent!==undefined?await W.sourceComponent(message.sourceComponent,sourceAsset,message.componentScope):null;
+      const result=await W.apply(before,message,presets,sourceModule),{record,parsed}=result;
       const built=await runGraphTask({task:'generic-build',ir:parsed.ir,state:parsed.state,extra:{authoring:parsed.authoring},options:options()});
       if(!built.ok||!N.accepts(built.graph,built.validation))throw Error(built.error||'编辑后的原生视图未通过校验。');
       const next=W.attach(built.graph,record);
@@ -559,27 +571,29 @@
     }finally{busy=false;render(committed?{validation}:{presentationOnly:true});if(committed)persist();studioBridge?.state();}
   }
   const invalidSourceRoutes=(graph,validation)=>validation.edges.some(([id,v])=>!v.ok&&!graph.edges.find(e=>e.id===id)?.draft);
-  async function registerDocument(value,edited,deferBuild=false){
-    const document=['archcanvas-summary-import/1','archcanvas-summary-authoring/1'].includes(value?.schema)?await D.restore(value):await D.read(value),{record,parsed}=document;
-    const initial=deferBuild?null:await runGraphTask({task:'generic-build',ir:parsed.ir,state:parsed.state,extra:{authoring:parsed.authoring,migration:parsed.migration,layouts:parsed.layouts},nativeLayout:parsed.nativeLayout,options:{}});
+  async function registerDocument(value,edited,deferBuild=false,prepared=null){
+    const document=prepared||(['archcanvas-summary-import/1','archcanvas-summary-authoring/1'].includes(value?.schema)?await D.restore(value):await D.read(value)),{record,parsed}=document;
+    const initial=deferBuild?null:await runGraphTask(prepared?.initialGraph?{task:'validate',graph:prepared.initialGraph}:{task:'generic-build',ir:parsed.ir,state:parsed.state,extra:{authoring:parsed.authoring,migration:parsed.migration,layouts:parsed.layouts},nativeLayout:parsed.nativeLayout,options:{}});
+    if(initial&&prepared?.camera)initial.graph.studioCamera=E.clone(prepared.camera);
     if(initial){if(!initial.ok||!N.accepts(initial.graph,initial.validation))throw new Error(initial.error||'Summary 文档没有通过原生视图校验。');
     if(record.schema==='archcanvas-summary-authoring/1')window.ArchCanvasSummaryAuthoring.attach(initial.graph,record);else D.attach(initial.graph,record);}
     if(edited){if(!D.matches(edited,parsed))throw new Error('编辑 JSON 改变了原始文档语义。');D.checkRendering(edited);const restored=record.schema==='archcanvas-summary-authoring/1'?window.ArchCanvasSummaryAuthoring.attach(E.clone(edited),record):D.attach(E.clone(edited),record),check=await runGraphTask({task:'validate',graph:restored});if(!check.ok||!N.accepts(restored,check.validation))throw new Error(check.error||'编辑 JSON 与文档来源契约不一致。');}
-    importedDocuments.set(record.id,{...document,initial});let c=catalog.cases.find(c=>c.id===record.id);
+    importedDocuments.set(record.id,{record,parsed,initial});let c=catalog.cases.find(c=>c.id===record.id);
     if(!c){c={id:record.id,title:record.title,collection:'summary_documents',origin:record.document.schema,historical:false,views:[{key:'overview',label:'原生语义图'}]};catalog.cases.push(c);}return c;
   }
-  async function installDocument(payload){
+  async function installDocument(payload,prepared=null){
     if(busy||drag)throw new Error('请先完成当前操作。');flushPersist();busy=true;render({presentationOnly:true});studioBridge?.state();let c;
     try{
       if(payload.nativeDocument&&[payload.graph?.caseId,payload.caseId||payload.case].some(id=>id!==undefined&&id!==payload.nativeDocument.id))throw new Error('编辑 JSON 案例身份与导入文档不一致。');
-      c=await registerDocument(payload.nativeDocument||payload,payload.nativeDocument&&payload.graph);
+      c=await registerDocument(payload.nativeDocument||payload,payload.nativeDocument&&payload.graph,false,prepared);
       await window.SummaryRecursiveStorage.put('summary-document:v1:'+c.id,importedDocuments.get(c.id).record);
       await window.SummaryRecursiveStorage.put('summary-document:index:v1',[...importedDocuments.keys()]);
     }finally{busy=false;render({presentationOnly:true});studioBridge?.state();}
     $('collection').value='all';$('search').value='';$('sourceImportDialog').close();
-    const restored=payload.nativeDocument?{graph:payload.graph,history:[],future:[],dirty:!!payload.dirty,frontierPreset:payload.frontierPreset}:undefined;
+    const restored=payload.nativeDocument&&payload.graph?{graph:payload.graph,history:[],future:[],dirty:!!payload.dirty,frontierPreset:payload.frontierPreset}:undefined;
     if(!await openCase(c,c.views[0],restored))throw new Error('Summary 文档已验证，但视图加载失败。');
-    toast(`已导入 ${c.title}；文档证据未绑定 Python 源码，模型未执行。`);
+    if(prepared?.parsed?.authoring?.codeReference)toast('已从源码创建完整模型副本；源码已保存，本次未执行代码。');
+    else toast(`已导入 ${c.title}；文档证据未绑定 Python 源码，模型未执行。`);
   }
   async function registerSource(bundle,edited){await A.verify(bundle);const sources=A.sources(bundle),native=N.enabled(bundle),preflight=await runGraphTask(native?{task:'generic-build',ir:bundle.ir.semantic_ir,binding:bundle,options:{}}:{task:'frontier',graph:F.build(F.create(sources)),options:{}});
     if(edited?.authoringWorkspace)throw Error('源码适配视图不能伪装为独立编辑副本。');

@@ -116,7 +116,7 @@ test('authoring copy and edits retain live module depths, drop stale openings an
  const W=ctx.ArchCanvasSummaryAuthoring,value=read('MultilayerPerceptron · mlp'),root=value.nodes.find((n:any)=>!n.parent).id;
  const before=build([{id:root,level:'source',depth:1,open:[root]}],value),saved=JSON.stringify(before);
  const begun=await W.begin(before),authored=W.attach(G.build(begun.parsed.ir,begun.parsed.state,{authoring:begun.parsed.authoring}),begun.record);
- assert.equal(authored.generic.state.moduleCuts[0].depth,1);assert.equal(authored.generic.state.moduleCuts[0].open,undefined);
+ assert.equal(authored.generic.state.moduleCuts[0].depth,1);assert.equal(JSON.stringify(authored.generic.state.moduleCuts[0].open),JSON.stringify([root]));
  const changed=await W.apply(authored,{action:'edit',id:root,fields:{label:'Edited model'}});
  assert.equal(changed.parsed.state.moduleCuts[0].id,root);assert.equal(changed.parsed.state.moduleCuts[0].depth,1);
  assert.equal(changed.parsed.ir.authoring.edited,true);assert.equal(changed.parsed.ir.semantic_contracts.length,0);

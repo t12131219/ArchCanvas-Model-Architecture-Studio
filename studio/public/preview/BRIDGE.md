@@ -539,3 +539,26 @@ or geometric fact: each batch validates before commit. Scope/settings/geometry
 changes start a fresh pass. Cancelling or refusing the result preserves the
 previous graph/history. Node positions, manual waypoint policy and source
 bindings continue through the same routing contracts.
+
+### Source workbench and explicit Python export (2026-10-29)
+
+The host's floating Monaco Python editor calls `/api/preview/authoring/inspect`
+for advisory AST entry inventory, then the existing isolated module compiler.
+`import-source-model` prepares `ArchCanvasSummaryAuthoring.fromSource` and
+installs the complete native workspace only after native preflight succeeds.
+It carries `document.codeReference` (source text, entry, constructor); this is
+an export binding rechecked against a fresh static compilation, not a formal
+source transaction, an execution certificate or permission to write Python.
+The host pins workspace and document digest during source analysis.
+
+`/api/preview/authoring/python` accepts only the current authoring document.
+It exports an exact source-preserving reconstruction or a DAG of unchanged
+source modules joined through their explicit interfaces. `modules.codeBinding`
+records the ID mapping used by `SemanticAuthoring.add`; the backend recompiles
+source and verifies all capsule nodes and internal edges before generating
+calls from external edges. Unknown atoms, groups, cycles, missing inputs,
+multiple drivers and modified capsule internals are rejected. This export
+creates new files, never writes original model source, and never executes user
+Python in the server. Archive filenames are generated locally. The UI hides
+stale downloads after the document changes. Archived IR-only cases need a
+source import before Python export; a reference IR alone is insufficient.

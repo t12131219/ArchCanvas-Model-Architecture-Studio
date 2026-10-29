@@ -64,3 +64,26 @@ test('first-feedback timing ignores pointer events that do not change the previe
  c.move({p:{x:2,y:1},timeStamp:11});queued();assert.equal(attrs.get('data-drag-first-input-to-dom-ms'),'9.00');assert.equal(attrs.get('data-drag-max-input-to-dom-ms'),'9.00');
  c.move({p:{x:3,y:1},timeStamp:12});queued();assert.equal(attrs.get('data-drag-first-input-to-dom-ms'),'9.00');assert.equal(attrs.get('data-drag-input-to-dom-ms'),'8.00');
 });
+
+test('authoring publishes one final response instead of repeating the complete source snapshot',async()=>{
+ let listener:any,builds=0,link:any;const messages:any[]=[],parent={postMessage:(v:any)=>messages.push(v)};
+ const root:any={parent,location:{origin:'http://localhost:8790',search:''},addEventListener(_:string,fn:any){listener=fn;}};
+ const c=vm.createContext({window:root,document:{},URLSearchParams});vm.runInContext(readFileSync(new URL('studio-bridge.js',base),'utf8'),c);
+ link=root.ArchCanvasPreviewBridge.create({started:async()=>{},isBusy:()=>false,state:()=>{builds++;return {document:{caseId:'edit',graph:{complete:true}}};},command:async()=>{link.state();link.state();}});
+ link.ready();messages.length=0;builds=0;
+ listener({source:parent,origin:root.location.origin,data:{type:'archcanvas:preview:authoring',action:'begin',requestId:'entry'}});
+ for(let i=0;i<20;i++)await Promise.resolve();
+ assert.equal(builds,1);assert.equal(messages.length,1);assert.equal(messages[0].type,'archcanvas:preview:applied');assert.equal(messages[0].requestId,'entry');assert.equal(messages[0].document.graph.complete,true);
+});
+
+test('only an internally prepared edit copy can skip layout generation; imported records still restore and build',async()=>{
+ const requests:any[]=[],stored=new Map(),record={id:'draft',schema:'archcanvas-summary-authoring/1',title:'Draft',document:{schema:'semantic-authoring/1'}},parsed={ir:{nodes:[],edges:[]},state:{open:['model']},authoring:{}};
+ let restores=0;
+ const c=vm.createContext({D:{restore:async()=>{restores++;return {record,parsed};}},runGraphTask:async(message:any)=>{requests.push(message);return {ok:true,graph:message.graph||{generated:true},validation:{}};},N:{accepts:()=>true},window:{ArchCanvasSummaryAuthoring:{attach:(graph:any)=>graph}},importedDocuments:stored,catalog:{cases:[]},E:{clone:structuredClone}});
+ vm.runInContext(named(app,'registerDocument'),c);
+ const candidate={native:true};await c.registerDocument(record,undefined,false,{record,parsed,initialGraph:candidate});
+ assert.equal(restores,0);assert.equal(requests[0].task,'validate');assert.equal(requests[0].graph,candidate);
+ assert.equal(stored.get('draft').initialGraph,undefined);
+ await c.registerDocument(record,undefined,false);
+ assert.equal(restores,1);assert.equal(requests[1].task,'generic-build');assert.equal(requests[1].ir,parsed.ir);
+});

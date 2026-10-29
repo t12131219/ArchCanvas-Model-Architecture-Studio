@@ -1,3 +1,4 @@
+import { t, uiMessage } from './i18n';
 import { useEffect, useState } from 'react';
 import type { Architecture, CanvasDocument } from './core';
 import type { Binding, InputSpec, RebindOptions } from './api';
@@ -28,29 +29,29 @@ export function ConnectionEditor({ document, nodeId, portId: initialPortId, enab
     } catch (e) { setError(String(e)); }
   }
   return <section className="property-section semantic-editor connection-editor">
-    <h3>输入连接<span className="review-tag">先审核</span></h3>
-    {ports.length > 1 && <><label className="field-label" htmlFor="rebind-target-port">目标输入端口</label><select id="rebind-target-port" aria-label="目标输入端口" className="field-select" value={portId} onChange={e => setPort(e.target.value)} disabled={busy}>{ports.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></>}
-    <div className="binding-card"><small>当前来源 · {portName}</small><strong>{label(edge ? { ...edge.source, tensorId: edge.tensorId } : undefined)}</strong></div>
-    <button className="full-button" onClick={onSetup} disabled={busy}>{inputSpec ? '调整运行输入与模式' : '设置运行输入与模式'}</button>
-    {inputSpec && <p className="field-help">CPU · {inputSpec.modes.join(' / ')} · 随机种子 {inputSpec.seed}</p>}
-    <button className="full-button" disabled={!enabled || busy || !inputSpec} onClick={() => void inspect()}>{options ? '重新检查可选来源' : '检查连接编辑能力'}</button>
+    <h3>{t("输入连接")}<span className="review-tag">{t("先审核")}</span></h3>
+    {ports.length > 1 && <><label className="field-label" htmlFor="rebind-target-port">{t("目标输入端口")}</label><select id="rebind-target-port" aria-label={t("目标输入端口")} className="field-select" value={portId} onChange={e => setPort(e.target.value)} disabled={busy}>{ports.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></>}
+    <div className="binding-card"><small>{t("当前来源 ·")}{portName}</small><strong>{label(edge ? { ...edge.source, tensorId: edge.tensorId } : undefined)}</strong></div>
+    <button className="full-button" onClick={onSetup} disabled={busy}>{inputSpec ? t("调整运行输入与模式") : t("设置运行输入与模式")}</button>
+    {inputSpec && <p className="field-help">CPU · {inputSpec.modes.join(' / ')}{t("· 随机种子")}{inputSpec.seed}</p>}
+    <button className="full-button" disabled={!enabled || busy || !inputSpec} onClick={() => void inspect()}>{options ? t("重新检查可选来源") : t("检查连接编辑能力")}</button>
     {options && <>
-      {options.target && <p className="field-help">源码输入：<code>{options.target.slot.variable}</code> · {options.target.slot.path}:{options.target.slot.line}</p>}
+      {options.target && <p className="field-help">{t("源码输入：")}<code>{options.target.slot.variable}</code> · {options.target.slot.path}:{options.target.slot.line}</p>}
       {options.supported && options.candidates.length > 0 && <>
-        <label className="field-label" htmlFor="rebind-producer">新的输入来源</label>
-        <select id="rebind-producer" aria-label="新的输入来源" className="field-select" value={candidate} disabled={busy} onChange={e => setCandidate(e.target.value)}>
-          <option value="" disabled>选择可用来源</option>
-          {options.candidates.map(c => <option key={`${c.binding.nodeId}:${c.binding.portId}`} value={`${c.binding.nodeId}:${c.binding.portId}`}>{label(c.binding)} · {c.variable}{c.binding.nodeId === current?.nodeId && c.binding.portId === current.portId ? '（当前）' : ''}</option>)}
+        <label className="field-label" htmlFor="rebind-producer">{t("新的输入来源")}</label>
+        <select id="rebind-producer" aria-label={t("新的输入来源")} className="field-select" value={candidate} disabled={busy} onChange={e => setCandidate(e.target.value)}>
+          <option value="" disabled>{t("选择可用来源")}</option>
+          {options.candidates.map(c => <option key={`${c.binding.nodeId}:${c.binding.portId}`} value={`${c.binding.nodeId}:${c.binding.portId}`}>{label(c.binding)} · {c.variable}{c.binding.nodeId === current?.nodeId && c.binding.portId === current.portId ? t("（当前）") : ''}</option>)}
         </select>
-        <p className="field-help">来源在调用前已定义。预览会在隔离环境中验证输入合同、前向、梯度和状态；改接会改变计算行为。</p>
-        {selected && <details className="connection-contract"><summary>兼容性条件</summary><p>{selected.contract.condition}</p><code>{Array.isArray(selected.contract.shape) ? `[${selected.contract.shape.join(', ')}] · ${selected.contract.dtype}` : '符号签名'}</code></details>}
-        <button className="full-button" disabled={busy || !selected || !!unchanged || !inputSpec} onClick={() => selected && onPrepare(nodeId, portId, selected.binding)}>运行验证并预览连接修改</button>
+        <p className="field-help">{t("来源在调用前已定义。预览会在隔离环境中验证输入合同、前向、梯度和状态；改接会改变计算行为。")}</p>
+        {selected && <details className="connection-contract"><summary>{t("兼容性条件")}</summary><p>{selected.contract.condition}</p><code>{Array.isArray(selected.contract.shape) ? `[${selected.contract.shape.join(', ')}] · ${selected.contract.dtype}` : t("符号签名")}</code></details>}
+        <button className="full-button" disabled={busy || !selected || !!unchanged || !inputSpec} onClick={() => selected && onPrepare(nodeId, portId, selected.binding)}>{t("运行验证并预览连接修改")}</button>
       </>}
-      {(!options.supported || !options.candidates.length) && <p className="field-help"><b>连接提案暂不可提交</b></p>}
+      {(!options.supported || !options.candidates.length) && <p className="field-help"><b>{t("连接提案暂不可提交")}</b></p>}
       {!!options.blockers.length && <div className="connection-blockers">{options.blockers.map((b, i) => <p key={i}>{b}</p>)}</div>}
     </>}
-    {!options && <p className="field-help">先登记明确的输入与模式。候选检查保持静态；连接预览才执行隔离验证，所有必需门通过后才能审核提交。</p>}
-    {error && <p className="error-text" role="alert">{error}</p>}
+    {!options && <p className="field-help">{t("先登记明确的输入与模式。候选检查保持静态；连接预览才执行隔离验证，所有必需门通过后才能审核提交。")}</p>}
+    {error && <p className="error-text" role="alert">{uiMessage(error)}</p>}
   </section>;
 }
 

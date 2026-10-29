@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { useState } from 'react';
 import type { LegendItem, SceneEdge, SceneSourceRelation } from './core/types';
 import { SOURCE_RELATION_DASH, SOURCE_RELATION_STROKE } from './core/sourceRelationRoutes.ts';
@@ -9,11 +10,11 @@ const ROLE_LABELS = { data: '数据流', residual: '残差', memory: 'Memory', m
 export function FloatingLegend({ scene, onEdit }: { scene: { legend: readonly LegendItem[]; edges: readonly Pick<SceneEdge, 'role' | 'stroke' | 'width' | 'dashed' | 'dashPattern'>[]; sourceRelations?: readonly SceneSourceRelation[] }; onEdit?: () => void }) {
   const [collapsed, setCollapsed] = useState(false);
   const variants = [...new Map(scene.edges.map(edge => [JSON.stringify([edge.role, edgeAppearanceKey(edge)]), edge])).values()];
-  return <aside className={`floating-legend ${collapsed ? 'collapsed' : ''}`} aria-label="悬浮图例"
+  return <aside className={`floating-legend ${collapsed ? 'collapsed' : ''}`} aria-label={t("悬浮图例")}
     onPointerDown={event => event.stopPropagation()} onDoubleClick={event => event.stopPropagation()}
     onWheel={event => event.stopPropagation()}>
-    <button className="legend-toggle" aria-expanded={!collapsed} aria-label={collapsed ? '展开悬浮图例' : '收起悬浮图例'} onClick={() => setCollapsed(value => !value)}>
-      <Icon name="layers" size={14} /><b>图例</b><span>{collapsed ? '‹' : '›'}</span>
+    <button className="legend-toggle" aria-expanded={!collapsed} aria-label={collapsed ? t("展开悬浮图例") : t("收起悬浮图例")} onClick={() => setCollapsed(value => !value)}>
+      <Icon name="layers" size={14} /><b>{t("图例")}</b><span>{collapsed ? '‹' : '›'}</span>
     </button>
     {!collapsed && <div className="floating-legend-content">
       <div className="floating-node-legend">{scene.legend.map(item => <div key={item.id} data-floating-legend-id={item.id}>
@@ -22,8 +23,8 @@ export function FloatingLegend({ scene, onEdit }: { scene: { legend: readonly Le
       {!!variants.length && <div className="floating-edge-legend">{variants.map((edge, index) => <div key={`${edge.role}-${index}`}>
         <svg width="38" height="14" aria-hidden="true"><path d="M 1 7 H 32" fill="none" stroke={edge.stroke} strokeWidth={Math.min(4, edge.width)} strokeDasharray={edgeDashPattern(edge)?.join(' ')} /><path d="M 28 4 L 33 7 L 28 10" fill="none" stroke={edge.stroke} /></svg><span>{ROLE_LABELS[edge.role]}</span>
       </div>)}</div>}
-      {!!scene.sourceRelations?.length && <div className="floating-edge-legend" data-source-relation-legend="true"><div><svg width="38" height="14" aria-hidden="true"><path d="M 1 7 H 32" fill="none" stroke={scene.sourceRelations[0].stroke ?? SOURCE_RELATION_STROKE} strokeWidth="1.5" strokeDasharray={SOURCE_RELATION_DASH}/><path d="M 28 4 L 33 7 L 28 10" fill="none" stroke={scene.sourceRelations[0].stroke}/></svg><span>源码数据依赖 · 执行路径未确定</span></div></div>}
-      {onEdit && <button className="legend-edit" onClick={onEdit}>编辑图例</button>}
+      {!!scene.sourceRelations?.length && <div className="floating-edge-legend" data-source-relation-legend="true"><div><svg width="38" height="14" aria-hidden="true"><path d="M 1 7 H 32" fill="none" stroke={scene.sourceRelations[0].stroke ?? SOURCE_RELATION_STROKE} strokeWidth="1.5" strokeDasharray={SOURCE_RELATION_DASH}/><path d="M 28 4 L 33 7 L 28 10" fill="none" stroke={scene.sourceRelations[0].stroke}/></svg><span>{t("源码数据依赖 · 执行路径未确定")}</span></div></div>}
+      {onEdit && <button className="legend-edit" onClick={onEdit}>{t("编辑图例")}</button>}
     </div>}
   </aside>;
 }

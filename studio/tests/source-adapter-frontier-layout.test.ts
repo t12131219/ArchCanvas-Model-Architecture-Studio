@@ -9,7 +9,7 @@ import vm from 'node:vm';
 
 const project = fileURLToPath(new URL('../../', import.meta.url));
 const preview = path.join(project, 'studio/public/preview');
-const context = vm.createContext({ TextEncoder, TextDecoder });
+const context = vm.createContext({ performance, TextEncoder, TextDecoder });
 for (const file of ['router.js', 'physical-ports.js', 'junction-markers.js', 'route-labels.js',
   'source-contracts.js', 'semantic-constraints.js', 'graph-engine.js', 'recursive-graph.js', 'source-adapter.js']) {
   vm.runInContext(readFileSync(path.join(preview, 'yworks_edge_router_lab', file), 'utf8'), context, { filename: file });

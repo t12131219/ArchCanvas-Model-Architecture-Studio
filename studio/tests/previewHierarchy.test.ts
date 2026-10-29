@@ -66,22 +66,22 @@ test('child bridge maps F0/F1 presets to the same recursive identities', async (
   const engine = readFileSync(new URL('../public/preview/yworks_edge_router_lab/app.js', import.meta.url), 'utf8');
   const command = engine.slice(engine.indexOf('  async function studioCommand('), engine.indexOf("  $('showSourceImport').onclick"));
   const nodes = [{ id: 'root', parent: null }, { id: 'module', parent: 'root' }, { id: 'leaf', parent: 'module' }, { id: 'other', parent: 'root' }];
-  const operations: unknown[][] = [];
+  const transitions: unknown[] = [];
   const toggles: Record<string, { checked: boolean }> = { showGhost: { checked: false }, showObstacles: { checked: false } };
   let mode = '';
   const context = vm.createContext({
     graph: { recursive: { authority: { detail: { nodes }, mandatory: ['root'] } } }, busy: false, drag: null,
     F: { containers: (authority: any) => authority.detail.nodes.filter((node: any) => nodes.some(child => child.parent === node.id)).map((node: any) => node.id),
       children: (authority: any, id: string) => authority.detail.nodes.filter((node: any) => node.parent === id) },
-    studioVisual: async (message: { operations: unknown[] }) => { operations.push(message.operations); }, studioBridge: { state() {} },
+    changeFrontier: async (transition: unknown) => { transitions.push(transition); }, studioBridge: { state() {} },
     $: (id: string) => toggles[id], render() {}, setInteractionMode: (value: string) => { mode = value; },
     sourceNodes: () => [],
   });
   vm.runInContext(command, context);
   await context.studioCommand('set-frontier', { preset: 'overview' });
-  assert.deepEqual(JSON.parse(JSON.stringify(operations[0])), [{ type: 'expand', id: 'root', expanded: true }, { type: 'expand', id: 'module', expanded: false }]);
+  assert.deepEqual(JSON.parse(JSON.stringify(transitions[0])), { type: 'preset', preset: 'overview' });
   await context.studioCommand('set-frontier', { preset: 'detail' });
-  assert.deepEqual(JSON.parse(JSON.stringify(operations[1])), [{ type: 'expand', id: 'root', expanded: true }, { type: 'expand', id: 'module', expanded: true }]);
+  assert.deepEqual(JSON.parse(JSON.stringify(transitions[1])), { type: 'preset', preset: 'detail' });
   await context.studioCommand('show-ghost', { enabled: true });
   await context.studioCommand('show-obstacles', { enabled: true });
   await context.studioCommand('interaction-mode', { mode: 'realtime' });

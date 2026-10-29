@@ -58,7 +58,7 @@
     const by=new Map(result.parsed.ir.nodes.map(n=>[n.id,n])),open=new Set(document.open);
     for(const n of result.parsed.ir.nodes)if(!n.parent&&n.kind==='composite')open.add(n.id);
     let at=document.editorScope;while(at&&by.has(at)){open.add(at);at=by.get(at).parent;}
-    result.parsed.state={...result.parsed.state,paperGranularity:'detailed',paperAuto:false,details:true,open:[...open]};
+    result.parsed.state=document.canvasView?copy(document.canvasView):{...result.parsed.state,paperGranularity:'detailed',paperAuto:false,details:true,open:[...open]};
     return result;
   }
   function attach(graph,record){

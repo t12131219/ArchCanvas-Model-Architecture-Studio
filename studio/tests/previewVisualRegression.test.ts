@@ -8,7 +8,7 @@ const execute = promisify(execFile);
 import { fileURLToPath } from 'node:url';
 
 const project = fileURLToPath(new URL('../../', import.meta.url));
-const context = vm.createContext({ TextEncoder, TextDecoder });
+const context = vm.createContext({ performance, TextEncoder, TextDecoder });
 for (const name of ['router','physical-ports','junction-markers','route-labels','source-contracts','semantic-constraints','graph-engine','recursive-graph','source-adapter','source-controls','frontier-task'])
   vm.runInContext(readFileSync(new URL(`../public/preview/yworks_edge_router_lab/${name}.js`,import.meta.url),'utf8'),context);
 const A=context.SummarySourceAdapter,F=context.SummaryRecursive,E=context.SummaryEngine,T=context.SummaryFrontierTask;
