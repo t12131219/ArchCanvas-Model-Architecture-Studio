@@ -41,7 +41,8 @@ SOURCE_FILES = (
     "scripts/m5_beta_bundle.py", "scripts/m5_beta_preflight.py", "scripts/export_canvas.mjs",
     "tests/test_m5_beta_release.py", "tests/test_m5_beta_bundle.py", "tests/test_m5_beta_preflight.py",
 )
-CURRENT_HELPERS = ("scripts/atomic_export.mjs", "scripts/canvas_bridge.mjs")
+CURRENT_HELPERS = ("scripts/atomic_export.mjs", "scripts/canvas_bridge.mjs",
+                   "scripts/validate_tfb_agent_views.py", "scripts/validate_agent_probe_completion.py")
 LIFECYCLE_FILES = (
     "scripts/m5_host_install.py", "scripts/m5_host_smoke.py", "scripts/m5_host_uninstall.py",
     "scripts/m5_reliability_smoke.py", "tests/test_m5_host_install.py", "tests/test_m5_host_smoke.py",
@@ -55,6 +56,23 @@ VERSION = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+")
 MAX_BYTES = 768 * 1024 * 1024
 MAX_FILES = 20_000
 OPTIONAL_EVIDENCE_FILES = (
+    "tests/test_agent_view_completion.py",
+    "tests/test_doctor_summary.py",
+    "docs/evidence/agent-unknown-views-20261029/followup/host-acceptance-plan.md",
+    "docs/evidence/agent-unknown-views-20261029/followup/depth-performance.json",
+    "docs/evidence/agent-unknown-views-20261029/followup/final-depth-performance.json",
+    "docs/evidence/agent-unknown-views-20261029/followup/cpu-failed-browser-restored.png",
+    "docs/evidence/agent-unknown-views-20261029/followup/cpu-failed-browser-restored-dom.txt",
+    "docs/evidence/agent-unknown-views-20261029/followup/cpu-failed-figure.svg",
+    "docs/evidence/agent-unknown-views-20261029/followup/cpu-failed-figure.svg.receipt.json",
+    "docs/evidence/agent-unknown-views-20261029/followup/cpu-failed-browser-binding.json",
+    "docs/evidence/agent-unknown-views-20261029/followup/browser-restored.png",
+    "docs/evidence/agent-unknown-views-20261029/followup/figure.svg",
+    "docs/evidence/agent-unknown-views-20261029/followup/figure.svg.receipt.json",
+    "studio/tests/agentViewCompletion.test.ts",
+    "docs/evidence/agent-unknown-views-20261029/tfb/TFB-LICENSE.txt",
+    "docs/evidence/agent-unknown-views-20261029/tfb/report.json",
+    "docs/evidence/agent-unknown-views-20261029/probe-completion-final/report.json",
     "docs/evidence/m5-host-availability-v1.json",
     "docs/preview-migration.md",
     "docs/preview-migration-validation.json",
@@ -368,7 +386,7 @@ def stage_current_candidate(root: Path, staging: Path, version: str) -> Path:
         metadata["artifacts"] = artifacts
         metadata["knownLimitations"] = [
             "Local unsigned beta-preview candidate; public Beta publication and host certification remain pending.",
-            "The current runtime catalog is discovered by doctor; this candidate does not execute user models.",
+            "The current runtime catalog is discovered by doctor; static analysis does not execute user models; explicit CPU assistance requires the formal isolated runtime.",
             "Three-host client E2E, human research tasks, performance and publication-size review remain not-tested.",
             "Unknown source regions remain source-backed opaque boundaries until independent lowering evidence exists.",
         ]

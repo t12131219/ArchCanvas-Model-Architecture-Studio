@@ -8,7 +8,7 @@ from archcanvas_authoring import module_catalog
 from .canvas import canvas_operation
 
 
-def diagnose() -> dict:
+def diagnose(*, summary=False) -> dict:
     from .server import project_root
     from . import __version__
     root = project_root()
@@ -31,7 +31,8 @@ def diagnose() -> dict:
     return {"schemaVersion": 1, "status": "ready-local" if ready else "incomplete", "runtimeVersion": __version__,
             "releaseVersion": version, "releaseIntegrity": integrity, "distribution": "frozen-local-preview" if version else "development-checkout",
             "runtimeRoot": str(root) if root else None, "interpreter": str(Path(sys.executable).resolve()),
-            "node": shutil.which("node"), "studio": {"available": bool(assets), "assets": assets, "digest": inventory},
+            "node": shutil.which("node"), "studio": {"available": bool(assets), "assetCount": len(assets),
+                **({} if summary else {"assets": assets}), "digest": inventory},
             "catalog": {"atomicModules": len(module_catalog()["modules"]), "presets": presets},
             "modelExecution": False, "hostE2E": "not-tested", "publicationReview": "not-certified",
             "next": "Start serve --data-dir /absolute/independent-state-root, then open --root MODEL_ROOT --entry module:Class --server http://127.0.0.1:8765" if ready else "Install the complete verified release and Node.js 24+, then run doctor again."}

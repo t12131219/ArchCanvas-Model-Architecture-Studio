@@ -147,6 +147,14 @@ class M5HostInstallTests(unittest.TestCase):
 
     def test_launcher_requires_external_state_for_service(self) -> None:
         skill, _ = self.install()
+        command = [str(Path(verify_install(skill)["runtimeCommand"][0])), "-I", "-B", str(skill / LAUNCHER)]
+        help_result = subprocess.run(command + ["serve", "--help"], cwd=self.work, text=True, capture_output=True, check=False)
+        self.assertEqual(help_result.returncode, 0, help_result.stderr)
+        self.assertIn("--data-dir", help_result.stdout)
+        compact = subprocess.run(command + ["doctor", "--summary"], cwd=self.work, text=True, capture_output=True, check=False)
+        self.assertEqual(compact.returncode, 0, compact.stderr)
+        self.assertLess(len(compact.stdout), 5000)
+        self.assertEqual(json.loads(compact.stdout)["releaseIntegrity"], "verified")
         run = subprocess.run([str(Path(verify_install(skill)["runtimeCommand"][0])), "-I", "-B", str(skill / LAUNCHER), "serve"], cwd=self.work, text=True, capture_output=True, check=False)
         self.assertNotEqual(run.returncode, 0)
         self.assertIn("explicit --data-dir", run.stderr + run.stdout)

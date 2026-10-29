@@ -27,9 +27,54 @@
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const engine={...E,semanticOnly:true,project:(ir,state,plan,opts={})=>E.project(ir,state,plan,{...opts,semanticOnly:true})};
   const Integration=root.SummarySourceRuntime||(typeof require==='function'?require('./source-runtime.js'):null);
-  const project=(ir,state)=>Integration.project(ir,state,engine);
+  // A callable/receiver decomposition explains source spelling, not a tensor
+  // path. Attach expression-only inspection subtrees to their original opaque
+  // call as evidence. Structural inspection (loops/branches/statements) stays
+  // on canvas; a non-syntax incident edge always prevents attachment.
+  function inspectionProjection(cut){
+    if(![...cut.idx.nodes.values()].some(n=>n.inspection_only))return cut;
+    const hidden=new Map(),syntax=n=>n?.inspection_only&&['SourceCall','SourceExpression'].includes(n.sourceKind);
+    const incident=new Map();
+    for(const e of cut.inspectionEdges||[])for(const id of [e.source,e.target]){if(!incident.has(id))incident.set(id,[]);incident.get(id).push(e);}
+    const subtree=id=>{const ids=[],queue=[id];while(queue.length){const at=queue.pop();ids.push(at);queue.push(...(cut.idx.children.get(at)||[]));}return ids;};
+    for(const n of cut.idx.nodes.values()){
+      if(n.inspection_only||n.kind!=='opaque')continue;
+      for(const child of cut.idx.children.get(n.id)||[]){
+        const root=cut.idx.nodes.get(child),ids=subtree(child);
+        if(root?.sourceParameters?.sourceRulePath?.[0]!=='func')continue;
+        if(ids.every(id=>syntax(cut.idx.nodes.get(id))&&(incident.get(id)||[]).every(e=>e.kind==='source-inspection'&&e.syntaxOnly)))for(const id of ids)hidden.set(id,n.id);
+      }
+    }
+    if(!hidden.size)return cut;
+    const representatives={...cut.representatives},node_accounting=clone(cut.node_accounting),edge_accounting=clone(cut.edge_accounting),annotations=new Map([...cut.annotations].map(([id,rows])=>[id,rows.slice()]));
+    const notes=(id,note)=>{if(!annotations.has(id))annotations.set(id,[]);annotations.get(id).push(note);};
+    for(const [id,owner]of hidden){
+      const target=cut.representatives[owner];
+      for(const ids of Object.values(node_accounting)){const at=ids.indexOf(id);if(at>=0)ids.splice(at,1);}
+      node_accounting[target?'attached':'excluded'].push(id);
+      if(target){representatives[id]=target;notes(target,{resource:cut.idx.nodes.get(id),annotation_kind:'source-expression',authority:'source-structure-only'});}else delete representatives[id];
+    }
+    const attachedEdges=new Set((cut.inspectionEdges||[]).filter(e=>hidden.has(e.source)||hidden.has(e.target)).map(e=>e.id));
+    const edges=cut.edges.filter(e=>!attachedEdges.has(e.id)&&!hidden.has(e.source)&&!hidden.has(e.target));
+    for(const e of cut.inspectionEdges||[]){
+      if(!hidden.has(e.source)&&!hidden.has(e.target))continue;
+      for(const ids of Object.values(edge_accounting)){const at=ids.indexOf(e.id);if(at>=0)ids.splice(at,1);}
+      const owner=hidden.get(e.source)||hidden.get(e.target),target=cut.representatives[owner];
+      edge_accounting[target?'attached':'excluded'].push(e.id);
+      if(target)notes(target,{edge:clone(e),annotation_kind:'source-expression',authority:'source-structure-only'});
+    }
+    const owners=new Set(hidden.values()),nodes=cut.nodes.filter(n=>!hidden.has(n.id)).map(n=>owners.has(n.id)?{...n,paper:{...n.paper,title:n.function_target||n.operator||n.label}}:n);
+    const replacements=new Map(nodes.map(n=>[n.id,n])),idx=E.index({nodes:[...cut.idx.nodes.values()].map(n=>replacements.get(n.id)||n)});
+    // Keep evidence nodes indexed, but remove them from expansion navigation.
+    idx.children=new Map([...idx.children].map(([id,ids])=>[id,ids.filter(child=>!hidden.has(child))]));
+    const positions=new Map(cut.positions);for(const id of hidden.keys())positions.delete(id);
+    for(const n of nodes)if(positions.has(n.id)&&!(idx.children.get(n.id)||[]).some(id=>positions.has(id)))positions.set(n.id,{...positions.get(n.id),expanded:false});
+    positions.context={...cut.positions.context,idx};
+    return {...cut,nodes,edges,idx,positions,annotations,representatives,node_accounting,edge_accounting,detailOnly:new Set(hidden.keys())};
+  }
+  const project=(ir,state)=>inspectionProjection({...Integration.project(ir,state,engine),inspectionEdges:ir.edges});
   const Flow=root.SummaryFlowOptimizer||(typeof require==='function'?require('./flow-optimizer.js'):null);
-  const VERSION='native-semantic/18',SCHEMA='archcanvas-native-semantic/1';
+  const VERSION='native-semantic/22',SCHEMA='archcanvas-native-semantic/1';
   const projectionInputs=new WeakMap(),certificates=new WeakMap(),sharedCertificates=new WeakMap(),frozen=new WeakSet();
   const projections=new WeakMap(),sharedProjections=new Map(),navigationIndexes=new WeakMap();
   const sourceKeys=new WeakMap();
@@ -56,6 +101,7 @@
   const palette={embedding:'#f8d4e1',ffn:'#c8ebfb',attention:'#ffddb3',norm:'#fff6bd',linear:'#dfdff8',softmax:'#c9f1cd',tensor:'#cdeaf8',control:'#f3f5f7',unknown:'#fff0e8'};
   const regionTones=['#e7f5fe','#fff0f5','#eef7e8','#f1edfa'];
   function color(n,region=0,depth=0){
+    if(n.inspection_only)return '#f3eff9';
     if(n.kind==='opaque'||n.source_runtime?.static_kind==='opaque')return palette.unknown;
     if(['control','state','buffer'].includes(n.kind))return palette.control;
     const type=n.semantic_type,op=n.operator;
@@ -80,6 +126,7 @@
   }
   function appearance(n,region=0,depth=0){
     const raw=n.paper?.title||n.label||n.id,title=String(raw),captions=[...new Set(n.paper?.captions||[])];
+    if(n.inspection_only)captions.splice(0,captions.length,n.sourceKind==='SourceLoop'?'Source iteration':'Source expression');
     const lines=P.wrap(title,240,16),notes=captions.flatMap(t=>P.wrap(t,240,12)),fill=color(n,region,depth);
     return {title,lines,notes:notes.slice(0,2),allCaptions:captions,fill,w:Math.max(112,Math.min(280,Math.ceil(Math.max(...lines.map(t=>P.width(t,16)),...notes.slice(0,2).map(t=>P.width(t,12)),80))+32)),h:Math.max(44,16+lines.length*20+Math.min(2,notes.length)*15)};
   }
@@ -89,6 +136,7 @@
   // fictitious ordinary tensor wire merely because their endpoints coincide.
   function edgeAppearance(edge,by){
     const classify=e=>{
+      if(e.kind==='source-inspection'&&e.syntaxOnly===true)return 'source-inspection';
       if(e.evidence_status==='conflict'||['opaque','conflict','unresolved'].includes(e.evidence))return 'unresolved';
       if(e.kind==='control')return 'control';
       if(['state-write','effect'].includes(e.kind))return 'effect';
@@ -103,7 +151,40 @@
     const kinds=new Set((edge.bundle_members?.length?edge.bundle_members:[edge]).map(classify));
     const category=kinds.size===1?[...kinds][0]:[...kinds].every(k=>['data','resource'].includes(k))?'data':'mixed';
     return {category,dashed:!['data','resource'].includes(category),width:category==='data'?2.2:1.6,
-      stroke:category==='resource'?'#72818c':'#263b4b',dashPattern:category==='relation'?'2 5':category==='mixed'?'7 4 2 4':category==='unresolved'?'3 4':'7 5'};
+      stroke:category==='source-inspection'?'#776095':category==='resource'?'#72818c':'#263b4b',dashPattern:category==='source-inspection'?'2 4':category==='relation'?'2 5':category==='mixed'?'7 4 2 4':category==='unresolved'?'3 4':'7 5'};
+  }
+  // Nested syntax frames share one presentation interface along an unbranched
+  // inspection chain. Tensor bindings and operand ports remain independent.
+  function inspectionPorts(nodes,edges,allocation){
+    const by=new Map(nodes.map(n=>[n.id,n])),incoming=new Map(),outgoing=new Map(),slots=new Map(),pinned=new Set();
+    const add=(map,id,e)=>{if(!map.has(id))map.set(id,[]);map.get(id).push(e);};
+    for(const e of edges)if(e.kind==='source-inspection'&&e.syntaxOnly===true){add(incoming,e.target,e);add(outgoing,e.source,e);}
+    for(const leaf of nodes){
+      if(!leaf.semantic.inspection_only||incoming.has(leaf.id)||outgoing.get(leaf.id)?.length!==1)continue;
+      const chain=[],seen=new Set();let n=leaf;
+      while(n&&!seen.has(n.id)){
+        seen.add(n.id);const rows=outgoing.get(n.id)||[];if(rows.length!==1)break;
+        const e=rows[0],parent=by.get(e.target);
+        if(!parent?.expanded||n.parent!==parent.id||incoming.get(parent.id)?.length!==1)break;
+        chain.push(e);n=parent;
+      }
+      if(!chain.length)continue;
+      const ids=[leaf.id,...chain.map(e=>e.target)],members=new Set(chain.map(e=>e.id)),middle=leaf.y+leaf.h/2;
+      const y=[middle,middle-12,middle+12].find(y=>ids.every(id=>{
+        const box=by.get(id);if(y<box.y+12||y>box.y+box.h-12)return false;
+        return edges.every(e=>members.has(e.id)||['source','target'].every(side=>{
+          if(e[side]!==id)return true;const f=allocation.get(e.id+':'+side),p=root.EdgeRouterLabRouting.port(box,f.side,f.fraction);
+          return Math.hypot(p.x-box.x-box.w,p.y-y)>=12;
+        }));
+      }));
+      if(y===undefined)continue;
+      for(const e of chain)for(const side of ['source','target']){
+        const id=e[side],box=by.get(id),key=e.id+':'+side;
+        allocation.set(key,{side:'right',fraction:(y-box.y)/box.h,...(box.expanded?{inward:side==='target'}:{})});
+        slots.set(key,stable(['source-inspection-interface',id,chain[0].id]));pinned.add(key);
+      }
+    }
+    return {slots,pinned};
   }
   function headingIds(cut){
     const visible=new Set(cut.nodes.map(n=>n.id)),incident=new Set(cut.edges.flatMap(e=>[e.source,e.target]));
@@ -138,9 +219,9 @@
     // Fold only dense source frontiers. Publication F0/F1 keeps Summary's
     // reviewed geometry; source identities, rank order and frame owners stay
     // unchanged when a long dependency sequence wraps into reading rows.
-    const sourceLayout=cut.nodes.length>120&&(selected.paperCanonical||selected.moduleCuts?.some(c=>c.level==='source'));
+    const sourceLayout=cut.nodes.length>120&&(selected.paperCanonical||selected.moduleCuts?.some(c=>c.level==='source')),foldSource=sourceLayout;
     const positions=L.layout(cut.idx,roots,visible,cut.edges,{}, {
-      foldSerial:!!sourceLayout,foldBoundaryRanks:!!sourceLayout,foldMaxParallel:4,foldMaxColumns:3,foldGain:.96,regularModuleColumns:!sourceLayout,
+      foldSerial:!!foldSource,foldBoundaryRanks:!!foldSource,foldMaxParallel:4,foldMaxColumns:3,foldGain:.96,regularModuleColumns:!sourceLayout,
       direction:selected.paperDirection==='up'?'up':'down',
       nodeSize:n=>looks.get(n.id)||appearance(n),
       frameHeader:n=>headings.has(n.id)?76+P.wrap(looks.get(n.id).title,600,26).length*30:24+Math.min(2,looks.get(n.id)?.lines.length||1)*20,
@@ -150,7 +231,7 @@
       framePadding:sourceLayout?80:20,framePaddingFor:n=>headings.has(n.id)?0:sourceLayout?80:20,frameMinWidthFor:n=>headings.has(n.id)?640:0,frameCenterBodyFor:()=>true,
       fixedInputIds:new Set(cut.nodes.filter(n=>n.invocation_binding).map(n=>n.id)),compactArgumentBand:true,
       compoundPorts:true,compoundStarts:true,compoundInputBand:true,followOutputSources:true,compoundOutputAlignment:true,headerClearance:6,
-      gapX:sourceLayout?48:32,gapY:sourceLayout?56:36,alignForks:true,rankColumns:4,inputPlacement:'consumer',rankStrategy:'consumer',protectFrameTitles:false,maxWidth:sourceLayout?24000:1600
+      gapX:sourceLayout?48:32,gapY:sourceLayout?56:36,alignForks:true,rankColumns:4,inputPlacement:'consumer',resourcePlacement:selected.paperCanonical||selected.moduleCuts?.some(c=>c.level==='source')?'consumer':undefined,rankStrategy:'consumer',protectFrameTitles:false,maxWidth:sourceLayout?24000:1600
     });
     const ps=[...positions.values()],dx=48-Math.min(0,...ps.map(p=>p.x)),dy=48-Math.min(0,...ps.map(p=>p.y));
     const nodes=cut.nodes.map(n=>{const p={...positions.get(n.id),modelHeading:headings.has(n.id),headingNote:[selected.mode==='runtime'?'运行证据':selected.mode==='merged'?'源码与运行证据':'源码语义',selected.paperCanonical?'源码原子层':selected.paperGranularity==='stages'?'架构概览':'可逆语义图','可继续展开至源码细节'].join(' · ')};p.x+=dx;p.y+=dy;const a=looks.get(n.id);return {id:n.id,parent:visible.has(n.parent)?n.parent:null,x:p.x,y:p.y,w:p.w,h:p.h,base:[0,0],expanded:!!p.expanded,modelHeading:p.modelHeading,routingObstacle:!p.expanded,label:a.title,fill:a.fill,semantic:clone(n),...glyph(n,p,a)};});
@@ -164,14 +245,15 @@
       for(const [edge,side]of rows){const rank=slots.get(slotIdentity(edge,side)),n=by.get(id),other=by.get(edge[side==='source'?'target':'source']),vertical=Math.abs(n.y+n.h/2-other.y-other.h/2)>=Math.abs(n.x+n.w/2-other.x-other.w/2),portSide=vertical?(other.y>n.y?'bottom':'top'):(other.x>n.x?'right':'left');
         allocation.set(edge.id+':'+side,{side:portSide,fraction:.12+.76*(rank+1)/(slots.size+1),...(n.expanded?{inward:within(nodes,edge[side==='source'?'target':'source'],id)}:{})});}
     }
+    const inspection=inspectionPorts(nodes,cut.edges,allocation);
     graph.edges=cut.edges.map(e=>{const s=by.get(e.source),t=by.get(e.target),fixedSource=allocation.get(e.id+':source'),fixedTarget=allocation.get(e.id+':target'),a=root.EdgeRouterLabRouting.port(s,fixedSource.side,fixedSource.fraction),b=root.EdgeRouterLabRouting.port(t,fixedTarget.side,fixedTarget.fraction);
       const appearance=edgeAppearance(e,cut.idx.nodes);
-      return {id:e.id,source:e.source,target:e.target,projection:{presentationSlots:{source:slotIdentity(e,'source'),target:slotIdentity(e,'target')}},binding:clone(e),fixedSource,fixedTarget,portPolicy:{source:{mode:'free',shape:'rectangle',spacing:6,sharedStem:null},target:{mode:'free',shape:'rectangle',spacing:6}},route:[a,{x:a.x,y:b.y},b],waypoints:[],arrow:'target',style:'orthogonal',width:appearance.width,dashed:appearance.dashed,stroke:appearance.stroke,dashPattern:appearance.dashPattern,relationStyle:appearance.category,role:e.kind,contract:{version:1,source:e.source,target:e.target,gates:[],wire:stable(e.bundle_members?['bundle',e.id]:[e.resolved_source||e.canonical_source||e.source,e.source_port]),bus:false,sharedStem:null,minimumTerminal:9,enforcePortApproach:true}};
+      return {id:e.id,source:e.source,target:e.target,projection:{presentationSlots:{source:inspection.slots.get(e.id+':source')||slotIdentity(e,'source'),target:inspection.slots.get(e.id+':target')||slotIdentity(e,'target')}},binding:clone(e),fixedSource,fixedTarget,portPolicy:{source:{mode:inspection.pinned.has(e.id+':source')?'fixed':'free',shape:'rectangle',spacing:6,sharedStem:null},target:{mode:inspection.pinned.has(e.id+':target')?'fixed':'free',shape:'rectangle',spacing:6}},route:[a,{x:a.x,y:b.y},b],waypoints:[],arrow:appearance.category==='source-inspection'?'open':'target',style:'orthogonal',width:appearance.width,dashed:appearance.dashed,stroke:appearance.stroke,dashPattern:appearance.dashPattern,relationStyle:appearance.category,role:e.kind,contract:{version:1,source:e.source,target:e.target,gates:[],wire:stable(e.bundle_members?['bundle',e.id]:[e.resolved_source||e.canonical_source||e.source,e.source_port]),bus:false,sharedStem:null,minimumTerminal:9,enforcePortApproach:true}};
     });
     return graph;
   }
   // Delayed hover reads the already-certified projection; no layout or route work.
-  function nodeEvidence(graph,id){const n=graph.nodes.find(n=>n.id===id)?.semantic;return n?[Evidence.nodeDetails(n,expected(graph).idx),n.source_runtime?'CPU invocation bridge (selected input/mode only):\n'+JSON.stringify(n.source_runtime,null,2):''].filter(Boolean).join('\n'):'';}
+  function nodeEvidence(graph,id){const n=graph.nodes.find(n=>n.id===id)?.semantic;if(!n)return '';const cut=expected(graph),notes=(cut.annotations.get(id)||[]).filter(note=>note.annotation_kind==='source-expression');return [Evidence.nodeDetails(n,cut.idx),notes.length?'Source syntax details (inspection only; not tensor dataflow):\n'+notes.map(note=>note.resource?Evidence.nodeDetails(note.resource,cut.idx):JSON.stringify(note.edge)).join('\n\n'):'',n.source_runtime?'CPU invocation bridge (selected input/mode only):\n'+JSON.stringify(n.source_runtime,null,2):''].filter(Boolean).join('\n');}
   function within(nodes,id,frame){const by=new Map(nodes.map(n=>[n.id,n]));let at=id;while(at){if(at===frame)return true;at=by.get(at)?.parent;}return false;}
   function slotIdentity(e,side){return stable(e.bundle_members?['bundle',e.id,side]:[side==='source'?e.resolved_source||e.canonical_source||e.source:e.canonical_target||e.target,side==='source'?e.source_port:e.target_port]);}
   function children(graph,id){let index=navigationIndexes.get(graph.generic);if(!index){index=new Map(graph.generic.navigation?.children||expected(graph).idx.children);navigationIndexes.set(graph.generic,index);}return index.get(id)||[];}
@@ -212,7 +294,7 @@
     for(const e of next.edges){
       const old=oldEdges.get(e.id),s=by.get(e.source),t=by.get(e.target),a=oldNodes.get(e.source),b=oldNodes.get(e.target);
       const sameBox=(n,o)=>n&&o&&n.w===o.w&&n.h===o.h&&n.expanded===o.expanded&&n.parent===o.parent;
-      if(!old||old.failed||old.pendingRouting||!sameBox(s,a)||!sameBox(t,b)||stable(old.binding)!==stable(e.binding)){e.pendingRouting=true;continue;}
+      if(!old||old.failed||old.pendingRouting||!sameBox(s,a)||!sameBox(t,b)||stable(old.binding)!==stable(e.binding)||stable(old.projection?.presentationSlots)!==stable(e.projection?.presentationSlots)||stable(old.portPolicy)!==stable(e.portPolicy)){e.pendingRouting=true;continue;}
       const dx=s.x-a.x,dy=s.y-a.y;
       if(Math.abs(t.x-b.x-dx)>1e-5||Math.abs(t.y-b.y-dy)>1e-5){e.pendingRouting=true;continue;}
       const translate=ps=>ps.map(p=>({x:p.x+dx,y:p.y+dy}));
@@ -240,7 +322,7 @@
       else if(ir.nodes.some(n=>n.id===op.id&&n.kind==='composite'))state.moduleCuts.push({id:op.id,level:'source',depth:expanded?1:0});
       else throw Error('请在模块语义深度中选择所属源码模块。');
     }
-    else {const cut=expected(graph);if(!cut.idx.children.get(op.id)?.length)throw Error('此节点没有内部源码单位');state.paperAuto=false;state.open=clone(cut.publication?.open||state.open||[]);const open=new Set(state.open);if(op.force??!open.has(op.id))open.add(op.id);else open.delete(op.id);state.open=[...open];}
+    else {const cut=expected(graph);if(!(cut.sourceNavigation||cut.idx.children).get(op.id)?.length)throw Error('此节点没有内部源码单位');state.paperAuto=false;state.open=clone(cut.publication?.open||state.open||[]);const open=new Set(state.open);if(op.force??!open.has(op.id))open.add(op.id);else open.delete(op.id);state.open=[...open];}
     delete state.canvasPlacement;delete state.offsets;
     // Finalise host-only frontier metadata before projecting/certifying. A
     // state replacement after validation would invalidate the projection and
@@ -414,7 +496,7 @@
       }
     };
   }
-  function routeOptions(options={}){return {margin:6,stub:16,bendCost:40,crossingCost:450,overlapCost:2,edgeSpacing:12,sides:'any',style:'orthogonal',boundaryLanes:false,preferCurrentPorts:true,tryDirectPorts:true,maxSearchVertices:20000,searchPadding:768,aStar:true,pruneContainedObstacles:true,spatialPrior:true,...options};}
+  function routeOptions(options={}){return {margin:6,stub:16,bendCost:40,crossingCost:450,overlapCost:2,edgeSpacing:12,sides:'any',style:'orthogonal',boundaryLanes:false,preferCurrentPorts:false,tryDirectPorts:true,maxSearchVertices:80000,searchPadding:768,aStar:true,pruneContainedObstacles:true,spatialPrior:true,...options};}
   function routePatternCache(graph){
     const by=new Map(graph.nodes.map(n=>[n.id,n])),patterns=new Map(),bounds=new WeakMap(),R=root.EdgeRouterLabRouting,P=root.SummaryPhysicalPorts,C=root.SummaryConstraints;
     const key=e=>{const a=by.get(e.source),b=by.get(e.target);return stable([a.label,b.label,a.w,a.h,b.w,b.h,+(b.x-a.x).toFixed(3),+(b.y-a.y).toFixed(3),e.binding?.kind,e.binding?.source_port,e.binding?.target_port]);};
@@ -447,7 +529,7 @@
     // Keep the same port, containment and wire checks, but stop searching
     // alternative ports after the first legal candidate on these cuts.
     const denseSource=graph.nodes.length>120&&(graph.generic.state.paperCanonical||graph.generic.state.moduleCuts?.some(c=>c.level==='source'));
-    const opts=routeOptions({firstLegal:!!denseSource,...(denseSource?{compactCoordinates:64}:{}),...options}),large=graph.nodes.length>1000,budget=options.budgetMs??(large?8000:Infinity),started=performance.now();
+    const opts=routeOptions({firstLegal:!!denseSource,...(denseSource?{compactCoordinates:64}:{}),...options}),large=graph.nodes.length>1000,budget=options.budgetMs??(large?8000:Math.max(8000,Math.min(16000,graph.edges.length*120))),started=performance.now();
     const candidates=(graph.nativeRouting?graph.edges.filter(e=>e.pendingRouting||e.failed):graph.edges.slice()).sort((a,b)=>denseSource?Number(!!a.nativeSimpleTried)-Number(!!b.nativeSimpleTried)||(a.nativeRouteAttempts||0)-(b.nativeRouteAttempts||0)||Number(!!b.pendingRouting)-Number(!!a.pendingRouting):Number(!!b.pendingRouting)-Number(!!a.pendingRouting));
     const selected=new Set(candidates),prior=graph.edges.filter(e=>!selected.has(e)&&!e.failed&&!e.pendingRouting).map(e=>Object.assign(e.route.slice(),{wire:e.contract.wire})),patterns=denseSource&&options.reusePatterns!==false?routePatternCache(graph):null;let routed=0;
     for(const e of candidates){
@@ -455,19 +537,21 @@
       const retry=!!graph.nativeRouting&&e.failed&&!e.pendingRouting,quick=denseSource&&!e.nativeSimpleTried;
       if(denseSource&&!quick)e.nativeRouteAttempts=(e.nativeRouteAttempts||0)+1;
       const attempt=e.nativeRouteAttempts||1;
-      const deadline=denseSource&&!quick?Math.min(started+budget,performance.now()+Math.min(15000,500*4**Math.min(3,attempt-1))):undefined;
+      const deadline=denseSource&&!quick?Math.min(started+budget,performance.now()+Math.min(15000,500*4**Math.min(3,attempt-1))):started+budget;
       const widerSearch=denseSource&&attempt>=3?{searchPadding:Math.max(4000,opts.searchPadding),maxSearchVertices:Math.max(500000,opts.maxSearchVertices),preferCurrentPorts:false}:{};
-      delete e.pendingRouting;const result=patterns?.reuse(e,prior,context,opts)||native.routeOne(graph,e,prior,quick?{...opts,quickCandidatesOnly:true}:retry||denseSource?{...opts,margin:2,stub:9,edgeSpacing:8,firstLegal:true,...widerSearch,...(deadline===undefined?{}:{deadline})}:opts,context);
+      delete e.pendingRouting;const result=patterns?.reuse(e,prior,context,opts)||native.routeOne(graph,e,prior,quick?{...opts,quickCandidatesOnly:true}:retry||denseSource?{...opts,margin:2,stub:9,edgeSpacing:8,firstLegal:true,...widerSearch,deadline}:{...opts,deadline},context);
       if(quick){e.nativeSimpleTried=true;if(!result.ok){e.pendingRouting=true;e.reason='简单通道未解：下一批继续完整布线';}}
       if(!result.ok&&deadline!==undefined&&performance.now()>=deadline){e.pendingRouting=true;e.reason='单边布线预算已到：下一批以更高预算继续';}
       if(result.ok){routed++;patterns?.remember(e);prior.push(Object.assign(e.route.slice(),{wire:e.contract.wire}));}
     }
+    // A bounded larger grid is necessary for long cross-region dependencies;
+    // a small grid reaching its vertex cap is not evidence of no valid route.
     // Retry only unsolved wires after legal lanes are known. Pending work is
     // explicit and never promoted to a valid route to meet a time budget.
-    for(const e of graph.edges.filter(e=>e.failed&&!e.pendingRouting)){
+    for(const e of graph.edges.filter(e=>e.failed&&(!e.pendingRouting||graph.nodes.length<=300))){
       if(performance.now()-started>=budget)break;
       const occupied=graph.edges.filter(v=>v!==e&&!v.failed&&!v.pendingRouting).map(v=>Object.assign(v.route.slice(),{wire:v.contract.wire}));
-      for(const retry of [{searchPadding:768,margin:2,stub:9,edgeSpacing:8,firstLegal:true},{searchPadding:256},{searchPadding:1536}]){if(performance.now()-started>=budget)break;const result=native.routeOne(graph,e,occupied,{...opts,...retry,maxSearchVertices:80000,...(denseSource?{deadline:Math.min(started+budget,performance.now()+4000)}:{})},context);if(result.ok){routed++;patterns?.remember(e);break;}}
+      for(const retry of [{searchPadding:768},{searchPadding:256},{searchPadding:1536,compactCoordinates:48,maxSearchVertices:500000,margin:2,stub:9,edgeSpacing:8,firstLegal:true}]){if(performance.now()-started>=budget)break;const result=native.routeOne(graph,e,occupied,{...opts,maxSearchVertices:80000,...retry,deadline:Math.min(started+budget,performance.now()+4000)},context);if(result.ok){delete e.pendingRouting;routed++;patterns?.remember(e);break;}}
     }
     // Small visible cuts can afford a bounded second pass. Reconsider only
     // crossed wires against all settled paths, including alternative physical
@@ -734,7 +818,7 @@
   function document(graph){const nativeLayout=layoutSnapshot(graph);return {schema:SCHEMA,renderer:graph.generic.version,ir:clone(graph.generic.ir),state:clone(graph.generic.state),authoring:clone(graph.generic.authoring),migration:clone(graph.generic.migration),layouts:clone(graph.generic.layouts||[]),nativeLayout:clone(nativeLayout)};}
   function read(value){
     let ir,state,authoring,migration,nativeLayout,layouts;
-    if(value.schema===SCHEMA){({ir,state,authoring,migration,nativeLayout,layouts}=value);const unaffectedPublication=['native-semantic/16','native-semantic/17'].includes(value.renderer)&&!state?.paperCanonical&&!state?.moduleCuts?.some(c=>c.level==='source');if(value.renderer!==VERSION&&!unaffectedPublication&&!(!state?.moduleCuts?.length&&(value.renderer==='native-semantic/15'||value.renderer==='native-semantic/14'&&!Integration.enabled(ir,state||{})))){if(!/^native-semantic\/([1-9]|10|11|12|13|14|15|16|17)$/.test(value.renderer||''))throw Error('不支持的原生语义布局版本');migration={...(migration||{}),previousRenderer:value.renderer,previousNativeLayout:clone(nativeLayout||null),previousLayouts:clone(layouts||[])};nativeLayout=null;layouts=[];}}
+    if(value.schema===SCHEMA){({ir,state,authoring,migration,nativeLayout,layouts}=value);const unaffectedPublication=['native-semantic/18','native-semantic/19','native-semantic/20','native-semantic/21'].includes(value.renderer)&&!ir.nodes.some(n=>n.inspection_only)&&!state?.paperCanonical&&!state?.moduleCuts?.some(c=>c.level==='source')||['native-semantic/16','native-semantic/17'].includes(value.renderer)&&!state?.paperCanonical&&!state?.moduleCuts?.some(c=>c.level==='source');if(value.renderer!==VERSION&&!unaffectedPublication&&!(!state?.moduleCuts?.length&&(value.renderer==='native-semantic/15'||value.renderer==='native-semantic/14'&&!Integration.enabled(ir,state||{})))){if(!/^native-semantic\/([1-9]|10|11|12|13|14|15|16|17|18|19|20|21)$/.test(value.renderer||''))throw Error('不支持的原生语义布局版本');migration={...(migration||{}),previousRenderer:value.renderer,previousNativeLayout:clone(nativeLayout||null),previousLayouts:clone(layouts||[])};nativeLayout=null;layouts=[];}}
     else if(value.schema==='semantic-authoring/1'){A.validate(value);authoring=value;ir=A.sourceIR(value);state={view:'publication',mode:'merged',paperCanonical:true,paperMedium:'canvas',paperAuto:false,open:value.open||[]};migration={schema:value.schema,original:clone(value)};}
     else if(['semantic-canvas/1','archcanvas-architecture-document/1'].includes(value.schema)){({ir,state}=value);authoring=value.authoring||null;migration={schema:value.schema,original:clone(value),geometry:'Retained as provenance; measured again for native canvas'};}
     else if(value.schema==='archcanvas-source-semantic/2')ir=value;

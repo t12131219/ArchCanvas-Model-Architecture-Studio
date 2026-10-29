@@ -84,8 +84,12 @@
       }
       if(!valid)continue;
       es.forEach((e,j)=>Object.assign(e,rows[j]));
+      // Individual candidates were checked against the old peer ports. Check
+      // the complete proposed tree together before accepting its geometry:
+      // two branches can otherwise choose the same destination operand slot.
+      const validTree=es.every(e=>C.validate(graph,e,e.route,context).ok&&!N.overlapsWire(graph,e,e.route));
       const stats=R.stats(graph.edges),painted=ink(graph.edges),cost=painted+40*stats.bends+450*stats.crossings;
-      if(painted<baseInk-EPS&&stats.length<=baseStats.length*1.04&&stats.bends<=baseStats.bends+1&&stats.crossings<=baseStats.crossings&&cost<bestTreeCost-EPS){bestTree=rows;bestTreeCost=cost;}
+      if(validTree&&painted<baseInk-EPS&&stats.length<=baseStats.length*1.04&&stats.bends<=baseStats.bends+1&&stats.crossings<=baseStats.crossings&&cost<bestTreeCost-EPS){bestTree=rows;bestTreeCost=cost;}
       es.forEach((e,j)=>Object.assign(e,snapshot[j]));
      }
     }

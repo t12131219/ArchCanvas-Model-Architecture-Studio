@@ -65,6 +65,12 @@ function prepare(graph?: any, transition?: any) {
   return result.graph;
 }
 
+test('renderer 18 documents without inspection cards keep their saved native geometry', () => {
+  const graph=prepare(),document=G.document(graph),parsed=G.read({...document,renderer:'native-semantic/18'});
+  assert.deepEqual(copy(parsed.nativeLayout),copy(document.nativeLayout));
+  assert.deepEqual(copy(parsed.layouts),copy(document.layouts));
+});
+
 test('F1 uses certified roles and stages, preserves every native fact and restores F0 geometry', () => {
   const original = JSON.stringify(bundle.ir.semantic_ir), f0 = prepare();
   const layout = copy(G.layoutSnapshot(f0));

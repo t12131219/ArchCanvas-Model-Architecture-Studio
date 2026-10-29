@@ -70,6 +70,10 @@ def capabilities() -> dict:
         "sourceAdapters": {"schema": "archcanvas-source-adapter/1", "schemas": ["archcanvas-source-adapter/1", "archcanvas-source-adapter/2"], "scaffold": "/api/adapters/scaffold", "validate": "/api/adapters/validate", "register": "/api/adapters/register", "list": "/api/adapters/list", "storage": "data-dir/adapters", "format": "source-bound-json", "pluginExecution": False,
                            "agentRules": {"schema": "archcanvas-source-rule/1", "validate": "/api/adapters/rule-validate", "list": "/api/adapters/rules", "storage": "data-dir/adapters/rules", "validation": "independent-ast-path-and-operand-proofs", "crossSourceReuse": "reinstantiate-and-validate-current-source", "tensorGeneration": False}},
         "preview": archcanvas_preview.capabilities(),
+        "agentViewCompletion": {"schema": "archcanvas-agent-view-handoff/1", "endpoint": "/api/adapters/handoff",
+                                "cli": "adapter handoff --root PATH --entry module:Class", "nativeSummaryViews": True,
+                                "authority": "source-structure-only", "executesAgent": False, "modelExecuted": False,
+                                "optionalCpuHandoff": {"cliFlag": "--probe-spec", "profile": "summary-aten-observed/1", "failureContinues": True}},
         "modelAuthoring": {"mode": "authored-draft", "catalog": "/api/authoring/catalog", "generation": "new-managed-copy", "sourceImport": "/api/authoring/import-source", "sourceFrontier": "/api/authoring/source-frontier", "customModulePreview": "/api/authoring/custom-modules/preview", "sourceFileEditing": {"read": "/api/authoring/source-regions/read", "apply": "/api/authoring/source-regions/apply", "editUnit": "complete-frozen-python-file", "pendingSupportedEdits": "included", "validation": "digest-bound-compile-and-independent-analysis", "modelExecuted": False}, "sourcePreservingGeneration": {"mode": "source-preserved-copy", "topology": ["preserved", "anchored-edits"], "parameters": "registered-explicit-constructor-literals", "structuralEdits": ["unary-insertion", "unary-custom-source-insertion", "unary-bypass-deletion", "replacement-by-delete-and-insert", "dominated-local-value-rewire"], "anchors": ["unary-call-argument", "static-return-slot"], "unresolvedControlFlow": "preserved-source-and-inspection-bindings", "validation": "exact-ast-source-spans-and-independent-source-reanalysis", "modelExecuted": False}, "runtimeVerified": False},
         "documentPersistence": True,
         "canvasSessions": {"open": "/api/open", "read": "/api/canvas-sessions/{documentId}", "actions": ["apply", "undo", "redo", "export"],
@@ -565,11 +569,14 @@ class Handler(BaseHTTPRequestHandler):
             elif path.startswith("/api/adapters/"):
                 from archcanvas_adapters import scaffold_adapter_files, validate_adapter_files
                 action = path.removeprefix("/api/adapters/")
-                allowed = {"files", "entry", "method", "config", "rules", "useRegistryRules"} if action == "scaffold" else {"files", "definition"} if action in ("validate", "register") else {"files"} if action == "list" else {"rule"} if action == "rule-validate" else set() if action == "rules" else None
-                required = {"rule"} if action == "rule-validate" else set() if action == "rules" else {"files"}
+                allowed = {"files", "entry", "config"} if action == "handoff" else {"files", "entry", "method", "config", "rules", "useRegistryRules"} if action == "scaffold" else {"files", "definition"} if action in ("validate", "register") else {"files"} if action == "list" else {"rule"} if action == "rule-validate" else set() if action == "rules" else None
+                required = {"files", "entry"} if action == "handoff" else {"rule"} if action == "rule-validate" else set() if action == "rules" else {"files"}
                 if allowed is None or required - set(payload) or set(payload) - allowed:
                     raise ValueError("Adapter operations require exact source file text and operation fields; filesystem paths and executable plugins are not accepted.")
-                if action == "scaffold":
+                if action == "handoff":
+                    from archcanvas_adapters.handoff import build_handoff
+                    result = build_handoff(payload['files'], payload['entry'], payload.get('config'), self.server.adapters.directory)
+                elif action == "scaffold":
                     rules = payload.get("rules")
                     from archcanvas_adapters.registry import merge_rules
                     if type(payload.get("useRegistryRules", False)) is not bool:

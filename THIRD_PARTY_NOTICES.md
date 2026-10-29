@@ -1,5 +1,24 @@
 # Third-party notices
 
+## TFB read-only validation evidence (2026-10-29)
+
+The unknown-module view validation artifacts contain source text and source
+excerpts from the local TFB benchmark. Its MIT license (Copyright 2024 Huawei
+Technologies Co., Ltd) is retained at
+`docs/evidence/agent-unknown-views-20261029/tfb/TFB-LICENSE.txt`.
+These are validation evidence, not a new executable runtime dependency.
+The follow-up CPU validation executes an exact copied ChebyKAN source only in
+the formal isolated runtime; the original TFB directory remains read-only.
+
+The 2026-10-29 native import integration change skips legacy full-frontier
+construction when the native Summary Worker already owns the graph. Source
+verification and native graph acceptance are retained. The vendored
+flow optimizer also receives a transaction validation fix: complete proposed
+fanout trees must preserve distinct physical operand slots before acceptance.
+An unchanged MIT-licensed ChebyKAN source fixture and its license are retained
+under `fixtures/agent_views` for independent regression. This change adapts the
+already authorized vendored editor, not the failed Temp runtime.
+
 The built Studio includes React, React DOM and Scheduler. Versions are fixed by `studio/package-lock.json`; the notices below are copied from the installed package LICENSE files. Python publication/runtime dependencies are optional, installed separately from their lock files and are not bundled here.
 
 ## Summary_Merge preview migration (2026-10-14)
@@ -43,7 +62,21 @@ search and physical-port candidate options, with adaptations and original
 hashes recorded in the same native manifest. Studio's existing endpoint,
 ordered-waypoint and canonical binding guards remain in effect.
 
-The multiformat document reader is the same unmodified `generic-semantic.js`.
+The multiformat document reader originally used the source-identical `generic-semantic.js`.
+The 2026-10-29 Studio adaptation (native-semantic/22) attaches verified,
+expression-only callable/receiver inspection subtrees to the original opaque
+call's source details. These syntax cards and arrows do not appear on the
+computation canvas or expansion tree. Structural inspection remains available;
+any non-syntax incident dependency vetoes attachment. Canonical nodes, edges,
+operand bindings and unknown status remain unchanged and fully accounted for.
+The earlier renderer 21 explanation wrapper is superseded by this policy.
+Source cuts also place predecessor-free, nonmutable resource reads near their
+first consumers and use a larger bounded routing grid and graph-size-based
+routing budget. These are generic policies without model/project name checks
+or source execution. Prior affected layouts migrate with provenance preserved.
+Current hashes are in the integration manifest; the native manifest retains
+the original migration baseline. Checks are recorded in
+`docs/evidence/inspection-connections-20261029/`.
 `studio-documents.js`, the imported-document provenance contract and retained
 Studio import/panel wiring are local integration code, documented in
 `docs/summary-documents-integration-20261028.md`. No second semantic renderer or

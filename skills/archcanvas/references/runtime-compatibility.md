@@ -1,6 +1,8 @@
 # Runtime compatibility
 
-A Skill description does not install a runtime. Identify this copy with its launcher and `doctor`; use its actual version, asset hashes and module counts. Frozen Beta.2 is a historical 17/3 distribution. Current development capabilities are not its release certification. Human/publication/performance gates and actual three-host client E2E remain open.
+A Skill description does not install a runtime. Identify this copy with its launcher and `doctor --summary`; use its actual version, asset hashes and module counts. Frozen Beta.2 is a historical 17/3 distribution. Current development capabilities are not its release certification. Human/publication/performance gates and actual three-host client E2E remain open.
+
+`doctor --summary` performs the same complete integrity checks and returns the actual version, runtime root, catalog counts, asset count and inventory digest, omitting thousands of per-file asset entries. Use full `doctor` only when the inventory itself is needed. Never paste the complete installation manifest or asset inventory into model context just to identify a runtime.
 
 ## Resolve a formal runtime
 

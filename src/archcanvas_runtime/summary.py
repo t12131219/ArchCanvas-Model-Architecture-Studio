@@ -137,7 +137,10 @@ def observe_summary(files: dict[str, str], entry: str, input_spec: dict[str, Any
     receipt['runtimeVerified'] = bool(complete)
     receipt['trace_digest'] = digest(receipt)
     if not complete:
-        receipt.update(status='failed', reason=receipt.get('reason', 'Observation/replay did not cover every declared case and mode.'))
+        failed_run = next((run for run in runs if run.get('status') != 'passed' and run.get('reason')), None)
+        reason = receipt.get('reason') or (f"{failed_run.get('case')}/{failed_run.get('mode')}: {failed_run['reason']}" if failed_run else
+                                         'Observation/replay did not cover every declared case and mode.')
+        receipt.update(status='failed', reason=reason)
         receipt['trace_digest'] = digest({k: v for k, v in receipt.items() if k != 'trace_digest'})
         return result
     document = merge(copy.deepcopy(semantic), receipt)

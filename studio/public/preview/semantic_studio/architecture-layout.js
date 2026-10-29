@@ -592,7 +592,8 @@
       if(options.inputPlacement==='consumer')for(const u of queue){
         if(scc[u].length!==1||!ca[u].size)continue;
         const id=scc[u][0],n=idx.nodes.get(id);
-        if(pred.get(id).size||n?.kind!=='interface'||n.role!=='input')continue;
+        const resource=options.resourcePlacement==='consumer'&&['state','buffer','parameter'].includes(n?.kind)&&!n.mutable&&edges.filter(e=>e.source===id).every(e=>['data','parameter-read','buffer-read','state-read'].includes(e.kind));
+        if(pred.get(id).size||!(n?.kind==='interface'&&n.role==='input'||resource))continue;
         rank[u]=Math.min(...[...ca[u]].map(v=>rank[v]-1));
       }
       for(const e of edges){const a=owner(e.source),b=owner(e.target);if(a&&b&&a!==b&&unit.get(a)===unit.get(b))feedback.add(e.id);}

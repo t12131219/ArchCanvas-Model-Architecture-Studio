@@ -1,0 +1,559 @@
+{
+  "applications": [
+    {
+      "matchKey": "match-50a41fd417a33c92fd457c5c",
+      "nodeIds": [
+        "source-rule:ce3e7c6bea81f958e47397a8",
+        "source-rule:10c5c76a86909c13bba06c26"
+      ],
+      "rootId": "source-rule:ce3e7c6bea81f958e47397a8",
+      "ruleId": "rule-728fcb6172b34f292f24acb1",
+      "source": {
+        "column": 8,
+        "endColumn": 57,
+        "endLine": 511,
+        "expression": "return x_periods.permute(0, 1, 3, 2).contiguous()",
+        "line": 511,
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py"
+      }
+    },
+    {
+      "matchKey": "match-fb5bac6298042d9377902085",
+      "nodeIds": [
+        "source-rule:d4bf31e45189e3b539b6bf4c",
+        "source-rule:8d342982dd3024f5a3801241",
+        "source-rule:2ec9b59dc36334187f292e2e"
+      ],
+      "rootId": "source-rule:d4bf31e45189e3b539b6bf4c",
+      "ruleId": "rule-0bff56e56192c8ed06b2c5c1",
+      "source": {
+        "column": 15,
+        "endColumn": 57,
+        "endLine": 511,
+        "expression": "x_periods.permute(0, 1, 3, 2).contiguous()",
+        "line": 511,
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py"
+      }
+    },
+    {
+      "matchKey": "match-919de7f01f1b2cba13da725e",
+      "nodeIds": [
+        "source-rule:405a43f33c12ca222ae372b1",
+        "source-rule:6d41c89e140760d324c3ec3a",
+        "source-rule:cb09e1b5dc31cb7315521f2c"
+      ],
+      "rootId": "source-rule:405a43f33c12ca222ae372b1",
+      "ruleId": "rule-0bff56e56192c8ed06b2c5c1",
+      "source": {
+        "column": 15,
+        "endColumn": 44,
+        "endLine": 511,
+        "expression": "x_periods.permute(0, 1, 3, 2)",
+        "line": 511,
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py"
+      }
+    }
+  ],
+  "authority": "source-structure-only; no execution path, tensor ports, shapes, or source-generation authority",
+  "binding": {
+    "entry": "ts_benchmark.baselines.phaseformer.models.PhaseFormer:Model",
+    "method": "_to_phase_series",
+    "methodSpan": {
+      "column": 4,
+      "endColumn": 57,
+      "endLine": 511,
+      "expression": "def _to_phase_series(x_periods):\n        \"\"\"(B, C, P_in, L) -> (B, C, L, P_in)\"\"\"\n        return x_periods.permute(0, 1, 3, 2).contiguous()",
+      "line": 509,
+      "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py",
+      "sha256": "fb4ad9a859736ad57da39cc7f70b5f8f2a9adbf3d58fe3a84ecb8594b791eaa9"
+    },
+    "sourceFiles": [
+      {
+        "path": "ts_benchmark/baselines/phaseformer/__init__.py",
+        "sha256": "1ca3b7649f5773819ddddeadf11bde03af429281916a7a0697ea6e45135442d6"
+      },
+      {
+        "path": "ts_benchmark/baselines/phaseformer/layers/SelfAttention_Family.py",
+        "sha256": "230f52e782a00f73fdb57244edee672fb71ecb65c72381d5cc73bf4cfc9ec738"
+      },
+      {
+        "path": "ts_benchmark/baselines/phaseformer/layers/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py",
+        "sha256": "c8de4407b6cd06974b195d6850e4d51f78e3fd1f526ffd23fb1ce747ca147d21"
+      },
+      {
+        "path": "ts_benchmark/baselines/phaseformer/models/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "ts_benchmark/baselines/phaseformer/phaseformer.py",
+        "sha256": "93175e28bfc5230130808fc6b8859716d36dd27856e67b69276d5d5df78fec58"
+      },
+      {
+        "path": "ts_benchmark/baselines/phaseformer/utils/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "ts_benchmark/baselines/phaseformer/utils/masking.py",
+        "sha256": "02f453e52cfaec65e34132923add80e7132f188706680fa86d7bd884976e09ef"
+      }
+    ],
+    "symbol": {
+      "column": 0,
+      "endColumn": 20,
+      "endLine": 569,
+      "expression": "class Model(nn.Module):\n    \"\"\"\n    PhaseFormer: phase-based modeling without cross-channel fusion.\n\n    Pipeline:\n    1) RevIN over time per variable\n    2) Embedding -> [CrossPhaseRouting] x N -> Predictor produce future phase steps\n    3) Reassemble to forecasting sequence and de-normalize\n    \"\"\"\n\n    def __init__(self, configs):\n        super().__init__()\n\n        # basic configs\n        self.seq_len = configs.seq_len\n        self.pred_len = configs.pred_len\n        self.enc_in = configs.enc_in\n        self.period_len = getattr(configs, \"period_len\", 24)\n\n        # phase dimensions\n        self.latent_dim = getattr(configs, \"latent_dim\", 8)\n        self.phase_encoder_hidden = getattr(configs, \"phase_encoder_hidden\", 32)\n        self.predictor_hidden = getattr(configs, \"predictor_hidden\", 64)\n\n        # phase attention parameters\n        self.phase_attn_heads = getattr(configs, \"phase_attn_heads\", 4)\n        self.phase_attn_dropout = getattr(configs, \"phase_attn_dropout\", 0.0)\n        self.phase_attn_use_relpos = getattr(configs, \"phase_attn_use_relpos\", True)\n        self.phase_attn_window = getattr(configs, \"phase_attn_window\", None)\n        self.phase_attention_dim = getattr(configs, \"phase_attention_dim\", None)\n        self.phase_num_routers = getattr(configs, \"phase_num_routers\", 8)\n        self.phase_use_pos_embed = getattr(configs, \"phase_use_pos_embed\", False)\n        self.phase_pos_dropout = getattr(configs, \"phase_pos_dropout\", 0.0)\n\n        # period calculations\n        self.num_periods_input = (self.seq_len + self.period_len - 1) // self.period_len\n        self.num_periods_output = (self.pred_len + self.period_len - 1) // self.period_len\n        self.total_len_in = self.num_periods_input * self.period_len\n        self.pad_seq_len = self.total_len_in - self.seq_len\n\n        # RevIN normalization\n        self.use_revin = getattr(configs, \"use_revin\", True)\n        self.revin_affine = getattr(configs, \"revin_affine\", False)\n        self.revin_eps = getattr(configs, \"revin_eps\", 1e-5)\n        if self.use_revin:\n            self.revin = RevIN(num_features=self.enc_in, eps=self.revin_eps, affine=self.revin_affine)\n\n        # task name\n        self.task_name = getattr(configs, \"task_name\", \"long_term_forecast\")\n\n        # expose: embedding -> [CrossPhaseRouting] x N -> predictor (P_out)\n        self.phase_layers = getattr(configs, \"phase_layers\", 1)\n\n        # Top-level embedding: projects (B, C, L, P_in) -> (B, C, L, D)\n        self.embedding = PhaseEmbedding(\n            p_in=self.num_periods_input,\n            latent_dim=self.latent_dim,\n            hidden=self.phase_encoder_hidden,\n            use_mlp=getattr(configs, \"phase_encoder_use_mlp\", False),\n            dropout=getattr(configs, \"phase_encoder_dropout\", 0.0),\n        )\n\n        # Routing layers: Cross-phase routing with optional linear in/out projections\n        routing_units = []\n        if self.phase_layers == 1:\n            routing_units.append(\n                CrossPhaseRoutingUnit(\n                    apply_in_proj=False,\n                    apply_out_proj=False,\n                    num_periods_input=self.num_periods_input,\n                    latent_dim=self.latent_dim,\n                    phase_encoder_hidden=self.phase_encoder_hidden,\n                    predictor_hidden=self.predictor_hidden,\n                    phase_attn_heads=self.phase_attn_heads,\n                    phase_attn_dropout=self.phase_attn_dropout,\n                    phase_attn_use_relpos=self.phase_attn_use_relpos,\n                    period_len=self.period_len,\n                    phase_attn_window=self.phase_attn_window,\n                    phase_attention_dim=self.phase_attention_dim,\n                    phase_num_routers=self.phase_num_routers,\n                    phase_use_pos_embed=self.phase_use_pos_embed,\n                    phase_pos_dropout=self.phase_pos_dropout,\n                    phase_encoder_use_mlp=getattr(configs, \"phase_encoder_use_mlp\", False),\n                    phase_encoder_dropout=getattr(configs, \"phase_encoder_dropout\", 0.0),\n                    predictor_use_mlp=getattr(configs, \"predictor_use_mlp\", False),\n                    predictor_dropout=getattr(configs, \"predictor_dropout\", 0.0),\n                )\n            )\n        else:\n            for li in range(self.phase_layers):\n                is_first = li == 0\n                is_last = li == self.phase_layers - 1\n                routing_units.append(\n                    CrossPhaseRoutingUnit(\n                        apply_in_proj=not is_first,\n                        apply_out_proj=not is_last,\n                        num_periods_input=self.num_periods_input,\n                        latent_dim=self.latent_dim,\n                        phase_encoder_hidden=self.phase_encoder_hidden,\n                        predictor_hidden=self.predictor_hidden,\n                        phase_attn_heads=self.phase_attn_heads,\n                        phase_attn_dropout=self.phase_attn_dropout,\n                        phase_attn_use_relpos=self.phase_attn_use_relpos,\n                        period_len=self.period_len,\n                        phase_attn_window=self.phase_attn_window,\n                        phase_attention_dim=self.phase_attention_dim,\n                        phase_num_routers=self.phase_num_routers,\n                        phase_use_pos_embed=self.phase_use_pos_embed,\n                        phase_pos_dropout=self.phase_pos_dropout,\n                        phase_encoder_use_mlp=getattr(configs, \"phase_encoder_use_mlp\", False),\n                        phase_encoder_dropout=getattr(configs, \"phase_encoder_dropout\", 0.0),\n                        predictor_use_mlp=getattr(configs, \"predictor_use_mlp\", False),\n                        predictor_dropout=getattr(configs, \"predictor_dropout\", 0.0),\n                    )\n                )\n        self.routing_layers = nn.ModuleList(routing_units)\n\n        # Top-level predictor to P_out: maps (B, C, L, D) -> (B, C, L, P_out)\n        self.predictor = PhasePredictor(\n            p_out=self.num_periods_output,\n            latent_dim=self.latent_dim,\n            hidden=self.predictor_hidden,\n            use_mlp=getattr(configs, \"predictor_use_mlp\", False),\n            dropout=getattr(configs, \"predictor_dropout\", 0.0),\n        )\n\n    # phase rearrangement helpers\n    @staticmethod\n    def _to_phase_series(x_periods):\n        \"\"\"(B, C, P_in, L) -> (B, C, L, P_in)\"\"\"\n        return x_periods.permute(0, 1, 3, 2).contiguous()\n\n    @staticmethod\n    def _from_phase_steps_to_periods(y_phase_steps):\n        \"\"\"(B, C, L, P_out) -> (B, C, P_out, L)\"\"\"\n        return y_phase_steps.permute(0, 1, 3, 2).contiguous()\n\n    # forward pass\n    def forward(self, x_enc, x_mark_enc=None, x_dec=None, x_mark_dec=None, *args, **kwargs):\n        \"\"\"\n        Input:  x_enc (B, seq_len, C)\n        Output: y_hat (B, pred_len, C)\n        Also returns intermediate Z (B,C,L,D) and future phase values (B,C,L,P_out) for analysis.\n        \"\"\"\n        # 1) RevIN normalization\n        if self.use_revin:\n            # RevIN expects (B, C, L)\n            x_in, stats = self.revin.normalize(x_enc)\n        else:\n            x_in = x_enc.float()\n        # 2) Use original input (no cross-channel fusion)\n        x_fused = x_in  # (B, L, C)\n\n        # 3) Ring padding to full periods\n        x = x_fused.permute(0, 2, 1)  # (B, C, L_total)\n        B, C, L = x.shape\n        if self.pad_seq_len > 0:\n            x = F.pad(x, (0, self.pad_seq_len), mode=\"circular\")  # (B, C, total_len_in)\n\n        # 4) Split to periods (B, C, P_in, L)\n        x_periods = x.view(B, C, self.num_periods_input, self.period_len)\n\n        # 5) Parallel by phase view (B, C, L, P_in)\n        phase_series = self._to_phase_series(x_periods)\n\n        # 6-8) Embedding -> routing layers -> top predictor\n        # Initial latent from embedding\n        Z = self.embedding(phase_series)  # (B, C, L, D)\n        phase_series_cur = phase_series\n\n        for layer_index, unit in enumerate(self.routing_layers):\n            Z, y_phase_steps_p_in = unit(phase_series_cur, Z)\n            if layer_index < len(self.routing_layers) - 1:\n                # intermediate layers must produce P_in for the next layer\n                phase_series_cur = y_phase_steps_p_in\n\n        # final predictor to produce P_out\n        y_phase_steps = self.predictor(Z)  # (B, C, L, P_out)\n\n        # 9) Reassemble to sequence (B, pred_len, C)\n        y_periods = self._from_phase_steps_to_periods(y_phase_steps)  # (B, C, P_out, L)\n        y_full = y_periods.reshape(B, C, -1)[..., : self.pred_len]  # (B, C, pred_len)\n        y_hat = y_full.permute(0, 2, 1)  # (B, pred_len, C)\n\n        # 10) De-normalization\n        if self.use_revin:\n            y_hat = self.revin.denormalize(y_hat, stats)\n\n        return y_hat",
+      "line": 381,
+      "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py",
+      "qualifiedName": "ts_benchmark.baselines.phaseformer.models.PhaseFormer:Model"
+    }
+  },
+  "children": [
+    {
+      "category": "container",
+      "children": [
+        "source-rule:10c5c76a86909c13bba06c26"
+      ],
+      "evidence": "source",
+      "id": "source-rule:ce3e7c6bea81f958e47397a8",
+      "kind": "SourceStatement",
+      "label": "Return",
+      "parameters": {
+        "guards": [],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified",
+        "sourceMatch": "match-50a41fd417a33c92fd457c5c",
+        "sourceRuleId": "rule-728fcb6172b34f292f24acb1",
+        "sourceRulePath": []
+      },
+      "parentId": null,
+      "ports": [],
+      "source": {
+        "column": 8,
+        "endColumn": 57,
+        "endLine": 511,
+        "expression": "return x_periods.permute(0, 1, 3, 2).contiguous()",
+        "line": 511,
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [],
+      "evidence": "source",
+      "id": "source-rule:10c5c76a86909c13bba06c26",
+      "kind": "SourceCall",
+      "label": "x_periods.permute(0, 1, 3, 2).contiguous",
+      "parameters": {
+        "guards": [],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified",
+        "sourceMatch": "match-50a41fd417a33c92fd457c5c",
+        "sourceRuleId": "rule-728fcb6172b34f292f24acb1",
+        "sourceRulePath": [
+          "value"
+        ]
+      },
+      "parentId": "source-rule:ce3e7c6bea81f958e47397a8",
+      "ports": [],
+      "source": {
+        "column": 15,
+        "endColumn": 57,
+        "endLine": 511,
+        "expression": "x_periods.permute(0, 1, 3, 2).contiguous()",
+        "line": 511,
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [
+        "source-rule:8d342982dd3024f5a3801241"
+      ],
+      "evidence": "source",
+      "id": "source-rule:d4bf31e45189e3b539b6bf4c",
+      "kind": "SourceCall",
+      "label": "Call",
+      "parameters": {
+        "guards": [],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified",
+        "sourceMatch": "match-fb5bac6298042d9377902085",
+        "sourceRuleId": "rule-0bff56e56192c8ed06b2c5c1",
+        "sourceRulePath": []
+      },
+      "parentId": null,
+      "ports": [],
+      "source": {
+        "column": 15,
+        "endColumn": 57,
+        "endLine": 511,
+        "expression": "x_periods.permute(0, 1, 3, 2).contiguous()",
+        "line": 511,
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [
+        "source-rule:2ec9b59dc36334187f292e2e"
+      ],
+      "evidence": "source",
+      "id": "source-rule:8d342982dd3024f5a3801241",
+      "kind": "SourceExpression",
+      "label": "x_periods.permute(0, 1, 3, 2).contiguous",
+      "parameters": {
+        "guards": [],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified",
+        "sourceMatch": "match-fb5bac6298042d9377902085",
+        "sourceRuleId": "rule-0bff56e56192c8ed06b2c5c1",
+        "sourceRulePath": [
+          "func"
+        ]
+      },
+      "parentId": "source-rule:d4bf31e45189e3b539b6bf4c",
+      "ports": [],
+      "source": {
+        "column": 15,
+        "endColumn": 55,
+        "endLine": 511,
+        "expression": "x_periods.permute(0, 1, 3, 2).contiguous",
+        "line": 511,
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [],
+      "evidence": "source",
+      "id": "source-rule:2ec9b59dc36334187f292e2e",
+      "kind": "SourceExpression",
+      "label": "x_periods.permute",
+      "parameters": {
+        "guards": [],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified",
+        "sourceMatch": "match-fb5bac6298042d9377902085",
+        "sourceRuleId": "rule-0bff56e56192c8ed06b2c5c1",
+        "sourceRulePath": [
+          "func",
+          "value"
+        ]
+      },
+      "parentId": "source-rule:8d342982dd3024f5a3801241",
+      "ports": [],
+      "source": {
+        "column": 15,
+        "endColumn": 44,
+        "endLine": 511,
+        "expression": "x_periods.permute(0, 1, 3, 2)",
+        "line": 511,
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [
+        "source-rule:6d41c89e140760d324c3ec3a"
+      ],
+      "evidence": "source",
+      "id": "source-rule:405a43f33c12ca222ae372b1",
+      "kind": "SourceCall",
+      "label": "Call",
+      "parameters": {
+        "guards": [],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified",
+        "sourceMatch": "match-919de7f01f1b2cba13da725e",
+        "sourceRuleId": "rule-0bff56e56192c8ed06b2c5c1",
+        "sourceRulePath": []
+      },
+      "parentId": null,
+      "ports": [],
+      "source": {
+        "column": 15,
+        "endColumn": 44,
+        "endLine": 511,
+        "expression": "x_periods.permute(0, 1, 3, 2)",
+        "line": 511,
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [
+        "source-rule:cb09e1b5dc31cb7315521f2c"
+      ],
+      "evidence": "source",
+      "id": "source-rule:6d41c89e140760d324c3ec3a",
+      "kind": "SourceExpression",
+      "label": "x_periods.permute",
+      "parameters": {
+        "guards": [],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified",
+        "sourceMatch": "match-919de7f01f1b2cba13da725e",
+        "sourceRuleId": "rule-0bff56e56192c8ed06b2c5c1",
+        "sourceRulePath": [
+          "func"
+        ]
+      },
+      "parentId": "source-rule:405a43f33c12ca222ae372b1",
+      "ports": [],
+      "source": {
+        "column": 15,
+        "endColumn": 32,
+        "endLine": 511,
+        "expression": "x_periods.permute",
+        "line": 511,
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py"
+      },
+      "sourceStructure": true
+    },
+    {
+      "category": "operator",
+      "children": [],
+      "evidence": "source",
+      "id": "source-rule:cb09e1b5dc31cb7315521f2c",
+      "kind": "SourceExpression",
+      "label": "x_periods",
+      "parameters": {
+        "guards": [],
+        "inspectionAuthority": "syntax only; runtime path and repetition unverified",
+        "sourceMatch": "match-919de7f01f1b2cba13da725e",
+        "sourceRuleId": "rule-0bff56e56192c8ed06b2c5c1",
+        "sourceRulePath": [
+          "func",
+          "value"
+        ]
+      },
+      "parentId": "source-rule:6d41c89e140760d324c3ec3a",
+      "ports": [],
+      "source": {
+        "column": 15,
+        "endColumn": 24,
+        "endLine": 511,
+        "expression": "x_periods",
+        "line": 511,
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py"
+      },
+      "sourceStructure": true
+    }
+  ],
+  "config": {},
+  "dependencies": [
+    {
+      "guards": [],
+      "id": "source-rule-relation:5799c7d73a6f1347bfb20e6d",
+      "kind": "source-data-dependency",
+      "proof": "expression-input",
+      "source": {
+        "column": 8,
+        "endColumn": 57,
+        "endLine": 511,
+        "expression": "return x_periods.permute(0, 1, 3, 2).contiguous()",
+        "line": 511,
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py"
+      },
+      "sourceId": "source-rule:10c5c76a86909c13bba06c26",
+      "sourceMatch": "match-50a41fd417a33c92fd457c5c",
+      "sourceRuleId": "rule-728fcb6172b34f292f24acb1",
+      "syntaxOnly": true,
+      "targetId": "source-rule:ce3e7c6bea81f958e47397a8"
+    },
+    {
+      "guards": [],
+      "id": "source-rule-relation:de5570efb3998253bc3bb99c",
+      "kind": "source-data-dependency",
+      "proof": "expression-input",
+      "source": {
+        "column": 15,
+        "endColumn": 55,
+        "endLine": 511,
+        "expression": "x_periods.permute(0, 1, 3, 2).contiguous",
+        "line": 511,
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py"
+      },
+      "sourceId": "source-rule:2ec9b59dc36334187f292e2e",
+      "sourceMatch": "match-fb5bac6298042d9377902085",
+      "sourceRuleId": "rule-0bff56e56192c8ed06b2c5c1",
+      "syntaxOnly": true,
+      "targetId": "source-rule:8d342982dd3024f5a3801241"
+    },
+    {
+      "guards": [],
+      "id": "source-rule-relation:ac649c7b37cbe7eb1dc05410",
+      "kind": "source-data-dependency",
+      "proof": "expression-input",
+      "source": {
+        "column": 15,
+        "endColumn": 57,
+        "endLine": 511,
+        "expression": "x_periods.permute(0, 1, 3, 2).contiguous()",
+        "line": 511,
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py"
+      },
+      "sourceId": "source-rule:8d342982dd3024f5a3801241",
+      "sourceMatch": "match-fb5bac6298042d9377902085",
+      "sourceRuleId": "rule-0bff56e56192c8ed06b2c5c1",
+      "syntaxOnly": true,
+      "targetId": "source-rule:d4bf31e45189e3b539b6bf4c"
+    },
+    {
+      "guards": [],
+      "id": "source-rule-relation:900781b9756cc297b25f43ed",
+      "kind": "source-data-dependency",
+      "proof": "expression-input",
+      "source": {
+        "column": 15,
+        "endColumn": 32,
+        "endLine": 511,
+        "expression": "x_periods.permute",
+        "line": 511,
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py"
+      },
+      "sourceId": "source-rule:cb09e1b5dc31cb7315521f2c",
+      "sourceMatch": "match-919de7f01f1b2cba13da725e",
+      "sourceRuleId": "rule-0bff56e56192c8ed06b2c5c1",
+      "syntaxOnly": true,
+      "targetId": "source-rule:6d41c89e140760d324c3ec3a"
+    },
+    {
+      "guards": [],
+      "id": "source-rule-relation:0395f5a2b32f06a35b813342",
+      "kind": "source-data-dependency",
+      "proof": "expression-input",
+      "source": {
+        "column": 15,
+        "endColumn": 44,
+        "endLine": 511,
+        "expression": "x_periods.permute(0, 1, 3, 2)",
+        "line": 511,
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py"
+      },
+      "sourceId": "source-rule:6d41c89e140760d324c3ec3a",
+      "sourceMatch": "match-919de7f01f1b2cba13da725e",
+      "sourceRuleId": "rule-0bff56e56192c8ed06b2c5c1",
+      "syntaxOnly": true,
+      "targetId": "source-rule:405a43f33c12ca222ae372b1"
+    }
+  ],
+  "diagnostics": [],
+  "generationContract": null,
+  "generatorRevision": "source-rules/1",
+  "id": "adapter-a3db788fc4f0eb616a856aed",
+  "inputs": [],
+  "outputs": [
+    {
+      "id": "return-511-8-0",
+      "kind": "source-return-slot",
+      "path": [],
+      "source": {
+        "column": 15,
+        "endColumn": 57,
+        "endLine": 511,
+        "expression": "x_periods.permute(0, 1, 3, 2).contiguous()",
+        "line": 511,
+        "path": "ts_benchmark/baselines/phaseformer/models/PhaseFormer.py"
+      }
+    }
+  ],
+  "presentation": {
+    "labels": {},
+    "notes": []
+  },
+  "rules": [
+    {
+      "id": "rule-0bff56e56192c8ed06b2c5c1",
+      "match": {
+        "fields": {
+          "func": {
+            "fields": {},
+            "type": "Attribute"
+          }
+        },
+        "type": "Call"
+      },
+      "name": "Attribute callable source view",
+      "nodes": [
+        {
+          "at": [],
+          "key": "call",
+          "kind": "SourceCall",
+          "parent": null
+        },
+        {
+          "at": [
+            "func"
+          ],
+          "key": "callable",
+          "kind": "SourceExpression",
+          "parent": "call"
+        },
+        {
+          "at": [
+            "func",
+            "value"
+          ],
+          "key": "receiver",
+          "kind": "SourceExpression",
+          "parent": "callable"
+        }
+      ],
+      "relations": [
+        {
+          "proof": "expression-input",
+          "source": "receiver",
+          "target": "callable"
+        },
+        {
+          "proof": "expression-input",
+          "source": "callable",
+          "target": "call"
+        }
+      ],
+      "schema": "archcanvas-source-rule/1"
+    },
+    {
+      "id": "rule-728fcb6172b34f292f24acb1",
+      "match": {
+        "fields": {
+          "value": {
+            "fields": {},
+            "type": "Call"
+          }
+        },
+        "type": "Return"
+      },
+      "name": "Source return expression",
+      "nodes": [
+        {
+          "at": [],
+          "key": "return",
+          "kind": "SourceStatement",
+          "parent": null
+        },
+        {
+          "at": [
+            "value"
+          ],
+          "key": "value",
+          "kind": "SourceCall",
+          "parent": "return"
+        }
+      ],
+      "relations": [
+        {
+          "proof": "expression-input",
+          "source": "value",
+          "target": "return"
+        }
+      ],
+      "schema": "archcanvas-source-rule/1"
+    }
+  ],
+  "schema": "archcanvas-source-adapter/2"
+}

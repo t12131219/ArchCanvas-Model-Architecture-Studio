@@ -1,0 +1,49 @@
+{
+  "schema": "archcanvas-source-rule/1",
+  "name": "Attribute callable source view",
+  "match": {
+    "type": "Call",
+    "fields": {
+      "func": {
+        "type": "Attribute"
+      }
+    }
+  },
+  "nodes": [
+    {
+      "key": "call",
+      "at": [],
+      "parent": null,
+      "kind": "SourceCall"
+    },
+    {
+      "key": "callable",
+      "at": [
+        "func"
+      ],
+      "parent": "call",
+      "kind": "SourceExpression"
+    },
+    {
+      "key": "receiver",
+      "at": [
+        "func",
+        "value"
+      ],
+      "parent": "callable",
+      "kind": "SourceExpression"
+    }
+  ],
+  "relations": [
+    {
+      "source": "receiver",
+      "target": "callable",
+      "proof": "expression-input"
+    },
+    {
+      "source": "callable",
+      "target": "call",
+      "proof": "expression-input"
+    }
+  ]
+}

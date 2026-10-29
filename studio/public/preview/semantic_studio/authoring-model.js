@@ -13,7 +13,7 @@
     if(doc?.schema!==schema||!Array.isArray(doc.nodes)||!Array.isArray(doc.edges)||doc.nodes.length>16000||doc.edges.length>50000)throw Error('不是有效的编辑文档或超过图规模限制');
     if(!Array.isArray(doc.sources)||!Array.isArray(doc.library)||!Array.isArray(doc.open)||!doc.modules||typeof doc.modules!=='object'||!doc.offsets||typeof doc.offsets!=='object'||!Number.isFinite(doc.serial))throw Error('编辑文档缺少源码、模块库或展示状态');
     const by=new Map(doc.nodes.map(n=>[n.id,n]));if(by.size!==doc.nodes.length)throw Error('重复节点身份');const edgeIds=new Set();
-    for(const n of doc.nodes){if(!n.id||!n.label)throw Error('节点缺少身份或名称');if(n.parent&&(!by.has(n.parent)||by.get(n.parent).kind!=='composite'))throw Error('父模块不存在或不是容器');const seen=new Set();let at=n;while(at){if(seen.has(at.id))throw Error('模块包含关系成环');seen.add(at.id);at=by.get(at.parent);}}
+    for(const n of doc.nodes){if(!n.id||!n.label)throw Error('节点缺少身份或名称');if(n.parent&&(!by.has(n.parent)||by.get(n.parent).kind!=='composite'&&!(n.inspection_only&&by.get(n.parent).kind==='opaque')))throw Error('父模块不存在或不是容器');const seen=new Set();let at=n;while(at){if(seen.has(at.id))throw Error('模块包含关系成环');seen.add(at.id);at=by.get(at.parent);}}
     for(const e of doc.edges){if(edgeIds.has(e.id)||!by.has(e.source)||!by.has(e.target)||e.source_port==null||e.target_port==null)throw Error('连接身份、端点或槽位无效');edgeIds.add(e.id);}
     for(const id of Object.keys(doc.modules||{}))if(!by.has(id))throw Error('模块定义没有对应节点');
     return true;
@@ -42,12 +42,13 @@
   function portIndex(doc){
     const nodes=new Map(doc.nodes.map(n=>[n.id,n])),children=new Map(),incoming=new Map(),outgoing=new Map(),order=new Map(),cache=new Map();
     for(const n of doc.nodes){if(!children.has(n.parent))children.set(n.parent,[]);children.get(n.parent).push(n);}
-    doc.edges.forEach((e,i)=>{order.set(e,i);for(const [map,id]of [[incoming,e.target],[outgoing,e.source]]){if(!map.has(id))map.set(id,[]);map.get(id).push(e);}});
+    doc.edges.forEach((e,i)=>{order.set(e,i);if(e.syntaxOnly||e.kind==='source-inspection')return;for(const [map,id]of [[incoming,e.target],[outgoing,e.source]]){if(!map.has(id))map.set(id,[]);map.get(id).push(e);}});
     return {nodes,children,incoming,outgoing,order,cache};
   }
   function ports(doc,id,index=portIndex(doc)){
     if(index.cache.has(id))return index.cache.get(id);
     const n=index.nodes.get(id);if(!n)throw Error('模块不存在');const children=index.children.get(id)||[],inputs=[],outputs=[];
+    if(n.inspection_only){const result={inputs,outputs};index.cache.set(id,result);return result;}
     function put(list,node,port,label){if(!list.some(p=>p.node===node&&p.port===String(port)))list.push({node,port:String(port),label:label||String(port)});}
     if(n.kind!=='composite'){
       const ins=index.incoming.get(id)||[];for(const e of ins)put(inputs,id,e.target_port,e.target_port);
@@ -65,6 +66,7 @@
   }
   function connect(doc,source,target,{kind='data',condition=null,id=null,replace=false}={}){
     if(!doc.nodes.some(n=>n.id===source.node)||!doc.nodes.some(n=>n.id===target.node))throw Error('连接端点不存在');
+    if(doc.nodes.some(n=>(n.id===source.node||n.id===target.node)&&n.inspection_only))throw Error('源码检查卡片没有张量连接端口');
     if(source.node===target.node)throw Error('请连接不同节点；状态反馈需使用显式状态接口');
     if(source.port==null||target.port==null)throw Error('请选择确切的输出和输入端口');
     const drivers=doc.edges.filter(e=>e.target===target.node&&String(e.target_port)===String(target.port));

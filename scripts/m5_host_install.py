@@ -288,7 +288,7 @@ RUNTIME_ROOT = SKILL_DIRECTORY / "runtime" / "release"
 SOURCE_ROOT = RUNTIME_ROOT / "src"
 if not RUNTIME_ROOT.is_dir() or not SOURCE_ROOT.is_dir():
     raise SystemExit("ArchCanvas embedded runtime is missing or damaged")
-if "serve" in sys.argv[1:]:
+if "serve" in sys.argv[1:] and not any(flag in sys.argv[1:] for flag in ("--help", "-h")):
     try:
         data_index = sys.argv.index("--data-dir")
         data_argument = sys.argv[data_index + 1]

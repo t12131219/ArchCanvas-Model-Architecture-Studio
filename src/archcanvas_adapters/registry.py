@@ -136,7 +136,10 @@ def _entry(corpus, entry, method):
             index = ModelIndex({own.path: own.content for own in corpus.units.values()})
             located = index.method(entry, method)
             resolved = None
-            if located and isinstance(located[1], ast.FunctionDef) and not located[1].decorator_list:
+            # An explicitly named method is inspected as written, including
+            # decorated bodies. This does not resolve the decorated callable
+            # or execute its decorator. Default callable selection stays strict.
+            if located and isinstance(located[1], ast.FunctionDef):
                 own = next((own for own in corpus.units.values() if own.path == located[0]), None)
                 if own:
                     # Use the matching AST object from the formal Corpus.
@@ -875,6 +878,8 @@ def apply_preview_adapters(bundle, files, adapters, *, automatic=False):
     if rule_definitions:
         from .rule_preview import apply_rule_adapters
         result = apply_rule_adapters(result, files, rule_definitions)
+    from .semantic_views import native_inspection_views
+    result = native_inspection_views(result, files)
     return _adaptation_coverage(result, files)
 
 
@@ -943,7 +948,7 @@ def _adaptation_coverage(bundle, files):
     corpus = _corpus(files)
     requests = []
     for node in bundle['ir']['nodes']:
-        if node.get('kind') != 'opaque':
+        if node.get('kind') != 'opaque' or node.get('semantic', {}).get('inspection_only'):
             continue
         candidates = sorted(_local_call_entries(node, bundle, corpus) | _local_owner_entries(node, bundle, corpus))
         if not candidates:

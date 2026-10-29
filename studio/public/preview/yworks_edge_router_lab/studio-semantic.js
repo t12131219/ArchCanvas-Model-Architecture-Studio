@@ -6,7 +6,7 @@
   const recordedRuns=ir=>Array.isArray(ir.runtime?.runs)?ir.runtime.runs:[];
   function enabled(bundle){return bundle?.ir?.semantic_ir?.schema==='archcanvas-source-semantic/2';}
   function state(action){return F.frontier({mode:'source'},action);}
-  function nodes(graph){const visible=new Map(graph.nodes.map(n=>[n.id,n]));return graph.generic?Array.from(G.expected(graph).idx.nodes.values()).map(n=>({x:0,y:0,w:160,h:60,expanded:false,...visible.get(n.id),id:n.id,parent:n.parent,label:n.paper?.title||n.label||n.id,semantic:n,presentation_only:!!n.presentation_only})):graph.recursive?.authority.detail.nodes||graph.nodes;}
+  function nodes(graph){const visible=new Map(graph.nodes.map(n=>[n.id,n]));return graph.generic?Array.from(G.expected(graph).idx.nodes.values()).filter(n=>!G.expected(graph).detailOnly?.has(n.id)).map(n=>({x:0,y:0,w:160,h:60,expanded:false,...visible.get(n.id),id:n.id,parent:n.parent,label:n.paper?.title||n.label||n.id,semantic:n,presentation_only:!!n.presentation_only})):graph.recursive?.authority.detail.nodes||graph.nodes;}
   // The host needs identity and source-matching fields, not a second copy of
   // canonical semantic bodies, rendered HTML or complete physical evidence.
   function hierarchy(graph){
@@ -105,7 +105,7 @@
     // Frontier gestures need legal routes, not a new global cosmetic search.
     // Explicit route/optimise commands retain all aesthetic passes.
     const interactive=!!message.transition;
-    message={...message,options:G.routeOptions({budgetMs:8000,...(interactive?{firstLegal:true,refineCrossings:false,refinePlacement:false,refineChannels:false,refineFlow:false}:{}),...message.options,...(interactive?{crossingCost:0}:{})})};
+    message={...message,options:G.routeOptions({...(interactive?{firstLegal:true,refineCrossings:false,refinePlacement:false,refineChannels:false,refineFlow:false}:{}),...message.options,...(interactive?{crossingCost:0}:{})})};
     // Aesthetic passes may try other physical ports. An explicit inspector
     // endpoint edit takes precedence over those optional layout proposals.
     if(Object.keys(message.options.portOverrides||{}).length)Object.assign(message.options,{refineCrossings:false,refinePlacement:false,refineChannels:false,refineFlow:false});

@@ -10,6 +10,7 @@
   // The endpoint fallback also recognizes saved frontiers from older adapters.
   function isSourceDependency(graph,edge){
     if(edge.draft||/visual edit draft/i.test(String(edge.binding?.evidence||'')))return false;
+    if(graph.generic){const rows=edge.binding?.bundle_members?.length?edge.binding.bundle_members:[edge.binding||edge];return rows.every(e=>e.kind==='source-inspection'&&e.syntaxOnly===true);}
     if(edge.role&&edge.role!=='source_dependency')return false;
     if(edge.role==='source_dependency'&&edge.syntaxOnly===true)return true;
     const detail=graph.recursive?.authority?.detail,original=detail?.edges?.find(e=>e.id===edge.projection?.original)||edge;
@@ -21,7 +22,7 @@
   function edgeAppearance(graph,edge){
     const overlay=state(graph),p=overlay.edges[edge.id]||overlay.edges[edge.projection?.original]||{},source=isSourceDependency(graph,edge),mono=overlay.page.preset==='monochrome';
     const dashed=p.dashed!==undefined?p.dashed:edge.dashed!==undefined?edge.dashed:source;
-    return {sourceRelation:source,stroke:mono?'#4b5563':color(p.stroke)?p.stroke:color(edge.stroke)?edge.stroke:source?'#776095':'#263b4b',
+    return {sourceRelation:source,stroke:mono?'#4b5563':color(p.stroke)?p.stroke:source?'#776095':color(edge.stroke)?edge.stroke:'#263b4b',
       width:p.width??edge.width??2.2,dashed,dashArray:dashed?(source?'2 4':'7 5'):'none'};
   }
   function applyNode(graph,n,view){
@@ -73,7 +74,7 @@
       const legend=node('g',{'data-studio-legend':'true'}),width=sourceEdge||controlRows.length?360:250,height=((sourceEdge?1:0)+controlRows.length)*28+32,x=Math.max(10,graph.canvas[0]-width-20),y=Math.max(10,graph.canvas[1]-height-20);
       legend.append(node('rect',{x,y,width,height,rx:8,fill:'#ffffff',stroke:'#ccd7df'}));
       if(sourceEdge){const row=y+24,appearance=edgeAppearance(graph,sourceEdge),relation=node('g',{'data-source-relation-legend':'true'});
-        relation.append(node('path',{d:`M ${x+12} ${row-5} H ${x+36}`,fill:'none',stroke:appearance.stroke,'stroke-width':1.5,'stroke-dasharray':appearance.dashArray}),node('path',{d:`M ${x+31} ${row-9} L ${x+37} ${row-5} L ${x+31} ${row-1}`,fill:'none',stroke:appearance.stroke,'stroke-width':1.5}),node('text',{x:x+44,y:row,'font-size':12,fill:'#334155'},'源码数据依赖 · 执行路径未确定'));legend.append(relation);}
+        relation.append(node('path',{d:`M ${x+12} ${row-5} H ${x+36}`,fill:'none',stroke:appearance.stroke,'stroke-width':1.5,'stroke-dasharray':appearance.dashArray}),node('path',{d:`M ${x+31} ${row-9} L ${x+37} ${row-5} L ${x+31} ${row-1}`,fill:'none',stroke:appearance.stroke,'stroke-width':1.5}),node('text',{x:x+44,y:row,'font-size':12,fill:'#334155'},graph.generic?'源码表达式依赖 · 不表示张量流':'源码数据依赖 · 执行路径未确定'));legend.append(relation);}
       controlRows.forEach((item,index)=>{const row=y+24+((sourceEdge?1:0)+index)*28,stroke=mono?'#4b5563':item.stroke,relation=node('g',{'data-source-control-legend':'true'});
         relation.append(node('path',{d:`M ${x+12} ${row-5} H ${x+36}`,fill:'none',stroke,'stroke-width':1.5,'stroke-dasharray':item.dashArray}),node('path',{d:`M ${x+31} ${row-9} L ${x+37} ${row-5} L ${x+31} ${row-1}`,fill:'none',stroke,'stroke-width':1.5}),node('text',{x:x+44,y:row,'font-size':12,fill:'#334155'},item.label));legend.append(relation);});
       layer.append(legend);

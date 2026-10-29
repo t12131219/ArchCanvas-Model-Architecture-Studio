@@ -16,7 +16,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="archcanvas", description="Static analysis and Studio by default; explicit isolated profiles verify reviewed structural source changes.")
     subcommands = parser.add_subparsers(dest="command", required=True)
     subcommands.add_parser("capabilities", help="Report implemented capabilities and actual package provenance")
-    subcommands.add_parser("doctor", help="Identify actual runtime version, assets, module counts and next step without model execution")
+    doctor = subcommands.add_parser("doctor", help="Identify actual runtime version, assets, module counts and next step without model execution")
+    doctor.add_argument("--summary", action="store_true", help="Keep integrity checks and inventory digest; omit the per-file asset listing")
     discovery = subcommands.add_parser("discover", help="Scan local Python model classes and source-backed containment without executing models")
     discovery.add_argument("--root", type=Path, required=True)
     discovery.add_argument("--output", type=Path)
@@ -28,11 +29,11 @@ def main(argv: list[str] | None = None) -> int:
     rule_list = adapter_actions.add_parser("rules", help="List persisted reusable AST rule templates")
     rule_list.add_argument("--registry", type=Path, required=True)
     rule_list.add_argument("--output", type=Path)
-    for action in ("scaffold", "validate", "register", "list", "preview"):
+    for action in ("scaffold", "validate", "register", "list", "preview", "handoff"):
         operation = adapter_actions.add_parser(action)
         operation.add_argument("--root", type=Path, required=True, help="Source corpus used to verify the adapter's exact source binding")
         operation.add_argument("--output", type=Path)
-        if action in ("scaffold", "preview"):
+        if action in ("scaffold", "preview", "handoff"):
             operation.add_argument("--entry", required=True)
             operation.add_argument("--config", type=Path, help="JSON constructor configuration, statically declared only")
         if action == "scaffold":
@@ -43,6 +44,15 @@ def main(argv: list[str] | None = None) -> int:
             operation.add_argument("--definition", type=Path, required=True)
         if action in ("register", "list", "preview"):
             operation.add_argument("--registry", type=Path, required=True, help="Explicit persistent JSON adapter registry")
+        if action == "handoff":
+            operation.add_argument("--registry", type=Path, help="Read existing adapters without writing them")
+            operation.add_argument("--probe-spec", type=Path, help="Explicit semantic-inputs/1 CPU cases; opt in to isolated execution before handoff")
+            operation.add_argument("--runtime-interpreter", type=Path)
+            operation.add_argument("--dependency-lock", type=Path)
+            operation.add_argument("--probe-output", type=Path, help="Persist the full CPU observation result separately")
+            operation.add_argument("--probe-timeout", type=int, default=30)
+        if action == "preview":
+            operation.add_argument("--semantic-mode", choices=("summary", "legacy"), default="legacy")
     opening = subcommands.add_parser("open", help="Statically analyze a model and return its exact persisted canvas session URL")
     inputs = opening.add_mutually_exclusive_group(required=True)
     inputs.add_argument("--root", type=Path)
@@ -116,7 +126,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if options.command == "doctor":
             from .doctor import diagnose
-            result = diagnose()
+            result = diagnose(summary=options.summary)
         elif options.command == "discover":
             from archcanvas_python.discovery import discover_directory
             result = discover_directory(options.root)
@@ -145,9 +155,30 @@ def main(argv: list[str] | None = None) -> int:
                 result = AdapterRegistry(options.registry).register_files(json.loads(options.definition.read_text()), files)
             elif action == "list":
                 result = AdapterRegistry(options.registry).list_files(files)
+            elif action == "handoff":
+                from archcanvas_adapters.handoff import build_handoff
+                probe_result = None
+                if options.probe_spec:
+                    if not options.runtime_interpreter or not options.dependency_lock:
+                        raise ValueError("--probe-spec requires --runtime-interpreter and --dependency-lock; no automatic environment fallback.")
+                    from archcanvas_runtime.summary import normalize_summary_spec, observe_summary
+                    spec = normalize_summary_spec(json.loads(options.probe_spec.read_text()))
+                    if config is not None and config != spec.get('constructor', {}):
+                        raise ValueError("--config and --probe-spec constructor must match.")
+                    config = spec.get('constructor', {})
+                    probe_result = observe_summary(files, options.entry, spec, {
+                        'interpreter': str(options.runtime_interpreter.absolute()),
+                        'dependencyLock': str(options.dependency_lock.absolute()),
+                        'timeoutSeconds': options.probe_timeout})
+                    if options.probe_output:
+                        options.probe_output.parent.mkdir(parents=True, exist_ok=True)
+                        options.probe_output.write_text(json.dumps(probe_result, ensure_ascii=False, allow_nan=False, indent=2) + '\n')
+                elif options.runtime_interpreter or options.dependency_lock or options.probe_output:
+                    raise ValueError("CPU probe options require explicit --probe-spec.")
+                result = build_handoff(files, options.entry, config, options.registry, probe_result)
             else:
                 import archcanvas_preview
-                result = archcanvas_preview.analyze(files, options.entry, config)
+                result = archcanvas_preview.analyze(files, options.entry, config, semantic_mode=options.semantic_mode)
                 result = AdapterRegistry(options.registry).preview(result, files)
         elif options.command in ("open", "session"):
             from .client import request

@@ -191,6 +191,17 @@ class PreviewSourceTests(unittest.TestCase):
 
 
 class PreviewHTTPTests(unittest.TestCase):
+    def test_agent_handoff_is_guarded_and_returns_static_unknown_requests(self):
+        files = {'foreign.py': 'from torch import nn\nraise RuntimeError("AST_ONLY")\nclass Closed(nn.Module):\n def forward(self,x):\n  return x.foreign_kernel()\n'}
+        payload = {'files': files, 'entry': 'foreign:Closed'}
+        self.assertEqual(self.request('/api/adapters/handoff', payload, token=False)[0], 403)
+        status, result = self.request('/api/adapters/handoff', payload)
+        self.assertEqual(status, 200, result)
+        self.assertEqual(result['schema'], 'archcanvas-agent-view-handoff/1')
+        self.assertTrue(result['requests'])
+        self.assertFalse(result['modelExecuted'])
+        self.assertEqual(self.request('/api/adapters/handoff', {**payload, 'root': '/tmp'})[0], 400)
+
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory(prefix="archcanvas-preview-http-", dir="/tmp")
         self.root = Path(self.directory.name)

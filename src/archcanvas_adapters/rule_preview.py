@@ -15,7 +15,13 @@ def apply_rule_adapters(bundle, files, definitions):
     corpus = _corpus(files)
     result = copy.deepcopy(bundle)
     ir = result['ir']
-    originals = [node for node in ir['nodes'] if node.get('kind') == 'opaque' or node.get('sourceStructure')]
+    # Native Summary already owns the known computation. Restrict new syntax
+    # cards to its actual unknowns instead of duplicating every known call
+    # below a source-module composite. Legacy inspection trees retain their
+    # existing anchoring contract.
+    native = bool(ir.get('semantic_ir'))
+    originals = [node for node in ir['nodes'] if node.get('kind') == 'opaque'
+                 or not native and node.get('sourceStructure')]
     by_id = {node['id']: node for node in ir['nodes']}
     original_ids = {node['id'] for node in originals if not node.get('sourceRuleId')}
     span_counts = {}

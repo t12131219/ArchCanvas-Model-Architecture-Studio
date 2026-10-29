@@ -135,7 +135,7 @@
         else if(disk?.version){localStorage.setItem('summary-merge:archived:'+modelKey+':'+Date.now(),JSON.stringify(disk));toast('早期递归草稿已保留归档，当前使用新的递归文档。');}
       }catch(_){}
       let nextGraph=E.clone(saved?.graph||base);validation=initial.validation;
-      if(saved&&native&&nextGraph.generic?.version!==G.VERSION&&(nextGraph.generic?.state.moduleCuts?.length||nextGraph.generic?.state.paperCanonical)&&!(['native-semantic/16','native-semantic/17'].includes(nextGraph.generic?.version)&&!nextGraph.generic?.state.paperCanonical&&!nextGraph.generic?.state.moduleCuts?.some(c=>c.level==='source'))){
+      if(saved&&native&&nextGraph.generic?.version!==G.VERSION&&!(['native-semantic/18','native-semantic/19','native-semantic/20','native-semantic/21'].includes(nextGraph.generic?.version)&&!nextGraph.generic?.ir.nodes.some(n=>n.inspection_only)&&!nextGraph.generic?.state.paperCanonical&&!nextGraph.generic?.state.moduleCuts?.some(c=>c.level==='source'))&&(nextGraph.generic?.state.moduleCuts?.length||nextGraph.generic?.state.paperCanonical||nextGraph.generic?.ir.nodes.some(n=>n.inspection_only))&&!(['native-semantic/16','native-semantic/17'].includes(nextGraph.generic?.version)&&!nextGraph.generic?.state.paperCanonical&&!nextGraph.generic?.state.moduleCuts?.some(c=>c.level==='source'))){
         const upgraded=await runGraphTask({task:'frontier',graph:nextGraph,transition:{type:'upgrade'},options:{}});
         if(!upgraded.ok||!N.accepts(upgraded.graph,upgraded.validation))throw Error(upgraded.error||'旧语义前沿无法重新编译');
         nextGraph=upgraded.graph;validation=upgraded.validation;
@@ -249,6 +249,13 @@
       setAttrs(v.hit,{x:n.x,y:n.y,width:n.w,height:n.h,class:n.expanded?'frame-hit':'node-hit'});v.g.onpointerdown=ev=>nodeDown(ev,n);v.g.ondblclick=ev=>{if(!busy&&!drag&&tool==='select'&&unifiedHasChildren(n.id)){ev.preventDefault();ev.stopPropagation();toggleUnifiedNode(n.id);}};
       if(unifiedHasChildren(n.id)){if(!v.toggle){v.toggle=element('g',{class:'expansion-control',role:'button',tabindex:'0'});v.toggle.append(element('rect',{width:22,height:22,rx:5,fill:'#fff',stroke:'#198e90'}),element('text',{x:11,y:16,'text-anchor':'middle','font-size':18,fill:'#198e90'}));v.g.append(v.toggle);}setAttrs(v.toggle,{transform:`translate(${n.x+n.w-28} ${n.y+5})`,'aria-label':`${window.ArchCanvasUILocale?.text(n.expanded?'收起':'展开')||(n.expanded?'收起':'展开')} ${label(n)}`});v.toggle.querySelector('text').textContent=n.expanded?'−':'＋';v.toggle.onpointerdown=ev=>ev.stopPropagation();v.toggle.onclick=ev=>{ev.preventDefault();ev.stopPropagation();toggleUnifiedNode(n.id);};v.toggle.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();toggleUnifiedNode(n.id);}};}else if(v.toggle){v.toggle.remove();v.toggle=null;}
       if($('showObstacles').checked&&n.routingObstacle!==false){const b=R.expand(n,+$('clearance').value);let obstacle=scene.obstacles.get(n.id);if(!obstacle){obstacle=element('rect',{fill:'none',stroke:'#c9925680','pointer-events':'none'});scene.obstacles.set(n.id,obstacle);$('obstacleLayer').append(obstacle);}setAttrs(obstacle,{x:b.x,y:b.y,width:b.w,height:b.h,'stroke-width':1/scale,'stroke-dasharray':`${4/scale} ${4/scale}`});}
+    }
+    if(graph.generic&&!partial){
+      // Presentation-only frames can arrive after their existing children.
+      // Paint ancestors first even when restoring an older node-array order;
+      // avoid touching correctly ordered DOM targets on selection renders.
+      const frames=G.engine.drawingOrder(graph.nodes.filter(n=>n.expanded),{nodes:new Map(graph.nodes.map(n=>[n.id,n]))}),layer=$('frameLayer');
+      let at=layer.firstChild;for(const n of frames){const g=scene.nodes.get(n.id)?.g;if(!g)continue;if(g===at)at=at.nextSibling;else layer.insertBefore(g,at);}
     }
     if(!partial){prune(scene.nodes,new Set(visibleNodes.map(n=>n.id)));
     prune(scene.obstacles,new Set($('showObstacles').checked?visibleNodes.filter(n=>n.routingObstacle!==false).map(n=>n.id):[]));}
@@ -595,9 +602,15 @@
     if(prepared?.parsed?.authoring?.codeReference)toast('已从源码创建完整模型副本；源码已保存，本次未执行代码。');
     else toast(`已导入 ${c.title}；文档证据未绑定 Python 源码，模型未执行。`);
   }
-  async function registerSource(bundle,edited){await A.verify(bundle);const sources=A.sources(bundle),native=N.enabled(bundle),preflight=await runGraphTask(native?{task:'generic-build',ir:bundle.ir.semantic_ir,binding:bundle,options:{}}:{task:'frontier',graph:F.build(F.create(sources)),options:{}});
+  async function registerSource(bundle,edited){await A.verify(bundle);const native=N.enabled(bundle)&&!edited?.recursive;
+    // Native imports use the Worker-built graph. Building every legacy depth
+    // first performs synchronous routing on the UI thread and can freeze even
+    // a small source model before its native view is reached.
+    let sources=native?null:A.sources(bundle);
+    const preflight=await runGraphTask(native?{task:'generic-build',ir:bundle.ir.semantic_ir,binding:bundle,options:{}}:{task:'frontier',graph:F.build(F.create(sources)),options:{}});
     if(edited?.authoringWorkspace)throw Error('源码适配视图不能伪装为独立编辑副本。');
     if(!preflight.ok||!native&&preflight.failed)throw new Error(preflight.error||'适配结果未通过连接/布局校验，请查看源码适配支持范围。');
+    if(native){if(!N.accepts(preflight.graph,preflight.validation))throw new Error('原生源码视图未通过来源与布局检查。');sources={overview:preflight.graph};}
     if(edited){const restored=E.clone(edited);if(native&&restored.generic){if(G.stable(restored.generic.ir)!==G.stable(bundle.ir.semantic_ir))throw new Error('编辑 JSON 改变了原始语义。');const validation=E.validateView(restored);if(!N.accepts(restored,validation))throw new Error('原生语义编辑 JSON 与来源契约不一致。');}else {if(!restored.recursive)throw new Error('编辑 JSON 缺少递归状态。');restored.recursive.authority=F.create(sources).authority;const check=await runGraphTask({task:'validate',graph:restored});if(!check.ok)throw new Error(check.error);const result=check.validation;
       if(restored.irSha256!==bundle.irSha256||!result.source.ok||!result.layout.ok||invalidSourceRoutes(restored,result))throw new Error('编辑 JSON 与源码适配契约不一致。');}}
     importedPackages.set(bundle.id,bundle);importedSources.set(bundle.id,sources);let c=catalog.cases.find(v=>v.id===bundle.id);
