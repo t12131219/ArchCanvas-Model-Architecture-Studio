@@ -154,7 +154,7 @@
     // Rehashing thousands of source nodes for every edge made a budgeted
     // routing batch spend minutes validating its still-pending routes.
     const constrained=graph.edges.filter(e=>e.boundaryLane?.constrainedAt===context.geometryKey).map(e=>e.id);
-    return {source:C.validateSource(graph),layout:{ok:!violations.length,violations,...conflicts,junctions},routing:{constrained,contacts:graph.edges.flatMap(e=>C.laneContacts(graph,e,e.route,context).map(hit=>({edge:e.id,...hit})))},edges:graph.edges.map(e=>{const check=C.validate(graph,e,e.route,context),extra=affected.get(e.id)||[];return [e.id,{ok:check.ok&&!extra.length,violations:[...check.violations,...extra]}];})};
+    return {source:context.nativeSource?.sourceCheck||C.validateSource(graph),layout:{ok:!violations.length,violations,...conflicts,junctions},routing:{constrained,contacts:graph.edges.flatMap(e=>C.laneContacts(graph,e,e.route,context).map(hit=>({edge:e.id,...hit})))},edges:graph.edges.map(e=>{const check=C.validate(graph,e,e.route,context),extra=affected.get(e.id)||[];return [e.id,{ok:check.ok&&!extra.length,violations:[...check.violations,...extra]}];})};
   }
   function repairCandidates(graph,e,old){
     const s=endpoint(graph,e,'source'),t=endpoint(graph,e,'target'),out=[];
@@ -199,11 +199,20 @@
   }
   function move(graph,id,dx,dy,options={}) {
     C.initialize(graph);
+    // Native drawings already own their physical ports and source boundaries.
+    // Repair locally before considering a bounded global visibility search.
+    if(graph.generic&&root.SummaryNativeSemantic){
+      options=root.SummaryNativeSemantic.routeOptions({firstLegal:true,...options});
+      const deadline=performance.now()+(options.moveBudgetMs??2000);
+      options={...options,deadline:Math.min(options.deadline??Infinity,deadline)};
+    }
+    const laneRepair=e=>options.boundaryLanes!==false&&C.needsLaneRepair(graph,e,context);
+    const laneClear=(e,ps)=>options.boundaryLanes===false||!C.laneContacts(graph,e,ps,context).length;
     const ids=descendants(graph,id);
     const moving=graph.nodes.filter(n=>ids.has(n.id)),selected=moving.find(n=>n.id===id);
     if(!selected)return new Set();
     const owner=graph.nodes.find(n=>n.id===selected.parent);
-    if(owner){const pad=2;for(const glyph of moving){const n=footprint(glyph);dx=Math.max(owner.x+pad-n.x,Math.min(owner.x+owner.w-pad-n.x-n.w,dx));dy=Math.max(owner.y+pad-n.y,Math.min(owner.y+owner.h-pad-n.y-n.h,dy));}}
+    if(owner&&!owner.modelHeading){const pad=2;for(const glyph of moving){const n=footprint(glyph);dx=Math.max(owner.x+pad-n.x,Math.min(owner.x+owner.w-pad-n.x-n.w,dx));dy=Math.max(owner.y+pad-n.y,Math.min(owner.y+owner.h-pad-n.y-n.h,dy));}}
     const siblings=graph.nodes.filter(n=>!ids.has(n.id)&&n.parent===moving.find(n=>n.id===id)?.parent&&!n.junction);
     const wouldOverlap=(node,other)=>{const n=footprint(node),b=footprint(other);return Math.min(n.x+dx+n.w,b.x+b.w)-Math.max(n.x+dx,b.x)>1e-5&&Math.min(n.y+dy+n.h,b.y+b.h)-Math.max(n.y+dy,b.y)>1e-5;};
     graph.lastMove={blocked:false,rerouted:0};
@@ -219,7 +228,7 @@
         if(ids.has(e.source))e.route[0]=endpoint(graph,e,'source');
         if(ids.has(e.target))e.route[e.route.length-1]=endpoint(graph,e,'target');
       }
-      if(ids.has(e.source)||ids.has(e.target)||!C.validate(graph,e,e.route,context).ok||C.needsLaneRepair(graph,e,context))affected.push(e);
+      if(ids.has(e.source)||ids.has(e.target)||!C.validate(graph,e,e.route,context).ok||laneRepair(e))affected.push(e);
     }
     const opts={margin:6,stub:16,bendCost:40,crossingCost:180,overlapCost:2,edgeSpacing:12,sides:'any',preserve:true,...options};
     const settled=new Set();let reserved=graph.edges;
@@ -232,19 +241,24 @@
       reserved=graph.edges.filter(v=>v===e||!affected.includes(v)||settled.has(v)||C.validate(graph,v,v.route,context).ok);
       const incident=ids.has(e.source)!==ids.has(e.target);
       if(incident&&e.portPolicy&&!e.contract.bus){
+        const old=savedEdges.find(([v])=>v===e)[1].route;
+        // Small drags should preserve a short legal corridor. Large drags may
+        // need a different physical side; leave those to the port router below.
+        const small=Math.hypot(dx,dy)<=32;
+        const repaired=small&&repairCandidates(graph,e,old).find(ps=>legal(e,ps)&&laneClear(e,ps));
+        if(repaired){e.route=repaired;e.failed=false;delete e.reason;settled.add(e);graph.lastMove.rerouted++;continue;}
         // Reconsider legal but long routes too: dragging a PE across an Add
         // must change its physical side without changing the PE input field.
         const prior=reserved.filter(v=>v!==e).map(v=>Object.assign(v.route.slice(),{wire:v.contract.wire}));
-        const old=savedEdges.find(([v])=>v===e)[1].route;
-        const shared=(e.portPolicy?.source.sharedStem||e.contract.sharedStem)&&repairCandidates(graph,e,old).find(ps=>legal(e,ps)&&!C.laneContacts(graph,e,ps,context).length);
+        const shared=(e.portPolicy?.source.sharedStem||e.contract.sharedStem)&&repairCandidates(graph,e,old).find(ps=>legal(e,ps)&&laneClear(e,ps));
         if(shared){e.route=shared;settled.add(e);graph.lastMove.rerouted++;continue;}
         const result=routeOne(graph,e,prior,{...opts,style:e.style,preserve:false},context);
         if(result.ok&&legal(e,e.route)){settled.add(e);graph.lastMove.rerouted++;continue;}
       }
-      if(legal(e,e.route)&&!C.needsLaneRepair(graph,e,context)){e.failed=false;delete e.reason;settled.add(e);continue;}
+      if(legal(e,e.route)&&!laneRepair(e)){e.failed=false;delete e.reason;settled.add(e);continue;}
       if(e.contract.bus)return rollback('explicit branch skeleton cannot be disconnected');
       const old=savedEdges.find(([v])=>v===e)[1].route;
-      const candidate=repairCandidates(graph,e,old).find(ps=>legal(e,ps)&&!C.laneContacts(graph,e,ps,context).length);
+      const candidate=repairCandidates(graph,e,old).find(ps=>legal(e,ps)&&laneClear(e,ps));
       if(candidate)e.route=candidate;
       else{
         const prior=reserved.filter(v=>v!==e).map(v=>Object.assign(v.route.slice(),{wire:v.contract.wire}));
@@ -270,7 +284,7 @@
     const bounds=footprint(selected);
     if(graph.canvas){dx=Math.max(3-bounds.x,Math.min(graph.canvas[0]-3-bounds.x-bounds.w,dx));dy=Math.max(3-bounds.y,Math.min(graph.canvas[1]-3-bounds.y-bounds.h,dy));}
     const owner=graph.nodes.find(n=>n.id===selected.parent);
-    if(owner){const pad=2;
+    if(owner&&!owner.modelHeading){const pad=2;
       dx=Math.max(owner.x+pad-bounds.x,Math.min(owner.x+owner.w-pad-bounds.x-bounds.w,dx));
       dy=Math.max(owner.y+pad-bounds.y,Math.min(owner.y+owner.h-pad-bounds.y-bounds.h,dy));
     }
@@ -360,9 +374,9 @@
     }
     return {...options,margin,stub,stubPadding:1,width:graph.canvas[0],height:graph.canvas[1]};
   }
-  function conflicts(graph,e,options) {
-    C.initialize(graph);
-    if(!C.validate(graph,e,e.route).ok)return true;
+  function conflicts(graph,e,options,context) {
+    if(!context){C.initialize(graph);context=C.validationContext(graph);}
+    if(!C.validate(graph,e,e.route,context).ok)return true;
     if(e.style!==options.style||e.route.length<2||e.draft)return true;
     const opts=adaptiveOptions(graph,e,options);
     for(let i=1;i<e.route.length;i++)for(const n of graph.nodes){
@@ -388,7 +402,7 @@
     const fraction=id=>{const siblings=graph.edges.filter(v=>v.source===id||v.target===id);return .2+.6*(siblings.indexOf(e)+1)/(siblings.length+1);};
     const compatible=prior.filter(p=>!p.wire||p.wire!==e.contract.wire);
     const tangled=options.crossingCost>0&&compatible.some(path=>path.slice(1).some((b,j)=>e.route.slice(1).some((d,i)=>R.crossing(path[j],b,e.route[i],d))));
-    if(!options.optimizeReadability&&!C.needsLaneRepair(graph,e,context)&&(options.optimizeCrossings===false||!tangled)&&(e.portPolicy?.source.sharedStem||e.contract.sharedStem)&&C.validate(graph,e,e.route,context).ok&&
+    if((e.portPolicy?.source.sharedStem||e.contract.sharedStem)&&!options.optimizeReadability&&(options.boundaryLanes===false||!C.needsLaneRepair(graph,e,context))&&(options.optimizeCrossings===false||!tangled)&&C.validate(graph,e,e.route,context).ok&&
         !compatible.some(path=>path.slice(1).some((b,j)=>e.route.slice(1).some((d,i)=>R.overlap(path[j],b,e.route[i],d)>1e-5)))){
       e.failed=false;e.style=options.style;delete e.reason;return {ok:true,retained:true,points:e.route,reason:'source-backed shared tensor stem retained'};
     }
@@ -398,7 +412,7 @@
     const flexible=!!e.portPolicy&&!e.draft;
     const requestedPorts=options.portOverrides?.[e.id];
     const extra=flexible?{
-      sourceCandidates:requestedPorts?.source?[requestedPorts.source]:P.candidates(graph,e,'source',options.sides),targetCandidates:requestedPorts?.target?[requestedPorts.target]:P.candidates(graph,e,'target',options.sides),
+      sourceCandidates:requestedPorts?.source?[requestedPorts.source]:P.candidates(graph,e,'source',options.sides,context),targetCandidates:requestedPorts?.target?[requestedPorts.target]:P.candidates(graph,e,'target',options.sides,context),
       obstaclesForPorts:(s,t)=>C.constraints(graph,projected(s,t),opts,context).extraObstacles,
       acceptCandidate:(ps,s,t)=>C.validate(graph,projected(s,t),ps,context).ok&&(options.boundaryLanes===false||!C.laneContacts(graph,projected(s,t),ps,context).length)
     }:{acceptCandidate:ps=>C.validate(graph,e,ps,context).ok&&(options.boundaryLanes===false||!C.laneContacts(graph,e,ps,context).length)};
@@ -418,7 +432,7 @@
     // explicit inspector overrides retain their requested candidate set.
     let result=options.firstLegal&&flexible?R.routeEdge(routedEdge,graph.nodes,compatible,{...routeSettings,quickCandidatesOnly:true}):null;
     if(!result?.ok&&!options.quickCandidatesOnly&&options.preferCurrentPorts&&flexible&&!requestedPorts)result=R.routeEdge(routedEdge,graph.nodes,compatible,{...routeSettings,sourceCandidates:[P.active(e,'source')],targetCandidates:[P.active(e,'target')]});
-    if(!options.quickCandidatesOnly&&options.tryDirectPorts&&flexible&&graph.nodes.length<=300){
+    if(!options.quickCandidatesOnly&&options.tryDirectPorts&&(!options.firstLegal||!result?.ok)&&flexible&&graph.nodes.length<=300){
       const quick=R.routeEdge({...routedEdge,route:result?.ok?result.points:routedEdge.route},graph.nodes,compatible,{...routeSettings,quickCandidatesOnly:true});
       if(quick.ok&&(!result?.ok||quick.cost<result.cost-1e-6))result=quick;
     }
@@ -444,19 +458,27 @@
   function routeBatch(graph,ids,options) {
     C.initialize(graph);
     const context=C.validationContext(graph);
-    const before=graph.edges.map(e=>[e,clone(e)]);
+    const before=graph.edges.map(e=>{const saved=clone(e);if(options.interactiveOptimization&&graph.generic)saved.binding=e.binding;return [e,saved];}),savedEdges=options.interactiveOptimization?new Map(before.map(([e,saved])=>[e.id,saved])):null;
+    const started=performance.now(),deferred=[],visited=[];
     const marked=e=>Object.assign(e.route.slice(),{wire:e.contract.wire}),set=new Set(ids),prior=graph.edges.filter(e=>!set.has(e.id)||e.contract.bus).map(marked);
     let routed=0,failed=0,retained=0;
-    const conflicted=new Set(graph.edges.filter(e=>overlapsWire(graph,e,e.route)).map(e=>e.id)),done=new Set();
+    const conflicted=options.interactiveOptimization?new Set(layoutConflicts(graph).wires.flat()):new Set(graph.edges.filter(e=>overlapsWire(graph,e,e.route)).map(e=>e.id)),done=new Set();
     const queue=graph.edges.filter(e=>set.has(e.id));
+    // Fixed geometry within this synchronous batch: settle each peer once.
+    // The final whole-graph check still verifies live port occupancy.
+    const legal=options.interactiveOptimization?new Map(graph.edges.map(e=>[e.id,C.validate(graph,e,e.route,context).ok])):null;
     if(options.groupByWire)queue.sort((a,b)=>String(a.contract?.wire||'').localeCompare(String(b.contract?.wire||''))||String(a.source).localeCompare(String(b.source))||String(a.id).localeCompare(String(b.id)));
     for(const e of queue){
+      if(options.interactiveOptimization&&performance.now()>=options.deadline){deferred.push(e.id);continue;}
       // Reserve registered legal corridors, but never reserve an invalid
       // projection merely because it happens not to overlap another wire.
       // Invalid siblings are provisional until routed; pinning their old
       // geometry can strand a branch in the same batch.
-      const occupied=e.portPolicy?graph.edges.filter(v=>v!==e&&(!set.has(v.id)||done.has(v.id)||v.contract?.bus||(!conflicted.has(v.id)&&C.validate(graph,v,v.route,context).ok))).map(marked):prior;
-      const r=routeOne(graph,e,occupied,options,context);if(r.ok){if(r.retained)retained++;else routed++;}else failed++;done.add(e.id);if(!e.contract.bus)prior.push(marked(e));}
+      const occupied=e.portPolicy?graph.edges.filter(v=>v!==e&&(!set.has(v.id)||done.has(v.id)||v.contract?.bus||(!conflicted.has(v.id)&&(legal?legal.get(v.id):C.validate(graph,v,v.route,context).ok)))).map(marked):prior;
+      const perEdge=options.interactiveOptimization?{...options,deadline:Math.min(options.deadline,performance.now()+(options.edgeBudgetMs??24))}:options;
+      let r=routeOne(graph,e,occupied,perEdge,context);
+      if(!r.ok&&legal?.get(e.id)){for(const k of Object.keys(e))delete e[k];Object.assign(e,savedEdges.get(e.id));r={ok:true,retained:true,points:e.route};}
+      visited.push(e.id);if(legal)legal.set(e.id,C.validate(graph,e,e.route,context).ok);if(r.ok){if(r.retained)retained++;else routed++;}else failed++;done.add(e.id);if(!e.contract.bus)prior.push(marked(e));}
     const junctionCheck=C.validateJunctions(graph);
     if(!junctionCheck.ok){
       // Validate shared topology after all branches have moved, not while
@@ -472,7 +494,31 @@
     if(options.optimizeReadability&&graph.recursive&&root.SummaryRecursive?.polish){
       root.SummaryRecursive.polish(graph,{...options,edgeIds:options.edgeIds||undefined});
     }
-    return {graph,routed,failed,retained};
+    return {graph,routed,failed,retained,...(options.interactiveOptimization?{optimization:{visited,deferred,ms:performance.now()-started}}:{})};
+  }
+  // Resume only an identical scope/settings/geometry. This is a scheduling
+  // receipt, never a source or validity certificate. Every batch validates.
+  function optimizationSignature(graph,ids,options){return JSON.stringify([ids,options,graph.nodes.map(n=>[n.id,n.parent,n.x,n.y,n.w,n.h,n.expanded,n.labelObstacles]),graph.edges.map(e=>[e.id,e.source,e.target,e.route,e.waypoints,e.style,e.contract,e.fixedSource,e.fixedTarget,e.physicalSource,e.physicalTarget,e.portPolicy])]);}
+  function optimizeRoutes(graph,ids,options={}){
+    const start=performance.now(),initial=validateView(graph),preflightMs=performance.now()-start;
+    if(!initial.source.ok)throw Error('源码语义校验失败：'+initial.source.violations[0]);
+    const requested=new Set(ids),scope=graph.edges.filter(e=>requested.has(e.id)).map(e=>e.id),signature=optimizationSignature(graph,scope,options);
+    const previous=graph.routeOptimization,remaining=previous?.signature===signature&&previous.pendingIds?.length?new Set(previous.pendingIds):null;
+    const context=C.validationContext(graph);
+    const targets=graph.edges.filter(e=>requested.has(e.id)&&(!remaining||remaining.has(e.id))&&(options.policy!=='needed'||conflicts(graph,e,options,context))).map(e=>e.id);
+    if(options.policy==='never'||!targets.length)return {ok:true,graph,validation:initial,routed:0,retained:0,failed:0,unchanged:true};
+    // Native semantics supplies the same geometry-aware A*/spatial options
+    // used by module movement. Explicit Apply still prices shorter routes
+    // and crossings; it does not switch to the first-legal expansion policy.
+    const tuned=graph.generic&&root.SummaryNativeSemantic?root.SummaryNativeSemantic.routeOptions(options):options;
+    const deadline=performance.now()+Math.max(0,options.budgetMs??1000);
+    const result=routeBatch(graph,targets,{...tuned,interactiveOptimization:true,deadline,edgeBudgetMs:options.edgeBudgetMs??24,edgeIds:targets});
+    if(result.failed)throw Error(result.reason||'部分连线无法完成合法优化，原图保留。');
+    const routeEnd=performance.now(),validation=validateView(graph),validationMs=performance.now()-routeEnd;
+    if(!validation.source.ok||!validation.layout.ok||validation.edges.some(([,check])=>!check.ok))throw Error('优化结果未通过完整约束校验，原图保留。');
+    graph.routeOptimization={pendingIds:result.optimization?.deferred||[],checked:result.optimization?.visited.length||0,ms:performance.now()-start,timing:{preflightMs,routeMs:result.optimization?.ms||0,validationMs}};
+    graph.routeOptimization.signature=optimizationSignature(graph,scope,options);
+    return {ok:true,...result,validation,optimization:graph.routeOptimization};
   }
   function labelPath(graph,a){const e=graph.edges.find(v=>v.id===a.edge);if(!e)return [];
     const ps=displayed(graph,e);return e.style==='curved'?curvePoints(ps,curveRadius(graph,e,ps)):ps;
@@ -482,7 +528,7 @@
     const placed=L.place(graph,a,points,occupied,fast);if(placed){out.set(a.id,placed);occupied.push(placed.box);}
   }return out;}
   function snapRouteLabel(graph,a,p){return L.snap(a,labelPath(graph,a),p);}
-  const api={labelPath,routeLabelPlacements,snapRouteLabel,clone,upgradePresentation,port,endpoint,descendants,move,movePreview,reconnect,crop,arrow,path,curvePoints,curveRadius,displayed,adaptiveOptions,conflicts,overlapsWire,sharesPresentation,layoutConflicts,validateView,routeOne,routeBatch,attachmentTransform,junctionPoint:J.point};
+  const api={labelPath,routeLabelPlacements,snapRouteLabel,clone,upgradePresentation,port,endpoint,descendants,move,movePreview,reconnect,crop,arrow,path,curvePoints,curveRadius,displayed,adaptiveOptions,conflicts,overlapsWire,sharesPresentation,layoutConflicts,validateView,routeOne,routeBatch,optimizeRoutes,attachmentTransform,junctionPoint:J.point};
   root.SummaryEngine=api;
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

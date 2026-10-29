@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, type CSSProperties } from 'react';
 import type { CanvasDocument } from './core';
 import type { HierarchyNode } from './previewHierarchy';
 import { Icon } from './icons';
@@ -65,9 +65,9 @@ function TreeNode({ node, state, depth = 0 }: { node: HierarchyNode; state: Tree
       <button className="tree-label" onClick={event => state.onSelect(node.id, event.shiftKey || event.ctrlKey || event.metaKey)}><span className={`tree-node-dot ${node.category}`} /><span>{state.aliases[node.id] ?? node.label}</span>{node.repeat && <small>×{node.repeat.count}</small>}</button>
       {state.pinned.has(node.id) && <Icon name="pin" size={10} />}
     </div>
-    {expanded && node.children.map(id => {
+    {expanded && node.children.length > 0 && <div role="group" className="tree-children" style={{ '--tree-guide-left': `${20 + depth * 13}px` } as CSSProperties}>{node.children.map(id => {
       const child = state.byId.get(id);
       return child ? <TreeNode key={id} node={child} state={state} depth={depth + 1} /> : null;
-    })}
+    })}</div>}
   </div>;
 }

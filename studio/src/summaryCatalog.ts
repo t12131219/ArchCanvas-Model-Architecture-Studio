@@ -4,6 +4,7 @@ type Asset = { path: string; bytes: number; sha256: string };
 export type SummaryCatalogModel = {
   id: string; title: string; nodes: number; edges: number; digest: string;
   runtime: string | null; coverage: string | null; ir: Asset; presentation: Asset | null;
+  program?: { id: string; label: string; constructor: Record<string, unknown>; observations: number };
 };
 export type SummaryCatalog = { schema: 'archcanvas-summary-catalog/1'; models: SummaryCatalogModel[] };
 export type SummaryPreviewCase = { id: string; title: string; views: { key: string; label: string; nodes: number; edges: number }[]; runtimeExpansion?: unknown };
@@ -27,9 +28,31 @@ export function parseSummaryCatalog(value: unknown): SummaryCatalog {
     const m = object(value);
     if (typeof m.id !== 'string' || !/^[a-zA-Z0-9_-]{1,100}$/.test(m.id) || seen.has(m.id) || typeof m.title !== 'string' || !m.title || m.title.length > 240 || !count(m.nodes) || !count(m.edges) || !digest(m.digest) || ![m.runtime,m.coverage].every(x => x === null || typeof x === 'string')) throw Error('Summary 模型身份或计数无效。');
     seen.add(m.id);
+    if (m.program !== undefined) {
+      const program = object(m.program);
+      if (!digest(program.id) || typeof program.label !== 'string' || !program.label || !count(program.observations)) throw Error('Summary 源程序身份无效。');
+      object(program.constructor);
+    }
     return { ...m, ir: asset(m.ir), presentation: m.presentation === null ? null : asset(m.presentation) } as SummaryCatalogModel;
   });
   return { schema: 'archcanvas-summary-catalog/1', models };
+}
+/** Constructor variants share an entry only when the entry-source hash agrees. */
+export function summaryPrograms(models: SummaryCatalogModel[]) {
+  const programs = new Map<string, { id: string; title: string; models: SummaryCatalogModel[] }>();
+  for (const model of models) {
+    const id = model.program?.id ?? model.id;
+    let program = programs.get(id);
+    if (!program) { program = { id, title: model.title, models: [] }; programs.set(id, program); }
+    program.models.push(model);
+    if (program.models.length > 1) program.title = model.program?.label ?? program.title;
+  }
+  return [...programs.values()];
+}
+export function summaryConfiguration(model: SummaryCatalogModel) {
+  const values = model.program?.constructor ?? {};
+  const parameters = Object.entries(values).map(([key, value]) => `${key}=${JSON.stringify(value)}`).join(', ');
+  return `${parameters || '默认构造参数'}${model.program?.observations ? ` · ${model.program.observations} 条观察记录` : ''}`;
 }
 export function summaryCatalogBlockReason(model: SummaryCatalogModel): string | null {
   if (model.nodes > SUMMARY_CATALOG_LIMITS.nodes || model.edges > SUMMARY_CATALOG_LIMITS.edges) return `原始图 ${model.nodes} 节点 / ${model.edges} 依赖，超过当前 ${SUMMARY_CATALOG_LIMITS.nodes} 节点 / ${SUMMARY_CATALOG_LIMITS.edges} 依赖预算。`;

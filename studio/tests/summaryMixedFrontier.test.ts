@@ -165,3 +165,19 @@ for(const model of catalog.models.filter((m:any)=>{const value=read(m.id);return
   equal(copy(G.layoutSnapshot(restored)),copy(G.layoutSnapshot(graph)),model.title+' '+mode);
  }
 });
+
+test('explicit subtree depth replaces descendant overrides and preserves sibling cuts, source and prior history',()=>{
+ const child=ir.nodes.find((n:any)=>n.label==='self_attn'&&inside(n.id,encode)).id;
+ const graph=build([{id:encode,level:'source',depth:2},{id:child,level:'f0'},{id:decode,level:'f1'}]);
+ const before=JSON.stringify(graph),options={budgetMs:0,refineCrossings:false,refinePlacement:false,refineChannels:false,refineFlow:false};
+ const apply=(request:any)=>N.prepare({task:'frontier',graph,transition:{type:'module',request},options}).graph;
+ const old=apply({ids:[encode],level:'source',depth:0});assert.ok(old.generic.state.moduleCuts.some((c:any)=>c.id===child),'existing callers retain specific overrides');
+ for(const request of [{ids:[encode],level:'source',depth:0},{ids:[encode],level:'source',depth:2},{ids:[encode],level:'f1'},{ids:[encode],reset:true}]){
+  const next=check(apply({...request,replaceDescendants:true}));
+  assert.ok(!next.generic.state.moduleCuts.some((c:any)=>c.id===child));
+  equal(copy(next.generic.state.moduleCuts.find((c:any)=>c.id===decode)),{id:decode,level:'f1'});
+  if(request.depth===0)assert.equal(next.nodes.filter((n:any)=>inside(n.id,encode)).length,1);
+  assert.equal(JSON.stringify(graph),before,'command mutated the preceding graph');
+ }
+ assert.throws(()=>apply({ids:[encode],level:'source',replaceDescendants:'yes'}),/范围/);
+});

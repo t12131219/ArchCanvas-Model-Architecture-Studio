@@ -8,17 +8,27 @@
   function slot(e,side){if(e.projection?.presentationSlots?.[side])return e.projection.presentationSlots[side];if(e.portPolicy?.[side]?.presentationSlot)return e.portPolicy[side].presentationSlot;const b=e.binding||{},c=b.endpoint_binding?.canonical,which=side==='source'?'src':'dst';
     return b['canonical_'+which]||(c?.[which]?c[which]+':'+c[which+'_port']:null)||
       (b['semantic_'+which]?b['semantic_'+which]+':'+b['semantic_'+which+'_port']:null)||b[which]||e.id+':'+side;}
-  function peers(graph,e,side){return graph.edges.flatMap(v=>['source','target'].filter(s=>v!==e&&v[s]===e[side]).map(s=>({edge:v,side:s})));}
+  // One synchronous geometry operation owns this index. Port values remain
+  // live as routes settle; never persist it across hierarchy/edge edits.
+  function context(graph){
+    const ports=new Map();for(const edge of graph.edges)for(const side of ['source','target']){
+      if(!ports.has(edge[side]))ports.set(edge[side],[]);ports.get(edge[side]).push({edge,side});
+    }
+    return {portGraph:graph,portNodes:graph.nodes,portEdges:graph.edges,nodeIndex:new Map(graph.nodes.map(n=>[n.id,n])),incidentPorts:ports};
+  }
+  const indexed=(graph,ctx)=>ctx?.portGraph===graph&&ctx.portNodes===graph.nodes&&ctx.portEdges===graph.edges;
+  const node=(graph,id,ctx)=>indexed(graph,ctx)?ctx.nodeIndex.get(id):graph.nodes.find(n=>n.id===id);
+  function peers(graph,e,side,ctx){return indexed(graph,ctx)?(ctx.incidentPorts.get(e[side])||[]).filter(v=>v.edge!==e):graph.edges.flatMap(v=>['source','target'].filter(s=>v!==e&&v[s]===e[side]).map(s=>({edge:v,side:s})));}
   function policy(graph,e,side){return e.portPolicy?.[side]||{mode:'fixed',reason:'unregistered source interface'};}
-  function permitted(graph,e,side,f){
-    const n=graph.nodes.find(n=>n.id===e[side]),p=policy(graph,e,side),original=e['fixed'+key(side)];
+  function permitted(graph,e,side,f,ctx){
+    const n=node(graph,e[side],ctx),p=policy(graph,e,side),original=e['fixed'+key(side)];
     if(!n||!f||!R.SIDE[f.side]||!Number.isFinite(f.fraction)||f.fraction<0||f.fraction>1)return false;
     if(JSON.stringify(f)===JSON.stringify(original)){
       // Registered original slots may be closer than the free-port spacing.
       // That exemption does not license returning onto a peer which moved
       // into this slot while it was vacant earlier in the routing batch.
       const xy=point(n,f),identity=(v,s)=>n.visualBinding?.canonical||slot(v,s);
-      return !peers(graph,e,side).some(({edge:v,side:s})=>!v.draft&&identity(v,s)!==identity(e,side)&&
+      return !peers(graph,e,side,ctx).some(({edge:v,side:s})=>!v.draft&&identity(v,s)!==identity(e,side)&&
         JSON.stringify(active(v,s))!==JSON.stringify(v['fixed'+key(s)])&&R.dist(xy,point(n,active(v,s)))<(p.spacing||12)-EPS);
     }
     if(p.mode==='fixed')return JSON.stringify(f)===JSON.stringify(original);
@@ -36,12 +46,12 @@
     const identity=(v,s)=>n.visualBinding?.canonical||slot(v,s);
     // A pending visual reconnection does not redefine registered model slots.
     // Its occupied route is still considered by the geometry router.
-    return !peers(graph,e,side).some(({edge:v,side:s})=>!v.draft&&identity(v,s)!==identity(e,side)&&
+    return !peers(graph,e,side,ctx).some(({edge:v,side:s})=>!v.draft&&identity(v,s)!==identity(e,side)&&
       R.dist(xy,point(n,active(v,s)))<(p.spacing||12)-EPS);
   }
-  function candidates(graph,e,side,rule='any'){
-    const n=graph.nodes.find(n=>n.id===e[side]),other=graph.nodes.find(n=>n.id===e[side==='source'?'target':'source']),p=policy(graph,e,side),original=e['fixed'+key(side)],out=[];
-    const add=f=>{if(f&&permitted(graph,e,side,f)&&!out.some(v=>R.dist(point(n,v),point(n,f))<EPS&&v.side===f.side))out.push(f);};
+  function candidates(graph,e,side,rule='any',ctx){
+    const n=node(graph,e[side],ctx),other=node(graph,e[side==='source'?'target':'source'],ctx),p=policy(graph,e,side),original=e['fixed'+key(side)],out=[];
+    const add=f=>{if(f&&permitted(graph,e,side,f,ctx)&&!out.some(v=>R.dist(point(n,v),point(n,f))<EPS&&v.side===f.side))out.push(f);};
     add(active(e,side));add(original);if(p.mode==='fixed')return out;
     if(n.junction){for(const s of p.mode==='side'?[original.side]:R.candidateSides(n,other,rule))add({side:s,fraction:.5,inward:original.inward});return out;}
     const otherPort=active(e,side==='source'?'target':'source'),op=otherPort?point(other,otherPort):{x:other.x+other.w/2,y:other.y+other.h/2};
@@ -55,16 +65,16 @@
     }
     return out;
   }
-  function errors(graph,e,points=e.route){
+  function errors(graph,e,points=e.route,ctx){
     const result=[];
     for(const [side,index]of [['source',0],['target',-1]]){
-      const f=e['physical'+key(side)],n=graph.nodes.find(n=>n.id===e[side]);
-      if(f&&!permitted(graph,e,side,f))result.push('unregistered or colliding physical '+side+' port');
+      const f=e['physical'+key(side)],n=node(graph,e[side],ctx);
+      if(f&&!permitted(graph,e,side,f,ctx))result.push('unregistered or colliding physical '+side+' port');
       const a=active(e,side),p=points?.at(index);
       if(n&&a&&p&&R.dist(point(n,a),p)>EPS)result.push('physical endpoint differs from registered '+side+' port');
     }
     return result;
   }
-  const api={active,point,slot,policy,permitted,candidates,errors};
+  const api={active,point,slot,policy,permitted,candidates,errors,context};
   root.SummaryPhysicalPorts=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -46,7 +46,10 @@
       const request=transition.request;
       const moduleIR=root.SummarySourceRuntime.scopeIR(graph.generic.ir,graph.generic.state);
       if(!request||!Array.isArray(request.ids)||!request.ids.length||new Set(request.ids).size!==request.ids.length||request.ids.some(id=>!moduleIR.nodes.some(n=>n.id===id&&n.kind==='composite')))throw Error('请选择实际源码模块。');
-      let cuts=copy(graph.generic.state.moduleCuts||[]);
+      if(request.replaceDescendants!==undefined&&typeof request.replaceDescendants!=='boolean')throw Error('模块展开范围无效。');
+      const parents=new Map(moduleIR.nodes.map(n=>[n.id,n.parent]));
+      const within=(id,owner)=>{const seen=new Set();while(id&&!seen.has(id)){if(id===owner)return true;seen.add(id);id=parents.get(id);}return false;};
+      let cuts=copy(graph.generic.state.moduleCuts||[]).filter(c=>!request.replaceDescendants||!request.ids.some(owner=>within(c.id,owner)));
       for(const id of request.ids){
         cuts=cuts.filter(c=>c.id!==id);
         if(!request.reset)cuts.push({id,level:request.level,...(request.depth!==undefined?{depth:request.depth}:{})});
@@ -98,29 +101,30 @@
     throw Error('不支持的原生语义前沿操作。');
   }
   function prepare(message){
-    message={...message,options:G.routeOptions({budgetMs:8000,...message.options})};
+    const started=performance.now();
+    // Frontier gestures need legal routes, not a new global cosmetic search.
+    // Explicit route/optimise commands retain all aesthetic passes.
+    const interactive=!!message.transition;
+    message={...message,options:G.routeOptions({budgetMs:8000,...(interactive?{firstLegal:true,refineCrossings:false,refinePlacement:false,refineChannels:false,refineFlow:false}:{}),...message.options,...(interactive?{crossingCost:0}:{})})};
     // Aesthetic passes may try other physical ports. An explicit inspector
     // endpoint edit takes precedence over those optional layout proposals.
     if(Object.keys(message.options.portOverrides||{}).length)Object.assign(message.options,{refineCrossings:false,refinePlacement:false,refineChannels:false,refineFlow:false});
     const previous=message.graph;let result;
+    const studioState=message.transition?{
+      preset:message.transition.type==='preset'?message.transition.preset:message.transition.type==='back'?null:'custom',
+      clearAdaptive:!['semantic','back'].includes(message.transition.type)
+    }:null;
     if(message.task==='generic-build'){
       result=G.prepare({...message,state:message.state||{...state('overview'),studioFrontierPreset:'overview'}});
     }else if(message.task==='generic-route'||!message.transition){
       result=G.prepare({...message,task:'generic-route'});
     }else if(message.transition.type==='expand'){
       let candidate=previous;
-      for(const id of message.transition.ids){if(!nodes(candidate).some(n=>n.id===id))throw Error('展开模块不存在。');candidate=G.operate(candidate,{kind:'toggle',id,force:message.transition.expanded});}
-      candidate.generic.state={...candidate.generic.state,studioFrontierPreset:'custom'};
+      for(const id of message.transition.ids){if(!nodes(candidate).some(n=>n.id===id))throw Error('展开模块不存在。');candidate=G.operate(candidate,{kind:'toggle',id,force:message.transition.expanded,studioState});}
       result=G.prepare({...message,task:'generic-route',graph:candidate});
     }else{
-      const op=operation(previous,message.transition);
+      const op={...operation(previous,message.transition),studioState};
       result=G.prepare({...message,operation:op});
-      const preset=message.transition.type==='preset'?message.transition.preset:message.transition.type==='back'?result.graph.generic.state.studioFrontierPreset:'custom';
-      // Frontiers carry their own preset through undo, redo and persistence.
-      result.graph.generic.state={...result.graph.generic.state,studioFrontierPreset:preset||'custom'};
-    }
-    if(message.transition&&!['semantic','back'].includes(message.transition.type)){
-      const state={...result.graph.generic.state};delete state.nativeAdaptiveBase;state.paperAdaptive=false;result.graph.generic.state=state;
     }
     if(root.ArchCanvasAdaptiveView&&message.task!=='generic-route')result=root.ArchCanvasAdaptiveView.select(result,message.options,previous);
     decorate(result.graph,previous,message.binding);
@@ -131,6 +135,7 @@
     const {pending,failed}=routing(result.graph);
     result.graph.nativeRouting=routing(result.graph);
     result.pending=pending;result.failed=pending+failed;
+    result.timing={...result.timing,totalMs:Math.round(performance.now()-started)};
     return result;
   }
   function routing(graph){const pending=graph.edges.filter(e=>e.pendingRouting).length,failed=graph.edges.filter(e=>e.failed&&!e.pendingRouting).length;return {pending,failed,complete:!pending&&!failed};}

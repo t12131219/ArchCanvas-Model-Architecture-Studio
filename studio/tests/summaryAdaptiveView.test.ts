@@ -28,7 +28,9 @@ const baseline=build(),automatic=patch(baseline,{paperAdaptive:true,paperAdaptiv
 test('native measured Summary selection gains exact relationships without changing canonical facts or original requests',()=>{
  const report=automatic.graph.nativeAdaptive;
  assert.equal(baseline.graph.nodes.length,11);assert.equal(automatic.graph.nodes.length,17);
- assert.ok(report.attempts.some((a:any)=>a.accepted&&a.gain>0&&a.opportunity.kind==='roles'));
+ // Measured geometry may prefer an exact role path over the complete role
+ // expansion. Both expose certified detail; do not pin the winning proposal.
+ assert.ok(report.attempts.some((a:any)=>a.accepted&&a.gain>0&&['roles','role-path'].includes(a.opportunity.kind)));
  assert.ok(report.attempts.length<=3);assert.ok(report.preflights.length<=36);
  assert.deepEqual(copy(automatic.graph.generic.ir),ir);
  assert.deepEqual(copy(automatic.graph.generic.state.nativeAdaptiveBase),{paperRoleDetails:[],paperRolePaths:[],paperExpressionDetails:[]});
@@ -66,10 +68,11 @@ test('JSON reopen restores effective native cut, camera-independent geometry and
 });
 
 test('manual role edits materialize selected automatic details and disable replanning',()=>{
- const roles=automatic.graph.generic.state.paperRoleDetails;assert.ok(roles.length);
- const manual=patch(automatic,{paperRolePaths:[]});
+ const roles=automatic.graph.generic.state.paperRoleDetails||[],paths=automatic.graph.generic.state.paperRolePaths||[];assert.ok(roles.length||paths.length);
+ const manual=patch(automatic,{paperExpressionDetails:[]});
  assert.equal(manual.graph.generic.state.paperAdaptive,false);assert.equal(manual.graph.generic.state.nativeAdaptiveBase,null);
- assert.deepEqual(copy(manual.graph.generic.state.paperRoleDetails),copy(roles));assert.equal(manual.graph.nodes.length,17);
+ assert.deepEqual(copy(manual.graph.generic.state.paperRoleDetails||[]),copy(roles));
+ assert.deepEqual(copy(manual.graph.generic.state.paperRolePaths||[]),copy(paths));assert.equal(manual.graph.nodes.length,17);
  const collapsed=patch(automatic,{paperRoleDetails:[],paperRolePaths:[]});assert.equal(collapsed.graph.nodes.length,11);assert.equal(collapsed.graph.generic.state.paperAdaptive,false);
 });
 

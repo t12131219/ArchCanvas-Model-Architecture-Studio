@@ -7,8 +7,23 @@
   const F=root.SemanticCompositionLayout||(typeof require==='function'?require('../semantic_studio/composition-layout.js'):null);
   const Evidence=root.SemanticEvidence||(typeof require==='function'?require('../semantic_studio/semantic-evidence.js'):null);
   const A=root.SemanticAuthoring||(typeof require==='function'?require('../semantic_studio/authoring-model.js'):null);
-  const clone=v=>JSON.parse(JSON.stringify(v)),stable=v=>JSON.stringify(normalize(v));
-  function normalize(v){return Array.isArray(v)?v.map(normalize):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,normalize(v[k])])):v;}
+  const normalizedEvidence=new WeakMap(),serializedEvidence=new WeakMap();
+  const clone=v=>JSON.parse(JSON.stringify(v)),stable=v=>{
+    if(v&&typeof v==='object'&&frozen.has(v)){
+      if(!serializedEvidence.has(v))serializedEvidence.set(v,JSON.stringify(normalize(v)));
+      return serializedEvidence.get(v);
+    }
+    return JSON.stringify(normalize(v));
+  };
+  function normalize(v){
+    if(!v||typeof v!=='object')return v;
+    // Cache only evidence recursively frozen by this runtime. A saved digest,
+    // Object.freeze on an untrusted outer object, or mutable geometry grants
+    // no shortcut to the complete canonical comparison.
+    if(frozen.has(v)&&normalizedEvidence.has(v))return normalizedEvidence.get(v);
+    const value=Array.isArray(v)?v.map(normalize):Object.fromEntries(Object.keys(v).sort().map(k=>[k,normalize(v[k])]));
+    if(frozen.has(v))normalizedEvidence.set(v,value);return value;
+  }
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const engine={...E,semanticOnly:true,project:(ir,state,plan,opts={})=>E.project(ir,state,plan,{...opts,semanticOnly:true})};
   const Integration=root.SummarySourceRuntime||(typeof require==='function'?require('./source-runtime.js'):null);
@@ -17,9 +32,17 @@
   const VERSION='native-semantic/18',SCHEMA='archcanvas-native-semantic/1';
   const projectionInputs=new WeakMap(),certificates=new WeakMap(),sharedCertificates=new WeakMap(),frozen=new WeakSet();
   const projections=new WeakMap(),sharedProjections=new Map(),navigationIndexes=new WeakMap();
-  function projectionKey(ir,state){return stable(ir)+'\n'+stable(state);}
-  function cacheProjection(generic,cut,key=projectionKey(generic.ir,generic.state)){
+  const sourceKeys=new WeakMap();
+  function projectionKey(ir,state){
+    // Only internally frozen evidence can reuse a key. Imported/mutable IR
+    // still gets a complete content comparison, never digest-only trust.
+    let key=frozen.has(ir)&&sourceKeys.get(ir);
+    if(!key){key=stable(ir);if(frozen.has(ir))sourceKeys.set(ir,key);}
+    return key+'\n'+stable(state);
+  }
+  function cacheProjection(generic,cut,key){
     freezeEvidence(generic.ir);freezeEvidence(generic.state);
+    key??=projectionKey(generic.ir,generic.state);
     projections.set(generic,cut);projectionInputs.set(generic,[generic.ir,generic.state]);sharedProjections.delete(key);sharedProjections.set(key,cut);
     while(sharedProjections.size>3)sharedProjections.delete(sharedProjections.keys().next().value);return cut;
   }
@@ -27,7 +50,7 @@
     const key=projectionKey(graph.generic.ir,graph.generic.state);cut=sharedProjections.get(key)||project(graph.generic.ir,graph.generic.state);
     return cacheProjection(graph.generic,cut,key);
   }
-  function initial(ir,state){E.validate(ir);return state?{view:'publication',mode:'source',open:[],offsets:{},...clone(state)}:F.certifiedDetails(ir,F.frontier({mode:ir.source_runtime_index?'merged':'source'},'detail'),{semanticOnly:true});}
+  function initial(ir,state){if(!frozen.has(ir))E.validate(ir);return state?{view:'publication',mode:'source',open:[],offsets:{},...clone(state)}:F.certifiedDetails(ir,F.frontier({mode:ir.source_runtime_index?'merged':'source'},'detail'),{semanticOnly:true});}
   // Palette from the dedicated drawing. Only certified roles/operators choose
   // algorithm colors; unlabeled source containers use structural region tones.
   const palette={embedding:'#f8d4e1',ffn:'#c8ebfb',attention:'#ffddb3',norm:'#fff6bd',linear:'#dfdff8',softmax:'#c9f1cd',tensor:'#cdeaf8',control:'#f3f5f7',unknown:'#fff0e8'};
@@ -102,7 +125,7 @@
     return {html,labelObstacles};
   }
   function build(ir,state,extra={}){
-    E.validate(ir);ir=clone(ir);const selected=initial(ir,state),cut=project(ir,selected),visible=new Set(cut.nodes.map(n=>n.id)),headings=headingIds(cut),looks=new Map();
+    if(!frozen.has(ir)){E.validate(ir);ir=clone(ir);freezeEvidence(ir);}const selected=initial(ir,state),cut=project(ir,selected),visible=new Set(cut.nodes.map(n=>n.id)),headings=headingIds(cut),looks=new Map();
     if(Integration.enabled(ir,selected)){selected.runtimeInlineRun=cut.publication.source_runtime.run;selected.runtimeInlineInitialized=selected.runtimeInlineRun;selected.open=clone(cut.publication.open||selected.open);selected.paperAuto=false;}
     const regions=new Map(),depths=new Map();let ordinal=0;
     const region=id=>{if(regions.has(id))return regions.get(id);const n=cut.idx.nodes.get(id);if(!n||!visible.has(id)||headings.has(id))return 0;
@@ -183,6 +206,25 @@
     const key=cutKey(graph),layout=layoutSnapshot(graph,true),row={key,layout},rows=(graph.generic.layouts||[]).filter(v=>v.key!==key);
     rows.push(row);while(rows.length>4||stable(rows).length>6000000){rows.shift();if(!rows.length)break;}graph.generic.layouts=rows;
   }
+  function reuseRoutes(previous,next){
+    const native=root.SummaryEngine,C=root.SummaryConstraints,by=new Map(next.nodes.map(n=>[n.id,n])),oldNodes=new Map(previous.nodes.map(n=>[n.id,n])),oldEdges=new Map(previous.edges.map(e=>[e.id,e]));
+    C.initialize(next);const context=C.validationContext(next),settled=[];let reused=0;
+    for(const e of next.edges){
+      const old=oldEdges.get(e.id),s=by.get(e.source),t=by.get(e.target),a=oldNodes.get(e.source),b=oldNodes.get(e.target);
+      const sameBox=(n,o)=>n&&o&&n.w===o.w&&n.h===o.h&&n.expanded===o.expanded&&n.parent===o.parent;
+      if(!old||old.failed||old.pendingRouting||!sameBox(s,a)||!sameBox(t,b)||stable(old.binding)!==stable(e.binding)){e.pendingRouting=true;continue;}
+      const dx=s.x-a.x,dy=s.y-a.y;
+      if(Math.abs(t.x-b.x-dx)>1e-5||Math.abs(t.y-b.y-dy)>1e-5){e.pendingRouting=true;continue;}
+      const translate=ps=>ps.map(p=>({x:p.x+dx,y:p.y+dy}));
+      const candidate={...e,route:translate(old.route),waypoints:translate(old.waypoints||[])};
+      for(const key of ['fixedSource','fixedTarget','physicalSource','physicalTarget','portPolicy'])if(old[key])candidate[key]=clone(old[key]);
+      if(!C.validate(next,candidate,candidate.route,context).ok||native.overlapsWire({...next,edges:settled},candidate,candidate.route)){e.pendingRouting=true;continue;}
+      Object.assign(e,candidate,{failed:false});delete e.pendingRouting;delete e.reason;
+      settled.push(e);reused++;
+    }
+    next.nativeRouting={pending:next.edges.length-reused,failed:0,complete:reused===next.edges.length};
+    next.nativeRouteReuse={reused,total:next.edges.length};return next;
+  }
   function operate(graph,op){
     graph=cloneGeometry(graph);if(op.kind!=='upgrade')remember(graph);const ir=graph.generic.ir;let state=clone(graph.generic.state);
     if(op.kind==='all'){delete state.moduleCuts;state=op.open?P.fullyExpanded(Integration.fullyExpandedIR(ir,state),state,E):{...state,paperAuto:false,open:[]};delete state.nativeSourceFocus;}
@@ -200,11 +242,19 @@
     }
     else {const cut=expected(graph);if(!cut.idx.children.get(op.id)?.length)throw Error('此节点没有内部源码单位');state.paperAuto=false;state.open=clone(cut.publication?.open||state.open||[]);const open=new Set(state.open);if(op.force??!open.has(op.id))open.add(op.id);else open.delete(op.id);state.open=[...open];}
     delete state.canvasPlacement;delete state.offsets;
+    // Finalise host-only frontier metadata before projecting/certifying. A
+    // state replacement after validation would invalidate the projection and
+    // make the next inspector/drag rebuild the whole semantic cut again.
+    if(op.studioState){
+      state.studioFrontierPreset=op.studioState.preset||state.studioFrontierPreset||'custom';
+      if(op.studioState.clearAdaptive){delete state.nativeAdaptiveBase;state.paperAdaptive=false;}
+    }
     const migration=op.kind==='upgrade'?{...graph.generic.migration,previousRenderer:graph.generic.version,previousNativeLayout:layoutSnapshot(graph)}:graph.generic.migration;
     const result=build(ir,state,{authoring:graph.generic.authoring,migration,layouts:op.kind==='upgrade'?[]:graph.generic.layouts});
     const cached=result.generic.layouts.find(v=>v.key===cutKey(result));
     if(cached){try{restore(result,cached.layout);result.nativeLayoutRestored=true;}catch(_){result.generic.layouts=result.generic.layouts.filter(v=>v!==cached);}}
-    return carryDrafts(graph,result);
+    carryDrafts(graph,result);
+    return cached&&result.nativeLayoutRestored?result:reuseRoutes(graph,result);
   }
   function boundarySequence(graph,e){
     const by=new Map(graph.nodes.map(n=>[n.id,n]));
@@ -258,7 +308,7 @@
             // Keep the exact predicate at the border; cache its SVG-derived
             // clearance instead of reparsing frame markup for every grid link.
             if(left>n.x+pad&&right<n.x+n.w-pad&&top>n.y+pad&&bottom<n.y+n.h-pad||right<n.x-pad||left>n.x+n.w+pad||bottom<n.y-pad||top>n.y+n.h+pad)return false;
-            return C.borderContacts(e,n,[a,b],pad).length;
+            return C.segmentBorderContact(a,b,n,pad);
           });}};
       index.constraints.set(key,base);
     }
@@ -278,19 +328,20 @@
     if(stable(graph.generic.receipts)!==stable({node_accounting:cut.node_accounting,edge_accounting:cut.edge_accounting,representatives:cut.representatives,publication:cut.publication||null,annotations:[...cut.annotations],frame_ownership:cut.frame_ownership||[]}))errors.push('semantic receipts changed');
     return [...errors,...nodeGeometryErrors(graph)];
   }
-  function edgeErrors(graph,e,points=e.route,semanticOnly=false){
+  function edgeErrors(graph,e,points=e.route,semanticOnly=false,context){
     const cut=expected(graph);let indexed=cut.nativeEdgeIndex;if(!indexed)cut.nativeEdgeIndex=indexed=new Map(cut.edges.map(v=>[v.id,v]));const saved=indexed.get(e.id),errors=[];
     if(!saved){if(!e.draft)errors.push('unregistered semantic connection');return errors;}
     if(stable(e.binding)!==stable(saved))errors.push('exact canonical dependency or operand changed');
     const wire=stable(saved.bundle_members?['bundle',saved.id]:[saved.resolved_source||saved.canonical_source||saved.source,saved.source_port]);
     if(!e.draft&&(e.contract?.wire!==wire||e.contract?.bus||e.contract?.minimumTerminal!==9||e.contract?.enforcePortApproach!==true||e.contract?.source!==saved.source||e.contract?.target!==saved.target))errors.push('source routing contract changed');
     if(!e.draft&&(e.source!==saved.source||e.target!==saved.target))errors.push('semantic endpoint changed');
-    if(!semanticOnly&&!e.draft)errors.push(...root.SummaryPhysicalPorts.errors(graph,e,points));return errors;
+    if(!semanticOnly&&!e.draft)errors.push(...root.SummaryPhysicalPorts.errors(graph,e,points,context));return errors;
   }
-  function validate(graph,semanticOnly=false){
+  function validate(graph,semanticOnly=false,context){
+    context??=root.SummaryPhysicalPorts.context(graph);
     const errors=nodeErrors(graph),ids=new Set(graph.edges.map(e=>e.id));if(ids.size!==graph.edges.length)errors.push('duplicate native edge');
     for(const saved of expected(graph).edges)if(!ids.has(saved.id)&&!(graph.sourceDraftOperations||[]).some(op=>op.kind==='remove-connection'&&op.id===saved.id&&stable(op.binding)===stable(saved)))errors.push('source connection missing '+saved.id);
-    for(const e of graph.edges)errors.push(...edgeErrors(graph,e,e.route,semanticOnly).map(v=>e.id+': '+v));return {ok:!errors.length,violations:[...new Set(errors)]};
+    for(const e of graph.edges)errors.push(...edgeErrors(graph,e,e.route,semanticOnly,context).map(v=>e.id+': '+v));return {ok:!errors.length,violations:[...new Set(errors)]};
   }
   function nodeGeometryErrors(graph){
     const by=new Map(graph.nodes.map(n=>[n.id,n])),errors=[];
@@ -309,21 +360,21 @@
   // A private in-memory certificate, never a serialized "trusted" flag. Its
   // immutable core covers the complete IR and this cut's canonical bindings.
   // Geometry remains mutable and is checked for every transaction/candidate.
-  function certifiedContext(graph){
+  function certifiedContext(graph,context){
     const key=topology(graph);let record=certificates.get(graph.generic);
     if(!sameCore(graph,record)||record.topology!==key)record=(sharedCertificates.get(graph.generic.ir)||[]).find(v=>sameCore(graph,v)&&v.topology===key);
     const reused=!!record;certificates.set(graph.generic,record);
     if(!reused){
       const errors=nodeErrors(graph),semanticEdges=new Map(graph.edges.map(e=>[e.id,edgeErrors(graph,e,e.route,true)]));
       const all=validate(graph,true);
-      if(!all.ok)return {nodeErrors:errors,semanticEdges,sourceCheck:all,certification:{reused:false,full:true}};
+      if(!all.ok)return {nodeErrors:errors,semanticEdges,sourceCheck:all,certification:{reused:false,full:true,certified:false}};
       for(const v of [graph.generic.ir,graph.generic.state,graph.generic.receipts,graph.generic.navigation,graph.generic.authoring,graph.generic.migration,...graph.nodes.map(n=>n.semantic),...graph.edges.map(e=>e.binding)])freezeEvidence(v);
       record={ir:graph.generic.ir,state:graph.generic.state,receipts:graph.generic.receipts,nodes:graph.nodes.map(n=>n.semantic),edges:graph.edges.map(e=>e.binding),topology:key,semanticEdges};
       certificates.set(graph.generic,record);
       sharedCertificates.set(graph.generic.ir,[record,...(sharedCertificates.get(graph.generic.ir)||[])].slice(0,4));
     }
-    const errors=nodeGeometryErrors(graph),physical=graph.edges.flatMap(e=>e.draft?[]:root.SummaryPhysicalPorts.errors(graph,e,e.route).map(v=>e.id+': '+v));
-    return {nodeErrors:errors,semanticEdges:record.semanticEdges,sourceCheck:{ok:!errors.length&&!physical.length,violations:[...errors,...physical]},certification:{reused,full:!reused}};
+    const errors=nodeGeometryErrors(graph),physical=graph.edges.flatMap(e=>e.draft?[]:root.SummaryPhysicalPorts.errors(graph,e,e.route,context).map(v=>e.id+': '+v));
+    return {nodeErrors:errors,semanticEdges:record.semanticEdges,sourceCheck:{ok:!errors.length&&!physical.length,violations:[...errors,...physical]},certification:{reused,full:!reused,certified:true}};
   }
   // Geometry-only undo/worker snapshots share frozen evidence, with independent
   // positions, routes, stateful drafts and cached layouts. No thousands-node IR
@@ -700,14 +751,17 @@
     const check=validate(graph);if(!check.ok)throw Error(check.violations.slice(0,3).join('; '));Object.assign(target,{nodes:graph.nodes,edges:graph.edges,sourceDraftOperations:graph.sourceDraftOperations,sourceDraftEdges:graph.sourceDraftEdges,nativeRouting:graph.nativeRouting,canvas:graph.canvas});return target;
   }
   function prepare(message){
+    const started=performance.now();
     const graph=message.task==='generic-build'?build(message.ir,message.state,message.extra):message.task==='generic-route'?message.graph:operate(message.graph,message.operation||{});
     if(message.nativeLayout)restore(graph,message.nativeLayout);
+    const built=performance.now();
     const result=message.nativeLayout||graph.nativeLayoutRestored?{routed:0,failed:0}:route(graph,message.options);delete graph.nativeLayoutRestored;
+    const routed=performance.now();
     const validation=root.SummaryEngine.validateView(graph);
     if(!validation.source.ok||validation.layout.nodes.length)throw Error([...validation.source.violations,...validation.layout.nodes.map(ids=>'overlapping source owners '+ids.join(' / '))].slice(0,4).join('; '));
     // Incomplete visual drafts remain visible and explicitly marked. They can
     // be saved/exported without pretending to satisfy geometry constraints.
-    return {ok:true,graph,...result,failed:Math.max(result.failed,validation.edges.filter(([,v])=>!v.ok).length),validation};
+    return {ok:true,graph,...result,failed:Math.max(result.failed,validation.edges.filter(([,v])=>!v.ok).length),validation,timing:{buildMs:Math.round(built-started),routeMs:Math.round(routed-built),validationMs:Math.round(performance.now()-routed)}};
   }
   const api={VERSION,SCHEMA,engine,project,initial,build,nodeEvidence,color,edgeAppearance,headingIds,appearance,glyph,children,operate,remember,expected,slotIdentity,boundarySequence,boundaryErrors,constraints,nodeErrors,edgeErrors,validate,certifiedContext,cloneGeometry,transport,prepare,route,routePatternCache,placementProposal,refinePlacement,borderProximity,refineChannels,refineJoins,routeOptions,layoutSnapshot,document,read,restore,stable};
   root.SummaryNativeSemantic=api;if(typeof module!=='undefined')module.exports=api;

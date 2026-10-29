@@ -12,6 +12,7 @@ self.onmessage = event => {
   try{
     if(task==='generic-build'||task==='generic-route'||task==='frontier'&&graph.generic){reply({requestId,...ArchCanvasSemanticView.prepare(message)});}
     else if(task==='frontier'){reply({requestId,...SummaryFrontierTask.run(graph,message.transition,options)});}
+    else if(task==='optimize'){const result=SummaryEngine.optimizeRoutes(graph,ids,options);SummarySourceControls.refresh(graph);reply({requestId,...result});}
     else if(task==='validate'){const validation=validateView(graph);SummarySourceControls.refresh(graph);reply({requestId,ok:true,graph,validation});}
     else if(task==='move'){
       SummaryEngine.move(graph,id,dx,dy,options);

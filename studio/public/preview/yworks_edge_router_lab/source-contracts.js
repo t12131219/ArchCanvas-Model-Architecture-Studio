@@ -11,7 +11,7 @@
     return value;
   }
   function edgeErrors(graph,e,points=e.route,options={}){
-    if(graph.generic&&root.SummaryNativeSemantic)return root.SummaryNativeSemantic.edgeErrors(graph,e,points);
+    if(graph.generic&&root.SummaryNativeSemantic)return root.SummaryNativeSemantic.edgeErrors(graph,e,points,false,options.context);
     if(graph.recursive&&root.SummaryRecursive)return root.SummaryRecursive.edgeErrors(graph,e,points,options);
     const base=graph.semanticBaseline;if(!base)return [];
     const errors=[],saved=base.edges[e.id];

@@ -67,7 +67,7 @@
       if(interaction.selectedAnnotation===annotation.id)layer.append(node('rect',{x:x-5,y:y-17,width:width+10,height:lines.length*20+7,fill:'none',stroke:'#d99160','stroke-width':1.5,'stroke-dasharray':'5 4','pointer-events':'none','data-editor-only':'annotation-selection'}));
       layer.append(text);
     }
-    const sourceEdge=graph.edges.find(edge=>isSourceDependency(graph,edge)),controlRows=root.SummarySourceControls?.legendRows(graph)||[];
+    const sourceEdge=graph.edges.find(edge=>isSourceDependency(graph,edge)),controlRows=interaction.interactive?[]:root.SummarySourceControls?.legendRows(graph)||[];
     // Node category legends stay in Studio's inspector, outside the diagram.
     if(sourceEdge||controlRows.length){
       const legend=node('g',{'data-studio-legend':'true'}),width=sourceEdge||controlRows.length?360:250,height=((sourceEdge?1:0)+controlRows.length)*28+32,x=Math.max(10,graph.canvas[0]-width-20),y=Math.max(10,graph.canvas[1]-height-20);
@@ -78,7 +78,7 @@
         relation.append(node('path',{d:`M ${x+12} ${row-5} H ${x+36}`,fill:'none',stroke,'stroke-width':1.5,'stroke-dasharray':item.dashArray}),node('path',{d:`M ${x+31} ${row-9} L ${x+37} ${row-5} L ${x+31} ${row-1}`,fill:'none',stroke,'stroke-width':1.5}),node('text',{x:x+44,y:row,'font-size':12,fill:'#334155'},item.label));legend.append(relation);});
       layer.append(legend);
     }
-    for(const e of graph.edges){const p=overlay.edges[e.id]||overlay.edges[e.projection?.original]||{},appearance=edgeAppearance(graph,e),group=svg.querySelector(`[data-edge-id="${CSS.escape(e.id)}"]`),path=group?.querySelector('.wire-path'),stroke=mono||color(p.stroke)||color(e.stroke)?appearance.stroke:null;if(path){if(p.width!==undefined)path.setAttribute('stroke-width',p.width);if(p.dashed!==undefined)path.setAttribute('stroke-dasharray',appearance.dashArray);if(stroke){path.setAttribute('stroke',stroke);for(const arrow of group.querySelectorAll('.arrow-shape')){if(arrow.getAttribute('fill')!=='none')arrow.setAttribute('fill',stroke);if(arrow.getAttribute('stroke')!=='none')arrow.setAttribute('stroke',stroke);}}}}
+    for(const e of graph.edges){if(interaction.edgeIds&&!interaction.edgeIds.has(e.id))continue;const p=overlay.edges[e.id]||overlay.edges[e.projection?.original]||{},appearance=edgeAppearance(graph,e),group=interaction.edgeViews?.get(e.id)?.g||svg.querySelector(`[data-edge-id="${CSS.escape(e.id)}"]`),path=group?.querySelector('.wire-path'),stroke=mono||color(p.stroke)||color(e.stroke)?appearance.stroke:null;if(path){if(p.width!==undefined)path.setAttribute('stroke-width',p.width);if(p.dashed!==undefined)path.setAttribute('stroke-dasharray',appearance.dashArray);if(stroke){path.setAttribute('stroke',stroke);for(const arrow of group.querySelectorAll('.arrow-shape')){if(arrow.getAttribute('fill')!=='none')arrow.setAttribute('fill',stroke);if(arrow.getAttribute('stroke')!=='none')arrow.setAttribute('stroke',stroke);}}}}
     const stage=document.getElementById('stage');if(stage)stage.style.backgroundColor=overlay.page.background||'#fafcfb';
     svg.setAttribute('data-studio-presentation-version','1');svg.setAttribute('data-studio-page-width-mm',String(overlay.page.widthMm||180));
   }

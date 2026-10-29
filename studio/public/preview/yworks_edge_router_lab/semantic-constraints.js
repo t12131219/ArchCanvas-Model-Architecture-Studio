@@ -141,7 +141,8 @@
       result[side]=gap;
     }return result;
   }
-  function laneClearances(graph,e,n,context){const minimum=borderClearance(e,n),gaps=context?.frameGaps?.get(n.id)||frameGaps(graph,n),out={};
+  function laneClearances(graph,e,n,context){const minimum=borderClearance(e,n);let gaps=context?.frameGaps?.get(n.id);
+    if(!gaps){gaps=frameGaps(graph,n);context?.frameGaps?.set(n.id,gaps);}const out={};
     for(const side of ['left','right','top','bottom'])out[side]=Object.fromEntries(['inside','outside'].map(key=>[key,Math.max(minimum,Math.min(12,gaps[side][key]/2))]));
     return out;
   }
@@ -151,6 +152,16 @@
   // painted border clearance in this synchronous geometry snapshot.
   function routeNodes(graph,points,context){
     if(!context?.spatialNodes||!points.length||points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)))return graph.nodes;
+    if(context.spatialIndex){
+      const found=new Set();
+      // Query every segment, not the empty interior of a large dogleg's box.
+      // The exact body/caption/border tests below remain authoritative.
+      for(let i=0;i<points.length;i++){
+        const a=points[Math.max(0,i-1)],b=points[i],pad=context.spatialPadding+Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y))*EPS,x=Math.min(a.x,b.x)-pad,y=Math.min(a.y,b.y)-pad;
+        for(const row of context.spatialIndex.query({x,y,w:Math.abs(a.x-b.x)+2*pad,h:Math.abs(a.y-b.y)+2*pad}))found.add(row);
+      }
+      return [...found].sort((a,b)=>a.order-b.order).map(row=>row.node);
+    }
     const pad=context.spatialPadding,minX=Math.min(...points.map(p=>p.x))-pad,maxX=Math.max(...points.map(p=>p.x))+pad,minY=Math.min(...points.map(p=>p.y))-pad,maxY=Math.max(...points.map(p=>p.y))+pad,out=[];
     for(const box of context.spatialNodes){if(box.x>maxX)break;if(box.right>=minX&&box.y<=maxY&&box.bottom>=minY)out.push(box.node);}return out;
   }
@@ -161,6 +172,7 @@
       const vertical=side==='left'||side==='right',axis=vertical?'x':'y',along=vertical?'y':'x';
       const value=n[axis]+(['right','bottom'].includes(side)?n[vertical?'w':'h']:0),low=n[along],high=low+n[vertical?'h':'w'];
       for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i];
+        if(Math.abs(a[axis]-b[axis])>=EPS)continue;
         const outward=['right','bottom'].includes(side)?1:-1,key=(a[axis]-value)*outward<0?'inside':'outside',clearance=typeof padding==='number'?padding:padding[side][key];
         const distance=Math.max(Math.abs(a[axis]-value),Math.abs(b[axis]-value));
         const length=Math.min(high,Math.max(a[along],b[along]))-Math.max(low,Math.min(a[along],b[along]));
@@ -170,6 +182,16 @@
           hits.push({frame:n.id,side,segment:i-1,distance,clearance,length});
       }
     }return hits;
+  }
+  // Boolean form of borderContacts for the visibility grid's hot path. It
+  // uses the same numeric-clearance predicate without allocating hit records.
+  function segmentBorderContact(a,b,n,pad){
+    if(n.modelHeading)return false;
+    const left=Math.min(a.x,b.x),right=Math.max(a.x,b.x),top=Math.min(a.y,b.y),bottom=Math.max(a.y,b.y),limit=pad-EPS;
+    return Math.abs(a.x-b.x)<EPS&&Math.min(n.y+n.h,bottom)-Math.max(n.y,top)>EPS&&
+      (Math.max(Math.abs(a.x-n.x),Math.abs(b.x-n.x))<limit||Math.max(Math.abs(a.x-(n.x+n.w)),Math.abs(b.x-(n.x+n.w)))<limit)||
+      Math.abs(a.y-b.y)<EPS&&Math.min(n.x+n.w,right)-Math.max(n.x,left)>EPS&&
+      (Math.max(Math.abs(a.y-n.y),Math.abs(b.y-n.y))<limit||Math.max(Math.abs(a.y-(n.y+n.h)),Math.abs(b.y-(n.y+n.h)))<limit);
   }
   function walls(n,gates,padding=2){
     if(n.modelHeading)return [];
@@ -214,17 +236,32 @@
       graph.recursiveReceipt?.edges
     ]:graph.semanticBaseline?.edges);
   }
-  function validationContext(graph){return {nodeErrors:S?S.nodeErrors(graph):[],geometryKey:geometryKey(graph),frameGaps:new Map(graph.nodes.filter(n=>n.expanded).map(n=>[n.id,frameGaps(graph,n)])),
-    nodeIndex:new Map(graph.nodes.map(n=>[n.id,n])),
+  const semanticEdgeScope=e=>JSON.stringify([e.id,e.source,e.target,!!e.draft,e.contract]);
+  function validationContext(graph){
+    const ports=P.context(graph),native=graph.generic&&root.SummaryNativeSemantic?.certifiedContext(graph,ports);
+    const spatialNodes=graph.nodes.map(n=>({node:n,x:Math.min(n.x,...(n.labelObstacles||[]).map(b=>n.x+b.x)),y:Math.min(n.y,...(n.labelObstacles||[]).map(b=>n.y+b.y)),right:Math.max(n.x+n.w,...(n.labelObstacles||[]).map(b=>n.x+b.x+b.w)),bottom:Math.max(n.y+n.h,...(n.labelObstacles||[]).map(b=>n.y+b.y+b.h))})).sort((a,b)=>a.x-b.x);
+    const spatialIndex=graph.nodes.length>64&&root.SemanticGeometryIndex?.boxes(spatialNodes.map((row,order)=>Object.assign(row,{order,w:row.right-row.x,h:row.bottom-row.y})));
+    return {...ports,nodeErrors:native?native.nodeErrors:S?S.nodeErrors(graph):[],nativeSource:native,
+    nativeEdges:native?.certification.certified?new Map(graph.edges.map(e=>[e.id,{binding:e.binding,scope:semanticEdgeScope(e)}])):null,
+    geometryKey:geometryKey(graph),frameGaps:new Map(),
     spatialPadding:Math.max(12,...graph.edges.map(e=>(e.width||2.2)/2))+Math.max(2,...graph.nodes.flatMap(n=>[...n.html?.matchAll(/stroke-width="([\d.]+)"/g)||[]].map(m=>+m[1])))/2+2,
-    spatialNodes:graph.nodes.map(n=>({node:n,x:Math.min(n.x,...(n.labelObstacles||[]).map(b=>n.x+b.x)),y:Math.min(n.y,...(n.labelObstacles||[]).map(b=>n.y+b.y)),right:Math.max(n.x+n.w,...(n.labelObstacles||[]).map(b=>n.x+b.x+b.w)),bottom:Math.max(n.y+n.h,...(n.labelObstacles||[]).map(b=>n.y+b.y+b.h))})).sort((a,b)=>a.x-b.x),
+    spatialNodes,spatialIndex,
     // The complete source scope is immutable for this synchronous routing
     // transaction, including all variant gate licences. Never reuse the
     // context across a hierarchy/source edit or for another graph.
     sourceGraph:graph,sourceScope:sourceScope(graph),sourceEdgeErrors:new Map()};}
   function sourceErrors(graph,e,points,context){
     if(!S)return [];
-    if(graph.generic)return S.edgeErrors(graph,e,points);
+    if(graph.generic){
+      const saved=context?.sourceGraph===graph&&context.nativeEdges?.get(e.id),native=context?.nativeSource;
+      // The private certificate covers frozen source bodies and bindings.
+      // Every mutable endpoint/contract is signed again for each candidate;
+      // physical ports and their live peer occupancy are always checked.
+      if(saved&&saved.binding===e.binding&&saved.scope===semanticEdgeScope(e))return [
+        ...(native.semanticEdges.get(e.id)||[]),...(!e.draft?P.errors(graph,e,points,context):[])
+      ];
+      return S.edgeErrors(graph,e,points,{context});
+    }
     if(context?.sourceGraph!==graph||!context.sourceEdgeErrors)return S.edgeErrors(graph,e,points);
     // Alternate physical ports and candidate polylines leave these source
     // fields unchanged. Sign all of them on every call, so even an in-place
@@ -284,6 +321,6 @@
     for(const g of actual){let found=false;while(cursor<allowed.length){const v=allowed[cursor++],n=graph.nodes.find(n=>n.id===g.frame);if(v.frame===g.frame&&v.side===g.side&&v.direction===g.direction&&R.dist(gatePoint(n,g),gatePoint(n,v))<3.01){found=true;break;}}if(!found){violations.push('boundary crossing order changed');break;}}
     return {ok:violations.length===0,violations:[...new Set(violations)]};
   }
-  const api={validationContext,borderClearance,borderContacts,laneClearances,laneContacts,needsLaneRepair,geometryKey,initialize,ancestors,crossings,wireIdentity,walls,gatePoint,sharedStemPoint,activeGates,constraints,validate,validateJunctions,inside,pointIn,validateSource:S?.validateGraph};
+  const api={validationContext,borderClearance,borderContacts,segmentBorderContact,laneClearances,laneContacts,needsLaneRepair,geometryKey,initialize,ancestors,crossings,wireIdentity,walls,gatePoint,sharedStemPoint,activeGates,constraints,validate,validateJunctions,inside,pointIn,validateSource:S?.validateGraph};
   root.SummaryConstraints=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

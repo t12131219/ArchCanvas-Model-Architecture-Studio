@@ -40,7 +40,13 @@ def vendor(source: Path, project: Path) -> dict:
         if ir.get('schema') != 'archcanvas-source-semantic/2' or ir.get('ir_digest') != model['digest'] or len(ir['nodes']) != model['nodes'] or len(ir['edges']) != model['edges']:
             raise ValueError('Catalog metadata disagrees with IR: ' + identity)
         presentation = copy_asset(model['presentation']) if model.get('presentation') else None
-        models.append(dict(id=identity,title=model['title'],nodes=model['nodes'],edges=model['edges'],digest=model['digest'],runtime=model.get('runtime'),coverage=model.get('coverage'),ir=asset,presentation=presentation))
+        entry = ir.get('entry', {})
+        source_entry = next((s for s in ir.get('sources', []) if s.get('path') == entry.get('file')), None)
+        program = None
+        if source_entry:
+            key = [source_entry.get('unit_sha256') or source_entry['sha256'], entry.get('class'), entry.get('cell')]
+            program = dict(id=hashlib.sha256(json.dumps(key, separators=(',', ':'), ensure_ascii=False).encode()).hexdigest(), label=entry.get('class') or model['title'], constructor=entry.get('constructor', {}), observations=len(ir.get('runtime', {}).get('runs', [])))
+        models.append(dict(id=identity,title=model['title'],nodes=model['nodes'],edges=model['edges'],digest=model['digest'],runtime=model.get('runtime'),coverage=model.get('coverage'),ir=asset,presentation=presentation, **({'program': program} if program else {})))
     result=dict(schema='archcanvas-summary-catalog/1',limits=dict(bytes=16000000,nodes=4000,edges=5000),models=models)
     (target/'studio-catalog.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
     manifest=dict(schema='archcanvas-summary-catalog-assets/1',source='prototype/Summary_Merge',reason='Complete generic model catalog and referenced original IR/presentation assets; current runtime budget remains explicit',files=list(files.values()),models=len(models))

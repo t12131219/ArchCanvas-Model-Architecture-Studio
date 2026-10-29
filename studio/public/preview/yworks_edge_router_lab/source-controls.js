@@ -133,8 +133,10 @@
   function ensure(graph){const value=graph.sourceControls;return value?.version===VERSION&&value.signature===signature(graph)?value:
     {version:VERSION,controls:[],decisions:[],diagnostics:[]};}
   function legendRows(graph){return ensure(graph).controls.length?[{label:'条件分支 · 非张量',stroke:'#8a6a46',dashArray:'4 4'}]:[];}
-  function render(graph,svg){
+  function render(graph,svg,{interactive=false}={}){
     let layer=svg.querySelector('#sourceControlLayer');
+    if(interactive){layer?.setAttribute('display','none');return;}
+    layer?.removeAttribute('display');
     if(!layer){layer=document.createElementNS(NS,'g');layer.setAttribute('id','sourceControlLayer');layer.setAttribute('pointer-events','none');svg.insertBefore(layer,svg.querySelector('#nodeLayer'));}
     const value=ensure(graph),mono=(graph.recursive?.state?.studioPresentation||graph.studioPresentation)?.page?.preset==='monochrome',stroke=mono?'#4b5563':'#8a6a46';
     const renderKey=value.signature+'|'+stroke;

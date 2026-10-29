@@ -148,7 +148,8 @@ test('visual overlays survive semantic projection and saved native layout reject
   const next = prepare(graph, { type: 'preset', preset: 'detail' });
   assert.deepEqual(copy(next.studioPresentation), graph.studioPresentation);
   const restored = copy(next); assert.equal(E.validateView(restored).source.ok, true);
-  restored.edges[0].binding.target_port = 'forged';
+  assert.equal(Object.isFrozen(restored.edges[0].binding), true);
+  restored.edges[0].binding = { ...restored.edges[0].binding, target_port: 'forged' };
   assert.equal(E.validateView(restored).source.ok, false);
   const forged = copy(next);forged.generic.receipts.node_accounting.visible.pop();
   assert.equal(E.validateView(forged).source.ok, false);

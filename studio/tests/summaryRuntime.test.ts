@@ -43,17 +43,6 @@ test('actual CPU entry refuses to start after an asynchronous source response lo
   await assert.rejects(callback('../src/App.tsx', 'runSummaryObservation', env)({}, () => {}), /未开始 CPU/);
   assert.equal(env.sent.length, 0);
 });
-test('actual result opening rejects failed receipts and uses the native reader plus committed snapshot for successful observation', async () => {
-  const loaded: unknown[] = [], received: unknown[] = [], snapshot = { caseId: 'new-observation', graph: {} };
-  const open = callback('../src/App.tsx', 'openSummaryObservation', {
-    readyPreview: () => true, previewLayoutDisabled: false,
-    previewEngine: { current: { load: async (doc: unknown) => { loaded.push(doc); }, snapshot: async () => snapshot } },
-    receivePreviewState: async (value: unknown) => { received.push(value); }, setNotice() {},
-  });
-  await assert.rejects(open({ receipt: { status: 'failed' }, document: {} }), /未完成/); assert.equal(loaded.length, 0);
-  const document = { schema: 'archcanvas-source-semantic/2' };
-  await open({ receipt: savedReceipt, document }); assert.deepEqual(loaded, [document]); assert.deepEqual(received, [snapshot]);
-});
 test('actual API polls with the current session, exposes targeted cancellation and returns observation receipts independently of transactions', async () => {
   const writes: any[] = [], reads: any[] = [], result = { receipt: { status: 'failed', reason: 'cancelled' }, document: null };
   let cancel!: () => Promise<void>;
@@ -81,6 +70,6 @@ test('retained Studio fold shows explicit profile and actual unavailable environ
   const source = readFileSync(new URL('../src/SummaryRuntimePanel.tsx', import.meta.url), 'utf8');
   const code = ts.transpileModule(source.replace(/^import .*;$/gm, '').replace('export function SummaryRuntimePanel', 'function SummaryRuntimePanel'), { compilerOptions: { target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.React } }).outputText;
   const Panel = new Function('React', 'useState', 'useRef', 'useEffect', code + ';return SummaryRuntimePanel;')(React, React.useState, React.useRef, () => {});
-  const html = renderToStaticMarkup(React.createElement(Panel, { available: false, reason: 'isolation unavailable', hasSource: true, disabled: false, onRun() { throw Error('render must not execute'); }, onOpen() {} }));
-  assert.match(html, /新 CPU 观察/); assert.match(html, /isolation unavailable/); assert.match(html, /disabled=""[^>]*>运行 CPU 观察/);
+  const html = renderToStaticMarkup(React.createElement(Panel, { available: false, reason: 'isolation unavailable', hasSource: true, disabled: false, onRun() { throw Error('render must not execute'); }, onSaveEvidence() {} }));
+  assert.match(html, /源码与运行证据/); assert.match(html, /添加运行证据/); assert.match(html, /isolation unavailable/); assert.doesNotMatch(html, /textarea|>运行探针<|Summary 证据视图/);
 });

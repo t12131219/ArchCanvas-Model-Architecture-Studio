@@ -172,3 +172,12 @@ test('pending observer advertises cancellation only for actual pending Worker re
  const b=channel.run({task:'validate',graph:build()});workers[1].onerror();assert.equal(await b,null);
  assert.deepEqual(events,[true,false,true,false]);assert.equal(channel.isPending(),false);
 });
+
+test('actual Apply worker task validates a bounded batch, keeps source transport shared and resumes the remaining scope',async t=>{
+ const {channel,sent}=actual();t.after(()=>channel.reset());const graph=valid(await channel.run({task:'validate',graph:build()}));
+ const ids=graph.edges.map((e:any)=>e.id),geometry=JSON.stringify(graph.nodes),bindings=JSON.stringify(graph.edges.map((e:any)=>e.binding));
+ const options={margin:6,stub:28,bendCost:40,crossingCost:450,overlapCost:2,edgeSpacing:12,sides:'any',style:'orthogonal',optimizeReadability:true,budgetMs:0};
+ const first=await channel.run({task:'optimize',graph,ids,options}),retained=valid(first);assert.deepEqual(plain(first.optimization.pendingIds),plain(ids));assert.equal(JSON.stringify(retained.nodes),geometry);assert.equal(JSON.stringify(retained.edges.map((e:any)=>e.binding)),bindings);assert.equal(retained.generic.ir,graph.generic.ir);
+ assert.equal(sent.at(-1).graph.core,undefined,'Apply must not resend the already verified source corpus');
+ const next=await channel.run({task:'optimize',graph:retained,ids,options:{...options,budgetMs:100}});valid(next);assert.equal(JSON.stringify(next.graph.nodes),geometry);assert.equal(next.optimization.checked+next.optimization.pendingIds.length,ids.length);
+});

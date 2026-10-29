@@ -27,3 +27,18 @@ test('registered F0 resets mixed overrides in one transition and restores its ex
  assert.deepEqual([...result.graph.nodes.map((n:any)=>n.id)].sort(),[...expected].sort());
  assert.ok(graph.recursive.state.moduleCuts.length>0,'prior mixed history must remain intact');
 });
+
+test('registered subtree replacement clears nested overrides without affecting sibling cuts or preceding graph',()=>{
+ let graph=F.build(F.create(sources));const available=T.modules(graph),by=new Map(graph.recursive.authority.detail.nodes.map((n:any)=>[n.id,n]));
+ const inside=(id:string,owner:string)=>{while(id){if(id===owner)return true;id=(by.get(id)as any)?.parent;}return false;};
+ const owner=available.find((m:any)=>available.some((n:any)=>n.id!==m.id&&inside(n.id,m.id))&&available.some((n:any)=>!inside(n.id,m.id)&&!inside(m.id,n.id)));
+ assert.ok(owner);const child=available.find((n:any)=>n.id!==owner.id&&inside(n.id,owner.id)),sibling=available.find((n:any)=>!inside(n.id,owner.id)&&!inside(owner.id,n.id));
+ graph=T.moduleCut(graph,{ids:[owner.id],level:'source',depth:1});graph=T.moduleCut(graph,{ids:[child.id],level:'source'});graph=T.moduleCut(graph,{ids:[sibling.id],level:'f1'});
+ const before=JSON.stringify(graph),collapsed=T.moduleCut(graph,{ids:[owner.id],level:'source',depth:0,replaceDescendants:true});
+ assert.equal(collapsed.recursive.state.moduleCuts.some((c:any)=>c.id===child.id),false);
+ assert.equal(collapsed.recursive.state.moduleCuts.find((c:any)=>c.id===sibling.id).level,'f1');
+ assert.equal(collapsed.nodes.filter((n:any)=>inside(n.id,owner.id)).length,1);
+ assert.equal(JSON.stringify(graph),before);
+ const reset=T.moduleCut(graph,{ids:[owner.id],reset:true,replaceDescendants:true});assert.equal(reset.recursive.state.moduleCuts.length,1);
+ assert.equal(reset.recursive.state.moduleCuts[0].id,sibling.id);
+});

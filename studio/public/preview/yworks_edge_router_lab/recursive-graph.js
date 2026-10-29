@@ -724,7 +724,7 @@
     // Fixed interfaces, shared spines, gates and manual knots stay protected.
     const P=root.SummaryPhysicalPorts;
     for(const e of graph.edges){
-      if(!budget||!qualityBudget)break;
+      if(!budget||!qualityBudget||options.deadline!==undefined&&performance.now()>=options.deadline)break;
       if(!eligible(e)||e.failed||e.style!=='orthogonal'||e.route.length<=2||e.contract.bus||e.contract.gates.length||e.contract.sharedStem||e.portPolicy?.source?.sharedStem||e.portPolicy?.target?.sharedStem)continue;
       const source=graph.nodes.find(n=>n.id===e.source),target=graph.nodes.find(n=>n.id===e.target);
       if(!source||!target||source.expanded||target.expanded||source.junction||target.junction||source.glyphPresentation||target.glyphPresentation)continue;
@@ -738,7 +738,7 @@
       }
       candidates.sort((a,b)=>length(a.points)-length(b.points));
       for(const {projected,points}of candidates){
-        if(!budget||!qualityBudget)break;budget--;qualityBudget--;
+        if(!budget||!qualityBudget||options.deadline!==undefined&&performance.now()>=options.deadline)break;budget--;qualityBudget--;
         if(!C.validate(graph,projected,points,context).ok||C.laneContacts(graph,projected,points,context).length||E.overlapsWire(graph,projected,points)||!qualityDoesNotRegress(peerRouteQuality(graph,e,points),quality))continue;
         e.route=points;e.physicalSource=projected.physicalSource;e.physicalTarget=projected.physicalTarget;
         if(C.validateJunctions(graph).ok){index=parallelLaneIndex(graph);break;}
@@ -749,7 +749,7 @@
       // Short internal steps are usually a mismatch between two clear lane
       // coordinates. Keep this optional cleanup bounded to local subchains;
       // long deliberate detours and physical arrow terminals are retained.
-      if(!budget||!qualityBudget)break;
+      if(!budget||!qualityBudget||options.deadline!==undefined&&performance.now()>=options.deadline)break;
       if(e.failed||e.route.length>96||!eligible(e))continue;
       const close=parallelLaneContacts(graph,e,e.route,index);
       // Evaluate legal routes with several bends as well as tiny-step routes.
@@ -801,7 +801,7 @@
       }
     }
     for(const e of graph.edges){
-      if(!budget||!qualityBudget)break;
+      if(!budget||!qualityBudget||options.deadline!==undefined&&performance.now()>=options.deadline)break;
       if(e.failed||e.route.length>96||!eligible(e))continue;
       // All normal lane shifts and shortening finish before this optional
       // terminal cleanup, so it cannot interrupt a peer's simplification.

@@ -70,11 +70,12 @@ export default function App() {
   const previewSource = useRef<PreviewEvidenceSource | undefined>(undefined);
   const previewBoundSource = useRef('');
   const previewSourceMatch = useRef<{ source: PreviewEvidenceSource; architecture: Architecture; matches: boolean } | null>(null);
-  const previewNodeBindings = useRef<{ source?: PreviewEvidenceSource; architecture: Architecture; signature: string; bindings: Map<string, string> } | null>(null);
+  const previewNodeBindings = useRef<{ source?: PreviewEvidenceSource; architecture: Architecture; graph?: Record<string, unknown>; signature: string; bindings: Map<string, string> } | null>(null);
   const previewCase = useRef('');
   const previewLoading = useRef(false);
   const [previewConnecting, setPreviewConnecting] = useState(true);
   const [previewBusy, setPreviewBusy] = useState(false);
+  const [previewCanCancel, setPreviewCanCancel] = useState(false);
   const [summaryCatalogOpen, setSummaryCatalogOpen] = useState(false);
   const synchronizingPreview = useRef(false);
   const initialModelLoading = useRef(true);
@@ -193,10 +194,12 @@ export default function App() {
   function currentPreviewNodeBindings(): Map<string, string> {
     const architecture = historyRef.current?.document.architecture, snapshot = previewSnapshot.current;
     if (!architecture || !snapshot?.graph) return new Map();
-    const source = previewSource.current, signature = previewMappingSignature(snapshot), cached = previewNodeBindings.current;
-    if (cached?.architecture === architecture && cached.source === source && cached.signature === signature) return cached.bindings;
+    const source = previewSource.current, cached = previewNodeBindings.current;
+    if (cached?.architecture === architecture && cached.source === source && cached.graph === snapshot.graph) return cached.bindings;
+    const signature = previewMappingSignature(snapshot);
+    if (cached?.architecture === architecture && cached.source === source && cached.signature === signature) { cached.graph = snapshot.graph; return cached.bindings; }
     const bindings = previewUniqueNodeBindings(architecture, snapshot.graph as unknown as PreviewVisualGraph, source);
-    previewNodeBindings.current = { architecture, source, signature, bindings };
+    previewNodeBindings.current = { architecture, source, graph: snapshot.graph, signature, bindings };
     return bindings;
   }
   function readyPreview(document = historyRef.current?.document): boolean {
@@ -349,6 +352,17 @@ export default function App() {
       typeof message.nodeId === 'string' && bindings.has(message.nodeId) ? [bindings.get(message.nodeId)!] : [];
     setSelection({ kind: 'node', ids }); setPanel(before => before === 'summary' ? before : 'object');
   }
+  function receivePreviewInteraction(status: Record<string, unknown>) {
+    const snapshot = previewSnapshot.current;
+    if (!snapshot || status.caseId !== snapshot.caseId) return;
+    // Keep the last committed graph, source ownership and selection intact.
+    // Escape/cancel reads these live flags without rebuilding the panel model.
+    snapshot.busy = status.busy === true;
+    snapshot.dragging = status.dragging === true;
+    snapshot.canCancel = status.canCancel === true;
+    setPreviewBusy(status.busy === true);
+    setPreviewCanCancel(status.canCancel === true);
+  }
   async function receivePreviewState(snapshot: PreviewSnapshot) {
     previewSnapshot.current = snapshot;
     synchronizePreviewNodeSelection(snapshot.selectedNodes);
@@ -356,6 +370,7 @@ export default function App() {
     if (typeof snapshot.showPorts === 'boolean') setPortEditing(snapshot.showPorts);
     if (typeof snapshot.gridVisible === 'boolean') setGrid(snapshot.gridVisible);
     setPreviewBusy(Boolean(snapshot.busy));
+    setPreviewCanCancel(snapshot.canCancel === true);
     const graph = snapshot.graph;
     const caseId = String(graph?.caseId ?? snapshot.caseId ?? '');
     const graphText = JSON.stringify(graph), matchesSavedGraph = graphText === savedPreviewGraph.current;
@@ -537,12 +552,6 @@ export default function App() {
       if (sequence === loadSequence.current) setFailure(String(error));
     });
   }, [apply]);
-  function setSemanticFrontier(preset: 'overview' | 'detail') {
-    cancelGesture();
-    if (!readyPreview()) { setFailure('预览正在接入当前源码，请完成后再切换语义前沿。'); return; }
-    setFailure(''); setNotice(preset === 'overview' ? '正在切换到架构概览（F0）…' : '正在切换到架构详图（F1）…');
-    previewEngine.current?.command('set-frontier', { preset });
-  }
   function focusCurrentFrontier() {
     const id = previewSelectedNodeIds[0] ?? frontier?.expandedIds[frontier.expandedIds.length - 1];
     if (id) { previewEngine.current?.focus({ nodeId: id }); return; }
@@ -1148,15 +1157,6 @@ export default function App() {
       if (sequence === loadSequence.current) { previewLoading.current = false; setBusy(false); setPreviewConnecting(false); }
     }
   }
-  async function openSummaryPreview(id: string) {
-    if (busy || previewBusy || previewConnecting || review) throw Error('请先完成当前模型操作。');
-    cancelGesture(); setBusy(true); setFailure('');
-    try {
-      const snapshot = await previewEngine.current!.openCase(id);
-      await receivePreviewState(snapshot);
-      setSummaryEditorId(null); setPanel('summary');
-    } finally { setBusy(false); }
-  }
   async function newSummaryModel() {
     if (busy || previewBusy || review) return;
     try {
@@ -1189,14 +1189,7 @@ export default function App() {
     if (sequence !== loadSequence.current || caseId !== previewCase.current) throw Error('模型已切换，CPU 观察结果未应用。');
     return result;
   }
-  async function openSummaryObservation(result: SummaryRuntimeResult) {
-    if (!readyPreview() || previewLayoutDisabled) throw Error('请等待当前模型就绪。');
-    if (!result.document || result.receipt.status !== 'passed' || result.receipt.runtimeVerified !== true) throw Error('本次观察未完成，不能作为完整结果打开。');
-    await previewEngine.current!.load(result.document);
-    const snapshot = await previewEngine.current!.snapshot();
-    await receivePreviewState(snapshot);
-    setNotice('已打开本次 CPU 观察的独立结果；原模型保留，源码写回仍使用正式事务。');
-  }
+
   async function compileSummaryModule(value: { source: string; entry: string; constructor: Record<string, unknown> }) {
     const generation = loadSequence.current, caseId = previewCase.current;
     const module = await api.summaryModule(value);
@@ -1369,11 +1362,11 @@ export default function App() {
             <button className={`tool ${previewAllPinned ? 'selected' : ''}`} aria-label={previewAllPinned ? '解锁所选节点' : '固定所选节点'} aria-pressed={previewAllPinned} onClick={pinPreviewSelection} disabled={previewLayoutDisabled || !previewSelectedNodes.length} title={previewAllPinned ? '解锁所选节点，恢复直接拖动' : '固定所选节点的直接拖动；子图仍随父容器移动'}><Icon name="pin" /></button>
           </div>
           <button className="layout-apply" aria-label="Apply layout" title="按当前布线设置应用布局 · Ctrl+Enter" disabled={!current || busy || previewConnecting || previewBusy} onClick={() => previewEngine.current?.command('apply-layout')}><Icon name="bend" size={16} />优化连线</button>
-          <div className="tool-group"><button className={`tool ${grid ? 'selected' : ''}`} title="显示点阵网格" aria-label="显示点阵网格" aria-pressed={grid} disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('grid', { enabled: !grid })}><Icon name="grid" size={16} /></button><button className="tool" onClick={() => fit()} title="适合画布 F" aria-label="适合画布" disabled={previewLayoutDisabled}><Icon name="fit" /></button><details className="canvas-options"><summary aria-label="画布选项" title="画布选项"><Icon name="more" size={16} /></summary><div><div className="menu-heading">画布</div><button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('show-routing')}>布线与箭头设置</button><button disabled={previewLayoutDisabled} onClick={() => setSemanticFrontier('overview')}>架构概览（F0）</button><button disabled={previewLayoutDisabled} onClick={() => setSemanticFrontier('detail')}>架构详图（F1）</button><button disabled={previewLayoutDisabled} onClick={focusCurrentFrontier}>返回当前前沿</button><button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('expand-all')}>展开全部</button><button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('collapse-all')}>收起全部</button><button disabled={previewLayoutDisabled} onClick={() => { cancelGesture(); previewEngine.current?.command('reset'); }}>恢复初始视图（可撤销）</button></div></details></div>
+          <div className="tool-group"><button className={`tool ${grid ? 'selected' : ''}`} title="显示点阵网格" aria-label="显示点阵网格" aria-pressed={grid} disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('grid', { enabled: !grid })}><Icon name="grid" size={16} /></button><button className="tool" onClick={() => fit()} title="适合画布 F" aria-label="适合画布" disabled={previewLayoutDisabled}><Icon name="fit" /></button><details className="canvas-options"><summary aria-label="画布选项" title="画布选项"><Icon name="more" size={16} /></summary><div><div className="menu-heading">画布</div><button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('show-routing')}>布线与箭头设置</button><button disabled={previewLayoutDisabled} onClick={focusCurrentFrontier}>定位当前模块</button><button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('expand-all')}>展开全部</button><button disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('collapse-all')}>收起全部</button><button disabled={previewLayoutDisabled} onClick={() => { cancelGesture(); previewEngine.current?.command('reset'); }}>恢复初始视图（可撤销）</button></div></details></div>
         </div>
         {actionFeedback && <div className={`canvas-feedback ${actionFeedback.error ? 'error' : ''}`} role={actionFeedback.error ? 'alert' : 'status'}><Icon name={actionFeedback.error ? 'info' : 'check'} size={15} /><span>{actionFeedback.message}</span><button className="tool" aria-label="关闭操作反馈" onClick={() => setActionFeedback(null)}><Icon name="close" size={13} /></button></div>}
         <div ref={viewportRef} className="canvas-viewport prototype-canvas" data-canvas-surface="recursive-preview">
-          <PreviewStudio ref={previewEngine} visible={!authoringOpen} onState={snapshot => void receivePreviewState(snapshot)}
+          <PreviewStudio ref={previewEngine} visible={!authoringOpen} onState={snapshot => void receivePreviewState(snapshot)} onInteraction={receivePreviewInteraction}
             onSelection={receivePreviewSelection} onEditSource={result => { void bindPreviewSource(result, true).catch(error => setFailure(String(error))); }}
             onError={message => { setFailure(message); setActionFeedback({message, error: true}); }} onNotice={(message, error) => { setNotice(message); setFailure(error ? message : ''); setActionFeedback({message, error}); }} onSave={() => void save()} />
         </div>
@@ -1381,13 +1374,12 @@ export default function App() {
         {sourceOpen && architecture && <div className="source-drawer"><div className="drawer-header"><Icon name="code" size={16} /><b>源码证据</b><span>{previewSourceSpan ? `${previewSourceSpan.path}:${previewSourceSpan.line}` : '只读 · 未执行'}</span><button className="tool" onClick={() => setSourceOpen(false)} aria-label="关闭源码"><Icon name="close" size={16} /></button></div><div className="source-content">{current?.sourceBindingDigest.startsWith('preview-only:') && <p className="field-help">只读源码文本。展示对象没有经过正式模型解析的计算绑定；可在编辑模式中解析支持的源码入口。</p>}{!previewSourceSpan && architecture.sources.length > 0 && <p className="field-help">当前图元没有独立的源码行证据，以下提供完整模型源码供查阅。</p>}{architecture.sources.length === 0 && <p className="field-help">{previewSnapshot.current?.importedDocument ? '当前为 Summary 导入文档，源码位置尚未与 Python 文本验证绑定；可通过原始文档检查声明证据。' : '当前案例是视觉或路由示例，没有模型源码。'}</p>}{architecture.sources.map(source => <div key={source.path}><div className="source-filename">{source.path}</div><pre>{source.content.split('\n').map((line, i) => <div key={i} className={previewSourceSpan?.path === source.path && i + 1 >= previewSourceSpan.line && i + 1 <= previewSourceSpan.endLine ? 'source-highlight' : ''}><span>{i + 1}</span>{line || ' '}</div>)}</pre></div>)}</div></div>}
       </main>
       <aside className="inspector"><div className="inspector-tabs"><button className={panel === 'object' ? 'active' : ''} onClick={() => setPanel('object')}>对象</button><button className={panel === 'legend' ? 'active' : ''} onClick={() => setPanel('legend')}>图例</button><button className={panel === 'page' ? 'active' : ''} onClick={() => setPanel('page')}>页面</button><button className={panel === 'summary' ? 'active' : ''} onClick={() => setPanel('summary')}>Summary</button></div><div className="inspector-content">
-        {panel === 'summary' && frontier && <details className="inspector-section semantic-frontier" open><summary>语义视图<span className="read-only">预览前沿</span></summary><div className="object-heading"><span className="object-icon"><Icon name="layers" size={18} /></span><div><h2>{frontier.label}</h2><span>同一源码语义图的可见切面</span></div></div><div className="coordinate-row"><label>节点 <output>{frontier.visibleNodeCount}</output></label><label>边 <output>{frontier.visibleEdgeCount}</output></label></div><p className="field-help">当前深度 {frontier.depth} · {frontier.expandableCount ? `还有 ${frontier.expandableCount} 个容器可继续细化。` : '当前前沿已展开到可见层级。'}</p><div className="segmented"><button className={frontier.preset === 'overview' ? 'active' : ''} disabled={previewLayoutDisabled} onClick={() => setSemanticFrontier('overview')}>F0 概览</button><button className={frontier.preset === 'detail' ? 'active' : ''} disabled={previewLayoutDisabled} onClick={() => setSemanticFrontier('detail')}>F1 详图</button></div><button className="full-button" disabled={previewLayoutDisabled} onClick={focusCurrentFrontier}>返回当前前沿</button></details>}
-        {panel === 'summary' && current && <details className="inspector-section summary-interaction"><summary>Summary 交互<span className="read-only">预览辅助</span></summary><label className="field-label" htmlFor="preview-interaction-mode">拖动模式</label><select id="preview-interaction-mode" className="field-select" value={previewSnapshot.current?.interactionMode === 'realtime' ? 'realtime' : 'compat'} disabled={previewLayoutDisabled} onChange={event => previewEngine.current?.command('interaction-mode', { mode: event.target.value })}><option value="compat">兼容模式 · 释放后校验</option><option value="realtime">实时模式 · 拖动中同步</option></select><div className="segmented"><button className={previewSnapshot.current?.showGhost ? 'active' : ''} disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('show-ghost', { enabled: !previewSnapshot.current?.showGhost })}>上次路径</button><button className={previewSnapshot.current?.showObstacles ? 'active' : ''} disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('show-obstacles', { enabled: !previewSnapshot.current?.showObstacles })}>安全边界</button></div><div className="coordinate-row"><label>快照 <output>{previewSnapshot.current?.snapshotRevision ?? 0}</output></label><label>源码 <output>{previewSnapshot.current?.importedDocument ? '文档证据' : previewSourceIdentity?.sourceSha256 ? '已绑定' : '预览'}</output></label></div><button className="full-button" disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('show-routing')}>打开布线与箭头设置</button><button className="full-button" disabled={previewLayoutDisabled} onClick={repairSummaryLayout}>优化当前布线</button><button className="full-button" disabled={previewLayoutDisabled || previewSelectedNodeIds.length !== 1} onClick={() => optimizeAutomaticPorts(previewSelectedNodeIds[0], true)}>恢复所选自动连接点</button><button className="full-button" disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('show-evidence')}>打开源码与证据</button></details>}
-        <div hidden={panel !== 'summary'}><SummaryCatalogPanel open={summaryCatalogOpen} onToggle={setSummaryCatalogOpen} disabled={busy || previewBusy || previewConnecting || !!review} onOpen={openSummaryCatalog} onOpenPreview={openSummaryPreview} onBrowseSaved={() => previewEngine.current?.command('show-library')} /></div>
+        <div hidden={panel !== 'summary'}><SummaryCatalogPanel open={summaryCatalogOpen} onToggle={setSummaryCatalogOpen} disabled={busy || previewBusy || previewConnecting || !!review} onOpen={openSummaryCatalog} onBrowseSaved={() => previewEngine.current?.command('show-library')} /></div>
         {panel === 'summary' && summaryEditing && <SummaryAuthoringPanel snapshot={previewSnapshot.current} selected={previewSelectedNodeIds} disabled={previewLayoutDisabled} onEdit={editSummary} onCompile={compileSummaryModule} onCertify={certifySummaryAssembly} onFormal={() => void formalSourceEditor()} />}
         {panel === 'summary' && <SummaryViewPanel onContinue={() => previewEngine.current?.command('continue-routing')} snapshot={previewSnapshot.current} selectedIds={previewSelectedNodeIds} disabled={previewLayoutDisabled} onCommand={payload => previewEngine.current?.command('semantic-view', payload)} onFocus={id => previewEngine.current?.focus({ nodeId: id })} />}
-        {panel === 'summary' && current && <SummaryRuntimePanel key={previewCase.current} available={capabilities?.runtimeProfiles?.summaryObserved === true} reason={capabilities?.runtimeProfiles?.unavailableReason} hasSource={summaryRuntimeHasSource} storedReceipt={summaryRuntimeReceipt} disabled={previewLayoutDisabled} onRun={runSummaryObservation} onOpen={openSummaryObservation} />}
-        {panel === 'summary' && current && <SummarySemanticPanel source={previewSource.current} selectedIds={previewSelectedNodeIds} onFocus={id => previewEngine.current?.focus({ nodeId: id })} onEvidence={() => previewEngine.current?.command('show-evidence')} />}
+        {panel === 'summary' && current && <SummaryRuntimePanel key={previewCase.current} available={capabilities?.runtimeProfiles?.summaryObserved === true} reason={capabilities?.runtimeProfiles?.unavailableReason} hasSource={summaryRuntimeHasSource} storedReceipt={summaryRuntimeReceipt} disabled={previewLayoutDisabled} onRun={runSummaryObservation} onSaveEvidence={document => download('summary-observation.json', JSON.stringify(document, null, 2), 'application/json')} snapshot={previewSnapshot.current} selectedIds={previewSelectedNodeIds} onCommand={payload => previewEngine.current?.command('semantic-view', payload)}>
+          <SummarySemanticPanel embedded source={previewSource.current} selectedIds={previewSelectedNodeIds} onFocus={id => previewEngine.current?.focus({ nodeId: id })} onEvidence={() => previewEngine.current?.command('show-evidence')} />
+        </SummaryRuntimePanel>}
         {panel === 'object' && previewSelectedNodes.length > 0 && <section className="preview-selection-tools" aria-label="画布选区"><h3>已选 {previewSelectedNodes.length} 个节点<span>{previewPinnedCount ? `${previewPinnedCount} 个已固定` : ''}</span><button className="tool" aria-label="清空选区" onClick={() => previewEngine.current?.command('select-nodes', {scope:'clear'})}><Icon name="close" size={13} /></button></h3><p className="selection-names" title={previewSelectedNodes.map(node => node.label || node.id).join('、')}>{previewSelectedNodes.map(node => node.label || node.id).join('、')}</p>{previewSelectedNodes.length > 1 && <p className="field-help">{previewCanAlign ? '使用工具栏的对齐与分布整理所选节点。' : '选区跨越不同容器；选择同级节点后可对齐。'}</p>}</section>}
         {panel === 'object' && previewSelectedNodes.length <= 1 && inspectionNode && inspectionPresentation && <>
           <div className="object-heading"><span className="object-icon" style={{ background: inspectionPresentation.fill }}><Icon name="layers" size={20} /></span><div><h2>{previewPresentation(previewSnapshot.current?.graph)?.nodes?.[inspectionNode.id]?.alias ?? inspectionNode.label ?? inspectionNode.id}</h2><span>{inspectionNode.semantic?.moduleType ?? inspectionNode.semantic?.kind ?? inspectionNode.kind ?? '检查对象'}</span></div></div>
@@ -1433,7 +1425,7 @@ export default function App() {
         {panel === 'page' && current && <><div className="panel-heading"><h2>出版页面</h2><p>SVG、PDF 与 PNG 共用当前画布场景。</p></div><section className="property-section"><label className="field-label">物理页宽</label><div className="segmented">{[85, 180].map(widthMm => <button key={widthMm} className={current.pageSpec.widthMm === widthMm ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { widthMm } }])}>{widthMm} mm</button>)}</div><label className="field-label">背景</label><div className="color-field"><input aria-label="页面背景" type="color" value={current.pageSpec.background} onChange={e => apply([{ type: 'page', page: { background: e.target.value } }])} /><code>{current.pageSpec.background}</code></div><label className="field-label">配色</label><div className="segmented"><button className={current.pageSpec.preset === 'paper' ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { preset: 'paper' } }])}>论文彩色</button><button className={current.pageSpec.preset === 'monochrome' ? 'active' : ''} onClick={() => apply([{ type: 'page', page: { preset: 'monochrome' } }])}>黑白</button></div></section><section className="property-section"><h3>说明文字</h3><button className="full-button" onClick={addAnnotation}><Icon name="plus" size={14} />添加说明文字</button><p className="field-help">使用右上角“导出”生成 SVG、PDF、PNG 或完整编辑 JSON。</p></section></>}
       </div><div className="inspector-footer"><Icon name="info" size={14} /><span>视觉编辑不修改模型源码</span></div></aside>
     </div>
-    <footer className={`statusbar ${failure ? 'has-error' : ''}`}><span><i className={busy ? 'busy-dot' : 'live-dot'} />{failure || (runtimeCancel ? cancelling ? '正在取消运行验证…' : '正在隔离运行并核对前后结构…' : busy ? '正在处理…' : notice)}</span><div>{previewSnapshot.current?.canCancel === true && <button onClick={() => previewEngine.current?.command('cancel-operation')}>取消当前图操作</button>}{runtimeCancel && <button disabled={cancelling} onClick={() => void cancelRuntime()}>{cancelling ? '取消中…' : '取消运行验证'}</button>}{selection.ids.length > 0 && <span>{selection.ids.length} 个已选</span>}<span>RECURSIVE PREVIEW</span><span>rev {current?.revision ?? 0}</span></div></footer>
+    <footer className={`statusbar ${failure ? 'has-error' : ''}`}><span><i className={busy ? 'busy-dot' : 'live-dot'} />{failure || (runtimeCancel ? cancelling ? '正在取消运行验证…' : '正在隔离运行并核对前后结构…' : busy ? '正在处理…' : notice)}</span><div>{previewCanCancel && <button onClick={() => previewEngine.current?.command('cancel-operation')}>取消当前图操作</button>}{runtimeCancel && <button disabled={cancelling} onClick={() => void cancelRuntime()}>{cancelling ? '取消中…' : '取消运行验证'}</button>}{selection.ids.length > 0 && <span>{selection.ids.length} 个已选</span>}<span>RECURSIVE PREVIEW</span><span>rev {current?.revision ?? 0}</span></div></footer>
     {runtimeOpen && architecture && <RuntimeProfileDialog architecture={architecture} initial={inputSpec} example={false} onSave={saveInputSpec} onClose={() => setRuntimeOpen(false)} />}
     {connectionProposal && <div className="modal-backdrop"><div className="runtime-modal connection-proposal" role="dialog" aria-modal="true" aria-labelledby="proposal-title"><div className="modal-heading"><div><div className="eyebrow">CONNECTION PROPOSAL</div><h2 id="proposal-title">{connectionProposal.candidate ? '检查改接提案' : '保留未支持的连接提案'}</h2></div><button className="tool" aria-label="关闭连接提案" onClick={() => setConnectionProposal(null)}><Icon name="close" /></button></div>{connectionProposal.candidate ? <p>将选定输入连接到 <b>{connectionProposal.candidate.variable}</b>。当前只创建提案；运行验证后会展示准确源码 diff 和前后关系，批准后才能提交工作副本。</p> : connectionProposal.blockers.map((blocker, i) => <p key={i}>{blocker}</p>)}<div className="modal-actions"><button onClick={() => setConnectionProposal(null)}>保留当前连接</button>{!inputSpec && <button onClick={() => { setConnectionProposal(null); setRuntimeOpen(true); }}>设置运行输入与模式</button>}{connectionProposal.candidate && <button className="primary" disabled={busy} onClick={() => { const proposal = connectionProposal; setConnectionProposal(null); prepareRebind(proposal.nodeId, proposal.portId, proposal.candidate!.binding); }}>运行验证并预览源码修改</button>}</div></div></div>}
     {review && <ReviewDialog base={review.base} transaction={review.transaction} busy={busy} error={reviewError} onApprove={() => void approveParameter()} onCommit={() => void commitParameter()} onClose={() => void closeReview()} />}

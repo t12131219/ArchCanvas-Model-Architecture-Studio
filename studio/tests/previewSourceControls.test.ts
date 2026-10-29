@@ -6,6 +6,7 @@ import vm from 'node:vm';
 class SvgElement {
   tagName: string; attributes = new Map<string, string>(); children: SvgElement[] = []; textContent = '';
   constructor(tag: string) { this.tagName = tag; }
+  removeAttribute(name: string) { this.attributes.delete(name); }
   setAttribute(name: string, value: unknown) { this.attributes.set(name, String(value)); }
   getAttribute(name: string) { return this.attributes.get(name) ?? null; }
   append(...children: SvgElement[]) { this.children.push(...children); }

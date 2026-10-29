@@ -8,8 +8,8 @@ const evidenceLabels: Record<string, string> = { 'static-only': '静态源码', 
   'source-runtime-associated': '源码与观察关联', 'static-runtime-consistent': '源码与观察一致', 'unobserved-branch': '未观察分支', conflict: '证据冲突' };
 
 /** Read-only evidence projection. Graph/frontier/selection remain in Summary. */
-export function SummarySemanticPanel({ source, selectedIds, onFocus, onEvidence }: {
-  source?: PreviewEvidenceSource; selectedIds: string[]; onFocus: (id: string) => void; onEvidence: () => void;
+export function SummarySemanticPanel({ source, selectedIds, onFocus, onEvidence, embedded = false }: {
+  embedded?: boolean; source?: PreviewEvidenceSource; selectedIds: string[]; onFocus: (id: string) => void; onEvidence: () => void;
 }) {
   if (source?.schema !== 'summary-source-adapter/1' || source.ir?.semanticSchema !== 'archcanvas-source-semantic/2') return null;
   const ir = record(source.ir.semantic_ir), nodes = rows(ir.nodes), byId = new Map(nodes.map(node => [label(node.id), node]));
@@ -17,8 +17,8 @@ export function SummarySemanticPanel({ source, selectedIds, onFocus, onEvidence 
   const coverage = record(ir.coverage), runtime = record(ir.runtime), contracts = rows(ir.semantic_contracts), motifs = rows(ir.motifs);
   const opaque = nodes.filter(node => node.kind === 'opaque'), branches = rows(ir.branches), blockers = rows(ir.coverage_blockers);
   const focus = (id: unknown) => { if (typeof id === 'string' && byId.has(id)) onFocus(id); };
-  return <details className="inspector-section summary-semantic">
-    <summary>Summary 源码语义<span className="read-only">只读证据</span></summary>
+  return <details className={embedded ? "summary-semantic" : "inspector-section summary-semantic"}>
+    <summary>源码证据<span className="read-only">只读证据</span></summary>
     <div className="coordinate-row"><label>语义版本 <output>v2</output></label><label>模型执行 <output>{runtime.model_executed === true ? '是' : '否'}</output></label></div>
     <div className="coordinate-row"><label>源码对象 <output>{nodes.length}</output></label><label>未知边界 <output>{opaque.length}</output></label></div>
     <p className="field-help">{coverage.complete === true ? '已验证限定范围的覆盖' : '覆盖尚未验证'} · {branches.length} 个分支/循环；静态依赖不证明张量形状或运行路径。</p>

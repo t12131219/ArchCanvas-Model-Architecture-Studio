@@ -26,16 +26,17 @@ type Pending = { resolve: (value: Record<string, unknown>) => void; reject: (err
 export const PreviewStudio = forwardRef<PreviewHandle, {
   visible: boolean;
   onState: (document: PreviewSnapshot) => void;
+  onInteraction: (status: Record<string, unknown>) => void;
   onSelection: (selection: Record<string, unknown>) => void;
   onEditSource: (result: PreviewSourceResult) => void;
   onError: (message: string) => void;
   onSave: () => void;
   onNotice: (message: string, error: boolean) => void;
-}>(function PreviewStudio({ visible, onState, onSelection, onEditSource, onError, onSave, onNotice }, ref) {
+}>(function PreviewStudio({ visible, onState, onInteraction, onSelection, onEditSource, onError, onSave, onNotice }, ref) {
   const iframe = useRef<HTMLIFrameElement>(null);
   const ready = useRef(false);
-  const callbacks = useRef({ onState, onSelection, onEditSource, onError, onSave, onNotice });
-  callbacks.current = { onState, onSelection, onEditSource, onError, onSave, onNotice };
+  const callbacks = useRef({ onState, onInteraction, onSelection, onEditSource, onError, onSave, onNotice });
+  callbacks.current = { onState, onInteraction, onSelection, onEditSource, onError, onSave, onNotice };
   const pending = useRef(new Map<string, Pending>());
   const readyWaiters = useRef(new Set<() => void>());
   // Toolbar commands are fire-and-forget at the React call sites, but they
@@ -119,11 +120,12 @@ export const PreviewStudio = forwardRef<PreviewHandle, {
         if (type === 'error' || type === 'source-unavailable') task.reject(new Error(String(message.error ?? message.message ?? '当前示例没有可编辑模型源码。')));
         else task.resolve(message);
       }
-      if ((type === 'state' || type === 'saved') && message.document) callbacks.current.onState({
+      if ((type === 'state' || type === 'saved' || type === 'applied' && message.command === 'apply-layout') && message.document) callbacks.current.onState({
         ...(message.document as PreviewSnapshot), dirty: message.dirty,
         canUndo: Number(message.undo) > 0, canRedo: Number(message.redo) > 0,
         busy: message.busy, canCancel: message.canCancel, dragging: message.dragging, selectedNodes: message.selectedNodes, selectedEdges: message.selectedEdges, caseInfo: message.case,
       });
+      if (type === 'interaction') callbacks.current.onInteraction(message);
       if (type === 'notice') callbacks.current.onNotice(String(message.message ?? ''), Boolean(message.error));
       if (type === 'selection') callbacks.current.onSelection(message);
       if (type === 'shortcut' && message.action === 'save') callbacks.current.onSave();

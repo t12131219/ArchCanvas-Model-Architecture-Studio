@@ -12,7 +12,9 @@
     if(!request||!Array.isArray(request.ids)||!request.ids.length||request.ids.some(id=>!by.has(id))||!request.reset&&!['f0','f1','source'].includes(request.level)||request.depth!==undefined&&(!Number.isInteger(request.depth)||request.depth<0||request.depth>graph.recursive.authority.detail.nodes.length))throw Error('登记预览模块切面无效。');
     const next=E.clone(graph);F.remember(next);const doc=next.recursive,nodes=doc.authority.detail.nodes,source=new Map(nodes.map(n=>[n.id,n]));
     if(!doc.state.moduleBase)doc.state.moduleBase={open:doc.state.open.slice(),folded:doc.state.folded.slice()};
-    let cuts=(doc.state.moduleCuts||[]).filter(c=>!request.ids.includes(c.id));
+    if(request.replaceDescendants!==undefined&&typeof request.replaceDescendants!=='boolean')throw Error('模块展开范围无效。');
+    const within=(id,owner)=>{const seen=new Set();while(id&&!seen.has(id)){if(id===owner)return true;seen.add(id);id=source.get(id)?.parent;}return false;};
+    let cuts=(doc.state.moduleCuts||[]).filter(c=>!request.ids.includes(c.id)&&(!request.replaceDescendants||!request.ids.some(owner=>within(c.id,owner))));
     if(!request.reset)cuts.push(...request.ids.map(id=>({id,level:request.level,...(request.depth!==undefined?{depth:request.depth}:{})})));
     // Rebuild from the original F0 skeleton so removing an override is exact.
     const open=new Set(doc.state.moduleBase.open),folded=new Set(doc.state.moduleBase.folded);
@@ -27,7 +29,6 @@
       };walk(cut.id,0);
       let at=source.get(cut.id)?.parent;while(at){open.add(at);folded.delete(at);at=source.get(at)?.parent;}
     }
-    const within=(id,owner)=>{while(id){if(id===owner)return true;id=source.get(id)?.parent;}return false;};
     doc.state.moduleManual=Object.fromEntries(Object.entries(doc.state.moduleManual||{}).filter(([id])=>!request.ids.some(owner=>within(id,owner))));
     for(const [id,expanded]of Object.entries(doc.state.moduleManual)){if(expanded){open.add(id);folded.delete(id);}else{open.delete(id);folded.add(id);}}
     doc.state.open=[...open];doc.state.folded=[...folded];doc.state.moduleCuts=cuts;doc.revision++;return F.build(doc);

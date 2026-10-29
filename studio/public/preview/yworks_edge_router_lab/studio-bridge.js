@@ -4,7 +4,7 @@
   const prefix='archcanvas:preview:';
   function create(api){
     const embedded=root.parent!==root&&root.location.origin!=='null';
-    let ready=false,selectionSignature='',queue=Promise.resolve();
+    let ready=false,selectionSignature='',queue=Promise.resolve(),applyingLayout=0;
     const concurrentReads=new Set(['snapshot','request-source','ping','hello']);
     const query=new URLSearchParams(root.location.search);
     if(query.get('embed')==='1')document.documentElement.classList.add('studio-embedded');
@@ -26,7 +26,9 @@
     function emit(name,payload={}){
       if(embedded)root.parent.postMessage({type:prefix+name,...payload},root.location.origin);
     }
-    function state(){if(ready)emit('state',api.state());}
+    // Pointer capture and Worker progress only need toolbar status. Never clone
+    // the source corpus or an uncommitted preview into the host on this path.
+    function state(){if(!ready)return;if(api.isBusy?.()&&api.interaction)emit('interaction',api.interaction());else if(!applyingLayout)emit('state',api.state());}
     function selection(payload){
       const signature=JSON.stringify([payload.caseId,payload.nodeId,payload.annotationId,payload.edgeIds,payload.nodeIds]);
       if(ready&&signature!==selectionSignature){selectionSignature=signature;emit('selection',payload);}
@@ -61,7 +63,11 @@
         else if(command==='save'){await api.save();emit('saved',{requestId,...api.state()});}
         else if(command==='svg'){const xml=await api.svg(message);emit('svg',{requestId,xml,svg:xml,...api.state()});}
         else if(command==='export-svg'||command==='export-json'){await api.export(command==='export-svg'?'svg':'json');emit('exported',{requestId,format:command==='export-svg'?'svg':'json'});}
-        else {await api.command(command,message);emit('applied',{requestId,command,...api.state()});state();}
+        else if(command==='apply-layout'){
+          // The command's response is also the final host state. Otherwise
+          // apply's finalizer plus applied + state clone the source three times.
+          applyingLayout++;try{await api.command(command,message);emit('applied',{requestId,command,...api.state()});}finally{applyingLayout--;}
+        }else {await api.command(command,message);emit('applied',{requestId,command,...api.state()});state();}
       }catch(error){emit('error',{requestId,command,message:error?.message||String(error)});}
     }
     function capabilities(){return ['cancel-operation','cancel-gesture','authoring','open-case','load','snapshot','request-source','focus','save','export-svg','export-json','svg','visual','presentation','set-frontier','semantic-view','continue-routing','show-library','show-routing','show-import','show-evidence','undo','redo','reset','fit','zoom','select-tool','connect-tool',...(query.get('surface')==='canvas'?[]:['pan-tool']),'bend-tool','show-ports','show-ghost','show-obstacles','interaction-mode','grid','select-nodes','arrange-selection','pin-selection','apply-layout','collapse-all','expand-all','ping'];}
@@ -73,7 +79,7 @@
       if(concurrentReads.has(command)||api.isBusy?.())void receive(event);
       else queue=queue.then(()=>receive(event)).catch(error=>emit('error',{message:error.message}));
     });
-    return {emit,state,selection,source,progress(payload){if(!ready)emit('progress',payload);},ready(){ready=true;emit('ready',{version:1,capabilities:capabilities()});state();}};
+    return {emit,state,selection,source,interaction(){if(ready&&api.interaction)emit('interaction',api.interaction());},progress(payload){if(!ready)emit('progress',payload);},ready(){ready=true;emit('ready',{version:1,capabilities:capabilities()});state();}};
   }
   root.ArchCanvasPreviewBridge={create};
 })(window);

@@ -686,7 +686,10 @@
     const observed=id=>{while(id){if(id==='runtime-observations'||id.startsWith('runtime:'))return true;id=originalIdx.nodes.get(id)?.parent;}return false;};
     const local=relationNode&&(mode==='merged'||(mode==='runtime')===observed(relationNode))?relationPanel(ir,originalPlan,state.paperRelation):null;
     const inline=canvas&&state.paperSequenceView!=='summary'&&!local;
-    const base=inline?inlinePlan(ir,originalPlan):local?.plan||originalPlan,baseIdx=index(base);
+    // Cache the expensive source analysis, but decorate a private working
+    // plan. Native receipts may freeze records reachable from a prior cut;
+    // another granularity must neither mutate that cut nor inherit its glyphs.
+    const base=copy(inline?inlinePlan(ir,originalPlan):local?.plan||originalPlan),baseIdx=index(base);
     if(inline){const all=index(base);for(const n of base.nodes)decorate(n,all);}
     if(mode==='runtime'&&!baseIdx.nodes.has('runtime-observations'))throw Error('当前 IR 没有 CPU 执行轨迹');
     const runtimeNode=id=>{while(id){if(id==='runtime-observations'||id.startsWith('runtime:'))return true;id=baseIdx.nodes.get(id)?.parent;}return false;};

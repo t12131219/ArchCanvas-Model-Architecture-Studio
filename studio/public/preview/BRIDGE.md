@@ -96,6 +96,17 @@ and `message`. Cases without model source return `source-unavailable`; the
 parent must retain their own identity and never reuse the previous model source.
 
 The child also publishes `selection` and `state` when users operate it directly.
+During pointer gestures and pending graph tasks, automatic notifications use
+`archcanvas:preview:interaction` with only `caseId`, `busy`, `dragging` and
+`canCancel`. They never contain graph geometry, selection evidence or a source
+document. The host updates toolbar/cancellation flags on the last committed
+snapshot and does not rebuild its panel projection or dirty fingerprint. The
+normal full `state` follows a completed/cancelled gesture; explicit `snapshot`,
+source, save and export replies keep their complete document contracts.
+Autosave completion also uses this lightweight status, since saving does not
+change the committed graph. Selection evidence/inspector work waits until
+release, while selection outlines and graph movement render locally.
+
 State and its document expose `tool`, `showPorts` and `gridVisible`; state also
 exposes `busy` (including an active gesture) and `dragging`. V/C/B choose tools
 and F fits the canvas from either toolbar focus context. Native Ctrl/Cmd+Z and
@@ -508,3 +519,23 @@ Native `semanticHierarchy.nodes` can carry `semanticRef:true`: the host resolves
 ## 原生测量驱动局部细化（2026-10-28）
 
 Summary 的原版 adaptive-frontier/5 现由 studio-adaptive.js 接到唯一原生画布；候选比较使用实际图元文字、精确操作数绑定和成功的物理路径。Studio 保留右侧折叠面板，增加开关、策略、采用/拒绝回执和手动收起入口。保存有效请求与开启前基线；关闭恢复原请求，重开独立校验已保存布局。详细范围、来源及验证见 `docs/summary-adaptive-view-integration-20261028.md`。新 CPU、大图完整压力与 D1 仍未完成。
+
+## Explicit Apply/layout responsiveness (2026-10-29)
+
+`apply-layout` delegates preflight, `needed` conflict detection, routing and final
+validation to the existing Worker (`task: optimize`). Its `applied` reply carries
+the single final full state/document and is consumed by the host as a state
+update; automatic idle snapshots inside this command are suppressed. Busy and
+cancellation status still use `interaction`. Explicit snapshot/export reads
+retain their complete reply contract.
+
+Search uses a one-second batch budget and a short per-edge search budget,
+excluding source certification, final validation, transport and painting. A
+legal path may be retained when search is exhausted. The graph's
+`routeOptimization.pendingIds` identifies unvisited scoped edges; clicking Apply
+again resumes those edges only when scope, options and all relevant geometry
+match the exact scheduling signature. The receipt does not license any source
+or geometric fact: each batch validates before commit. Scope/settings/geometry
+changes start a fresh pass. Cancelling or refusing the result preserves the
+previous graph/history. Node positions, manual waypoint policy and source
+bindings continue through the same routing contracts.

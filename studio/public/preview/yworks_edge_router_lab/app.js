@@ -11,6 +11,7 @@
   // Every model is edited as one detailed graph. The compact source views are
   // used only as the initial projection and summary routing reference.
   let unifiedSources=null,unifiedState=null,frontierPreset='overview';
+  let nodeIndexGraph=null,nodeIndex=new Map();
   let history=[],future=[],ghost=[],drag=null,connection=null,busy=false,dirty=false,loadToken=0,epoch=0;
   let sourceCheck={ok:true,violations:[]},dragFrame=0,dragPoint=null,persistTimer=0;
   let interactionMode=(()=>{try{return M.normalize(localStorage.getItem(M.key));}catch(_){return 'compat';}})();
@@ -28,7 +29,7 @@
   const unifiedChildren=id=>graph?.generic?G.children(graph,id):graph?.recursive?F.children(graph.recursive.authority,id):[];
   const unifiedHasChildren=id=>!node(id)?.modelHeading&&unifiedChildren(id).length>0&&(!!graph.generic||!graph.recursive.authority.mandatory.includes(id));
   const unifiedDisplayEdges=()=>graph.edges;
-  function syncUnifiedState(){if(graph?.generic)frontierPreset=graph.frontierPreset||'custom';unifiedState=graph?.generic||graph?.recursive?{expandedIds:graph.nodes.filter(n=>n.expanded).map(n=>n.id)}:null;}
+  function syncUnifiedState(){nodeIndexGraph=graph;nodeIndex=new Map((graph?.nodes||[]).map(n=>[n.id,n]));if(graph?.generic)frontierPreset=graph.frontierPreset||'custom';const expandedIds=graph?.nodes.filter(n=>n.expanded).map(n=>n.id)||[];unifiedState=graph?.generic||graph?.recursive?{expandedIds,expanded:new Set(expandedIds)}:null;}
   function updateUnifiedStatus(){
     syncUnifiedState();if(!graph)return;if(graph.generic){const total=graph.generic.ir.nodes.length,opened=graph.nodes.filter(n=>n.expanded).length;$('recursiveStatus').textContent=`Summary 语义切面 · ${graph.nodes.length}/${total} 个节点 · ${graph.generic.ir.edges.length} 条原始依赖${graph.nativeRouting?.pending?' · '+graph.nativeRouting.pending+' 条待布线':''}`;$('collapseAll').disabled=busy||!!drag||!opened;$('expandAll').disabled=busy||!!drag||graph.generic.state.paperCanonical===true;return;}const a=graph.recursive.authority,total=a.detail.nodes.filter(n=>!n.junction).length,opened=graph.nodes.filter(n=>n.expanded&&!a.mandatory.includes(n.id)).length;
     $('recursiveStatus').textContent=`递归图：已展开 ${opened} 个模块 · 显示 ${graph.nodes.filter(n=>!n.junction).length}/${total} 个节点`;
@@ -54,7 +55,7 @@
   function restoreSourceBaseline(){} // Recursive receipts derive from registered source snapshots.
   const stageScale=()=>$('stage').clientWidth/camera.w;
   const point=event=>{const p=svg.createSVGPoint();p.x=event.clientX;p.y=event.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());};
-  const node=id=>graph.nodes.find(n=>n.id===id);
+  const node=id=>nodeIndexGraph===graph?nodeIndex.get(id):graph.nodes.find(n=>n.id===id);
   function toast(message){studioBridge?.emit('notice',{message,error:/^(未应用|未移动|移动已恢复|展开未提交|自动保存失败|源码语义校验失败)|条约束冲突|无法保留合法连接/.test(message)});$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(timer);timer=setTimeout(()=>$('toast').classList.remove('visible'),4500);}
   function updateInteractionModeUi(){
     const select=$('interactionMode'),badge=$('interactionModeBadge'),description=$('interactionModeDescription'),hint=$('interactionHint');
@@ -73,9 +74,9 @@
     if(notify)toast(interactionMode==='realtime'?'已切换到实时模式：拖动中同步更新箭头与连线。':'已切换到兼容模式：拖动结束后后台校验并整理连线。');
   }
   function save(){if(graph.generic)graph.studioCamera=E.clone(camera);history.push(N.snapshot(graph));if(history.length>30)history.shift();future=[];}
-  function flushPersist(){void persistWorkspace().catch(error=>toast('自动保存失败，请导出 JSON：'+error.message));clearTimeout(persistTimer);persistTimer=0;if(!graph||!current||busy||drag)return;if(graph.generic){graph.studioCamera=E.clone(camera);G.remember(graph);}else F.remember(graph);const state={graph:N.snapshot(graph),history:history.slice(),future:future.slice(),dirty,frontierPreset};sessions.set(key(),state);
+  function flushPersist(){clearTimeout(persistTimer);persistTimer=0;if(!graph||!current)return;if(busy||drag){persist();return;}void persistWorkspace().catch(error=>toast('自动保存失败，请导出 JSON：'+error.message));if(graph.generic){graph.studioCamera=E.clone(camera);G.remember(graph);}else F.remember(graph);const state={graph:N.snapshot(graph),history:history.slice(),future:future.slice(),dirty,frontierPreset};sessions.set(key(),state);
     const payload={version:5,ir:(graph.authoringWorkspace?graph.irSha256:original.irSha256)||null,graph:N.snapshot(graph),dirty,frontierPreset};if(payload.graph.recursive)delete payload.graph.recursive.authority;
-    const modelKey=key();window.SummaryRecursiveStorage.put(modelKey,payload).then(()=>{if(current&&key()===modelKey){svg.setAttribute('data-storage-status','saved');$('recursiveStatus').title='展开树、局部布局和当前图已保存到浏览器。';studioBridge?.state();}}).catch(error=>{svg.setAttribute('data-storage-status','error');studioBridge?.emit('error',{command:'save',message:error.message});toast('自动保存失败，请导出 JSON 保留当前状态：'+error.message);});
+    const modelKey=key();window.SummaryRecursiveStorage.put(modelKey,payload).then(()=>{if(current&&key()===modelKey){svg.setAttribute('data-storage-status','saved');$('recursiveStatus').title='展开树、局部布局和当前图已保存到浏览器。';studioBridge?.interaction?.();}}).catch(error=>{svg.setAttribute('data-storage-status','error');studioBridge?.emit('error',{command:'save',message:error.message});toast('自动保存失败，请导出 JSON 保留当前状态：'+error.message);});
   }
   function persist(){clearTimeout(persistTimer);persistTimer=setTimeout(flushPersist,180);}
   function options(){return {margin:+$('clearance').value,stub:28,bendCost:40,crossingCost:$('crossings').checked?450:0,overlapCost:$('crossings').checked?2:0,edgeSpacing:$('crossings').checked?12:0,preserve:$('keepBends').checked,sides:$('portSides').value,grid:$('gridEnabled').checked?24:0,style:$('routingStyle').value,optimizeReadability:true};}
@@ -201,8 +202,9 @@
         badge.append(element('title',{},'已固定：禁止直接拖动和排列；仍随父容器移动与递归布局更新。'),element('rect',{width:22,height:20,rx:4,fill:'#fff8e9',stroke:'#bd8a39','stroke-width':1/scale}),element('path',{d:'M 7 9 V 6 A 4 4 0 0 1 15 6 V 9 M 6 9 H 16 V 17 H 6 Z',fill:'none',stroke:'#916620','stroke-width':1.4/scale}));layer.append(badge);
       }
     }
-    if($('showPorts').checked)for(const n of graph.nodes){if(n.junction||!unifiedVisible().has(n.id))continue;
-      const ports=current.id==='routing-lab'?['left','right','top','bottom'].map(side=>({fixed:{side,fraction:.5},p:R.port(n,side),field:side})):graph.edges.flatMap(e=>[['source','fixedSource'],['target','fixedTarget']].filter(([side])=>e[side]===n.id).map(([side])=>({fixed:window.SummaryPhysicalPorts.active(e,side)||{side:E.endpoint(graph,e,side).side,fraction:E.endpoint(graph,e,side).fraction},p:E.endpoint(graph,e,side),field:e.binding?.[side==='source'?'src':'dst']||'视觉草稿'})));
+    const incident=new Map();if($('showPorts').checked)for(const e of graph.edges)for(const side of ['source','target']){if(!incident.has(e[side]))incident.set(e[side],[]);incident.get(e[side]).push({e,side});}
+    if($('showPorts').checked)for(const n of graph.nodes){if(n.junction)continue;
+      const ports=current.id==='routing-lab'?['left','right','top','bottom'].map(side=>({fixed:{side,fraction:.5},p:R.port(n,side),field:side})):(incident.get(n.id)||[]).map(({e,side})=>{const p=E.endpoint(graph,e,side);return {fixed:window.SummaryPhysicalPorts.active(e,side)||{side:p.side,fraction:p.fraction},p,field:e.binding?.[side==='source'?'src':'dst']||'视觉草稿'};});
       const seen=new Set();for(const {p,fixed,field} of ports){const key=p.x+':'+p.y;if(seen.has(key))continue;seen.add(key);
         const c=element('circle',{cx:p.x,cy:p.y,r:handle*.65,fill:'#fff',stroke:'#3ca1a3','stroke-width':1/scale,class:'port-handle','data-port':n.id+':'+fixed.side});c.append(element('title',{},field));c.onpointerdown=ev=>tool==='connect'?startConnection(ev,n,fixed):nodeDown(ev,n);layer.append(c);
       }
@@ -212,8 +214,13 @@
       e.waypoints.forEach((p,i)=>{const h=element('rect',{x:p.x-handle,y:p.y-handle,width:handle*2,height:handle*2,fill:'#fff',stroke:'#d77944','stroke-width':1.5/scale,class:'bend-handle','data-bend':e.id+':'+i});h.onpointerdown=ev=>begin(ev,{kind:'bend',edge:e,index:i});layer.append(h);});
     }
   }
-  function render({interactive=false,presentationOnly=false,cameraOnly=false,validation=null,validationOrigin='worker'}={}){
-    const measuredStart=performance.now();if(!graph)return;syncUnifiedState();
+  function render({interactive=false,presentationOnly=false,cameraOnly=false,validation=null,validationOrigin='worker',changedNodes=null}={}){
+    const measuredStart=performance.now();if(!graph)return;
+    // Selection feedback must precede any full scene/inspector work. A click
+    // (including a cancelled gesture) receives its normal inspector on release.
+    if(drag&&presentationOnly&&!interactive){refreshHandles(stageScale());svg.setAttribute('data-render-ms',(performance.now()-measuredStart).toFixed(2));return;}
+    syncUnifiedState();
+    const partial=interactive&&changedNodes&&scene.key===key();
     if(!interactive)updateNavigation();
     if(cameraOnly){const scale=stageScale();for(const v of scene.edges.values())setAttrs(v.hit,{'stroke-width':Math.min(45,12/scale)});refreshHandles(scale);svg.setAttribute('data-camera-ms',(performance.now()-measuredStart).toFixed(2));return;}
     if(scene.key!==key()){
@@ -230,10 +237,10 @@
     setAttrs(svg,{'data-source-constraint-valid':String(sourceCheck.ok),'data-source-constraint-reason':sourceCheck.violations.join('; '),'data-interaction-mode':interactionMode,'data-interaction-phase':realtimeDrag?'realtime':interactive?'preview':busy?'settling':'committed'});
     if(scene.definitions!==graph.definitions){$('definitions').innerHTML=graph.definitions||'';scene.definitions=graph.definitions;}
     if(scene.extras!==graph.extras){$('annotationLayer').innerHTML=graph.extras||'';scene.extras=graph.extras;}
-    const scale=stageScale(),visible=unifiedVisible(),visibleNodes=graph.nodes.filter(n=>!n.junction&&visible.has(n.id));
+    const scale=stageScale(),visible=unifiedVisible(),visibleNodes=graph.nodes.filter(n=>!n.junction&&visible.has(n.id)&&(!partial||changedNodes.has(n.id)));
     for(const n of visibleNodes){if(n.junction)continue;let v=scene.nodes.get(n.id);
       if(!v){const g=element('g',{class:'scene-node','data-render-instance':++epoch}),content=element('g'),hit=element('rect',{rx:8});g.append(content,hit);v={g,content,hit};scene.nodes.set(n.id,v);$(n.expanded?'frameLayer':'nodeLayer').append(g);}
-      setAttrs(v.g,{'data-node-id':n.id,'data-parent':n.parent||'','data-expanded':String(!!n.expanded),'data-recursive-children':unifiedChildren(n.id).length,'data-unified-expanded':String(!!unifiedState?.expandedIds?.includes(n.id)),'data-unified-collapsed':String(unifiedHasChildren(n.id)&&!unifiedState?.expandedIds?.includes(n.id)),'data-visual-binding':JSON.stringify(n.visualBinding||{}),'aria-label':`节点 ${n.id} ${label(n)}`});
+      setAttrs(v.g,{'data-node-id':n.id,'data-parent':n.parent||'','data-expanded':String(!!n.expanded),'data-recursive-children':unifiedChildren(n.id).length,'data-unified-expanded':String(!!unifiedState?.expanded?.has(n.id)),'data-unified-collapsed':String(unifiedHasChildren(n.id)&&!unifiedState?.expanded?.has(n.id)),'data-visual-binding':JSON.stringify(n.visualBinding||{}),'aria-label':`节点 ${n.id} ${label(n)}`});
       const ownerLayer=$(n.expanded?'frameLayer':'nodeLayer');
       // Preserve native click targets and stacking order on selection-only
       // renders. Reparent only when a module changes between node and frame.
@@ -243,11 +250,11 @@
       if(unifiedHasChildren(n.id)){if(!v.toggle){v.toggle=element('g',{class:'expansion-control',role:'button',tabindex:'0'});v.toggle.append(element('rect',{width:22,height:22,rx:5,fill:'#fff',stroke:'#198e90'}),element('text',{x:11,y:16,'text-anchor':'middle','font-size':18,fill:'#198e90'}));v.g.append(v.toggle);}setAttrs(v.toggle,{transform:`translate(${n.x+n.w-28} ${n.y+5})`,'aria-label':`${n.expanded?'收起':'展开'} ${label(n)}`});v.toggle.querySelector('text').textContent=n.expanded?'−':'＋';v.toggle.onpointerdown=ev=>ev.stopPropagation();v.toggle.onclick=ev=>{ev.preventDefault();ev.stopPropagation();toggleUnifiedNode(n.id);};v.toggle.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();toggleUnifiedNode(n.id);}};}else if(v.toggle){v.toggle.remove();v.toggle=null;}
       if($('showObstacles').checked&&n.routingObstacle!==false){const b=R.expand(n,+$('clearance').value);let obstacle=scene.obstacles.get(n.id);if(!obstacle){obstacle=element('rect',{fill:'none',stroke:'#c9925680','pointer-events':'none'});scene.obstacles.set(n.id,obstacle);$('obstacleLayer').append(obstacle);}setAttrs(obstacle,{x:b.x,y:b.y,width:b.w,height:b.h,'stroke-width':1/scale,'stroke-dasharray':`${4/scale} ${4/scale}`});}
     }
-    prune(scene.nodes,new Set(visibleNodes.map(n=>n.id)));
-    prune(scene.obstacles,new Set($('showObstacles').checked?visibleNodes.filter(n=>n.routingObstacle!==false).map(n=>n.id):[]));
+    if(!partial){prune(scene.nodes,new Set(visibleNodes.map(n=>n.id)));
+    prune(scene.obstacles,new Set($('showObstacles').checked?visibleNodes.filter(n=>n.routingObstacle!==false).map(n=>n.id):[]));}
     const labelStart=performance.now(),labelPlacements=presentationOnly&&scene.placements?scene.placements:E.routeLabelPlacements(graph,interactive);
     if(!interactive&&!presentationOnly)scene.placements=labelPlacements;svg.setAttribute('data-label-ms',(performance.now()-labelStart).toFixed(2));
-    const displayEdges=unifiedDisplayEdges(),displayEdgeIds=new Set(displayEdges.map(e=>e.id));
+    const allDisplayEdges=unifiedDisplayEdges(),displayEdges=partial?allDisplayEdges.filter(e=>changedNodes.has(e.source)||changedNodes.has(e.target)):allDisplayEdges,displayEdgeIds=new Set(allDisplayEdges.map(e=>e.id));
     for(const a of graph.routeLabels||[]){if(unifiedState&&!displayEdgeIds.has(a.edge))continue;const offset=labelPlacements.get(a.id);if(!offset)continue;let v=scene.labels.get(a.id);
       if(!v){const leader=element('path',{stroke:'#a6adb5','stroke-width':.8,'stroke-dasharray':'2 3',fill:'none','pointer-events':'none','data-label-leader':a.id}),g=element('g',{class:'scene-attachment route-caption',style:'cursor:grab'}),bg=element('rect',{rx:2,fill:'white','fill-opacity':.9}),text=element('g');g.append(bg,text,element('title',{},'拖动文字沿所属连线吸附；模型连接保持绑定。'));v={g,bg,text,leader};scene.labels.set(a.id,v);$('labelLayer').append(leader,g);}
       setAttrs(v.g,{'data-route-label-id':a.id,'data-follow-edge':a.edge,'data-label-anchor':`${offset.point.x},${offset.point.y}`,transform:`translate(${offset.x} ${offset.y})`});
@@ -269,23 +276,23 @@
       setAttrs(v.tail,{display:start?'inline':'none',d:start?E.arrow(ps[0],ps[1]):'',fill:color,stroke:'none'});
       setAttrs(v.hit,{d,'stroke-width':Math.min(45,12/scale)});v.hit.onpointerdown=ev=>edgeDown(ev,e);
     }
-    prune(scene.edges,new Set(displayEdges.map(e=>e.id)));
+    if(!partial)prune(scene.edges,new Set(displayEdges.map(e=>e.id)));
     for(const marker of graph.junctionMarkers||[]){const p=E.junctionPoint(graph,marker);let dot=scene.junctions.get(marker.id);if(!dot){dot=element('circle',{'pointer-events':'none'});scene.junctions.set(marker.id,dot);$('edgeLayer').append(dot);}setAttrs(dot,{display:p?'inline':'none',cx:p?.x||0,cy:p?.y||0,r:marker.radius||2.5,fill:marker.fill||'#263b4b','data-junction-id':marker.id,'data-junction-owner':marker.owner,'data-junction-edges':JSON.stringify(marker.edges),'data-junction-wire':JSON.stringify(marker.wire)});}
     prune(scene.junctions,new Set((graph.junctionMarkers||[]).map(m=>m.id)));refreshHandles(scale);
     if(!interactive&&!presentationOnly){const stats=R.stats(displayEdges),count=visibleNodes.length;$('graphCount').textContent=`${count} nodes / ${displayEdges.length} edges`;$('metricNodes').textContent=count+' / '+displayEdges.length;$('metricLength').textContent=stats.length.toLocaleString();$('metricBends').textContent=stats.bends+' / '+stats.crossings;$('metricRouted').textContent=metrics.routed;$('metricTime').textContent=metrics.time;}
-    if(!interactive)renderInspector();
+    if(!interactive&&!drag)renderInspector();
     updateUnifiedStatus();$('dirtyBadge').textContent=realtimeDrag?(graph.lastMove?.blocked?'保留上一合法位置':'实时布线'):interactive?'拖动预览':!sourceCheck.ok?'源码语义校验失败':busy?'正在布线…':dirty?'待 Apply · 已编辑':'布局已就绪';$('dirtyBadge').title=sourceCheck.violations.join('; ');$('dirtyBadge').classList.toggle('dirty',dirty||!sourceCheck.ok);$('undo').disabled=busy||!!drag||!history.length;$('redo').disabled=busy||!!drag||!future.length;$('applyLayout').disabled=busy||!!drag||!sourceCheck.ok;$('interactionMode').disabled=busy||!!drag;
     $('exportSvg').disabled=busy||interactive;$('exportJson').disabled=busy||interactive;
     svg.setAttribute('data-render-ms',(performance.now()-measuredStart).toFixed(2));
-    window.SummarySourceControls?.render(graph,svg);
-    $('modelTitle').textContent=window.ArchCanvasStudioPresentation?.state(graph).title||current.title;window.ArchCanvasStudioPresentation?.render(graph,svg,{selectedAnnotation,onAnnotationDown:studioAnnotationDown});
+    window.SummarySourceControls?.render(graph,svg,{interactive});
+    $('modelTitle').textContent=window.ArchCanvasStudioPresentation?.state(graph).title||current.title;window.ArchCanvasStudioPresentation?.render(graph,svg,{interactive,selectedAnnotation,onAnnotationDown:studioAnnotationDown,edgeViews:scene.edges,edgeIds:partial?new Set(displayEdges.map(e=>e.id)):null});
     if(interactive)svg.setAttribute('data-preview-ms',(performance.now()-measuredStart).toFixed(2));
   }
   function renderInspector(interactive=false){const box=$('selectionInfo');studioBridge?.selection(studioSelection());
       if(selectedEdges.size===1){const e=graph.edges.find(e=>selectedEdges.has(e.id));const validation=scene.checks.get(e.id)||C.validate(graph,e,e.route);box.innerHTML=`<p class="eyebrow">SELECTED EDGE</p><h3>${esc(e.id)}</h3><div class="prop">源端 <code>${esc(e.source)}</code></div><div class="prop">目标端 <code>${esc(e.target)}</code></div><div class="prop">端口 <code>${esc(E.endpoint(graph,e,'source').side||'auto')} → ${esc(E.endpoint(graph,e,'target').side||'auto')}</code></div><div class="prop">途经点 <code>${e.waypoints.length}</code></div><p class="micro">${e.draft?'本页编辑草稿':'导入的原图连接'} · ${esc(e.role||'tensor')}</p><pre>${esc(scene.edges.get(e.id)?.path||E.path(E.displayed(graph,e),e.style,graph,e))}</pre><details><summary>容器接口与边界</summary><pre>${esc(JSON.stringify({gates:e.contract?.gates,originalSource:e.contract?.source,originalTarget:e.contract?.target,validation,reason:e.reason||null},null,2))}</pre></details><details><summary>原始语义映射</summary><pre>${esc(JSON.stringify(e.binding,null,2))}</pre></details><button class="secondary" id="releasePorts">释放固定端口</button><button class="secondary" id="clearBends">清除手动折点</button><button class="secondary" id="deleteEdge">删除这条边</button>`;$('arrowStyle').value=e.arrow;
       $('releasePorts').onclick=()=>{if(busy||drag)return;save();delete e.fixedSource;delete e.fixedTarget;delete e.physicalSource;delete e.physicalTarget;e.draft=true;delete e.contract;C.initialize(graph);dirty=true;render();persist();toast('已释放物理端口；原始语义映射保留在检查器。');};
       $('clearBends').onclick=()=>{if(busy||drag)return;save();e.waypoints=[];dirty=true;render();persist();};$('deleteEdge').onclick=()=>{if(busy||drag)return;save();graph.sourceDraftOperations=graph.sourceDraftOperations||[];graph.sourceDraftOperations.push({kind:'remove-connection',id:e.id,binding:E.clone(e.binding)});graph.edges=graph.edges.filter(x=>x!==e);selectedEdges.clear();dirty=true;render();persist();};
-    }else if(selectedNodes.size===1){const n=node([...selectedNodes][0]),canExpand=unifiedHasChildren(n.id),isOpen=unifiedState?.expandedIds?.includes(n.id),pinned=!!window.ArchCanvasStudioPresentation.state(graph).nodes[n.id]?.pinned;box.innerHTML=`<p class="eyebrow">SELECTED NODE</p><h3>${esc(label(n))}</h3><div class="prop">位置 <code>${Math.round(n.x)}, ${Math.round(n.y)}</code></div><div class="prop">尺寸 <code>${Math.round(n.w)} × ${Math.round(n.h)}</code></div><div class="prop">所属容器 <code>${esc(n.parent||"画布")}</code></div><div class="prop">直接移动 <code>${pinned?'已固定':'未固定'}</code></div><p class="micro">固定阻止直接拖动和排列；子节点仍随父容器移动，递归展开也会更新布局。</p>${canExpand?`<button class="secondary" id="toggleSelectedNode">${isOpen?'收起子图':'展开子图'} · ${unifiedChildren(n.id).length} 个直接节点</button>`:''}<p class="micro">${canExpand?(isOpen?'已展开；可继续选择内部容器。':'可逐级展开；双击节点也可切换。'):(n.expanded?'展开的容器；移动时携带可见子节点。':'移动时同步更新所属文字与局部连线。')}</p><details><summary>源码 / IR 节点</summary><pre>${esc(JSON.stringify(n.semantic,null,2))}</pre></details>`;if(canExpand)$('toggleSelectedNode').onclick=()=>toggleUnifiedNode(n.id);
+    }else if(selectedNodes.size===1){const n=node([...selectedNodes][0]),canExpand=unifiedHasChildren(n.id),isOpen=unifiedState?.expanded?.has(n.id),pinned=!!window.ArchCanvasStudioPresentation.state(graph).nodes[n.id]?.pinned;box.innerHTML=`<p class="eyebrow">SELECTED NODE</p><h3>${esc(label(n))}</h3><div class="prop">位置 <code>${Math.round(n.x)}, ${Math.round(n.y)}</code></div><div class="prop">尺寸 <code>${Math.round(n.w)} × ${Math.round(n.h)}</code></div><div class="prop">所属容器 <code>${esc(n.parent||"画布")}</code></div><div class="prop">直接移动 <code>${pinned?'已固定':'未固定'}</code></div><p class="micro">固定阻止直接拖动和排列；子节点仍随父容器移动，递归展开也会更新布局。</p>${canExpand?`<button class="secondary" id="toggleSelectedNode">${isOpen?'收起子图':'展开子图'} · ${unifiedChildren(n.id).length} 个直接节点</button>`:''}<p class="micro">${canExpand?(isOpen?'已展开；可继续选择内部容器。':'可逐级展开；双击节点也可切换。'):(n.expanded?'展开的容器；移动时携带可见子节点。':'移动时同步更新所属文字与局部连线。')}</p><details><summary>源码 / IR 节点</summary><pre>${esc(JSON.stringify(n.semantic,null,2))}</pre></details>`;if(canExpand)$('toggleSelectedNode').onclick=()=>toggleUnifiedNode(n.id);
     }else box.innerHTML=`<p class="micro">${selectedNodes.size||selectedEdges.size?`已选 ${selectedNodes.size} 个节点 / ${selectedEdges.size} 条边`:'点击节点或连接，检查图元、端口和源码映射。'}<br>Shift + 点击可多选。</p>`;
   }
   function nearestSide(n,p){const sides=[['left',Math.abs(p.x-n.x),(p.y-n.y)/n.h],['right',Math.abs(p.x-n.x-n.w),(p.y-n.y)/n.h],['top',Math.abs(p.y-n.y),(p.x-n.x)/n.w],['bottom',Math.abs(p.y-n.y-n.h),(p.x-n.x)/n.w]],b=sides.sort((a,b)=>a[1]-b[1])[0];return{side:b[0],fraction:Math.max(.02,Math.min(.98,b[2]))};}
@@ -347,14 +354,15 @@
       drag.last=p;render({presentationOnly:true});
       $('previewLayer').replaceChildren(element('rect',{x:Math.min(drag.start.x,p.x),y:Math.min(drag.start.y,p.y),width:Math.abs(p.x-drag.start.x),height:Math.abs(p.y-drag.start.y),fill:'#287c7515',stroke:'#287c75','stroke-width':1.5/stageScale(),'stroke-dasharray':'5 3','pointer-events':'none'}));return;
     }
-    if((drag.kind==='node'||drag.kind==='bend'||drag.kind==='route-label'||drag.kind==='studio-annotation')&&!drag.saved){drag.history=history.slice();drag.future=future;drag.dirty=dirty;save();drag.saved=true;drag.before=history.at(-1);}
+    if((drag.kind==='node'||drag.kind==='bend'||drag.kind==='route-label'||drag.kind==='studio-annotation')&&!drag.saved){drag.history=history.slice();drag.future=future;drag.dirty=dirty;const snapshotStart=performance.now();save();svg.setAttribute('data-drag-snapshot-ms',(performance.now()-snapshotStart).toFixed(2));drag.saved=true;drag.before=history.at(-1);}
     if(drag.kind==='node'){
       const n=drag.node;
+      let moved=null;
       if(interactionMode==='realtime'){
         // Rebuild each frame from one immutable gesture baseline. This keeps
         // route repair, port gates, shared stems and semantic checks identical
         // to a committed move while still exposing the new arrow direction.
-        const candidate=E.clone(drag.before),origin=candidate.nodes.find(v=>v.id===n.id);
+        const candidate=N.snapshot(drag.before),origin=candidate.nodes.find(v=>v.id===n.id);
         const totalDx=Math.max(3-origin.x,Math.min(candidate.canvas[0]-3-origin.x-origin.w,p.x-drag.start.x));
         const totalDy=Math.max(3-origin.y,Math.min(candidate.canvas[1]-3-origin.y-origin.h,p.y-drag.start.y));
         E.move(candidate,n.id,totalDx,totalDy,options());
@@ -364,9 +372,9 @@
           graph=candidate;
         }
       }else{
-        const dx=p.x-drag.last.x,dy=p.y-drag.last.y;E.movePreview(graph,n.id,dx,dy);
+        const dx=p.x-drag.last.x,dy=p.y-drag.last.y;moved=E.movePreview(graph,n.id,dx,dy);
       }
-      drag.last=p;dirty=true;render({interactive:interactionMode!=='realtime'});
+      drag.last=p;dirty=true;render({interactive:interactionMode!=='realtime',changedNodes:moved});
     }
     else if(drag.kind==='studio-annotation'){
       const P=window.ArchCanvasStudioPresentation,base=P.state(drag.before).annotations[drag.annotation],overlay=P.editable(graph);
@@ -378,9 +386,13 @@
     else{const a=drag.kind==='connection'?drag.origin:drag.edge.route[drag.side==='source'?0:drag.edge.route.length-1];$('previewLayer').replaceChildren(element('path',{d:`M ${a.x} ${a.y} L ${p.x} ${p.y}`,stroke:'#d77944',fill:'none','stroke-width':2/stageScale(),'stroke-dasharray':'5 5','pointer-events':'none'}));}
     const samples=drag.samples||(drag.samples=[]);samples.push(performance.now()-frameStart);const sorted=samples.slice().sort((a,b)=>a-b);svg.setAttribute('data-drag-profile',JSON.stringify({count:sorted.length,p50:+sorted[Math.floor((sorted.length-1)*.5)].toFixed(2),p95:+sorted[Math.floor((sorted.length-1)*.95)].toFixed(2),max:+sorted.at(-1).toFixed(2)}));
   }
+  // Event work and scheduling delay are separate from routing/commit timing.
+  svg.addEventListener('pointerdown',ev=>{if(busy)return;const start=performance.now(),inputTime=ev.timeStamp;svg.setAttribute('data-pointer-input-delay-ms',Math.max(0,start-inputTime).toFixed(2));requestAnimationFrame(()=>svg.setAttribute('data-pointerdown-to-frame-ms',Math.max(0,performance.now()-inputTime).toFixed(2)));},true);
   svg.addEventListener('pointermove',ev=>{if(!drag)return;const p=point(ev);
     if(drag.kind==='pan'){const dx=(ev.clientX-(drag.clientX??ev.clientX))/stageScale(),dy=(ev.clientY-(drag.clientY??ev.clientY))/stageScale();camera.x-=dx;camera.y-=dy;drag.clientX=ev.clientX;drag.clientY=ev.clientY;cameraUpdate();return;}
-    dragPoint=p;if(dragFrame)return;dragFrame=requestAnimationFrame(()=>{dragFrame=0;const q=dragPoint;dragPoint=null;processDragPoint(q);});
+    dragPoint=p;if(dragFrame)return;const inputTime=ev.timeStamp;dragFrame=requestAnimationFrame(()=>{dragFrame=0;const q=dragPoint,previousPoint=drag?.last;dragPoint=null;processDragPoint(q);
+      if(drag&&drag.last!==previousPoint){const elapsed=Math.max(0,performance.now()-inputTime);svg.setAttribute('data-drag-input-to-dom-ms',elapsed.toFixed(2));if(drag.feedbackMax===undefined)svg.setAttribute('data-drag-first-input-to-dom-ms',elapsed.toFixed(2));drag.feedbackMax=Math.max(drag.feedbackMax||0,elapsed);svg.setAttribute('data-drag-max-input-to-dom-ms',drag.feedbackMax.toFixed(2));}
+    });
   });
   svg.addEventListener('pointerup',async ev=>{if(!drag)return;const p=point(ev),n=hitNode(p),kind=drag.kind;
     if(dragFrame){cancelAnimationFrame(dragFrame);dragFrame=0;dragPoint=null;processDragPoint(p);}
@@ -446,16 +458,35 @@
     if(workerResult)return workerResult;
     await new Promise(resolve=>setTimeout(resolve,0));if(message.task==='generic-build'||message.task==='generic-route'||message.task==='frontier'&&message.graph?.generic)return N.prepare(E.clone(message));const copy=E.clone(message.graph);
     if(message.task==='frontier')return window.SummaryFrontierTask.run(copy,message.transition,message.options);
+    if(message.task==='optimize'){const result=E.optimizeRoutes(copy,message.ids,message.options);window.SummarySourceControls?.refresh(copy);return result;}
     if(message.task==='validate'){window.SummarySourceControls?.refresh(copy);return {ok:true,graph:copy,validation:E.validateView(copy)};}
     if(message.task==='move'){E.move(copy,message.id,message.dx,message.dy,message.options);const validation=E.validateView(copy);if(!validation.source.ok||!validation.layout.ok||validation.edges.some(([,check])=>!check.ok))return {ok:false,error:'移动后的图未通过完整校验'};window.SummarySourceControls?.refresh(copy);return{ok:true,graph:copy,validation};}
     const result=E.routeBatch(copy,message.ids,{...message.options,edgeIds:message.ids});window.SummarySourceControls?.refresh(result.graph);return {ok:true,...result,validation:E.validateView(copy)};
   }
   async function runRouting(ids,opts){C.initialize(graph);return runGraphTask({task:'route',graph,ids,options:opts});}
-  async function apply(){if(!graph||busy)return;restoreSourceBaseline();const sourceCheck=C.validateSource(graph);if(!sourceCheck.ok){render();toast('源码语义校验失败：'+sourceCheck.violations[0]);return;}let targets=$('scope').value==='all'?graph.edges:$('scope').value==='selected'?graph.edges.filter(e=>selectedEdges.has(e.id)):graph.edges.filter(e=>selectedNodes.has(e.source)||selectedNodes.has(e.target));
-    if(!targets.length){toast('作用范围为空，请先选择节点或边。');return;}if($('policy').value==='never'){metrics={routed:0,time:0};render();toast('Never：保留当前路径。');return;}
-    const opts=options();if($('policy').value==='needed')targets=targets.filter(e=>E.conflicts(graph,e,opts));if(!targets.length){metrics={routed:0,time:0};render();toast('当前路径满足约束，无需重算。');return;}
-    busy=true;render({presentationOnly:true});const begin=performance.now(),before=JSON.stringify(graph.nodes.map(n=>[n.id,n.x,n.y]));let validation=null,committed=false;
-    try{const result=await runRouting(targets.map(e=>e.id),opts);if(!result.ok)throw new Error(result.error);if(before!==JSON.stringify(result.graph.nodes.map(n=>[n.id,n.x,n.y])))throw new Error('布线不应移动节点');save();ghost=graph.edges.map(e=>({route:E.clone(e.route),style:e.style}));graph=result.graph;validation=result.validation;committed=true;metrics={routed:result.routed,time:Math.round(performance.now()-begin)};dirty=true;toast(result.failed?`${result.routed} 条完成，${result.failed} 条约束冲突（红色），原路径保留。请检查容器接口、端口或安全距离。`:`${result.routed} 条边已布线${result.retained?' · '+result.retained+' 段原始合法通道/汇流骨架保留':''} · 节点位置不变`);}catch(error){toast(error.message);}finally{busy=false;render(committed?{validation}:{presentationOnly:true});if(committed)persist();studioBridge?.state();}
+  async function apply(){
+    if(!graph||busy||drag)return;
+    const scope=$('scope').value,targets=scope==='all'?graph.edges:scope==='selected'?graph.edges.filter(e=>selectedEdges.has(e.id)):graph.edges.filter(e=>selectedNodes.has(e.source)||selectedNodes.has(e.target));
+    if(!targets.length){toast('作用范围为空，请先选择节点或边。');return;}
+    if($('policy').value==='never'){toast('Never：保留当前路径。');return;}
+    const opts={...options(),policy:$('policy').value},before=graph;
+    busy=true;studioBridge?.state();$('dirtyBadge').textContent='正在优化连线…';
+    // Source preflight, conflict discovery and routing all belong to Worker.
+    // Paint feedback before serialization; do not run source parsing per edge
+    // or rebuild the inspector on the input event's critical path.
+    await new Promise(resolve=>requestAnimationFrame(resolve));
+    const started=performance.now();let validation=null,committed=false;
+    try{
+      const result=await runGraphTask({task:'optimize',graph:before,ids:targets.map(e=>e.id),options:opts});
+      if(!result.ok)throw Error(result.error);
+      if(result.unchanged){toast('当前路径满足约束，无需重算。');return;}
+      if(JSON.stringify(before.nodes.map(n=>[n.id,n.x,n.y,n.w,n.h]))!==JSON.stringify(result.graph.nodes.map(n=>[n.id,n.x,n.y,n.w,n.h])))throw Error('布线不应移动或缩放节点');
+      validation=result.validation;if(!validation?.source.ok||!validation.layout.ok||validation.edges.some(([,check])=>!check.ok))throw Error('优化结果未通过完整约束校验，原图保留。');
+      save();ghost=graph.edges.map(e=>({route:E.clone(e.route),style:e.style}));graph=result.graph;committed=true;dirty=true;
+      metrics={routed:result.routed,time:Math.round(performance.now()-started)};svg.setAttribute('data-optimize-ms',String(metrics.time));svg.setAttribute('data-optimize-worker-ms',String(result.optimization?.ms||0));svg.setAttribute('data-optimize-preflight-ms',String(result.optimization?.timing?.preflightMs||0));svg.setAttribute('data-optimize-route-ms',String(result.optimization?.timing?.routeMs||0));svg.setAttribute('data-optimize-validation-ms',String(result.optimization?.timing?.validationMs||0));
+      const pending=result.optimization?.pendingIds?.length||0;svg.setAttribute('data-optimize-pending',String(pending));
+      toast(pending?`本轮已检查 ${result.optimization.checked} 条连线，${pending} 条保留原路径；再次点击继续优化。`:`${result.routed} 条路径已优化，${result.retained} 条保留合法路径 · 节点位置不变`);
+    }catch(error){validation=null;toast('未应用优化：'+error.message);}finally{busy=false;render(committed?{validation}:{presentationOnly:true});if(committed)persist();studioBridge?.state();}
   }
   function download(text,type,name){const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);}
   function exportSvg(){const out=svg.cloneNode(true);out.setAttribute('xmlns',NS);out.setAttribute('width',graph.canvas[0]);out.setAttribute('height',graph.canvas[1]);out.setAttribute('viewBox','0 0 '+graph.canvas.join(' '));out.removeAttribute('tabindex');out.querySelector('#previewLayer').remove();out.querySelector('#handleLayer').remove();out.querySelector('#obstacleLayer').remove();out.querySelector('#ghostLayer').remove();out.querySelectorAll('.wire-hit,.node-hit,.frame-hit,.expansion-control,[data-editor-only]').forEach(n=>n.remove());const style=element('style',{},'.wire-path{fill:none;stroke-linecap:butt;stroke-linejoin:round}.scene-node text{font-family:DejaVu Sans,Arial,sans-serif}');out.querySelector('defs').append(style);out.prepend(element('rect',{x:0,y:0,width:graph.canvas[0],height:graph.canvas[1],fill:'white'}));out.prepend(element('metadata',{'id':'summary-merge-binding'},JSON.stringify({case:current.id,view:view.key,interactionMode,source:graph.source,irSha256:graph.irSha256,edited:dirty,sourceDraftOperations:graph.sourceDraftOperations||[],sourceValidation:C.validateSource?.(graph),attachments:graph.attachments||[],routeLabels:graph.routeLabels||[],junctionMarkers:graph.junctionMarkers||[],nodes:graph.nodes.map(n=>({id:n.id,parent:n.parent,semantic:n.semantic,visualBinding:n.visualBinding,glyphPresentation:n.glyphPresentation,labelObstacles:n.glyphPresentation?n.labelObstacles:undefined})),edges:graph.edges.map(e=>({id:e.id,source:e.source,target:e.target,draft:e.draft,binding:e.binding,portPolicy:e.portPolicy,physicalSource:e.physicalSource,physicalTarget:e.physicalTarget}))})));download(new XMLSerializer().serializeToString(out),'image/svg+xml',current.title+'-'+view.key+'.svg');toast('已生成当前视图 SVG。');}
@@ -572,6 +603,7 @@
   }
   const sourceError=error=>{$('sourceImportStatus').textContent=error.message;toast(error.message);};
   function applyStudioPresentation(n,v){window.ArchCanvasStudioPresentation?.applyNode(graph,n,v);}
+  function studioInteraction(){return {caseId:current?.id||null,busy:busy||!!drag,dragging:!!drag,canCancel:workerChannel.isPending()};}
   function studioDocument(){const workspace=window.ArchCanvasSummaryAuthoring?.record(graph);return graph&&current?hostSource.copy({schema:'summary-merge-recursive/1',case:current.id,caseId:current.id,title:workspace?.title||current.title,collection:current.collection,view:view.key,frontierPreset,snapshotRevision:graph.semanticRevision||graph.recursive?.revision||0,semanticView:N.inspector(graph,[...selectedNodes]),authoring:window.ArchCanvasSummaryAuthoring?.inspector(graph),...(graph.importedDocument?{importedDocument:graph.importedDocument}:{}),sourceIdentity:{caseId:current.id,sourceSha256:graph.sourceAdapter?.sourceSha256||null,irSha256:graph.sourceAdapter?.irSha256||graph.irSha256||null},interactionMode,tool,showPorts:$('showPorts').checked,showGhost:$('showGhost').checked,showObstacles:$('showObstacles').checked,gridVisible:canvasGridVisible,dirty,busy:busy||!!drag,canCancel:workerChannel.isPending(),dragging:!!drag,canUndo:!!history.length,canRedo:!!future.length,undo:history.length,redo:future.length,presentationVersion:1,sourceAvailable:!!(importedPackages.has(current.id)||catalogSources?.cases?.[current.id]?.available),selectedNodes:[...selectedNodes],selectedEdges:[...selectedEdges],selection:studioSelection(),graph:graph.generic?{...graph,studioCamera:camera}:graph,...(importedPackages.has(current.id)?{adapter:importedPackages.get(current.id)}:{}),...(importedDocuments.has(current.id)?{nativeDocument:workspace||importedDocuments.get(current.id).record}:{})}):null;}
   function studioState(){const document=studioDocument();return {document,graph:document?.graph||null,case:current?{id:current.id,title:current.title,collection:current.collection,historical:!!current.historical}:null,bundle:document?.adapter||null,sourceAvailable:!!(document?.adapter||catalogSources?.cases?.[current?.id]?.available),dirty,tool,showPorts:$('showPorts').checked,gridVisible:canvasGridVisible,busy:busy||!!drag,canCancel:workerChannel.isPending(),dragging:!!drag,undo:history.length,redo:future.length,selectedNodes:[...selectedNodes],selectedEdges:[...selectedEdges],presentationVersion:1,selection:studioSelection(),camera:{...camera}};}
   async function sourceAsset(path,json=false){
@@ -922,6 +954,6 @@
     try{const ids=await window.SummaryRecursiveStorage.get('summary-document:index:v1')||[];for(const id of ids){try{studioBridge?.progress({canCancel:false,message:'正在读取保存的 Summary 文档…'});const value=await window.SummaryRecursiveStorage.get('summary-document:v1:'+id);if(value)await registerDocument(value,undefined,true);}catch(e){console.warn('Saved Summary document:',e.message);}}}catch(e){console.warn('Summary document storage:',e.message);}
     const query=new URLSearchParams(location.search),chosen=catalog.cases.find(c=>c.id===query.get('case'))||catalog.cases.find(c=>c.collection==='transformer_programmatic_guide'&&c.title==='Transformer'&&!c.historical)||catalog.cases[0];
     if(chosen.historical)$('includeHistory').checked=true;renderCatalog();await openCase(chosen,chosen.views.find(v=>v.key===query.get('view'))||chosen.views[0]);studioBridge?.ready();}
-  studioBridge=window.ArchCanvasPreviewBridge?.create({started:()=>startupPromise,isBusy:()=>busy||!!drag,load:studioLoad,state:studioState,selection:studioSelection,source:studioSource,focus:studioFocus,command:studioCommand,svg:studioSvg,save:async()=>{if(busy||drag)throw new Error('请先完成当前图操作。');flushPersist();await persistWorkspace();if(graph&&current){const stored=N.snapshot(graph.generic?{...graph,studioCamera:camera}:graph);if(stored.recursive)delete stored.recursive.authority;await window.SummaryRecursiveStorage.put(key(),{version:5,ir:graph.irSha256||null,graph:stored,dirty,frontierPreset});}},export:format=>format==='svg'?download(studioSvg(),'image/svg+xml',current.title+'-unified.svg'):$('exportJson').click()});
+  studioBridge=window.ArchCanvasPreviewBridge?.create({started:()=>startupPromise,isBusy:()=>busy||!!drag,load:studioLoad,state:studioState,interaction:studioInteraction,selection:studioSelection,source:studioSource,focus:studioFocus,command:studioCommand,svg:studioSvg,save:async()=>{if(busy||drag)throw new Error('请先完成当前图操作。');flushPersist();await persistWorkspace();if(graph&&current){const stored=N.snapshot(graph.generic?{...graph,studioCamera:camera}:graph);if(stored.recursive)delete stored.recursive.authority;await window.SummaryRecursiveStorage.put(key(),{version:5,ir:graph.irSha256||null,graph:stored,dirty,frontierPreset});}},export:format=>format==='svg'?download(studioSvg(),'image/svg+xml',current.title+'-unified.svg'):$('exportJson').click()});
   startupPromise=start();
 })();

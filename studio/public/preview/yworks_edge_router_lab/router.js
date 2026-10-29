@@ -344,6 +344,13 @@
     // corridor in place). Unrelated expanded frames remain obstacles.
     const gateFrames = new Set((edge.contract?.gates||[]).map(g=>g.frame));
     const solid = nodes.filter(n => !settings.excludedObstacleIds?.has(n.id) && n.routingObstacle !== false && !(n.expanded && gateFrames.has(n.id)));
+    const geometry=root.SemanticGeometryIndex,extraIndexes=new WeakMap();
+    const solidIndex=geometry&&solid.length>64?geometry.boxes(solid.map(n=>({...expand(n,Math.max(0,settings.margin)),original:n}))):null;
+    const queryBox=(a,b)=>({x:Math.min(a.x,b.x),y:Math.min(a.y,b.y),w:Math.abs(a.x-b.x),h:Math.abs(a.y-b.y)});
+    const extraIndex=extra=>{
+      if(!geometry||extra.length<=64||extra.some(n=>n.w<0||n.h<0))return null;
+      if(!extraIndexes.has(extra))extraIndexes.set(extra,geometry.boxes(extra));return extraIndexes.get(extra);
+    };
     const obstacles = [...solid.map(n => expand(n, settings.margin)),...(options.extraObstacles||[])], boundary = { x: 1, y: 1, w: options.width ? options.width - 2 : 1098, h: options.height ? options.height - 2 : 718 };
     const candidates=(node,other,fixed,fraction)=>candidateSides(node,other,settings.sides,fixed).map(side=>fixed||{side,fraction:fraction??.5});
     const portsS=options.sourceCandidates||candidates(s,t,edge.fixedSource,options.sourceFraction),portsT=options.targetCandidates||candidates(t,s,edge.fixedTarget,options.targetFraction);
@@ -365,7 +372,8 @@
     const pairs=[];
     // Try exact straight/elbow/balanced paths before adding terminal stubs. In
     // short gaps two fixed stubs can pass each other and invent a tiny detour.
-    for(const fs of portsS)for(const ft of portsT){
+    portPairs:for(const fs of portsS)for(const ft of portsT){
+      if(settings.deadline!==undefined&&performance.now()>=settings.deadline)break portPairs;
       const anchored = (n, side, fixed, fraction) => {
         const p = port(n, side, fraction);
         return fixed?.offset ? { ...p, x: n.x + fixed.offset.x, y: n.y + fixed.offset.y } : p;
@@ -382,7 +390,9 @@
       if(ps.length<2||ps.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y))||ps.slice(1).some((p,i)=>Math.abs(p.x-ps[i].x)>EPS&&Math.abs(p.y-ps[i].y)>EPS))return false;
       for(let i=1;i<ps.length;i++){
         const a=ps[i-1],b=ps[i];if(settings.segmentAllowed&&!settings.segmentAllowed(a,b))return false;if(i>1&&reverses(heading(ps[i-2],a),heading(a,b)))return false;
-        if(solid.some(n=>intersectsRect(a,b,(i===1&&n.id===s.id||i===ps.length-1&&n.id===t.id)?n:expand(n,settings.margin)))||extra.some(n=>intersectsRect(a,b,n)))return false;
+        const box=queryBox(a,b),near=solidIndex?.query(box),extras=extraIndex(extra);
+        if((near?near.some(row=>{const n=row.original;return intersectsRect(a,b,(i===1&&n.id===s.id||i===ps.length-1&&n.id===t.id)?n:expand(n,settings.margin));}):solid.some(n=>intersectsRect(a,b,(i===1&&n.id===s.id||i===ps.length-1&&n.id===t.id)?n:expand(n,settings.margin))))||
+          (extras?extras.query(box):extra).some(n=>intersectsRect(a,b,n)))return false;
       }
       if(ps.some(p=>!inside(p,boundary)))return false;
       const approach=(a,b,f)=>((b.x-a.x)*SIDE[f.side][0]+(b.y-a.y)*SIDE[f.side][1])*(f.inward?-1:1)>EPS;
@@ -405,6 +415,7 @@
     if(edge.route?.length>1&&followsWaypoints(edge.route)){const pair=pairs.find(p=>equal(p.sp,edge.route[0])&&equal(p.tp,edge.route.at(-1)));
       if(pair){const cost=routeCost(edge.route,priorPaths,settings);if(Number.isFinite(cost))trials.push({points:simplify(edge.route),cost,pair});}}
     if(!waypoints.length)for(const pair of pairs){
+      if(settings.deadline!==undefined&&performance.now()>=settings.deadline)break;
       const {sp:s,tp:t,fs,ft}=pair,ns=SIDE[fs.side],nt=SIDE[ft.side],ss=fs.inward?-1:1,ts=ft.inward?-1:1;
       // Reject geometry before pricing thousands of settled wires. Dense
       // source cuts have many legal physical slots, but most simple paths
@@ -519,7 +530,11 @@
   function stats(edges) {
     let length = 0, bends = 0, crossings = 0;
     for (const e of edges) { const ps = e.route || []; for (let i = 1; i < ps.length; i++) length += dist(ps[i - 1], ps[i]); bends += Math.max(0, ps.length - 2); }
-    for (let i = 0; i < edges.length; i++) for (let j = i + 1; j < edges.length; j++) { const a = edges[i].route || [], b = edges[j].route || []; for (let u = 1; u < a.length; u++) for (let v = 1; v < b.length; v++) if (crossing(a[u - 1], a[u], b[v - 1], b[v])) crossings++; }
+    if(edges.length>64&&root.SemanticGeometryIndex){
+      const segments=edges.flatMap((e,edge)=>(e.route||[]).slice(1).map((b,i)=>{const a=e.route[i];return {a,b,edge,x:Math.min(a.x,b.x),y:Math.min(a.y,b.y),w:Math.abs(a.x-b.x),h:Math.abs(a.y-b.y)};}));
+      const index=root.SemanticGeometryIndex.boxes(segments);
+      for(const a of segments)for(const b of index.query(a))if(b.edge>a.edge&&crossing(a.a,a.b,b.a,b.b))crossings++;
+    }else for (let i = 0; i < edges.length; i++) for (let j = i + 1; j < edges.length; j++) { const a = edges[i].route || [], b = edges[j].route || []; for (let u = 1; u < a.length; u++) for (let v = 1; v < b.length; v++) if (crossing(a[u - 1], a[u], b[v - 1], b[v])) crossings++; }
     return { length: Math.round(length), bends, crossings };
   }
   const api = { routeEdge, routeCost, port, candidateSides, simplify, chamfer, roundedPath, polylinePath, stats, intersectsRect, expand, crossing, wireContacts, overlap, dist, SIDE };
