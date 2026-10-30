@@ -59,5 +59,6 @@ test('v15 saved mixed graphs and portable documents rebuild without reusing brok
  const doc=G.document(graph),parsed=G.read(doc);assert.equal(parsed.nativeLayout,null);assert.deepEqual(Array.from(parsed.layouts),[]);
  const small=G.build(read(catalog.models.find((m:any)=>m.title==='MultilayerPerceptron · mlp')),N.state('overview'));
  const unchanged=G.document(small);unchanged.renderer='native-semantic/15';
- equal(G.read(unchanged).nativeLayout,unchanged.nativeLayout,'unaffected v15 custom positions remain portable');
+ const parsedSmall=G.read(unchanged);assert.equal(parsedSmall.nativeLayout,null);
+ equal(parsedSmall.migration.previousNativeLayout,unchanged.nativeLayout,'v15 parameter-arrow geometry remains available as provenance');
 });

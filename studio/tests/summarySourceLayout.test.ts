@@ -12,7 +12,8 @@ const catalog=JSON.parse(readFileSync(new URL('data/semantic/studio-catalog.json
 const ir=JSON.parse(readFileSync(new URL('data/semantic/'+catalog.models.find((m:any)=>m.id==='0216717d966327f4').ir.path,base),'utf8'));
 test('dense source frontiers wrap without dropping any source node, operand or owner',()=>{
  const root=ir.nodes.find((n:any)=>!n.parent),graph=G.build(ir,{...N.state('overview'),moduleCuts:[{id:root.id,level:'source'}]});
- assert.equal(graph.nodes.length,3371);assert.equal(graph.edges.length,3663);
+ assert.equal(graph.nodes.length,3371);assert.equal(graph.edges.length+graph.generic.receipts.edge_accounting.attached.length,3663);
+ assert.ok(graph.edges.every((e:any)=>e.binding.kind!=='parameter-read'));
  assert.ok(Math.max(...graph.canvas)/Math.min(...graph.canvas)<4,'full source canvas must not degenerate into a 68:1 strip');
  assert.equal(G.validate(graph,true).ok,true);
  const by=new Map(graph.nodes.map((n:any)=>[n.id,n]));
@@ -21,10 +22,11 @@ test('dense source frontiers wrap without dropping any source node, operand or o
  for(const version of ['native-semantic/16','native-semantic/17']){const doc=G.document(graph);doc.renderer=version;const restored=G.read(doc);
  assert.equal(restored.nativeLayout,null);assert.ok(restored.migration.previousNativeLayout);}
 });
-test('v16 publication-only mixed layouts preserve manual geometry',()=>{
+test('v16 publication layouts retain manual geometry as provenance when parameter arrows migrate',()=>{
  const root=ir.nodes.find((n:any)=>!n.parent),graph=G.build(ir,{...N.state('overview'),moduleCuts:[{id:root.id,level:'f0'}]});
  graph.nodes[0].x+=17;const doc=G.document(graph);doc.renderer='native-semantic/16';
- assert.equal(G.stable(G.read(doc).nativeLayout),G.stable(doc.nativeLayout));
+ const parsed=G.read(doc);assert.equal(parsed.nativeLayout,null);
+ assert.equal(G.stable(parsed.migration.previousNativeLayout),G.stable(doc.nativeLayout));
 });
 test('spatial candidate filtering preserves exhaustive source, body, caption and boundary validation',()=>{
  const root=ir.nodes.find((n:any)=>!n.parent),graph=G.build(ir,{...N.state('overview'),moduleCuts:[{id:root.id,level:'source'}]}),C=ctx.SummaryConstraints;

@@ -28,7 +28,7 @@
   }
   function project(ir,state,derivedPlan=null,options={}){
     if(state.view==='publication'&&!derivedPlan){
-      const engine=options.semanticOnly?{...api,semanticOnly:true,project:(value,view,plan,inner={})=>api.project(value,view,plan,{...inner,semanticOnly:true})}:api;
+      const engine=options.semanticOnly?{...api,semanticOnly:true,project:(value,view,plan,inner={})=>api.project(value,view,plan,{...inner,semanticOnly:true,parameterReadsAsAnnotations:options.parameterReadsAsAnnotations===true})}:api;
       return state.paperCanonical?paper().projectCanonical(ir,state,engine):paper().project(ir,state,engine);
     }
     const plan=derivedPlan||(state.view==='architecture'?architecture(ir):ir),idx=index(plan),mode=state.mode||'source',open=new Set(state.open),visible=new Set();
@@ -63,6 +63,17 @@
     const projected=[],internal=[],excluded=[],contracted=[],attached=[],annotations=new Map();
     for(const raw of ir.edges){
       if(!eligible(raw.source)||!eligible(raw.target)){excluded.push(raw.id);continue;}
+      // Weight reads describe a call's resources, not a second activation
+      // input from its enclosing frame. Attach before ribbon/bundle creation
+      // so mixed endpoint pairs cannot erase a real data/control dependency.
+      if(options.parameterReadsAsAnnotations&&raw.kind==='parameter-read'){
+        const owner=rep(raw.target);
+        if(owner){
+          attached.push(raw.id);if(!annotations.has(owner))annotations.set(owner,[]);
+          annotations.get(owner).push({edge:clone(raw),resource:idx.nodes.get(raw.source)||ir.nodes.find(n=>n.id===raw.source),annotation_kind:'parameter-dependency'});
+        }else excluded.push(raw.id);
+        continue;
+      }
       // A closed summary may attach one exact source-alternative cut without
       // turning its producer (and that producer's other uses) into metadata.
       const attachment=options.edgeAttachments?.get(raw.id);

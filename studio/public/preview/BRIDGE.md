@@ -1,5 +1,14 @@
 # Studio preview integration
 
+## Frontier performance (2026-10-30)
+
+The native renderer reuses private source/state templates before graph layout,
+and shares immutable canonical analysis between mixed atomic scopes. Caches
+are bounded and cannot be supplied by imported documents or claimed digests.
+Geometry, authoring data and histories remain independent. Worker transport
+preserves new source identities; restored routes still undergo validation.
+See `docs/frontier-performance-20261030.md` for measurements and limitations.
+
 ## Mixed semantic frontiers (2026-10-28)
 
 The current Summary model library contains 43 native semantic models and 3
@@ -80,6 +89,7 @@ Messages do not write Python source, change model parameters or approve edits.
 | `export-svg`, `export-json` | none | starts existing download flow, then `exported` |
 | `visual` | `operations` | `applied`, then `state`; every command carries a request id and the state includes `snapshotRevision`/`sourceIdentity` |
 | `set-frontier` | `preset`: `overview` (F0) or `detail` (F1), or legacy `locations`/`sourceLocations` plus `expanded` | `applied`, then `state`; the state document reports `frontierPreset` |
+| `atomic-selection` | optional `ids` (defaults to selected visible nodes), `expanded` (defaults to `true`) | lowers only the selected scope to the same canonical source units, expanded containers and internal wires used by global expand-all; `false` restores its saved semantic scope. Uses native Worker validation, undo and saved `atomicCuts`; does not change canonical IR or source authority. |
 | `show-library`, `show-routing` | none | opens original drawer |
 | `show-import`, `show-evidence` | none | opens original dialog |
 | `undo`, `redo`, `reset`, `fit`, `apply-layout`, `collapse-all`, `expand-all` | none | invokes original operation; reset restores the initial view and is undoable |
@@ -90,6 +100,12 @@ Messages do not write Python source, change model parameters or approve edits.
 | `interaction-mode` | `mode`: `compat` or `realtime` | changes the Summary drag/route interaction mode and publishes a new state |
 | `arrange-selection` | `kind`: `left`, `hcenter`, `right`, `top`, `vcenter`, `bottom`, `distribute-x`, or `distribute-y`; optional `scope` | arranges actual selected visible sibling nodes as one validated undo step |
 | `pin-selection` | optional boolean `pinned` (otherwise toggles the selected set) | fixes or unlocks direct movement of the actual selected visible nodes |
+
+Native renderer 25 attaches canonical `parameter-read` edges to consumer details
+as `parameter-dependency` annotations before routing. This applies to every
+frontier and atomic selection; source nodes, raw edges and operand slots remain
+in the exported IR and accounting. Data, mask, buffer and control edges are not
+hidden by their color. Older affected saved layouts recompile with provenance.
 
 Replies retain `requestId`. Validation failures return `error` with `command`
 and `message`. Cases without model source return `source-unavailable`; the

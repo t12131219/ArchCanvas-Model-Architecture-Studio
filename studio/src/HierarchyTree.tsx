@@ -2,6 +2,7 @@ import { t, getLocale, subscribeLocale } from './i18n';
 import { memo, useMemo, useSyncExternalStore, type CSSProperties } from 'react';
 import type { CanvasDocument } from './core';
 import type { HierarchyNode } from './previewHierarchy';
+import { ModuleSymbol } from './ModuleSymbol';
 import { Icon } from './icons';
 
 type HierarchyTreeProps = {
@@ -11,6 +12,7 @@ type HierarchyTreeProps = {
   onSelect: (id: string, additive?: boolean) => void;
   query?: string;
   mandatoryIds?: readonly string[];
+  markerStyle?: 'blocks' | 'symbols';
   onExpand: (id: string, expanded: boolean) => void;
 };
 
@@ -24,9 +26,10 @@ type TreeState = {
   onExpand: HierarchyTreeProps['onExpand'];
   matches: ReadonlySet<string> | null;
   mandatory: ReadonlySet<string>;
+  markerStyle: 'blocks' | 'symbols';
 };
 
-export const HierarchyTree = memo(function HierarchyTree({ architecture, document, selected, onSelect, onExpand, query = '', mandatoryIds = [] }: HierarchyTreeProps) {
+export const HierarchyTree = memo(function HierarchyTree({ architecture, document, selected, onSelect, onExpand, query = '', mandatoryIds = [], markerStyle = 'blocks' }: HierarchyTreeProps) {
   useSyncExternalStore(subscribeLocale, getLocale, getLocale);
   const { roots, byId } = useMemo(() => {
     const roots: HierarchyNode[] = [];
@@ -50,7 +53,7 @@ export const HierarchyTree = memo(function HierarchyTree({ architecture, documen
     return ids;
   }, [architecture, document.displayAliases, query, byId]);
   const mandatory = useMemo(() => new Set(mandatoryIds), [mandatoryIds]);
-  const state: TreeState = { byId, aliases: document.displayAliases, expanded, selected: selectedIds, pinned, onSelect, onExpand, matches, mandatory };
+  const state: TreeState = { byId, aliases: document.displayAliases, expanded, selected: selectedIds, pinned, onSelect, onExpand, matches, mandatory, markerStyle };
 
   return <>{matches?.size === 0 && <p className="tree-empty">{t("没有匹配的模块")}</p>}{roots.map(node => <TreeNode key={node.id} node={node} state={state} />)}</>;
 });
@@ -64,7 +67,7 @@ function TreeNode({ node, state, depth = 0 }: { node: HierarchyNode; state: Tree
   return <div role="treeitem" data-tree-node-id={node.id} data-tree-depth={depth} aria-expanded={node.children.length ? expanded : undefined} aria-selected={selected}>
     <div className={`tree-row ${selected ? 'selected' : ''}`} style={{ paddingLeft: 14 + depth * 13 }}>
       <button className={`tree-toggle ${canvasExpanded ? 'open' : ''}`} disabled={!node.children.length || state.mandatory.has(node.id)} title={state.mandatory.has(node.id) ? t("根容器保持展开") : undefined} aria-label={`${canvasExpanded ? t("收起") : t("展开")} ${node.label}`} onClick={() => state.onExpand(node.id, !canvasExpanded)}><Icon name="chevron" size={11} /></button>
-      <button className="tree-label" onClick={event => state.onSelect(node.id, event.shiftKey || event.ctrlKey || event.metaKey)}><span className={`tree-node-dot ${node.category}`} /><span>{state.aliases[node.id] ?? node.label}</span>{node.repeat && <small>×{node.repeat.count}</small>}</button>
+      <button className="tree-label" onClick={event => state.onSelect(node.id, event.shiftKey || event.ctrlKey || event.metaKey)}>{state.markerStyle === 'symbols' ? <span className="tree-module-symbol" style={{ backgroundColor: node.fill }} title={t(node.symbolDescription ?? "模块或容器")}><ModuleSymbol symbol={node.symbol ?? "module"} /></span> : <span className={`tree-node-dot ${node.category}`} style={{ backgroundColor: node.fill }} />}<span>{state.aliases[node.id] ?? node.label}</span>{node.repeat && <small>×{node.repeat.count}</small>}</button>
       {state.pinned.has(node.id) && <Icon name="pin" size={10} />}
     </div>
     {expanded && node.children.length > 0 && <div role="group" className="tree-children" style={{ '--tree-guide-left': `${20 + depth * 13}px` } as CSSProperties}>{node.children.map(id => {

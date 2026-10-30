@@ -77,6 +77,33 @@ or source execution. Prior affected layouts migrate with provenance preserved.
 Current hashes are in the integration manifest; the native manifest retains
 the original migration baseline. Checks are recorded in
 `docs/evidence/inspection-connections-20261029/`.
+The subsequent native-semantic/23 adaptation adds reversible local canonical
+source cuts for selected visible nodes, including semantic leaves without a
+stable expansion button. The canvas context menu uses the existing native
+Worker, route/accounting checks, history and document persistence. Canonical
+membership and resource annotations determine scope; labels and model names
+do not. Hierarchy colors follow committed canvas presentation, and original
+SVG operator glyphs are reading aids rather than new semantic facts. See
+`docs/node-atomic-menu-and-hierarchy-20261029.md` for notation references and
+current validation. Integration hashes record these local adaptations.
+The native-semantic/24 revision closes local atomic scopes over canonical
+source containment and preserves the same source units, containers and wires
+as global source expansion. It rebuilds older partial atomic layouts with
+provenance retained. Hierarchy squares are the default; original SVG symbols
+remain an optional presentation preference in the View menu.
+The 2026-10-30 native-semantic/25 adaptation explicitly attaches parameter-read
+dependencies to consumer details before presentation bundling and routing.
+Canonical weights, edges and operand slots remain intact; data, masks, buffers
+and control dependencies are not removed by color. Affected saved layouts
+recompile with prior geometry retained as provenance. Source-independent and
+43-configuration checks are recorded in
+`docs/parameter-dependency-presentation-20261030.md`.
+The same renderer's 2026-10-30 performance adaptation reuses privately built
+source/state projections and view templates with bounded caches. Mixed atomic
+scopes share immutable canonical analysis; source identity, mutable geometry,
+Worker transport, saved-layout validation and canonical accounting remain
+independent. Measurements and limits are recorded in
+`docs/frontier-performance-20261030.md`.
 `studio-documents.js`, the imported-document provenance contract and retained
 Studio import/panel wiring are local integration code, documented in
 `docs/summary-documents-integration-20261028.md`. No second semantic renderer or

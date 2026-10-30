@@ -42,13 +42,41 @@
       studioBridge?.state();
       const result=await runGraphTask({task:'frontier',graph:before,transition,options:options()});if(!result.ok)throw new Error(result.error);if(result.unchanged)return;
       history.push(before);if(history.length>30)history.shift();future=[];
-      graph=result.graph;if(graph.generic&&transition&&['preset','semantic','module','focus','back','all'].includes(transition.type)){const restored=N.restoreCamera(before,graph,camera);if(restored){camera=restored;cameraUpdate();}else fit();graph.studioCamera=E.clone(camera);}
+      graph=result.graph;if(graph.generic&&transition&&['preset','semantic','module','focus','back','all','atomic'].includes(transition.type)){const restored=N.restoreCamera(before,graph,camera)||(transition.type==='atomic'?N.localCamera(before,graph,camera,transition.ids):null);if(restored){camera=restored;cameraUpdate();}else fit();graph.studioCamera=E.clone(camera);}
+      if(transition?.type==='atomic'){const ids=transition.expanded?(graph.generic.state.atomicCuts||[]).filter(c=>transition.ids.includes(c.id)).flatMap(c=>c.members):G.atomicOwners(before,transition.ids).map(c=>c.id);selectedNodes=new Set(ids.filter(id=>node(id)));}
       frontierPreset=transition?.preset==='overview'||transition?.preset==='detail'?transition.preset:'custom';syncUnifiedState();selectedNodes=new Set([...selectedNodes].filter(id=>node(id)));selectedEdges.clear();ghost=[];dirty=true;
       metrics={routed:result.routed||0,time:Math.round(performance.now()-start)};validation=result.validation;committed=true;
       svg.setAttribute('data-frontier-ms',metrics.time);svg.setAttribute('data-frontier-worker-ms',JSON.stringify(result.timing||{}));
       toast(result.pending?`语义切面已载入，还有 ${result.pending} 条连接待布线。请在语义切面面板继续布线。`:result.failed?`语义切面已载入，${result.failed} 条路线存在冲突，已明确标记。`:'展开状态与局部布局已保存；可继续选择内部模块。');
     }catch(error){graph=before;toast('展开未提交：'+error.message);if(propagateError)throw error;}finally{busy=false;render(committed?{validation}:{presentationOnly:true});if(committed)persist();studioBridge?.state();}
   }
+  let nodeMenu=null;
+  function closeNodeMenu(){if(!nodeMenu)return;nodeMenu.remove();nodeMenu=null;}
+  function showNodeMenu(event,id){
+    if(busy||drag||!graph||!node(id))return;
+    event.preventDefault();event.stopPropagation();closeNodeMenu();
+    // Right-click inside a selection retains that complete selection.
+    if(!selectedNodes.has(id)){selectedNodes=new Set([id]);selectedEdges.clear();selectedAnnotation=null;render({presentationOnly:true});studioBridge?.state();}
+    const ids=[...selectedNodes],selected=ids.map(node).filter(Boolean),ui=text=>window.ArchCanvasUILocale?.text(text)||text;
+    const menu=document.createElement('div');menu.className='node-context-menu';menu.setAttribute('role','menu');menu.setAttribute('aria-label',ui('节点展开菜单'));nodeMenu=menu;
+    const heading=document.createElement('div');heading.className='node-context-heading';heading.textContent=ids.length===1?label(selected[0]):ui('已选择 {0} 个节点').replace('{0}',ids.length);menu.append(heading);
+    const action=(text,enabled,run)=>{const button=document.createElement('button');button.type='button';button.setAttribute('role','menuitem');button.textContent=ui(text);button.disabled=!enabled;button.onclick=async()=>{closeNodeMenu();try{await run();}catch(error){toast(error.message);}};menu.append(button);};
+    const stable=selected.filter(n=>unifiedHasChildren(n.id));
+    action('展开稳定语义层',stable.some(n=>!n.expanded),()=>studioVisual({operations:stable.filter(n=>!n.expanded).map(n=>({type:'expand',id:n.id,expanded:true}))}));
+    action('折叠稳定语义层',stable.some(n=>n.expanded),()=>studioVisual({operations:stable.filter(n=>n.expanded).map(n=>({type:'expand',id:n.id,expanded:false}))}));
+    const divider=document.createElement('hr');menu.append(divider);
+    const targets=graph.generic?G.atomicTargets(graph,ids):[];
+    action('展开到原子层',!!targets.length,()=>changeFrontier({type:'atomic',ids,expanded:true},true));
+    action('返回原语义视图',!!graph.generic&&G.atomicOwners(graph,ids).length>0,()=>changeFrontier({type:'atomic',ids,expanded:false},true));
+    const note=document.createElement('p');note.textContent=ui(targets.length?'仅展开所选范围；保留其他模块的层级。':'已是原子节点，或没有可进一步展开的源码。');menu.append(note);
+    document.body.append(menu);const rect=menu.getBoundingClientRect();menu.style.left=Math.max(8,Math.min(event.clientX,innerWidth-rect.width-8))+'px';menu.style.top=Math.max(8,Math.min(event.clientY,innerHeight-rect.height-8))+'px';
+    menu.querySelector('button:not(:disabled)')?.focus();
+    menu.onkeydown=ev=>{ev.stopPropagation();if(ev.key==='Escape'){ev.preventDefault();closeNodeMenu();svg.focus();return;}const buttons=[...menu.querySelectorAll('button:not(:disabled)')],at=buttons.indexOf(document.activeElement);if(['ArrowDown','ArrowUp','Home','End'].includes(ev.key)&&buttons.length){ev.preventDefault();buttons[ev.key==='Home'?0:ev.key==='End'?buttons.length-1:(at+(ev.key==='ArrowUp'?-1:1)+buttons.length)%buttons.length].focus();}};
+  }
+  svg.addEventListener('contextmenu',ev=>{const id=ev.target.closest('[data-node-id]')?.getAttribute('data-node-id')||[...selectedNodes][0];if(id)showNodeMenu(ev,id);});
+  svg.addEventListener('keydown',ev=>{if((ev.shiftKey&&ev.key==='F10')||ev.key==='ContextMenu'){const id=[...selectedNodes][0],target=scene.nodes.get(id)?.g;if(target){const rect=target.getBoundingClientRect();showNodeMenu({preventDefault:()=>ev.preventDefault(),stopPropagation:()=>ev.stopPropagation(),clientX:rect.x+rect.width/2,clientY:rect.y+rect.height/2},id);}}});
+  document.addEventListener('pointerdown',ev=>{if(nodeMenu&&!nodeMenu.contains(ev.target))closeNodeMenu();},true);
+  window.addEventListener('blur',closeNodeMenu);window.addEventListener('resize',closeNodeMenu);svg.addEventListener('wheel',closeNodeMenu,{passive:true});
   const toggleUnifiedNode=(id,force)=>changeFrontier({type:'toggle',id,expanded:force});
   const collapseUnifiedAll=()=>changeFrontier({type:'all',expanded:false});
   const expandUnifiedAll=()=>changeFrontier({type:'all',expanded:true});
@@ -135,7 +163,7 @@
         else if(disk?.version){localStorage.setItem('summary-merge:archived:'+modelKey+':'+Date.now(),JSON.stringify(disk));toast('早期递归草稿已保留归档，当前使用新的递归文档。');}
       }catch(_){}
       let nextGraph=E.clone(saved?.graph||base);validation=initial.validation;
-      if(saved&&native&&nextGraph.generic?.version!==G.VERSION&&!(['native-semantic/18','native-semantic/19','native-semantic/20','native-semantic/21'].includes(nextGraph.generic?.version)&&!nextGraph.generic?.ir.nodes.some(n=>n.inspection_only)&&!nextGraph.generic?.state.paperCanonical&&!nextGraph.generic?.state.moduleCuts?.some(c=>c.level==='source'))&&(nextGraph.generic?.state.moduleCuts?.length||nextGraph.generic?.state.paperCanonical||nextGraph.generic?.ir.nodes.some(n=>n.inspection_only))&&!(['native-semantic/16','native-semantic/17'].includes(nextGraph.generic?.version)&&!nextGraph.generic?.state.paperCanonical&&!nextGraph.generic?.state.moduleCuts?.some(c=>c.level==='source'))){
+      if(saved&&native&&G.requiresUpgrade(nextGraph.generic?.version,nextGraph.generic?.ir,nextGraph.generic?.state)){
         const upgraded=await runGraphTask({task:'frontier',graph:nextGraph,transition:{type:'upgrade'},options:{}});
         if(!upgraded.ok||!N.accepts(upgraded.graph,upgraded.validation))throw Error(upgraded.error||'旧语义前沿无法重新编译');
         nextGraph=upgraded.graph;validation=upgraded.validation;
@@ -879,6 +907,7 @@
       if(message.preset==='overview'||message.preset==='detail')return changeFrontier({type:'preset',preset:message.preset},true);
       const nodes=sourceNodes(message);if(!nodes.length)throw new Error('没有匹配的源码模块。');return studioVisual({operations:nodes.filter(n=>unifiedChildren(n.id).length).map(n=>({type:'expand',id:n.id,expanded:!!message.expanded}))});
     }
+    if(command==='atomic-selection')return changeFrontier({type:'atomic',ids:message.ids||[...selectedNodes],expanded:message.expanded!==false},true);
     if(command==='continue-routing'){if(!graph?.generic)throw new Error('当前图没有原生语义 IR。');return changeFrontier(null,true);}
     if(command==='semantic-view'){if(!graph?.generic&&!message.moduleCut)throw new Error('当前图没有原生语义 IR。');return changeFrontier(message.moduleCut?{type:'module',request:message.moduleCut}:message.back?{type:'back'}:{type:'semantic',patch:message.patch||{}},true);}
     if(command==='show-library'||command==='show-routing'){document.documentElement.classList.remove('studio-library-open','studio-routing-open');document.documentElement.classList.add(command==='show-library'?'studio-library-open':'studio-routing-open');return;}

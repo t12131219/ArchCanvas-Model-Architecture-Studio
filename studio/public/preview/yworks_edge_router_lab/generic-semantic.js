@@ -25,7 +25,7 @@
     if(frozen.has(v))normalizedEvidence.set(v,value);return value;
   }
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const engine={...E,semanticOnly:true,project:(ir,state,plan,opts={})=>E.project(ir,state,plan,{...opts,semanticOnly:true})};
+  const engine={...E,semanticOnly:true,isImmutableSource:ir=>frozen.has(ir),project:(ir,state,plan,opts={})=>E.project(ir,state,plan,{...opts,semanticOnly:true,parameterReadsAsAnnotations:true})};
   const Integration=root.SummarySourceRuntime||(typeof require==='function'?require('./source-runtime.js'):null);
   // A callable/receiver decomposition explains source spelling, not a tensor
   // path. Attach expression-only inspection subtrees to their original opaque
@@ -74,9 +74,9 @@
   }
   const project=(ir,state)=>inspectionProjection({...Integration.project(ir,state,engine),inspectionEdges:ir.edges});
   const Flow=root.SummaryFlowOptimizer||(typeof require==='function'?require('./flow-optimizer.js'):null);
-  const VERSION='native-semantic/22',SCHEMA='archcanvas-native-semantic/1';
+  const VERSION='native-semantic/25',SCHEMA='archcanvas-native-semantic/1';
   const projectionInputs=new WeakMap(),certificates=new WeakMap(),sharedCertificates=new WeakMap(),frozen=new WeakSet();
-  const projections=new WeakMap(),sharedProjections=new Map(),navigationIndexes=new WeakMap();
+  const projections=new WeakMap(),sharedProjections=new Map(),navigationIndexes=new WeakMap(),viewTemplates=new Map();
   const sourceKeys=new WeakMap();
   function projectionKey(ir,state){
     // Only internally frozen evidence can reuse a key. Imported/mutable IR
@@ -206,7 +206,19 @@
     return {html,labelObstacles};
   }
   function build(ir,state,extra={}){
-    if(!frozen.has(ir)){E.validate(ir);ir=clone(ir);freezeEvidence(ir);}const selected=initial(ir,state),cut=project(ir,selected),visible=new Set(cut.nodes.map(n=>n.id)),headings=headingIds(cut),looks=new Map();
+    if(!frozen.has(ir)){E.validate(ir);ir=clone(ir);freezeEvidence(ir);}const selected=initial(ir,state),key=projectionKey(ir,selected),template=viewTemplates.get(key);
+    if(template){
+      // Only internally built templates enter this cache. The complete source
+      // and state key is checked; saved documents never supply trusted cuts.
+      // Share frozen semantic evidence, but own every mutable geometry/history.
+      const graph=cloneGeometry(template);
+      // A new source object still owns a new transport core. Equal content
+      // permits reusing its projection, never borrowing the old source identity.
+      graph.generic.ir=ir;cacheProjection(graph.generic,expected(template));
+      graph.generic.layouts=clone(extra.layouts||[]);graph.generic.authoring=clone(extra.authoring||null);graph.generic.migration=clone(extra.migration||null);
+      viewTemplates.delete(key);viewTemplates.set(key,template);return graph;
+    }
+    const cut=sharedProjections.get(key)||project(ir,selected),visible=new Set(cut.nodes.map(n=>n.id)),headings=headingIds(cut),looks=new Map();
     if(Integration.enabled(ir,selected)){selected.runtimeInlineRun=cut.publication.source_runtime.run;selected.runtimeInlineInitialized=selected.runtimeInlineRun;selected.open=clone(cut.publication.open||selected.open);selected.paperAuto=false;}
     const regions=new Map(),depths=new Map();let ordinal=0;
     const region=id=>{if(regions.has(id))return regions.get(id);const n=cut.idx.nodes.get(id);if(!n||!visible.has(id)||headings.has(id))return 0;
@@ -219,7 +231,7 @@
     // Fold only dense source frontiers. Publication F0/F1 keeps Summary's
     // reviewed geometry; source identities, rank order and frame owners stay
     // unchanged when a long dependency sequence wraps into reading rows.
-    const sourceLayout=cut.nodes.length>120&&(selected.paperCanonical||selected.moduleCuts?.some(c=>c.level==='source')),foldSource=sourceLayout;
+    const sourceLayout=cut.nodes.length>120&&(selected.paperCanonical||selected.atomicCuts?.length||selected.moduleCuts?.some(c=>c.level==='source')),foldSource=sourceLayout;
     const positions=L.layout(cut.idx,roots,visible,cut.edges,{}, {
       foldSerial:!!foldSource,foldBoundaryRanks:!!foldSource,foldMaxParallel:4,foldMaxColumns:3,foldGain:.96,regularModuleColumns:!sourceLayout,
       direction:selected.paperDirection==='up'?'up':'down',
@@ -231,7 +243,7 @@
       framePadding:sourceLayout?80:20,framePaddingFor:n=>headings.has(n.id)?0:sourceLayout?80:20,frameMinWidthFor:n=>headings.has(n.id)?640:0,frameCenterBodyFor:()=>true,
       fixedInputIds:new Set(cut.nodes.filter(n=>n.invocation_binding).map(n=>n.id)),compactArgumentBand:true,
       compoundPorts:true,compoundStarts:true,compoundInputBand:true,followOutputSources:true,compoundOutputAlignment:true,headerClearance:6,
-      gapX:sourceLayout?48:32,gapY:sourceLayout?56:36,alignForks:true,rankColumns:4,inputPlacement:'consumer',resourcePlacement:selected.paperCanonical||selected.moduleCuts?.some(c=>c.level==='source')?'consumer':undefined,rankStrategy:'consumer',protectFrameTitles:false,maxWidth:sourceLayout?24000:1600
+      gapX:sourceLayout?48:32,gapY:sourceLayout?56:36,alignForks:true,rankColumns:4,inputPlacement:'consumer',resourcePlacement:selected.paperCanonical||selected.atomicCuts?.length||selected.moduleCuts?.some(c=>c.level==='source')?'consumer':undefined,rankStrategy:'consumer',protectFrameTitles:false,maxWidth:sourceLayout?24000:1600
     });
     const ps=[...positions.values()],dx=48-Math.min(0,...ps.map(p=>p.x)),dy=48-Math.min(0,...ps.map(p=>p.y));
     const nodes=cut.nodes.map(n=>{const p={...positions.get(n.id),modelHeading:headings.has(n.id),headingNote:[selected.mode==='runtime'?'运行证据':selected.mode==='merged'?'源码与运行证据':'源码语义',selected.paperCanonical?'源码原子层':selected.paperGranularity==='stages'?'架构概览':'可逆语义图','可继续展开至源码细节'].join(' · ')};p.x+=dx;p.y+=dy;const a=looks.get(n.id);return {id:n.id,parent:visible.has(n.parent)?n.parent:null,x:p.x,y:p.y,w:p.w,h:p.h,base:[0,0],expanded:!!p.expanded,modelHeading:p.modelHeading,routingObstacle:!p.expanded,label:a.title,fill:a.fill,semantic:clone(n),...glyph(n,p,a)};});
@@ -250,10 +262,19 @@
       const appearance=edgeAppearance(e,cut.idx.nodes);
       return {id:e.id,source:e.source,target:e.target,projection:{presentationSlots:{source:inspection.slots.get(e.id+':source')||slotIdentity(e,'source'),target:inspection.slots.get(e.id+':target')||slotIdentity(e,'target')}},binding:clone(e),fixedSource,fixedTarget,portPolicy:{source:{mode:inspection.pinned.has(e.id+':source')?'fixed':'free',shape:'rectangle',spacing:6,sharedStem:null},target:{mode:inspection.pinned.has(e.id+':target')?'fixed':'free',shape:'rectangle',spacing:6}},route:[a,{x:a.x,y:b.y},b],waypoints:[],arrow:appearance.category==='source-inspection'?'open':'target',style:'orthogonal',width:appearance.width,dashed:appearance.dashed,stroke:appearance.stroke,dashPattern:appearance.dashPattern,relationStyle:appearance.category,role:e.kind,contract:{version:1,source:e.source,target:e.target,gates:[],wire:stable(e.bundle_members?['bundle',e.id]:[e.resolved_source||e.canonical_source||e.source,e.source_port]),bus:false,sharedStem:null,minimumTerminal:9,enforcePortApproach:true}};
     });
+    for(const value of [graph.generic.receipts,graph.generic.navigation,...graph.nodes.map(n=>n.semantic),...graph.edges.map(e=>e.binding)])freezeEvidence(value);
+    viewTemplates.set(key,cloneGeometry(graph));
+    while(viewTemplates.size>3||[...viewTemplates.values()].reduce((sum,g)=>sum+g.nodes.length,0)>8000){viewTemplates.delete(viewTemplates.keys().next().value);}
     return graph;
   }
   // Delayed hover reads the already-certified projection; no layout or route work.
-  function nodeEvidence(graph,id){const n=graph.nodes.find(n=>n.id===id)?.semantic;if(!n)return '';const cut=expected(graph),notes=(cut.annotations.get(id)||[]).filter(note=>note.annotation_kind==='source-expression');return [Evidence.nodeDetails(n,cut.idx),notes.length?'Source syntax details (inspection only; not tensor dataflow):\n'+notes.map(note=>note.resource?Evidence.nodeDetails(note.resource,cut.idx):JSON.stringify(note.edge)).join('\n\n'):'',n.source_runtime?'CPU invocation bridge (selected input/mode only):\n'+JSON.stringify(n.source_runtime,null,2):''].filter(Boolean).join('\n');}
+  function nodeEvidence(graph,id){
+    const n=graph.nodes.find(n=>n.id===id)?.semantic;if(!n)return '';
+    const cut=expected(graph),rows=cut.annotations.get(id)||[],notes=rows.filter(note=>note.annotation_kind==='source-expression'),parameters=rows.filter(note=>note.annotation_kind==='parameter-dependency');
+    return [Evidence.nodeDetails(n,cut.idx),notes.length?'Source syntax details (inspection only; not tensor dataflow):\n'+notes.map(note=>note.resource?Evidence.nodeDetails(note.resource,cut.idx):JSON.stringify(note.edge)).join('\n\n'):'',
+      parameters.length?'Parameter dependencies (details only; not activation arrows):\n'+parameters.map(note=>[note.resource?Evidence.nodeDetails(note.resource,cut.idx):'',JSON.stringify(note.edge)].filter(Boolean).join('\n')).join('\n\n'):'',
+      n.source_runtime?'CPU invocation bridge (selected input/mode only):\n'+JSON.stringify(n.source_runtime,null,2):''].filter(Boolean).join('\n');
+  }
   function within(nodes,id,frame){const by=new Map(nodes.map(n=>[n.id,n]));let at=id;while(at){if(at===frame)return true;at=by.get(at)?.parent;}return false;}
   function slotIdentity(e,side){return stable(e.bundle_members?['bundle',e.id,side]:[side==='source'?e.resolved_source||e.canonical_source||e.source:e.canonical_target||e.target,side==='source'?e.source_port:e.target_port]);}
   function children(graph,id){let index=navigationIndexes.get(graph.generic);if(!index){index=new Map(graph.generic.navigation?.children||expected(graph).idx.children);navigationIndexes.set(graph.generic,index);}return index.get(id)||[];}
@@ -307,16 +328,41 @@
     next.nativeRouting={pending:next.edges.length-reused,failed:0,complete:reused===next.edges.length};
     next.nativeRouteReuse={reused,total:next.edges.length};return next;
   }
+  function atomicTargets(graph,ids){
+    const cut=expected(graph),by=new Map(graph.nodes.map(n=>[n.id,n])),raw=new Map(graph.generic.ir.nodes.map(n=>[n.id,n])),targets=[];
+    const visibleWithin=(id,owner)=>{while(id){if(id===owner)return true;id=by.get(id)?.parent;}return false;};
+    for(const id of ids){
+      const node=by.get(id);if(!node)continue;
+      const references=new Set([...(node.semantic.canonical_members||[]),...(node.semantic.local_pipeline?.canonical_members||[]),...(node.semantic.local_pipeline?.operations||[]).map(n=>n.node),...(cut.annotations.get(id)||[]).map(note=>note.resource?.id)].filter(Boolean));
+      // Canonical containment also owns aliases/configuration that a semantic
+      // cut may have attached to a different visible representative.
+      const sourceWithin=value=>{while(value){if(value===id||references.has(value))return true;value=raw.get(value)?.parent;}return false;};
+      const members=graph.generic.ir.nodes.filter(n=>!n.inspection_only&&(sourceWithin(n.id)||cut.representatives[n.id]===id||visibleWithin(cut.representatives[n.id],id))).map(n=>n.id);
+      const visible=new Set(graph.nodes.filter(n=>visibleWithin(n.id,id)).map(n=>n.id));
+      if(members.some(id=>!visible.has(id)))targets.push({id,parent:node.parent,members});
+    }
+    // A selected parent owns its descendants; never lower overlapping scopes twice.
+    return targets.filter(t=>!targets.some(other=>other!==t&&visibleWithin(t.id,other.id)));
+  }
+  function atomicOwners(graph,ids){return (graph.generic.state.atomicCuts||[]).filter(c=>ids.some(id=>c.id===id||c.members.includes(id)));}
   function operate(graph,op){
     graph=cloneGeometry(graph);if(op.kind!=='upgrade')remember(graph);const ir=graph.generic.ir;let state=clone(graph.generic.state);
-    if(op.kind==='all'){delete state.moduleCuts;state=op.open?P.fullyExpanded(Integration.fullyExpandedIR(ir,state),state,E):{...state,paperAuto:false,open:[]};delete state.nativeSourceFocus;}
-    else if(op.kind==='frontier'){delete state.moduleCuts;delete state.nativeSourceFocus;state=F.frontier(state,op.action);if(op.action==='detail'){state=F.certifiedDetails(ir,state,{semanticOnly:true});delete state.runtimeInlineInitialized;}}
+    if(op.kind==='all'){delete state.atomicCuts;delete state.moduleCuts;state=op.open?P.fullyExpanded(Integration.fullyExpandedIR(ir,state),state,E):{...state,paperAuto:false,open:[]};delete state.nativeSourceFocus;}
+    else if(op.kind==='frontier'){delete state.atomicCuts;delete state.moduleCuts;delete state.nativeSourceFocus;state=F.frontier(state,op.action);if(op.action==='detail'){state=F.certifiedDetails(ir,state,{semanticOnly:true});delete state.runtimeInlineInitialized;}}
+    else if(op.kind==='atomic'){
+      if(op.open){const targets=atomicTargets(graph,op.ids);if(!targets.length)throw Error('所选节点已是源码原子层，没有更深的计算内容。');const covered=new Set(targets.flatMap(t=>t.members));state.atomicCuts=[...(state.atomicCuts||[]).filter(c=>!c.members.some(id=>covered.has(id))),...targets];}
+      else {const owners=new Set(atomicOwners(graph,op.ids).map(c=>c.id));if(!owners.size)throw Error('所选节点没有局部原子展开记录。');state.atomicCuts=(state.atomicCuts||[]).filter(c=>!owners.has(c.id));}
+    }
     else if(op.kind==='state'||op.kind==='upgrade'){state={...state,...clone(op.patch||{})};if(op.patch?.runtimeInlineRun!=null)delete state.runtimeInlineInitialized;}
     else if(op.kind==='focus'){const back=clone(state);delete back.nativeFocusReturn;state={...state,paperFocus:op.id,paperRelation:null,paperAuto:true,open:state.paperCanonical?state.open:[],nativeFocusReturn:back,...(state.paperCanonical?{nativeSourceFocus:op.id}:{} )};}
     else if(op.kind==='back')state=state.nativeFocusReturn||state.paperFrontierReturn||state;
+    else if(state.atomicCuts?.some(c=>c.members.includes(op.id))){
+      const request=state.atomicCuts.find(c=>c.members.includes(op.id)),cut=expected(graph),row=cut.publication.mixed.scopes.find(c=>c.atomic&&c.id===request.id);
+      const open=new Set(request.open||row.open),expanded=op.force??!graph.nodes.find(n=>n.id===op.id)?.expanded;if(expanded)open.add(op.id);else open.delete(op.id);request.open=[...open];
+    }
     else if(state.moduleCuts?.length){
       const cut=expected(graph),rows=cut.publication.mixed.scopes,by=cut.idx.nodes;
-      let at=op.id,owner;while(at&&!owner){owner=rows.find(row=>row.id===at);at=by.get(at)?.parent;}
+      let at=op.id,owner;while(at&&!owner){owner=rows.find(row=>!row.atomic&&row.id===at);at=by.get(at)?.parent;}
       const expanded=op.force??!graph.nodes.find(n=>n.id===op.id)?.expanded;
       if(owner){const request=state.moduleCuts.find(c=>c.id===owner.id),open=new Set(request.open||owner.open);if(expanded)open.add(op.id);else open.delete(op.id);request.open=[...open];}
       else if(ir.nodes.some(n=>n.id===op.id&&n.kind==='composite'))state.moduleCuts.push({id:op.id,level:'source',depth:expanded?1:0});
@@ -816,9 +862,26 @@
     graph.nativeRefinement={attempted,accepted,before:baseline,after:R.stats(graph.edges)};
   }
   function document(graph){const nativeLayout=layoutSnapshot(graph);return {schema:SCHEMA,renderer:graph.generic.version,ir:clone(graph.generic.ir),state:clone(graph.generic.state),authoring:clone(graph.generic.authoring),migration:clone(graph.generic.migration),layouts:clone(graph.generic.layouts||[]),nativeLayout:clone(nativeLayout)};}
+  function requiresUpgrade(renderer,ir,state={}){
+    if(renderer===VERSION)return false;
+    // Old receipts and routes include weight arrows even when the parameter
+    // was folded into an ancestor. Recompile while retaining source evidence.
+    if(ir?.edges.some(e=>e.kind==='parameter-read'))return true;
+    const unaffected=renderer==='native-semantic/24'||renderer==='native-semantic/22'||renderer==='native-semantic/23'&&!state.atomicCuts?.length||
+      ['native-semantic/18','native-semantic/19','native-semantic/20','native-semantic/21'].includes(renderer)&&!ir?.nodes.some(n=>n.inspection_only)&&!state.paperCanonical&&!state.moduleCuts?.some(c=>c.level==='source')||
+      ['native-semantic/16','native-semantic/17'].includes(renderer)&&!state.paperCanonical&&!state.moduleCuts?.some(c=>c.level==='source');
+    const legacy=!state.moduleCuts?.length&&(renderer==='native-semantic/15'||renderer==='native-semantic/14'&&!Integration.enabled(ir,state));
+    return !unaffected&&!legacy;
+  }
   function read(value){
     let ir,state,authoring,migration,nativeLayout,layouts;
-    if(value.schema===SCHEMA){({ir,state,authoring,migration,nativeLayout,layouts}=value);const unaffectedPublication=['native-semantic/18','native-semantic/19','native-semantic/20','native-semantic/21'].includes(value.renderer)&&!ir.nodes.some(n=>n.inspection_only)&&!state?.paperCanonical&&!state?.moduleCuts?.some(c=>c.level==='source')||['native-semantic/16','native-semantic/17'].includes(value.renderer)&&!state?.paperCanonical&&!state?.moduleCuts?.some(c=>c.level==='source');if(value.renderer!==VERSION&&!unaffectedPublication&&!(!state?.moduleCuts?.length&&(value.renderer==='native-semantic/15'||value.renderer==='native-semantic/14'&&!Integration.enabled(ir,state||{})))){if(!/^native-semantic\/([1-9]|10|11|12|13|14|15|16|17|18|19|20|21)$/.test(value.renderer||''))throw Error('不支持的原生语义布局版本');migration={...(migration||{}),previousRenderer:value.renderer,previousNativeLayout:clone(nativeLayout||null),previousLayouts:clone(layouts||[])};nativeLayout=null;layouts=[];}}
+    if(value.schema===SCHEMA){
+      ({ir,state,authoring,migration,nativeLayout,layouts}=value);
+      if(requiresUpgrade(value.renderer,ir,state)){
+        if(!/^native-semantic\/([1-9]|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24)$/.test(value.renderer||''))throw Error('不支持的原生语义布局版本');
+        migration={...(migration||{}),previousRenderer:value.renderer,previousNativeLayout:clone(nativeLayout||null),previousLayouts:clone(layouts||[])};nativeLayout=null;layouts=[];
+      }
+    }
     else if(value.schema==='semantic-authoring/1'){A.validate(value);authoring=value;ir=A.sourceIR(value);state={view:'publication',mode:'merged',paperCanonical:true,paperMedium:'canvas',paperAuto:false,open:value.open||[]};migration={schema:value.schema,original:clone(value)};}
     else if(['semantic-canvas/1','archcanvas-architecture-document/1'].includes(value.schema)){({ir,state}=value);authoring=value.authoring||null;migration={schema:value.schema,original:clone(value),geometry:'Retained as provenance; measured again for native canvas'};}
     else if(value.schema==='archcanvas-source-semantic/2')ir=value;
@@ -847,6 +910,6 @@
     // be saved/exported without pretending to satisfy geometry constraints.
     return {ok:true,graph,...result,failed:Math.max(result.failed,validation.edges.filter(([,v])=>!v.ok).length),validation,timing:{buildMs:Math.round(built-started),routeMs:Math.round(routed-built),validationMs:Math.round(performance.now()-routed)}};
   }
-  const api={VERSION,SCHEMA,engine,project,initial,build,nodeEvidence,color,edgeAppearance,headingIds,appearance,glyph,children,operate,remember,expected,slotIdentity,boundarySequence,boundaryErrors,constraints,nodeErrors,edgeErrors,validate,certifiedContext,cloneGeometry,transport,prepare,route,routePatternCache,placementProposal,refinePlacement,borderProximity,refineChannels,refineJoins,routeOptions,layoutSnapshot,document,read,restore,stable};
+  const api={VERSION,SCHEMA,engine,project,atomicTargets,atomicOwners,initial,build,nodeEvidence,color,edgeAppearance,headingIds,appearance,glyph,children,operate,remember,expected,slotIdentity,boundarySequence,boundaryErrors,constraints,nodeErrors,edgeErrors,validate,certifiedContext,cloneGeometry,transport,prepare,route,routePatternCache,placementProposal,refinePlacement,borderProximity,refineChannels,refineJoins,routeOptions,layoutSnapshot,document,read,requiresUpgrade,restore,stable};
   root.SummaryNativeSemantic=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

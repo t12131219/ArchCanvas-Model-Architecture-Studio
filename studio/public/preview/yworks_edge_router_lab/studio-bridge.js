@@ -78,7 +78,7 @@
         }else {await api.command(command,message);emit('applied',{requestId,command,...api.state()});state();}
       }catch(error){emit('error',{requestId,command,message:error?.message||String(error)});}
     }
-    function capabilities(){return ['cancel-operation','cancel-gesture','authoring','open-case','load','snapshot','request-source','focus','save','export-svg','export-json','svg','visual','presentation','set-frontier','semantic-view','continue-routing','show-library','show-routing','show-import','show-evidence','undo','redo','reset','fit','zoom','select-tool','connect-tool',...(query.get('surface')==='canvas'?[]:['pan-tool']),'bend-tool','show-ports','show-ghost','show-obstacles','interaction-mode','grid','select-nodes','arrange-selection','pin-selection','apply-layout','collapse-all','expand-all','ping'];}
+    function capabilities(){return ['cancel-operation','cancel-gesture','authoring','open-case','load','snapshot','request-source','focus','save','export-svg','export-json','svg','visual','presentation','set-frontier','semantic-view','atomic-selection','continue-routing','show-library','show-routing','show-import','show-evidence','undo','redo','reset','fit','zoom','select-tool','connect-tool',...(query.get('surface')==='canvas'?[]:['pan-tool']),'bend-tool','show-ports','show-ghost','show-obstacles','interaction-mode','grid','select-nodes','arrange-selection','pin-selection','apply-layout','collapse-all','expand-all','ping'];}
     root.addEventListener('message',event=>{
       // Read the committed state while a Worker is pending. Mutating commands
       // reject while busy instead of silently running later on another model.

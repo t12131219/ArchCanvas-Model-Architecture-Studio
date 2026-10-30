@@ -158,7 +158,7 @@ test('cancelled graph task rejects before any main-thread fallback and frontier 
   render(){},options:()=>({}),$(){return {};},studioBridge:{state(){}},toast(){},persist(){throw Error('cancel must not persist');}});
  vm.runInContext(app.slice(start,end)+';globalThis.run=runGraphTask;',scope);
  await assert.rejects(()=>scope.run({task:'generic-build',ir}),{name:'AbortError'});assert.equal(fallbackCalls,0);
- const a=app.indexOf('  async function changeFrontier('),b=app.indexOf('  const toggleUnifiedNode=',a);
+ const a=app.indexOf('  async function changeFrontier('),b=app.indexOf('  let nodeMenu=',a);
  vm.runInContext(app.slice(a,b)+';globalThis.change=changeFrontier;',scope);
  await assert.rejects(()=>scope.change({type:'preset',preset:'detail'},true),{name:'AbortError'});
  assert.equal(scope.graph,graph);assert.equal(scope.history.length,0);assert.equal(scope.future.length,1);assert.equal(scope.selectedNodes,selected);

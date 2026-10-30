@@ -115,6 +115,13 @@ export default function App() {
   useWorkspaceMenus();
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [treeSearch, setTreeSearch] = useState('');
+  const [hierarchyMarkers, setHierarchyMarkers] = useState<'blocks' | 'symbols'>(() => {
+    try { return localStorage.getItem('archcanvas.hierarchy-markers.v1') === 'symbols' ? 'symbols' : 'blocks'; } catch { return 'blocks'; }
+  });
+  function changeHierarchyMarkers(style: 'blocks' | 'symbols') {
+    setHierarchyMarkers(style);
+    try { localStorage.setItem('archcanvas.hierarchy-markers.v1', style); } catch { /* Session preference still applies. */ }
+  }
   const [actionFeedback, setActionFeedback] = useState<{message: string; error?: boolean} | null>(null);
   useEffect(() => {
     if (!actionFeedback || actionFeedback.error) return;
@@ -1373,6 +1380,9 @@ export default function App() {
           <button disabled={previewLayoutDisabled} onClick={focusCurrentFrontier}>{t("定位当前模块")}</button>
           <button disabled={previewLayoutDisabled} onClick={() => fit()}><Icon name="fit" size={15} />{t("适合画布")}<kbd>F</kbd></button>
           <button aria-pressed={grid} disabled={previewLayoutDisabled} onClick={() => previewEngine.current?.command('grid', { enabled: !grid })}>{grid ? t("隐藏") : t("显示")}{t("点阵网格")}</button>
+          <div className="menu-heading">{t("模型层级标记")}</div>
+          <button aria-pressed={hierarchyMarkers === 'blocks'} onClick={() => changeHierarchyMarkers('blocks')}>{t("彩色方块")}{hierarchyMarkers === 'blocks' && <span aria-hidden="true">✓</span>}</button>
+          <button aria-pressed={hierarchyMarkers === 'symbols'} onClick={() => changeHierarchyMarkers('symbols')}>{t("语义图标")}{hierarchyMarkers === 'symbols' && <span aria-hidden="true">✓</span>}</button>
           <div className="menu-heading">{t("来源与观察")}</div>
           <button disabled={!current} onClick={() => setSourceOpen(true)}>{t("查看源码证据")}</button>
           <button disabled={previewLayoutDisabled} onClick={() => setTaskDialog('runtime')}>{t("运行观察与语义证据…")}</button>
@@ -1404,7 +1414,7 @@ export default function App() {
       <aside className="navigator" hidden={summaryEditing && assemblyOpen}>
         <div className="navigator-top"><div className="panel-title"><Icon name="layers" size={16} /><b>{t("模型层级")}</b><span>{navigation?.nodes.length ?? architecture?.nodes.length ?? 0}</span></div><label className="tree-search"><Icon name="search" size={14} /><input aria-label={t("搜索模型层级")} placeholder={t("搜索模块…")} value={treeSearch} onChange={e => setTreeSearch(e.target.value)} />{treeSearch && <button className="tool" aria-label={t("清除层级搜索")} onClick={() => setTreeSearch('')}><Icon name="close" size={12} /></button>}</label></div>
         <div className="tree" role="tree" aria-label={t("模型层级")} aria-multiselectable="true">
-          {architecture && current && <HierarchyTree architecture={navigation ?? architecture} document={navigation ?? current} mandatoryIds={navigation?.mandatoryIds} selected={navigation ? previewSelectedNodeIds : selection.ids} onSelect={selectHierarchyNode} onExpand={expandHierarchyNode} query={treeSearch} />}
+          {architecture && current && <HierarchyTree architecture={navigation ?? architecture} document={navigation ?? current} mandatoryIds={navigation?.mandatoryIds} markerStyle={hierarchyMarkers} selected={navigation ? previewSelectedNodeIds : selection.ids} onSelect={selectHierarchyNode} onExpand={expandHierarchyNode} query={treeSearch} />}
         </div>
         <div className="navigator-bottom"><button className={sourceOpen ? 'active' : ''} onClick={() => setSourceOpen(x => !x)} disabled={!current}><Icon name="code" size={16} />{t("查看源码证据")}<Icon name="chevron" size={13} /></button><div className="source-note"><span className="live-dot" />{previewSnapshot.current?.importedDocument ? t("导入文档证据") : t("静态源码视图")}</div></div>
       </aside>

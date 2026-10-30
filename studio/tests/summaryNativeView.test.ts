@@ -65,10 +65,17 @@ function prepare(graph?: any, transition?: any) {
   return result.graph;
 }
 
-test('renderer 18 documents without inspection cards keep their saved native geometry', () => {
+test('old parameter-arrow layouts migrate with provenance while unaffected layouts remain compatible', () => {
   const graph=prepare(),document=G.document(graph),parsed=G.read({...document,renderer:'native-semantic/18'});
-  assert.deepEqual(copy(parsed.nativeLayout),copy(document.nativeLayout));
-  assert.deepEqual(copy(parsed.layouts),copy(document.layouts));
+  assert.equal(parsed.nativeLayout,null);
+  assert.deepEqual(copy(parsed.migration.previousNativeLayout),copy(document.nativeLayout));
+  for(const renderer of ['native-semantic/18','native-semantic/22','native-semantic/23','native-semantic/24']){
+    assert.equal(G.requiresUpgrade(renderer,document.ir,document.state),true);
+    assert.equal(G.read({...document,renderer}).nativeLayout,null);
+  }
+  const ir={schema:'archcanvas-source-semantic/2',nodes:[{id:'root',kind:'composite',label:'Untouched'},{id:'op',parent:'root',kind:'compute',label:'Op'}],edges:[]};
+  const untouched=G.document(G.build(ir,{view:'source',mode:'source',open:['root']}));
+  assert.deepEqual(copy(G.read({...untouched,renderer:'native-semantic/24'}).nativeLayout),copy(untouched.nativeLayout));
 });
 
 test('F1 uses certified roles and stages, preserves every native fact and restores F0 geometry', () => {
@@ -88,6 +95,14 @@ test('F1 uses certified roles and stages, preserves every native fact and restor
   assert.equal(JSON.stringify(returned.generic.ir), original);
 });
 
+test('local source expansion keeps the selected node screen position and zoom', () => {
+  const camera={x:10,y:20,w:800,h:500};
+  const before={nodes:[{id:'leaf',x:100,y:200,w:160,h:60}]};
+  const next={nodes:[{id:'leaf',x:400,y:600,w:180,h:80}],generic:{state:{}}};
+  assert.deepEqual(copy(N.localCamera(before,next,camera,['leaf'])),{x:320,y:430,w:800,h:500});
+  assert.deepEqual(camera,{x:10,y:20,w:800,h:500});
+});
+
 test('native cut cameras restore independently and reject invalid saved viewports', () => {
   const f0 = prepare(), f1 = prepare(f0, { type: 'preset', preset: 'detail' });
   const overviewCamera = { x: 31, y: -20, w: 800, h: 500 };
@@ -104,7 +119,8 @@ test('source-unit expansion and native JSON roundtrip retain every original node
   const graph = prepare(prepare(), { type: 'all', expanded: true });
   assert.equal(graph.generic.state.paperCanonical, true);
   assert.equal(graph.nodes.length, bundle.ir.semantic_ir.nodes.length);
-  assert.equal(graph.edges.length, bundle.ir.semantic_ir.edges.length);
+  assert.equal(graph.edges.length + graph.generic.receipts.edge_accounting.attached.length, bundle.ir.semantic_ir.edges.length);
+  assert.ok(graph.edges.every((e:any)=>e.binding.kind!=='parameter-read'));
   const saved = G.document(graph), read = G.read(copy(saved));
   const restored = N.prepare({ task: 'generic-build', ...read, options }).graph;
   assert.deepEqual(copy(G.layoutSnapshot(restored)), copy(G.layoutSnapshot(graph)));
@@ -228,3 +244,106 @@ for (const [fixture, model] of [['mlp', 'MLP'], ['residual_cnn', 'ResidualCNN'],
     }
   });
 }
+
+test('weight reads attach to consumer details without hiding masks, buffer values, control or tensor operands', () => {
+  const ir:any={schema:'archcanvas-source-semantic/2',nodes:[
+    {id:'root',kind:'composite',label:'Unseen'},
+    {id:'weights',parent:'root',kind:'parameter',label:'arbitrary weight'},
+    {id:'buffer',parent:'root',kind:'buffer',label:'persistent tensor'},
+    {id:'mask',parent:'root',kind:'interface',role:'input',label:'mask'},
+    {id:'input',parent:'root',kind:'interface',role:'input',label:'value'},
+    {id:'guard',parent:'root',kind:'control',operator:'if',label:'guard'},
+    {id:'op',parent:'root',kind:'compute',operator:'unknown',label:'Unseen operation'}
+  ],edges:[
+    {id:'weight-use',source:'weights',target:'op',kind:'parameter-read',evidence:'framework-contract'},
+    {id:'tensor-operand',source:'weights',target:'op',kind:'data',target_port:'arg:1'},
+    {id:'buffer-use',source:'buffer',target:'op',kind:'data'},
+    {id:'mask-use',source:'mask',target:'op',kind:'interface-binding',target_port:'mask'},
+    {id:'value-use',source:'input',target:'op',kind:'data',target_port:'arg:0'},
+    {id:'control-use',source:'guard',target:'op',kind:'control'}
+  ]};
+  for(const edge of ir.edges){edge.source_port??='out';edge.target_port??='in';}
+  const original=JSON.stringify(ir),state={view:'source',mode:'source',open:['root']};
+  const cut=G.project(ir,state),reference=context.SemanticEngine.project(ir,state,null,{semanticOnly:true});
+  assert.deepEqual(copy(cut.edges),copy(reference.edges.filter((e:any)=>e.kind!=='parameter-read')));
+  assert.deepEqual(copy(cut.edge_accounting.attached),['weight-use']);
+  assert.deepEqual(copy(cut.annotations.get('op')[0].edge),ir.edges[0]);
+  assert.equal(cut.annotations.get('op')[0].resource.id,'weights');
+  assert.match(G.nodeEvidence(G.build(ir,state),'op'),/Parameter dependencies/);
+  assert.equal(JSON.stringify(ir),original);
+});
+
+test('all catalog configurations attach parameter arrows at overview, detail and full source cuts', t => {
+  const catalog=JSON.parse(readFileSync(new URL('../public/preview/data/semantic/studio-catalog.json',import.meta.url),'utf8'));
+  let views=0,parameterReads=0;
+  for(const model of catalog.models){
+    const ir=JSON.parse(readFileSync(new URL('../public/preview/data/semantic/'+model.ir.path,import.meta.url),'utf8')),original=JSON.stringify(ir);
+    const full=context.SemanticPublication.fullyExpanded(ir,{mode:'source'},context.SemanticEngine);
+    for(const [name,state]of [['F0',N.state('overview')],['F1',G.initial(ir)],['source',full]]){
+      const cut=G.project(ir,state),members=(e:any):any[]=>e.bundle_members?.flatMap(members)||[e];
+      assert.ok(cut.edges.flatMap(members).every((e:any)=>e.kind!=='parameter-read'),model.id+': '+name);
+      const counted=Object.values(cut.edge_accounting).flat() as string[];
+      assert.equal(counted.length,ir.edges.length,model.id+': complete ledger');
+      assert.equal(new Set(counted).size,ir.edges.length,model.id+': no duplicate accounting');
+      assert.deepEqual([...counted].sort(),ir.edges.map((e:any)=>e.id).sort());
+      for(const edge of ir.edges.filter((e:any)=>e.kind==='parameter-read')){
+        if(cut.edge_accounting.excluded.includes(edge.id))continue;
+        assert.ok(cut.edge_accounting.attached.includes(edge.id),model.id+': '+edge.id);
+        assert.ok([...cut.annotations.values()].flat().some((note:any)=>note.annotation_kind==='parameter-dependency'&&JSON.stringify(note.edge)===JSON.stringify(edge)),model.id+': exact parameter evidence');
+        parameterReads++;
+      }
+      views++;
+    }
+    assert.equal(JSON.stringify(ir),original);
+  }
+  t.diagnostic(JSON.stringify({configurations:catalog.models.length,views,parameterReads,modelExecution:false}));
+});
+
+test('revisiting a complete source/state cut skips projection and layout while owning fresh mutable geometry', () => {
+  const ir:any={schema:'archcanvas-source-semantic/2',title:'cache-isolation',nodes:[
+    {id:'cache-root',kind:'composite',label:'Cache root'},
+    {id:'cache-op',parent:'cache-root',kind:'compute',label:'Original label'}
+  ],edges:[]},state={view:'source',mode:'source',open:['cache-root']};
+  const first=G.build(ir,state),positions=copy(first.nodes.map((n:any)=>[n.id,n.x,n.y,n.w,n.h]));
+  const runtime=context.SummarySourceRuntime,layout=context.SemanticLayout,project=runtime.project,arrange=layout.layout;
+  let projects=0,layouts=0;runtime.project=(...args:any[])=>{projects++;return project(...args);};layout.layout=(...args:any[])=>{layouts++;return arrange(...args);};
+  try{
+    first.nodes[0].x+=50;first.generic.layouts.push({key:'private',layout:{}});
+    const second=G.build(copy(ir),copy(state),{migration:{private:'new'}});
+    assert.equal(projects,0);assert.equal(layouts,0);
+    assert.deepEqual(copy(second.nodes.map((n:any)=>[n.id,n.x,n.y,n.w,n.h])),positions);
+    assert.notEqual(first.nodes,second.nodes);assert.notEqual(first.nodes[0],second.nodes[0]);
+    assert.deepEqual(copy(second.generic.layouts),[]);
+    assert.deepEqual(copy(second.generic.migration),{private:'new'});
+    assert.equal(G.validate(second,true).ok,true);
+    const altered=copy(ir);altered.nodes[1].label='Changed source, same claimed digest';altered.ir_digest='claimed';
+    const changed=G.build(altered,state);
+    assert.ok(projects>0&&layouts>0,'a saved digest cannot authorize reuse across changed source facts');
+    assert.equal(changed.nodes.find((n:any)=>n.id==='cache-op').semantic.label,altered.nodes[1].label);
+    const closed=G.build(ir,{...state,open:[]});assert.equal(closed.nodes.length,1);
+  }finally{runtime.project=project;layout.layout=arrange;}
+});
+
+test('multi-selection atomic expansion compiles its complete source form once and preserves independent ranges', () => {
+  const catalog=JSON.parse(readFileSync(new URL('../public/preview/data/semantic/studio-catalog.json',import.meta.url),'utf8'));
+  const model=catalog.models.find((m:any)=>m.title==='Transformer · 语义架构');
+  const ir=JSON.parse(readFileSync(new URL('../public/preview/data/semantic/'+model.ir.path,import.meta.url),'utf8'));
+  ir.title='independent atomic projection cache check';
+  const base=G.build(ir),targets=base.nodes.filter((n:any)=>!n.modelHeading&&!G.children(base,n.id).length&&G.atomicTargets(base,[n.id]).length).slice(0,2).map((n:any)=>n.id);
+  assert.equal(targets.length,2);
+  const P=context.SemanticPublication,project=P.projectCanonical;let calls=0;
+  P.projectCanonical=(...args:any[])=>{calls++;return project(...args);};
+  try{
+    const result=G.operate(base,{kind:'atomic',ids:targets,open:true});
+    assert.equal(calls,1,'independent atomic selections share one canonical projection');
+    assert.equal(result.generic.state.atomicCuts.length,2);
+    assert.equal(G.validate(result,true).ok,true);
+    assert.equal(JSON.stringify(result.generic.ir),JSON.stringify(base.generic.ir));
+    assert.ok(result.edges.every((e:any)=>e.binding.kind!=='parameter-read'));
+    const separate=G.operate(base,{kind:'atomic',ids:[targets[1]],open:true});
+    assert.equal(calls,1,'another scope reuses the immutable complete source analysis');
+    assert.equal(separate.generic.state.atomicCuts.length,1);
+    assert.equal(result.generic.state.atomicCuts.length,2,'cached analysis does not merge independent view state');
+    assert.equal(G.validate(separate,true).ok,true);
+  }finally{P.projectCanonical=project;}
+});

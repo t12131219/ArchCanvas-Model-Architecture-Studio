@@ -151,6 +151,8 @@ with tempfile.TemporaryDirectory() as directory:
  continuous(moved);
  const old=context.SummaryNativeSemantic.read({...document,renderer:'native-semantic/21'});
  assert.equal(old.nativeLayout,null,'old disconnected inspection layouts are migrated instead of replayed');
+ const compatible=context.SummaryNativeSemantic.read({...document,renderer:'native-semantic/22'});
+ assert.deepEqual(copy(compatible.nativeLayout),copy(document.nativeLayout),'compatible saved source layouts must not be discarded by the new context menu version');
 });
 
 
@@ -182,4 +184,60 @@ test('resource docking is a general geometry policy and retains mutable/effectfu
  assert.ok(positions.get('read').y<positions.get('op7').y);
  assert.equal(positions.get('mutable').y,positions.get('op0').y,'mutable state retains conservative source arrangement');
  assert.equal(JSON.stringify({nodes,edges}),before,'layout may not mutate source facts');
+});
+
+test('selected semantic leaves lower to local source atoms and restore independently',async()=>{
+ const catalog=JSON.parse(readFileSync(new URL('../public/preview/data/semantic/studio-catalog.json',import.meta.url),'utf8'));
+ const model=catalog.models.find((m:any)=>/transformer/i.test(m.title||m.id))||catalog.models[0];
+ const ir=JSON.parse(readFileSync(new URL('../public/preview/data/semantic/'+model.ir.path,import.meta.url),'utf8'));
+ let result=N.prepare({task:'generic-build',ir,options});
+ const G=context.SummaryNativeSemantic;
+ const candidates=result.graph.nodes.filter((n:any)=>!n.modelHeading&&!G.children(result.graph,n.id).length&&G.atomicTargets(result.graph,[n.id]).length);
+ assert.ok(candidates.length,'semantic leaves with attached configuration/resources must allow atomic inspection');
+ const selected=candidates.slice(0,2).map((n:any)=>n.id),before=copy(result.graph),canonical=JSON.stringify(result.graph.generic.ir);
+ result=N.prepare({task:'frontier',graph:result.graph,transition:{type:'atomic',ids:selected,expanded:true},options:{...options,budgetMs:16000}});
+ assert.equal(result.validation.source.ok,true,result.validation.source.violations.join('; '));
+ assert.equal(result.graph.generic.state.paperCanonical===true,false,'local source expansion must not expand the whole model');
+ assert.equal(result.graph.generic.state.atomicCuts.length,selected.length);
+ assert.equal(result.validation.layout.ok,true,result.validation.layout.violations.join('; '));
+ assert.ok(result.validation.edges.every(([,v]:any)=>v.ok),'local atomic expansion must keep strictly valid routes');
+ assert.ok(result.graph.edges.every((e:any)=>e.binding.kind!=='parameter-read'),'local atomic scopes must not restore weight arrows');
+ const touched=new Set(result.graph.generic.state.atomicCuts.flatMap((c:any)=>c.members));
+ for(const n of before.nodes.filter((n:any)=>!selected.includes(n.id)&&!touched.has(n.id)))assert.ok(result.graph.nodes.some((v:any)=>v.id===n.id),'unselected semantic siblings remain visible');
+ assert.equal(JSON.stringify(result.graph.generic.ir),canonical);
+ const first=result.graph.generic.state.atomicCuts[0];
+ const firstVisible=result.graph.nodes.find((n:any)=>first.members.includes(n.id));
+ const partial=N.prepare({task:'frontier',graph:result.graph,transition:{type:'atomic',ids:[firstVisible.id],expanded:false},options});
+ assert.equal(partial.graph.generic.state.atomicCuts.length,selected.length-1);
+ assert.ok(partial.graph.nodes.some((n:any)=>n.id===first.id),'one scope can restore without closing the other');
+ assert.equal(JSON.stringify(partial.graph.generic.ir),canonical);
+ const edit=await W.begin(result.graph);
+ assert.equal(JSON.stringify(edit.parsed.ir),canonical,'local source inspection does not change edit authority');
+ const members=result.graph.generic.state.atomicCuts.flatMap((c:any)=>c.members);
+ assert.ok(members.some((id:string)=>result.graph.nodes.some((n:any)=>n.id===id)&&!before.nodes.some((n:any)=>n.id===id)));
+ const record=G.document(result.graph),parsed=G.read(record);
+ assert.equal(G.read({...record,renderer:'native-semantic/23'}).nativeLayout,null,'old partial atomic layouts are rebuilt to the complete source form');
+ const reopened=N.prepare({task:'generic-build',...parsed,options});
+ assert.deepEqual(copy(reopened.graph.nodes.map((n:any)=>n.id)),copy(result.graph.nodes.map((n:any)=>n.id)));
+ const restored=N.prepare({task:'frontier',graph:result.graph,transition:{type:'atomic',ids:result.graph.nodes.filter((n:any)=>members.includes(n.id)).map((n:any)=>n.id),expanded:false},options});
+ assert.equal(restored.validation.source.ok,true,restored.validation.source.violations.join('; '));
+ assert.deepEqual(copy(restored.graph.nodes.map((n:any)=>n.id)),copy(before.nodes.map((n:any)=>n.id)));
+});
+
+test('local atomic module uses the same source units and containers as expand all',()=>{
+ const catalog=JSON.parse(readFileSync(new URL('../public/preview/data/semantic/studio-catalog.json',import.meta.url),'utf8'));
+ const model=catalog.models.find((m:any)=>/transformer/i.test(m.title||m.id));
+ const ir=JSON.parse(readFileSync(new URL('../public/preview/data/semantic/'+model.ir.path,import.meta.url),'utf8'));
+ const G=context.SummaryNativeSemantic,base=G.build(ir),raw=new Map(ir.nodes.map((n:any)=>[n.id,n]));
+ const within=(id:string,owner:string)=>{while(id){if(id===owner)return true;id=(raw.get(id) as any)?.parent;}return false;};
+ const target=base.nodes.find((n:any)=>n.semantic.kind==='composite'&&!n.modelHeading&&ir.nodes.filter((v:any)=>within(v.id,n.id)).length>10&&ir.nodes.filter((v:any)=>within(v.id,n.id)).length<60);
+ assert.ok(target);
+ const local=G.operate(base,{kind:'atomic',ids:[target.id],open:true}),all=G.operate(base,{kind:'all',open:true});
+ const expected=all.nodes.filter((n:any)=>within(n.id,target.id)),actual=local.nodes.filter((n:any)=>within(n.id,target.id));
+ assert.deepEqual(copy(actual.map((n:any)=>n.id).sort()),copy(expected.map((n:any)=>n.id).sort()));
+ for(const n of expected){const a=actual.find((v:any)=>v.id===n.id);assert.equal(a.expanded,n.expanded,n.id);assert.equal(a.label,n.label,n.id);assert.deepEqual(copy(a.semantic.paper),copy(n.semantic.paper),n.id);}
+ const ids=new Set(expected.map((n:any)=>n.id));
+ const signature=(g:any)=>g.edges.filter((e:any)=>ids.has(e.source)&&ids.has(e.target)).map((e:any)=>[e.id,e.source,e.target,e.binding.kind]).sort((a:any,b:any)=>a[0].localeCompare(b[0]));
+ assert.deepEqual(copy(signature(local)),copy(signature(all)),'internal source wires match expand all rather than publication bundles');
+ assert.equal(JSON.stringify(local.generic.ir),JSON.stringify(base.generic.ir));
 });

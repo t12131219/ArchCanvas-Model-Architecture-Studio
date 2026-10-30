@@ -1,7 +1,7 @@
 /* Source-led runtime supplementation. Canonical facts never become view rewrites. */
 (function(root){
   'use strict';
-  const copy=x=>JSON.parse(JSON.stringify(x)),cache=new WeakMap();
+  const copy=x=>JSON.parse(JSON.stringify(x)),cache=new WeakMap(),compiledSources=new WeakMap();
   const observed=id=>id==='runtime-observations'||id.startsWith('runtime:');
   function enabled(ir,state){return state.mode==='merged'&&ir.runtime?.runs?.length>0;}
   // Recheck bridge identities against the saved receipt and both canonical
@@ -69,11 +69,11 @@
   }
   function project(ir,state,engine){
     if(state.moduleCuts?.length)validateCuts(scopeIR(ir,state),state.moduleCuts);
-    if(state.moduleCuts?.length&&!enabled(ir,state))return mixedProject(ir,{...state,moduleCuts:state.moduleCuts.filter(c=>ir.nodes.some(n=>n.id===c.id&&n.kind==='composite'))},engine);
+    if((state.moduleCuts?.length||state.atomicCuts?.length)&&!enabled(ir,state))return mixedProject(ir,{...state,moduleCuts:(state.moduleCuts||[]).filter(c=>ir.nodes.some(n=>n.id===c.id&&n.kind==='composite'))},engine);
     if(!enabled(ir,state))return engine.project(ir,state);
     const run=Number.isInteger(state.runtimeInlineRun)&&ir.runtime.runs[state.runtimeInlineRun]?state.runtimeInlineRun:0;
     const prepared=prepare(ir,run),view=prepared.ir;
-    const render=next=>next.moduleCuts?.length?mixedProject(view,{...next,moduleCuts:next.moduleCuts.filter(c=>view.nodes.some(n=>n.id===c.id&&n.kind==='composite'))},engine):engine.project(view,next);
+    const render=next=>next.moduleCuts?.length||next.atomicCuts?.length?mixedProject(view,{...next,moduleCuts:(next.moduleCuts||[]).filter(c=>view.nodes.some(n=>n.id===c.id&&n.kind==='composite'))},engine):engine.project(view,next);
     let cut=render(state);
     if(state.runtimeInlineInitialized!==run&&!state.paperCanonical){
       const open=[...new Set([...(cut.publication?.open||state.open||[]),...prepared.selected.map(v=>v.source)])];
@@ -118,42 +118,65 @@
   }
   function mixedProject(ir,state,engine){
     const E=root.SemanticEngine,P=root.SemanticPublication,F=root.SemanticCompositionLayout;
-    validateCuts(ir,state.moduleCuts);
-    const plain={...state};delete plain.moduleCuts;
+    validateCuts(ir,state.moduleCuts||[]);
+    const atomic=state.atomicCuts||[],canonicalIds=new Set(ir.nodes.map(n=>n.id));
+    if(!Array.isArray(atomic)||atomic.length>ir.nodes.length||atomic.some(c=>!c||typeof c.id!=='string'||!Array.isArray(c.members)||!c.members.length||new Set(c.members).size!==c.members.length||c.members.some(id=>!canonicalIds.has(id))))throw Error('原子展开范围无效。');
+    const plain={...state};delete plain.moduleCuts;delete plain.atomicCuts;
     let captured;
     const capture={...engine,semanticOnly:true,project:(value,view,plan,opts={})=>{
       if(plan){captured={view,plan,opts};return engine.project(value,view,plan,opts);}
       return view.paperCanonical?P.projectCanonical(value,view,capture):P.project(value,view,capture);
     }};
-    const compile=view=>{captured=null;const cut=capture.project(ir,view);return {cut,policy:captured?.opts||{}};};
+    // Only the native engine's recursively frozen source may reuse analysis.
+    // Neither a saved digest nor Object.freeze on a caller's outer IR licenses
+    // this cache. Mixed cuts copy nodes/maps before editing their own scope.
+    let compiled;
+    if(engine.isImmutableSource?.(ir)){
+      let engines=compiledSources.get(ir);if(!engines)compiledSources.set(ir,engines=new WeakMap());
+      compiled=engines.get(engine);if(!compiled)engines.set(engine,compiled=new Map());
+    }
+    const compile=view=>{
+      const key=compiled&&JSON.stringify(view);
+      if(compiled?.has(key))return compiled.get(key);
+      captured=null;const cut=capture.project(ir,view),value={cut,policy:captured?.opts||{}};
+      if(compiled){compiled.set(key,value);while(compiled.size>6)compiled.delete(compiled.keys().next().value);}
+      return value;
+    };
     const base=compile(plain),raw=E.index(ir),by=new Map(base.cut.nodes.map(n=>[n.id,copy(n)]));
     const reps=new Map(Object.entries(base.cut.representatives)),bindings=new Map(base.policy.bindings||[]),metadata=new Set(base.policy.metadata||[]);
     const edgeAttachments=new Map(base.policy.edgeAttachments||[]),metadataKinds=new Map(base.policy.metadataKinds||[]);
     const presentations=new Map(base.cut.edges.map(e=>[e.id,e]));
     const expanded=new Set(base.cut.nodes.filter(n=>base.cut.positions.get(n.id)?.expanded).map(n=>n.id));
     const navigation=new Map([...raw.nodes,...base.cut.idx.nodes]);
+    let fullyExpanded;
     const touched=new Set(),rows=[],rank=id=>{let n=raw.nodes.get(id),d=0;while(n?.parent){d++;n=raw.nodes.get(n.parent);}return d;};
     const isWithin=(id,owner,idx)=>{const seen=new Set();while(id&&!seen.has(id)){if(id===owner)return true;seen.add(id);id=idx.get(id)?.parent;}return false;};
     const runtimeNode=id=>{while(id){if(observed(id))return true;id=raw.nodes.get(id)?.parent;}return false;};
     // More specific children override their ancestors, independent of click order.
-    for(const request of state.moduleCuts.slice().sort((a,b)=>rank(a.id)-rank(b.id)||a.id.localeCompare(b.id))){
+    for(const request of [...(state.moduleCuts||[]).slice().sort((a,b)=>rank(a.id)-rank(b.id)||a.id.localeCompare(b.id)),...atomic.map(c=>({...c,level:'source',atomic:true}))]){
       let at=raw.nodes.get(request.id),runtime=false;
       while(at){if(observed(at.id))runtime=true;at=raw.nodes.get(at.parent);}
       if(state.mode==='runtime'&&!runtime||state.mode==='source'&&runtime)continue;
-      const scope=new Set(),walk=id=>{scope.add(id);touched.add(id);for(const c of raw.children.get(id)||[])walk(c);};walk(request.id);
-      const anchor=by.get(request.id)||copy(raw.nodes.get(request.id));
+      const scope=new Set(),walk=id=>{if(scope.has(id))return;scope.add(id);touched.add(id);for(const c of raw.children.get(id)||[])walk(c);};for(const id of request.atomic?[...request.members,...(raw.nodes.has(request.id)?[request.id]:[])]:[request.id])walk(id);
+      const anchor=by.get(request.id)||copy(raw.nodes.get(request.id)||{id:request.id,parent:request.parent});
       // A latent scope needs its real source ancestors exposed. Sibling modules
       // retain their current representatives rather than inheriting this depth.
-      const chain=[];let parent=raw.nodes.get(request.id)?.parent;
+      const chain=[];let parent=request.atomic?request.parent:raw.nodes.get(request.id)?.parent;
       while(parent&&!by.has(parent)){
         if(state.mode==='runtime'&&!runtimeNode(parent))break;
         chain.unshift(parent);parent=raw.nodes.get(parent)?.parent;
       }
       for(const id of chain){const n=copy(raw.nodes.get(id));by.set(id,n);expanded.add(id);}
-      anchor.parent=raw.nodes.get(request.id).parent;
+      anchor.parent=request.atomic?request.parent:raw.nodes.get(request.id).parent;
       const affected=new Set([...by].filter(([id,n])=>scope.has(id)||isWithin(id,request.id,navigation)||n.canonical_members?.length&&n.canonical_members.every(id=>scope.has(id))).map(([id])=>id));
       let local;
-      if(request.level==='source'){
+      if(request.atomic){
+        const full=P.fullyExpanded(ir,{...plain,nativeSourceFocus:null},E);
+        if(request.open){if(!Array.isArray(request.open)||request.open.some(id=>!scope.has(id)||!raw.children.get(id)?.length))throw Error('原子层级展开记录无效。');full.open=[...full.open.filter(id=>!scope.has(id)),...request.open];}
+        // Independent selections use one complete canonical source projection.
+        // A scope with custom collapsed children still gets its own exact cut.
+        local=request.open?compile(full):(fullyExpanded??=compile(full));
+      }else if(request.level==='source'){
         const depth=request.depth??ir.nodes.length,open=[];
         const visit=(id,d)=>{if(d<depth&&(raw.children.get(id)||[]).length){open.push(id);for(const c of raw.children.get(id)||[])visit(c,d+1);}};visit(request.id,0);
         local=compile({...plain,paperCanonical:true,paperAuto:false,open:request.open||open,nativeSourceFocus:request.id});
@@ -180,14 +203,15 @@
           local=compile({...view,paperAuto:false,open:request.open});
         }
       }
-      if(request.level==='source'&&request.open?.some(id=>!scope.has(id)||!raw.children.get(id)?.length))throw Error('局部展开节点不属于当前源码模块。');
+      if(!request.atomic&&request.level==='source'&&request.open?.some(id=>!scope.has(id)||!raw.children.get(id)?.length))throw Error('局部展开节点不属于当前源码模块。');
       // boundary_ports is the cut inventory of real presentation regions
       // (Add & Norm, role paths, repeated calls), not a panel-only terminal.
       // Removing those regions strands their children and destroys the DAG.
-      const keep=local.cut.nodes.filter(n=>!n.boundary_edge&&n.semantic_type!=='boundary-interface-group'&&isWithin(n.id,request.id,local.cut.idx.nodes));
+      const keep=local.cut.nodes.filter(n=>!n.boundary_edge&&n.semantic_type!=='boundary-interface-group'&&(request.atomic?scope.has(n.id):isWithin(n.id,request.id,local.cut.idx.nodes)));
       for(const id of affected){by.delete(id);expanded.delete(id);}
-      by.set(anchor.id,anchor);
-      for(const n of keep){const value=copy(n);if(n.id===anchor.id)value.parent=anchor.parent;by.set(n.id,value);if(local.cut.positions.get(n.id)?.expanded)expanded.add(n.id);navigation.set(n.id,n);}
+      if(request.atomic){by.delete(request.id);expanded.delete(request.id);}
+      if(!request.atomic)by.set(anchor.id,anchor);
+      for(const n of keep){const value=copy(n);if(request.atomic&&!scope.has(value.parent)&&!by.has(value.parent))value.parent=anchor.parent;else if(!request.atomic&&n.id===anchor.id)value.parent=anchor.parent;by.set(n.id,value);if(local.cut.positions.get(n.id)?.expanded)expanded.add(n.id);navigation.set(n.id,n);}
       const keptIds=new Set(keep.map(n=>n.id));
       for(const e of local.cut.edges)if(keptIds.has(e.source)||keptIds.has(e.target))presentations.set(e.id,e);
       for(const e of ir.edges)if(scope.has(e.source)||scope.has(e.target)){
@@ -206,8 +230,8 @@
       }
       for(const id of chain)reps.set(id,id);
       let ancestor=raw.nodes.get(request.id)?.parent;while(ancestor){expanded.add(ancestor);ancestor=raw.nodes.get(ancestor)?.parent;}
-      reps.set(request.id,request.id);
-      rows.push({id:request.id,level:request.level,depth:request.depth??null,canonicalNodes:scope.size,visibleNodes:keep.length,open:local.cut.publication?.open||[]});
+      if(!request.atomic)reps.set(request.id,request.id);
+      rows.push({id:request.id,atomic:!!request.atomic,level:request.level,depth:request.depth??null,canonicalNodes:scope.size,visibleNodes:keep.length,open:(local.cut.publication?.open||[]).filter(id=>!request.atomic||scope.has(id))});
     }
     // A base presentation group can cover an ancestor and a requested subtree.
     // Keep the group for untouched facts; ensure every representative exists.
@@ -221,9 +245,15 @@
     const plan={...base.cut.architecture,nodes:[...by.values()]},idx=E.index(plan),roots=idx.children.get(null)||[];
     // Exact binding traversal and every condition/slot/kind are handled by the
     // original canonical projector, including bundles and dependency accounting.
-    const cut=engine.project(ir,{...plain,view:'architecture',details:false,open:[...expanded]},plan,{
+    const cut=engine.project(ir,{...plain,view:'architecture',details:!!atomic.length,open:[...expanded]},plan,{
       roots,bindings,metadata,metadataKinds,edgeAttachments,metadataTargets:reps,semanticOnly:true,exposedResources:new Set([...by.values()].filter(n=>n.kind==='parameter').map(n=>n.id)),
-      presentEdges:base.policy.presentEdges
+      // Canonical source wires inside the atomic scope must not be summarized
+      // again by the outer publication's bundling/alias presentation policy.
+      presentEdges:base.policy.presentEdges&&((edges,idx)=>{
+        if(!atomic.length)return base.policy.presentEdges(edges,idx);
+        const inside=e=>touched.has(e.canonical_source||e.source)||touched.has(e.canonical_target||e.target);
+        return [...base.policy.presentEdges(edges.filter(e=>!inside(e)),idx),...edges.filter(inside)];
+      })
     });
     // Retain every unaffected outer dependency exactly, including existing
     // bundles, conditions and attachment policies. Only touching paths lower

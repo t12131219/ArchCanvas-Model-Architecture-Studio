@@ -160,3 +160,12 @@ test('actual focus reveals a hidden node and toggles the same selection set used
   await context.studioFocus({ nodeId: 'inner' }); assert.deepEqual([...context.selectedNodes], ['inner']);
   assert.equal(context.camera.w,800,'tree focus opens a readable view at 100% instead of retaining tiny overview zoom');
 });
+
+
+test('hierarchy markers use committed canvas colours and semantic operators, including presentation overrides',()=>{
+ const snapshot={graph:{nodes:[{id:'sum',label:'not-an-add-name',fill:'#ffcc88',semantic:{id:'sum',operator:'add',kind:'compute'}}],semanticHierarchy:{nodes:[{id:'sum',label:'not-an-add-name',fill:'#000000',semantic:{id:'sum',operator:'add',kind:'compute'}}]},studioPresentation:{nodes:{sum:{fill:'#abcdef'}}}}} as unknown as PreviewSnapshot;
+ const before=JSON.stringify(snapshot),node=previewHierarchy(snapshot)!.nodes[0];
+ assert.equal(node.fill,'#abcdef');assert.equal(node.symbol,'add');assert.equal(JSON.stringify(snapshot),before);
+ delete (snapshot.graph as any).studioPresentation;
+ assert.equal(previewHierarchy(snapshot)!.nodes[0].fill,'#ffcc88');
+});

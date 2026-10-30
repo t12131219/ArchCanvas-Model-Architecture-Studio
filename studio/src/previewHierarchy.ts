@@ -1,10 +1,11 @@
+import { moduleSymbol, type ModuleSymbol } from './moduleSymbols.ts';
 import type { ArchitectureNode } from './core/types.ts';
 import type { PreviewSnapshot } from './PreviewStudio';
 import type { PreviewVisualGraph } from './previewInterop.ts';
 import { previewDetailGraph } from './previewInterop.ts';
 import { previewPresentation } from './previewPresentation.ts';
 
-export type HierarchyNode = Pick<ArchitectureNode, 'id' | 'label' | 'category' | 'parentId' | 'children' | 'repeat'>;
+export type HierarchyNode = Pick<ArchitectureNode, 'id' | 'label' | 'category' | 'parentId' | 'children' | 'repeat'> & { fill?: string; symbol?: ModuleSymbol; symbolDescription?: string };
 export type PreviewHierarchy = {
   nodes: HierarchyNode[];
   expandedIds: string[];
@@ -58,6 +59,8 @@ export function previewHierarchy(snapshot: PreviewSnapshot | null): PreviewHiera
   };
   if (!Array.isArray(graph.nodes)) return null;
   const detail = previewDetailGraph(graph);
+  const visible = new Map(graph.nodes.map(node => [node.id, node]));
+  const presentation = previewPresentation(snapshot.graph);
   const all = new Map(detail.nodes.map(node => [node.id, node]));
   const nodes: HierarchyNode[] = detail.nodes.filter(node => !node.junction).map(node => {
     let parent = node.parent;
@@ -66,7 +69,8 @@ export function previewHierarchy(snapshot: PreviewSnapshot | null): PreviewHiera
     const visited = new Set([node.id]);
     while (parent && all.get(parent)?.junction && !visited.has(parent)) { visited.add(parent); parent = all.get(parent)?.parent; }
     const kind = node.semantic?.kind ?? node.kind ?? 'opaque';
-    return { id: node.id, label: node.label ?? node.id, category: kind === 'group' || kind === 'composite' ? 'container' : kind === 'normalization' ? 'norm' : kind,
+    const marker = moduleSymbol(node.semantic ?? node);
+    return { id: node.id, label: node.label ?? node.id, fill: presentation?.nodes?.[node.id]?.fill ?? visible.get(node.id)?.fill ?? node.fill, symbol: marker.symbol, symbolDescription: marker.description, category: kind === 'group' || kind === 'composite' ? 'container' : kind === 'normalization' ? 'norm' : kind,
       ...(parent && all.has(parent) && !all.get(parent)?.junction && !visited.has(parent) ? { parentId: parent } : {}), children: [] };
   });
   const byId = new Map(nodes.map(node => [node.id, node]));

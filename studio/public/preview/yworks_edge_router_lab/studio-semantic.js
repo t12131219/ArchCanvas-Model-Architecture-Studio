@@ -10,13 +10,13 @@
   // The host needs identity and source-matching fields, not a second copy of
   // canonical semantic bodies, rendered HTML or complete physical evidence.
   function hierarchy(graph){
-    const fields=['id','kind','sourceKind','instance','moduleType','expression','source_evidence','sourceStructure','presentation_only','canonical_members'];
+    const fields=['id','kind','sourceKind','instance','moduleType','expression','source_evidence','sourceStructure','presentation_only','canonical_members','operator','semantic_type','shape'];
     const matching=raw=>{const value=Object.fromEntries(fields.filter(k=>raw[k]!==undefined&&(k!=='canonical_members'||!raw.presentation_only)).map(k=>[k,raw[k]]));
       if(raw.sourceParameters){value.sourceParameters={};for(const k of ['callSites','condition'])if(raw.sourceParameters[k]!==undefined)value.sourceParameters[k]=raw.sourceParameters[k];}return value;};
     const canonical=new Map(graph.generic.ir.nodes.map(n=>[n.id,n]));
     return nodes(graph).map(n=>{
       const semantic=matching(n.semantic||n),original=canonical.get(n.id),reference=original&&G.stable(matching(original))===G.stable(semantic);
-      return {id:n.id,parent:n.parent,label:n.label,x:n.x,y:n.y,w:n.w,h:n.h,expanded:n.expanded,presentation_only:n.presentation_only,
+      return {id:n.id,parent:n.parent,label:n.label,fill:n.fill||G.appearance(n.semantic||n).fill,x:n.x,y:n.y,w:n.w,h:n.h,expanded:n.expanded,presentation_only:n.presentation_only,
         ...(reference?{semanticRef:true}:{semantic})};
     });
   }
@@ -84,6 +84,7 @@
     }
     if(transition.type==='preset')return {kind:'frontier',action:transition.preset};
     if(transition.type==='back')return {kind:'back'};
+    if(transition.type==='atomic'){if(!Array.isArray(transition.ids)||!transition.ids.length||transition.ids.some(id=>!graph.nodes.some(n=>n.id===id)))throw Error('请选择画布中的节点。');return {kind:'atomic',ids:[...new Set(transition.ids)],open:!!transition.expanded};}
     if(transition.type==='all')return {kind:'all',open:!!transition.expanded};
     if(transition.type==='focus'){
       const cut=G.expected(graph),by=new Map([...graph.generic.ir.nodes,...cut.idx.nodes.values()].map(n=>[n.id,n])),target=by.get(transition.id);
@@ -174,5 +175,14 @@
     const saved=next.studioCameras.find(row=>row.key===newKey)?.camera;
     return validCamera(saved)?copy(saved):null;
   }
-  root.ArchCanvasSemanticView={enabled,state,nodes,hierarchy,snapshot,decorate,prepare,inspector,restoreCamera,validCamera,accepts};
+  function localCamera(previous,next,camera,ids){
+    if(!validCamera(camera))return null;
+    const before=previous.nodes.find(n=>ids.includes(n.id));if(!before)return copy(camera);
+    const members=next.generic.state.atomicCuts?.find(c=>c.id===before.id)?.members||[];
+    const after=next.nodes.find(n=>n.id===before.id)||next.nodes.find(n=>members.includes(n.id));
+    if(!after)return copy(camera);
+    // Keep the chosen node at the same screen position and preserve zoom.
+    return {...copy(camera),x:camera.x+after.x+after.w/2-before.x-before.w/2,y:camera.y+after.y+after.h/2-before.y-before.h/2};
+  }
+  root.ArchCanvasSemanticView={enabled,state,nodes,hierarchy,snapshot,decorate,prepare,inspector,restoreCamera,localCamera,validCamera,accepts};
 })(typeof window!=='undefined'?window:globalThis);

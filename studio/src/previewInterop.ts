@@ -5,7 +5,7 @@ import type { AuthoredDraft } from './authoring.ts';
 export type PreviewSourceRequest = { files: Record<string, string>; entry: string; config: Record<string, unknown>; semanticMode?: 'summary' | 'legacy' };
 export type PreviewSourceLocation = { path: string; line: number; endLine: number; expression?: string; column?: number; endColumn?: number };
 export type PreviewEvidence = { file: string; line: number; endLine: number; expression: string; column?: number; endColumn?: number };
-export type PreviewSourceNode = { id: string; parent?: string | null; kind?: string; sourceKind?: string; label?: string; instance?: string; moduleType?: string; expression?: string; source_evidence?: string[]; sourceStructure?: boolean;
+export type PreviewSourceNode = { id: string; parent?: string | null; kind?: string; operator?: string; semantic_type?: string; shape?: unknown; sourceKind?: string; label?: string; instance?: string; moduleType?: string; expression?: string; source_evidence?: string[]; sourceStructure?: boolean;
   presentation_only?: boolean; canonical_members?: string[]; sourceParameters?: { callSites?: (Partial<PreviewEvidence> & { path?: string })[]; condition?: string } };
 export type PreviewSourceBundle = {
   schema: 'summary-source-adapter/1'; id: string; entry: string; sourceSha256: string; irSha256: string;
